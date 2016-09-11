@@ -4,11 +4,20 @@
 
 int main(void) {
     Environment env;
-    int size = 100;
+    int size = 60;
     int iterations = 250;
 
-    int lid = env.add_layer(size, 1, 0.02, 0.25, -65, 0.05);
-    env.connect_layers(lid, lid, true);
+    double a = 0.02;
+    double b = 0.25;
+    double c = -65;
+    double d = 0.05;
+
+    int pos = env.add_layer(size, 1, a, b, c, d);
+    int neg = env.add_layer(size, -1, a, b, c, d);
+    env.connect_layers(pos, pos, true);
+    env.connect_layers(pos, neg, true);
+    env.connect_layers(neg, pos, true);
+    env.connect_layers(neg, neg, true);
 
     for (int i = 0 ; i < iterations ; ++i) {
         //cout << "Currents: " << env.currents[0] << " " << env.currents[1] << "\n";
@@ -19,7 +28,7 @@ int main(void) {
             //cout << env.spikes[nid];
             cout << c;
         }
-        cout << "\n";
+        cout << "|\n";
         env.cycle();
     }
 
