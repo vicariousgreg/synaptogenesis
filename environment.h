@@ -1,7 +1,9 @@
+#pragma once
 #include <vector>
 #include <ctime>
 #include <cstdlib>
 #include "layer.h"
+#include "connectivity_matrix.h"
 
 using namespace std;
 
@@ -20,6 +22,8 @@ class Environment {
     public:
         Environment () {
             this->num_neurons = 0;
+            this->num_layers = 0;
+            this->num_connections = 0;
             srand(time(NULL));
         }
 
@@ -27,19 +31,23 @@ class Environment {
 
         int add_layer(int size, int sign, double a, double b, double c, double d);
 
+        int connect_layers(int from_layer, int to_layer, bool plastic);
+
         int add_neuron(double a, double b, double c, double d);
 
         void cycle();
 
     //private:
-        // Count of neurons
+        // Neurons
         int num_neurons;
 
-        // Count of layers
+        // Layers
         int num_layers;
-
-        // Layer Vector
         vector<Layer> layers;
+
+        // Connection matrices.
+        int num_connections;
+        vector<ConnectivityMatrix> connections;
 
         // Age Vector
         vector<int> ages;

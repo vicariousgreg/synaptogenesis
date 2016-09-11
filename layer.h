@@ -1,3 +1,5 @@
+#pragma once
+
 class Layer {
     public:
         Layer (int start_index, int size, int layer_index, int sign) :

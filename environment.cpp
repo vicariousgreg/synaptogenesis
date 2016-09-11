@@ -1,4 +1,6 @@
+#include "tools.h"
 #include "environment.h"
+//#include "connectivity_matrix.h"
 #include <cstdlib>
 #include <iostream>
 #include <ctime>
@@ -6,10 +8,10 @@
 #define VOLTAGE_THRESHOLD 30
 #define EULER_RESOLUTION 10
 
-double fRand(double fMin, double fMax)
-{
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
+int Environment::connect_layers(int from_layer, int to_layer, bool plastic) {
+    this->connections.push_back(ConnectivityMatrix(
+        this->layers[from_layer], this->layers[to_layer], plastic));
+    return this->num_connections++;
 }
 
 /* Adds a layer to the environment.
@@ -53,14 +55,25 @@ void Environment::cycle() {
     /* 1. Inputs */
     // Initialize currents to external currents
     for (int nid = 0 ; nid < this->num_neurons; ++nid) {
-        this->currents[nid] = fRand(0, 10);
+        this->currents[nid] = fRand(0, 1);
     }
 
     /* 2. Activation */
     // For each connectivity matrix...
     //   Update Currents using synaptic input
     //     current += sign * dot ( spikes * weights )
-    //
+    for (int cid = 0 ; cid < this->num_connections; ++cid) {
+        ConnectivityMatrix conn = this->connections[cid];
+        for (int row = 0 ; row < conn.to_size ; ++row) {
+            for (int col = 0 ; col < conn.from_size ; ++col) {
+                this->currents[row + conn.to_index] += 
+                    conn.sign *
+                    this->spikes[col + conn.from_index] *
+                    conn.matrix(row, col);
+            }
+        }
+    }
+
     // For each neuron...
     //   update voltage according to current
     //     Euler's method with #defined resolution
@@ -71,7 +84,9 @@ void Environment::cycle() {
         double delta_v = 0;
         NeuronParameters params = this->neuron_parameters[nid];
 
+        // Euler's method for voltage/recovery update
         for (int i = 0 ; i < EULER_RESOLUTION; ++i) {
+            // If the voltage exceeds the spiking threshold, break
             if (voltage >= VOLTAGE_THRESHOLD) break;
 
             delta_v = (0.04 * voltage * voltage) +
@@ -80,12 +95,12 @@ void Environment::cycle() {
             recovery += params.a * ((params.b * voltage) - recovery)
                             / EULER_RESOLUTION;
         }
+        //recovery += params.a * ((params.b * voltage) - recovery);
         this->voltages[nid] = voltage;
         this->recoveries[nid] = recovery;
     }
 
     /* 3. Timestep */
-
     // Determine spikes.
     for (int i = 0; i < this->num_neurons; ++i) {
         bool spike = this->voltages[i] >= VOLTAGE_THRESHOLD;

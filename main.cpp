@@ -4,17 +4,20 @@
 
 int main(void) {
     Environment env;
-    int size = 10;
-    int iterations = 20;
+    int size = 100;
+    int iterations = 250;
 
-    env.add_layer(size, 1, 0.02, 0.2, -70, 2);
+    int lid = env.add_layer(size, 1, 0.02, 0.25, -65, 0.05);
+    env.connect_layers(lid, lid, true);
 
     for (int i = 0 ; i < iterations ; ++i) {
         //cout << "Currents: " << env.currents[0] << " " << env.currents[1] << "\n";
         //cout << "Voltages: " << env.voltages[0] << " " << env.voltages[1] << "\n";
         //cout << "Spikes: " << env.spikes[0] << " " << env.spikes[1] << "\n\n";
         for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
-            cout << env.spikes[nid];
+            char c = env.spikes[nid] ? '.' : ' ';
+            //cout << env.spikes[nid];
+            cout << c;
         }
         cout << "\n";
         env.cycle();
