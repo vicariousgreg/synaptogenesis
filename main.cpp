@@ -4,8 +4,8 @@
 
 int main(void) {
     Environment env;
-    int size = 60;
-    int iterations = 250;
+    int size = 65;
+    int iterations = 1000;
 
     double a = 0.02;
     double b = 0.25;
