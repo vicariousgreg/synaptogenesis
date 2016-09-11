@@ -1,4 +1,6 @@
 #include <vector>
+#include <ctime>
+#include <cstdlib>
 #include "layer.h"
 
 using namespace std;
@@ -18,6 +20,7 @@ class Environment {
     public:
         Environment () {
             this->num_neurons = 0;
+            srand(time(NULL));
         }
 
         virtual ~Environment () {}

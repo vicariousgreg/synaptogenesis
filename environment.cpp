@@ -1,9 +1,16 @@
-#include <iostream>
-#include <vector>
 #include "environment.h"
+#include <cstdlib>
+#include <iostream>
+#include <ctime>
 
 #define VOLTAGE_THRESHOLD 30
 #define EULER_RESOLUTION 10
+
+double fRand(double fMin, double fMax)
+{
+    double f = (double)rand() / RAND_MAX;
+    return fMin + f * (fMax - fMin);
+}
 
 /* Adds a layer to the environment.
  *     Adds the appropriate number of neurons according to the given size.
@@ -45,6 +52,9 @@ int Environment::add_neuron(double a, double b, double c, double d) {
 void Environment::cycle() {
     /* 1. Inputs */
     // Initialize currents to external currents
+    for (int nid = 0 ; nid < this->num_neurons; ++nid) {
+        this->currents[nid] = fRand(0, 10);
+    }
 
     /* 2. Activation */
     // For each connectivity matrix...
@@ -54,6 +64,25 @@ void Environment::cycle() {
     // For each neuron...
     //   update voltage according to current
     //     Euler's method with #defined resolution
+    for (int nid = 0 ; nid < this->num_neurons; ++nid) {
+        double voltage = this->voltages[nid];
+        double recovery = this->recoveries[nid];
+        double current = this->currents[nid];
+        double delta_v = 0;
+        NeuronParameters params = this->neuron_parameters[nid];
+
+        for (int i = 0 ; i < EULER_RESOLUTION; ++i) {
+            if (voltage >= VOLTAGE_THRESHOLD) break;
+
+            delta_v = (0.04 * voltage * voltage) +
+                            (5*voltage) + 140 - recovery + current;
+            voltage += delta_v / EULER_RESOLUTION;
+            recovery += params.a * ((params.b * voltage) - recovery)
+                            / EULER_RESOLUTION;
+        }
+        this->voltages[nid] = voltage;
+        this->recoveries[nid] = recovery;
+    }
 
     /* 3. Timestep */
 
@@ -76,21 +105,4 @@ void Environment::cycle() {
     // Update weights.
 
     /* 4. Outputs */
-}
-
-int main(void) {
-    Environment env;
-
-    env.add_neuron(0,0,0,0);
-    env.voltages[0] = 100;
-    cout << env.voltages[0] << "\n";
-
-    env.cycle();
-    cout << env.voltages[0] << "\n";
-    cout << env.spikes[0] << "\n";
-
-    env.voltages[0] = 0;
-    env.cycle();
-    cout << env.spikes[0] << "\n";
-    return 0;
 }
