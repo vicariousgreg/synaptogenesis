@@ -24,7 +24,7 @@ int main(void) {
         //cout << "Voltages: " << env.voltages[0] << " " << env.voltages[1] << "\n";
         //cout << "Spikes: " << env.spikes[0] << " " << env.spikes[1] << "\n\n";
         for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
-            char c = env.spikes[nid] ? '.' : ' ';
+            char c = env.spikes[nid] ? '*' : ' ';
             //cout << env.spikes[nid];
             cout << c;
         }

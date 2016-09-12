@@ -1,30 +1,24 @@
-#pragma once
+#ifndef matrix_h
+#define matrix_h
+
 #include <vector>
 #include <cstdlib>
 
 class Matrix
 {
     public:
-        Matrix(int rows, int cols)
-        : mRows(rows),
-          mCols(cols),
-          mData(rows * cols) {}
+        Matrix(int rows, int cols) :
+                mRows(rows),
+                mCols(cols),
+                mData(rows * cols) {}
 
-        void randomize() {
-            for (int row = 0 ; row < this->mRows ; ++row) {
-                for (int col = 0 ; col < this->mCols ; ++col) {
-                    this->mData[row * mCols + col] = (double)rand() / RAND_MAX;
-                }
-            }
-        }
+        void randomize();
 
-        double& operator()(int i, int j)
-        {
+        double& operator()(int i, int j) {
             return this->mData[i * mCols + j];
         }
 
-        double operator()(int i, int j) const
-        {
+        double operator()(int i, int j) const {
             return this->mData[i * mCols + j];
         }
 
@@ -32,5 +26,6 @@ class Matrix
         int mRows;
         int mCols;
         std::vector<double> mData;
-
 };
+
+#endif

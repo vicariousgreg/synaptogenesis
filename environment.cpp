@@ -1,6 +1,6 @@
-#include "tools.h"
 #include "environment.h"
-//#include "connectivity_matrix.h"
+#include "connectivity_matrix.h"
+#include "tools.h"
 #include <cstdlib>
 #include <iostream>
 #include <ctime>

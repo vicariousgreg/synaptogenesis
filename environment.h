@@ -1,4 +1,6 @@
-#pragma once
+#ifndef environment_h
+#define environment_h
+
 #include <vector>
 #include <ctime>
 #include <cstdlib>
@@ -69,3 +71,5 @@ class Environment {
 
     protected:
 };
+
+#endif

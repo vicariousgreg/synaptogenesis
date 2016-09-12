@@ -1,12 +1,9 @@
-#pragma once
+#ifndef layer_h
+#define layer_h
 
 class Layer {
     public:
-        Layer (int start_index, int size, int layer_index, int sign) :
-                start_index(start_index),
-                size(size),
-                layer_index(layer_index),
-                sign(sign) {}
+        Layer(int start_index, int size, int layer_index, int sign);
 
         virtual ~Layer () {}
 
@@ -25,3 +22,5 @@ class Layer {
     private:
     protected:
 };
+
+#endif

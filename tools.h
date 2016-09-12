@@ -1,7 +1,6 @@
-#pragma once
-#include <cstdlib>
+#ifndef tools_h
+#define tools_h
 
-double fRand(double fMin, double fMax) {
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
-}
+double fRand(double fMin, double fMax);
+
+#endif
