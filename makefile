@@ -1,3 +1,6 @@
 all:
-	g++ -w *.cpp *.h
+	g++ -w *.cpp *.h -o test
+
+clean:
+	rm *.gch
 

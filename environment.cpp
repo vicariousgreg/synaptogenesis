@@ -1,12 +1,13 @@
-#include "environment.h"
-#include "connectivity_matrix.h"
-#include "tools.h"
 #include <cstdlib>
 #include <iostream>
 #include <ctime>
 
-#define VOLTAGE_THRESHOLD 30
-#define EULER_RESOLUTION 10
+#include "environment.h"
+#include "connectivity_matrix.h"
+#include "tools.h"
+
+#define SPIKE_THRESH 30
+#define EULER_RES 10
 
 int Environment::connect_layers(int from_layer, int to_layer, bool plastic) {
     this->connections.push_back(ConnectivityMatrix(
@@ -21,7 +22,8 @@ int Environment::connect_layers(int from_layer, int to_layer, bool plastic) {
  * Returns the layer's index.
  * TODO: Add more parameters
  */
-int Environment::add_layer(int size, int sign, double a, double b, double c, double d) {
+int Environment::add_layer(int size, int sign,
+        double a, double b, double c, double d) {
     // Index of first neuron for layer
     int start_index = this->num_neurons;
     int layer_index = this->num_layers++;
@@ -85,15 +87,13 @@ void Environment::cycle() {
         NeuronParameters params = this->neuron_parameters[nid];
 
         // Euler's method for voltage/recovery update
-        for (int i = 0 ; i < EULER_RESOLUTION; ++i) {
-            // If the voltage exceeds the spiking threshold, break
-            if (voltage >= VOLTAGE_THRESHOLD) break;
-
+        // If the voltage exceeds the spiking threshold, break
+        for (int i = 0 ; i < EULER_RES && voltage >= SPIKE_THRESH ; ++i) {
             delta_v = (0.04 * voltage * voltage) +
                             (5*voltage) + 140 - recovery + current;
-            voltage += delta_v / EULER_RESOLUTION;
+            voltage += delta_v / EULER_RES;
             recovery += params.a * ((params.b * voltage) - recovery)
-                            / EULER_RESOLUTION;
+                            / EULER_RES;
         }
         //recovery += params.a * ((params.b * voltage) - recovery);
         this->voltages[nid] = voltage;
@@ -103,7 +103,7 @@ void Environment::cycle() {
     /* 3. Timestep */
     // Determine spikes.
     for (int i = 0; i < this->num_neurons; ++i) {
-        bool spike = this->voltages[i] >= VOLTAGE_THRESHOLD;
+        bool spike = this->voltages[i] >= SPIKE_THRESH;
         this->spikes[i] = spike;
 
         // Increment or reset spike ages.
