@@ -1,10 +1,11 @@
 #include "matrix.h"
 #include "tools.h"
 
-void Matrix::randomize() {
+void Matrix::randomize(bool self_connected) {
     for (int row = 0 ; row < this->mRows ; ++row) {
         for (int col = 0 ; col < this->mCols ; ++col) {
-            this->mData[row * mCols + col] = fRand(0, 1);
+            if (self_connected)
+                this->mData[row * mCols + col] = fRand(0, 1);
         }
     }
 }

@@ -39,6 +39,12 @@ class Environment {
         int add_neuron(double a, double b, double c, double d);
 
         void cycle();
+        void gather_input();
+        void activate();
+        void update_voltages();
+        void timestep();
+        void update_weights();
+        void report_output();
 
     //private:
         // Neurons

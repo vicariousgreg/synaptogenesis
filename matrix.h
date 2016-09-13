@@ -12,7 +12,7 @@ class Matrix
                 mCols(cols),
                 mData(rows * cols) {}
 
-        void randomize();
+        void randomize(bool self_connected);
 
         double& operator()(int i, int j) {
             return this->mData[i * mCols + j];

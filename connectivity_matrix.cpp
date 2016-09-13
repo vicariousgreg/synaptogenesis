@@ -9,5 +9,5 @@ ConnectivityMatrix::ConnectivityMatrix (Layer from_layer, Layer to_layer, bool p
         plastic(plastic),
         sign(from_layer.sign),
         matrix(to_layer.size, from_layer.size) {
-    this->matrix.randomize();
+    this->matrix.randomize(true);
 }
