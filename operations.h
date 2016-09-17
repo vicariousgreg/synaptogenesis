@@ -1,5 +1,5 @@
-#ifndef parallel_h
-#define parallel_h
+#ifndef operations_h
+#define operations_h
 
 #include "environment.h"
 
@@ -11,5 +11,8 @@ void mult(int sign, int* spikes, double* weights, double* currents,
 
 void izhikevich(double* voltages, double*recoveries, double* currents,
                 NeuronParameters* neuron_params, int num_neurons);
+
+void calc_spikes(int* spikes, int* ages, double* voltages, double* recoveries,
+                 NeuronParameters* neuron_params, int num_neurons);
 
 #endif

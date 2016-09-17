@@ -5,7 +5,7 @@
 #include "environment.h"
 #include "connectivity_matrix.h"
 #include "tools.h"
-#include "parallel.h"
+#include "operations.h"
 
 /******************************************************************************
  ********************** INITIALIZATION FUNCTIONS ******************************
@@ -197,26 +197,14 @@ void Environment::update_voltages() {
  * Increments the ages of last spikes, and resets recovery if spiked.
  */
 void Environment::timestep() {
-    int spike;
-    NeuronParameters *params;
-
     /* 4. Timestep */
-    // Determine spikes.
-    for (int i = 0; i < this->num_neurons; ++i) {
-        spike = ((double*)this->nat[VOLTAGE])[i] >= SPIKE_THRESH;
-        ((int*)this->nat[SPIKE])[i] = spike;
-
-        // Increment or reset spike ages.
-        // Also, reset voltage if spiked.
-        if (spike) {
-            params = &(((NeuronParameters*)this->nat[PARAMS])[i]);
-            ((int*)this->nat[AGE])[i] = 0;
-            ((double*)this->nat[VOLTAGE])[i] = params->c;
-            ((double*)this->nat[RECOVERY])[i] += params->d;
-        } else {
-            ((int*)this->nat[AGE])[i]++;
-        }
-    }
+    calc_spikes(
+        (int*)this->nat[SPIKE],
+        (int*)this->nat[AGE],
+        (double*)this->nat[VOLTAGE],
+        (double*)this->nat[RECOVERY],
+        (NeuronParameters*)this->nat[PARAMS],
+        this->num_neurons);
 }
 
 /**

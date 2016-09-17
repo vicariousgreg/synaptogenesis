@@ -7,7 +7,7 @@ void print_values(Environment env) {
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
         double current = ((double*)env.nat[CURRENT])[nid];
         double voltage = ((double*)env.nat[VOLTAGE])[nid];
-        NeuronParameters *params = &(((NeuronParameters*)env.nat[PARAMS])[nid]);
+        NeuronParameters &params = ((NeuronParameters*)env.nat[PARAMS])[nid];
         //cout << env.spikes[nid];
         //cout << current << " " << voltage << " " << a << " " << b << " " << c << " " << d;;
         //cout << "\n";

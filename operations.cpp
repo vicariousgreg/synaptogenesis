@@ -46,3 +46,27 @@ void izhikevich(double* voltages, double*recoveries, double* currents,
         recoveries[nid] = recovery;
     }
 }
+
+void calc_spikes(int* spikes, int* ages, double* voltages, double* recoveries,
+                 NeuronParameters* neuron_params, int num_neurons) {
+    int spike; 
+    NeuronParameters *params;
+
+    /* 4. Timestep */
+    // Determine spikes.
+    for (int i = 0; i < num_neurons; ++i) {
+        spike = voltages[i] >= SPIKE_THRESH;
+        spikes[i] = spike;
+
+        // Increment or reset spike ages.
+        // Also, reset voltage if spiked.
+        if (spike) {
+            params = &neuron_params[i];
+            ages[i] = 0;
+            voltages[i] = params->c;
+            recoveries[i] += params->d;
+        } else {
+            ++ages[i];
+        }
+    }
+}
