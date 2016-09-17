@@ -60,15 +60,17 @@ class Environment {
             bool plastic, double max_weight);
         int add_neuron(double a, double b, double c, double d);
 
-        void set_random_currents(int layer_id, double max);
+        void inject_random_current(int layer_id, double max);
+        void inject_current(int layer_id, double* input);
+
+        int* get_spikes();
+        double* get_currents();
 
         void cycle();
-        void gather_input();
         void activate();
         void update_voltages();
         void timestep();
         void update_weights();
-        void report_output();
 
     //private:
         // Neurons
@@ -87,6 +89,11 @@ class Environment {
 
         // Neuron Attribute Table
         void **nat;
+
+#ifdef parallel
+        int* local_spikes;
+        double* local_currents;
+#endif
 
     protected:
 };

@@ -1,11 +1,95 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <climits>
+#include <stdio.h>
 
 #include "environment.h"
 #include "connectivity_matrix.h"
 #include "tools.h"
 #include "operations.h"
+
+#ifdef parallel
+
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
+#define cudaCheckError() {                                          \
+ cudaError_t e=cudaGetLastError();                                 \
+ if(e!=cudaSuccess) {                                              \
+   printf("Cuda failure %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(e));           \
+   exit(0); \
+ }                                                                 \
+}
+
+#endif
+
+/******************************************************************************
+ ************************* GETTER / SETTER ************************************
+ ******************************************************************************/
+
+int* Environment::get_spikes() {
+#ifdef parallel
+    // Copy from GPU to local location
+    cudaMemcpy(this->local_spikes, this->nat[SPIKE], this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+    return this->local_spikes;
+#else
+    return (int*)this->nat[SPIKE];
+#endif
+}
+
+double* Environment::get_currents() {
+#ifdef parallel
+    // Copy from GPU to local location
+    cudaMemcpy(this->local_currents, this->nat[CURRENT], this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+    return this->local_currents;
+#else
+    return (double*)this->nat[CURRENT];
+#endif
+}
+
+void Environment::inject_random_current(int layer_id, double max) {
+    int offset = this->layers[layer_id].start_index;
+    int size = this->layers[layer_id].size;
+#ifdef parallel
+    // Send to GPU
+    double* temp = (double*)malloc(size * sizeof(double));
+    for (int nid = 0 ; nid < size; ++nid) {
+        temp[nid] = fRand(0, max);
+    }
+    cout << temp[0] << " *******\n\n";
+    this->inject_current(layer_id, temp);
+    free(temp);
+#else
+    for (int nid = offset ; nid < offset + size; ++nid) {
+        ((double*)this->nat[CURRENT])[nid] = fRand(0, max);
+    }
+#endif
+}
+
+void Environment::inject_current(int layer_id, double* input) {
+    int offset = this->layers[layer_id].start_index;
+    int size = this->layers[layer_id].size;
+#ifdef parallel
+    // Send to GPU
+    //cudaMemcpy(&((double*)this->nat[CURRENT])[offset], input, size * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[CURRENT], input, size * sizeof(double), cudaMemcpyHostToDevice);
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+#else
+    for (int nid = 0 ; nid < size; ++nid) {
+        ((double*)this->nat[CURRENT])[nid+offset] = input[nid];
+    }
+#endif
+}
+
 
 /******************************************************************************
  ********************** INITIALIZATION FUNCTIONS ******************************
@@ -21,26 +105,84 @@ void Environment::build() {
     // Initialize Neuron Attributes Table
     // First, initialize pointers to arrays
     this->nat = (void**)malloc(SIZE * sizeof(void*));
+    int count = this->num_neurons;
 
-    // Then initialize actual arrays
-    this->nat[CURRENT] = malloc(this->num_neurons * sizeof(double));
-    this->nat[VOLTAGE] = malloc(this->num_neurons * sizeof(double));
-    this->nat[RECOVERY] = malloc(this->num_neurons * sizeof(double));
-    this->nat[SPIKE] = malloc(this->num_neurons * sizeof(int));
-    this->nat[AGE] = malloc(this->num_neurons * sizeof(int));
-    this->nat[PARAMS] = malloc(this->num_neurons * sizeof(NeuronParameters));
+#ifdef parallel
+    // Local spikes for output reporting
+    this->local_spikes = (int*)calloc(count, sizeof(int));
+    this->local_currents = (double*)calloc(count, sizeof(double));
+
+    // Allocate space on GPU
+    cudaMalloc(&this->nat[CURRENT], count * sizeof(double));
+    cudaMalloc(&this->nat[VOLTAGE], count * sizeof(double));
+    cudaMalloc(&this->nat[RECOVERY], count * sizeof(double));
+    cudaMalloc(&this->nat[SPIKE], count * sizeof(int));
+    cudaMalloc(&this->nat[AGE], count * sizeof(int));
+    cudaMalloc(&this->nat[PARAMS], count * sizeof(NeuronParameters));
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+
+    // Make temporary arrays for initialization
+    double *temp_current = (double*)malloc(count * sizeof(double));
+    double *temp_voltage = (double*)malloc(count * sizeof(double));
+    double *temp_recovery = (double*)malloc(count * sizeof(double));
+    int *temp_spike = (int*)malloc(count * sizeof(int));
+    int *temp_age = (int*)malloc(count * sizeof(int));
+    NeuronParameters *temp_params = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
 
     // Fill in table
-    for (int i = 0 ; i < this->num_neurons ; ++i) {
-        NeuronParameters params = this->neuron_parameters[i];
+    for (int i = 0 ; i < count ; ++i) {
+        NeuronParameters &params = this->neuron_parameters[i];
+        temp_params[i] = this->neuron_parameters[i].copy();
+
+        temp_current[i] = 0;
+        temp_voltage[i] = params.c;
+        temp_recovery[i] = params.b * params.c;
+        temp_spike[i] = 0;
+        temp_age[i] = INT_MAX;
+    }
+
+    // Copy values to GPU
+    cudaMemcpy(this->nat[CURRENT], temp_current, count * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[VOLTAGE], temp_voltage, count * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[RECOVERY], temp_recovery, count * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[SPIKE], temp_spike, count * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[AGE], temp_age, count * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[PARAMS], temp_params, count * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+
+    // Free up temporary memory
+    free(temp_current);
+    free(temp_voltage);
+    free(temp_recovery);
+    free(temp_spike);
+    free(temp_age);
+    free(temp_params);
+
+#else
+    // Then initialize actual arrays
+    this->nat[CURRENT] = malloc(count * sizeof(double));
+    this->nat[VOLTAGE] = malloc(count * sizeof(double));
+    this->nat[RECOVERY] = malloc(count * sizeof(double));
+    this->nat[SPIKE] = malloc(count * sizeof(int));
+    this->nat[AGE] = malloc(count * sizeof(int));
+    this->nat[PARAMS] = malloc(count * sizeof(NeuronParameters));
+
+    // Fill in table
+    for (int i = 0 ; i < count ; ++i) {
+        NeuronParameters &params = this->neuron_parameters[i];
         ((NeuronParameters*)this->nat[PARAMS])[i] = this->neuron_parameters[i].copy();
 
         ((double*)this->nat[CURRENT])[i] = 0;
         ((double*)this->nat[VOLTAGE])[i] = params.c;
         ((double*)this->nat[RECOVERY])[i] = params.b * params.c;
         ((int*)this->nat[SPIKE])[i] = 0;
-        ((int*)this->nat[AGE])[i] = 0;
+        ((int*)this->nat[AGE])[i] = INT_MAX;
     }
+#endif
 }
 
 /*
@@ -129,15 +271,6 @@ int Environment::add_neuron(double a, double b, double c, double d) {
     return this->num_neurons++;
 }
 
-void Environment::set_random_currents(int layer_id, double max) {
-    int offset = this->layers[layer_id].start_index;
-    int size = this->layers[layer_id].size;
-
-    for (int nid = offset ; nid < offset + size; ++nid) {
-        ((double*)this->nat[CURRENT])[nid] = fRand(0, max);
-    }
-}
-
 /******************************************************************************
  ************************ TIMESTEP DYNAMICS ***********************************
  ******************************************************************************/
@@ -147,9 +280,29 @@ void Environment::set_random_currents(int layer_id, double max) {
  */
 void Environment::cycle() {
     this->activate();
+#ifdef parallel
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+#endif
     this->update_voltages();
+#ifdef parallel
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+#endif
     this->timestep();
+#ifdef parallel
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+#endif
     this->update_weights();
+#ifdef parallel
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+#endif
 }
 
 /*
@@ -161,13 +314,22 @@ void Environment::activate() {
     int* spikes = (int*)this->nat[SPIKE];
     double* currents = (double*)this->nat[CURRENT];
 
+#ifdef parallel
+    int threads = 64;
+    int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
+#endif
+
     /* 2. Activation */
     // For each connectivity matrix...
     //   Update Currents using synaptic input
     //     current += sign * dot ( spikes * weights )
     for (int cid = 0 ; cid < this->num_connections; ++cid) {
         ConnectivityMatrix &conn = this->connections[cid];
+#ifdef parallel
+        mult<<<blocks, threads>>>(
+#else
         mult(
+#endif
             conn.sign,
             spikes + conn.from_index,
             conn.matrix.mData,
@@ -177,13 +339,20 @@ void Environment::activate() {
     }
 }
 
+
 /*
  * Perform voltage update according to input currents using Izhikevich
  *   with Euler's method.
  */
 void Environment::update_voltages() {
     /* 3. Voltage Updates */
+#ifdef parallel
+    int threads = 64;
+    int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
+    izhikevich<<<blocks, threads>>>(
+#else
     izhikevich(
+#endif
         (double*)this->nat[VOLTAGE],
         (double*)this->nat[RECOVERY],
         (double*)this->nat[CURRENT],
@@ -198,7 +367,13 @@ void Environment::update_voltages() {
  */
 void Environment::timestep() {
     /* 4. Timestep */
+#ifdef parallel
+    int threads = 64;
+    int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
+    calc_spikes<<<blocks, threads>>>(
+#else
     calc_spikes(
+#endif
         (int*)this->nat[SPIKE],
         (int*)this->nat[AGE],
         (double*)this->nat[VOLTAGE],

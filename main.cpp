@@ -14,9 +14,18 @@ void print_values(Environment env) {
     }
 }
 void print_spikes(Environment env) {
+    int* spikes = env.get_spikes();
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
-        char c = ((int*)env.nat[SPIKE])[nid] ? '*' : ' ';
+        char c = spikes[nid] ? '*' : ' ';
         cout << c;
+    }
+    cout << "|\n";
+}
+
+void print_currents(Environment env) {
+    double* currents = env.get_currents();
+    for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
+        cout << currents[nid] << " ";
     }
     cout << "|\n";
 }
@@ -37,8 +46,9 @@ int main(void) {
     for (int i = 0 ; i < iterations ; ++i) {
         //print_values(env);
         print_spikes(env);
-        env.set_random_currents(pos, 5);
-        env.set_random_currents(neg, 2);
+        print_currents(env);
+        env.inject_random_current(pos, 5);
+        env.inject_random_current(neg, 2);
         env.cycle();
     }
 

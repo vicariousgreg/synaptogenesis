@@ -3,6 +3,19 @@
 
 #include "environment.h"
 
+#ifdef parallel
+
+__global__ void mult(int sign, int* spikes, double* weights, double* currents,
+          int from_size, int to_size);
+
+__global__ void izhikevich(double* voltages, double*recoveries, double* currents,
+                NeuronParameters* neuron_params, int num_neurons);
+
+__global__ void calc_spikes(int* spikes, int* ages, double* voltages, double* recoveries,
+                 NeuronParameters* neuron_params, int num_neurons);
+
+#else
+
 void dot(int sign, int* spikes, double* weights, double* currents,
          int from_size, int to_index);
 
@@ -14,5 +27,7 @@ void izhikevich(double* voltages, double*recoveries, double* currents,
 
 void calc_spikes(int* spikes, int* ages, double* voltages, double* recoveries,
                  NeuronParameters* neuron_params, int num_neurons);
+
+#endif
 
 #endif
