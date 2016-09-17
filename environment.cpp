@@ -5,6 +5,7 @@
 #include "environment.h"
 #include "connectivity_matrix.h"
 #include "tools.h"
+#include "parallel.h"
 
 #define SPIKE_THRESH 30
 #define EULER_RES 10
@@ -166,14 +167,12 @@ void Environment::activate() {
     //     current += sign * dot ( spikes * weights )
     for (int cid = 0 ; cid < this->num_connections; ++cid) {
         ConnectivityMatrix conn = this->connections[cid];
-        for (int row = 0 ; row < conn.to_size ; ++row) {
-            for (int col = 0 ; col < conn.from_size ; ++col) {
-                ((double*)this->nat[CURRENT])[row + conn.to_index] += 
-                    conn.sign *
-                    ((int*)this->nat[SPIKE])[col + conn.from_index] *
-                    conn.matrix(row, col);
-            }
-        }
+        mult(conn.sign,
+             &((int*)this->nat[SPIKE])[conn.from_index],
+             conn.matrix.mData,
+             &((double*)this->nat[CURRENT])[conn.to_index],
+             conn.from_size,
+             conn.to_size);
     }
 }
 

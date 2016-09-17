@@ -1,7 +1,6 @@
 #ifndef matrix_h
 #define matrix_h
 
-#include <vector>
 #include <cstdlib>
 
 class Matrix
@@ -9,8 +8,9 @@ class Matrix
     public:
         Matrix(int rows, int cols) :
                 mRows(rows),
-                mCols(cols),
-                mData(rows * cols) {}
+                mCols(cols) {
+            mData = (double*)malloc(rows * cols * sizeof(double));
+        }
 
         void randomize(bool self_connected, double max_weight);
 
@@ -22,10 +22,11 @@ class Matrix
             return this->mData[i * mCols + j];
         }
 
+        double* mData;
+
     private:
         int mRows;
         int mCols;
-        std::vector<double> mData;
 };
 
 #endif
