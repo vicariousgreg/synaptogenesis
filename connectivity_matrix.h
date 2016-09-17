@@ -6,7 +6,8 @@
 
 class ConnectivityMatrix {
     public:
-        ConnectivityMatrix (Layer from_layer, Layer to_layer, bool plastic);
+        ConnectivityMatrix (Layer from_layer, Layer to_layer,
+            bool plastic, double max_weight);
 
         virtual ~ConnectivityMatrix () {}
 

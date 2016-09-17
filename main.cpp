@@ -3,48 +3,47 @@
 
 #include "environment.h"
 
+void print_values(Environment env) {
+    for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
+        double current = ((double*)env.nat[CURRENT])[nid];
+        double voltage = ((double*)env.nat[VOLTAGE])[nid];
+        double a = ((double*)env.nat[PARAMS_A])[nid];
+        double b = ((double*)env.nat[PARAMS_B])[nid];
+        double c = ((double*)env.nat[PARAMS_C])[nid];
+        double d = ((double*)env.nat[PARAMS_D])[nid];
+        //cout << env.spikes[nid];
+        //cout << current << " " << voltage << " " << a << " " << b << " " << c << " " << d;;
+        //cout << "\n";
+    }
+}
+void print_spikes(Environment env) {
+    for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
+        char c = ((int*)env.nat[SPIKE])[nid] ? '*' : ' ';
+        cout << c;
+    }
+    cout << "|\n";
+}
+
 int main(void) {
     Environment env;
-    int size = 65;
-    int iterations = 1000;
+    int size = 800;
+    int iterations = 400;
 
-    double a = 0.02;
-    double b = 0.25;
-    double c = -65;
-    double d = 0.05;
-
-    int pos = env.add_layer(size, 1, a, b, c, d);
-    int neg = env.add_layer(size, -1, a, b, c, d);
-    env.connect_layers(pos, pos, true);
-    env.connect_layers(pos, neg, true);
-    env.connect_layers(neg, pos, true);
-    env.connect_layers(neg, neg, true);
+    int pos = env.add_randomized_layer(size, 1);
+    int neg = env.add_randomized_layer(size / 4, -1);
+    env.connect_layers(pos, pos, true, .5);
+    env.connect_layers(pos, neg, true, .5);
+    env.connect_layers(neg, pos, true, 1);
+    env.connect_layers(neg, neg, true, 1);
+    env.build();
 
     for (int i = 0 ; i < iterations ; ++i) {
-        //cout << "Currents: " << env.currents[0] << " " << env.currents[1] << "\n";
-        //cout << "Voltages: " << env.voltages[0] << " " << env.voltages[1] << "\n";
-        //cout << "Spikes: " << env.spikes[0] << " " << env.spikes[1] << "\n\n";
-        for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
-            char c = env.spikes[nid] ? '*' : ' ';
-            //cout << env.spikes[nid];
-            cout << c;
-        }
-        cout << "|\n";
+        //print_values(env);
+        print_spikes(env);
+        env.set_random_currents(pos, 5);
+        env.set_random_currents(neg, 2);
         env.cycle();
     }
 
-    /*
-    env.add_neuron(0,0,0,0);
-    env.voltages[0] = 100;
-    cout << env.voltages[0] << "\n";
-
-    env.cycle();
-    cout << env.voltages[0] << "\n";
-    cout << env.spikes[0] << "\n";
-
-    env.voltages[0] = 0;
-    env.cycle();
-    cout << env.spikes[0] << "\n";
-    */
     return 0;
 }

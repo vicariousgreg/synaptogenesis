@@ -15,10 +15,23 @@ class NeuronParameters {
         NeuronParameters(double a, double b, double c, double d) :
                 a(a), b(b), c(c), d(d) {}
 
-        int a;
-        int b;
-        int c;
-        int d;
+        double a;
+        double b;
+        double c;
+        double d;
+};
+
+enum NeuronAttributes {
+    CURRENT,
+    VOLTAGE,
+    RECOVERY,
+    SPIKE,
+    AGE,
+    PARAMS_A,
+    PARAMS_B,
+    PARAMS_C,
+    PARAMS_D,
+    SIZE
 };
 
 class Environment {
@@ -28,15 +41,21 @@ class Environment {
             this->num_layers = 0;
             this->num_connections = 0;
             srand(time(NULL));
+            //srand(0);
         }
 
         virtual ~Environment () {}
 
-        int add_layer(int size, int sign, double a, double b, double c, double d);
+        void build();
 
-        int connect_layers(int from_layer, int to_layer, bool plastic);
-
+        int add_layer(int size, int sign,
+            double a, double b, double c, double d);
+        int add_randomized_layer(int size, int sign);
+        int connect_layers(int from_layer, int to_layer,
+            bool plastic, double max_weight);
         int add_neuron(double a, double b, double c, double d);
+
+        void set_random_currents(int layer_id, double max);
 
         void cycle();
         void gather_input();
@@ -58,23 +77,11 @@ class Environment {
         int num_connections;
         vector<ConnectivityMatrix> connections;
 
-        // Age Vector
-        vector<int> ages;
-
-        // Spike Vector
-        vector<bool> spikes;
-
-        // Voltage Vector
-        vector<double> voltages;
-
-        // Current Vector
-        vector<double> currents;
-
-        // Recovery Vector
-        vector<double> recoveries;
-
         // Parameter Vector
         vector<NeuronParameters> neuron_parameters;
+
+        // Neuron Attribute Table
+        void **nat;
 
     protected:
 };
