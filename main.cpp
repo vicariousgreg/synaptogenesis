@@ -7,10 +7,7 @@ void print_values(Environment env) {
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
         double current = ((double*)env.nat[CURRENT])[nid];
         double voltage = ((double*)env.nat[VOLTAGE])[nid];
-        double a = ((double*)env.nat[PARAMS_A])[nid];
-        double b = ((double*)env.nat[PARAMS_B])[nid];
-        double c = ((double*)env.nat[PARAMS_C])[nid];
-        double d = ((double*)env.nat[PARAMS_D])[nid];
+        NeuronParameters *params = &(((NeuronParameters*)env.nat[PARAMS])[nid]);
         //cout << env.spikes[nid];
         //cout << current << " " << voltage << " " << a << " " << b << " " << c << " " << d;;
         //cout << "\n";
@@ -27,7 +24,7 @@ void print_spikes(Environment env) {
 int main(void) {
     Environment env;
     int size = 800;
-    int iterations = 400;
+    int iterations = 1000;
 
     int pos = env.add_randomized_layer(size, 1);
     int neg = env.add_randomized_layer(size / 4, -1);

@@ -15,6 +15,10 @@ class NeuronParameters {
         NeuronParameters(double a, double b, double c, double d) :
                 a(a), b(b), c(c), d(d) {}
 
+        NeuronParameters copy() {
+            return NeuronParameters(this->a, this->b, this->c, this->d);
+        }
+
         double a;
         double b;
         double c;
@@ -27,10 +31,7 @@ enum NeuronAttributes {
     RECOVERY,
     SPIKE,
     AGE,
-    PARAMS_A,
-    PARAMS_B,
-    PARAMS_C,
-    PARAMS_D,
+    PARAMS,
     SIZE
 };
 

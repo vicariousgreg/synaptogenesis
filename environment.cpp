@@ -30,18 +30,12 @@ void Environment::build() {
     this->nat[RECOVERY] = malloc(this->num_neurons * sizeof(double));
     this->nat[SPIKE] = malloc(this->num_neurons * sizeof(int));
     this->nat[AGE] = malloc(this->num_neurons * sizeof(int));
-    this->nat[PARAMS_A] = malloc(this->num_neurons * sizeof(double));
-    this->nat[PARAMS_B] = malloc(this->num_neurons * sizeof(double));
-    this->nat[PARAMS_C] = malloc(this->num_neurons * sizeof(double));
-    this->nat[PARAMS_D] = malloc(this->num_neurons * sizeof(double));
+    this->nat[PARAMS] = malloc(this->num_neurons * sizeof(NeuronParameters));
 
     // Fill in table
     for (int i = 0 ; i < this->num_neurons ; ++i) {
         NeuronParameters params = this->neuron_parameters[i];
-        ((double*)this->nat[PARAMS_A])[i] = params.a;
-        ((double*)this->nat[PARAMS_B])[i] = params.b;
-        ((double*)this->nat[PARAMS_C])[i] = params.c;
-        ((double*)this->nat[PARAMS_D])[i] = params.d;
+        ((NeuronParameters*)this->nat[PARAMS])[i] = this->neuron_parameters[i].copy();
 
         ((double*)this->nat[CURRENT])[i] = 0;
         ((double*)this->nat[VOLTAGE])[i] = params.c;
@@ -154,24 +148,10 @@ void Environment::set_random_currents(int layer_id, double max) {
  * Performs a timestep cycle.
  */
 void Environment::cycle() {
-    //this->gather_input();
     this->activate();
     this->update_voltages();
     this->timestep();
     this->update_weights();
-    this->report_output();
-}
-
-/*
- * Gathers input currents from external sources.
- * TODO: replace random generation with real input.
- */
-void Environment::gather_input() {
-    /* 1. Inputs */
-    // Initialize currents to external currents
-    for (int nid = 0 ; nid < this->num_neurons; ++nid) {
-        ((double*)this->nat[CURRENT])[nid] = fRand(0, 5);
-    }
 }
 
 /*
@@ -202,20 +182,20 @@ void Environment::activate() {
  *   with Euler's method.
  */
 void Environment::update_voltages() {
+    double voltage, recovery, current, delta_v;
+    NeuronParameters *params;
+
     /* 3. Voltage Updates */
     // For each neuron...
     //   update voltage according to current
     //     Euler's method with #defined resolution
     for (int nid = 0 ; nid < this->num_neurons; ++nid) {
-        double voltage = ((double*)this->nat[VOLTAGE])[nid];
-        double recovery = ((double*)this->nat[RECOVERY])[nid];
-        double current = ((double*)this->nat[CURRENT])[nid];
-        double delta_v = 0;
+        voltage = ((double*)this->nat[VOLTAGE])[nid];
+        recovery = ((double*)this->nat[RECOVERY])[nid];
+        current = ((double*)this->nat[CURRENT])[nid];
+        delta_v = 0;
 
-        double a = ((double*)this->nat[PARAMS_A])[nid];
-        double b = ((double*)this->nat[PARAMS_B])[nid];
-        double c = ((double*)this->nat[PARAMS_C])[nid];
-        double d = ((double*)this->nat[PARAMS_D])[nid];
+        params = &(((NeuronParameters*)this->nat[PARAMS])[nid]);
 
         // Euler's method for voltage/recovery update
         // If the voltage exceeds the spiking threshold, break
@@ -223,10 +203,10 @@ void Environment::update_voltages() {
             delta_v = (0.04 * voltage * voltage) +
                             (5*voltage) + 140 - recovery + current;
             voltage += delta_v / EULER_RES;
-            //recovery += a * ((b * voltage) - recovery)
+            //recovery += params->a * ((params->b * voltage) - recovery)
             //                / EULER_RES;
         }
-        recovery += a * ((b * voltage) - recovery);
+        recovery += params->a * ((params->b * voltage) - recovery);
         ((double*)this->nat[VOLTAGE])[nid] = voltage;
         ((double*)this->nat[RECOVERY])[nid] = recovery;
     }
@@ -238,18 +218,22 @@ void Environment::update_voltages() {
  * Increments the ages of last spikes, and resets recovery if spiked.
  */
 void Environment::timestep() {
+    int spike;
+    NeuronParameters *params;
+
     /* 4. Timestep */
     // Determine spikes.
     for (int i = 0; i < this->num_neurons; ++i) {
-        int spike = ((double*)this->nat[VOLTAGE])[i] >= SPIKE_THRESH;
+        spike = ((double*)this->nat[VOLTAGE])[i] >= SPIKE_THRESH;
         ((int*)this->nat[SPIKE])[i] = spike;
 
         // Increment or reset spike ages.
         // Also, reset voltage if spiked.
         if (spike) {
+            params = &(((NeuronParameters*)this->nat[PARAMS])[i]);
             ((int*)this->nat[AGE])[i] = 0;
-            ((double*)this->nat[VOLTAGE])[i] = ((double*)this->nat[PARAMS_C])[i];
-            ((double*)this->nat[RECOVERY])[i] += ((double*)this->nat[PARAMS_D])[i];
+            ((double*)this->nat[VOLTAGE])[i] = params->c;
+            ((double*)this->nat[RECOVERY])[i] += params->d;
         } else {
             ((int*)this->nat[AGE])[i]++;
         }
@@ -262,12 +246,4 @@ void Environment::timestep() {
  */
 void Environment::update_weights() {
     /* 5. Update weights */
-}
-
-/**
- * Reports spike vector.
- * TODO: implement.
- */
-void Environment::report_output() {
-    /* 6. Outputs */
 }
