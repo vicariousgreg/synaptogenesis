@@ -8,6 +8,10 @@
 #include "layer.h"
 #include "connectivity_matrix.h"
 
+#define SPIKE_THRESH 30
+#define EULER_RES 10
+
+
 using namespace std;
 
 class NeuronParameters {

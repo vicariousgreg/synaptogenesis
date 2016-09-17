@@ -7,9 +7,6 @@
 #include "tools.h"
 #include "parallel.h"
 
-#define SPIKE_THRESH 30
-#define EULER_RES 10
-
 /******************************************************************************
  ********************** INITIALIZATION FUNCTIONS ******************************
  ******************************************************************************/
@@ -161,18 +158,22 @@ void Environment::cycle() {
  *   and add it to the current vector.
  */
 void Environment::activate() {
+    int* spikes = (int*)this->nat[SPIKE];
+    double* currents = (double*)this->nat[CURRENT];
+
     /* 2. Activation */
     // For each connectivity matrix...
     //   Update Currents using synaptic input
     //     current += sign * dot ( spikes * weights )
     for (int cid = 0 ; cid < this->num_connections; ++cid) {
-        ConnectivityMatrix conn = this->connections[cid];
-        mult(conn.sign,
-             &((int*)this->nat[SPIKE])[conn.from_index],
-             conn.matrix.mData,
-             &((double*)this->nat[CURRENT])[conn.to_index],
-             conn.from_size,
-             conn.to_size);
+        ConnectivityMatrix &conn = this->connections[cid];
+        mult(
+            conn.sign,
+            spikes + conn.from_index,
+            conn.matrix.mData,
+            currents + conn.to_index,
+            conn.from_size,
+            conn.to_size);
     }
 }
 
@@ -181,34 +182,13 @@ void Environment::activate() {
  *   with Euler's method.
  */
 void Environment::update_voltages() {
-    double voltage, recovery, current, delta_v;
-    NeuronParameters *params;
-
     /* 3. Voltage Updates */
-    // For each neuron...
-    //   update voltage according to current
-    //     Euler's method with #defined resolution
-    for (int nid = 0 ; nid < this->num_neurons; ++nid) {
-        voltage = ((double*)this->nat[VOLTAGE])[nid];
-        recovery = ((double*)this->nat[RECOVERY])[nid];
-        current = ((double*)this->nat[CURRENT])[nid];
-        delta_v = 0;
-
-        params = &(((NeuronParameters*)this->nat[PARAMS])[nid]);
-
-        // Euler's method for voltage/recovery update
-        // If the voltage exceeds the spiking threshold, break
-        for (int i = 0 ; i < EULER_RES && voltage < SPIKE_THRESH ; ++i) {
-            delta_v = (0.04 * voltage * voltage) +
-                            (5*voltage) + 140 - recovery + current;
-            voltage += delta_v / EULER_RES;
-            //recovery += params->a * ((params->b * voltage) - recovery)
-            //                / EULER_RES;
-        }
-        recovery += params->a * ((params->b * voltage) - recovery);
-        ((double*)this->nat[VOLTAGE])[nid] = voltage;
-        ((double*)this->nat[RECOVERY])[nid] = recovery;
-    }
+    izhikevich(
+        (double*)this->nat[VOLTAGE],
+        (double*)this->nat[RECOVERY],
+        (double*)this->nat[CURRENT],
+        (NeuronParameters*)this->nat[PARAMS],
+        this->num_neurons);
 }
 
 /*
