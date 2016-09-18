@@ -3,6 +3,37 @@
 
 #include "environment.h"
 
+#ifdef parallel
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
+#define cudaCheckError() {                                          \
+ cudaError_t e=cudaGetLastError();                                 \
+ if(e!=cudaSuccess) {                                              \
+   printf("Cuda failure %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(e));           \
+   exit(0); \
+ }                                                                 \
+}
+
+void check_memory() {
+    // show memory usage of GPU
+    size_t free_byte ;
+    size_t total_byte ;
+    cudaMemGetInfo( &free_byte, &total_byte ) ;
+    //cuda_status = cudaMemGetInfo( &free_byte, &total_byte ) ;
+    //if ( cudaSuccess != cuda_status ){
+    //    printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
+    //    exit(1);
+    //}
+
+    double free_db = (double)free_byte ;
+    double total_db = (double)total_byte ;
+    double used_db = total_db - free_db ;
+    printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
+        used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
+}
+#endif
+
 /*
 void print_values(Environment env) {
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
@@ -35,8 +66,8 @@ void print_currents(Environment env) {
 
 int main(void) {
     Environment env;
-    int size = 1600;
-    int iterations = 1000;
+    int size = 800 * 15;
+    int iterations = 100;
 
     int pos = env.add_randomized_layer(size, 1);
     int neg = env.add_randomized_layer(size / 4, -1);
@@ -53,9 +84,12 @@ int main(void) {
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);
         env.cycle();
-        print_spikes(env);
+        //print_spikes(env);
         //print_currents(env);
     }
+#ifdef parallel
+    check_memory();
+#endif
 
     return 0;
 }

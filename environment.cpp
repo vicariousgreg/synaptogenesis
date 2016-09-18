@@ -314,7 +314,7 @@ void Environment::activate() {
     double* currents = (double*)this->nat[CURRENT];
 
 #ifdef parallel
-    int threads = 64;
+    int threads = 32;
     int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
 #endif
 
@@ -346,7 +346,7 @@ void Environment::activate() {
 void Environment::update_voltages() {
     /* 3. Voltage Updates */
 #ifdef parallel
-    int threads = 64;
+    int threads = 32;
     int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
     izhikevich<<<blocks, threads>>>(
 #else
@@ -367,7 +367,7 @@ void Environment::update_voltages() {
 void Environment::timestep() {
     /* 4. Timestep */
 #ifdef parallel
-    int threads = 64;
+    int threads = 32;
     int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
     calc_spikes<<<blocks, threads>>>(
 #else
