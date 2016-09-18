@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <cstdio>
 
 #include "environment.h"
 
@@ -66,8 +67,8 @@ void print_currents(Environment env) {
 
 int main(void) {
     Environment env;
-    int size = 800 * 15;
-    int iterations = 100;
+    int size = 800 * 1;
+    int iterations = 10;
 
     int pos = env.add_randomized_layer(size, 1);
     int neg = env.add_randomized_layer(size / 4, -1);
@@ -79,7 +80,7 @@ int main(void) {
 
     for (int i = 0 ; i < iterations ; ++i) {
         //print_values(env);
-        //print_spikes(env);
+        print_spikes(env);
         //print_currents(env);
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);

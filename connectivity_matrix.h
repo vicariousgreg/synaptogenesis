@@ -2,12 +2,13 @@
 #define connectivity_matrix_h
 
 #include "layer.h"
-#include "matrix.h"
 
 class ConnectivityMatrix {
     public:
         ConnectivityMatrix (Layer from_layer, Layer to_layer,
             bool plastic, double max_weight);
+
+        void build();
 
         virtual ~ConnectivityMatrix () {}
 
@@ -17,10 +18,19 @@ class ConnectivityMatrix {
         int to_size;
         int sign;
         bool plastic;
-        Matrix matrix;
+        double max_weight;
+        double* mData;
 
-    private:
-    protected:
+        void randomize(bool self_connected, double max_weight);
+
+        double& operator()(int i, int j) {
+            return this->mData[i * to_size + j];
+        }
+
+        double operator()(int i, int j) const {
+            return this->mData[i * to_size + j];
+        }
+
 };
 
 #endif

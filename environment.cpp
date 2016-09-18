@@ -106,6 +106,10 @@ void Environment::build() {
     this->nat = (void**)malloc(SIZE * sizeof(void*));
     int count = this->num_neurons;
 
+    // Build connectivity matrices
+    for (int i = 0 ; i < this->num_connections ; ++i)
+        this->connections[i].build();
+
 #ifdef parallel
     // Local spikes for output reporting
     this->local_spikes = (int*)calloc(count, sizeof(int));
@@ -331,7 +335,7 @@ void Environment::activate() {
 #endif
             conn.sign,
             spikes + conn.from_index,
-            conn.matrix.mData,
+            conn.mData,
             currents + conn.to_index,
             conn.from_size,
             conn.to_size);
