@@ -3,16 +3,19 @@
 
 #include "environment.h"
 
+/*
 void print_values(Environment env) {
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
         double current = ((double*)env.nat[CURRENT])[nid];
         double voltage = ((double*)env.nat[VOLTAGE])[nid];
         NeuronParameters &params = ((NeuronParameters*)env.nat[PARAMS])[nid];
-        //cout << env.spikes[nid];
-        //cout << current << " " << voltage << " " << a << " " << b << " " << c << " " << d;;
-        //cout << "\n";
+        cout << env.spikes[nid];
+        cout << current << " " << voltage << " " << a << " " << b << " " << c << " " << d;;
+        cout << "\n";
     }
 }
+*/
+
 void print_spikes(Environment env) {
     int* spikes = env.get_spikes();
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
@@ -32,7 +35,7 @@ void print_currents(Environment env) {
 
 int main(void) {
     Environment env;
-    int size = 800;
+    int size = 1600;
     int iterations = 1000;
 
     int pos = env.add_randomized_layer(size, 1);
@@ -45,11 +48,13 @@ int main(void) {
 
     for (int i = 0 ; i < iterations ; ++i) {
         //print_values(env);
-        print_spikes(env);
-        print_currents(env);
+        //print_spikes(env);
+        //print_currents(env);
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);
         env.cycle();
+        print_spikes(env);
+        //print_currents(env);
     }
 
     return 0;

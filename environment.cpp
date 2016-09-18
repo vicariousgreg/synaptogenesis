@@ -44,7 +44,7 @@ int* Environment::get_spikes() {
 double* Environment::get_currents() {
 #ifdef parallel
     // Copy from GPU to local location
-    cudaMemcpy(this->local_currents, this->nat[CURRENT], this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(this->local_currents, this->nat[CURRENT], this->num_neurons * sizeof(double), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();
@@ -63,7 +63,6 @@ void Environment::inject_random_current(int layer_id, double max) {
     for (int nid = 0 ; nid < size; ++nid) {
         temp[nid] = fRand(0, max);
     }
-    cout << temp[0] << " *******\n\n";
     this->inject_current(layer_id, temp);
     free(temp);
 #else
@@ -78,8 +77,8 @@ void Environment::inject_current(int layer_id, double* input) {
     int size = this->layers[layer_id].size;
 #ifdef parallel
     // Send to GPU
-    //cudaMemcpy(&((double*)this->nat[CURRENT])[offset], input, size * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[CURRENT], input, size * sizeof(double), cudaMemcpyHostToDevice);
+    void* current = &((double*)this->nat[CURRENT])[offset];
+    cudaMemcpy(current, input, size * sizeof(double), cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();

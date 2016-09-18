@@ -16,9 +16,6 @@ __global__ void calc_spikes(int* spikes, int* ages, double* voltages, double* re
 
 #else
 
-void dot(int sign, int* spikes, double* weights, double* currents,
-         int from_size, int to_index);
-
 void mult(int sign, int* spikes, double* weights, double* currents,
           int from_size, int to_size);
 

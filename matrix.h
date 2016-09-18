@@ -2,6 +2,12 @@
 #define matrix_h
 
 #include <cstdlib>
+#include <stdio.h>
+
+#ifdef parallel
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#endif
 
 class Matrix
 {
@@ -9,7 +15,11 @@ class Matrix
         Matrix(int rows, int cols) :
                 mRows(rows),
                 mCols(cols) {
+#ifdef parallel
+            cudaMalloc(((void**)&this->mData), rows * cols * sizeof(double));
+#else
             mData = (double*)malloc(rows * cols * sizeof(double));
+#endif
         }
 
         void randomize(bool self_connected, double max_weight);
