@@ -63,8 +63,8 @@ __global__ void calc_spikes(int* spikes, int* ages, double* voltages,
             ages[nid] = 0;
             voltages[nid] = params->c;
             recoveries[nid] += params->d;
-        } else {
-            if (ages[nid] < INT_MAX) ++ages[nid];
+        } else if (ages[nid] < INT_MAX) {
+            ++ages[nid];
         }
     }
 }
@@ -130,8 +130,8 @@ void calc_spikes(int* spikes, int* ages, double* voltages, double* recoveries,
             ages[i] = 0;
             voltages[i] = params->c;
             recoveries[i] += params->d;
-        } else {
-            if (ages[i] < INT_MAX) ++ages[i];
+        } else if (ages[i] < INT_MAX) {
+            ++ages[i];
         }
     }
 }
