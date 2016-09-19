@@ -20,4 +20,4 @@ float Timer::stop(const char header[]) {
 
 }
 
-extern Timer timer = Timer();
+Timer timer = Timer();

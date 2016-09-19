@@ -3,6 +3,7 @@
 #include <iostream>
 #include <climits>
 #include <stdio.h>
+#include <math.h>
 
 #include "environment.h"
 #include "connectivity_matrix.h"
@@ -317,11 +318,6 @@ void Environment::activate() {
     int* spikes = (int*)this->nat[SPIKE];
     float* currents = (float*)this->nat[CURRENT];
 
-#ifdef parallel
-    int threads = 32;
-    int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
-#endif
-
     /* 2. Activation */
     // For each connectivity matrix...
     //   Update Currents using synaptic input
@@ -329,6 +325,8 @@ void Environment::activate() {
     for (int cid = 0 ; cid < this->num_connections; ++cid) {
         ConnectivityMatrix &conn = this->connections[cid];
 #ifdef parallel
+        int threads = 32;
+        int blocks = ceil((float)(conn.to_size) / threads);
         mult<<<blocks, threads>>>(
 #else
         mult(
@@ -351,7 +349,7 @@ void Environment::update_voltages() {
     /* 3. Voltage Updates */
 #ifdef parallel
     int threads = 32;
-    int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
+    int blocks = ceil((float)(this->num_neurons) / threads);
     izhikevich<<<blocks, threads>>>(
 #else
     izhikevich(
@@ -372,7 +370,7 @@ void Environment::timestep() {
     /* 4. Timestep */
 #ifdef parallel
     int threads = 32;
-    int blocks = (this->num_neurons / threads) + (this->num_neurons % threads ? 1 : 0);
+    int blocks = ceil((float)(this->num_neurons) / threads);
     calc_spikes<<<blocks, threads>>>(
 #else
     calc_spikes(
