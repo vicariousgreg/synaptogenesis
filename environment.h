@@ -16,17 +16,17 @@ using namespace std;
 
 class NeuronParameters {
     public:
-        NeuronParameters(double a, double b, double c, double d) :
+        NeuronParameters(float a, float b, float c, float d) :
                 a(a), b(b), c(c), d(d) {}
 
         NeuronParameters copy() {
             return NeuronParameters(this->a, this->b, this->c, this->d);
         }
 
-        double a;
-        double b;
-        double c;
-        double d;
+        float a;
+        float b;
+        float c;
+        float d;
 };
 
 enum NeuronAttributes {
@@ -54,17 +54,17 @@ class Environment {
         void build();
 
         int add_layer(int size, int sign,
-            double a, double b, double c, double d);
+            float a, float b, float c, float d);
         int add_randomized_layer(int size, int sign);
         int connect_layers(int from_layer, int to_layer,
-            bool plastic, double max_weight);
-        int add_neuron(double a, double b, double c, double d);
+            bool plastic, float max_weight);
+        int add_neuron(float a, float b, float c, float d);
 
-        void inject_random_current(int layer_id, double max);
-        void inject_current(int layer_id, double* input);
+        void inject_random_current(int layer_id, float max);
+        void inject_current(int layer_id, float* input);
 
         int* get_spikes();
-        double* get_currents();
+        float* get_currents();
 
         void cycle();
         void activate();
@@ -92,7 +92,7 @@ class Environment {
 
 #ifdef parallel
         int* local_spikes;
-        double* local_currents;
+        float* local_currents;
 #endif
 
     protected:

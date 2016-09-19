@@ -4,8 +4,10 @@
 
 #ifdef parallel
 
-__global__ void mult(int sign, int* spikes, double* weights, double* currents,
+__global__ void mult(int sign, int* spikes, float* weights, float* currents,
             int from_size, int to_size) {
+    //extern __shared__ float shared_data[];
+
     int row = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (row < to_size) {
@@ -15,8 +17,8 @@ __global__ void mult(int sign, int* spikes, double* weights, double* currents,
     }
 }
 
-__global__ void izhikevich(double* voltages, double*recoveries,
-        double* currents, NeuronParameters* neuron_params, int num_neurons) {
+__global__ void izhikevich(float* voltages, float*recoveries,
+        float* currents, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
     /* 3. Voltage Updates */
@@ -24,10 +26,10 @@ __global__ void izhikevich(double* voltages, double*recoveries,
     //   update voltage according to current
     //     Euler's method with #defined resolution
     if (nid < num_neurons) {
-        double voltage = voltages[nid];
-        double recovery = recoveries[nid];
-        double current = currents[nid];
-        double delta_v = 0;
+        float voltage = voltages[nid];
+        float recovery = recoveries[nid];
+        float current = currents[nid];
+        float delta_v = 0;
 
         NeuronParameters *params = &neuron_params[nid];
 
@@ -46,8 +48,8 @@ __global__ void izhikevich(double* voltages, double*recoveries,
     }
 }
 
-__global__ void calc_spikes(int* spikes, int* ages, double* voltages,
-        double* recoveries, NeuronParameters* neuron_params, int num_neurons) {
+__global__ void calc_spikes(int* spikes, int* ages, float* voltages,
+        float* recoveries, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
     /* 4. Timestep */
@@ -71,7 +73,7 @@ __global__ void calc_spikes(int* spikes, int* ages, double* voltages,
 
 #else
 
-void mult(int sign, int* spikes, double* weights, double* currents,
+void mult(int sign, int* spikes, float* weights, float* currents,
           int from_size, int to_size) {
     for (int row = 0 ; row < to_size ; ++row) {
         for (int index = 0 ; index < from_size ; ++index) {
@@ -80,9 +82,9 @@ void mult(int sign, int* spikes, double* weights, double* currents,
     }
 }
 
-void izhikevich(double* voltages, double*recoveries, double* currents,
+void izhikevich(float* voltages, float*recoveries, float* currents,
                 NeuronParameters* neuron_params, int num_neurons) {
-    double voltage, recovery, current, delta_v;
+    float voltage, recovery, current, delta_v;
     NeuronParameters *params;
 
     /* 3. Voltage Updates */
@@ -112,7 +114,7 @@ void izhikevich(double* voltages, double*recoveries, double* currents,
     }
 }
 
-void calc_spikes(int* spikes, int* ages, double* voltages, double* recoveries,
+void calc_spikes(int* spikes, int* ages, float* voltages, float* recoveries,
                  NeuronParameters* neuron_params, int num_neurons) {
     int spike; 
     NeuronParameters *params;

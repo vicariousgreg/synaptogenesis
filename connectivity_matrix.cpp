@@ -9,7 +9,7 @@
 #endif
 
 ConnectivityMatrix::ConnectivityMatrix (Layer from_layer, Layer to_layer,
-        bool plastic, double max_weight) :
+        bool plastic, float max_weight) :
             from_index(from_layer.start_index),
             to_index(to_layer.start_index),
             from_size(from_layer.size),
@@ -20,17 +20,17 @@ ConnectivityMatrix::ConnectivityMatrix (Layer from_layer, Layer to_layer,
 
 void ConnectivityMatrix::build() {
 #ifdef parallel
-    cudaMalloc(((void**)&this->mData), to_size * from_size * sizeof(double));
+    cudaMalloc(((void**)&this->mData), to_size * from_size * sizeof(float));
 #else
-    mData = (double*)malloc(to_size * from_size * sizeof(double));
+    mData = (float*)malloc(to_size * from_size * sizeof(float));
 #endif
     this->randomize(true, this->max_weight);
 }
 
-void ConnectivityMatrix::randomize(bool self_connected, double max_weight) {
+void ConnectivityMatrix::randomize(bool self_connected, float max_weight) {
 #ifdef parallel
     int matrix_size = this->from_size * this->to_size;
-    double* temp_matrix = (double*)malloc(matrix_size * sizeof(double));
+    float* temp_matrix = (float*)malloc(matrix_size * sizeof(float));
 #endif
     for (int row = 0 ; row < this->from_size ; ++row) {
         for (int col = 0 ; col < this->to_size ; ++col) {
@@ -44,7 +44,7 @@ void ConnectivityMatrix::randomize(bool self_connected, double max_weight) {
     }
 
 #ifdef parallel
-    cudaMemcpy(this->mData, temp_matrix, matrix_size * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->mData, temp_matrix, matrix_size * sizeof(float), cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     free(temp_matrix);

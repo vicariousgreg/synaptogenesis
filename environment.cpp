@@ -41,25 +41,25 @@ int* Environment::get_spikes() {
 #endif
 }
 
-double* Environment::get_currents() {
+float* Environment::get_currents() {
 #ifdef parallel
     // Copy from GPU to local location
-    cudaMemcpy(this->local_currents, this->nat[CURRENT], this->num_neurons * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(this->local_currents, this->nat[CURRENT], this->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();
     return this->local_currents;
 #else
-    return (double*)this->nat[CURRENT];
+    return (float*)this->nat[CURRENT];
 #endif
 }
 
-void Environment::inject_random_current(int layer_id, double max) {
+void Environment::inject_random_current(int layer_id, float max) {
     int offset = this->layers[layer_id].start_index;
     int size = this->layers[layer_id].size;
 #ifdef parallel
     // Send to GPU
-    double* temp = (double*)malloc(size * sizeof(double));
+    float* temp = (float*)malloc(size * sizeof(float));
     for (int nid = 0 ; nid < size; ++nid) {
         temp[nid] = fRand(0, max);
     }
@@ -67,24 +67,24 @@ void Environment::inject_random_current(int layer_id, double max) {
     free(temp);
 #else
     for (int nid = offset ; nid < offset + size; ++nid) {
-        ((double*)this->nat[CURRENT])[nid] = fRand(0, max);
+        ((float*)this->nat[CURRENT])[nid] = fRand(0, max);
     }
 #endif
 }
 
-void Environment::inject_current(int layer_id, double* input) {
+void Environment::inject_current(int layer_id, float* input) {
     int offset = this->layers[layer_id].start_index;
     int size = this->layers[layer_id].size;
 #ifdef parallel
     // Send to GPU
-    void* current = &((double*)this->nat[CURRENT])[offset];
-    cudaMemcpy(current, input, size * sizeof(double), cudaMemcpyHostToDevice);
+    void* current = &((float*)this->nat[CURRENT])[offset];
+    cudaMemcpy(current, input, size * sizeof(float), cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();
 #else
     for (int nid = 0 ; nid < size; ++nid) {
-        ((double*)this->nat[CURRENT])[nid+offset] = input[nid];
+        ((float*)this->nat[CURRENT])[nid+offset] = input[nid];
     }
 #endif
 }
@@ -113,12 +113,12 @@ void Environment::build() {
 #ifdef parallel
     // Local spikes for output reporting
     this->local_spikes = (int*)calloc(count, sizeof(int));
-    this->local_currents = (double*)calloc(count, sizeof(double));
+    this->local_currents = (float*)calloc(count, sizeof(float));
 
     // Allocate space on GPU
-    cudaMalloc(&this->nat[CURRENT], count * sizeof(double));
-    cudaMalloc(&this->nat[VOLTAGE], count * sizeof(double));
-    cudaMalloc(&this->nat[RECOVERY], count * sizeof(double));
+    cudaMalloc(&this->nat[CURRENT], count * sizeof(float));
+    cudaMalloc(&this->nat[VOLTAGE], count * sizeof(float));
+    cudaMalloc(&this->nat[RECOVERY], count * sizeof(float));
     cudaMalloc(&this->nat[SPIKE], count * sizeof(int));
     cudaMalloc(&this->nat[AGE], count * sizeof(int));
     cudaMalloc(&this->nat[PARAMS], count * sizeof(NeuronParameters));
@@ -127,9 +127,9 @@ void Environment::build() {
     cudaCheckError();
 
     // Make temporary arrays for initialization
-    double *temp_current = (double*)malloc(count * sizeof(double));
-    double *temp_voltage = (double*)malloc(count * sizeof(double));
-    double *temp_recovery = (double*)malloc(count * sizeof(double));
+    float *temp_current = (float*)malloc(count * sizeof(float));
+    float *temp_voltage = (float*)malloc(count * sizeof(float));
+    float *temp_recovery = (float*)malloc(count * sizeof(float));
     int *temp_spike = (int*)malloc(count * sizeof(int));
     int *temp_age = (int*)malloc(count * sizeof(int));
     NeuronParameters *temp_params = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
@@ -147,9 +147,9 @@ void Environment::build() {
     }
 
     // Copy values to GPU
-    cudaMemcpy(this->nat[CURRENT], temp_current, count * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[VOLTAGE], temp_voltage, count * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[RECOVERY], temp_recovery, count * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[CURRENT], temp_current, count * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[VOLTAGE], temp_voltage, count * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->nat[RECOVERY], temp_recovery, count * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(this->nat[SPIKE], temp_spike, count * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(this->nat[AGE], temp_age, count * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(this->nat[PARAMS], temp_params, count * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
@@ -167,9 +167,9 @@ void Environment::build() {
 
 #else
     // Then initialize actual arrays
-    this->nat[CURRENT] = malloc(count * sizeof(double));
-    this->nat[VOLTAGE] = malloc(count * sizeof(double));
-    this->nat[RECOVERY] = malloc(count * sizeof(double));
+    this->nat[CURRENT] = malloc(count * sizeof(float));
+    this->nat[VOLTAGE] = malloc(count * sizeof(float));
+    this->nat[RECOVERY] = malloc(count * sizeof(float));
     this->nat[SPIKE] = malloc(count * sizeof(int));
     this->nat[AGE] = malloc(count * sizeof(int));
     this->nat[PARAMS] = malloc(count * sizeof(NeuronParameters));
@@ -179,9 +179,9 @@ void Environment::build() {
         NeuronParameters &params = this->neuron_parameters[i];
         ((NeuronParameters*)this->nat[PARAMS])[i] = this->neuron_parameters[i].copy();
 
-        ((double*)this->nat[CURRENT])[i] = 0;
-        ((double*)this->nat[VOLTAGE])[i] = params.c;
-        ((double*)this->nat[RECOVERY])[i] = params.b * params.c;
+        ((float*)this->nat[CURRENT])[i] = 0;
+        ((float*)this->nat[VOLTAGE])[i] = params.c;
+        ((float*)this->nat[RECOVERY])[i] = params.b * params.c;
         ((int*)this->nat[SPIKE])[i] = 0;
         ((int*)this->nat[AGE])[i] = INT_MAX;
     }
@@ -194,7 +194,7 @@ void Environment::build() {
  * TODO: this initializes with random weights. provide means of changing that
  */
 int Environment::connect_layers(int from_layer, int to_layer,
-        bool plastic, double max_weight) {
+        bool plastic, float max_weight) {
     this->connections.push_back(ConnectivityMatrix(
         this->layers[from_layer], this->layers[to_layer],
         plastic, max_weight));
@@ -210,7 +210,7 @@ int Environment::connect_layers(int from_layer, int to_layer,
  * TODO: Add more parameters
  */
 int Environment::add_layer(int size, int sign,
-        double a, double b, double c, double d) {
+        float a, float b, float c, float d) {
     // Index of first neuron for layer
     int start_index = this->num_neurons;
     int layer_index = this->num_layers++;
@@ -239,27 +239,27 @@ int Environment::add_randomized_layer(
     if (sign > 0) {
         for (int i = 0; i < size; ++i) {
             // (ai; bi) = (0:02; 0:2) and (ci; di) = (-65; 8) + (15;-6)r2
-            double a = 0.02;
-            double b = 0.2; // increase for higher frequency oscillations
+            float a = 0.02;
+            float b = 0.2; // increase for higher frequency oscillations
 
-            double rand = fRand(0, 1);
-            double c = -65.0 + (15.0 * rand * rand);
+            float rand = fRand(0, 1);
+            float c = -65.0 + (15.0 * rand * rand);
 
             rand = fRand(0, 1);
-            double d = 8.0 - (6.0 * (rand * rand));
+            float d = 8.0 - (6.0 * (rand * rand));
             this->add_neuron(a,b,c,d);
         }
     } else {
         for (int i = 0; i < size; ++i) {
             //(ai; bi) = (0:02; 0:25) + (0:08;-0:05)ri and (ci; di)=(-65; 2).
-            double rand = fRand(0, 1);
-            double a = 0.02 + (0.08 * rand);
+            float rand = fRand(0, 1);
+            float a = 0.02 + (0.08 * rand);
 
             rand = fRand(0, 1);
-            double b = 0.25 - (0.05 * rand);
+            float b = 0.25 - (0.05 * rand);
 
-            double c = -65.0;
-            double d = 2.0;
+            float c = -65.0;
+            float d = 2.0;
             this->add_neuron(a,b,c,d);
         }
     }
@@ -269,7 +269,7 @@ int Environment::add_randomized_layer(
 
 // Adds a neuron to the environment.
 // Returns the neuron's index.
-int Environment::add_neuron(double a, double b, double c, double d) {
+int Environment::add_neuron(float a, float b, float c, float d) {
     this->neuron_parameters.push_back(NeuronParameters(a,b,c,d));
     return this->num_neurons++;
 }
@@ -315,7 +315,7 @@ void Environment::cycle() {
  */
 void Environment::activate() {
     int* spikes = (int*)this->nat[SPIKE];
-    double* currents = (double*)this->nat[CURRENT];
+    float* currents = (float*)this->nat[CURRENT];
 
 #ifdef parallel
     int threads = 32;
@@ -356,9 +356,9 @@ void Environment::update_voltages() {
 #else
     izhikevich(
 #endif
-        (double*)this->nat[VOLTAGE],
-        (double*)this->nat[RECOVERY],
-        (double*)this->nat[CURRENT],
+        (float*)this->nat[VOLTAGE],
+        (float*)this->nat[RECOVERY],
+        (float*)this->nat[CURRENT],
         (NeuronParameters*)this->nat[PARAMS],
         this->num_neurons);
 }
@@ -379,8 +379,8 @@ void Environment::timestep() {
 #endif
         (int*)this->nat[SPIKE],
         (int*)this->nat[AGE],
-        (double*)this->nat[VOLTAGE],
-        (double*)this->nat[RECOVERY],
+        (float*)this->nat[VOLTAGE],
+        (float*)this->nat[RECOVERY],
         (NeuronParameters*)this->nat[PARAMS],
         this->num_neurons);
 }

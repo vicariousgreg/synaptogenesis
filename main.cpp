@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "environment.h"
+#include "tools.h"
 
 #ifdef parallel
 #include "cuda_runtime.h"
@@ -58,7 +59,7 @@ void print_spikes(Environment env) {
 }
 
 void print_currents(Environment env) {
-    double* currents = env.get_currents();
+    float* currents = env.get_currents();
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
         cout << currents[nid] << " ";
     }
@@ -66,9 +67,12 @@ void print_currents(Environment env) {
 }
 
 int main(void) {
+    // Start timer
+    timer.start();
+
     Environment env;
-    int size = 800 * 1;
-    int iterations = 10;
+    int size = 800 * 21;
+    int iterations = 50;
 
     int pos = env.add_randomized_layer(size, 1);
     int neg = env.add_randomized_layer(size / 4, -1);
@@ -78,9 +82,13 @@ int main(void) {
     env.connect_layers(neg, neg, true, 1);
     env.build();
 
+    timer.stop("Initialization");
+
+    timer.start();
+
     for (int i = 0 ; i < iterations ; ++i) {
         //print_values(env);
-        print_spikes(env);
+        //print_spikes(env);
         //print_currents(env);
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);
@@ -88,6 +96,9 @@ int main(void) {
         //print_spikes(env);
         //print_currents(env);
     }
+    float time = timer.stop("Total time");
+    printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+
 #ifdef parallel
     check_memory();
 #endif
