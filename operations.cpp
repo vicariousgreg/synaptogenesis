@@ -11,9 +11,9 @@ __global__ void mult(int sign, int* spikes, float* weights, float* currents,
     if (col < to_size) {
         float sum = 0;
         for (int row = 0 ; row < from_size ; ++row) {
-            sum += sign * spikes[row] * weights[row*to_size + col];
+            sum += spikes[row] * weights[row * to_size + col];
         }
-        currents[col] += sum;
+        currents[col] += sign * sum;
     }
 }
 
