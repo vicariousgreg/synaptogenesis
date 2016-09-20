@@ -8,11 +8,11 @@ __global__ void mult(int sign, int* spikes, float* weights, float* currents,
             int from_size, int to_size) {
     //extern __shared__ float shared_data[];
 
-    int row = blockIdx.x * blockDim.x + threadIdx.x;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (row < to_size) {
-        for (int index = 0 ; index < from_size ; ++index) {
-            currents[row] += sign * spikes[index] * weights[row*from_size + index];
+    if (col < to_size) {
+        for (int row = 0 ; row < from_size ; ++row) {
+            currents[col] += sign * spikes[row] * weights[row*to_size + col];
         }
     }
 }
@@ -75,9 +75,9 @@ __global__ void calc_spikes(int* spikes, int* ages, float* voltages,
 
 void mult(int sign, int* spikes, float* weights, float* currents,
           int from_size, int to_size) {
-    for (int row = 0 ; row < to_size ; ++row) {
-        for (int index = 0 ; index < from_size ; ++index) {
-            currents[row] += sign * spikes[index] * weights[row*from_size + index];
+    for (int col = 0 ; col < to_size ; ++col) {
+        for (int row = 0 ; row < from_size ; ++row) {
+            currents[col] += sign * spikes[row] * weights[row*to_size + col];
         }
     }
 }

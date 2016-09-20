@@ -289,18 +289,21 @@ void Environment::cycle() {
     cudaThreadSynchronize();
     cudaCheckError();
 #endif
+
     this->update_voltages();
 #ifdef parallel
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();
 #endif
+
     this->timestep();
 #ifdef parallel
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();
 #endif
+
     this->update_weights();
 #ifdef parallel
     cudaDeviceSynchronize();
@@ -337,6 +340,11 @@ void Environment::activate() {
             currents + conn.to_index,
             conn.from_size,
             conn.to_size);
+#ifdef parallel
+        cudaDeviceSynchronize();
+        cudaThreadSynchronize();
+        cudaCheckError();
+#endif
     }
 }
 
