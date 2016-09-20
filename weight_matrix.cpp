@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "connectivity_matrix.h"
+#include "weight_matrix.h"
 #include "layer.h"
 #include "tools.h"
 
@@ -8,7 +8,7 @@
 #include "device_launch_parameters.h"
 #endif
 
-ConnectivityMatrix::ConnectivityMatrix (Layer from_layer, Layer to_layer,
+WeightMatrix::WeightMatrix (Layer from_layer, Layer to_layer,
         bool plastic, float max_weight) :
             from_index(from_layer.start_index),
             to_index(to_layer.start_index),
@@ -18,7 +18,7 @@ ConnectivityMatrix::ConnectivityMatrix (Layer from_layer, Layer to_layer,
             max_weight(max_weight),
             sign(from_layer.sign) { }
 
-void ConnectivityMatrix::build() {
+void WeightMatrix::build() {
 #ifdef parallel
     cudaMalloc(((void**)&this->mData), to_size * from_size * sizeof(float));
 #else
@@ -27,7 +27,7 @@ void ConnectivityMatrix::build() {
     this->randomize(true, this->max_weight);
 }
 
-void ConnectivityMatrix::randomize(bool self_connected, float max_weight) {
+void WeightMatrix::randomize(bool self_connected, float max_weight) {
 #ifdef parallel
     int matrix_size = this->from_size * this->to_size;
     float* temp_matrix = (float*)malloc(matrix_size * sizeof(float));

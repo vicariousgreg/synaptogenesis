@@ -6,7 +6,7 @@
 #include <cstdlib>
 
 #include "layer.h"
-#include "connectivity_matrix.h"
+#include "weight_matrix.h"
 
 #define SPIKE_THRESH 30
 #define EULER_RES 10
@@ -80,7 +80,7 @@ class Environment {
 
         // Connection matrices.
         int num_connections;
-        vector<ConnectivityMatrix> connections;
+        vector<WeightMatrix> connections;
 
         // Parameter Vector
         vector<NeuronParameters> neuron_parameters;

@@ -6,7 +6,7 @@
 #include <math.h>
 
 #include "environment.h"
-#include "connectivity_matrix.h"
+#include "weight_matrix.h"
 #include "tools.h"
 #include "operations.h"
 
@@ -107,7 +107,7 @@ void Environment::build() {
     this->nat = (void**)malloc(SIZE * sizeof(void*));
     int count = this->num_neurons;
 
-    // Build connectivity matrices
+    // Build weight matrices
     for (int i = 0 ; i < this->num_connections ; ++i)
         this->connections[i].build();
 
@@ -190,13 +190,13 @@ void Environment::build() {
 }
 
 /*
- * Connects two layers with a connectivity matrix.
+ * Connects two layers with a weight matrix.
  * If the layer is plastic, it will learn.
  * TODO: this initializes with random weights. provide means of changing that
  */
 int Environment::connect_layers(int from_layer, int to_layer,
         bool plastic, float max_weight) {
-    this->connections.push_back(ConnectivityMatrix(
+    this->connections.push_back(WeightMatrix(
         this->layers[from_layer], this->layers[to_layer],
         plastic, max_weight));
     return this->num_connections++;
@@ -314,18 +314,18 @@ void Environment::cycle() {
 
 /*
  * Performs activation during a timestep.
- * For each connectivity matrix, calculate sum of inputs for each neuron
+ * For each weight matrix, calculate sum of inputs for each neuron
  *   and add it to the current vector.
  */
 void Environment::activate() {
     float* currents = (float*)this->nat[CURRENT];
 
     /* 2. Activation */
-    // For each connectivity matrix...
+    // For each weight matrix...
     //   Update Currents using synaptic input
     //     current += sign * dot ( spikes * weights )
     for (int cid = 0 ; cid < this->num_connections; ++cid) {
-        ConnectivityMatrix &conn = this->connections[cid];
+        WeightMatrix &conn = this->connections[cid];
 #ifdef parallel
         int threads = 32;
         int blocks = ceil((float)(conn.to_size) / threads);
