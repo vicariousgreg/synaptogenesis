@@ -10,7 +10,7 @@
 
 #define SPIKE_THRESH 30
 #define EULER_RES 10
-#define HISTORY_SIZE 32
+#define HISTORY_SIZE 8
 
 using namespace std;
 

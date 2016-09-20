@@ -130,7 +130,7 @@ void Environment::build() {
     float *temp_current = (float*)malloc(count * sizeof(float));
     float *temp_voltage = (float*)malloc(count * sizeof(float));
     float *temp_recovery = (float*)malloc(count * sizeof(float));
-    int *temp_spike = (int*)calloc(count, HISTORY_SIZE, sizeof(int));
+    int *temp_spike = (int*)calloc(count, HISTORY_SIZE * sizeof(int));
     NeuronParameters *temp_params = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
 
     // Fill in table

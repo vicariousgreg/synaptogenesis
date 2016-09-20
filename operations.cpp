@@ -42,6 +42,7 @@ __global__ void izhikevich(float* voltages, float*recoveries,
             //recovery += params->a * ((params->b * voltage) - recovery)
             //                / EULER_RES;
         }
+
         recovery += params->a * ((params->b * voltage) - recovery);
         voltages[nid] = voltage;
         recoveries[nid] = recovery;
@@ -56,7 +57,27 @@ __global__ void calc_spikes(int* spikes, float* voltages,
     // Determine spikes.
     if (nid < num_neurons) {
         int spike = voltages[nid] >= SPIKE_THRESH;
-        spikes[nid] = (spikes[nid] << 1) + spike;
+
+        // Reduce reads, chain values.
+        int curr_value, new_value;
+        int next_value = spikes[nid];
+
+        // Shift all the bits.
+        // Check if next word is negative (1 for MSB).
+        int index;
+        for (index = 0 ; index < HISTORY_SIZE-1 ; ++ index) {
+            curr_value = next_value;
+            next_value = spikes[num_neurons * (index + 1) + nid];
+
+            // Shift bits, carry over MSB from next value.
+            new_value = curr_value << 1 + (next_value < 0);
+            spikes[num_neurons*index + nid] = new_value;
+        }
+
+        // Least significant value already loaded into next_value.
+        // Index moved appropriately from loop.
+        new_value = (next_value << 1) + spike;
+        spikes[num_neurons*index + nid] = new_value;
 
         // Reset voltage if spiked.
         if (spike) {
@@ -64,29 +85,6 @@ __global__ void calc_spikes(int* spikes, float* voltages,
             voltages[nid] = params->c;
             recoveries[nid] += params->d;
         }
-    }
-
-    ///////
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (index < HISTORY_SIZE) {
-        int spike = voltages[nid] >= SPIKE_THRESH;
-
-        int curr_value;
-        int next_value = spikes[index*HISTORY_SIZE] << 1;
-
-        // Shift all the bits.
-        // Check if next word is negative (1 for MSB).
-        for (int nid = 0 ; nid < num_neurons-1 ; ++ nid) {
-            curr_value = next_value;
-            next_value = spikes[index*HISTORY_SIZE + nid] << 1;
-
-            new_value = spikes[nid*HISTORY_SIZE + index] << 1
-                + (spikes[nid*HISTORY_SIZE + index + 1] < 0);
-            spikes[nid*HISTORY_SIZE + index] = new_value;
-        }
-        new_value = spikes[nid*HISTORY_SIZE + HISTORY_SIZE] << 1 + spike;
-        spikes[nid*HISTORY_SIZE + HISTORY_SIZE] new_value;
     }
 }
 
