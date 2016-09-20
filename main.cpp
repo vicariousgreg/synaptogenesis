@@ -71,8 +71,8 @@ int main(void) {
     timer.start();
 
     Environment env;
-    int size = 800 * 15;
-    int iterations = 500;
+    int size = 800 * 21;
+    int iterations = 50;
 
     int pos = env.add_randomized_layer(size, 1);
     int neg = env.add_randomized_layer(size / 4, -1);
