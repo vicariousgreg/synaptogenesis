@@ -10,6 +10,7 @@
 
 #define SPIKE_THRESH 30
 #define EULER_RES 10
+#define HISTORY_SIZE 32
 
 using namespace std;
 
@@ -32,8 +33,6 @@ enum NeuronAttributes {
     CURRENT,
     VOLTAGE,
     RECOVERY,
-    SPIKE,
-    AGE,
     PARAMS,
     SIZE
 };
@@ -88,6 +87,10 @@ class Environment {
 
         // Neuron Attribute Table
         void **nat;
+
+        // Neuron Spikes
+        int* spikes;
+        int* recent_spikes;
 
 #ifdef parallel
         int* local_spikes;

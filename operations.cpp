@@ -11,7 +11,7 @@ __global__ void mult(int sign, int* spikes, float* weights, float* currents,
     if (col < to_size) {
         float sum = 0;
         for (int row = 0 ; row < from_size ; ++row) {
-            sum += spikes[row] * weights[row * to_size + col];
+            sum += (spikes[row] % 2) * weights[row * to_size + col];
         }
         currents[col] += sign * sum;
     }
@@ -48,7 +48,7 @@ __global__ void izhikevich(float* voltages, float*recoveries,
     }
 }
 
-__global__ void calc_spikes(int* spikes, int* ages, float* voltages,
+__global__ void calc_spikes(int* spikes, float* voltages,
         float* recoveries, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -56,18 +56,37 @@ __global__ void calc_spikes(int* spikes, int* ages, float* voltages,
     // Determine spikes.
     if (nid < num_neurons) {
         int spike = voltages[nid] >= SPIKE_THRESH;
-        spikes[nid] = spike;
+        spikes[nid] = (spikes[nid] << 1) + spike;
 
-        // Increment or reset spike ages.
-        // Also, reset voltage if spiked.
+        // Reset voltage if spiked.
         if (spike) {
             NeuronParameters *params = &neuron_params[nid];
-            ages[nid] = 0;
             voltages[nid] = params->c;
             recoveries[nid] += params->d;
-        } else if (ages[nid] < INT_MAX) {
-            ++ages[nid];
         }
+    }
+
+    ///////
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (index < HISTORY_SIZE) {
+        int spike = voltages[nid] >= SPIKE_THRESH;
+
+        int curr_value;
+        int next_value = spikes[index*HISTORY_SIZE] << 1;
+
+        // Shift all the bits.
+        // Check if next word is negative (1 for MSB).
+        for (int nid = 0 ; nid < num_neurons-1 ; ++ nid) {
+            curr_value = next_value;
+            next_value = spikes[index*HISTORY_SIZE + nid] << 1;
+
+            new_value = spikes[nid*HISTORY_SIZE + index] << 1
+                + (spikes[nid*HISTORY_SIZE + index + 1] < 0);
+            spikes[nid*HISTORY_SIZE + index] = new_value;
+        }
+        new_value = spikes[nid*HISTORY_SIZE + HISTORY_SIZE] << 1 + spike;
+        spikes[nid*HISTORY_SIZE + HISTORY_SIZE] new_value;
     }
 }
 
@@ -77,7 +96,7 @@ void mult(int sign, int* spikes, float* weights, float* currents,
           int from_size, int to_size) {
     for (int row = 0 ; row < from_size ; ++row) {
         for (int col = 0 ; col < to_size ; ++col) {
-            currents[col] += sign * spikes[row] * weights[row*to_size + col];
+            currents[col] += sign * (spikes[row] % 2) * weights[row*to_size + col];
         }
     }
 }
@@ -114,26 +133,31 @@ void izhikevich(float* voltages, float*recoveries, float* currents,
     }
 }
 
-void calc_spikes(int* spikes, int* ages, float* voltages, float* recoveries,
+void calc_spikes(int* spikes, float* voltages, float* recoveries,
                  NeuronParameters* neuron_params, int num_neurons) {
-    int spike; 
+    int spike, new_value; 
     NeuronParameters *params;
 
     /* 4. Timestep */
     // Determine spikes.
-    for (int i = 0; i < num_neurons; ++i) {
-        spike = voltages[i] >= SPIKE_THRESH;
-        spikes[i] = spike;
+    for (int nid = 0; nid < num_neurons; ++nid) {
+        spike = voltages[nid] >= SPIKE_THRESH;
 
-        // Increment or reset spike ages.
-        // Also, reset voltage if spiked.
+        // Shift all the bits.
+        // Check if next word is negative (1 for MSB).
+        for (int index = 0 ; index < HISTORY_SIZE-1 ; ++ index) {
+            new_value = spikes[num_neurons*index + nid] << 1
+                + (spikes[num_neurons*(index+1) + nid] < 0);
+            spikes[num_neurons*index + nid] = new_value;
+        }
+        new_value = (spikes[num_neurons*(HISTORY_SIZE-1) + nid] << 1) + spike;
+        spikes[num_neurons*(HISTORY_SIZE-1) + nid] = new_value;
+
+        // Reset voltage if spiked.
         if (spike) {
-            params = &neuron_params[i];
-            ages[i] = 0;
-            voltages[i] = params->c;
-            recoveries[i] += params->d;
-        } else if (ages[i] < INT_MAX) {
-            ++ages[i];
+            params = &neuron_params[nid];
+            voltages[nid] = params->c;
+            recoveries[nid] += params->d;
         }
     }
 }

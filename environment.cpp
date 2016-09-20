@@ -32,13 +32,13 @@
 int* Environment::get_spikes() {
 #ifdef parallel
     // Copy from GPU to local location
-    cudaMemcpy(this->local_spikes, this->nat[SPIKE], this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(this->local_spikes, this->recent_spikes, this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();
     return this->local_spikes;
 #else
-    return (int*)this->nat[SPIKE];
+    return this->recent_spikes;
 #endif
 }
 
@@ -120,19 +120,17 @@ void Environment::build() {
     cudaMalloc(&this->nat[CURRENT], count * sizeof(float));
     cudaMalloc(&this->nat[VOLTAGE], count * sizeof(float));
     cudaMalloc(&this->nat[RECOVERY], count * sizeof(float));
-    cudaMalloc(&this->nat[SPIKE], count * sizeof(int));
-    cudaMalloc(&this->nat[AGE], count * sizeof(int));
     cudaMalloc(&this->nat[PARAMS], count * sizeof(NeuronParameters));
-    cudaDeviceSynchronize();
-    cudaThreadSynchronize();
-    cudaCheckError();
+
+    // Set up spikes, keep pointer to recent spikes.
+    cudaMalloc(&this->spikes, HISTORY_SIZE * count * sizeof(int));
+    this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * count];
 
     // Make temporary arrays for initialization
     float *temp_current = (float*)malloc(count * sizeof(float));
     float *temp_voltage = (float*)malloc(count * sizeof(float));
     float *temp_recovery = (float*)malloc(count * sizeof(float));
-    int *temp_spike = (int*)malloc(count * sizeof(int));
-    int *temp_age = (int*)malloc(count * sizeof(int));
+    int *temp_spike = (int*)calloc(count, HISTORY_SIZE, sizeof(int));
     NeuronParameters *temp_params = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
 
     // Fill in table
@@ -143,17 +141,19 @@ void Environment::build() {
         temp_current[i] = 0;
         temp_voltage[i] = params.c;
         temp_recovery[i] = params.b * params.c;
-        temp_spike[i] = 0;
-        temp_age[i] = INT_MAX;
     }
 
     // Copy values to GPU
+    cudaDeviceSynchronize();
+    cudaThreadSynchronize();
+    cudaCheckError();
+
     cudaMemcpy(this->nat[CURRENT], temp_current, count * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(this->nat[VOLTAGE], temp_voltage, count * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(this->nat[RECOVERY], temp_recovery, count * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[SPIKE], temp_spike, count * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[AGE], temp_age, count * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(this->nat[PARAMS], temp_params, count * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->spikes, temp_spike, count * HISTORY_SIZE * sizeof(int), cudaMemcpyHostToDevice);
+
     cudaDeviceSynchronize();
     cudaThreadSynchronize();
     cudaCheckError();
@@ -163,7 +163,6 @@ void Environment::build() {
     free(temp_voltage);
     free(temp_recovery);
     free(temp_spike);
-    free(temp_age);
     free(temp_params);
 
 #else
@@ -171,9 +170,12 @@ void Environment::build() {
     this->nat[CURRENT] = malloc(count * sizeof(float));
     this->nat[VOLTAGE] = malloc(count * sizeof(float));
     this->nat[RECOVERY] = malloc(count * sizeof(float));
-    this->nat[SPIKE] = malloc(count * sizeof(int));
-    this->nat[AGE] = malloc(count * sizeof(int));
     this->nat[PARAMS] = malloc(count * sizeof(NeuronParameters));
+
+    // Set up spikes array
+    // Keep track of pointer to least significant word for convenience
+    this->spikes = (int*)calloc(count, HISTORY_SIZE * sizeof(int));
+    this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * count];
 
     // Fill in table
     for (int i = 0 ; i < count ; ++i) {
@@ -183,8 +185,6 @@ void Environment::build() {
         ((float*)this->nat[CURRENT])[i] = 0;
         ((float*)this->nat[VOLTAGE])[i] = params.c;
         ((float*)this->nat[RECOVERY])[i] = params.b * params.c;
-        ((int*)this->nat[SPIKE])[i] = 0;
-        ((int*)this->nat[AGE])[i] = INT_MAX;
     }
 #endif
 }
@@ -318,7 +318,6 @@ void Environment::cycle() {
  *   and add it to the current vector.
  */
 void Environment::activate() {
-    int* spikes = (int*)this->nat[SPIKE];
     float* currents = (float*)this->nat[CURRENT];
 
     /* 2. Activation */
@@ -335,7 +334,7 @@ void Environment::activate() {
         mult(
 #endif
             conn.sign,
-            spikes + conn.from_index,
+            this->recent_spikes + conn.from_index,  // only most recent
             conn.mData,
             currents + conn.to_index,
             conn.from_size,
@@ -383,8 +382,7 @@ void Environment::timestep() {
 #else
     calc_spikes(
 #endif
-        (int*)this->nat[SPIKE],
-        (int*)this->nat[AGE],
+        this->spikes,
         (float*)this->nat[VOLTAGE],
         (float*)this->nat[RECOVERY],
         (NeuronParameters*)this->nat[PARAMS],

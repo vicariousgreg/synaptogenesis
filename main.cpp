@@ -52,7 +52,7 @@ void print_values(Environment env) {
 void print_spikes(Environment env) {
     int* spikes = env.get_spikes();
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
-        char c = spikes[nid] ? '*' : ' ';
+        char c = (spikes[nid] % 2) ? '*' : ' ';
         cout << c;
     }
     cout << "|\n";
