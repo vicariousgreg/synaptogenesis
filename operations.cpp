@@ -17,6 +17,9 @@ __global__ void mult(int sign, int* spikes, float* weights, float* currents,
     }
 }
 
+/* Parallel implementation of Izhikevich voltage update function.
+ * Each thread calculates for one neuron.  Because this is a single
+ *   dimensional calculation, few optimizations are possible. */
 __global__ void izhikevich(float* voltages, float*recoveries,
         float* currents, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -49,6 +52,9 @@ __global__ void izhikevich(float* voltages, float*recoveries,
     }
 }
 
+/* Parallel implementation of spike update function.
+ * Each thread calculates for one neuron.  Because this is a single
+ *   dimensional calculation, few optimizations are possible. */
 __global__ void calc_spikes(int* spikes, float* voltages,
         float* recoveries, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;

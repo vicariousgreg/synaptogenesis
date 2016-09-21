@@ -3,9 +3,13 @@
 
 class Layer {
     public:
-        Layer(int start_index, int size, int layer_index, int sign);
-
-        virtual ~Layer () {}
+        /* Constructor.
+         * |start_index| identifies the first neuron in the layer.
+         * |size| indicates the size of the layer.
+         * |sign| specifies the output sign of neural activity.
+         * TODO: replace sign with function
+         */
+        Layer(int start_index, int size, int sign);
 
         // Index of first neuron
         int start_index;
@@ -13,14 +17,8 @@ class Layer {
         // Size of layer
         int size;
 
-        // Index of layer
-        int layer_index;
-
         // Sign of layer (excitatory / inhibitory)
         int sign;
-
-    private:
-    protected:
 };
 
 #endif

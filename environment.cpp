@@ -25,6 +25,14 @@
 
 #endif
 
+Environment::Environment () {
+    this->num_neurons = 0;
+    this->num_layers = 0;
+    this->num_connections = 0;
+    srand(time(NULL));
+    //srand(0);
+}
+
 /******************************************************************************
  ************************* GETTER / SETTER ************************************
  ******************************************************************************/
@@ -34,7 +42,6 @@ int* Environment::get_spikes() {
     // Copy from GPU to local location
     cudaMemcpy(this->local_spikes, this->recent_spikes, this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
     return this->local_spikes;
 #else
@@ -47,11 +54,26 @@ float* Environment::get_currents() {
     // Copy from GPU to local location
     cudaMemcpy(this->local_currents, this->nat[CURRENT], this->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
     return this->local_currents;
 #else
     return (float*)this->nat[CURRENT];
+#endif
+}
+
+void Environment::inject_current(int layer_id, float* input) {
+    int offset = this->layers[layer_id].start_index;
+    int size = this->layers[layer_id].size;
+#ifdef parallel
+    // Send to GPU
+    void* current = &((float*)this->nat[CURRENT])[offset];
+    cudaMemcpy(current, input, size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaDeviceSynchronize();
+    cudaCheckError();
+#else
+    for (int nid = 0 ; nid < size; ++nid) {
+        ((float*)this->nat[CURRENT])[nid+offset] = input[nid];
+    }
 #endif
 }
 
@@ -73,19 +95,20 @@ void Environment::inject_random_current(int layer_id, float max) {
 #endif
 }
 
-void Environment::inject_current(int layer_id, float* input) {
+void Environment::clear_current(int layer_id) {
     int offset = this->layers[layer_id].start_index;
     int size = this->layers[layer_id].size;
 #ifdef parallel
     // Send to GPU
-    void* current = &((float*)this->nat[CURRENT])[offset];
-    cudaMemcpy(current, input, size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaDeviceSynchronize();
-    cudaThreadSynchronize();
-    cudaCheckError();
+    float* temp = (float*)malloc(size * sizeof(float));
+    for (int nid = 0 ; nid < size; ++nid) {
+        temp[nid] = 0.0;
+    }
+    this->inject_current(layer_id, temp);
+    free(temp);
 #else
     for (int nid = 0 ; nid < size; ++nid) {
-        ((float*)this->nat[CURRENT])[nid+offset] = input[nid];
+        ((float*)this->nat[CURRENT])[nid+offset] = 0.0;
     }
 #endif
 }
@@ -145,7 +168,6 @@ void Environment::build() {
 
     // Copy values to GPU
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
 
     cudaMemcpy(this->nat[CURRENT], temp_current, count * sizeof(float), cudaMemcpyHostToDevice);
@@ -155,7 +177,6 @@ void Environment::build() {
     cudaMemcpy(this->spikes, temp_spike, count * HISTORY_SIZE * sizeof(int), cudaMemcpyHostToDevice);
 
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
 
     // Free up temporary memory
@@ -192,7 +213,6 @@ void Environment::build() {
 /*
  * Connects two layers with a weight matrix.
  * If the layer is plastic, it will learn.
- * TODO: this initializes with random weights. provide means of changing that
  */
 int Environment::connect_layers(int from_layer, int to_layer,
         bool plastic, float max_weight) {
@@ -216,7 +236,7 @@ int Environment::add_layer(int size, int sign,
     int start_index = this->num_neurons;
     int layer_index = this->num_layers++;
 
-    this->layers.push_back(Layer(start_index, size, layer_index, sign));
+    this->layers.push_back(Layer(start_index, size, sign));
 
     // Add neurons.
     for (int i = 0; i < size; ++i) {
@@ -234,7 +254,7 @@ int Environment::add_randomized_layer(
     int start_index = this->num_neurons;
     int layer_index = this->num_layers++;
 
-    this->layers.push_back(Layer(start_index, size, layer_index, sign));
+    this->layers.push_back(Layer(start_index, size, sign));
 
     // Add neurons.
     if (sign > 0) {
@@ -286,28 +306,24 @@ void Environment::cycle() {
     this->activate();
 #ifdef parallel
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
 #endif
 
     this->update_voltages();
 #ifdef parallel
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
 #endif
 
     this->timestep();
 #ifdef parallel
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
 #endif
 
     this->update_weights();
 #ifdef parallel
     cudaDeviceSynchronize();
-    cudaThreadSynchronize();
     cudaCheckError();
 #endif
 }
@@ -324,6 +340,9 @@ void Environment::activate() {
     // For each weight matrix...
     //   Update Currents using synaptic input
     //     current += sign * dot ( spikes * weights )
+    //
+    // TODO: optimize order, create batches of parallelizable computations,
+    //       and move cuda barriers around batches
     for (int cid = 0 ; cid < this->num_connections; ++cid) {
         WeightMatrix &conn = this->connections[cid];
 #ifdef parallel
@@ -341,7 +360,6 @@ void Environment::activate() {
             conn.to_size);
 #ifdef parallel
         cudaDeviceSynchronize();
-        cudaThreadSynchronize();
         cudaCheckError();
 #endif
     }
