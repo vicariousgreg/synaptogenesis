@@ -5,6 +5,8 @@
 #include <ctime>
 #include <cstdlib>
 
+#include "neuron_parameters.h"
+#include "state.h"
 #include "layer.h"
 #include "weight_matrix.h"
 
@@ -13,32 +15,6 @@
 #define HISTORY_SIZE 8
 
 using namespace std;
-
-/* Neuron parameters class.
- * Contains a,b,c,d parameters for Izhikevich model */
-class NeuronParameters {
-    public:
-        NeuronParameters(float a, float b, float c, float d) :
-                a(a), b(b), c(c), d(d) {}
-
-        NeuronParameters copy() {
-            return NeuronParameters(this->a, this->b, this->c, this->d);
-        }
-
-        float a;
-        float b;
-        float c;
-        float d;
-};
-
-/* Enumeration for neuron attributes for memory layout purposes */
-enum NeuronAttributes {
-    CURRENT,
-    VOLTAGE,
-    RECOVERY,
-    PARAMS,
-    SIZE
-};
 
 class Environment {
     public:
@@ -80,7 +56,7 @@ class Environment {
 
         /* Returns a pointer to an array containing the neuron currents.
          * If parallel, this will copy the values from the device. */
-        float* get_currents();
+        float* get_current();
 
         /* Cycles the environment:
          * 1. Activate neural connections, which updates currents.
@@ -105,6 +81,9 @@ class Environment {
         // Neurons
         int num_neurons;
 
+        // Environment state
+        State state;
+
     private:
         /* Adds a single neuron.
          * This is called from add_layer() */
@@ -119,22 +98,8 @@ class Environment {
         vector<WeightMatrix> connections;
 
         // Parameter Vector
-        vector<NeuronParameters> neuron_parameters;
-
-        // Neuron Attribute Table
-        void **nat;
-
-        // Neuron Spikes
-        // Recent points to the most recent integers for spike bit vectors
-        int* spikes;
-        int* recent_spikes;
-
-#ifdef parallel
-        // Locations to store local copies of spikes and currents.
-        // When accessed, these values will be copied here from the device.
-        int* local_spikes;
-        float* local_currents;
-#endif
+        vector<NeuronParameters> parameters_vector;
+        NeuronParameters *neuron_parameters;
 };
 
 #endif

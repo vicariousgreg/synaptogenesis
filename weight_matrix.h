@@ -18,7 +18,7 @@ class WeightMatrix {
          * Frees matrix memory.
          * If parallel, this will free on the device.
          */
-        virtual ~WeightMatrix ();
+        virtual ~WeightMatrix () {}
 
         /* Randomizes the matrix
          * If |self_connected|, the diagonal is randomized.

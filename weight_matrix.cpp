@@ -18,14 +18,6 @@ WeightMatrix::WeightMatrix (Layer from_layer, Layer to_layer,
             max_weight(max_weight),
             sign(from_layer.sign) { }
 
-WeightMatrix::~WeightMatrix () {
-#ifdef parallel
-    cudaFree(this->mData);
-#else
-    free(this->mData);
-#endif
-}
-
 void WeightMatrix::build() {
 #ifdef parallel
     cudaMalloc(((void**)&this->mData), to_size * from_size * sizeof(float));
@@ -53,6 +45,7 @@ void WeightMatrix::randomize(bool self_connected, float max_weight) {
 
 #ifdef parallel
     cudaMemcpy(this->mData, temp_matrix, matrix_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaDeviceSynchronize();
     free(temp_matrix);
 #endif
 }

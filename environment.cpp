@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "environment.h"
+#include "neuron_parameters.h"
 #include "weight_matrix.h"
 #include "tools.h"
 #include "operations.h"
@@ -38,79 +39,29 @@ Environment::Environment () {
  ******************************************************************************/
 
 int* Environment::get_spikes() {
-#ifdef parallel
-    // Copy from GPU to local location
-    cudaMemcpy(this->local_spikes, this->recent_spikes, this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    cudaCheckError();
-    return this->local_spikes;
-#else
-    return this->recent_spikes;
-#endif
+    return this->state.get_spikes();
 }
 
-float* Environment::get_currents() {
-#ifdef parallel
-    // Copy from GPU to local location
-    cudaMemcpy(this->local_currents, this->nat[CURRENT], this->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    cudaCheckError();
-    return this->local_currents;
-#else
-    return (float*)this->nat[CURRENT];
-#endif
+float* Environment::get_current() {
+    return this->state.get_current();
 }
 
 void Environment::inject_current(int layer_id, float* input) {
     int offset = this->layers[layer_id].start_index;
     int size = this->layers[layer_id].size;
-#ifdef parallel
-    // Send to GPU
-    void* current = &((float*)this->nat[CURRENT])[offset];
-    cudaMemcpy(current, input, size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaDeviceSynchronize();
-    cudaCheckError();
-#else
-    for (int nid = 0 ; nid < size; ++nid) {
-        ((float*)this->nat[CURRENT])[nid+offset] = input[nid];
-    }
-#endif
+    this->state.set_current(offset, size, input);
 }
 
 void Environment::inject_random_current(int layer_id, float max) {
     int offset = this->layers[layer_id].start_index;
     int size = this->layers[layer_id].size;
-#ifdef parallel
-    // Send to GPU
-    float* temp = (float*)malloc(size * sizeof(float));
-    for (int nid = 0 ; nid < size; ++nid) {
-        temp[nid] = fRand(0, max);
-    }
-    this->inject_current(layer_id, temp);
-    free(temp);
-#else
-    for (int nid = offset ; nid < offset + size; ++nid) {
-        ((float*)this->nat[CURRENT])[nid] = fRand(0, max);
-    }
-#endif
+    this->state.randomize_current(offset, size, max);
 }
 
 void Environment::clear_current(int layer_id) {
     int offset = this->layers[layer_id].start_index;
     int size = this->layers[layer_id].size;
-#ifdef parallel
-    // Send to GPU
-    float* temp = (float*)malloc(size * sizeof(float));
-    for (int nid = 0 ; nid < size; ++nid) {
-        temp[nid] = 0.0;
-    }
-    this->inject_current(layer_id, temp);
-    free(temp);
-#else
-    for (int nid = 0 ; nid < size; ++nid) {
-        ((float*)this->nat[CURRENT])[nid+offset] = 0.0;
-    }
-#endif
+    this->state.clear_current(offset, size);
 }
 
 
@@ -125,9 +76,6 @@ void Environment::clear_current(int layer_id) {
  *   is not initialized until this function is called.
  */
 void Environment::build() {
-    // Initialize Neuron Attributes Table
-    // First, initialize pointers to arrays
-    this->nat = (void**)malloc(SIZE * sizeof(void*));
     int count = this->num_neurons;
 
     // Build weight matrices
@@ -135,79 +83,39 @@ void Environment::build() {
         this->connections[i].build();
 
 #ifdef parallel
-    // Local spikes for output reporting
-    this->local_spikes = (int*)calloc(count, sizeof(int));
-    this->local_currents = (float*)calloc(count, sizeof(float));
-
-    // Allocate space on GPU
-    cudaMalloc(&this->nat[CURRENT], count * sizeof(float));
-    cudaMalloc(&this->nat[VOLTAGE], count * sizeof(float));
-    cudaMalloc(&this->nat[RECOVERY], count * sizeof(float));
-    cudaMalloc(&this->nat[PARAMS], count * sizeof(NeuronParameters));
-
-    // Set up spikes, keep pointer to recent spikes.
-    cudaMalloc(&this->spikes, HISTORY_SIZE * count * sizeof(int));
-    this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * count];
-
-    // Make temporary arrays for initialization
-    float *temp_current = (float*)malloc(count * sizeof(float));
-    float *temp_voltage = (float*)malloc(count * sizeof(float));
-    float *temp_recovery = (float*)malloc(count * sizeof(float));
-    int *temp_spike = (int*)calloc(count, HISTORY_SIZE * sizeof(int));
-    NeuronParameters *temp_params = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
+    cudaMalloc(&this->neuron_parameters, count * sizeof(NeuronParameters));
+    NeuronParameters *temp_params =
+        (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
 
     // Fill in table
     for (int i = 0 ; i < count ; ++i) {
-        NeuronParameters &params = this->neuron_parameters[i];
-        temp_params[i] = this->neuron_parameters[i].copy();
-
-        temp_current[i] = 0;
-        temp_voltage[i] = params.c;
-        temp_recovery[i] = params.b * params.c;
+        temp_params[i] = this->parameters_vector[i].copy();
     }
 
     // Copy values to GPU
     cudaDeviceSynchronize();
     cudaCheckError();
 
-    cudaMemcpy(this->nat[CURRENT], temp_current, count * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[VOLTAGE], temp_voltage, count * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[RECOVERY], temp_recovery, count * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->nat[PARAMS], temp_params, count * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
-    cudaMemcpy(this->spikes, temp_spike, count * HISTORY_SIZE * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(&this->neuron_parameters, temp_params,
+        count * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
 
     cudaDeviceSynchronize();
     cudaCheckError();
 
     // Free up temporary memory
-    free(temp_current);
-    free(temp_voltage);
-    free(temp_recovery);
-    free(temp_spike);
     free(temp_params);
 
 #else
     // Then initialize actual arrays
-    this->nat[CURRENT] = malloc(count * sizeof(float));
-    this->nat[VOLTAGE] = malloc(count * sizeof(float));
-    this->nat[RECOVERY] = malloc(count * sizeof(float));
-    this->nat[PARAMS] = malloc(count * sizeof(NeuronParameters));
-
-    // Set up spikes array
-    // Keep track of pointer to least significant word for convenience
-    this->spikes = (int*)calloc(count, HISTORY_SIZE * sizeof(int));
-    this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * count];
+    this->neuron_parameters = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
 
     // Fill in table
     for (int i = 0 ; i < count ; ++i) {
-        NeuronParameters &params = this->neuron_parameters[i];
-        ((NeuronParameters*)this->nat[PARAMS])[i] = this->neuron_parameters[i].copy();
-
-        ((float*)this->nat[CURRENT])[i] = 0;
-        ((float*)this->nat[VOLTAGE])[i] = params.c;
-        ((float*)this->nat[RECOVERY])[i] = params.b * params.c;
+        this->neuron_parameters[i] = this->parameters_vector[i].copy();
     }
 #endif
+
+    this->state.build(count, this->neuron_parameters);
 }
 
 /*
@@ -291,7 +199,7 @@ int Environment::add_randomized_layer(
 // Adds a neuron to the environment.
 // Returns the neuron's index.
 int Environment::add_neuron(float a, float b, float c, float d) {
-    this->neuron_parameters.push_back(NeuronParameters(a,b,c,d));
+    this->parameters_vector.push_back(NeuronParameters(a,b,c,d));
     return this->num_neurons++;
 }
 
@@ -334,7 +242,8 @@ void Environment::cycle() {
  *   and add it to the current vector.
  */
 void Environment::activate() {
-    float* currents = (float*)this->nat[CURRENT];
+    float* current = this->state.current;
+    int* spikes = this->state.recent_spikes;
 
     /* 2. Activation */
     // For each weight matrix...
@@ -353,9 +262,9 @@ void Environment::activate() {
         mult(
 #endif
             conn.sign,
-            this->recent_spikes + conn.from_index,  // only most recent
+            spikes + conn.from_index,  // only most recent
             conn.mData,
-            currents + conn.to_index,
+            current + conn.to_index,
             conn.from_size,
             conn.to_size);
 #ifdef parallel
@@ -379,10 +288,10 @@ void Environment::update_voltages() {
 #else
     izhikevich(
 #endif
-        (float*)this->nat[VOLTAGE],
-        (float*)this->nat[RECOVERY],
-        (float*)this->nat[CURRENT],
-        (NeuronParameters*)this->nat[PARAMS],
+        this->state.voltage,
+        this->state.recovery,
+        this->state.current,
+        this->neuron_parameters,
         this->num_neurons);
 }
 
@@ -400,10 +309,10 @@ void Environment::timestep() {
 #else
     calc_spikes(
 #endif
-        this->spikes,
-        (float*)this->nat[VOLTAGE],
-        (float*)this->nat[RECOVERY],
-        (NeuronParameters*)this->nat[PARAMS],
+        this->state.spikes,
+        this->state.voltage,
+        this->state.recovery,
+        this->neuron_parameters,
         this->num_neurons);
 }
 

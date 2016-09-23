@@ -37,7 +37,7 @@ void print_spikes(Environment env) {
 
 /* Prints a line for a timestep containing neuron currents */
 void print_currents(Environment env) {
-    float* currents = env.get_currents();
+    float* currents = env.get_current();
     for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
         cout << currents[nid] << " ";
     }
@@ -49,8 +49,8 @@ int main(void) {
     timer.start();
 
     Environment env;
-    int size = 800 * 21;
-    int iterations = 50;
+    int size = 800 * 1;
+    int iterations = 500;
 
     int pos = env.add_randomized_layer(size, 1);
     int neg = env.add_randomized_layer(size / 4, -1);
@@ -66,7 +66,7 @@ int main(void) {
 
     for (int i = 0 ; i < iterations ; ++i) {
         //print_values(env);
-        //print_spikes(env);
+        print_spikes(env);
         //print_currents(env);
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);
