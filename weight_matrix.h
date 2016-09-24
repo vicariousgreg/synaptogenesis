@@ -25,12 +25,6 @@ class WeightMatrix {
          */
         void build();
 
-        /* Destructor.
-         * Frees matrix memory.
-         * If parallel, this will free on the device.
-         */
-        virtual ~WeightMatrix () {}
-
         /* Randomizes the matrix
          * The bounds for weights are set by |max_weight|.
          *

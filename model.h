@@ -11,8 +11,6 @@ class Model {
     public:
         Model ();
 
-        virtual ~Model () {}
-
         /* Adds a layer to the environment with the given parameters */
         int add_layer(int size, int sign,
             float a, float b, float c, float d);

@@ -8,8 +8,6 @@ class Environment {
     public:
         Environment (Model model);
 
-        virtual ~Environment () {}
-
         /* Builds the environment.
          * Allocates memory for various arrays of data.
          * Calls build() on all weight matrices.

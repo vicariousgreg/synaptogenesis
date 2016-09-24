@@ -7,7 +7,6 @@
 class State {
     public:
         State () {}
-        virtual ~State () {}
 
         void build(Model model);
 
