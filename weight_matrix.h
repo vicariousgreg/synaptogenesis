@@ -34,16 +34,6 @@ class WeightMatrix {
          */
         void randomize(float max_weight);
 
-        /* Accessor override */
-        float& operator()(int i, int j) {
-            return this->mData[i * to_layer.size + j];
-        }
-
-        /* Accessor override */
-        float operator()(int i, int j) const {
-            return this->mData[i * to_layer.size + j];
-        }
-
         // Matrix type (see enum)
         MatrixType type;
 

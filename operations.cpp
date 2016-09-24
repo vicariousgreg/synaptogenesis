@@ -224,26 +224,23 @@ float calc(OPCODE opcode, float current, float sum) {
         case SUB:  return current - sum;
         case MULT: return current * sum;
         case DIV:  return current / sum;
+        default: throw "Unrecognized connection operation!";
     }
-    throw "Unrecognized connection operation!";
 }
 
 void serial_activate_matrix(int* spikes, float* weights, float* currents,
                           int from_size, int to_size, int mask, OPCODE opcode) {
-    /*
-    for (int row = 0 ; row < from_size ; ++row) {
-        for (int col = 0 ; col < to_size ; ++col) {
-            currents[col] = calc(opcode, currents[col],
-                (spikes[row] & mask) * weights[row*to_size + col]);
-        }
-    }
-    */
-    for (int col = 0 ; col < to_size ; ++col) {
+    // IMPORTANT:
+    // Serial implementation is faster if matrix is interpreted in a transposed
+    //    fashion compared to parallel.  In this loop, row is the destination,
+    //    column is the source.  In this way, inputs to one neuron are
+    //    contiguous in memory.
+    for (int row = 0 ; row < to_size ; ++row) {
         float sum = 0.0;
-        for (int row = 0 ; row < from_size ; ++row) {
-            sum += (spikes[row] & mask) * weights[row*to_size + col];
+        for (int col = 0 ; col < from_size ; ++col) {
+            sum += (spikes[row] & mask) * weights[row*from_size + col];
         }
-        currents[col] = calc(opcode, currents[col], sum);
+        currents[row] = calc(opcode, currents[row], sum);
     }
 }
 

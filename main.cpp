@@ -32,7 +32,7 @@ void print_currents(Environment env) {
 int main(void) {
     Model model;
     int size = 800 * 20;
-    int iterations = 5;
+    int iterations = 50;
 
     int pos = model.add_randomized_layer(size, 1);
     int neg = model.add_randomized_layer(size / 4, -1);
@@ -51,7 +51,7 @@ int main(void) {
 
         for (int i = 0 ; i < iterations ; ++i) {
             //print_values(env);
-            print_spikes(env);
+            //print_spikes(env);
             //print_currents(env);
             env.inject_random_current(pos, 5);
             env.inject_random_current(neg, 2);
