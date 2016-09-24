@@ -82,30 +82,39 @@ bool Environment::build() {
 /*
  * Performs a timestep cycle.
  */
-void Environment::cycle() {
+bool Environment::cycle() {
     this->activate();
 #ifdef PARALLEL
-    cudaDeviceSynchronize();
-    cudaCheckError();
+    if (!cudaCheckError()) {
+        printf("Failed to calculate connection activation!\n");
+        return false;
+    }
 #endif
 
     this->update_voltages();
 #ifdef PARALLEL
-    cudaDeviceSynchronize();
-    cudaCheckError();
+    if (!cudaCheckError()) {
+        printf("Failed to update neuron voltages!\n");
+        return false;
+    }
 #endif
 
     this->timestep();
 #ifdef PARALLEL
-    cudaDeviceSynchronize();
-    cudaCheckError();
+    if (!cudaCheckError()) {
+        printf("Failed to timestep spikes!\n");
+        return false;
+    }
 #endif
 
     this->update_weights();
 #ifdef PARALLEL
-    cudaDeviceSynchronize();
-    cudaCheckError();
+    if (!cudaCheckError()) {
+        printf("Failed to update connection weights!\n");
+        return false;
+    }
 #endif
+    return true;
 }
 
 /*
@@ -140,8 +149,6 @@ void Environment::activate() {
             conn.from_layer.size,
             conn.to_layer.size);
 #ifdef PARALLEL
-        cudaDeviceSynchronize();
-        cudaCheckError();
 #endif
     }
 }

@@ -1,6 +1,10 @@
 #ifndef layer_h
 #define layer_h
 
+#include <vector>
+
+class WeightMatrix;
+
 class Layer {
     public:
         /* Constructor.
@@ -11,6 +15,8 @@ class Layer {
          */
         Layer(int start_index, int size, int sign);
 
+        void add_incoming_connection(WeightMatrix &matrix);
+
         // Index of first neuron
         int index;
 
@@ -19,6 +25,9 @@ class Layer {
 
         // Sign of layer (excitatory / inhibitory)
         int sign;
+
+        // Incoming weight matrices
+        std::vector<WeightMatrix*> incoming_connections;
 };
 
 #endif

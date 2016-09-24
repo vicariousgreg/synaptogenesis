@@ -4,8 +4,6 @@
 #include "state.h"
 #include "model.h"
 
-using namespace std;
-
 class Environment {
     public:
         Environment (Model model);
@@ -43,7 +41,7 @@ class Environment {
          * 2. Update neuron voltages from currents.
          * 3. Timestep the spikes.
          * 4. Update connection weights for plastic matrices */
-        void cycle();
+        bool cycle();
 
         /* Activates neural connections, triggering updates of currents */
         void activate();

@@ -3,8 +3,9 @@
 #include "weight_matrix.h"
 #include "tools.h"
 #include "parallel.h"
+#include "layer.h"
 
-WeightMatrix::WeightMatrix (Layer from_layer, Layer to_layer,
+WeightMatrix::WeightMatrix (Layer &from_layer, Layer &to_layer,
         bool plastic, float max_weight) :
             from_layer(from_layer),
             to_layer(to_layer),

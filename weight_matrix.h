@@ -5,7 +5,7 @@
 
 class WeightMatrix {
     public:
-        WeightMatrix (Layer from_layer, Layer to_layer,
+        WeightMatrix (Layer &from_layer, Layer &to_layer,
             bool plastic, float max_weight);
 
         /* Allocates memory for the matrix and initializes it.

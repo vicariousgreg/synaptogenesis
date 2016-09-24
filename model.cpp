@@ -16,9 +16,11 @@ Model::Model () {
  */
 int Model::connect_layers(int from_layer, int to_layer,
         bool plastic, float max_weight) {
-    this->connections.push_back(WeightMatrix(
+    WeightMatrix matrix = WeightMatrix(
         this->layers[from_layer], this->layers[to_layer],
-        plastic, max_weight));
+        plastic, max_weight);
+    this->layers[to_layer].add_incoming_connection(matrix);
+    this->connections.push_back(matrix);
     return this->num_connections++;
 }
 

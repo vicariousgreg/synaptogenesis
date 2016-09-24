@@ -13,18 +13,18 @@ void print_spikes(Environment env) {
     int* spikes = env.get_spikes();
     for (int nid = 0 ; nid < env.model.num_neurons ; ++nid) {
         char c = (spikes[nid] % 2) ? '*' : ' ';
-        cout << c;
+        std::cout << c;
     }
-    cout << "|\n";
+    std::cout << "|\n";
 }
 
 /* Prints a line for a timestep containing neuron currents */
 void print_currents(Environment env) {
     float* currents = env.get_current();
     for (int nid = 0 ; nid < env.model.num_neurons ; ++nid) {
-        cout << currents[nid] << " ";
+        std::cout << currents[nid] << " ";
     }
-    cout << "|\n";
+    std::cout << "|\n";
 }
 
 int main(void) {
@@ -32,8 +32,8 @@ int main(void) {
     timer.start();
 
     Model model;
-    int size = 800 * 20;
-    int iterations = 50;
+    int size = 800 * 1;
+    int iterations = 500;
 
     int pos = model.add_randomized_layer(size, 1);
     int neg = model.add_randomized_layer(size / 4, -1);
@@ -54,7 +54,7 @@ int main(void) {
 
     for (int i = 0 ; i < iterations ; ++i) {
         //print_values(env);
-        //print_spikes(env);
+        print_spikes(env);
         //print_currents(env);
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);

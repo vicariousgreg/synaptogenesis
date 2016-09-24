@@ -7,8 +7,6 @@
 #include "layer.h"
 #include "weight_matrix.h"
 
-using namespace std;
-
 class Model {
     public:
         Model ();
@@ -40,14 +38,14 @@ class Model {
 
         // Layers
         int num_layers;
-        vector<Layer> layers;
+        std::vector<Layer> layers;
 
         // Connection matrices.
         int num_connections;
-        vector<WeightMatrix> connections;
+        std::vector<WeightMatrix> connections;
 
         // Parameter Vector
-        vector<NeuronParameters> neuron_parameters;
+        std::vector<NeuronParameters> neuron_parameters;
 };
 
 #endif
