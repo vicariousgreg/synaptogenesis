@@ -28,7 +28,7 @@ void check_memory() {
  * If a neuron spikes, an asterisk will be printed.  Otherwise, a space */
 void print_spikes(Environment env) {
     int* spikes = env.get_spikes();
-    for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
+    for (int nid = 0 ; nid < env.model.num_neurons ; ++nid) {
         char c = (spikes[nid] % 2) ? '*' : ' ';
         cout << c;
     }
@@ -38,7 +38,7 @@ void print_spikes(Environment env) {
 /* Prints a line for a timestep containing neuron currents */
 void print_currents(Environment env) {
     float* currents = env.get_current();
-    for (int nid = 0 ; nid < env.num_neurons ; ++nid) {
+    for (int nid = 0 ; nid < env.model.num_neurons ; ++nid) {
         cout << currents[nid] << " ";
     }
     cout << "|\n";
@@ -48,16 +48,18 @@ int main(void) {
     // Start timer
     timer.start();
 
-    Environment env;
+    Model model;
     int size = 800 * 1;
     int iterations = 500;
 
-    int pos = env.add_randomized_layer(size, 1);
-    int neg = env.add_randomized_layer(size / 4, -1);
-    env.connect_layers(pos, pos, true, .5);
-    env.connect_layers(pos, neg, true, .5);
-    env.connect_layers(neg, pos, true, 1);
-    env.connect_layers(neg, neg, true, 1);
+    int pos = model.add_randomized_layer(size, 1);
+    int neg = model.add_randomized_layer(size / 4, -1);
+    model.connect_layers(pos, pos, true, .5);
+    model.connect_layers(pos, neg, true, .5);
+    model.connect_layers(neg, pos, true, 1);
+    model.connect_layers(neg, neg, true, 1);
+
+    Environment env(model);
     env.build();
 
     timer.stop("Initialization");

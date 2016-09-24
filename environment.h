@@ -7,8 +7,8 @@
 
 #include "neuron_parameters.h"
 #include "state.h"
-#include "layer.h"
 #include "weight_matrix.h"
+#include "model.h"
 
 #define SPIKE_THRESH 30
 #define EULER_RES 10
@@ -18,7 +18,7 @@ using namespace std;
 
 class Environment {
     public:
-        Environment ();
+        Environment (Model model);
 
         virtual ~Environment () {}
 
@@ -28,18 +28,6 @@ class Environment {
          * Returns whether allocation was successful.
          */
         bool build();
-
-        /* Adds a layer to the environment with the given parameters */
-        int add_layer(int size, int sign,
-            float a, float b, float c, float d);
-
-        /* Adds a randomized layer to the environment */
-        int add_randomized_layer(int size, int sign);
-
-        /* Connects two layers, creating a weight matrix with the given 
-         *   parameters */
-        int connect_layers(int from_layer, int to_layer,
-            bool plastic, float max_weight);
 
         /* Injects current from the given pointer to the given layer */
         void inject_current(int layer_id, float* input);
@@ -80,27 +68,13 @@ class Environment {
          * TODO: implement.  This should use STDB variant Hebbian learning */
         void update_weights();
 
-        // Neurons
-        int num_neurons;
-
         // Environment state
         State state;
 
+        // Network model
+        Model model;
+
     private:
-        /* Adds a single neuron.
-         * This is called from add_layer() */
-        int add_neuron(float a, float b, float c, float d);
-
-        // Layers
-        int num_layers;
-        vector<Layer> layers;
-
-        // Connection matrices.
-        int num_connections;
-        vector<WeightMatrix> connections;
-
-        // Parameter Vector
-        vector<NeuronParameters> parameters_vector;
         NeuronParameters *neuron_parameters;
 };
 
