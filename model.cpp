@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include <stdio.h>
+#include <cstdio>
 
 #include "model.h"
 #include "tools.h"
@@ -19,7 +19,6 @@ int Model::connect_layers(int from_layer, int to_layer, bool plastic,
     WeightMatrix matrix = WeightMatrix(
         this->layers[from_layer], this->layers[to_layer],
         plastic, delay, max_weight, type, opcode);
-    this->layers[to_layer].add_incoming_connection(matrix);
     this->connections.push_back(matrix);
     return this->num_connections++;
 }

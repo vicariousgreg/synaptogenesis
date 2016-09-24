@@ -5,8 +5,6 @@
 #include "environment.h"
 #include "weight_matrix.h"
 #include "operations.h"
-#include "parallel.h"
-
 
 Environment::Environment (Model model)
         : model(model) {
