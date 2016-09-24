@@ -40,19 +40,10 @@ class Model {
 
         // Connection matrices.
         int num_connections;
-        std::vector<WeightMatrix*> connections;
+        std::vector<WeightMatrix> connections;
 
         // Parameter Vector
         std::vector<NeuronParameters> neuron_parameters;
-
-#ifdef PARALLEL
-        // Vector of layer vectors.
-        // For each index (i), there is a vector of layers that contain an
-        //   ith input connection.
-        // The ith connection of all layers in the ith vector can be computed
-        //   simultaneously.
-        std::vector<std::vector<WeightMatrix*> > ordered_matrices;
-#endif
 };
 
 #endif
