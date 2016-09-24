@@ -15,7 +15,7 @@ class Environment {
          * Calls build() on all weight matrices.
          * Returns whether allocation was successful.
          */
-        bool build();
+        void build();
 
         /* Injects current from the given pointer to the given layer */
         void inject_current(int layer_id, float* input);
@@ -45,20 +45,20 @@ class Environment {
          * 2. Update neuron voltages from currents.
          * 3. Timestep the spikes.
          * 4. Update connection weights for plastic matrices */
-        bool cycle();
+        void cycle();
 
         /* Activates neural connections, triggering updates of currents */
-        bool activate();
+        void activate();
 
         /* Updates neuron voltages from the currents using the Izhikevich model */
-        bool update_voltages();
+        void update_voltages();
 
         /* Timesteps the spikes, shifting spike bit vectors */
-        bool timestep();
+        void timestep();
 
         /* Updates weights for plastic neural connections.
          * TODO: implement.  This should use STDP variant Hebbian learning */
-        bool update_weights();
+        void update_weights();
 
         // Environment state
         State state;

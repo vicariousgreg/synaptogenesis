@@ -7,7 +7,7 @@
 #include "constants.h"
 #include "parallel.h"
 
-bool State::build(Model model) {
+void State::build(Model model) {
     int num_neurons = model.num_neurons;
     this->num_neurons = num_neurons;
 
@@ -15,11 +15,8 @@ bool State::build(Model model) {
     // Local spikes for output reporting
     this->local_spikes = (int*)calloc(num_neurons, sizeof(int));
     this->local_current = (float*)calloc(num_neurons, sizeof(float));
-    if (this->local_spikes == NULL or this->local_current == NULL) {
-        printf("Failed to allocate space on host for local copies of\n");
-        printf("  neuron state!\n");
-        return false;
-    }
+    if (this->local_spikes == NULL or this->local_current == NULL)
+        throw "Failed to allocate space on host for local copies of neuron state!";
 
     // Allocate space on GPU
     cudaMalloc(&this->current, num_neurons * sizeof(float));
@@ -30,10 +27,7 @@ bool State::build(Model model) {
     // Set up spikes, keep pointer to recent spikes.
     this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
-    if (!cudaCheckError()) {
-        printf("Failed to allocate memory on device for neuron state!\n");
-        return false;
-    }
+    cudaCheckError("Failed to allocate memory on device for neuron state!");
 
     // Make temporary arrays for initialization
     float *temp_current = (float*)malloc(num_neurons * sizeof(float));
@@ -44,11 +38,8 @@ bool State::build(Model model) {
         (NeuronParameters*)malloc(num_neurons * sizeof(NeuronParameters));
 
     if (temp_current == NULL or temp_voltage == NULL or temp_recovery == NULL
-            or temp_spike == NULL or temp_params == NULL) {
-        printf("Failed to allocate space on host for temporary local copies\n");
-        printf("  of neuron state!\n");
-        return false;
-    }
+            or temp_spike == NULL or temp_params == NULL)
+        throw "Failed to allocate space on host for temporary local copies of neuron state!";
 
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
@@ -71,10 +62,7 @@ bool State::build(Model model) {
     cudaMemcpy(this->neuron_parameters, temp_params,
         num_neurons * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
 
-    if (!cudaCheckError()) {
-        printf("Failed to allocate memory on device for neuron state!\n");
-        return false;
-    }
+    cudaCheckError("Failed to allocate memory on device for neuron state!");
 
     // Free up temporary memory
     free(temp_current);
@@ -97,10 +85,8 @@ bool State::build(Model model) {
     this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
     if (this->current == NULL or this->voltage == NULL
-            or this->recovery == NULL or this->spikes == NULL) {
-        printf("Failed to allocate space on host for neuron state!\n");
-        return false;
-    }
+            or this->recovery == NULL or this->spikes == NULL)
+        throw "Failed to allocate space on host for neuron state!";
 
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
@@ -111,67 +97,59 @@ bool State::build(Model model) {
         this->recovery[i] = params.b * params.c;
     }
 #endif
-    return true;
 }
 
-bool State::set_current(int offset, int size, float* input) {
+void State::set_current(int offset, int size, float* input) {
 #ifdef PARALLEL
     // Send to GPU
     void* current = &this->current[offset];
     cudaMemcpy(current, input, size * sizeof(float), cudaMemcpyHostToDevice);
-    return cudaCheckError();
+    cudaCheckError("Failed to set current!");
 #else
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = input[nid];
     }
-    return true;
 #endif
 }
 
-bool State::randomize_current(int offset, int size, float max) {
+void State::randomize_current(int offset, int size, float max) {
 #ifdef PARALLEL
     // Create temporary random array
     float* temp = (float*)malloc(size * sizeof(float));
-    if (temp == NULL) {
-        printf("Failed to allocate memory on host for temporary currents!\n");
-        return false;
-    }
+    if (temp == NULL)
+        throw "Failed to allocate memory on host for temporary currents!";
+
     for (int nid = 0 ; nid < size; ++nid) {
         temp[nid] = fRand(0, max);
     }
 
     // Send to GPU
-    bool success = this->set_current(offset, size, temp);
-    return success;
+    this->set_current(offset, size, temp);
 #else
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = fRand(0, max);
     }
-    return true;
 #endif
 }
 
-bool State::clear_current(int offset, int size) {
+void State::clear_current(int offset, int size) {
 #ifdef PARALLEL
     // Create temporary blank array
     float* temp = (float*)malloc(size * sizeof(float));
-    if (temp == NULL) {
-        printf("Failed to allocate memory on host for temporary currents!\n");
-        return false;
-    }
+    if (temp == NULL)
+        throw "Failed to allocate memory on host for temporary currents!";
+
     for (int nid = 0 ; nid < size; ++nid) {
         temp[nid] = 0.0;
     }
 
     // Send to GPU
-    bool success = this->set_current(offset, size, temp);
+    this->set_current(offset, size, temp);
     free(temp);
-    return success;
 #else
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = 0.0;
     }
-    return true;
 #endif
 }
 
@@ -181,12 +159,8 @@ int* State::get_spikes() {
     // Copy from GPU to local location
     cudaMemcpy(this->local_spikes, this->recent_spikes,
         this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
-    if (!cudaCheckError()) {
-        printf("Failed to copy spikes from device to host!\n");
-        return NULL;
-    } else {
-        return this->local_spikes;
-    }
+    cudaCheckError("Failed to copy spikes from device to host!");
+    return this->local_spikes;
 #else
     return this->recent_spikes;
 #endif
@@ -197,12 +171,8 @@ float* State::get_current() {
     // Copy from GPU to local location
     cudaMemcpy(this->local_current, this->current,
         this->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
-    if (!cudaCheckError()) {
-        printf("Failed to copy currents from device to host!\n");
-        return NULL;
-    } else {
-        return this->local_current;
-    }
+    cudaCheckError("Failed to copy currents from device to host!");
+    return this->local_current;
 #else
     return this->current;
 #endif

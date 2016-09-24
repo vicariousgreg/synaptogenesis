@@ -8,15 +8,15 @@
 
 
 /* Generic versions to obfuscate preprocessor directives. */
-bool activate_conn(WeightMatrix &conn, int* spikes, float* currents);
+void activate_conn(WeightMatrix &conn, int* spikes, float* currents);
 
-bool izhikevich(float* voltages, float*recoveries, float* currents,
+void izhikevich(float* voltages, float*recoveries, float* currents,
                 NeuronParameters* neuron_params, int num_neurons);
 
-bool calc_spikes(int* spikes, float* voltages, float* recoveries,
+void calc_spikes(int* spikes, float* voltages, float* recoveries,
                  NeuronParameters* neuron_params, int num_neurons);
 
-bool update_weights();
+void update_weights();
 
 #ifdef PARALLEL
 

@@ -9,13 +9,13 @@ class State {
         State () {}
         virtual ~State () {}
 
-        bool build(Model model);
+        void build(Model model);
 
         // SETTERS
         /* If parallel, these will copy data to the device */
-        bool set_current(int offset, int size, float* input);
-        bool randomize_current(int offset, int size, float max);
-        bool clear_current(int offset, int size);
+        void set_current(int offset, int size, float* input);
+        void randomize_current(int offset, int size, float max);
+        void clear_current(int offset, int size);
 
         // GETTERS
         /* If parallel, these will copy data from the device */

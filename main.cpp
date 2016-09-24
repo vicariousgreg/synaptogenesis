@@ -44,8 +44,10 @@ int main(void) {
     model.connect_layers(neg, neg, true, 1, FULLY_CONNECTED);
 
     Environment env(model);
-    if (!env.build()) {
-        printf("Failed to build environment!\n");
+    try {
+        env.build();
+    } catch (const char* msg) { 
+        printf("%s\n", msg);
         return 1;
     }
 

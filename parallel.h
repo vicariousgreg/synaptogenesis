@@ -7,7 +7,7 @@
 #include "device_launch_parameters.h"
 #include <cstdio>
 
-bool cudaCheckError();
+void cudaCheckError(const char* msg);
 
 void cudaSync();
 

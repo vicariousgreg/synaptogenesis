@@ -8,7 +8,7 @@
 #include "parallel.h"
 
 Environment::Environment (Model model)
-        model(model) {
+        : model(model) {
     srand(time(NULL));
     //srand(0);
 }
@@ -54,24 +54,28 @@ void Environment::clear_current(int layer_id) {
  * Neuron parameters are tracked in a vector, but the neuron attributes table
  *   is not initialized until this function is called.
  */
-bool Environment::build() {
+void Environment::build() {
     // Build the state.
-    if (!this->state.build(this->model)) {
+    try {
+        this->state.build(this->model);
+    } catch (const char* msg) {
+        printf("%s\n", msg);
         printf("Failed to build environment state!\n");
-        return false;
+        throw "Failed to build environment!";
     }
 
     // Build weight matrices
     for (int i = 0 ; i < this->model.num_connections ; ++i) {
         WeightMatrix &conn = this->model.connections[i];
-        if (!conn.build()) {
+        try {
+            conn.build();
+        } catch (const char* msg) {
+            printf("%s\n", msg);
             printf("Failed to initialize %d x %d matrix!\n",
                 conn.from_layer.size, conn.to_layer.size);
-            return false;
+            throw "Failed to environment!";
         }
     }
-
-    return true;
 }
 
 
@@ -82,12 +86,11 @@ bool Environment::build() {
 /*
  * Performs a timestep cycle.
  */
-bool Environment::cycle() {
-    if (!this->activate())        return false;
-    if (!this->update_voltages()) return false;
-    if (!this->timestep())        return false;
-    if (!this->update_weights())  return false;
-    return true;
+void Environment::cycle() {
+    this->activate();
+    this->update_voltages();
+    this->timestep();
+    this->update_weights();
 }
 
 /*
@@ -95,7 +98,7 @@ bool Environment::cycle() {
  * For each weight matrix, calculate sum of inputs for each neuron
  *   and add it to the current vector.
  */
-bool Environment::activate() {
+void Environment::activate() {
     float* current = this->state.current;
     int* spikes = this->state.recent_spikes;
 
@@ -107,10 +110,8 @@ bool Environment::activate() {
     // TODO: optimize order, create batches of parallelizable computations,
     //       and move cuda barriers around batches
     for (int cid = 0 ; cid < this->model.num_connections; ++cid) {
-        if (!activate_conn(this->model.connections[cid], spikes, current))
-            return false;
+        activate_conn(this->model.connections[cid], spikes, current);
     }
-    return true;
 }
 
 
@@ -118,9 +119,9 @@ bool Environment::activate() {
  * Perform voltage update according to input currents using Izhikevich
  *   with Euler's method.
  */
-bool Environment::update_voltages() {
+void Environment::update_voltages() {
     /* 3. Voltage Updates */
-    return izhikevich(
+    izhikevich(
         this->state.voltage,
         this->state.recovery,
         this->state.current,
@@ -133,9 +134,9 @@ bool Environment::update_voltages() {
  * Fills the spike buffer based on voltages and the SPIKE_THRESH.
  * Increments the ages of last spikes, and resets recovery if spiked.
  */
-bool Environment::timestep() {
+void Environment::timestep() {
     /* 4. Timestep */
-    return calc_spikes(
+    calc_spikes(
         this->state.spikes,
         this->state.voltage,
         this->state.recovery,
@@ -147,7 +148,6 @@ bool Environment::timestep() {
  * Updates weights.
  * TODO: implement.
  */
-bool Environment::update_weights() {
+void Environment::update_weights() {
     /* 5. Update weights */
-    return true;
 }

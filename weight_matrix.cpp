@@ -24,24 +24,24 @@ WeightMatrix::WeightMatrix (Layer &from_layer, Layer &to_layer,
     }
 }
 
-bool WeightMatrix::build() {
+void WeightMatrix::build() {
 #ifdef PARALLEL
     cudaMalloc((&this->mData), matrix_size * sizeof(float));
-    if (!cudaCheckError()) return false;
+    cudaCheckError("Failed to build weight matrix!");
 #else
     mData = (float*)malloc(matrix_size * sizeof(float));
-    if (mData == NULL) return false;
+    if (mData == NULL)
+        throw "Failed to build weight matrix!";
 #endif
-    return this->randomize(this->max_weight);
+    this->randomize(this->max_weight);
 }
 
-bool WeightMatrix::randomize(float max_weight) {
+void WeightMatrix::randomize(float max_weight) {
 #ifdef PARALLEL
     float* temp_matrix = (float*)malloc(matrix_size * sizeof(float));
-    if (temp_matrix == NULL) {
-        printf("Failed to allocate temporary matrix on host!\n");
-        return false;
-    }
+    if (temp_matrix == NULL)
+        throw "Failed to allocate temporary matrix on host!";
+
 #endif
     for (int index = 0 ; index < matrix_size ; ++index) {
 #ifdef PARALLEL
@@ -53,10 +53,8 @@ bool WeightMatrix::randomize(float max_weight) {
 
 #ifdef PARALLEL
     cudaMemcpy(this->mData, temp_matrix, matrix_size * sizeof(float), cudaMemcpyHostToDevice);
-    bool success =  cudaCheckError();
+    cudaCheckError("Failed to randomize weight matrix!");
     free(temp_matrix);
-    return success;
 #else
-    return true;
 #endif
 }

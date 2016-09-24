@@ -3,7 +3,7 @@
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
-bool activate_conn(WeightMatrix &conn, int* spikes, float* currents) {
+void activate_conn(WeightMatrix &conn, int* spikes, float* currents) {
 #ifdef PARALLEL
     int threads = 32;
     int blocks = ceil((float)(conn.to_layer.size) / threads);
@@ -23,11 +23,8 @@ bool activate_conn(WeightMatrix &conn, int* spikes, float* currents) {
             currents + conn.to_layer.index,
             conn.to_layer.size);
     }
+    cudaCheckError("Failed to calculate connection activation!");
 
-    if (!cudaCheckError()) {
-        printf("Failed to calculate connection activation!\n");
-        return false;
-    }
 #else
     if (conn.type == FULLY_CONNECTED) {
         serial_activate_matrix(
@@ -46,10 +43,9 @@ bool activate_conn(WeightMatrix &conn, int* spikes, float* currents) {
             conn.to_layer.size);
     }
 #endif
-    return true;
 }
 
-bool izhikevich(float* voltages, float*recoveries, float* currents,
+void izhikevich(float* voltages, float*recoveries, float* currents,
                 NeuronParameters* neuron_params, int num_neurons) {
 #ifdef PARALLEL
     int threads = 32;
@@ -65,15 +61,11 @@ bool izhikevich(float* voltages, float*recoveries, float* currents,
         num_neurons);
 
 #ifdef PARALLEL
-    if (!cudaCheckError()) {
-        printf("Failed to update neuron voltages!\n");
-        return false;
-    }
+    cudaCheckError("Failed to update neuron voltages!");
 #endif
-    return true;
 }
 
-bool calc_spikes(int* spikes, float* voltages, float* recoveries,
+void calc_spikes(int* spikes, float* voltages, float* recoveries,
                  NeuronParameters* neuron_params, int num_neurons) {
 #ifdef PARALLEL
     int threads = 32;
@@ -89,22 +81,14 @@ bool calc_spikes(int* spikes, float* voltages, float* recoveries,
         num_neurons);
 
 #ifdef PARALLEL
-    if (!cudaCheckError()) {
-        printf("Failed to timestep spikes!\n");
-        return false;
-    }
+    cudaCheckError("Failed to timestep spikes!");
 #endif
-    return true;
 }
 
-bool update_weights() {
+void update_weights() {
 #ifdef PARALLEL
-    if (!cudaCheckError()) {
-        printf("Failed to update connection weights!\n");
-        return false;
-    }
+    cudaCheckError("Failed to update connection weights!");
 #endif
-    return true;
 }
 
 

@@ -23,7 +23,7 @@ class WeightMatrix {
          * If parallel, weights are initialized on the device.
          * Returns whether the allocation was successful.
          */
-        bool build();
+        void build();
 
         /* Destructor.
          * Frees matrix memory.
@@ -37,7 +37,7 @@ class WeightMatrix {
          * If parallel, a temporary matrix is allocated on the host, which is
          *   initialized and then copied to the device.
          */
-        bool randomize(float max_weight);
+        void randomize(float max_weight);
 
         /* Accessor override */
         float& operator()(int i, int j) {

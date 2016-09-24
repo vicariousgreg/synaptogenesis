@@ -5,14 +5,12 @@
 #include "device_launch_parameters.h"
 #include "parallel.h"
 
-bool cudaCheckError() {
+void cudaCheckError(const char* msg) {
     cudaSync();
     cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) {
         printf("Cuda failure: '%s'\n", cudaGetErrorString(e));
-        return false;
-    } else {
-        return true;
+        throw msg;
     }
 }
 
