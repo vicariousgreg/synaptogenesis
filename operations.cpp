@@ -238,7 +238,7 @@ void serial_activate_matrix(int* spikes, float* weights, float* currents,
     for (int row = 0 ; row < to_size ; ++row) {
         float sum = 0.0;
         for (int col = 0 ; col < from_size ; ++col) {
-            sum += (spikes[row] & mask) * weights[row*from_size + col];
+            sum += (spikes[col] & mask) * weights[row*from_size + col];
         }
         currents[row] = calc(opcode, currents[row], sum);
     }
