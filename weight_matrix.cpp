@@ -16,7 +16,7 @@ WeightMatrix::WeightMatrix (Layer from_layer, Layer to_layer,
 
 bool WeightMatrix::build() {
 #ifdef PARALLEL
-    cudaMalloc(((void**)&this->mData), to_size * from_size * sizeof(float));
+    cudaMalloc((&this->mData), to_size * from_size * sizeof(float));
     if (!cudaCheckError()) return false;
 #else
     mData = (float*)malloc(to_size * from_size * sizeof(float));

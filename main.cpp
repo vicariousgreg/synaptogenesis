@@ -32,8 +32,8 @@ int main(void) {
     timer.start();
 
     Model model;
-    int size = 800 * 1;
-    int iterations = 500;
+    int size = 800 * 20;
+    int iterations = 50;
 
     int pos = model.add_randomized_layer(size, 1);
     int neg = model.add_randomized_layer(size / 4, -1);
@@ -43,7 +43,10 @@ int main(void) {
     model.connect_layers(neg, neg, true, 1);
 
     Environment env(model);
-    env.build();
+    if (!env.build()) {
+        printf("Failed to build environment!\n");
+        return 1;
+    }
 
     timer.stop("Initialization");
 
@@ -51,7 +54,7 @@ int main(void) {
 
     for (int i = 0 ; i < iterations ; ++i) {
         //print_values(env);
-        print_spikes(env);
+        //print_spikes(env);
         //print_currents(env);
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);
