@@ -12,7 +12,7 @@ class Layer {
         Layer(int start_index, int size, int sign);
 
         // Index of first neuron
-        int start_index;
+        int index;
 
         // Size of layer
         int size;

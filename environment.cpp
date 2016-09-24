@@ -26,19 +26,19 @@ float* Environment::get_current() {
 }
 
 void Environment::inject_current(int layer_id, float* input) {
-    int offset = this->model.layers[layer_id].start_index;
+    int offset = this->model.layers[layer_id].index;
     int size = this->model.layers[layer_id].size;
     this->state.set_current(offset, size, input);
 }
 
 void Environment::inject_random_current(int layer_id, float max) {
-    int offset = this->model.layers[layer_id].start_index;
+    int offset = this->model.layers[layer_id].index;
     int size = this->model.layers[layer_id].size;
     this->state.randomize_current(offset, size, max);
 }
 
 void Environment::clear_current(int layer_id) {
-    int offset = this->model.layers[layer_id].start_index;
+    int offset = this->model.layers[layer_id].index;
     int size = this->model.layers[layer_id].size;
     this->state.clear_current(offset, size);
 }
@@ -66,7 +66,7 @@ bool Environment::build() {
         WeightMatrix &conn = this->model.connections[i];
         if (!conn.build()) {
             printf("Failed to initialize %d x %d matrix!\n",
-                conn.from_size, conn.to_size);
+                conn.from_layer.size, conn.to_layer.size);
             return false;
         }
     }
@@ -128,17 +128,17 @@ void Environment::activate() {
         WeightMatrix &conn = this->model.connections[cid];
 #ifdef PARALLEL
         int threads = 32;
-        int blocks = ceil((float)(conn.to_size) / threads);
+        int blocks = ceil((float)(conn.to_layer.size) / threads);
         mult<<<blocks, threads>>>(
 #else
         mult(
 #endif
             conn.sign,
-            spikes + conn.from_index,  // only most recent
+            spikes + conn.from_layer.index,  // only most recent
             conn.mData,
-            current + conn.to_index,
-            conn.from_size,
-            conn.to_size);
+            current + conn.to_layer.index,
+            conn.from_layer.size,
+            conn.to_layer.size);
 #ifdef PARALLEL
         cudaDeviceSynchronize();
         cudaCheckError();

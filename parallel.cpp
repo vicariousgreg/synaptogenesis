@@ -1,8 +1,9 @@
 #ifdef PARALLEL
 
+#include <cstdio>
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include <cstdio>
+#include "parallel.h"
 
 bool cudaCheckError() {
     cudaSync();

@@ -32,19 +32,16 @@ class WeightMatrix {
 
         /* Accessor override */
         float& operator()(int i, int j) {
-            return this->mData[i * to_size + j];
+            return this->mData[i * to_layer.size + j];
         }
 
         /* Accessor override */
         float operator()(int i, int j) const {
-            return this->mData[i * to_size + j];
+            return this->mData[i * to_layer.size + j];
         }
 
-        // Size and offset for source layer
-        int from_index, from_size;
-
-        // Size and offset for destination layer
-        int to_index, to_size;
+        // Associated layers
+        Layer from_layer, to_layer;
 
         // Sign of operation
         // TODO: Replace with function
