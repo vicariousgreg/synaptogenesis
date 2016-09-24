@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include <stdio.h>
+#include <cstdio>
 
 #include "model.h"
 #include "tools.h"
@@ -16,11 +16,21 @@ Model::Model () {
  */
 int Model::connect_layers(int from_layer, int to_layer, bool plastic,
         int delay, float max_weight, MatrixType type, OPCODE opcode) {
-    WeightMatrix matrix = WeightMatrix(
+    WeightMatrix *matrix = new WeightMatrix(
         this->layers[from_layer], this->layers[to_layer],
         plastic, delay, max_weight, type, opcode);
     this->layers[to_layer].add_incoming_connection(matrix);
     this->connections.push_back(matrix);
+
+#ifdef PARALLEL
+    // Update layer vector
+    // |to_layer| now has one more connection (see model.h)
+    Layer &layer = this->layers[to_layer];
+    int layer_conn_size = layer.incoming_connections.size();
+    if (ordered_matrices.size() < layer_conn_size)
+        ordered_matrices.push_back(std::vector<WeightMatrix*>());
+    ordered_matrices[layer_conn_size-1].push_back(matrix);
+#endif
     return this->num_connections++;
 }
 

@@ -17,8 +17,8 @@ enum OPCODE {
 };
 
 /* Generic versions to obfuscate preprocessor directives. */
-void update_currents(WeightMatrix &conn, int* spikes,
-                    float* currents, int num_neurons);
+void update_currents(WeightMatrix* conn, int* spikes,
+                        float* currents, int num_neurons);
 
 void update_voltages(float* voltages, float*recoveries, float* currents,
                 NeuronParameters* neuron_params, int num_neurons);

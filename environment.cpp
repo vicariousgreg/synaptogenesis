@@ -5,7 +5,6 @@
 #include "environment.h"
 #include "weight_matrix.h"
 #include "operations.h"
-#include "parallel.h"
 
 
 Environment::Environment (Model model)
@@ -24,13 +23,13 @@ Environment::Environment (Model model)
 
     // Build weight matrices
     for (int i = 0 ; i < this->model.num_connections ; ++i) {
-        WeightMatrix &conn = this->model.connections[i];
+        WeightMatrix *conn = this->model.connections[i];
         try {
-            conn.build();
+            conn->build();
         } catch (const char* msg) {
             printf("%s\n", msg);
             printf("Failed to initialize %d x %d matrix!\n",
-                conn.from_layer.size, conn.to_layer.size);
+                conn->from_layer.size, conn->to_layer.size);
             throw "Failed to environment!";
         }
     }
@@ -98,10 +97,25 @@ void Environment::step_currents() {
     //
     // TODO: optimize order, create batches of parallelizable computations,
     //       and move cuda barriers around batches
+#ifdef PARALLEL
+    // Run each batch of parallelizable connections.
+    int num_batches = this->model.ordered_matrices.size();
+    for (int batch_index = 0 ; batch_index < num_batches ; ++batch_index) {
+        int batch_size = this->model.ordered_matrices[batch_index].size();
+        for (int conn_index = 0 ; conn_index < batch_size; ++conn_index) {
+            update_currents(
+                this->model.ordered_matrices[batch_index][conn_index],
+                spikes, current, this->model.num_neurons);
+        }
+        cudaCheckError("Failed to calculate connection activation!");
+    }
+#else
+    // Run each connection sequentially.
     for (int cid = 0 ; cid < this->model.num_connections; ++cid) {
         update_currents(this->model.connections[cid],
             spikes, current, this->model.num_neurons);
     }
+#endif
 }
 
 
@@ -117,6 +131,9 @@ void Environment::step_voltages() {
         this->state.current,
         this->state.neuron_parameters,
         this->model.num_neurons);
+#ifdef PARALLEL
+    cudaCheckError("Failed to update neuron voltages!");
+#endif
 }
 
 /*
@@ -132,6 +149,9 @@ void Environment::step_spikes() {
         this->state.recovery,
         this->state.neuron_parameters,
         this->model.num_neurons);
+#ifdef PARALLEL
+    cudaCheckError("Failed to timestep spikes!");
+#endif
 }
 
 /**
@@ -140,4 +160,7 @@ void Environment::step_spikes() {
  */
 void Environment::step_weights() {
     /* 5. Update weights */
+#ifdef PARALLEL
+    cudaCheckError("Failed to update connection weights!");
+#endif
 }
