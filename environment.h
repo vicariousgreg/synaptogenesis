@@ -44,17 +44,17 @@ class Environment {
         bool cycle();
 
         /* Activates neural connections, triggering updates of currents */
-        void activate();
+        bool activate();
 
         /* Updates neuron voltages from the currents using the Izhikevich model */
-        void update_voltages();
+        bool update_voltages();
 
         /* Timesteps the spikes, shifting spike bit vectors */
-        void timestep();
+        bool timestep();
 
         /* Updates weights for plastic neural connections.
          * TODO: implement.  This should use STDP variant Hebbian learning */
-        void update_weights();
+        bool update_weights();
 
         // Environment state
         State state;

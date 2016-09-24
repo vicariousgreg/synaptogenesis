@@ -1,9 +1,120 @@
 #include "operations.h"
 
+/*****************************************************************************/
+/************************* GENERIC IMPLEMENTATIONS ***************************/
+/*****************************************************************************/
+bool activate_conn(WeightMatrix &conn, int* spikes, float* currents) {
 #ifdef PARALLEL
+    int threads = 32;
+    int blocks = ceil((float)(conn.to_layer.size) / threads);
+    if (conn.type == FULLY_CONNECTED) {
+        parallel_activate_matrix<<<blocks, threads>>>(
+            conn.sign,
+            spikes + conn.from_layer.index,  // only most recent
+            conn.mData,
+            currents + conn.to_layer.index,
+            conn.from_layer.size,
+            conn.to_layer.size);
+    } else if (conn.type == ONE_TO_ONE) {
+        parallel_activate_vector<<<blocks, threads>>>(
+            conn.sign,
+            spikes + conn.from_layer.index,  // only most recent
+            conn.mData,
+            currents + conn.to_layer.index,
+            conn.to_layer.size);
+    }
 
-__global__ void mult(int sign, int* spikes, float* weights, float* currents,
-            int from_size, int to_size) {
+    if (!cudaCheckError()) {
+        printf("Failed to calculate connection activation!\n");
+        return false;
+    }
+#else
+    if (conn.type == FULLY_CONNECTED) {
+        serial_activate_matrix(
+            conn.sign,
+            spikes + conn.from_layer.index,  // only most recent
+            conn.mData,
+            currents + conn.to_layer.index,
+            conn.from_layer.size,
+            conn.to_layer.size);
+    } else if (conn.type == ONE_TO_ONE) {
+        serial_activate_vector(
+            conn.sign,
+            spikes + conn.from_layer.index,  // only most recent
+            conn.mData,
+            currents + conn.to_layer.index,
+            conn.to_layer.size);
+    }
+#endif
+    return true;
+}
+
+bool izhikevich(float* voltages, float*recoveries, float* currents,
+                NeuronParameters* neuron_params, int num_neurons) {
+#ifdef PARALLEL
+    int threads = 32;
+    int blocks = ceil((float)(num_neurons) / threads);
+    parallel_izhikevich<<<blocks, threads>>>(
+#else
+    serial_izhikevich(
+#endif
+        voltages,
+        recoveries,
+        currents,
+        neuron_params,
+        num_neurons);
+
+#ifdef PARALLEL
+    if (!cudaCheckError()) {
+        printf("Failed to update neuron voltages!\n");
+        return false;
+    }
+#endif
+    return true;
+}
+
+bool calc_spikes(int* spikes, float* voltages, float* recoveries,
+                 NeuronParameters* neuron_params, int num_neurons) {
+#ifdef PARALLEL
+    int threads = 32;
+    int blocks = ceil((float)(num_neurons) / threads);
+    parallel_calc_spikes<<<blocks, threads>>>(
+#else
+    serial_calc_spikes(
+#endif
+        spikes,
+        voltages,
+        recoveries,
+        neuron_params,
+        num_neurons);
+
+#ifdef PARALLEL
+    if (!cudaCheckError()) {
+        printf("Failed to timestep spikes!\n");
+        return false;
+    }
+#endif
+    return true;
+}
+
+bool update_weights() {
+#ifdef PARALLEL
+    if (!cudaCheckError()) {
+        printf("Failed to update connection weights!\n");
+        return false;
+    }
+#endif
+    return true;
+}
+
+
+#ifdef PARALLEL
+/*****************************************************************************/
+/************************ PARALLEL IMPLEMENTATIONS ***************************/
+/*****************************************************************************/
+
+__global__ void parallel_activate_matrix(int sign, int* spikes, float* weights,
+            float* currents, int from_size, int to_size) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (col < to_size) {
@@ -15,10 +126,19 @@ __global__ void mult(int sign, int* spikes, float* weights, float* currents,
     }
 }
 
+__global__ void parallel_activate_vector(int sign, int* spikes, float* weights,
+            float* currents, int size) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (index < size) {
+        currents[index] += sign * (spikes[index] % 2) * weights[index];
+    }
+}
+
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-__global__ void izhikevich(float* voltages, float*recoveries,
+__global__ void parallel_izhikevich(float* voltages, float*recoveries,
         float* currents, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -53,7 +173,7 @@ __global__ void izhikevich(float* voltages, float*recoveries,
 /* Parallel implementation of spike update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-__global__ void calc_spikes(int* spikes, float* voltages,
+__global__ void parallel_calc_spikes(int* spikes, float* voltages,
         float* recoveries, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -93,17 +213,29 @@ __global__ void calc_spikes(int* spikes, float* voltages,
 }
 
 #else
+/*****************************************************************************/
+/************************** SERIAL IMPLEMENTATIONS ***************************/
+/*****************************************************************************/
 
-void mult(int sign, int* spikes, float* weights, float* currents,
+void serial_activate_matrix(int sign, int* spikes, float* weights, float* currents,
           int from_size, int to_size) {
     for (int row = 0 ; row < from_size ; ++row) {
         for (int col = 0 ; col < to_size ; ++col) {
-            currents[col] += sign * (spikes[row] % 2) * weights[row*to_size + col];
+            currents[col] +=
+                sign * (spikes[row] % 2) *
+                weights[row*to_size + col];
         }
     }
 }
 
-void izhikevich(float* voltages, float*recoveries, float* currents,
+void serial_activate_vector(int sign, int* spikes,
+            float* weights, float* currents, int size) {
+    for (int index = 0 ; index < size ; ++index) {
+        currents[index] += sign * (spikes[index] % 2) * weights[index];
+    }
+}
+
+void serial_izhikevich(float* voltages, float*recoveries, float* currents,
                 NeuronParameters* neuron_params, int num_neurons) {
     float voltage, recovery, current, delta_v;
     NeuronParameters *params;
@@ -135,7 +267,7 @@ void izhikevich(float* voltages, float*recoveries, float* currents,
     }
 }
 
-void calc_spikes(int* spikes, float* voltages, float* recoveries,
+void serial_calc_spikes(int* spikes, float* voltages, float* recoveries,
                  NeuronParameters* neuron_params, int num_neurons) {
     int spike, new_value; 
     NeuronParameters *params;

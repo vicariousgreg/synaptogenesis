@@ -4,6 +4,7 @@
 #include "environment.h"
 #include "state.h"
 #include "model.h"
+#include "weight_matrix.h"
 #include "tools.h"
 #include "parallel.h"
 
@@ -37,10 +38,10 @@ int main(void) {
 
     int pos = model.add_randomized_layer(size, 1);
     int neg = model.add_randomized_layer(size / 4, -1);
-    model.connect_layers(pos, pos, true, .5);
-    model.connect_layers(pos, neg, true, .5);
-    model.connect_layers(neg, pos, true, 1);
-    model.connect_layers(neg, neg, true, 1);
+    model.connect_layers(pos, pos, true, .5, FULLY_CONNECTED);
+    model.connect_layers(pos, neg, true, .5, FULLY_CONNECTED);
+    model.connect_layers(neg, pos, true, 1, FULLY_CONNECTED);
+    model.connect_layers(neg, neg, true, 1, FULLY_CONNECTED);
 
     Environment env(model);
     if (!env.build()) {

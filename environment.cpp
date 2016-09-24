@@ -83,37 +83,10 @@ bool Environment::build() {
  * Performs a timestep cycle.
  */
 bool Environment::cycle() {
-    this->activate();
-#ifdef PARALLEL
-    if (!cudaCheckError()) {
-        printf("Failed to calculate connection activation!\n");
-        return false;
-    }
-#endif
-
-    this->update_voltages();
-#ifdef PARALLEL
-    if (!cudaCheckError()) {
-        printf("Failed to update neuron voltages!\n");
-        return false;
-    }
-#endif
-
-    this->timestep();
-#ifdef PARALLEL
-    if (!cudaCheckError()) {
-        printf("Failed to timestep spikes!\n");
-        return false;
-    }
-#endif
-
-    this->update_weights();
-#ifdef PARALLEL
-    if (!cudaCheckError()) {
-        printf("Failed to update connection weights!\n");
-        return false;
-    }
-#endif
+    if (!this->activate())        return false;
+    if (!this->update_voltages()) return false;
+    if (!this->timestep())        return false;
+    if (!this->update_weights())  return false;
     return true;
 }
 
@@ -122,7 +95,7 @@ bool Environment::cycle() {
  * For each weight matrix, calculate sum of inputs for each neuron
  *   and add it to the current vector.
  */
-void Environment::activate() {
+bool Environment::activate() {
     float* current = this->state.current;
     int* spikes = this->state.recent_spikes;
 
@@ -134,23 +107,10 @@ void Environment::activate() {
     // TODO: optimize order, create batches of parallelizable computations,
     //       and move cuda barriers around batches
     for (int cid = 0 ; cid < this->model.num_connections; ++cid) {
-        WeightMatrix &conn = this->model.connections[cid];
-#ifdef PARALLEL
-        int threads = 32;
-        int blocks = ceil((float)(conn.to_layer.size) / threads);
-        mult<<<blocks, threads>>>(
-#else
-        mult(
-#endif
-            conn.sign,
-            spikes + conn.from_layer.index,  // only most recent
-            conn.mData,
-            current + conn.to_layer.index,
-            conn.from_layer.size,
-            conn.to_layer.size);
-#ifdef PARALLEL
-#endif
+        if (!activate_conn(this->model.connections[cid], spikes, current))
+            return false;
     }
+    return true;
 }
 
 
@@ -158,15 +118,9 @@ void Environment::activate() {
  * Perform voltage update according to input currents using Izhikevich
  *   with Euler's method.
  */
-void Environment::update_voltages() {
+bool Environment::update_voltages() {
     /* 3. Voltage Updates */
-#ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(this->model.num_neurons) / threads);
-    izhikevich<<<blocks, threads>>>(
-#else
-    izhikevich(
-#endif
+    return izhikevich(
         this->state.voltage,
         this->state.recovery,
         this->state.current,
@@ -179,15 +133,9 @@ void Environment::update_voltages() {
  * Fills the spike buffer based on voltages and the SPIKE_THRESH.
  * Increments the ages of last spikes, and resets recovery if spiked.
  */
-void Environment::timestep() {
+bool Environment::timestep() {
     /* 4. Timestep */
-#ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(this->model.num_neurons) / threads);
-    calc_spikes<<<blocks, threads>>>(
-#else
-    calc_spikes(
-#endif
+    return calc_spikes(
         this->state.spikes,
         this->state.voltage,
         this->state.recovery,
@@ -199,6 +147,7 @@ void Environment::timestep() {
  * Updates weights.
  * TODO: implement.
  */
-void Environment::update_weights() {
+bool Environment::update_weights() {
     /* 5. Update weights */
+    return true;
 }

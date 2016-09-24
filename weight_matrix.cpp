@@ -6,42 +6,49 @@
 #include "layer.h"
 
 WeightMatrix::WeightMatrix (Layer &from_layer, Layer &to_layer,
-        bool plastic, float max_weight) :
+        bool plastic, float max_weight, MatrixType type) :
             from_layer(from_layer),
             to_layer(to_layer),
             plastic(plastic),
             max_weight(max_weight),
-            sign(from_layer.sign) { }
+            sign(from_layer.sign),
+            type(type) {
+    if (type == FULLY_CONNECTED) {
+        this->matrix_size = from_layer.size * to_layer.size;
+    } else if (type == ONE_TO_ONE) {
+        if (from_layer.size != to_layer.size) {
+            throw;
+        } else {
+            this->matrix_size = from_layer.size;
+        }
+    }
+}
 
 bool WeightMatrix::build() {
 #ifdef PARALLEL
-    cudaMalloc((&this->mData), to_layer.size * from_layer.size * sizeof(float));
+    cudaMalloc((&this->mData), matrix_size * sizeof(float));
     if (!cudaCheckError()) return false;
 #else
-    mData = (float*)malloc(to_layer.size * from_layer.size * sizeof(float));
+    mData = (float*)malloc(matrix_size * sizeof(float));
     if (mData == NULL) return false;
 #endif
-    return this->randomize(true, this->max_weight);
+    return this->randomize(this->max_weight);
 }
 
-bool WeightMatrix::randomize(bool self_connected, float max_weight) {
+bool WeightMatrix::randomize(float max_weight) {
 #ifdef PARALLEL
-    int matrix_size = this->from_layer.size * this->to_layer.size;
     float* temp_matrix = (float*)malloc(matrix_size * sizeof(float));
     if (!temp_matrix) {
         printf("Failed to allocate temporary matrix on host!\n");
         return false;
     }
 #endif
-    for (int row = 0 ; row < this->from_layer.size ; ++row) {
-        for (int col = 0 ; col < this->to_layer.size ; ++col) {
-            if (self_connected || (row != col))
+    for (int index = 0 ; index < matrix_size ; ++index) {
 #ifdef PARALLEL
-                temp_matrix[row * to_layer.size + col] = fRand(0, max_weight);
+        temp_matrix[index] = fRand(0, max_weight);
 #else
-                this->mData[row * to_layer.size + col] = fRand(0, max_weight);
+        this->mData[index] = fRand(0, max_weight);
 #endif
-        }
     }
 
 #ifdef PARALLEL
