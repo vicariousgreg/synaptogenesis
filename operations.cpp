@@ -105,8 +105,8 @@ __device__ float calc(OPCODE opcode, float current, float sum) {
     switch (opcode) {
         case ADD:  return current + sum;
         case SUB:  return current - sum;
-        case MULT: return current * sum;
-        case DIV:  return current / sum;
+        case MULT: return current * (1+sum);
+        case DIV:  return current / (1+sum);
     }
     assert(false);
     return 0.0;
@@ -222,8 +222,8 @@ float calc(OPCODE opcode, float current, float sum) {
     switch (opcode) {
         case ADD:  return current + sum;
         case SUB:  return current - sum;
-        case MULT: return current * sum;
-        case DIV:  return current / sum;
+        case MULT: return current * (1+sum);
+        case DIV:  return current / (1+sum);
         default: throw "Unrecognized connection operation!";
     }
 }
