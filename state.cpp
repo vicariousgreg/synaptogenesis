@@ -1,9 +1,10 @@
 #include <cstdlib>
 #include <cstdio>
+
 #include "state.h"
 #include "model.h"
 #include "tools.h"
-
+#include "constants.h"
 #include "parallel.h"
 
 bool State::build(Model model) {

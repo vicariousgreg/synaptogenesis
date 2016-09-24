@@ -2,16 +2,10 @@
 #define model_h
 
 #include <vector>
-#include <ctime>
-#include <cstdlib>
 
 #include "neuron_parameters.h"
 #include "layer.h"
 #include "weight_matrix.h"
-
-#define SPIKE_THRESH 30
-#define EULER_RES 10
-#define HISTORY_SIZE 8
 
 using namespace std;
 

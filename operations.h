@@ -1,7 +1,8 @@
 #ifndef operations_h
 #define operations_h
 
-#include "environment.h"
+#include "neuron_parameters.h"
+#include "constants.h"
 
 #ifdef PARALLEL
 

@@ -1,17 +1,10 @@
 #include <cstdlib>
 #include <ctime>
-#include <iostream>
-#include <climits>
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
 
 #include "environment.h"
-#include "model.h"
-#include "neuron_parameters.h"
 #include "weight_matrix.h"
-#include "tools.h"
 #include "operations.h"
-
 #include "parallel.h"
 
 Environment::Environment (Model model) {

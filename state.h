@@ -1,10 +1,8 @@
 #ifndef state_h
 #define state_h
 
-#include "neuron_parameters.h"
 #include "model.h"
-
-#define HISTORY_SIZE 8
+#include "neuron_parameters.h"
 
 class State {
     public:

@@ -1,6 +1,4 @@
-#include <cstdlib>
-#include <climits>
-#include "environment.h"
+#include "operations.h"
 
 #ifdef PARALLEL
 

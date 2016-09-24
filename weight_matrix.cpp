@@ -1,12 +1,8 @@
 #include <cstdlib>
-#include "weight_matrix.h"
-#include "layer.h"
-#include "tools.h"
 
-#ifdef PARALLEL
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#endif
+#include "weight_matrix.h"
+#include "tools.h"
+#include "parallel.h"
 
 WeightMatrix::WeightMatrix (Layer from_layer, Layer to_layer,
         bool plastic, float max_weight) :

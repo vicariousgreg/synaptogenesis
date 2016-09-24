@@ -1,14 +1,8 @@
 #include <cstdlib>
-#include <ctime>
-#include <iostream>
-#include <climits>
 #include <stdio.h>
-#include <math.h>
 
 #include "model.h"
 #include "tools.h"
-#include "neuron_parameters.h"
-#include "weight_matrix.h"
 
 Model::Model () {
     this->num_neurons = 0;

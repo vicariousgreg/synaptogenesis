@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cstdio>
+
 #include "tools.h"
 
 float fRand(float fMin, float fMax) {

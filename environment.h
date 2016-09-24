@@ -1,18 +1,8 @@
 #ifndef environment_h
 #define environment_h
 
-#include <vector>
-#include <ctime>
-#include <cstdlib>
-
-#include "neuron_parameters.h"
 #include "state.h"
-#include "weight_matrix.h"
 #include "model.h"
-
-#define SPIKE_THRESH 30
-#define EULER_RES 10
-#define HISTORY_SIZE 8
 
 using namespace std;
 
@@ -65,7 +55,7 @@ class Environment {
         void timestep();
 
         /* Updates weights for plastic neural connections.
-         * TODO: implement.  This should use STDB variant Hebbian learning */
+         * TODO: implement.  This should use STDP variant Hebbian learning */
         void update_weights();
 
         // Environment state
