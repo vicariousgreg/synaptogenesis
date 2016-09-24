@@ -71,7 +71,6 @@ bool State::build(Model model) {
     cudaMemcpy(this->neuron_parameters, temp_params,
         num_neurons * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
 
-    cudaSync();
     if (!cudaCheckError()) {
         printf("Failed to allocate memory on device for neuron state!\n");
         return false;
@@ -119,7 +118,6 @@ bool State::set_current(int offset, int size, float* input) {
     // Send to GPU
     void* current = &this->current[offset];
     cudaMemcpy(current, input, size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaSync();
     return cudaCheckError();
 #else
     for (int nid = 0 ; nid < size; ++nid) {
@@ -182,7 +180,6 @@ int* State::get_spikes() {
     // Copy from GPU to local location
     cudaMemcpy(this->local_spikes, this->recent_spikes,
         this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaSync();
     if (!cudaCheckError()) {
         printf("Failed to copy spikes from device to host!\n");
         return NULL;
@@ -199,7 +196,6 @@ float* State::get_current() {
     // Copy from GPU to local location
     cudaMemcpy(this->local_current, this->current,
         this->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaSync();
     if (!cudaCheckError()) {
         printf("Failed to copy currents from device to host!\n");
         return NULL;

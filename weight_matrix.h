@@ -28,7 +28,7 @@ class WeightMatrix {
          * If parallel, a temporary matrix is allocated on the host, which is
          *   initialized and then copied to the device.
          */
-        void randomize(bool self_connected, float max_weight);
+        bool randomize(bool self_connected, float max_weight);
 
         /* Accessor override */
         float& operator()(int i, int j) {

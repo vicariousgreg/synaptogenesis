@@ -22,14 +22,17 @@ bool WeightMatrix::build() {
     mData = (float*)malloc(to_size * from_size * sizeof(float));
     if (mData == NULL) return false;
 #endif
-    this->randomize(true, this->max_weight);
-    return true;
+    return this->randomize(true, this->max_weight);
 }
 
-void WeightMatrix::randomize(bool self_connected, float max_weight) {
+bool WeightMatrix::randomize(bool self_connected, float max_weight) {
 #ifdef PARALLEL
     int matrix_size = this->from_size * this->to_size;
     float* temp_matrix = (float*)malloc(matrix_size * sizeof(float));
+    if (!temp_matrix) {
+        printf("Failed to allocate temporary matrix on host!\n");
+        return false;
+    }
 #endif
     for (int row = 0 ; row < this->from_size ; ++row) {
         for (int col = 0 ; col < this->to_size ; ++col) {
@@ -43,9 +46,11 @@ void WeightMatrix::randomize(bool self_connected, float max_weight) {
     }
 
 #ifdef PARALLEL
-    cudaDeviceSynchronize();
     cudaMemcpy(this->mData, temp_matrix, matrix_size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaDeviceSynchronize();
+    bool success =  cudaCheckError();
     free(temp_matrix);
+    return success;
+#else
+    return true;
 #endif
 }

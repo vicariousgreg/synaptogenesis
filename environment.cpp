@@ -55,21 +55,22 @@ void Environment::clear_current(int layer_id) {
  *   is not initialized until this function is called.
  */
 bool Environment::build() {
-    // Build weight matrices
-    for (int i = 0 ; i < this->model.num_connections ; ++i) {
-        WeightMatrix &conn = this->model.connections[i];
-        if (!conn.build()) {
-            printf("Failed to allocate %d (%d) -> %d (%d) matrix!\n",
-                conn.from_index, conn.from_size, conn.to_index, conn.to_size);
-            return false;
-        }
-    }
-
     // Build the state.
     if (!this->state.build(this->model)) {
         printf("Failed to build environment state!\n");
         return false;
     }
+
+    // Build weight matrices
+    for (int i = 0 ; i < this->model.num_connections ; ++i) {
+        WeightMatrix &conn = this->model.connections[i];
+        if (!conn.build()) {
+            printf("Failed to initialize %d x %d matrix!\n",
+                conn.from_size, conn.to_size);
+            return false;
+        }
+    }
+
     return true;
 }
 

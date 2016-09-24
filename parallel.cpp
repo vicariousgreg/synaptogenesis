@@ -5,6 +5,7 @@
 #include <cstdio>
 
 bool cudaCheckError() {
+    cudaSync();
     cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) {
         printf("Cuda failure: '%s'\n", cudaGetErrorString(e));
