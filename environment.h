@@ -48,17 +48,17 @@ class Environment {
         void timestep();
 
         /* Activates neural connections, triggering updates of currents */
-        void activate();
+        void step_currents();
 
         /* Updates neuron voltages from the currents using the Izhikevich model */
-        void update_voltages();
+        void step_voltages();
 
         /* Timesteps the spikes, shifting spike bit vectors */
-        void cycle_spikes();
+        void step_spikes();
 
         /* Updates weights for plastic neural connections.
          * TODO: implement.  This should use STDP variant Hebbian learning */
-        void update_weights();
+        void step_weights();
 
         // Environment state
         State state;

@@ -87,10 +87,10 @@ void Environment::build() {
  * Performs a timestep cycle.
  */
 void Environment::timestep() {
-    this->activate();
-    this->update_voltages();
-    this->cycle_spikes();
-    this->update_weights();
+    this->step_currents();
+    this->step_voltages();
+    this->step_spikes();
+    this->step_weights();
 }
 
 /*
@@ -98,9 +98,9 @@ void Environment::timestep() {
  * For each weight matrix, calculate sum of inputs for each neuron
  *   and add it to the current vector.
  */
-void Environment::activate() {
+void Environment::step_currents() {
     float* current = this->state.current;
-    int* spikes = this->state.recent_spikes;
+    int* spikes = this->state.recent_spikes; // only most recent
 
     /* 2. Activation */
     // For each weight matrix...
@@ -110,7 +110,7 @@ void Environment::activate() {
     // TODO: optimize order, create batches of parallelizable computations,
     //       and move cuda barriers around batches
     for (int cid = 0 ; cid < this->model.num_connections; ++cid) {
-        activate_conn(this->model.connections[cid], spikes, current);
+        update_currents(this->model.connections[cid], spikes, current);
     }
 }
 
@@ -119,9 +119,9 @@ void Environment::activate() {
  * Perform voltage update according to input currents using Izhikevich
  *   with Euler's method.
  */
-void Environment::update_voltages() {
+void Environment::step_voltages() {
     /* 3. Voltage Updates */
-    izhikevich(
+    update_voltages(
         this->state.voltage,
         this->state.recovery,
         this->state.current,
@@ -134,9 +134,9 @@ void Environment::update_voltages() {
  * Fills the spike buffer based on voltages and the SPIKE_THRESH.
  * Increments the ages of last spikes, and resets recovery if spiked.
  */
-void Environment::cycle_spikes() {
+void Environment::step_spikes() {
     /* 4. Timestep */
-    calc_spikes(
+    update_spikes(
         this->state.spikes,
         this->state.voltage,
         this->state.recovery,
@@ -148,6 +148,6 @@ void Environment::cycle_spikes() {
  * Updates weights.
  * TODO: implement.
  */
-void Environment::update_weights() {
+void Environment::step_weights() {
     /* 5. Update weights */
 }

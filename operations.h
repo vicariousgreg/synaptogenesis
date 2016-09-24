@@ -8,12 +8,12 @@
 
 
 /* Generic versions to obfuscate preprocessor directives. */
-void activate_conn(WeightMatrix &conn, int* spikes, float* currents);
+void update_currents(WeightMatrix &conn, int* spikes, float* currents);
 
-void izhikevich(float* voltages, float*recoveries, float* currents,
+void update_voltages(float* voltages, float*recoveries, float* currents,
                 NeuronParameters* neuron_params, int num_neurons);
 
-void calc_spikes(int* spikes, float* voltages, float* recoveries,
+void update_spikes(int* spikes, float* voltages, float* recoveries,
                  NeuronParameters* neuron_params, int num_neurons);
 
 void update_weights();
