@@ -7,8 +7,8 @@
 #include "operations.h"
 #include "parallel.h"
 
-Environment::Environment (Model model) {
-    this->model = model;
+Environment::Environment (Model model)
+        model(model) {
     srand(time(NULL));
     //srand(0);
 }

@@ -15,7 +15,7 @@ bool State::build(Model model) {
     // Local spikes for output reporting
     this->local_spikes = (int*)calloc(num_neurons, sizeof(int));
     this->local_current = (float*)calloc(num_neurons, sizeof(float));
-    if (!this->local_spikes or !this->local_current) {
+    if (this->local_spikes == NULL or this->local_current == NULL) {
         printf("Failed to allocate space on host for local copies of\n");
         printf("  neuron state!\n");
         return false;
@@ -43,8 +43,8 @@ bool State::build(Model model) {
     NeuronParameters *temp_params =
         (NeuronParameters*)malloc(num_neurons * sizeof(NeuronParameters));
 
-    if (!temp_current or !temp_voltage or !temp_recovery
-            or !temp_spike or !temp_params) {
+    if (temp_current == NULL or temp_voltage == NULL or temp_recovery == NULL
+            or temp_spike == NULL or temp_params == NULL) {
         printf("Failed to allocate space on host for temporary local copies\n");
         printf("  of neuron state!\n");
         return false;
@@ -96,7 +96,8 @@ bool State::build(Model model) {
     this->spikes = (int*)calloc(num_neurons, HISTORY_SIZE * sizeof(int));
     this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
-    if (!this->current or !this->voltage or !this->recovery or !this->spikes) {
+    if (this->current == NULL or this->voltage == NULL
+            or this->recovery == NULL or this->spikes == NULL) {
         printf("Failed to allocate space on host for neuron state!\n");
         return false;
     }
@@ -131,7 +132,7 @@ bool State::randomize_current(int offset, int size, float max) {
 #ifdef PARALLEL
     // Create temporary random array
     float* temp = (float*)malloc(size * sizeof(float));
-    if (!temp) {
+    if (temp == NULL) {
         printf("Failed to allocate memory on host for temporary currents!\n");
         return false;
     }
@@ -154,7 +155,7 @@ bool State::clear_current(int offset, int size) {
 #ifdef PARALLEL
     // Create temporary blank array
     float* temp = (float*)malloc(size * sizeof(float));
-    if (!temp) {
+    if (temp == NULL) {
         printf("Failed to allocate memory on host for temporary currents!\n");
         return false;
     }

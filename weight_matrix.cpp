@@ -38,7 +38,7 @@ bool WeightMatrix::build() {
 bool WeightMatrix::randomize(float max_weight) {
 #ifdef PARALLEL
     float* temp_matrix = (float*)malloc(matrix_size * sizeof(float));
-    if (!temp_matrix) {
+    if (temp_matrix == NULL) {
         printf("Failed to allocate temporary matrix on host!\n");
         return false;
     }

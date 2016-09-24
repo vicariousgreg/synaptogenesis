@@ -36,6 +36,10 @@ class Environment {
          * If parallel, this will copy the values from the device. */
         float* get_current();
 
+        /**********************************************************************
+         *********************** TIMESTEP DYNAMICS ****************************
+         **********************************************************************/
+
         /* Cycles the environment:
          * 1. Activate neural connections, which updates currents.
          * 2. Update neuron voltages from currents.
