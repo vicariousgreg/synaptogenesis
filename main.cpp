@@ -35,10 +35,10 @@ int main(void) {
 
     int pos = model.add_randomized_layer(size, 1);
     int neg = model.add_randomized_layer(size / 4, -1);
-    model.connect_layers(pos, pos, true, .5, FULLY_CONNECTED);
-    model.connect_layers(pos, neg, true, .5, FULLY_CONNECTED);
-    model.connect_layers(neg, pos, true, 1, FULLY_CONNECTED);
-    model.connect_layers(neg, neg, true, 1, FULLY_CONNECTED);
+    model.connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED);
+    model.connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED);
+    model.connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED);
+    model.connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED);
 
     try {
         // Start timer
@@ -61,6 +61,7 @@ int main(void) {
         printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
     } catch (const char* msg) { 
         printf("%s\n", msg);
+        printf("\nFatal error -- exiting...\n");
         return 1;
     }
 

@@ -1,6 +1,8 @@
 #ifndef state_h
 #define state_h
 
+#include <stdint.h>
+
 #include "model.h"
 #include "neuron_parameters.h"
 

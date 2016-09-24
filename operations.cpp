@@ -1,9 +1,16 @@
 #include "operations.h"
+#include "constants.h"
 
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
-void update_currents(WeightMatrix &conn, int* spikes, float* currents) {
+void update_currents(WeightMatrix &conn, int* spikes,
+                    float* currents, int num_neurons) {
+    // Determine which part of spike vector to use based on delay
+    int word_index = HISTORY_SIZE - (conn.delay / 32) - 1;
+    int mask = 1 << (conn.delay % 32);
+    spikes = &spikes[num_neurons * word_index];
+
 #ifdef PARALLEL
     int threads = 32;
     int blocks = ceil((float)(conn.to_layer.size) / threads);
@@ -20,7 +27,8 @@ void update_currents(WeightMatrix &conn, int* spikes, float* currents) {
             conn.mData,
             currents + conn.to_layer.index,
             conn.from_layer.size,
-            conn.to_layer.size);
+            conn.to_layer.size,
+            mask);
     } else if (conn.type == ONE_TO_ONE) {
 #ifdef PARALLEL
         parallel_activate_vector<<<blocks, threads>>>(
@@ -31,7 +39,8 @@ void update_currents(WeightMatrix &conn, int* spikes, float* currents) {
             spikes + conn.from_layer.index,
             conn.mData,
             currents + conn.to_layer.index,
-            conn.to_layer.size);
+            conn.to_layer.size,
+            mask);
     }
 #ifdef PARALLEL
     cudaCheckError("Failed to calculate connection activation!");
@@ -91,24 +100,24 @@ void update_weights() {
 /*****************************************************************************/
 
 __global__ void parallel_activate_matrix(int sign, int* spikes, float* weights,
-            float* currents, int from_size, int to_size) {
+            float* currents, int from_size, int to_size, int mask) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (col < to_size) {
         float sum = 0;
         for (int row = 0 ; row < from_size ; ++row) {
-            sum += (spikes[row] % 2) * weights[row * to_size + col];
+            sum += (spikes[row] & mask) * weights[row * to_size + col];
         }
         currents[col] += sign * sum;
     }
 }
 
 __global__ void parallel_activate_vector(int sign, int* spikes, float* weights,
-            float* currents, int size) {
+            float* currents, int size, int mask) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index < size) {
-        currents[index] += sign * (spikes[index] % 2) * weights[index];
+        currents[index] += sign * (spikes[index] & mask) * weights[index];
     }
 }
 
@@ -195,20 +204,20 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages,
 /*****************************************************************************/
 
 void serial_activate_matrix(int sign, int* spikes, float* weights, float* currents,
-          int from_size, int to_size) {
+          int from_size, int to_size, int mask) {
     for (int row = 0 ; row < from_size ; ++row) {
         for (int col = 0 ; col < to_size ; ++col) {
             currents[col] +=
-                sign * (spikes[row] % 2) *
+                sign * (spikes[row] & mask) *
                 weights[row*to_size + col];
         }
     }
 }
 
 void serial_activate_vector(int sign, int* spikes,
-            float* weights, float* currents, int size) {
+            float* weights, float* currents, int size, int mask) {
     for (int index = 0 ; index < size ; ++index) {
-        currents[index] += sign * (spikes[index] % 2) * weights[index];
+        currents[index] += sign * (spikes[index] & mask) * weights[index];
     }
 }
 

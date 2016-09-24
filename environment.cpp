@@ -89,7 +89,7 @@ void Environment::timestep() {
  */
 void Environment::step_currents() {
     float* current = this->state.current;
-    int* spikes = this->state.recent_spikes; // only most recent
+    int* spikes = this->state.spikes;
 
     /* 2. Activation */
     // For each weight matrix...
@@ -99,7 +99,8 @@ void Environment::step_currents() {
     // TODO: optimize order, create batches of parallelizable computations,
     //       and move cuda barriers around batches
     for (int cid = 0 ; cid < this->model.num_connections; ++cid) {
-        update_currents(this->model.connections[cid], spikes, current);
+        update_currents(this->model.connections[cid],
+            spikes, current, this->model.num_neurons);
     }
 }
 

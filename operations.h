@@ -1,14 +1,16 @@
 #ifndef operations_h
 #define operations_h
 
+#include <stdint.h>
+
 #include "neuron_parameters.h"
-#include "constants.h"
 #include "weight_matrix.h"
 #include "parallel.h"
 
 
 /* Generic versions to obfuscate preprocessor directives. */
-void update_currents(WeightMatrix &conn, int* spikes, float* currents);
+void update_currents(WeightMatrix &conn, int* spikes,
+                    float* currents, int num_neurons);
 
 void update_voltages(float* voltages, float*recoveries, float* currents,
                 NeuronParameters* neuron_params, int num_neurons);
@@ -31,13 +33,13 @@ void update_weights();
  *   running siactivate_matrix will access sequential data from one row.
  */
 __global__ void parallel_activate_matrix(int sign, int* spikes, float* weights,
-                                float* currents, int from_size, int to_size);
+                   float* currents, int from_size, int to_size, int mask);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
  *   input weight.  Weight vectors represent one-to-one neural connections.
  */
 __global__ void parallel_activate_vector(int sign, int* spikes,
-            float* weights, float* currents, int size);
+            float* weights, float* currents, int size, int mask);
 
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
@@ -56,12 +58,12 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages, float* recove
 /* Serial implementation of activate_matrix function for activation of
  *   neural connections */
 void serial_activate_matrix(int sign, int* spikes, float* weights,
-                        float* currents, int from_size, int to_size);
+                float* currents, int from_size, int to_size, int mask);
 
 /* Serial implementation of activate_vector function for activation of
  *   neural connections */
 void serial_activate_vector(int sign, int* spikes,
-            float* weights, float* currents, int size);
+            float* weights, float* currents, int size, int mask);
 
 /* Serial implementation of Izhikevich voltage update function */
 void serial_izhikevich(float* voltages, float*recoveries, float* currents,

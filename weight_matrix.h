@@ -16,7 +16,7 @@ enum MatrixType {
 class WeightMatrix {
     public:
         WeightMatrix (Layer &from_layer, Layer &to_layer,
-            bool plastic, float max_weight, MatrixType type);
+            bool plastic, int delay, float max_weight, MatrixType type);
 
         /* Allocates memory for the matrix and initializes it.
          * Implementation depends on parallel flag.
@@ -43,6 +43,9 @@ class WeightMatrix {
             return this->mData[i * to_layer.size + j];
         }
 
+        // Matrix type (see enum)
+        MatrixType type;
+
         // Associated layers
         Layer from_layer, to_layer;
 
@@ -53,6 +56,9 @@ class WeightMatrix {
         // TODO: Replace with function
         int sign;
 
+        // Connection delay
+        int delay;
+
         // Flag for whether matrix can change via learning
         bool plastic;
 
@@ -62,9 +68,6 @@ class WeightMatrix {
         // Pointer to data
         // If parallel, this will point to device memory
         float* mData;
-
-        // Matrix type (see enum)
-        MatrixType type;
 };
 
 #endif

@@ -4,20 +4,25 @@
 #include "tools.h"
 #include "parallel.h"
 #include "layer.h"
+#include "constants.h"
 
 WeightMatrix::WeightMatrix (Layer &from_layer, Layer &to_layer,
-        bool plastic, float max_weight, MatrixType type) :
+        bool plastic, int delay, float max_weight, MatrixType type) :
             from_layer(from_layer),
             to_layer(to_layer),
             plastic(plastic),
+            delay(delay),
             max_weight(max_weight),
             sign(from_layer.sign),
             type(type) {
+    if (delay > (32 * HISTORY_SIZE - 1))
+        throw "Cannot implement connection delay longer than history!";
+
     if (type == FULLY_CONNECTED) {
         this->matrix_size = from_layer.size * to_layer.size;
     } else if (type == ONE_TO_ONE) {
         if (from_layer.size != to_layer.size) {
-            throw;
+            throw "Cannot connect differently sized layers one-to-one!";
         } else {
             this->matrix_size = from_layer.size;
         }

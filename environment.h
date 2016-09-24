@@ -1,6 +1,7 @@
 #ifndef environment_h
 #define environment_h
 
+#include <stdint.h>
 #include "state.h"
 #include "model.h"
 

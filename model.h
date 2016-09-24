@@ -21,7 +21,7 @@ class Model {
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */
         int connect_layers(int from_layer, int to_layer,
-            bool plastic, float max_weight, MatrixType type);
+            bool plastic, int delay, float max_weight, MatrixType type);
 
         // Neurons
         int num_neurons;

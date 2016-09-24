@@ -15,10 +15,10 @@ Model::Model () {
  * If the layer is plastic, it will learn.
  */
 int Model::connect_layers(int from_layer, int to_layer,
-        bool plastic, float max_weight, MatrixType type) {
+        bool plastic, int delay, float max_weight, MatrixType type) {
     WeightMatrix matrix = WeightMatrix(
         this->layers[from_layer], this->layers[to_layer],
-        plastic, max_weight, type);
+        plastic, delay, max_weight, type);
     this->layers[to_layer].add_incoming_connection(matrix);
     this->connections.push_back(matrix);
     return this->num_connections++;
