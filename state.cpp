@@ -1,44 +1,48 @@
-#ifdef parallel
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#define cudaCheckError() {                                          \
- cudaError_t e=cudaGetLastError();                                 \
- if(e!=cudaSuccess) {                                              \
-   printf("Cuda failure %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(e));           \
-   exit(0); \
- }                                                                 \
-}
-
-#endif
-
 #include <cstdlib>
+#include <cstdio>
+#include <vector>
 #include "state.h"
 #include "tools.h"
 
-void State::build(int num_neurons, NeuronParameters* neuron_parameters) {
+#include "parallel.h"
+
+bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_parameters) {
     this->num_neurons = num_neurons;
 
-#ifdef parallel
+#ifdef PARALLEL
     // Local spikes for output reporting
     this->local_spikes = (int*)calloc(num_neurons, sizeof(int));
     this->local_current = (float*)calloc(num_neurons, sizeof(float));
+    if (!this->local_spikes or !this->local_current) {
+        printf("Failed to allocate space on host for local copies of\n");
+        printf("  neuron variables!\n");
+        return false;
+    }
 
     // Allocate space on GPU
     cudaMalloc(&this->current, num_neurons * sizeof(float));
     cudaMalloc(&this->voltage, num_neurons * sizeof(float));
     cudaMalloc(&this->recovery, num_neurons * sizeof(float));
-
-    // Set up spikes, keep pointer to recent spikes.
     cudaMalloc(&this->spikes, HISTORY_SIZE * num_neurons * sizeof(int));
+    // Set up spikes, keep pointer to recent spikes.
     this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
+
+    if (!cudaCheckError()) {
+        printf("Failed to allocate memory on device for neuron variables!\n");
+        return false;
+    }
 
     // Make temporary arrays for initialization
     float *temp_current = (float*)malloc(num_neurons * sizeof(float));
     float *temp_voltage = (float*)malloc(num_neurons * sizeof(float));
     float *temp_recovery = (float*)malloc(num_neurons * sizeof(float));
     int *temp_spike = (int*)calloc(num_neurons, HISTORY_SIZE * sizeof(int));
+
+    if (!temp_current or !temp_voltage or !temp_recovery or !temp_spike) {
+        printf("Failed to allocate space on host for temporary local copies\n");
+        printf("  of neuron variables!\n");
+        return false;
+    }
 
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
@@ -49,9 +53,6 @@ void State::build(int num_neurons, NeuronParameters* neuron_parameters) {
     }
 
     // Copy values to GPU
-    cudaDeviceSynchronize();
-    cudaCheckError();
-
     cudaMemcpy(this->current, temp_current,
         num_neurons * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(this->voltage, temp_voltage,
@@ -61,8 +62,11 @@ void State::build(int num_neurons, NeuronParameters* neuron_parameters) {
     cudaMemcpy(this->spikes, temp_spike,
         num_neurons * HISTORY_SIZE * sizeof(int), cudaMemcpyHostToDevice);
 
-    cudaDeviceSynchronize();
-    cudaCheckError();
+    cudaSync();
+    if (!cudaCheckError()) {
+        printf("Failed to allocate memory on device for neuron variables!\n");
+        return false;
+    }
 
     // Free up temporary memory
     free(temp_current);
@@ -81,6 +85,11 @@ void State::build(int num_neurons, NeuronParameters* neuron_parameters) {
     this->spikes = (int*)calloc(num_neurons, HISTORY_SIZE * sizeof(int));
     this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
+    if (!this->current or !this->voltage or !this->recovery or !this->spikes) {
+        printf("Failed to allocate space on host for neuron variables!\n");
+        return false;
+    }
+
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
         NeuronParameters &params = neuron_parameters[i];
@@ -89,77 +98,101 @@ void State::build(int num_neurons, NeuronParameters* neuron_parameters) {
         this->recovery[i] = params.b * params.c;
     }
 #endif
+    return true;
 }
 
-void State::set_current(int offset, int size, float* input) {
-#ifdef parallel
+bool State::set_current(int offset, int size, float* input) {
+#ifdef PARALLEL
     // Send to GPU
     void* current = &this->current[offset];
     cudaMemcpy(current, input, size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaDeviceSynchronize();
-    cudaCheckError();
+    cudaSync();
+    return cudaCheckError();
 #else
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = input[nid];
     }
+    return true;
 #endif
 }
 
-void State::randomize_current(int offset, int size, float max) {
-#ifdef parallel
-    // Send to GPU
+bool State::randomize_current(int offset, int size, float max) {
+#ifdef PARALLEL
+    // Create temporary random array
     float* temp = (float*)malloc(size * sizeof(float));
+    if (!temp) {
+        printf("Failed to allocate memory on host for temporary currents!\n");
+        return false;
+    }
     for (int nid = 0 ; nid < size; ++nid) {
         temp[nid] = fRand(0, max);
     }
-    this->set_current(offset, size, temp);
-    free(temp);
+
+    // Send to GPU
+    bool success = this->set_current(offset, size, temp);
+    return success;
 #else
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = fRand(0, max);
     }
+    return true;
 #endif
 }
 
-void State::clear_current(int offset, int size) {
-#ifdef parallel
-    // Send to GPU
+bool State::clear_current(int offset, int size) {
+#ifdef PARALLEL
+    // Create temporary blank array
     float* temp = (float*)malloc(size * sizeof(float));
+    if (!temp) {
+        printf("Failed to allocate memory on host for temporary currents!\n");
+        return false;
+    }
     for (int nid = 0 ; nid < size; ++nid) {
         temp[nid] = 0.0;
     }
-    this->set_current(offset, size, temp);
+
+    // Send to GPU
+    bool success = this->set_current(offset, size, temp);
     free(temp);
+    return success;
 #else
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = 0.0;
     }
+    return true;
 #endif
 }
 
 
-// GETTERS
 int* State::get_spikes() {
-#ifdef parallel
+#ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->local_spikes, this->recent_spikes,
         this->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    cudaCheckError();
-    return this->local_spikes;
+    cudaSync();
+    if (!cudaCheckError()) {
+        printf("Failed to copy spikes from device to host!\n");
+        return NULL;
+    } else {
+        return this->local_spikes;
+    }
 #else
     return this->recent_spikes;
 #endif
 }
 
 float* State::get_current() {
-#ifdef parallel
+#ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->local_current, this->current,
         this->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
-    cudaCheckError();
-    return this->local_current;
+    cudaSync();
+    if (!cudaCheckError()) {
+        printf("Failed to copy currents from device to host!\n");
+        return NULL;
+    } else {
+        return this->local_current;
+    }
 #else
     return this->current;
 #endif

@@ -11,20 +11,7 @@
 #include "tools.h"
 #include "operations.h"
 
-#ifdef parallel
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#define cudaCheckError() {                                          \
- cudaError_t e=cudaGetLastError();                                 \
- if(e!=cudaSuccess) {                                              \
-   printf("Cuda failure %s:%d: '%s'\n",__FILE__,__LINE__,cudaGetErrorString(e));           \
-   exit(0); \
- }                                                                 \
-}
-
-#endif
+#include "parallel.h"
 
 Environment::Environment () {
     this->num_neurons = 0;
@@ -75,47 +62,67 @@ void Environment::clear_current(int layer_id) {
  * Neuron parameters are tracked in a vector, but the neuron attributes table
  *   is not initialized until this function is called.
  */
-void Environment::build() {
+bool Environment::build() {
     int count = this->num_neurons;
 
     // Build weight matrices
-    for (int i = 0 ; i < this->num_connections ; ++i)
-        this->connections[i].build();
+    for (int i = 0 ; i < this->num_connections ; ++i) {
+        WeightMatrix &conn = this->connections[i];
+        if (!conn.build()) {
+            printf("Failed to allocate %d (%d) -> %d (%d) matrix!\n",
+                conn.from_index, conn.from_size, conn.to_index, conn.to_size);
+            return false;
+        }
+    }
 
-#ifdef parallel
-    cudaMalloc(&this->neuron_parameters, count * sizeof(NeuronParameters));
+#ifdef PARALLEL
+    cudaMalloc((void**)&this->neuron_parameters, count * sizeof(NeuronParameters));
+    if (!cudaCheckError()) {
+        printf("Failed to allocate memory on device for neuron parameters!\n");
+        return false;
+    }
+    
+    // Set up temporary parameters list
     NeuronParameters *temp_params =
         (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
-
-    // Fill in table
+    if (!temp_params) {
+        printf("Failed to allocate memory on host for neuron parameters!\n");
+        return false;
+    }
     for (int i = 0 ; i < count ; ++i) {
         temp_params[i] = this->parameters_vector[i].copy();
     }
 
     // Copy values to GPU
-    cudaDeviceSynchronize();
-    cudaCheckError();
-
-    cudaMemcpy(&this->neuron_parameters, temp_params,
+    cudaMemcpy(this->neuron_parameters, temp_params,
         count * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
-
-    cudaDeviceSynchronize();
-    cudaCheckError();
+    cudaSync();
+    if (!cudaCheckError()) {
+        printf("Failed to copy neuron parameters to device!\n");
+        return false;
+    }
 
     // Free up temporary memory
     free(temp_params);
 
 #else
-    // Then initialize actual arrays
+    // Set up parameters list
+    // New array copy for memory continuity
     this->neuron_parameters = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
-
-    // Fill in table
+    if (!this->neuron_parameters) {
+        printf("Failed to allocate memory for neuron parameters!\n");
+        return false;
+    }
     for (int i = 0 ; i < count ; ++i) {
         this->neuron_parameters[i] = this->parameters_vector[i].copy();
     }
 #endif
-
-    this->state.build(count, this->neuron_parameters);
+    // Build the state.
+    if (!this->state.build(count, this->parameters_vector)) {
+        printf("Failed to build environment state!\n");
+        return false;
+    }
+    return true;
 }
 
 /*
@@ -212,25 +219,25 @@ int Environment::add_neuron(float a, float b, float c, float d) {
  */
 void Environment::cycle() {
     this->activate();
-#ifdef parallel
+#ifdef PARALLEL
     cudaDeviceSynchronize();
     cudaCheckError();
 #endif
 
     this->update_voltages();
-#ifdef parallel
+#ifdef PARALLEL
     cudaDeviceSynchronize();
     cudaCheckError();
 #endif
 
     this->timestep();
-#ifdef parallel
+#ifdef PARALLEL
     cudaDeviceSynchronize();
     cudaCheckError();
 #endif
 
     this->update_weights();
-#ifdef parallel
+#ifdef PARALLEL
     cudaDeviceSynchronize();
     cudaCheckError();
 #endif
@@ -254,7 +261,7 @@ void Environment::activate() {
     //       and move cuda barriers around batches
     for (int cid = 0 ; cid < this->num_connections; ++cid) {
         WeightMatrix &conn = this->connections[cid];
-#ifdef parallel
+#ifdef PARALLEL
         int threads = 32;
         int blocks = ceil((float)(conn.to_size) / threads);
         mult<<<blocks, threads>>>(
@@ -267,7 +274,7 @@ void Environment::activate() {
             current + conn.to_index,
             conn.from_size,
             conn.to_size);
-#ifdef parallel
+#ifdef PARALLEL
         cudaDeviceSynchronize();
         cudaCheckError();
 #endif
@@ -281,7 +288,7 @@ void Environment::activate() {
  */
 void Environment::update_voltages() {
     /* 3. Voltage Updates */
-#ifdef parallel
+#ifdef PARALLEL
     int threads = 32;
     int blocks = ceil((float)(this->num_neurons) / threads);
     izhikevich<<<blocks, threads>>>(
@@ -302,7 +309,7 @@ void Environment::update_voltages() {
  */
 void Environment::timestep() {
     /* 4. Timestep */
-#ifdef parallel
+#ifdef PARALLEL
     int threads = 32;
     int blocks = ceil((float)(this->num_neurons) / threads);
     calc_spikes<<<blocks, threads>>>(

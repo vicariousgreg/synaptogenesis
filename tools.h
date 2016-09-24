@@ -4,7 +4,7 @@
 #include <ctime>
 
 /* Calculates a random float between |fMin| and |fMax| */
-double fRand(double fMin, double fMax);
+float fRand(float fMin, float fMax);
 
 /* Timer class.
  * Can be used to keep track of runtimes.

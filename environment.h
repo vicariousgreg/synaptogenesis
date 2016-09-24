@@ -24,8 +24,10 @@ class Environment {
 
         /* Builds the environment.
          * Allocates memory for various arrays of data.
-         * Calls build() on all weight matrices. */
-        void build();
+         * Calls build() on all weight matrices.
+         * Returns whether allocation was successful.
+         */
+        bool build();
 
         /* Adds a layer to the environment with the given parameters */
         int add_layer(int size, int sign,

@@ -3,7 +3,7 @@
 #include "layer.h"
 #include "tools.h"
 
-#ifdef parallel
+#ifdef PARALLEL
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #endif
@@ -18,24 +18,27 @@ WeightMatrix::WeightMatrix (Layer from_layer, Layer to_layer,
             max_weight(max_weight),
             sign(from_layer.sign) { }
 
-void WeightMatrix::build() {
-#ifdef parallel
+bool WeightMatrix::build() {
+#ifdef PARALLEL
     cudaMalloc(((void**)&this->mData), to_size * from_size * sizeof(float));
+    if (!cudaCheckError()) return false;
 #else
     mData = (float*)malloc(to_size * from_size * sizeof(float));
+    if (mData == NULL) return false;
 #endif
     this->randomize(true, this->max_weight);
+    return true;
 }
 
 void WeightMatrix::randomize(bool self_connected, float max_weight) {
-#ifdef parallel
+#ifdef PARALLEL
     int matrix_size = this->from_size * this->to_size;
     float* temp_matrix = (float*)malloc(matrix_size * sizeof(float));
 #endif
     for (int row = 0 ; row < this->from_size ; ++row) {
         for (int col = 0 ; col < this->to_size ; ++col) {
             if (self_connected || (row != col))
-#ifdef parallel
+#ifdef PARALLEL
                 temp_matrix[row * to_size + col] = fRand(0, max_weight);
 #else
                 this->mData[row * to_size + col] = fRand(0, max_weight);
@@ -43,7 +46,8 @@ void WeightMatrix::randomize(bool self_connected, float max_weight) {
         }
     }
 
-#ifdef parallel
+#ifdef PARALLEL
+    cudaDeviceSynchronize();
     cudaMemcpy(this->mData, temp_matrix, matrix_size * sizeof(float), cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
     free(temp_matrix);

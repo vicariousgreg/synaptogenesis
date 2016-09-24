@@ -3,7 +3,7 @@
 
 #include "environment.h"
 
-#ifdef parallel
+#ifdef PARALLEL
 
 /* Parallel implementation of multiplication function for activation of
  *   neural connections.  Parameters are pointers to locations in various

@@ -2,7 +2,7 @@
 #include <climits>
 #include "environment.h"
 
-#ifdef parallel
+#ifdef PARALLEL
 
 __global__ void mult(int sign, int* spikes, float* weights, float* currents,
             int from_size, int to_size) {

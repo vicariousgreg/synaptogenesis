@@ -5,7 +5,7 @@
 #include "environment.h"
 #include "tools.h"
 
-#ifdef parallel
+#ifdef PARALLEL
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -76,7 +76,7 @@ int main(void) {
     float time = timer.stop("Total time");
     printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
 
-#ifdef parallel
+#ifdef PARALLEL
     check_memory();
 #endif
 

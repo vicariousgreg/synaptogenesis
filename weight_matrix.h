@@ -11,8 +11,9 @@ class WeightMatrix {
         /* Allocates memory for the matrix and initializes it.
          * Implementation depends on parallel flag.
          * If parallel, weights are initialized on the device.
+         * Returns whether the allocation was successful.
          */
-        void build();
+        bool build();
 
         /* Destructor.
          * Frees matrix memory.

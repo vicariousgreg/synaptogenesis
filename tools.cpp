@@ -2,8 +2,8 @@
 #include <cstdio>
 #include "tools.h"
 
-double fRand(double fMin, double fMax) {
-    double f = (double)rand() / RAND_MAX;
+float fRand(float fMin, float fMax) {
+    float f = (float)rand() / RAND_MAX;
     return fMin + f * (fMax - fMin);
 }
 
