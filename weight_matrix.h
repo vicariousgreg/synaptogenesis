@@ -1,6 +1,7 @@
 #ifndef weight_matrix_h
 #define weight_matrix_h
 
+#include "operations.h"
 #include "layer.h"
 
 /* Matrix Type enumeration.
@@ -15,8 +16,8 @@ enum MatrixType {
 
 class WeightMatrix {
     public:
-        WeightMatrix (Layer &from_layer, Layer &to_layer,
-            bool plastic, int delay, float max_weight, MatrixType type);
+        WeightMatrix (Layer &from_layer, Layer &to_layer, bool plastic,
+            int delay, float max_weight, MatrixType type, OPCODE opcode);
 
         /* Allocates memory for the matrix and initializes it.
          * Implementation depends on parallel flag.
@@ -52,9 +53,8 @@ class WeightMatrix {
         // Number of weights in matrix.
         int matrix_size;
 
-        // Sign of operation
-        // TODO: Replace with function
-        int sign;
+        // Connection operation code
+        OPCODE opcode;
 
         // Connection delay
         int delay;

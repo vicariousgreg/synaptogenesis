@@ -94,7 +94,7 @@ void Environment::step_currents() {
     /* 2. Activation */
     // For each weight matrix...
     //   Update Currents using synaptic input
-    //     current += sign * dot ( spikes * weights )
+    //     current = operation ( current , dot ( spikes * weights ) )
     //
     // TODO: optimize order, create batches of parallelizable computations,
     //       and move cuda barriers around batches

@@ -6,22 +6,22 @@
 #include "neuron_parameters.h"
 #include "layer.h"
 #include "weight_matrix.h"
+#include "operations.h"
 
 class Model {
     public:
         Model ();
 
         /* Adds a layer to the environment with the given parameters */
-        int add_layer(int size, int sign,
-            float a, float b, float c, float d);
+        int add_layer(int size, float a, float b, float c, float d);
 
         /* Adds a randomized layer to the environment */
         int add_randomized_layer(int size, int sign);
 
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */
-        int connect_layers(int from_layer, int to_layer,
-            bool plastic, int delay, float max_weight, MatrixType type);
+        int connect_layers(int from_layer, int to_layer, bool plastic,
+            int delay, float max_weight, MatrixType type, OPCODE opcode);
 
         // Neurons
         int num_neurons;

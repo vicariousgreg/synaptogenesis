@@ -1,5 +1,6 @@
 #include "operations.h"
 #include "constants.h"
+#include "weight_matrix.h"
 
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
@@ -22,25 +23,25 @@ void update_currents(WeightMatrix &conn, int* spikes,
 #else
         serial_activate_matrix(
 #endif
-            conn.sign,
             spikes + conn.from_layer.index,
             conn.mData,
             currents + conn.to_layer.index,
             conn.from_layer.size,
             conn.to_layer.size,
-            mask);
+            mask,
+            conn.opcode);
     } else if (conn.type == ONE_TO_ONE) {
 #ifdef PARALLEL
         parallel_activate_vector<<<blocks, threads>>>(
 #else
         serial_activate_vector(
 #endif
-            conn.sign,
             spikes + conn.from_layer.index,
             conn.mData,
             currents + conn.to_layer.index,
             conn.to_layer.size,
-            mask);
+            mask,
+            conn.opcode);
     }
 #ifdef PARALLEL
     cudaCheckError("Failed to calculate connection activation!");
@@ -99,8 +100,20 @@ void update_weights() {
 /************************ PARALLEL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-__global__ void parallel_activate_matrix(int sign, int* spikes, float* weights,
-            float* currents, int from_size, int to_size, int mask) {
+/* Synaptic operations */
+__device__ float calc(OPCODE opcode, float current, float sum) {
+    switch (opcode) {
+        case ADD:  return current + sum;
+        case SUB:  return current - sum;
+        case MULT: return current * sum;
+        case DIV:  return current / sum;
+    }
+    assert(false);
+    return 0.0;
+}
+
+__global__ void parallel_activate_matrix(int* spikes, float* weights,
+        float* currents, int from_size, int to_size, int mask, OPCODE opcode) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (col < to_size) {
@@ -108,23 +121,24 @@ __global__ void parallel_activate_matrix(int sign, int* spikes, float* weights,
         for (int row = 0 ; row < from_size ; ++row) {
             sum += (spikes[row] & mask) * weights[row * to_size + col];
         }
-        currents[col] += sign * sum;
+        currents[col] = calc(opcode, currents[col], sum);
     }
 }
 
-__global__ void parallel_activate_vector(int sign, int* spikes, float* weights,
-            float* currents, int size, int mask) {
+__global__ void parallel_activate_vector(int* spikes, float* weights,
+            float* currents, int size, int mask, OPCODE opcode) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index < size) {
-        currents[index] += sign * (spikes[index] & mask) * weights[index];
+        currents[index] = calc(opcode, currents[index],
+            (spikes[index] & mask) * weights[index]);
     }
 }
 
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-__global__ void parallel_izhikevich(float* voltages, float*recoveries,
+__global__ void parallel_izhikevich(float* voltages, float* recoveries,
         float* currents, NeuronParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -203,21 +217,41 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages,
 /************************** SERIAL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void serial_activate_matrix(int sign, int* spikes, float* weights, float* currents,
-          int from_size, int to_size, int mask) {
+/* Synaptic operations */
+float calc(OPCODE opcode, float current, float sum) {
+    switch (opcode) {
+        case ADD:  return current + sum;
+        case SUB:  return current - sum;
+        case MULT: return current * sum;
+        case DIV:  return current / sum;
+    }
+    throw "Unrecognized connection operation!";
+}
+
+void serial_activate_matrix(int* spikes, float* weights, float* currents,
+                          int from_size, int to_size, int mask, OPCODE opcode) {
+    /*
     for (int row = 0 ; row < from_size ; ++row) {
         for (int col = 0 ; col < to_size ; ++col) {
-            currents[col] +=
-                sign * (spikes[row] & mask) *
-                weights[row*to_size + col];
+            currents[col] = calc(opcode, currents[col],
+                (spikes[row] & mask) * weights[row*to_size + col]);
         }
+    }
+    */
+    for (int col = 0 ; col < to_size ; ++col) {
+        float sum = 0.0;
+        for (int row = 0 ; row < from_size ; ++row) {
+            sum += (spikes[row] & mask) * weights[row*to_size + col];
+        }
+        currents[col] = calc(opcode, currents[col], sum);
     }
 }
 
-void serial_activate_vector(int sign, int* spikes,
-            float* weights, float* currents, int size, int mask) {
+void serial_activate_vector(int* spikes, float* weights,
+                        float* currents, int size, int mask, OPCODE opcode) {
     for (int index = 0 ; index < size ; ++index) {
-        currents[index] += sign * (spikes[index] & mask) * weights[index];
+        currents[index] = calc(opcode, currents[index],
+            (spikes[index] & mask) * weights[index]);
     }
 }
 

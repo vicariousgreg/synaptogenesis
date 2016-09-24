@@ -6,6 +6,7 @@
 #include "model.h"
 #include "weight_matrix.h"
 #include "tools.h"
+#include "operations.h"
 #include "parallel.h"
 
 /* Prints a line for a timestep containing markers for neuron spikes.
@@ -30,15 +31,15 @@ void print_currents(Environment env) {
 
 int main(void) {
     Model model;
-    int size = 800 * 1;
-    int iterations = 500;
+    int size = 800 * 20;
+    int iterations = 5;
 
     int pos = model.add_randomized_layer(size, 1);
     int neg = model.add_randomized_layer(size / 4, -1);
-    model.connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED);
-    model.connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED);
-    model.connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED);
-    model.connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED);
+    model.connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD);
+    model.connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD);
+    model.connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB);
+    model.connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, SUB);
 
     try {
         // Start timer

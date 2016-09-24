@@ -1,8 +1,6 @@
 #ifdef PARALLEL
 
 #include <cstdio>
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
 #include "parallel.h"
 
 void cudaCheckError(const char* msg) {

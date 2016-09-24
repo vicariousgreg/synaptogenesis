@@ -6,14 +6,14 @@
 #include "layer.h"
 #include "constants.h"
 
-WeightMatrix::WeightMatrix (Layer &from_layer, Layer &to_layer,
-        bool plastic, int delay, float max_weight, MatrixType type) :
+WeightMatrix::WeightMatrix (Layer &from_layer, Layer &to_layer, bool plastic,
+                int delay, float max_weight, MatrixType type, OPCODE opcode) :
             from_layer(from_layer),
             to_layer(to_layer),
             plastic(plastic),
             delay(delay),
             max_weight(max_weight),
-            sign(from_layer.sign),
+            opcode(opcode),
             type(type) {
     if (delay > (32 * HISTORY_SIZE - 1))
         throw "Cannot implement connection delay longer than history!";

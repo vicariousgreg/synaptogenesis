@@ -14,11 +14,11 @@ Model::Model () {
  * Connects two layers with a weight matrix.
  * If the layer is plastic, it will learn.
  */
-int Model::connect_layers(int from_layer, int to_layer,
-        bool plastic, int delay, float max_weight, MatrixType type) {
+int Model::connect_layers(int from_layer, int to_layer, bool plastic,
+        int delay, float max_weight, MatrixType type, OPCODE opcode) {
     WeightMatrix matrix = WeightMatrix(
         this->layers[from_layer], this->layers[to_layer],
-        plastic, delay, max_weight, type);
+        plastic, delay, max_weight, type, opcode);
     this->layers[to_layer].add_incoming_connection(matrix);
     this->connections.push_back(matrix);
     return this->num_connections++;
@@ -28,17 +28,15 @@ int Model::connect_layers(int from_layer, int to_layer,
  * Adds a layer to the environment.
  *     Adds the appropriate number of neurons according to the given size.
  *     Neurons are initialized with given parameters a,b,c,d.
- *     |sign| indicates whether the layer is excitatory or inhibitory.
  * Returns the layer's index.
  * TODO: Add more parameters
  */
-int Model::add_layer(int size, int sign,
-        float a, float b, float c, float d) {
+int Model::add_layer(int size, float a, float b, float c, float d) {
     // Index of first neuron for layer
     int start_index = this->num_neurons;
     int layer_index = this->num_layers++;
 
-    this->layers.push_back(Layer(start_index, size, sign));
+    this->layers.push_back(Layer(start_index, size));
 
     // Add neurons.
     for (int i = 0; i < size; ++i) {
@@ -50,13 +48,12 @@ int Model::add_layer(int size, int sign,
 
 /*
  */
-int Model::add_randomized_layer(
-        int size, int sign) {
+int Model::add_randomized_layer(int size, int sign) {
     // Index of first neuron for layer
     int start_index = this->num_neurons;
     int layer_index = this->num_layers++;
 
-    this->layers.push_back(Layer(start_index, size, sign));
+    this->layers.push_back(Layer(start_index, size));
 
     // Add neurons.
     if (sign > 0) {

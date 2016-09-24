@@ -4,9 +4,17 @@
 #include <stdint.h>
 
 #include "neuron_parameters.h"
-#include "weight_matrix.h"
 #include "parallel.h"
 
+class WeightMatrix;
+
+/* Synaptic operation opcode */
+enum OPCODE {
+    ADD,
+    SUB,
+    MULT,
+    DIV
+};
 
 /* Generic versions to obfuscate preprocessor directives. */
 void update_currents(WeightMatrix &conn, int* spikes,
@@ -22,6 +30,8 @@ void update_weights();
 
 #ifdef PARALLEL
 
+__device__ float calc(OPCODE opcode, float current, float sum);
+
 /* Parallel implementation of activation function for activation of
  *   neural connections.  Parameters are pointers to locations in various
  *   value arrays, which allows for optimzation of memory access.  In addition,
@@ -32,14 +42,14 @@ void update_weights();
  *   are located in a column of the matrix.  This is efficient because threads
  *   running siactivate_matrix will access sequential data from one row.
  */
-__global__ void parallel_activate_matrix(int sign, int* spikes, float* weights,
-                   float* currents, int from_size, int to_size, int mask);
+__global__ void parallel_activate_matrix(int* spikes, float* weights,
+        float* currents, int from_size, int to_size, int mask, OPCODE opcode);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
  *   input weight.  Weight vectors represent one-to-one neural connections.
  */
-__global__ void parallel_activate_vector(int sign, int* spikes,
-            float* weights, float* currents, int size, int mask);
+__global__ void parallel_activate_vector(int* spikes, float* weights,
+                    float* currents, int size, int mask, OPCODE opcode);
 
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
@@ -55,15 +65,17 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages, float* recove
 
 #else
 
+float calc(OPCODE opcode, float current, float sum);
+
 /* Serial implementation of activate_matrix function for activation of
  *   neural connections */
-void serial_activate_matrix(int sign, int* spikes, float* weights,
-                float* currents, int from_size, int to_size, int mask);
+void serial_activate_matrix(int* spikes, float* weights, float* currents,
+                        int from_size, int to_size, int mask, OPCODE opcode);
 
 /* Serial implementation of activate_vector function for activation of
  *   neural connections */
-void serial_activate_vector(int sign, int* spikes,
-            float* weights, float* currents, int size, int mask);
+void serial_activate_vector(int* spikes, float* weights, float* currents,
+                                        int size, int mask, OPCODE opcode);
 
 /* Serial implementation of Izhikevich voltage update function */
 void serial_izhikevich(float* voltages, float*recoveries, float* currents,
