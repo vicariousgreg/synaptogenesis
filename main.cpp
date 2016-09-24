@@ -29,9 +29,6 @@ void print_currents(Environment env) {
 }
 
 int main(void) {
-    // Start timer
-    timer.start();
-
     Model model;
     int size = 800 * 1;
     int iterations = 500;
@@ -43,29 +40,29 @@ int main(void) {
     model.connect_layers(neg, pos, true, 1, FULLY_CONNECTED);
     model.connect_layers(neg, neg, true, 1, FULLY_CONNECTED);
 
-    Environment env(model);
     try {
-        env.build();
+        // Start timer
+        timer.start();
+        Environment env(model);
+        timer.stop("Initialization");
+
+        timer.start();
+
+        for (int i = 0 ; i < iterations ; ++i) {
+            //print_values(env);
+            print_spikes(env);
+            //print_currents(env);
+            env.inject_random_current(pos, 5);
+            env.inject_random_current(neg, 2);
+            env.timestep();
+        }
+
+        float time = timer.stop("Total time");
+        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
     } catch (const char* msg) { 
         printf("%s\n", msg);
         return 1;
     }
-
-    timer.stop("Initialization");
-
-    timer.start();
-
-    for (int i = 0 ; i < iterations ; ++i) {
-        //print_values(env);
-        print_spikes(env);
-        //print_currents(env);
-        env.inject_random_current(pos, 5);
-        env.inject_random_current(neg, 2);
-        env.timestep();
-    }
-
-    float time = timer.stop("Total time");
-    printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
 
 #ifdef PARALLEL
     check_memory();

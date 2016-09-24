@@ -6,14 +6,12 @@
 
 class Environment {
     public:
+        /* Builds the neuron model and instantiates the state */
         Environment (Model model);
 
-        /* Builds the environment.
-         * Allocates memory for various arrays of data.
-         * Calls build() on all weight matrices.
-         * Returns whether allocation was successful.
-         */
-        void build();
+        /**********************************************************************
+         *********************** STATE INTERACTION ****************************
+         **********************************************************************/
 
         /* Injects current from the given pointer to the given layer */
         void inject_current(int layer_id, float* input);

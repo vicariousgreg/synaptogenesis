@@ -7,14 +7,38 @@
 #include "operations.h"
 #include "parallel.h"
 
+
 Environment::Environment (Model model)
         : model(model) {
     srand(time(NULL));
     //srand(0);
+
+    // Build the state
+    try {
+        this->state.build(this->model);
+    } catch (const char* msg) {
+        printf("%s\n", msg);
+        printf("Failed to build environment state!\n");
+        throw "Failed to build environment!";
+    }
+
+    // Build weight matrices
+    for (int i = 0 ; i < this->model.num_connections ; ++i) {
+        WeightMatrix &conn = this->model.connections[i];
+        try {
+            conn.build();
+        } catch (const char* msg) {
+            printf("%s\n", msg);
+            printf("Failed to initialize %d x %d matrix!\n",
+                conn.from_layer.size, conn.to_layer.size);
+            throw "Failed to environment!";
+        }
+    }
 }
 
+
 /******************************************************************************
- ************************* GETTER / SETTER ************************************
+ *************************** STATE INTERACTION ********************************
  ******************************************************************************/
 
 int* Environment::get_spikes() {
@@ -41,41 +65,6 @@ void Environment::clear_current(int layer_id) {
     int offset = this->model.layers[layer_id].index;
     int size = this->model.layers[layer_id].size;
     this->state.clear_current(offset, size);
-}
-
-
-/******************************************************************************
- ********************** INITIALIZATION FUNCTIONS ******************************
- ******************************************************************************/
-
-/*
- * Builds the environment.
- * During dynamic construction, instantiation is lazy.
- * Neuron parameters are tracked in a vector, but the neuron attributes table
- *   is not initialized until this function is called.
- */
-void Environment::build() {
-    // Build the state.
-    try {
-        this->state.build(this->model);
-    } catch (const char* msg) {
-        printf("%s\n", msg);
-        printf("Failed to build environment state!\n");
-        throw "Failed to build environment!";
-    }
-
-    // Build weight matrices
-    for (int i = 0 ; i < this->model.num_connections ; ++i) {
-        WeightMatrix &conn = this->model.connections[i];
-        try {
-            conn.build();
-        } catch (const char* msg) {
-            printf("%s\n", msg);
-            printf("Failed to initialize %d x %d matrix!\n",
-                conn.from_layer.size, conn.to_layer.size);
-            throw "Failed to environment!";
-        }
-    }
 }
 
 
