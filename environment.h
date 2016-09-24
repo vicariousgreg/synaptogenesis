@@ -45,7 +45,7 @@ class Environment {
          * 2. Update neuron voltages from currents.
          * 3. Timestep the spikes.
          * 4. Update connection weights for plastic matrices */
-        void cycle();
+        void timestep();
 
         /* Activates neural connections, triggering updates of currents */
         void activate();
@@ -54,7 +54,7 @@ class Environment {
         void update_voltages();
 
         /* Timesteps the spikes, shifting spike bit vectors */
-        void timestep();
+        void cycle_spikes();
 
         /* Updates weights for plastic neural connections.
          * TODO: implement.  This should use STDP variant Hebbian learning */

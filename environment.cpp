@@ -86,10 +86,10 @@ void Environment::build() {
 /*
  * Performs a timestep cycle.
  */
-void Environment::cycle() {
+void Environment::timestep() {
     this->activate();
     this->update_voltages();
-    this->timestep();
+    this->cycle_spikes();
     this->update_weights();
 }
 
@@ -134,7 +134,7 @@ void Environment::update_voltages() {
  * Fills the spike buffer based on voltages and the SPIKE_THRESH.
  * Increments the ages of last spikes, and resets recovery if spiked.
  */
-void Environment::timestep() {
+void Environment::cycle_spikes() {
     /* 4. Timestep */
     calc_spikes(
         this->state.spikes,

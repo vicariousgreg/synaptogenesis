@@ -61,7 +61,7 @@ int main(void) {
         //print_currents(env);
         env.inject_random_current(pos, 5);
         env.inject_random_current(neg, 2);
-        env.cycle();
+        env.timestep();
     }
 
     float time = timer.stop("Total time");
