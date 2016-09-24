@@ -44,7 +44,7 @@ void State::build(Model model) {
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
         NeuronParameters &params = model.neuron_parameters[i];
-        temp_params[i] = params.copy();
+        temp_params[i] = params;
         temp_current[i] = 0;
         temp_voltage[i] = params.c;
         temp_recovery[i] = params.b * params.c;
@@ -91,7 +91,7 @@ void State::build(Model model) {
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
         NeuronParameters &params = model.neuron_parameters[i];
-        this->neuron_parameters[i] = params.copy();
+        this->neuron_parameters[i] = params;
         this->current[i] = 0;
         this->voltage[i] = params.c;
         this->recovery[i] = params.b * params.c;
