@@ -73,9 +73,6 @@ class Environment {
 
         // Network model
         Model model;
-
-    private:
-        NeuronParameters *neuron_parameters;
 };
 
 #endif

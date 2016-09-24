@@ -1,8 +1,8 @@
 #ifndef state_h
 #define state_h
 
-#include <vector>
 #include "neuron_parameters.h"
+#include "model.h"
 
 #define HISTORY_SIZE 8
 
@@ -11,7 +11,7 @@ class State {
         State () {}
         virtual ~State () {}
 
-        bool build(int num_neurons, std::vector<NeuronParameters> neuron_parameters);
+        bool build(Model model);
 
         // SETTERS
         /* If parallel, these will copy data to the device */
@@ -41,6 +41,9 @@ class State {
         int* spikes;
         // Recent points to the most recent integers for spike bit vectors
         int* recent_spikes;
+
+        // Neuron parameters
+        NeuronParameters *neuron_parameters;
 
 #ifdef PARALLEL
         // Locations to store local copies of spikes and currents.

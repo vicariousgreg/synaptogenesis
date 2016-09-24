@@ -1,12 +1,13 @@
 #include <cstdlib>
 #include <cstdio>
-#include <vector>
 #include "state.h"
+#include "model.h"
 #include "tools.h"
 
 #include "parallel.h"
 
-bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_parameters) {
+bool State::build(Model model) {
+    int num_neurons = model.num_neurons;
     this->num_neurons = num_neurons;
 
 #ifdef PARALLEL
@@ -15,7 +16,7 @@ bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_paramete
     this->local_current = (float*)calloc(num_neurons, sizeof(float));
     if (!this->local_spikes or !this->local_current) {
         printf("Failed to allocate space on host for local copies of\n");
-        printf("  neuron variables!\n");
+        printf("  neuron state!\n");
         return false;
     }
 
@@ -24,11 +25,12 @@ bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_paramete
     cudaMalloc(&this->voltage, num_neurons * sizeof(float));
     cudaMalloc(&this->recovery, num_neurons * sizeof(float));
     cudaMalloc(&this->spikes, HISTORY_SIZE * num_neurons * sizeof(int));
+    cudaMalloc(&this->neuron_parameters, num_neurons * sizeof(NeuronParameters));
     // Set up spikes, keep pointer to recent spikes.
     this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
     if (!cudaCheckError()) {
-        printf("Failed to allocate memory on device for neuron variables!\n");
+        printf("Failed to allocate memory on device for neuron state!\n");
         return false;
     }
 
@@ -37,16 +39,20 @@ bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_paramete
     float *temp_voltage = (float*)malloc(num_neurons * sizeof(float));
     float *temp_recovery = (float*)malloc(num_neurons * sizeof(float));
     int *temp_spike = (int*)calloc(num_neurons, HISTORY_SIZE * sizeof(int));
+    NeuronParameters *temp_params =
+        (NeuronParameters*)malloc(num_neurons * sizeof(NeuronParameters));
 
-    if (!temp_current or !temp_voltage or !temp_recovery or !temp_spike) {
+    if (!temp_current or !temp_voltage or !temp_recovery
+            or !temp_spike or !temp_params) {
         printf("Failed to allocate space on host for temporary local copies\n");
-        printf("  of neuron variables!\n");
+        printf("  of neuron state!\n");
         return false;
     }
 
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
-        NeuronParameters &params = neuron_parameters[i];
+        NeuronParameters &params = model.neuron_parameters[i];
+        temp_params[i] = params.copy();
         temp_current[i] = 0;
         temp_voltage[i] = params.c;
         temp_recovery[i] = params.b * params.c;
@@ -61,10 +67,12 @@ bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_paramete
         num_neurons * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(this->spikes, temp_spike,
         num_neurons * HISTORY_SIZE * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->neuron_parameters, temp_params,
+        num_neurons * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
 
     cudaSync();
     if (!cudaCheckError()) {
-        printf("Failed to allocate memory on device for neuron variables!\n");
+        printf("Failed to allocate memory on device for neuron state!\n");
         return false;
     }
 
@@ -73,12 +81,15 @@ bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_paramete
     free(temp_voltage);
     free(temp_recovery);
     free(temp_spike);
+    free(temp_params);
 
 #else
     // Then initialize actual arrays
     this->current = (float*)malloc(num_neurons * sizeof(float));
     this->voltage = (float*)malloc(num_neurons * sizeof(float));
     this->recovery = (float*)malloc(num_neurons * sizeof(float));
+    this->neuron_parameters =
+        (NeuronParameters*)malloc(num_neurons * sizeof(NeuronParameters));
 
     // Set up spikes array
     // Keep track of pointer to least significant word for convenience
@@ -86,13 +97,14 @@ bool State::build(int num_neurons, std::vector<NeuronParameters> neuron_paramete
     this->recent_spikes = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
     if (!this->current or !this->voltage or !this->recovery or !this->spikes) {
-        printf("Failed to allocate space on host for neuron variables!\n");
+        printf("Failed to allocate space on host for neuron state!\n");
         return false;
     }
 
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
-        NeuronParameters &params = neuron_parameters[i];
+        NeuronParameters &params = model.neuron_parameters[i];
+        this->neuron_parameters[i] = params.copy();
         this->current[i] = 0;
         this->voltage[i] = params.c;
         this->recovery[i] = params.b * params.c;

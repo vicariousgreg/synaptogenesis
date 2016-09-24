@@ -62,8 +62,6 @@ void Environment::clear_current(int layer_id) {
  *   is not initialized until this function is called.
  */
 bool Environment::build() {
-    int count = this->model.num_neurons;
-
     // Build weight matrices
     for (int i = 0 ; i < this->model.num_connections ; ++i) {
         WeightMatrix &conn = this->model.connections[i];
@@ -74,50 +72,8 @@ bool Environment::build() {
         }
     }
 
-#ifdef PARALLEL
-    cudaMalloc((void**)&this->neuron_parameters, count * sizeof(NeuronParameters));
-    if (!cudaCheckError()) {
-        printf("Failed to allocate memory on device for neuron parameters!\n");
-        return false;
-    }
-    
-    // Set up temporary parameters list
-    NeuronParameters *temp_params =
-        (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
-    if (!temp_params) {
-        printf("Failed to allocate memory on host for neuron parameters!\n");
-        return false;
-    }
-    for (int i = 0 ; i < count ; ++i) {
-        temp_params[i] = this->model.parameters_vector[i].copy();
-    }
-
-    // Copy values to GPU
-    cudaMemcpy(this->neuron_parameters, temp_params,
-        count * sizeof(NeuronParameters), cudaMemcpyHostToDevice);
-    cudaSync();
-    if (!cudaCheckError()) {
-        printf("Failed to copy neuron parameters to device!\n");
-        return false;
-    }
-
-    // Free up temporary memory
-    free(temp_params);
-
-#else
-    // Set up parameters list
-    // New array copy for memory continuity
-    this->neuron_parameters = (NeuronParameters*)malloc(count * sizeof(NeuronParameters));
-    if (!this->neuron_parameters) {
-        printf("Failed to allocate memory for neuron parameters!\n");
-        return false;
-    }
-    for (int i = 0 ; i < count ; ++i) {
-        this->neuron_parameters[i] = this->model.parameters_vector[i].copy();
-    }
-#endif
     // Build the state.
-    if (!this->state.build(count, this->model.parameters_vector)) {
+    if (!this->state.build(this->model)) {
         printf("Failed to build environment state!\n");
         return false;
     }
@@ -213,7 +169,7 @@ void Environment::update_voltages() {
         this->state.voltage,
         this->state.recovery,
         this->state.current,
-        this->neuron_parameters,
+        this->state.neuron_parameters,
         this->model.num_neurons);
 }
 
@@ -234,7 +190,7 @@ void Environment::timestep() {
         this->state.spikes,
         this->state.voltage,
         this->state.recovery,
-        this->neuron_parameters,
+        this->state.neuron_parameters,
         this->model.num_neurons);
 }
 

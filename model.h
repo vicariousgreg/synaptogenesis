@@ -6,7 +6,6 @@
 #include <cstdlib>
 
 #include "neuron_parameters.h"
-#include "state.h"
 #include "layer.h"
 #include "weight_matrix.h"
 
@@ -39,6 +38,8 @@ class Model {
 
     private:
         friend class Environment;
+        friend class State;
+
         /* Adds a single neuron.
          * This is called from add_layer() */
         int add_neuron(float a, float b, float c, float d);
@@ -52,7 +53,7 @@ class Model {
         vector<WeightMatrix> connections;
 
         // Parameter Vector
-        vector<NeuronParameters> parameters_vector;
+        vector<NeuronParameters> neuron_parameters;
 };
 
 #endif

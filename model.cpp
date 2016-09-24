@@ -97,6 +97,6 @@ int Model::add_randomized_layer(
 // Adds a neuron to the environment.
 // Returns the neuron's index.
 int Model::add_neuron(float a, float b, float c, float d) {
-    this->parameters_vector.push_back(NeuronParameters(a,b,c,d));
+    this->neuron_parameters.push_back(NeuronParameters(a,b,c,d));
     return this->num_neurons++;
 }
