@@ -22,33 +22,29 @@ class IzhikevichDriver : public Driver {
         void build(Model* model);
 
         void step_input();
-        void step_state();
         void step_output();
         void step_weights();
+
+        // SETTERS
+        /* If parallel, these will copy data to the device */
+        void set_input(int layer_id, float* input);
+        void randomize_input(int layer_id, float max);
+        void clear_input(int layer_id);
+
+        // GETTERS
+        float* get_input();
 
         //////////////////////
         /// MODEL SPECIFIC ///
         //////////////////////
-        //
-        // SETTERS
-        /* If parallel, these will copy data to the device */
-        void set_current(int layer_id, float* input);
-        void randomize_current(int layer_id, float max);
-        void clear_current(int layer_id);
-        //
         // GETTERS
         /* If parallel, these will copy data from the device */
         int* get_spikes();
-        float* get_current();
         float* get_voltage();
         float* get_recovery();
 
-        // Network model
-        Model* model;
-
     private:
         // Neuron States
-        float *current;
         float *voltage;
         float *recovery;
 
@@ -60,14 +56,10 @@ class IzhikevichDriver : public Driver {
         // Neuron parameters
         IzhikevichParameters *neuron_parameters;
 
-        // Weight matrices
-        float** weight_matrices;
-
 #ifdef PARALLEL
         // Locations to store device copies of data.
         // When accessed, these values will be copied here from the device.
         int *device_spikes;
-        float *device_current;
         float *device_voltage;
         float *device_recovery;
         int* device_recent_spikes;

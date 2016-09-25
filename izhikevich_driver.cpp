@@ -71,7 +71,7 @@ void IzhikevichDriver::build(Model* model) {
 
     // Local spikes for output reporting
     this->spikes = (int*) allocate_host(num_neurons * HISTORY_SIZE, sizeof(int));
-    this->current = (float*) allocate_host(num_neurons, sizeof(float));
+    this->input = (float*) allocate_host(num_neurons, sizeof(float));
     this->voltage = (float*) allocate_host(num_neurons, sizeof(float));
     this->recovery = (float*) allocate_host(num_neurons, sizeof(float));
     this->neuron_parameters =
@@ -85,15 +85,15 @@ void IzhikevichDriver::build(Model* model) {
         std::string &param_string = model->neuron_parameters[i];
         IzhikevichParameters params = create_parameters(param_string);
         this->neuron_parameters[i] = params;
-        this->current[i] = 0;
+        this->input[i] = 0;
         this->voltage[i] = params.c;
         this->recovery[i] = params.b * params.c;
     }
 
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
-    this->device_current = (float*)
-        allocate_device(num_neurons, sizeof(float), this->current);
+    this->device_input = (float*)
+        allocate_device(num_neurons, sizeof(float), this->input);
     this->device_voltage = (float*)
         allocate_device(num_neurons, sizeof(float), this->voltage);
     this->device_recovery = (float*)
@@ -120,35 +120,33 @@ void IzhikevichDriver::step_input() {
 #ifdef PARALLEL
         iz_update_currents(
             this->model->connections[cid], this->weight_matrices[cid],
-            this->device_spikes, this->device_current, this->model->num_neurons);
+            this->device_spikes, this->device_input, this->model->num_neurons);
 #else
         iz_update_currents(
             this->model->connections[cid], this->weight_matrices[cid],
-            this->spikes, this->current, this->model->num_neurons);
+            this->spikes, this->input, this->model->num_neurons);
 #endif
     }
 }
 
-void IzhikevichDriver::step_state() {
+void IzhikevichDriver::step_output() {
     /* 3. Voltage Updates */
 #ifdef PARALLEL
     iz_update_voltages(
         this->device_voltage,
         this->device_recovery,
-        this->device_current,
+        this->device_input,
         this->device_neuron_parameters,
         this->model->num_neurons);
 #else
     iz_update_voltages(
         this->voltage,
         this->recovery,
-        this->current,
+        this->input,
         this->neuron_parameters,
         this->model->num_neurons);
 #endif
-}
 
-void IzhikevichDriver::step_output() {
     /* 4. Timestep */
 #ifdef PARALLEL
     iz_update_spikes(
@@ -177,44 +175,44 @@ void IzhikevichDriver::step_weights() {
  *************************** STATE INTERACTION ********************************
  ******************************************************************************/
 
-void IzhikevichDriver::set_current(int layer_id, float* input) {
+void IzhikevichDriver::set_input(int layer_id, float* input) {
     int offset = this->model->layers[layer_id].index;
     int size = this->model->layers[layer_id].size;
 #ifdef PARALLEL
     // Send to GPU
-    cudaMemcpy(&this->device_current[offset], input,
+    cudaMemcpy(&this->device_input[offset], input,
         size * sizeof(float), cudaMemcpyHostToDevice);
     cudaCheckError("Failed to set current!");
 #else
     for (int nid = 0 ; nid < size; ++nid) {
-        this->current[nid+offset] = input[nid];
+        this->input[nid+offset] = input[nid];
     }
 #endif
 }
 
-void IzhikevichDriver::randomize_current(int layer_id, float max) {
+void IzhikevichDriver::randomize_input(int layer_id, float max) {
     int size = this->model->layers[layer_id].size;
     int offset = this->model->layers[layer_id].index;
 
     for (int nid = 0 ; nid < size; ++nid) {
-        this->current[nid+offset] = fRand(0, max);
+        this->input[nid+offset] = fRand(0, max);
     }
 #ifdef PARALLEL
     // Send to GPU
-    this->set_current(layer_id, &this->current[offset]);
+    this->set_input(layer_id, &this->input[offset]);
 #endif
 }
 
-void IzhikevichDriver::clear_current(int layer_id) {
+void IzhikevichDriver::clear_input(int layer_id) {
     int size = this->model->layers[layer_id].size;
     int offset = this->model->layers[layer_id].index;
 
     for (int nid = 0 ; nid < size; ++nid) {
-        this->current[nid+offset] = 0.0;
+        this->input[nid+offset] = 0.0;
     }
 #ifdef PARALLEL
     // Send to GPU
-    this->set_current(layer_id, &this->current[offset]);
+    this->set_input(layer_id, &this->input[offset]);
 #endif
 }
 
@@ -229,12 +227,12 @@ int* IzhikevichDriver::get_spikes() {
     return this->recent_spikes;
 }
 
-float* IzhikevichDriver::get_current() {
+float* IzhikevichDriver::get_input() {
 #ifdef PARALLEL
     // Copy from GPU to local location
-    cudaMemcpy(this->current, this->device_current,
+    cudaMemcpy(this->input, this->device_input,
         this->model->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
     cudaCheckError("Failed to copy currents from device to host!");
 #endif
-    return this->current;
+    return this->input;
 }

@@ -61,7 +61,7 @@ void print_outputs(RateEncodingDriver *driver) {
 
 /* Prints a line for a timestep containing neuron currents */
 void print_currents(IzhikevichDriver *driver) {
-    float* currents = driver->get_current();
+    float* currents = driver->get_input();
     for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
         std::cout << currents[nid] << " " ;
     }
@@ -79,8 +79,8 @@ void test_izhikevich(Model* model) {
     timer.start();
     int iterations = 50;
     for (int i = 0 ; i < iterations ; ++i) {
-        driver->randomize_current(0, 5);
-        driver->randomize_current(1, 2);
+        driver->randomize_input(0, 5);
+        driver->randomize_input(1, 2);
         driver->timestep();
         //print_currents(driver);
         print_spikes(driver);

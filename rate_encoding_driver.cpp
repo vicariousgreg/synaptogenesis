@@ -68,8 +68,6 @@ void RateEncodingDriver::step_input() {
     }
 }
 
-void RateEncodingDriver::step_state() { }
-
 void RateEncodingDriver::step_output() {
 #ifdef PARALLEL
     re_update_outputs(
