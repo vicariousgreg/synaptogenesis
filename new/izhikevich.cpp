@@ -9,32 +9,56 @@
 #include "izhikevich_operations.h"
 #include "parallel.h"
 
-// TODO: implement me
-IzhikevichParameters create_parameters(std::string param_string) {
-    float a,b,c,d;
+#define DEF_PARAM(name, a,b,c,d) \
+    static const IzhikevichParameters name = IzhikevichParameters(a,b,c,d);
 
-    if (param_string.compare("random positive")) {
+/* Izhikevich Parameters Table */
+DEF_PARAM(DEFAULT          , 0.02, 0.2 , -70.0, 2   ); // Default
+DEF_PARAM(REGULAR          , 0.02, 0.2 , -65.0, 8   ); // Regular Spiking
+DEF_PARAM(BURSTING         , 0.02, 0.2 , -55.0, 4   ); // Intrinsically Bursting
+DEF_PARAM(CHATTERING       , 0.02, 0.2 , -50.0, 2   ); // Chattering
+DEF_PARAM(FAST             , 0.1 , 0.2 , -65.0, 2   ); // Fast Spiking
+DEF_PARAM(LOW_THRESHOLD    , 0.02, 0.25, -65.0, 2   ); // Low Threshold
+DEF_PARAM(THALAMO_CORTICAL , 0.02, 0.25, -65.0, 0.05); // Thalamo-cortical
+DEF_PARAM(RESONATOR        , 0.1 , 0.26, -65.0, 2   ); // Resonator
+DEF_PARAM(PHOTORECEPTOR    , 0   , 0   , -82.6, 0   ); // Photoreceptor
+DEF_PARAM(HORIZONTAL       , 0   , 0   , -82.6, 0   ); // Horizontal Cell
+
+IzhikevichParameters create_parameters(std::string str) {
+    if (str == "random positive") {
         // (ai; bi) = (0:02; 0:2) and (ci; di) = (-65; 8) + (15;-6)r2
-        a = 0.02;
-        b = 0.2; // increase for higher frequency oscillations
+        float a = 0.02;
+        float b = 0.2; // increase for higher frequency oscillations
 
         float rand = fRand(0, 1);
-        c = -65.0 + (15.0 * rand * rand);
+        float c = -65.0 + (15.0 * rand * rand);
 
         rand = fRand(0, 1);
-        d = 8.0 - (6.0 * (rand * rand));
-    } else if (param_string.compare("random negative")) {
+        float d = 8.0 - (6.0 * (rand * rand));
+        return IzhikevichParameters(a,b,c,d);
+    } else if (str == "random negative") {
         //(ai; bi) = (0:02; 0:25) + (0:08;-0:05)ri and (ci; di)=(-65; 2).
         float rand = fRand(0, 1);
-        a = 0.02 + (0.08 * rand);
+        float a = 0.02 + (0.08 * rand);
 
         rand = fRand(0, 1);
-        b = 0.25 - (0.05 * rand);
+        float b = 0.25 - (0.05 * rand);
 
-        c = -65.0;
-        d = 2.0;
+        float c = -65.0;
+        float d = 2.0;
+        return IzhikevichParameters(a,b,c,d);
     }
-    return IzhikevichParameters(a,b,c,d);
+    else if (str == "default")            return DEFAULT;
+    else if (str == "regular")            return REGULAR;
+    else if (str == "bursting")           return BURSTING;
+    else if (str == "chattering")         return CHATTERING;
+    else if (str == "fast")               return FAST;
+    else if (str == "low_threshold")      return LOW_THRESHOLD;
+    else if (str == "thalamo_cortical")   return THALAMO_CORTICAL;
+    else if (str == "resonator")          return RESONATOR;
+    else if (str == "photoreceptor")      return PHOTORECEPTOR;
+    else if (str == "horizontal")         return HORIZONTAL;
+    else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
 void Izhikevich::build(Model* model) {

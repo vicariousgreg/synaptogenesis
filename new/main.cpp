@@ -8,7 +8,7 @@
 Model* build_model() {
     /* Construct the model */
     Model *model = new Model();
-    int size = 800 * 2090;
+    int size = 800 * 1;
 
     int pos = model->add_layer(size, "random positive");
     int neg = model->add_layer(size / 4, "random negative");
@@ -28,16 +28,22 @@ Driver* build_driver(Model* model) {
 }
 
 int main(void) {
-    Model *model = build_model();
-    printf("Built model.\n");
-    printf("  - neurons     : %10d\n", model->num_neurons);
-    printf("  - layers      : %10d\n", model->num_layers);
-    printf("  - connections : %10d\n", model->num_connections);
+    try {
+        Model *model = build_model();
+        printf("Built model.\n");
+        printf("  - neurons     : %10d\n", model->num_neurons);
+        printf("  - layers      : %10d\n", model->num_layers);
+        printf("  - connections : %10d\n", model->num_connections);
 
-    Driver *driver = build_driver(model);
-    printf("Built driver.\n");
+        Driver *driver = build_driver(model);
+        printf("Built driver.\n");
 
-    //int iterations = 500;
+        //int iterations = 500;
+    } catch (const char* msg) {
+        printf("\n\nERROR: %s\n", msg);
+        printf("Fatal error -- exiting...\n");
+        return 1;
+    }
 
     return 0;
 }
