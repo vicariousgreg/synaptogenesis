@@ -1,5 +1,5 @@
 all:
-	make serial # parallel
+	make parallel
 
 parallel:
 	nvcc -x cu *.cpp -DPARALLEL -o test

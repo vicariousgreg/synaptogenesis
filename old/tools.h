@@ -1,15 +1,10 @@
 #ifndef tools_h
 #define tools_h
 
-#include <cstdlib>
-#include <cstdio>
 #include <ctime>
 
 /* Calculates a random float between |fMin| and |fMax| */
-inline float fRand(float fMin, float fMax) {
-    float f = (float)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
-}
+float fRand(float fMin, float fMax);
 
 /* Timer class.
  * Can be used to keep track of runtimes.
@@ -19,24 +14,19 @@ inline float fRand(float fMin, float fMax) {
 class Timer {
     public:
         /* Sets a start time */
-        void start() {
-            this->start_time = clock();
-        }
+        void start();
 
         /* Calculates elapsed time since last start() call.
          * If |header| is provided, the time will be printed.
          */
-        float stop(const char header[]) {
-            float total = ((float)(clock() - this->start_time)) / CLOCKS_PER_SEC;
-            if (header != NULL) {
-                printf("%s: %f\n", header, total);
-            }
-            return total;
-        }
+        float stop(const char header[]);
         
     private:
         // Timestamp from last start call()
         clock_t start_time;
 };
+
+// Global variable for timer (singleton)
+extern Timer timer;
 
 #endif

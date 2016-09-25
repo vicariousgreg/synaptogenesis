@@ -1,0 +1,6 @@
+class Environment {
+        class State {
+        class Model {
+                class Layer {
+                class WeightMatrix {
+        class NeuronParameters {

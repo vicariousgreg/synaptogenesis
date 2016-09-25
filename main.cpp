@@ -1,19 +1,40 @@
 #include <iostream>
 #include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
-#include "environment.h"
-#include "state.h"
 #include "model.h"
-#include "weight_matrix.h"
+#include "driver.h"
+#include "izhikevich.h"
 #include "tools.h"
-#include "operations.h"
-#include "parallel.h"
+
+Model* build_model() {
+    /* Construct the model */
+    Model *model = new Model();
+    int size = 800 * 20;
+
+    int pos = model->add_layer(size, "random positive");
+    int neg = model->add_layer(size / 4, "random negative");
+    model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD);
+    model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD);
+    model->connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB);
+    model->connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, SUB);
+
+    return model;
+}
+
+Izhikevich* build_driver(Model* model) {
+    /* Construct the driver */
+    Izhikevich *driver = new Izhikevich();
+    driver->build(model);
+    return driver;
+}
 
 /* Prints a line for a timestep containing markers for neuron spikes.
  * If a neuron spikes, an asterisk will be printed.  Otherwise, a space */
-void print_spikes(Environment env) {
-    int* spikes = env.get_spikes();
-    for (int nid = 0 ; nid < env.model.num_neurons ; ++nid) {
+void print_spikes(Izhikevich *driver) {
+    int* spikes = driver->get_spikes();
+    for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
         char c = (spikes[nid] % 2) ? '*' : ' ';
         std::cout << c;
     }
@@ -21,54 +42,50 @@ void print_spikes(Environment env) {
 }
 
 /* Prints a line for a timestep containing neuron currents */
-void print_currents(Environment env) {
-    float* currents = env.get_current();
-    for (int nid = 0 ; nid < env.model.num_neurons ; ++nid) {
-        std::cout << currents[nid] << " ";
+void print_currents(Izhikevich *driver) {
+    float* currents = driver->get_current();
+    for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
+        std::cout << currents[nid] << " " ;
     }
     std::cout << "|\n";
 }
 
 int main(void) {
-    Model model;
-    int size = 800 * 20;
-    int iterations = 50;
-
-    int pos = model.add_randomized_layer(size, 1);
-    int neg = model.add_randomized_layer(size / 4, -1);
-    model.connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD);
-    model.connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD);
-    model.connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB);
-    model.connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, SUB);
+    // Seed random number generator
+    srand(time(NULL));
+    Timer timer = Timer();
 
     try {
         // Start timer
         timer.start();
-        Environment env(model);
+
+        Model *model = build_model();
+        printf("Built model.\n");
+        printf("  - neurons     : %10d\n", model->num_neurons);
+        printf("  - layers      : %10d\n", model->num_layers);
+        printf("  - connections : %10d\n", model->num_connections);
+
+        Izhikevich *driver = build_driver(model);
+        printf("Built driver.\n");
         timer.stop("Initialization");
 
         timer.start();
-
+        int iterations = 50;
         for (int i = 0 ; i < iterations ; ++i) {
-            //print_values(env);
-            //print_spikes(env);
-            //print_currents(env);
-            env.inject_random_current(pos, 5);
-            env.inject_random_current(neg, 2);
-            env.timestep();
+            driver->randomize_current(0, 5);
+            driver->randomize_current(1, 2);
+            driver->timestep();
+            //print_currents(driver);
+            //print_spikes(driver);
         }
 
         float time = timer.stop("Total time");
         printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
-    } catch (const char* msg) { 
-        printf("%s\n", msg);
-        printf("\nFatal error -- exiting...\n");
+    } catch (const char* msg) {
+        printf("\n\nERROR: %s\n", msg);
+        printf("Fatal error -- exiting...\n");
         return 1;
     }
-
-#ifdef PARALLEL
-    check_memory();
-#endif
 
     return 0;
 }

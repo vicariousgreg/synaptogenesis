@@ -1,0 +1,15 @@
+SIMULATION:
+  20,000 neurons
+  Fully connected (20,000 * 20,000 = 400,000,000 weights)
+  50 iterations
+
+SERIAL
+  Initialization: 5.422545
+  Total time: 76.517891
+  Time averaged over 50 iterations: 1.530358
+
+PARALLEL
+  Initialization: 10.081819
+  Total time: 7.613035
+  Time averaged over 50 iterations: 0.152261
+  GPU memory usage: used = 1831.128906, free = 216.746094 MB, total = 2047.875000 MB
