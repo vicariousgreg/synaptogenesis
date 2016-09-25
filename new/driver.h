@@ -36,4 +36,12 @@ class Driver {
  *  containing pointers to starting points for each matrix */
 float** build_weight_matrices(Model* model, int depth);
 
+/* Allocates data on the host */
+void* allocate_host(int count, int size);
+
+#ifdef PARALLEL
+/* Allocates data on the device */
+void* allocate_device(int count, int size, void* source);
+#endif
+
 #endif

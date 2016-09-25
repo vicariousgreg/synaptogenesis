@@ -5,6 +5,25 @@
 #include "tools.h"
 #include "parallel.h"
 
+void* allocate_host(int count, int size) {
+    void* ptr = calloc(count, size);
+    if (ptr == NULL)
+        throw "Failed to allocate space on host for neuron state!";
+    return ptr;
+}
+
+#ifdef PARALLEL
+void* allocate_device(int count, int size, void* source_data) {
+    void* ptr;
+    cudaMalloc(&ptr, count * size);
+    cudaCheckError("Failed to allocate memory on device for neuron state!");
+    if (source_data != NULL)
+        cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to initialize memory on device for neuron state!");
+    return ptr;
+}
+#endif
+
 /* Randomizes matrices */
 void randomize_matrices(Model* model, float** entry_points, int depth) {
     for (int i = 0 ; i < model->num_connections ; ++i) {

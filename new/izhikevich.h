@@ -64,10 +64,14 @@ class Izhikevich : public Driver {
         float** weight_matrices;
 
 #ifdef PARALLEL
-        // Locations to store local copies of spikes and currents.
+        // Locations to store device copies of data.
         // When accessed, these values will be copied here from the device.
-        int* local_spikes;
-        float* local_current;
+        int *device_spikes;
+        float *device_current;
+        float *device_voltage;
+        float *device_recovery;
+        int* device_recent_spikes;
+        IzhikevichParameters* device_neuron_parameters;
 #endif
 
 };
