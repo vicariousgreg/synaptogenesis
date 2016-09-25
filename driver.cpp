@@ -5,6 +5,68 @@
 #include "tools.h"
 #include "parallel.h"
 
+
+float* Driver::get_input() {
+#ifdef PARALLEL
+    // Copy from GPU to local location
+    cudaMemcpy(this->input, this->device_input,
+        this->model->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaCheckError("Failed to copy input from device to host!");
+#endif
+    return this->input;
+}
+
+void* Driver::get_output() {
+#ifdef PARALLEL
+    // Copy from GPU to local location
+    cudaMemcpy(this->output, this->device_output,
+        this->model->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaCheckError("Failed to copy output from device to host!");
+#endif
+    return this->output;
+}
+
+void Driver::set_input(int layer_id, float* input) {
+    int offset = this->model->layers[layer_id].index;
+    int size = this->model->layers[layer_id].size;
+#ifdef PARALLEL
+    // Send to GPU
+    cudaMemcpy(&this->device_input[offset], input,
+        size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to set input!");
+#else
+    for (int nid = 0 ; nid < size; ++nid) {
+        this->input[nid+offset] = input[nid];
+    }
+#endif
+}
+
+void Driver::randomize_input(int layer_id, float max) {
+    int size = this->model->layers[layer_id].size;
+    int offset = this->model->layers[layer_id].index;
+
+    for (int nid = 0 ; nid < size; ++nid) {
+        this->input[nid+offset] = fRand(0, max);
+    }
+#ifdef PARALLEL
+    // Send to GPU
+    this->set_input(layer_id, &this->input[offset]);
+#endif
+}
+
+void Driver::clear_input(int layer_id) {
+    int size = this->model->layers[layer_id].size;
+    int offset = this->model->layers[layer_id].index;
+
+    for (int nid = 0 ; nid < size; ++nid) {
+        this->input[nid+offset] = 0.0;
+    }
+#ifdef PARALLEL
+    // Send to GPU
+    this->set_input(layer_id, &this->input[offset]);
+#endif
+}
+
 void* allocate_host(int count, int size) {
     void* ptr = calloc(count, size);
     if (ptr == NULL)

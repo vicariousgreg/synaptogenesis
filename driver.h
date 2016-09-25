@@ -7,12 +7,11 @@ class Driver {
     public:
         virtual void build(Model* model) = 0;
 
-        virtual void set_input(int layer_id, float* data) = 0;
-        virtual void randomize_input(int layer_id, float max) = 0;
-        virtual void clear_input(int layer_id) = 0;
-        virtual float* get_input() = 0;
-
-        //virtual void* get_output(int layer_id) = 0;
+        float* get_input();
+        void* get_output();
+        void set_input(int layer_id, float* input);
+        void randomize_input(int layer_id, float max);
+        void clear_input(int layer_id);
 
         /* Cycles the environment */
         void timestep() {
@@ -36,7 +35,10 @@ class Driver {
 
     protected:
         // Neuron input
-        float *input;
+        float* input;
+
+        // Neuron output
+        void* output;
 
         // Weight matrices
         float** weight_matrices;
@@ -44,7 +46,8 @@ class Driver {
 #ifdef PARALLEL
         // Locations to store device copies of data.
         // When accessed, these values will be copied here from the device.
-        float *device_input;
+        float* device_input;
+        void* device_output;
 #endif
 };
 

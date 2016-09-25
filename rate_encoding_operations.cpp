@@ -7,7 +7,7 @@
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
-void re_update_inputs(Connection &conn, float* mData, float* outputs,
+void re_update_inputs(Connection &conn, float* mData, void* outputs,
                      float* inputs, int num_neurons) {
 #ifdef PARALLEL
     int threads = 32;
@@ -20,7 +20,7 @@ void re_update_inputs(Connection &conn, float* mData, float* outputs,
 #else
         serial_activate_matrix(
 #endif
-            outputs + conn.from_layer.index,
+            (float*)outputs + conn.from_layer.index,
             mData,
             inputs + conn.to_layer.index,
             conn.from_layer.size,
@@ -32,7 +32,7 @@ void re_update_inputs(Connection &conn, float* mData, float* outputs,
 #else
         serial_activate_vector(
 #endif
-            outputs + conn.from_layer.index,
+            (float*)outputs + conn.from_layer.index,
             mData,
             inputs + conn.to_layer.index,
             conn.to_layer.size,
@@ -43,7 +43,7 @@ void re_update_inputs(Connection &conn, float* mData, float* outputs,
 #endif
 }
 
-void re_update_outputs(float* outputs, float* inputs,
+void re_update_outputs(void* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons) {
 #ifdef PARALLEL
     int threads = 32;
@@ -52,7 +52,7 @@ void re_update_outputs(float* outputs, float* inputs,
 #else
     serial_activation_function(
 #endif
-        outputs,
+        (float*)outputs,
         inputs,
         neuron_params,
         num_neurons);

@@ -20,26 +20,15 @@ class IzhikevichParameters {
 class IzhikevichDriver : public Driver {
     public:
         void build(Model* model);
-
         void step_input();
         void step_output();
         void step_weights();
-
-        // SETTERS
-        /* If parallel, these will copy data to the device */
-        void set_input(int layer_id, float* input);
-        void randomize_input(int layer_id, float max);
-        void clear_input(int layer_id);
-
-        // GETTERS
-        float* get_input();
 
         //////////////////////
         /// MODEL SPECIFIC ///
         //////////////////////
         // GETTERS
         /* If parallel, these will copy data from the device */
-        int* get_spikes();
         float* get_voltage();
         float* get_recovery();
 
@@ -50,11 +39,9 @@ class IzhikevichDriver : public Driver {
 
         // Neuron Spikes
         int* spikes;
-        // Recent points to the most recent integers for spike bit vectors
-        int* recent_spikes;
 
         // Neuron parameters
-        IzhikevichParameters *neuron_parameters;
+        IzhikevichParameters* neuron_parameters;
 
 #ifdef PARALLEL
         // Locations to store device copies of data.
@@ -62,7 +49,6 @@ class IzhikevichDriver : public Driver {
         int *device_spikes;
         float *device_voltage;
         float *device_recovery;
-        int* device_recent_spikes;
         IzhikevichParameters* device_neuron_parameters;
 #endif
 

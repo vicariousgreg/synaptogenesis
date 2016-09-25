@@ -43,7 +43,7 @@ RateEncodingDriver* build_rate_encoding_driver(Model* model) {
 /* Prints a line for a timestep containing markers for neuron spikes.
  * If a neuron spikes, an asterisk will be printed.  Otherwise, a space */
 void print_spikes(IzhikevichDriver *driver) {
-    int* spikes = driver->get_spikes();
+    int* spikes = (int*)driver->get_output();
     for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
         char c = (spikes[nid] % 2) ? '*' : ' ';
         std::cout << c;
@@ -52,7 +52,7 @@ void print_spikes(IzhikevichDriver *driver) {
 }
 
 void print_outputs(RateEncodingDriver *driver) {
-    float* output = driver->get_output();
+    float* output = (float*)driver->get_output();
     for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
         std::cout << output[nid] << " ";
     }

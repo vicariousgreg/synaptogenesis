@@ -7,10 +7,10 @@
 #include "parallel.h"
 
 /* Generic versions to obfuscate preprocessor directives. */
-void re_update_inputs(Connection &conn, float* mData, float* outputs,
+void re_update_inputs(Connection &conn, float* mData, void* outputs,
                      float* inputs, int num_neurons);
 
-void re_update_outputs(float* outputs, float* inputs,
+void re_update_outputs(void* outputs, float* inputs,
                  RateEncodingParameters* neuron_params, int num_neurons);
 
 void re_update_weights();
