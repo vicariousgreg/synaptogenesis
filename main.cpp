@@ -5,7 +5,7 @@
 
 #include "model.h"
 #include "driver.h"
-#include "izhikevich.h"
+#include "izhikevich_driver.h"
 #include "tools.h"
 
 Model* build_model() {
@@ -23,16 +23,16 @@ Model* build_model() {
     return model;
 }
 
-Izhikevich* build_driver(Model* model) {
+IzhikevichDriver* build_driver(Model* model) {
     /* Construct the driver */
-    Izhikevich *driver = new Izhikevich();
+    IzhikevichDriver *driver = new IzhikevichDriver();
     driver->build(model);
     return driver;
 }
 
 /* Prints a line for a timestep containing markers for neuron spikes.
  * If a neuron spikes, an asterisk will be printed.  Otherwise, a space */
-void print_spikes(Izhikevich *driver) {
+void print_spikes(IzhikevichDriver *driver) {
     int* spikes = driver->get_spikes();
     for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
         char c = (spikes[nid] % 2) ? '*' : ' ';
@@ -42,7 +42,7 @@ void print_spikes(Izhikevich *driver) {
 }
 
 /* Prints a line for a timestep containing neuron currents */
-void print_currents(Izhikevich *driver) {
+void print_currents(IzhikevichDriver *driver) {
     float* currents = driver->get_current();
     for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
         std::cout << currents[nid] << " " ;
@@ -65,7 +65,7 @@ int main(void) {
         printf("  - layers      : %10d\n", model->num_layers);
         printf("  - connections : %10d\n", model->num_connections);
 
-        Izhikevich *driver = build_driver(model);
+        IzhikevichDriver *driver = build_driver(model);
         printf("Built driver.\n");
         timer.stop("Initialization");
 

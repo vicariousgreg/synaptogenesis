@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <string>
 
-#include "izhikevich.h"
+#include "izhikevich_driver.h"
 #include "model.h"
 #include "tools.h"
 #include "constants.h"
@@ -65,7 +65,7 @@ IzhikevichParameters create_parameters(std::string str) {
     else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-void Izhikevich::build(Model* model) {
+void IzhikevichDriver::build(Model* model) {
     this->model = model;
     int num_neurons = model->num_neurons;
 
@@ -111,7 +111,7 @@ void Izhikevich::build(Model* model) {
  ************************ TIMESTEP DYNAMICS ***********************************
  ******************************************************************************/
 
-void Izhikevich::step_input() {
+void IzhikevichDriver::step_input() {
     /* 2. Activation */
     // For each weight matrix...
     //   Update Currents using synaptic input
@@ -129,7 +129,7 @@ void Izhikevich::step_input() {
     }
 }
 
-void Izhikevich::step_state() {
+void IzhikevichDriver::step_state() {
     /* 3. Voltage Updates */
 #ifdef PARALLEL
     update_voltages(
@@ -148,7 +148,7 @@ void Izhikevich::step_state() {
 #endif
 }
 
-void Izhikevich::step_output() {
+void IzhikevichDriver::step_output() {
     /* 4. Timestep */
 #ifdef PARALLEL
     update_spikes(
@@ -167,7 +167,7 @@ void Izhikevich::step_output() {
 #endif
 }
 
-void Izhikevich::step_weights() {
+void IzhikevichDriver::step_weights() {
     /* 5. Update weights */
     update_weights();
 }
@@ -177,7 +177,7 @@ void Izhikevich::step_weights() {
  *************************** STATE INTERACTION ********************************
  ******************************************************************************/
 
-void Izhikevich::set_current(int layer_id, float* input) {
+void IzhikevichDriver::set_current(int layer_id, float* input) {
     int offset = this->model->layers[layer_id].index;
     int size = this->model->layers[layer_id].size;
 #ifdef PARALLEL
@@ -192,7 +192,7 @@ void Izhikevich::set_current(int layer_id, float* input) {
 #endif
 }
 
-void Izhikevich::randomize_current(int layer_id, float max) {
+void IzhikevichDriver::randomize_current(int layer_id, float max) {
     int size = this->model->layers[layer_id].size;
     int offset = this->model->layers[layer_id].index;
 
@@ -205,7 +205,7 @@ void Izhikevich::randomize_current(int layer_id, float max) {
 #endif
 }
 
-void Izhikevich::clear_current(int layer_id) {
+void IzhikevichDriver::clear_current(int layer_id) {
     int size = this->model->layers[layer_id].size;
     int offset = this->model->layers[layer_id].index;
 
@@ -219,7 +219,7 @@ void Izhikevich::clear_current(int layer_id) {
 }
 
 
-int* Izhikevich::get_spikes() {
+int* IzhikevichDriver::get_spikes() {
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->spikes, this->device_spikes,
@@ -229,7 +229,7 @@ int* Izhikevich::get_spikes() {
     return this->recent_spikes;
 }
 
-float* Izhikevich::get_current() {
+float* IzhikevichDriver::get_current() {
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->current, this->device_current,

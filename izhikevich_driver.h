@@ -1,5 +1,5 @@
-#ifndef izhikevich_h
-#define izhikevich_h
+#ifndef izhikevich_driver_h
+#define izhikevich_driver_h
 
 #include "driver.h"
 #include "model.h"
@@ -17,7 +17,7 @@ class IzhikevichParameters {
         float d;
 };
 
-class Izhikevich : public Driver {
+class IzhikevichDriver : public Driver {
     public:
         void build(Model* model);
 

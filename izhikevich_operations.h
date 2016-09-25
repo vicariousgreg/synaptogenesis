@@ -1,7 +1,7 @@
 #ifndef izhikevich_operations_h
 #define izhikevich_operations_h
 
-#include "izhikevich.h"
+#include "izhikevich_driver.h"
 #include "model.h"
 #include "constants.h"
 #include "parallel.h"
