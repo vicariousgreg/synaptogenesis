@@ -28,7 +28,7 @@ DEF_PARAM(RESONATOR        , 0.1 , 0.26, -65.0, 2   ); // Resonator
 DEF_PARAM(PHOTORECEPTOR    , 0   , 0   , -82.6, 0   ); // Photoreceptor
 DEF_PARAM(HORIZONTAL       , 0   , 0   , -82.6, 0   ); // Horizontal Cell
 
-IzhikevichParameters create_parameters(std::string str) {
+static IzhikevichParameters create_parameters(std::string str) {
     if (str == "random positive") {
         // (ai; bi) = (0:02; 0:2) and (ci; di) = (-65; 8) + (15;-6)r2
         float a = 0.02;
@@ -118,11 +118,11 @@ void IzhikevichDriver::step_input() {
     //     current = operation ( current , dot ( spikes * weights ) )
     for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
 #ifdef PARALLEL
-        update_currents(
+        iz_update_currents(
             this->model->connections[cid], this->weight_matrices[cid],
             this->device_spikes, this->device_current, this->model->num_neurons);
 #else
-        update_currents(
+        iz_update_currents(
             this->model->connections[cid], this->weight_matrices[cid],
             this->spikes, this->current, this->model->num_neurons);
 #endif
@@ -132,14 +132,14 @@ void IzhikevichDriver::step_input() {
 void IzhikevichDriver::step_state() {
     /* 3. Voltage Updates */
 #ifdef PARALLEL
-    update_voltages(
+    iz_update_voltages(
         this->device_voltage,
         this->device_recovery,
         this->device_current,
         this->device_neuron_parameters,
         this->model->num_neurons);
 #else
-    update_voltages(
+    iz_update_voltages(
         this->voltage,
         this->recovery,
         this->current,
@@ -151,14 +151,14 @@ void IzhikevichDriver::step_state() {
 void IzhikevichDriver::step_output() {
     /* 4. Timestep */
 #ifdef PARALLEL
-    update_spikes(
+    iz_update_spikes(
         this->device_spikes,
         this->device_voltage,
         this->device_recovery,
         this->device_neuron_parameters,
         this->model->num_neurons);
 #else
-    update_spikes(
+    iz_update_spikes(
         this->spikes,
         this->voltage,
         this->recovery,
@@ -169,7 +169,7 @@ void IzhikevichDriver::step_output() {
 
 void IzhikevichDriver::step_weights() {
     /* 5. Update weights */
-    update_weights();
+    iz_update_weights();
 }
 
 

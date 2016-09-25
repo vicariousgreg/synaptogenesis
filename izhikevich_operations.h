@@ -7,16 +7,16 @@
 #include "parallel.h"
 
 /* Generic versions to obfuscate preprocessor directives. */
-void update_currents(Connection &conn, float* mData, int* spikes,
+void iz_update_currents(Connection &conn, float* mData, int* spikes,
                      float* currents, int num_neurons);
 
-void update_voltages(float* voltages, float*recoveries, float* currents,
+void iz_update_voltages(float* voltages, float*recoveries, float* currents,
                     IzhikevichParameters* neuron_params, int num_neurons);
 
-void update_spikes(int* spikes, float* voltages, float* recoveries,
+void iz_update_spikes(int* spikes, float* voltages, float* recoveries,
                  IzhikevichParameters* neuron_params, int num_neurons);
 
-void update_weights();
+void iz_update_weights();
 
 #ifdef PARALLEL
 

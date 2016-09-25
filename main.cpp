@@ -6,12 +6,15 @@
 #include "model.h"
 #include "driver.h"
 #include "izhikevich_driver.h"
+#include "rate_encoding_driver.h"
 #include "tools.h"
+
+static Timer timer = Timer();
 
 Model* build_model() {
     /* Construct the model */
     Model *model = new Model();
-    int size = 800 * 20;
+    int size = 800 * 1;
 
     int pos = model->add_layer(size, "random positive");
     int neg = model->add_layer(size / 4, "random negative");
@@ -23,9 +26,16 @@ Model* build_model() {
     return model;
 }
 
-IzhikevichDriver* build_driver(Model* model) {
+IzhikevichDriver* build_izhikevich_driver(Model* model) {
     /* Construct the driver */
     IzhikevichDriver *driver = new IzhikevichDriver();
+    driver->build(model);
+    return driver;
+}
+
+RateEncodingDriver* build_rate_encoding_driver(Model* model) {
+    /* Construct the driver */
+    RateEncodingDriver *driver = new RateEncodingDriver();
     driver->build(model);
     return driver;
 }
@@ -41,6 +51,14 @@ void print_spikes(IzhikevichDriver *driver) {
     std::cout << "|\n";
 }
 
+void print_outputs(RateEncodingDriver *driver) {
+    float* output = driver->get_output();
+    for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
+        std::cout << output[nid] << " ";
+    }
+    std::cout << "|\n";
+}
+
 /* Prints a line for a timestep containing neuron currents */
 void print_currents(IzhikevichDriver *driver) {
     float* currents = driver->get_current();
@@ -50,10 +68,52 @@ void print_currents(IzhikevichDriver *driver) {
     std::cout << "|\n";
 }
 
+void test_izhikevich(Model* model) {
+    // Start timer
+    timer.start();
+
+    IzhikevichDriver *driver = build_izhikevich_driver(model);
+    printf("Built driver.\n");
+    timer.stop("Initialization");
+
+    timer.start();
+    int iterations = 50;
+    for (int i = 0 ; i < iterations ; ++i) {
+        driver->randomize_current(0, 5);
+        driver->randomize_current(1, 2);
+        driver->timestep();
+        //print_currents(driver);
+        print_spikes(driver);
+    }
+
+    float time = timer.stop("Total time");
+    printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+}
+
+void test_rate_encoding(Model* model) {
+    // Start timer
+    timer.start();
+
+    RateEncodingDriver *driver = build_rate_encoding_driver(model);
+    printf("Built driver.\n");
+    timer.stop("Initialization");
+
+    timer.start();
+    int iterations = 50;
+    for (int i = 0 ; i < iterations ; ++i) {
+        driver->randomize_input(0, 0.5);
+        driver->randomize_input(1, 0.2);
+        driver->timestep();
+        print_outputs(driver);
+    }
+
+    float time = timer.stop("Total time");
+    printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+}
+
 int main(void) {
     // Seed random number generator
     srand(time(NULL));
-    Timer timer = Timer();
 
     try {
         // Start timer
@@ -65,22 +125,9 @@ int main(void) {
         printf("  - layers      : %10d\n", model->num_layers);
         printf("  - connections : %10d\n", model->num_connections);
 
-        IzhikevichDriver *driver = build_driver(model);
-        printf("Built driver.\n");
-        timer.stop("Initialization");
+        //test_rate_encoding(model);
+        test_izhikevich(model);
 
-        timer.start();
-        int iterations = 50;
-        for (int i = 0 ; i < iterations ; ++i) {
-            driver->randomize_current(0, 5);
-            driver->randomize_current(1, 2);
-            driver->timestep();
-            //print_currents(driver);
-            //print_spikes(driver);
-        }
-
-        float time = timer.stop("Total time");
-        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);
         printf("Fatal error -- exiting...\n");

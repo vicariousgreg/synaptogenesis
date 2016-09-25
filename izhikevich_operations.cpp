@@ -5,7 +5,7 @@
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
-void update_currents(Connection &conn, float* mData, int* spikes,
+void iz_update_currents(Connection &conn, float* mData, int* spikes,
                     float* currents, int num_neurons) {
     // Determine which part of spike vector to use based on delay
     int word_index = HISTORY_SIZE - (conn.delay / 32) - 1;
@@ -48,7 +48,7 @@ void update_currents(Connection &conn, float* mData, int* spikes,
 #endif
 }
 
-void update_voltages(float* voltages, float*recoveries, float* currents,
+void iz_update_voltages(float* voltages, float*recoveries, float* currents,
                 IzhikevichParameters* neuron_params, int num_neurons) {
 #ifdef PARALLEL
     int threads = 32;
@@ -68,7 +68,7 @@ void update_voltages(float* voltages, float*recoveries, float* currents,
 #endif
 }
 
-void update_spikes(int* spikes, float* voltages, float* recoveries,
+void iz_update_spikes(int* spikes, float* voltages, float* recoveries,
                  IzhikevichParameters* neuron_params, int num_neurons) {
 #ifdef PARALLEL
     int threads = 32;
@@ -88,7 +88,7 @@ void update_spikes(int* spikes, float* voltages, float* recoveries,
 #endif
 }
 
-void update_weights() {
+void iz_update_weights() {
 #ifdef PARALLEL
     cudaCheckError("Failed to update connection weights!");
 #endif
