@@ -159,7 +159,9 @@ void Izhikevich::step_weights() {
  *************************** STATE INTERACTION ********************************
  ******************************************************************************/
 
-void Izhikevich::set_current(int offset, int size, float* input) {
+void Izhikevich::set_current(int layer_id, float* input) {
+    int offset = this->model->layers[layer_id].index;
+    int size = this->model->layers[layer_id].size;
 #ifdef PARALLEL
     // Send to GPU
     cudaMemcpy(&this->device_current[offset], input,
@@ -172,7 +174,8 @@ void Izhikevich::set_current(int offset, int size, float* input) {
 #endif
 }
 
-void Izhikevich::randomize_current(int offset, int size, float max) {
+void Izhikevich::randomize_current(int layer_id, float max) {
+    int size = this->model->layers[layer_id].size;
 #ifdef PARALLEL
     // Create temporary random array
     float* temp = (float*)malloc(size * sizeof(float));
@@ -184,15 +187,17 @@ void Izhikevich::randomize_current(int offset, int size, float max) {
     }
 
     // Send to GPU
-    this->set_current(offset, size, temp);
+    this->set_current(layer_id, temp);
 #else
+    int offset = this->model->layers[layer_id].index;
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = fRand(0, max);
     }
 #endif
 }
 
-void Izhikevich::clear_current(int offset, int size) {
+void Izhikevich::clear_current(int layer_id) {
+    int size = this->model->layers[layer_id].size;
 #ifdef PARALLEL
     // Create temporary blank array
     float* temp = (float*)malloc(size * sizeof(float));
@@ -204,9 +209,10 @@ void Izhikevich::clear_current(int offset, int size) {
     }
 
     // Send to GPU
-    this->set_current(offset, size, temp);
+    this->set_current(layer_id, temp);
     free(temp);
 #else
+    int offset = this->model->layers[layer_id].index;
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = 0.0;
     }

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
 #include "model.h"
 #include "driver.h"
@@ -28,6 +30,9 @@ Driver* build_driver(Model* model) {
 }
 
 int main(void) {
+    // Seed random number generator
+    srand(time(NULL));
+
     try {
         Model *model = build_model();
         printf("Built model.\n");

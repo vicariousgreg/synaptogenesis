@@ -32,9 +32,9 @@ class Izhikevich : public Driver {
         //
         // SETTERS
         /* If parallel, these will copy data to the device */
-        void set_current(int offset, int size, float* input);
-        void randomize_current(int offset, int size, float max);
-        void clear_current(int offset, int size);
+        void set_current(int layer_id, float* input);
+        void randomize_current(int layer_id, float max);
+        void clear_current(int layer_id);
         //
         // GETTERS
         /* If parallel, these will copy data from the device */
