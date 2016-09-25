@@ -10,15 +10,22 @@ Model::Model () {
     this->num_connections = 0;
 }
 
-/*
- * Connects two layers with a weight matrix.
- * If the layer is plastic, it will learn.
- */
 int Model::connect_layers(int from_layer, int to_layer, bool plastic,
         int delay, float max_weight, MatrixType type, OPCODE opcode) {
-    WeightMatrix matrix = WeightMatrix(
+    WeightMatrix *matrix = new WeightMatrix(
         this->layers[from_layer], this->layers[to_layer],
         plastic, delay, max_weight, type, opcode);
+    this->connections.push_back(matrix);
+    return this->num_connections++;
+}
+
+int Model::connect_layers_shared(int from_layer, int to_layer, int parent_id) {
+    if (this->connections[parent_id]->parent != NULL)
+        throw "Shared connections must refer to non-shared connection!";
+
+    WeightMatrix *matrix = new WeightMatrix(
+        this->layers[from_layer], this->layers[to_layer],
+        this->connections[parent_id]);
     this->connections.push_back(matrix);
     return this->num_connections++;
 }

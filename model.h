@@ -23,6 +23,10 @@ class Model {
         int connect_layers(int from_layer, int to_layer, bool plastic,
             int delay, float max_weight, MatrixType type, OPCODE opcode);
 
+        /* Connects to layers, sharing weights with another connection
+         *   specified by |parent_id| */
+        int connect_layers_shared(int from_layer, int to_layer, int parent_id);
+
         // Neurons
         int num_neurons;
 
@@ -40,7 +44,7 @@ class Model {
 
         // Connection matrices.
         int num_connections;
-        std::vector<WeightMatrix> connections;
+        std::vector<WeightMatrix*> connections;
 
         // Parameter Vector
         std::vector<NeuronParameters> neuron_parameters;

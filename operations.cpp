@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 #include "operations.h"
 #include "constants.h"
 #include "weight_matrix.h"
@@ -5,43 +7,43 @@
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
-void update_currents(WeightMatrix &conn, int* spikes,
+void update_currents(WeightMatrix* conn, int* spikes,
                     float* currents, int num_neurons) {
     // Determine which part of spike vector to use based on delay
-    int word_index = HISTORY_SIZE - (conn.delay / 32) - 1;
-    int mask = 1 << (conn.delay % 32);
+    int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
+    int mask = 1 << (conn->delay % 32);
     spikes = &spikes[num_neurons * word_index];
 
 #ifdef PARALLEL
     int threads = 32;
-    int blocks = ceil((float)(conn.to_layer.size) / threads);
+    int blocks = ceil((float)(conn->to_layer.size) / threads);
 #endif
 
-    if (conn.type == FULLY_CONNECTED) {
+    if (conn->type == FULLY_CONNECTED) {
 #ifdef PARALLEL
         parallel_activate_matrix<<<blocks, threads>>>(
 #else
         serial_activate_matrix(
 #endif
-            spikes + conn.from_layer.index,
-            conn.mData,
-            currents + conn.to_layer.index,
-            conn.from_layer.size,
-            conn.to_layer.size,
+            spikes + conn->from_layer.index,
+            conn->mData,
+            currents + conn->to_layer.index,
+            conn->from_layer.size,
+            conn->to_layer.size,
             mask,
-            conn.opcode);
-    } else if (conn.type == ONE_TO_ONE) {
+            conn->opcode);
+    } else if (conn->type == ONE_TO_ONE) {
 #ifdef PARALLEL
         parallel_activate_vector<<<blocks, threads>>>(
 #else
         serial_activate_vector(
 #endif
-            spikes + conn.from_layer.index,
-            conn.mData,
-            currents + conn.to_layer.index,
-            conn.to_layer.size,
+            spikes + conn->from_layer.index,
+            conn->mData,
+            currents + conn->to_layer.index,
+            conn->to_layer.size,
             mask,
-            conn.opcode);
+            conn->opcode);
     }
 #ifdef PARALLEL
     cudaCheckError("Failed to calculate connection activation!");

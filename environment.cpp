@@ -22,13 +22,13 @@ Environment::Environment (Model model)
 
     // Build weight matrices
     for (int i = 0 ; i < this->model.num_connections ; ++i) {
-        WeightMatrix &conn = this->model.connections[i];
+        WeightMatrix *conn = this->model.connections[i];
         try {
-            conn.build();
+            conn->build();
         } catch (const char* msg) {
             printf("%s\n", msg);
             printf("Failed to initialize %d x %d matrix!\n",
-                conn.from_layer.size, conn.to_layer.size);
+                conn->from_layer.size, conn->to_layer.size);
             throw "Failed to build environment!";
         }
     }
