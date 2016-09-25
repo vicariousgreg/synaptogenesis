@@ -39,7 +39,4 @@ class Timer {
         clock_t start_time;
 };
 
-// Global variable for timer (singleton)
-extern Timer timer;
-
 #endif

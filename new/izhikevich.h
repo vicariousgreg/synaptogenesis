@@ -43,10 +43,10 @@ class Izhikevich : public Driver {
         float* get_voltage();
         float* get_recovery();
 
-    private:
         // Network model
         Model* model;
 
+    private:
         // Neuron States
         float *current;
         float *voltage;

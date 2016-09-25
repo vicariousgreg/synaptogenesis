@@ -6,6 +6,7 @@
 #include "model.h"
 #include "driver.h"
 #include "izhikevich.h"
+#include "tools.h"
 
 Model* build_model() {
     /* Construct the model */
@@ -22,28 +23,64 @@ Model* build_model() {
     return model;
 }
 
-Driver* build_driver(Model* model) {
+Izhikevich* build_driver(Model* model) {
     /* Construct the driver */
-    Driver *driver = new Izhikevich();
+    Izhikevich *driver = new Izhikevich();
     driver->build(model);
     return driver;
+}
+
+/* Prints a line for a timestep containing markers for neuron spikes.
+ * If a neuron spikes, an asterisk will be printed.  Otherwise, a space */
+void print_spikes(Izhikevich *driver) {
+    int* spikes = driver->get_spikes();
+    for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
+        char c = (spikes[nid] % 2) ? '*' : ' ';
+        std::cout << c;
+    }
+    std::cout << "|\n";
+}
+
+/* Prints a line for a timestep containing neuron currents */
+void print_currents(Izhikevich *driver) {
+    float* currents = driver->get_current();
+    for (int nid = 0 ; nid < driver->model->num_neurons ; ++nid) {
+        std::cout << currents[nid] << " " ;
+    }
+    std::cout << "|\n";
 }
 
 int main(void) {
     // Seed random number generator
     srand(time(NULL));
+    Timer timer = Timer();
 
     try {
+        // Start timer
+        timer.start();
+
         Model *model = build_model();
         printf("Built model.\n");
         printf("  - neurons     : %10d\n", model->num_neurons);
         printf("  - layers      : %10d\n", model->num_layers);
         printf("  - connections : %10d\n", model->num_connections);
 
-        Driver *driver = build_driver(model);
+        Izhikevich *driver = build_driver(model);
         printf("Built driver.\n");
+        timer.stop("Initialization");
 
-        //int iterations = 500;
+        timer.start();
+        int iterations = 500;
+        for (int i = 0 ; i < iterations ; ++i) {
+            driver->randomize_current(0, 5);
+            driver->randomize_current(1, 2);
+            driver->timestep();
+            //print_currents(driver);
+            print_spikes(driver);
+        }
+
+        float time = timer.stop("Total time");
+        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);
         printf("Fatal error -- exiting...\n");

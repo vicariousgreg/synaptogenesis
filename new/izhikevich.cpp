@@ -70,7 +70,7 @@ void Izhikevich::build(Model* model) {
     int num_neurons = model->num_neurons;
 
     // Local spikes for output reporting
-    this->spikes = (int*) allocate_host(num_neurons, sizeof(int));
+    this->spikes = (int*) allocate_host(num_neurons * HISTORY_SIZE, sizeof(int));
     this->current = (float*) allocate_host(num_neurons, sizeof(float));
     this->voltage = (float*) allocate_host(num_neurons, sizeof(float));
     this->recovery = (float*) allocate_host(num_neurons, sizeof(float));
@@ -112,41 +112,59 @@ void Izhikevich::build(Model* model) {
  ******************************************************************************/
 
 void Izhikevich::step_input() {
-    float* current = this->current;
-    int* spikes = this->spikes;
-
     /* 2. Activation */
     // For each weight matrix...
     //   Update Currents using synaptic input
     //     current = operation ( current , dot ( spikes * weights ) )
-    //
-    // TODO: optimize order, create batches of parallelizable computations,
-    //       and move cuda barriers around batches
     for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
+#ifdef PARALLEL
         update_currents(
             this->model->connections[cid], this->weight_matrices[cid],
-            spikes, current, this->model->num_neurons);
+            this->device_spikes, this->device_current, this->model->num_neurons);
+#else
+        update_currents(
+            this->model->connections[cid], this->weight_matrices[cid],
+            this->spikes, this->current, this->model->num_neurons);
+#endif
     }
 }
 
 void Izhikevich::step_state() {
     /* 3. Voltage Updates */
+#ifdef PARALLEL
+    update_voltages(
+        this->device_voltage,
+        this->device_recovery,
+        this->device_current,
+        this->device_neuron_parameters,
+        this->model->num_neurons);
+#else
     update_voltages(
         this->voltage,
         this->recovery,
         this->current,
         this->neuron_parameters,
         this->model->num_neurons);
+#endif
 }
 
 void Izhikevich::step_output() {
     /* 4. Timestep */
+#ifdef PARALLEL
+    update_spikes(
+        this->device_spikes,
+        this->device_voltage,
+        this->device_recovery,
+        this->device_neuron_parameters,
+        this->model->num_neurons);
+#else
     update_spikes(
         this->spikes,
         this->voltage,
         this->recovery,
         this->neuron_parameters,
         this->model->num_neurons);
+#endif
 }
 
 void Izhikevich::step_weights() {
@@ -176,46 +194,27 @@ void Izhikevich::set_current(int layer_id, float* input) {
 
 void Izhikevich::randomize_current(int layer_id, float max) {
     int size = this->model->layers[layer_id].size;
-#ifdef PARALLEL
-    // Create temporary random array
-    float* temp = (float*)malloc(size * sizeof(float));
-    if (temp == NULL)
-        throw "Failed to allocate memory on host for temporary currents!";
-
-    for (int nid = 0 ; nid < size; ++nid) {
-        temp[nid] = fRand(0, max);
-    }
-
-    // Send to GPU
-    this->set_current(layer_id, temp);
-#else
     int offset = this->model->layers[layer_id].index;
+
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = fRand(0, max);
     }
+#ifdef PARALLEL
+    // Send to GPU
+    this->set_current(layer_id, &this->current[offset]);
 #endif
 }
 
 void Izhikevich::clear_current(int layer_id) {
     int size = this->model->layers[layer_id].size;
-#ifdef PARALLEL
-    // Create temporary blank array
-    float* temp = (float*)malloc(size * sizeof(float));
-    if (temp == NULL)
-        throw "Failed to allocate memory on host for temporary currents!";
-
-    for (int nid = 0 ; nid < size; ++nid) {
-        temp[nid] = 0.0;
-    }
-
-    // Send to GPU
-    this->set_current(layer_id, temp);
-    free(temp);
-#else
     int offset = this->model->layers[layer_id].index;
+
     for (int nid = 0 ; nid < size; ++nid) {
         this->current[nid+offset] = 0.0;
     }
+#ifdef PARALLEL
+    // Send to GPU
+    this->set_current(layer_id, &this->current[offset]);
 #endif
 }
 
@@ -224,10 +223,10 @@ int* Izhikevich::get_spikes() {
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->spikes, this->device_spikes,
-        this->model->num_neurons * sizeof(int), cudaMemcpyDeviceToHost);
+        this->model->num_neurons * HISTORY_SIZE * sizeof(int), cudaMemcpyDeviceToHost);
     cudaCheckError("Failed to copy spikes from device to host!");
 #endif
-    return this->spikes;
+    return this->recent_spikes;
 }
 
 float* Izhikevich::get_current() {
