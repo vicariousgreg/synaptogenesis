@@ -1,7 +1,7 @@
-#ifndef izhikevich_driver_h
-#define izhikevich_driver_h
+#ifndef izhikevich_state_h
+#define izhikevich_state_h
 
-#include "driver.h"
+#include "state.h"
 #include "model.h"
 
 /* Neuron parameters class.
@@ -17,7 +17,7 @@ class IzhikevichParameters {
         float d;
 };
 
-class IzhikevichDriver : public Driver {
+class IzhikevichState : public State {
     public:
         void build(Model* model);
         void step_input();

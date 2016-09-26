@@ -1,7 +1,7 @@
 #ifndef rate_encoding_operations_h
 #define rate_encoding_operations_h
 
-#include "rate_encoding_driver.h"
+#include "rate_encoding_state.h"
 #include "model.h"
 #include "constants.h"
 #include "parallel.h"

@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <string>
 
-#include "rate_encoding_driver.h"
+#include "rate_encoding_state.h"
 #include "rate_encoding_operations.h"
 #include "model.h"
 #include "tools.h"
@@ -18,7 +18,7 @@ static RateEncodingParameters create_parameters(std::string str) {
     //throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-void RateEncodingDriver::build(Model* model) {
+void RateEncodingState::build(Model* model) {
     this->model = model;
     int num_neurons = model->num_neurons;
 
@@ -51,7 +51,7 @@ void RateEncodingDriver::build(Model* model) {
  ************************ TIMESTEP DYNAMICS ***********************************
  ******************************************************************************/
 
-void RateEncodingDriver::step_input() {
+void RateEncodingState::step_input() {
     // For each weight matrix...
     //   Update Currents using synaptic input
     //     current = operation ( current , dot ( spikes * weights ) )
@@ -68,7 +68,7 @@ void RateEncodingDriver::step_input() {
     }
 }
 
-void RateEncodingDriver::step_output() {
+void RateEncodingState::step_output() {
 #ifdef PARALLEL
     re_update_outputs(
         this->device_output,
@@ -84,6 +84,6 @@ void RateEncodingDriver::step_output() {
 #endif
 }
 
-void RateEncodingDriver::step_weights() {
+void RateEncodingState::step_weights() {
     re_update_weights();
 }

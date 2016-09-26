@@ -1,7 +1,7 @@
-#ifndef rate_encoding_driver_h
-#define rate_encoding_driver_h
+#ifndef rate_encoding_state_h
+#define rate_encoding_state_h
 
-#include "driver.h"
+#include "state.h"
 #include "model.h"
 
 /* Neuron parameters class.
@@ -12,7 +12,7 @@ class RateEncodingParameters {
         float x;
 };
 
-class RateEncodingDriver : public Driver {
+class RateEncodingState : public State {
     public:
         void build(Model* model);
         void step_input();

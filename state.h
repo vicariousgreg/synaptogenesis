@@ -1,9 +1,9 @@
-#ifndef driver_h
-#define driver_h
+#ifndef state_h
+#define state_h
 
 #include "model.h"
 
-class Driver {
+class State {
     public:
         virtual void build(Model* model) = 0;
 

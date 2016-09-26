@@ -1,12 +1,12 @@
 #include <cstdlib>
 
-#include "driver.h"
+#include "state.h"
 #include "model.h"
 #include "tools.h"
 #include "parallel.h"
 
 
-float* Driver::get_input() {
+float* State::get_input() {
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->input, this->device_input,
@@ -16,7 +16,7 @@ float* Driver::get_input() {
     return this->input;
 }
 
-void* Driver::get_output() {
+void* State::get_output() {
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->output, this->device_output,
@@ -26,7 +26,7 @@ void* Driver::get_output() {
     return this->output;
 }
 
-void Driver::set_input(int layer_id, float* input) {
+void State::set_input(int layer_id, float* input) {
     int offset = this->model->layers[layer_id].index;
     int size = this->model->layers[layer_id].size;
 #ifdef PARALLEL
@@ -41,7 +41,7 @@ void Driver::set_input(int layer_id, float* input) {
 #endif
 }
 
-void Driver::randomize_input(int layer_id, float max) {
+void State::randomize_input(int layer_id, float max) {
     int size = this->model->layers[layer_id].size;
     int offset = this->model->layers[layer_id].index;
 
@@ -54,7 +54,7 @@ void Driver::randomize_input(int layer_id, float max) {
 #endif
 }
 
-void Driver::clear_input(int layer_id) {
+void State::clear_input(int layer_id) {
     int size = this->model->layers[layer_id].size;
     int offset = this->model->layers[layer_id].index;
 

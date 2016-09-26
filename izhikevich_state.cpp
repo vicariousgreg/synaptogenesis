@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <string>
 
-#include "izhikevich_driver.h"
+#include "izhikevich_state.h"
 #include "model.h"
 #include "tools.h"
 #include "constants.h"
@@ -65,7 +65,7 @@ static IzhikevichParameters create_parameters(std::string str) {
     else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-void IzhikevichDriver::build(Model* model) {
+void IzhikevichState::build(Model* model) {
     this->model = model;
     int num_neurons = model->num_neurons;
 
@@ -112,7 +112,7 @@ void IzhikevichDriver::build(Model* model) {
  ************************ TIMESTEP DYNAMICS ***********************************
  ******************************************************************************/
 
-void IzhikevichDriver::step_input() {
+void IzhikevichState::step_input() {
     /* 2. Activation */
     // For each weight matrix...
     //   Update Currents using synaptic input
@@ -130,7 +130,7 @@ void IzhikevichDriver::step_input() {
     }
 }
 
-void IzhikevichDriver::step_output() {
+void IzhikevichState::step_output() {
     /* 3. Voltage Updates */
 #ifdef PARALLEL
     iz_update_voltages(
@@ -166,7 +166,7 @@ void IzhikevichDriver::step_output() {
 #endif
 }
 
-void IzhikevichDriver::step_weights() {
+void IzhikevichState::step_weights() {
     /* 5. Update weights */
     iz_update_weights();
 }
