@@ -5,8 +5,6 @@
 
 #include "driver.h"
 #include "rate_encoding_state.h"
-#include "model.h"
-#include "constants.h"
 #include "parallel.h"
 
 

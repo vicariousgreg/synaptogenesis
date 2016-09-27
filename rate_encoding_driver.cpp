@@ -1,8 +1,6 @@
 #include <math.h>
 
 #include "rate_encoding_driver.h"
-#include "rate_encoding_state.h"
-#include "constants.h"
 
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/

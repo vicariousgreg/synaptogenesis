@@ -1,6 +1,44 @@
-#include <cstdlib>
-
 #include "model.h"
+
+Connection::Connection (int conn_id, Layer &from_layer, Layer &to_layer,
+        bool plastic, int delay, float max_weight,
+        ConnectionType type, OPCODE opcode) :
+            id(conn_id),
+            from_layer(from_layer),
+            to_layer(to_layer),
+            plastic(plastic),
+            delay(delay),
+            max_weight(max_weight),
+            opcode(opcode),
+            type(type),
+            parent(-1) {
+    if (delay >= (32 * HISTORY_SIZE))
+        throw "Cannot implement connection delay longer than history!";
+
+    if (type == FULLY_CONNECTED) {
+        this->num_weights = from_layer.size * to_layer.size;
+    } else if (type == ONE_TO_ONE) {
+        if (from_layer.size != to_layer.size) {
+            throw "Cannot connect differently sized layers one-to-one!";
+        } else {
+            this->num_weights = from_layer.size;
+        }
+    }
+}
+
+Connection::Connection(int conn_id,
+        Layer &from_layer, Layer &to_layer, int parent) :
+            id(conn_id),
+            from_layer(from_layer),
+            to_layer(to_layer),
+            parent(parent) {
+    if (type == FULLY_CONNECTED) {
+        this->num_weights = from_layer.size * to_layer.size;
+    } else if (type == ONE_TO_ONE) {
+        this->num_weights = from_layer.size;
+    }
+}
+
 
 Model::Model (std::string driver_string) :
         num_neurons(0),
@@ -37,12 +75,6 @@ int Model::connect_layers_shared(int from_layer, int to_layer, int parent_id) {
     return this->num_connections++;
 }
 
-/*
- * Adds a layer to the environment.
- *     Adds the appropriate number of neurons according to the given size.
- *     Neurons are initialized with given parameters a,b,c,d.
- * Returns the layer's index.
- */
 int Model::add_layer(int size, std::string params) {
     // Index of first neuron for layer
     int start_index = this->num_neurons;
@@ -58,8 +90,6 @@ int Model::add_layer(int size, std::string params) {
     return layer_index;
 }
 
-// Adds a neuron to the environment.
-// Returns the neuron's index.
 int Model::add_neuron(std::string params) {
     this->parameter_strings.push_back(params);
     return this->num_neurons++;

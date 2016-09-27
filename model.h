@@ -17,57 +17,20 @@ class Layer {
                 index(start_index),
                 size(size) {}
 
-        // Layer ID
-        int id;
-
-        // Index of first neuron
-        int index;
-
-        // Size of layer
-        int size;
+        // Layer ID, start index, and size
+        int id, index, size;
 };
 
 class Connection {
     public:
         Connection (int conn_id, Layer &from_layer, Layer &to_layer, bool plastic,
-                int delay, float max_weight, ConnectionType type, OPCODE opcode) :
-                    id(conn_id),
-                    from_layer(from_layer),
-                    to_layer(to_layer),
-                    plastic(plastic),
-                    delay(delay),
-                    max_weight(max_weight),
-                    opcode(opcode),
-                    type(type),
-                    parent(-1) {
-            if (delay >= (32 * HISTORY_SIZE))
-                throw "Cannot implement connection delay longer than history!";
+                int delay, float max_weight, ConnectionType type, OPCODE opcode);
 
-            if (type == FULLY_CONNECTED) {
-                this->num_weights = from_layer.size * to_layer.size;
-            } else if (type == ONE_TO_ONE) {
-                if (from_layer.size != to_layer.size) {
-                    throw "Cannot connect differently sized layers one-to-one!";
-                } else {
-                    this->num_weights = from_layer.size;
-                }
-            }
-        }
-
-        Connection(int conn_id, Layer &from_layer, Layer &to_layer, int parent) :
-                id(conn_id),
-                from_layer(from_layer),
-                to_layer(to_layer),
-                parent(parent) {
-            if (type == FULLY_CONNECTED) {
-                this->num_weights = from_layer.size * to_layer.size;
-            } else if (type == ONE_TO_ONE) {
-                this->num_weights = from_layer.size;
-            }
-        }
+        Connection(int conn_id, Layer &from_layer, Layer &to_layer, int parent);
 
         // Connection ID
-        int id;
+        // ID of parent matrix if this is a shared connection
+        int id, parent;
 
         // Matrix type (see enum)
         ConnectionType type;
@@ -76,22 +39,17 @@ class Connection {
         Layer from_layer, to_layer;
 
         // Number of weights in connection
-        int num_weights;
+        // Connection delay
+        int num_weights, delay;
 
         // Connection operation code
         OPCODE opcode;
-
-        // Connection delay
-        int delay;
 
         // Flag for whether matrix can change via learning
         bool plastic;
 
         // Maximum weight for randomization
         float max_weight;
-
-        // ID of parent matrix if this is a shared connection
-        int parent;
 };
 
 class Model {

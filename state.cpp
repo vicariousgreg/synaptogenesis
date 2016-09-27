@@ -1,7 +1,6 @@
 #include <cstdlib>
 
 #include "state.h"
-#include "model.h"
 #include "tools.h"
 #include "parallel.h"
 
@@ -137,13 +136,13 @@ float** build_weight_matrices(Model* model, int depth) {
     // Skip shared weights because they don't take up extra space
     int total_size = 0;
     for (int i = 0 ; i < model->num_connections ; ++i) {
-        int matrix_size = 0;
-        if (model->connections[i].parent == -1)
-            total_size += model->connections[i].num_weights;
-
+        int matrix_size = model->connections[i].num_weights;
         // If plastic, multiply by depth to make room.
         if (model->connections[i].plastic)
             matrix_size *= depth;
+
+        if (model->connections[i].parent == -1)
+            total_size += matrix_size;
     }
 
     float* matrix_datas;
@@ -164,8 +163,12 @@ float** build_weight_matrices(Model* model, int depth) {
         Connection &conn = model->connections[i];
         if (conn.parent == -1) {
             entry_points[i] = curr_point;
-            // TODO: factor in weight depth for LTP, LTD, etc
-            curr_point += conn.num_weights;
+            // Skip over appropriate amount of memory
+            // Plastic matrices might have additional layers
+            if (conn.plastic)
+                curr_point += (conn.num_weights * depth);
+            else
+                curr_point += conn.num_weights;
         } else {
             entry_points[i] = entry_points[conn.parent];
         }

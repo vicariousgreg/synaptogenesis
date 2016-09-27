@@ -11,9 +11,9 @@
 
 static Timer timer = Timer();
 
-Model* build_model() {
+Model* build_model(std::string driver_name) {
     /* Construct the model */
-    Model *model = new Model("izhikevich");
+    Model *model = new Model(driver_name);
     int size = 800 * 1;
 
     int pos = model->add_layer(size, "random positive");
@@ -34,7 +34,7 @@ int main(void) {
         // Start timer
         timer.start();
 
-        Model *model = build_model();
+        Model *model = build_model("izhikevich");
         printf("Built model.\n");
         printf("  - neurons     : %10d\n", model->num_neurons);
         printf("  - layers      : %10d\n", model->num_layers);

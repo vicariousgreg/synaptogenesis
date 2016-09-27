@@ -5,8 +5,6 @@
 
 #include "driver.h"
 #include "izhikevich_state.h"
-#include "model.h"
-#include "constants.h"
 #include "parallel.h"
 
 class IzhikevichDriver : public Driver {

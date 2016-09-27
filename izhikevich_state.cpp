@@ -3,9 +3,7 @@
 #include <string>
 
 #include "izhikevich_state.h"
-#include "model.h"
 #include "tools.h"
-#include "constants.h"
 #include "parallel.h"
 
 #define DEF_PARAM(name, a,b,c,d) \
