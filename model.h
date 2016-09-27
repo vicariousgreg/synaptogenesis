@@ -40,7 +40,7 @@ class Connection {
                     opcode(opcode),
                     type(type),
                     parent(-1) {
-            if (delay > (32 * HISTORY_SIZE - 1))
+            if (delay >= (32 * HISTORY_SIZE))
                 throw "Cannot implement connection delay longer than history!";
 
             if (type == FULLY_CONNECTED) {
@@ -121,12 +121,12 @@ class Model {
         int num_layers;
         std::vector<Layer> layers;
 
-        // Connection matrices.
+        // Connection matrices
         int num_connections;
         std::vector<Connection> connections;
 
-        // Parameter Vector
-        std::vector<std::string> neuron_parameters;
+        // Parameter strings vector
+        std::vector<std::string> parameter_strings;
 };
 
 #endif

@@ -28,7 +28,7 @@ void RateEncodingState::build(Model* model) {
 
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
-        std::string &param_string = model->neuron_parameters[i];
+        std::string &param_string = model->parameter_strings[i];
         RateEncodingParameters params = create_parameters(param_string);
         this->neuron_parameters[i] = params;
         this->input[i] = 0;

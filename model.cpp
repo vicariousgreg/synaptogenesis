@@ -61,6 +61,6 @@ int Model::add_layer(int size, std::string params) {
 // Adds a neuron to the environment.
 // Returns the neuron's index.
 int Model::add_neuron(std::string params) {
-    this->neuron_parameters.push_back(params);
+    this->parameter_strings.push_back(params);
     return this->num_neurons++;
 }

@@ -1,5 +1,10 @@
 #include "izhikevich_driver.h"
-#include "izhikevich_state.h"
+
+/* Voltage threshold for neuron spiking. */
+#define SPIKE_THRESH 30
+
+/* Euler resolution for voltage update. */
+#define EULER_RES 10
 
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/

@@ -129,8 +129,8 @@ int main(void) {
         printf("  - layers      : %10d\n", model->num_layers);
         printf("  - connections : %10d\n", model->num_connections);
 
-        test_rate_encoding(model);
-        //test_izhikevich(model);
+        //test_rate_encoding(model);
+        test_izhikevich(model);
 
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);
