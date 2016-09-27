@@ -7,6 +7,7 @@
 #include "state.h"
 #include "izhikevich_state.h"
 #include "izhikevich_driver.h"
+#include "rate_encoding_driver.h"
 #include "rate_encoding_state.h"
 #include "tools.h"
 
@@ -75,7 +76,6 @@ void test_izhikevich(Model* model) {
 
     IzhikevichDriver driver;
     driver.build(model);
-    IzhikevichState *state = build_izhikevich_state(model);
     printf("Built state.\n");
     timer.stop("Initialization");
 
@@ -97,17 +97,18 @@ void test_rate_encoding(Model* model) {
     // Start timer
     timer.start();
 
-    RateEncodingState *state = build_rate_encoding_state(model);
+    RateEncodingDriver driver;
+    driver.build(model);
     printf("Built state.\n");
     timer.stop("Initialization");
 
     timer.start();
     int iterations = 50;
     for (int i = 0 ; i < iterations ; ++i) {
-        state->randomize_input(0, 0.5);
-        state->randomize_input(1, 0.2);
-        state->timestep();
-        print_outputs(state);
+        driver.state->randomize_input(0, 0.5);
+        driver.state->randomize_input(1, 0.2);
+        driver.timestep();
+        print_outputs((RateEncodingState*)driver.state);
     }
 
     float time = timer.stop("Total time");

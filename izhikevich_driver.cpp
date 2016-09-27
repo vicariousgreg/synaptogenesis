@@ -58,8 +58,6 @@ void IzhikevichDriver::step_output() {
 }
 
 void IzhikevichDriver::step_weights() {
-    IzhikevichState *iz_state = (IzhikevichState*) this->state;
-
     /* 5. Update weights */
 #ifdef PARALLEL
     cudaCheckError("Failed to update connection weights!");

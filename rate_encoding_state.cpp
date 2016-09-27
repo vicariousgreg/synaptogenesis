@@ -3,7 +3,6 @@
 #include <string>
 
 #include "rate_encoding_state.h"
-#include "rate_encoding_operations.h"
 #include "model.h"
 #include "tools.h"
 #include "constants.h"
@@ -45,45 +44,4 @@ void RateEncodingState::build(Model* model) {
         allocate_device(num_neurons, sizeof(RateEncodingParameters), this->neuron_parameters);
 #endif
     this->weight_matrices = build_weight_matrices(model, 1);
-}
-
-/******************************************************************************
- ************************ TIMESTEP DYNAMICS ***********************************
- ******************************************************************************/
-
-void RateEncodingState::step_input() {
-    // For each weight matrix...
-    //   Update Currents using synaptic input
-    //     current = operation ( current , dot ( spikes * weights ) )
-    for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
-#ifdef PARALLEL
-        re_update_inputs(
-            this->model->connections[cid], this->weight_matrices[cid],
-            this->device_output, this->device_input, this->model->num_neurons);
-#else
-        re_update_inputs(
-            this->model->connections[cid], this->weight_matrices[cid],
-            this->output, this->input, this->model->num_neurons);
-#endif
-    }
-}
-
-void RateEncodingState::step_output() {
-#ifdef PARALLEL
-    re_update_outputs(
-        this->device_output,
-        this->device_input,
-        this->device_neuron_parameters,
-        this->model->num_neurons);
-#else
-    re_update_outputs(
-        this->output,
-        this->input,
-        this->neuron_parameters,
-        this->model->num_neurons);
-#endif
-}
-
-void RateEncodingState::step_weights() {
-    re_update_weights();
 }

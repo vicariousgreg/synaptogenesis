@@ -14,18 +14,11 @@ class RateEncodingParameters {
 
 class RateEncodingState : public State {
     public:
-        void timestep() {
-            this->step_input();
-            this->step_output();
-            this->step_weights();
-        }
-
         void build(Model* model);
-        void step_input();
-        void step_output();
-        void step_weights();
 
     private:
+        friend class RateEncodingDriver;
+
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;
 

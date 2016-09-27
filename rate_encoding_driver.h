@@ -1,19 +1,27 @@
-#ifndef rate_encoding_operations_h
-#define rate_encoding_operations_h
+#ifndef rate_encoding_odriver_hperations_h
+#define rate_encoding_driver_h
 
+#include "driver.h"
 #include "rate_encoding_state.h"
 #include "model.h"
 #include "constants.h"
 #include "parallel.h"
 
+
+class RateEncodingDriver : public Driver {
+    public:
+        RateEncodingDriver () {
+            this->state = new RateEncodingState();
+        }
+
+        void step_input();
+        void step_output();
+        void step_weights();
+};
+
 /* Generic versions to obfuscate preprocessor directives. */
 void re_update_inputs(Connection &conn, float* mData, void* outputs,
                      float* inputs, int num_neurons);
-
-void re_update_outputs(void* outputs, float* inputs,
-                 RateEncodingParameters* neuron_params, int num_neurons);
-
-void re_update_weights();
 
 #ifdef PARALLEL
 

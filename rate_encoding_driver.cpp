@@ -1,7 +1,54 @@
 #include <math.h>
 
-#include "rate_encoding_operations.h"
+#include "rate_encoding_driver.h"
+#include "rate_encoding_state.h"
 #include "constants.h"
+
+void RateEncodingDriver::step_input() {
+    RateEncodingState* state = (RateEncodingState*) this->state;
+
+    // For each weight matrix...
+    //   Update Currents using synaptic input
+    //     current = operation ( current , dot ( spikes * weights ) )
+    for (int cid = 0 ; cid < state->model->num_connections; ++cid) {
+#ifdef PARALLEL
+        re_update_inputs(
+            state->model->connections[cid], state->weight_matrices[cid],
+            state->device_output, state->device_input, state->model->num_neurons);
+#else
+        re_update_inputs(
+            state->model->connections[cid], state->weight_matrices[cid],
+            state->output, state->input, state->model->num_neurons);
+#endif
+    }
+}
+
+void RateEncodingDriver::step_output() {
+    RateEncodingState* state = (RateEncodingState*) this->state;
+
+#ifdef PARALLEL
+    int threads = 32;
+    int blocks = ceil((float)(this->model->num_neurons) / threads);
+    parallel_activation_function<<<blocks, threads>>>(
+        (float*)state->device_output,
+        state->device_input,
+        state->device_neuron_parameters,
+        this->model->num_neurons);
+    cudaCheckError("Failed to update neuron output!");
+#else
+    serial_activation_function(
+        (float*)state->output,
+        state->input,
+        state->neuron_parameters,
+        this->model->num_neurons);
+#endif
+}
+
+void RateEncodingDriver::step_weights() {
+#ifdef PARALLEL
+    cudaCheckError("Failed to update connection weights!");
+#endif
+}
 
 
 /*****************************************************************************/
@@ -12,14 +59,8 @@ void re_update_inputs(Connection &conn, float* mData, void* outputs,
 #ifdef PARALLEL
     int threads = 32;
     int blocks = ceil((float)(conn.to_layer.size) / threads);
-#endif
-
     if (conn.type == FULLY_CONNECTED) {
-#ifdef PARALLEL
         parallel_activate_matrix<<<blocks, threads>>>(
-#else
-        serial_activate_matrix(
-#endif
             (float*)outputs + conn.from_layer.index,
             mData,
             inputs + conn.to_layer.index,
@@ -27,47 +68,34 @@ void re_update_inputs(Connection &conn, float* mData, void* outputs,
             conn.to_layer.size,
             conn.opcode);
     } else if (conn.type == ONE_TO_ONE) {
-#ifdef PARALLEL
         parallel_activate_vector<<<blocks, threads>>>(
-#else
-        serial_activate_vector(
-#endif
             (float*)outputs + conn.from_layer.index,
             mData,
             inputs + conn.to_layer.index,
             conn.to_layer.size,
             conn.opcode);
     }
-#ifdef PARALLEL
     cudaCheckError("Failed to calculate connection activation!");
-#endif
-}
-
-void re_update_outputs(void* outputs, float* inputs,
-                RateEncodingParameters* neuron_params, int num_neurons) {
-#ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(num_neurons) / threads);
-    parallel_activation_function<<<blocks, threads>>>(
 #else
-    serial_activation_function(
-#endif
-        (float*)outputs,
-        inputs,
-        neuron_params,
-        num_neurons);
 
-#ifdef PARALLEL
-    cudaCheckError("Failed to update neuron output!");
+    if (conn.type == FULLY_CONNECTED) {
+        serial_activate_matrix(
+            (float*)outputs + conn.from_layer.index,
+            mData,
+            inputs + conn.to_layer.index,
+            conn.from_layer.size,
+            conn.to_layer.size,
+            conn.opcode);
+    } else if (conn.type == ONE_TO_ONE) {
+        serial_activate_vector(
+            (float*)outputs + conn.from_layer.index,
+            mData,
+            inputs + conn.to_layer.index,
+            conn.to_layer.size,
+            conn.opcode);
+    }
 #endif
 }
-
-void re_update_weights() {
-#ifdef PARALLEL
-    cudaCheckError("Failed to update connection weights!");
-#endif
-}
-
 
 #ifdef PARALLEL
 /*****************************************************************************/
