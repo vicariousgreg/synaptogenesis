@@ -10,11 +10,7 @@ class IzhikevichParameters {
     public:
         IzhikevichParameters(float a, float b, float c, float d) :
                 a(a), b(b), c(c), d(d) {}
-
-        float a;
-        float b;
-        float c;
-        float d;
+        float a, b, c, d;
 };
 
 class IzhikevichState : public State {

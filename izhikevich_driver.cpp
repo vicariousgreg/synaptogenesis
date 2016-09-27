@@ -25,16 +25,15 @@ void IzhikevichDriver::step_output() {
     int num_neurons = this->model->num_neurons;
 
 #ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(num_neurons) / threads);
-    parallel_izhikevich<<<blocks, threads>>>(
+    int blocks = calc_blocks(num_neurons);
+    parallel_izhikevich<<<blocks, THREADS>>>(
         iz_state->device_voltage,
         iz_state->device_recovery,
         iz_state->device_input,
         iz_state->device_neuron_parameters,
         num_neurons);
     cudaCheckError("Failed to update neuron voltages!");
-    parallel_calc_spikes<<<blocks, threads>>>(
+    parallel_calc_spikes<<<blocks, THREADS>>>(
         iz_state->device_spikes,
         iz_state->device_voltage,
         iz_state->device_recovery,
@@ -76,10 +75,9 @@ void iz_update_currents(Connection &conn, float* mData, int* spikes,
     spikes = &spikes[num_neurons * word_index];
 
 #ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(conn.to_layer.size) / threads);
+    int blocks = calc_blocks(conn.to_layer.size);
     if (conn.type == FULLY_CONNECTED) {
-        parallel_activate_matrix<<<blocks, threads>>>(
+        parallel_activate_matrix<<<blocks, THREADS>>>(
             spikes + conn.from_layer.index,
             mData,
             currents + conn.to_layer.index,
@@ -88,7 +86,7 @@ void iz_update_currents(Connection &conn, float* mData, int* spikes,
             mask,
             conn.opcode);
     } else if (conn.type == ONE_TO_ONE) {
-        parallel_activate_vector<<<blocks, threads>>>(
+        parallel_activate_vector<<<blocks, THREADS>>>(
             spikes + conn.from_layer.index,
             mData,
             currents + conn.to_layer.index,

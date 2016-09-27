@@ -10,15 +10,15 @@ void RateEncodingDriver::step_input() {
     // For each weight matrix...
     //   Update Currents using synaptic input
     //     current = operation ( current , dot ( spikes * weights ) )
-    for (int cid = 0 ; cid < state->model->num_connections; ++cid) {
+    for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
 #ifdef PARALLEL
         re_update_inputs(
-            state->model->connections[cid], state->weight_matrices[cid],
-            state->device_output, state->device_input, state->model->num_neurons);
+            this->model->connections[cid], state->weight_matrices[cid],
+            state->device_output, state->device_input, this->model->num_neurons);
 #else
         re_update_inputs(
-            state->model->connections[cid], state->weight_matrices[cid],
-            state->output, state->input, state->model->num_neurons);
+            this->model->connections[cid], state->weight_matrices[cid],
+            state->output, state->input, this->model->num_neurons);
 #endif
     }
 }
@@ -27,9 +27,8 @@ void RateEncodingDriver::step_output() {
     RateEncodingState* state = (RateEncodingState*) this->state;
 
 #ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(this->model->num_neurons) / threads);
-    parallel_activation_function<<<blocks, threads>>>(
+    int blocks = calc_blocks(this->model->num_neurons);
+    parallel_activation_function<<<blocks, THREADS>>>(
         (float*)state->device_output,
         state->device_input,
         state->device_neuron_parameters,
@@ -57,10 +56,9 @@ void RateEncodingDriver::step_weights() {
 void re_update_inputs(Connection &conn, float* mData, void* outputs,
                      float* inputs, int num_neurons) {
 #ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(conn.to_layer.size) / threads);
+    int blocks = calc_blocks(conn.to_layer.size);
     if (conn.type == FULLY_CONNECTED) {
-        parallel_activate_matrix<<<blocks, threads>>>(
+        parallel_activate_matrix<<<blocks, THREADS>>>(
             (float*)outputs + conn.from_layer.index,
             mData,
             inputs + conn.to_layer.index,
@@ -68,7 +66,7 @@ void re_update_inputs(Connection &conn, float* mData, void* outputs,
             conn.to_layer.size,
             conn.opcode);
     } else if (conn.type == ONE_TO_ONE) {
-        parallel_activate_vector<<<blocks, threads>>>(
+        parallel_activate_vector<<<blocks, THREADS>>>(
             (float*)outputs + conn.from_layer.index,
             mData,
             inputs + conn.to_layer.index,

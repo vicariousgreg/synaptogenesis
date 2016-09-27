@@ -9,6 +9,12 @@
 #include "device_launch_parameters.h"
 #include "assert.h"
 
+#define THREADS 32
+
+inline int calc_blocks(int computations) {
+    return (float) computations / THREADS;
+}
+
 inline void cudaSync() {
     cudaDeviceSynchronize();
 }
