@@ -37,9 +37,9 @@ void iz_update_currents(Connection &conn, float* mData, int* spikes,
  
 /* This parallel kernel calculates the input to one neuron, the weights of which
  *   are located in a column of the matrix.  This is efficient because threads
- *   running siactivate_matrix will access sequential data from one row.
+ *   running calc_matrix will access sequential data from one row.
  */
-__global__ void parallel_activate_matrix(int* spikes, float* weights,
+__global__ void parallel_calc_matrix(int* spikes, float* weights,
         float* currents, int from_size, int to_size, int mask, OPCODE opcode);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
@@ -62,9 +62,9 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages, float* recove
 
 #else
 
-/* Serial implementation of activate_matrix function for activation of
+/* Serial implementation of calc_matrix function for activation of
  *   neural connections */
-void serial_activate_matrix(int* spikes, float* weights, float* currents,
+void serial_calc_matrix(int* spikes, float* weights, float* currents,
                         int from_size, int to_size, int mask, OPCODE opcode);
 
 /* Serial implementation of activate_vector function for activation of
@@ -73,7 +73,7 @@ void serial_activate_vector(int* spikes, float* weights, float* currents,
                                         int size, int mask, OPCODE opcode);
 
 /* Serial implementation of Izhikevich voltage update function */
-void serial_izhikevich(float* voltages, float*recoveries, float* currents,
+void serial_izhikevich(float* voltages, float* recoveries, float* currents,
                 IzhikevichParameters* neuron_params, int num_neurons);
 
 /* Serial implementation of spike update function */

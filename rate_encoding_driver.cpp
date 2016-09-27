@@ -11,7 +11,7 @@
 void RateEncodingDriver::step_connection_fully_connected(Connection &conn) {
 #ifdef PARALLEL
     int blocks = calc_blocks(conn.to_layer.size);
-    parallel_activate_matrix<<<blocks, THREADS>>>(
+    parallel_calc_matrix<<<blocks, THREADS>>>(
         (float*)this->re_state->device_output + conn.from_layer.index,
         this->re_state->get_matrix(conn.id),
         this->re_state->device_input + conn.to_layer.index,
@@ -20,7 +20,7 @@ void RateEncodingDriver::step_connection_fully_connected(Connection &conn) {
         conn.opcode);
     cudaCheckError("Failed to calculate connection activation!");
 #else
-    serial_activate_matrix(
+    serial_calc_matrix(
         (float*)this->re_state->output + conn.from_layer.index,
         this->re_state->get_matrix(conn.id),
         this->re_state->input + conn.to_layer.index,
@@ -83,7 +83,7 @@ void RateEncodingDriver::step_weights() {
 /************************ PARALLEL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-__global__ void parallel_activate_matrix(float* outputs, float* weights,
+__global__ void parallel_calc_matrix(float* outputs, float* weights,
         float* inputs, int from_size, int to_size, OPCODE opcode) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -119,7 +119,7 @@ __global__ void parallel_activation_function(float* outputs, float* inputs,
 /************************** SERIAL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void serial_activate_matrix(float* outputs, float* weights, float* inputs,
+void serial_calc_matrix(float* outputs, float* weights, float* inputs,
                         int from_size, int to_size, OPCODE opcode) {
     // IMPORTANT:
     // Serial implementation is faster if matrix is interpreted in a transposed

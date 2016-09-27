@@ -13,7 +13,7 @@ void IzhikevichDriver::step_connection_fully_connected(Connection &conn) {
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
     int blocks = calc_blocks(conn.to_layer.size);
-    parallel_activate_matrix<<<blocks, THREADS>>>(
+    parallel_calc_matrix<<<blocks, THREADS>>>(
         spikes + conn.from_layer.index,
         this->iz_state->get_matrix(conn.id),
         this->iz_state->device_input + conn.to_layer.index,
@@ -25,7 +25,7 @@ void IzhikevichDriver::step_connection_fully_connected(Connection &conn) {
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    serial_activate_matrix(
+    serial_calc_matrix(
         spikes + conn.from_layer.index,
         this->state->get_matrix(conn.id),
         this->iz_state->input + conn.to_layer.index,
@@ -113,7 +113,7 @@ void IzhikevichDriver::step_weights() {
 /************************ PARALLEL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-__global__ void parallel_activate_matrix(int* spikes, float* weights,
+__global__ void parallel_calc_matrix(int* spikes, float* weights,
         float* currents, int from_size, int to_size, int mask, OPCODE opcode) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -218,7 +218,7 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages,
 /************************** SERIAL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void serial_activate_matrix(int* spikes, float* weights, float* currents,
+void serial_calc_matrix(int* spikes, float* weights, float* currents,
                           int from_size, int to_size, int mask, OPCODE opcode) {
     // IMPORTANT:
     // Serial implementation is faster if matrix is interpreted in a transposed
@@ -242,7 +242,7 @@ void serial_activate_vector(int* spikes, float* weights,
     }
 }
 
-void serial_izhikevich(float* voltages, float*recoveries, float* currents,
+void serial_izhikevich(float* voltages, float* recoveries, float* currents,
                 IzhikevichParameters* neuron_params, int num_neurons) {
     float voltage, recovery, current, delta_v;
     IzhikevichParameters *params;

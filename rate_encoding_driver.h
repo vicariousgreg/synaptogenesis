@@ -23,10 +23,6 @@ class RateEncodingDriver : public Driver {
         RateEncodingState *re_state;
 };
 
-/* Generic versions to obfuscate preprocessor directives. */
-void re_update_inputs(Connection &conn, float* mData, void* outputs,
-                     float* inputs, int num_neurons);
-
 #ifdef PARALLEL
 
 /* Parallel implementation of activation function for activation of
@@ -37,9 +33,9 @@ void re_update_inputs(Connection &conn, float* mData, void* outputs,
  
 /* This parallel kernel calculates the input to one neuron, the weights of which
  *   are located in a column of the matrix.  This is efficient because threads
- *   running siactivate_matrix will access sequential data from one row.
+ *   running calc_matrix will access sequential data from one row.
  */
-__global__ void parallel_activate_matrix(float* outputs, float* weights,
+__global__ void parallel_calc_matrix(float* outputs, float* weights,
         float* inputs, int from_size, int to_size, OPCODE opcode);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
@@ -53,9 +49,9 @@ __global__ void parallel_activation_function(float* outputs, float* inputs,
 
 #else
 
-/* Serial implementation of activate_matrix function for activation of
+/* Serial implementation of calc_matrix function for activation of
  *   neural connections */
-void serial_activate_matrix(float* outputs, float* weights, float* inputs,
+void serial_calc_matrix(float* outputs, float* weights, float* inputs,
                         int from_size, int to_size, OPCODE opcode);
 
 /* Serial implementation of activate_vector function for activation of
