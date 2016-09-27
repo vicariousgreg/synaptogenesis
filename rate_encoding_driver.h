@@ -1,6 +1,8 @@
 #ifndef rate_encoding_odriver_hperations_h
 #define rate_encoding_driver_h
 
+#include <iostream>
+
 #include "driver.h"
 #include "rate_encoding_state.h"
 #include "model.h"
@@ -13,6 +15,13 @@ class RateEncodingDriver : public Driver {
         RateEncodingDriver () {
             this->re_state = new RateEncodingState();
             this->state = this->re_state;
+        }
+
+        void print_output() {
+            float* values = (float*)this->state->get_output();
+            for (int nid = 0 ; nid < this->model->num_neurons ; ++nid)
+                std::cout << values[nid] << " ";
+            std::cout << "|\n";
         }
 
         void step_connection_fully_connected(Connection &conn);

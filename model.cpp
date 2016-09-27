@@ -2,11 +2,11 @@
 
 #include "model.h"
 
-Model::Model () {
-    this->num_neurons = 0;
-    this->num_layers = 0;
-    this->num_connections = 0;
-}
+Model::Model (std::string driver_string) :
+        num_neurons(0),
+        num_layers(0),
+        num_connections(0),
+        driver_string(driver_string) {}
 
 int Model::connect_layers(int from_layer, int to_layer, bool plastic,
         int delay, float max_weight, ConnectionType type, OPCODE opcode) {

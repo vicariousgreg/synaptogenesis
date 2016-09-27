@@ -1,6 +1,8 @@
 #ifndef izhikevich_driver_h
 #define izhikevich_driver_h
 
+#include <iostream>
+
 #include "driver.h"
 #include "izhikevich_state.h"
 #include "model.h"
@@ -12,6 +14,13 @@ class IzhikevichDriver : public Driver {
         IzhikevichDriver () {
             this->iz_state = new IzhikevichState();
             this->state = this->iz_state;
+        }
+
+        void print_output() {
+            int* spikes = (int*)this->state->get_output();
+            for (int nid = 0 ; nid < this->model->num_neurons ; ++nid)
+                std::cout << ((spikes[nid] % 2) ? '*' : ' ');
+            std::cout << "|\n";
         }
 
         void step_connection_fully_connected(Connection &conn);

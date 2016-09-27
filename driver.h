@@ -6,11 +6,6 @@
 
 class Driver {
     public:
-        void build(Model* model) {
-            this->state->build(model);
-            this->model = model;
-        }
-
         /* Cycles the environment */
         void timestep() {
             this->step_input();
@@ -29,6 +24,8 @@ class Driver {
             }
         }
 
+        virtual void print_output() = 0;
+
         /* Activates neural connections, calculating connection input */
         virtual void step_connection_fully_connected(Connection &conn) = 0;
         virtual void step_connection_one_to_one(Connection &conn) = 0;
@@ -43,5 +40,8 @@ class Driver {
         State *state;
         Model *model;
 };
+
+/* Instantiates a driver based on the driver_string in the given model */
+Driver* build_driver(Model* model);
 
 #endif

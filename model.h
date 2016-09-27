@@ -96,7 +96,7 @@ class Connection {
 
 class Model {
     public:
-        Model ();
+        Model (std::string driver_string);
 
         /* Adds a layer to the environment with the given parameters */
         int add_layer(int size, std::string params);
@@ -113,6 +113,9 @@ class Model {
         /* Adds a single neuron.
          * This is called from add_layer() */
         int add_neuron(std::string params);
+
+        // Driver string indicating type of driver
+        std::string driver_string;
 
         // Neurons
         int num_neurons;
