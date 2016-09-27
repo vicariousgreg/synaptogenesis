@@ -105,7 +105,6 @@ class Model {
          * This is called from add_layer() */
         int add_neuron(std::string params);
 
-
         // Neurons
         int num_neurons;
 

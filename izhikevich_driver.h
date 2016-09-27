@@ -1,22 +1,27 @@
-#ifndef izhikevich_operations_h
-#define izhikevich_operations_h
+#ifndef izhikevich_driver_h
+#define izhikevich_driver_h
 
+#include "driver.h"
 #include "izhikevich_state.h"
 #include "model.h"
 #include "constants.h"
 #include "parallel.h"
 
+class IzhikevichDriver : public Driver {
+    public:
+        IzhikevichDriver () {
+            this->state = new IzhikevichState();
+        }
+
+        void step_input();
+        void step_output();
+        void step_weights();
+};
+
+
 /* Generic versions to obfuscate preprocessor directives. */
 void iz_update_currents(Connection &conn, float* mData, int* spikes,
                      float* currents, int num_neurons);
-
-void iz_update_voltages(float* voltages, float*recoveries, float* currents,
-                    IzhikevichParameters* neuron_params, int num_neurons);
-
-void iz_update_spikes(int* spikes, float* voltages, float* recoveries,
-                 IzhikevichParameters* neuron_params, int num_neurons);
-
-void iz_update_weights();
 
 #ifdef PARALLEL
 

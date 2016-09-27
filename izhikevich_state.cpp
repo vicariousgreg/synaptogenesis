@@ -6,7 +6,6 @@
 #include "model.h"
 #include "tools.h"
 #include "constants.h"
-#include "izhikevich_operations.h"
 #include "parallel.h"
 
 #define DEF_PARAM(name, a,b,c,d) \
@@ -106,67 +105,4 @@ void IzhikevichState::build(Model* model) {
     this->device_output = (void*) &this->device_spikes[(HISTORY_SIZE-1) * num_neurons];
 #endif
     this->weight_matrices = build_weight_matrices(model, 1);
-}
-
-/******************************************************************************
- ************************ TIMESTEP DYNAMICS ***********************************
- ******************************************************************************/
-
-void IzhikevichState::step_input() {
-    /* 2. Activation */
-    // For each weight matrix...
-    //   Update Currents using synaptic input
-    //     current = operation ( current , dot ( spikes * weights ) )
-    for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
-#ifdef PARALLEL
-        iz_update_currents(
-            this->model->connections[cid], this->weight_matrices[cid],
-            this->device_spikes, this->device_input, this->model->num_neurons);
-#else
-        iz_update_currents(
-            this->model->connections[cid], this->weight_matrices[cid],
-            this->spikes, this->input, this->model->num_neurons);
-#endif
-    }
-}
-
-void IzhikevichState::step_output() {
-    /* 3. Voltage Updates */
-#ifdef PARALLEL
-    iz_update_voltages(
-        this->device_voltage,
-        this->device_recovery,
-        this->device_input,
-        this->device_neuron_parameters,
-        this->model->num_neurons);
-#else
-    iz_update_voltages(
-        this->voltage,
-        this->recovery,
-        this->input,
-        this->neuron_parameters,
-        this->model->num_neurons);
-#endif
-
-    /* 4. Timestep */
-#ifdef PARALLEL
-    iz_update_spikes(
-        this->device_spikes,
-        this->device_voltage,
-        this->device_recovery,
-        this->device_neuron_parameters,
-        this->model->num_neurons);
-#else
-    iz_update_spikes(
-        this->spikes,
-        this->voltage,
-        this->recovery,
-        this->neuron_parameters,
-        this->model->num_neurons);
-#endif
-}
-
-void IzhikevichState::step_weights() {
-    /* 5. Update weights */
-    iz_update_weights();
 }

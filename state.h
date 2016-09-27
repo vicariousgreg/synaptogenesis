@@ -13,23 +13,6 @@ class State {
         void randomize_input(int layer_id, float max);
         void clear_input(int layer_id);
 
-        /* Cycles the environment */
-        void timestep() {
-            this->step_input();
-            this->step_output();
-            this->step_weights();
-        }
-
-        /* Activates neural connections, calculating connection input */
-        virtual void step_input() = 0;
-
-        /* Calculates neuron outputs */
-        virtual void step_output() = 0;
-
-        /* Updates weights for plastic neural connections.
-         * TODO: implement.  This should use STDP variant Hebbian learning */
-        virtual void step_weights() = 0;
-
         // Network model
         Model* model;
 

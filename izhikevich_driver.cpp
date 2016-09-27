@@ -1,5 +1,70 @@
-#include "izhikevich_operations.h"
-#include "constants.h"
+#include "izhikevich_driver.h"
+#include "izhikevich_state.h"
+
+void IzhikevichDriver::step_input() {
+    IzhikevichState *iz_state = (IzhikevichState*) this->state;
+    /* 2. Activation */
+    // For each weight matrix...
+    //   Update Currents using synaptic input
+    //     current = operation ( current , dot ( spikes * weights ) )
+    for (int cid = 0 ; cid < iz_state->model->num_connections; ++cid) {
+#ifdef PARALLEL
+        iz_update_currents(
+            iz_state->model->connections[cid], iz_state->weight_matrices[cid],
+            iz_state->device_spikes, iz_state->device_input, iz_state->model->num_neurons);
+#else
+        iz_update_currents(
+            iz_state->model->connections[cid], iz_state->weight_matrices[cid],
+            iz_state->spikes, iz_state->input, iz_state->model->num_neurons);
+#endif
+    }
+}
+
+void IzhikevichDriver::step_output() {
+    IzhikevichState *iz_state = (IzhikevichState*) this->state;
+    int num_neurons = this->model->num_neurons;
+
+#ifdef PARALLEL
+    int threads = 32;
+    int blocks = ceil((float)(num_neurons) / threads);
+    parallel_izhikevich<<<blocks, threads>>>(
+        iz_state->device_voltage,
+        iz_state->device_recovery,
+        iz_state->device_input,
+        iz_state->device_neuron_parameters,
+        num_neurons);
+    cudaCheckError("Failed to update neuron voltages!");
+    parallel_calc_spikes<<<blocks, threads>>>(
+        iz_state->device_spikes,
+        iz_state->device_voltage,
+        iz_state->device_recovery,
+        iz_state->device_neuron_parameters,
+        num_neurons);
+    cudaCheckError("Failed to timestep spikes!");
+#else
+    serial_izhikevich(
+        iz_state->voltage,
+        iz_state->recovery,
+        iz_state->input,
+        iz_state->neuron_parameters,
+        num_neurons);
+    serial_calc_spikes(
+        iz_state->spikes,
+        iz_state->voltage,
+        iz_state->recovery,
+        iz_state->neuron_parameters,
+        num_neurons);
+#endif
+}
+
+void IzhikevichDriver::step_weights() {
+    IzhikevichState *iz_state = (IzhikevichState*) this->state;
+
+    /* 5. Update weights */
+#ifdef PARALLEL
+    cudaCheckError("Failed to update connection weights!");
+#endif
+}
 
 
 /*****************************************************************************/
@@ -15,14 +80,8 @@ void iz_update_currents(Connection &conn, float* mData, int* spikes,
 #ifdef PARALLEL
     int threads = 32;
     int blocks = ceil((float)(conn.to_layer.size) / threads);
-#endif
-
     if (conn.type == FULLY_CONNECTED) {
-#ifdef PARALLEL
         parallel_activate_matrix<<<blocks, threads>>>(
-#else
-        serial_activate_matrix(
-#endif
             spikes + conn.from_layer.index,
             mData,
             currents + conn.to_layer.index,
@@ -31,11 +90,7 @@ void iz_update_currents(Connection &conn, float* mData, int* spikes,
             mask,
             conn.opcode);
     } else if (conn.type == ONE_TO_ONE) {
-#ifdef PARALLEL
         parallel_activate_vector<<<blocks, threads>>>(
-#else
-        serial_activate_vector(
-#endif
             spikes + conn.from_layer.index,
             mData,
             currents + conn.to_layer.index,
@@ -43,54 +98,28 @@ void iz_update_currents(Connection &conn, float* mData, int* spikes,
             mask,
             conn.opcode);
     }
-#ifdef PARALLEL
     cudaCheckError("Failed to calculate connection activation!");
-#endif
-}
 
-void iz_update_voltages(float* voltages, float*recoveries, float* currents,
-                IzhikevichParameters* neuron_params, int num_neurons) {
-#ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(num_neurons) / threads);
-    parallel_izhikevich<<<blocks, threads>>>(
 #else
-    serial_izhikevich(
-#endif
-        voltages,
-        recoveries,
-        currents,
-        neuron_params,
-        num_neurons);
 
-#ifdef PARALLEL
-    cudaCheckError("Failed to update neuron voltages!");
-#endif
-}
-
-void iz_update_spikes(int* spikes, float* voltages, float* recoveries,
-                 IzhikevichParameters* neuron_params, int num_neurons) {
-#ifdef PARALLEL
-    int threads = 32;
-    int blocks = ceil((float)(num_neurons) / threads);
-    parallel_calc_spikes<<<blocks, threads>>>(
-#else
-    serial_calc_spikes(
-#endif
-        spikes,
-        voltages,
-        recoveries,
-        neuron_params,
-        num_neurons);
-
-#ifdef PARALLEL
-    cudaCheckError("Failed to timestep spikes!");
-#endif
-}
-
-void iz_update_weights() {
-#ifdef PARALLEL
-    cudaCheckError("Failed to update connection weights!");
+    if (conn.type == FULLY_CONNECTED) {
+        serial_activate_matrix(
+            spikes + conn.from_layer.index,
+            mData,
+            currents + conn.to_layer.index,
+            conn.from_layer.size,
+            conn.to_layer.size,
+            mask,
+            conn.opcode);
+    } else if (conn.type == ONE_TO_ONE) {
+        serial_activate_vector(
+            spikes + conn.from_layer.index,
+            mData,
+            currents + conn.to_layer.index,
+            conn.to_layer.size,
+            mask,
+            conn.opcode);
+    }
 #endif
 }
 

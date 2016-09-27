@@ -33,6 +33,8 @@ class IzhikevichState : public State {
         float* get_recovery();
 
     private:
+        friend class IzhikevichDriver;
+
         // Neuron States
         float *voltage;
         float *recovery;
