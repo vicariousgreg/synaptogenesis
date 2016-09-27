@@ -16,9 +16,6 @@ class IzhikevichParameters {
 class IzhikevichState : public State {
     public:
         void build(Model* model);
-        void step_input();
-        void step_output();
-        void step_weights();
 
         //////////////////////
         /// MODEL SPECIFIC ///

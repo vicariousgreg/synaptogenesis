@@ -1,57 +1,101 @@
 #include "izhikevich_driver.h"
 #include "izhikevich_state.h"
 
-void IzhikevichDriver::step_input() {
-    IzhikevichState *iz_state = (IzhikevichState*) this->state;
-    /* 2. Activation */
-    // For each weight matrix...
-    //   Update Currents using synaptic input
-    //     current = operation ( current , dot ( spikes * weights ) )
-    for (int cid = 0 ; cid < iz_state->model->num_connections; ++cid) {
+/*****************************************************************************/
+/************************* GENERIC IMPLEMENTATIONS ***************************/
+/*****************************************************************************/
+
+void IzhikevichDriver::step_connection_fully_connected(Connection &conn) {
+    // Determine which part of spike vector to use based on delay
+    int word_index = HISTORY_SIZE - (conn.delay / 32) - 1;
+    int mask = 1 << (conn.delay % 32);
+
 #ifdef PARALLEL
-        iz_update_currents(
-            iz_state->model->connections[cid], iz_state->weight_matrices[cid],
-            iz_state->device_spikes, iz_state->device_input, iz_state->model->num_neurons);
+    int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
+    int blocks = calc_blocks(conn.to_layer.size);
+    parallel_activate_matrix<<<blocks, THREADS>>>(
+        spikes + conn.from_layer.index,
+        this->iz_state->get_matrix(conn.id),
+        this->iz_state->device_input + conn.to_layer.index,
+        conn.from_layer.size,
+        conn.to_layer.size,
+        mask,
+        conn.opcode);
+    cudaCheckError("Failed to calculate connection activation!");
+
 #else
-        iz_update_currents(
-            iz_state->model->connections[cid], iz_state->weight_matrices[cid],
-            iz_state->spikes, iz_state->input, iz_state->model->num_neurons);
+    int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
+    serial_activate_matrix(
+        spikes + conn.from_layer.index,
+        this->state->get_matrix(conn.id),
+        this->iz_state->input + conn.to_layer.index,
+        conn.from_layer.size,
+        conn.to_layer.size,
+        mask,
+        conn.opcode);
 #endif
-    }
+}
+
+void IzhikevichDriver::step_connection_one_to_one(Connection &conn) {
+    // Determine which part of spike vector to use based on delay
+    int word_index = HISTORY_SIZE - (conn.delay / 32) - 1;
+    int mask = 1 << (conn.delay % 32);
+
+#ifdef PARALLEL
+    int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
+    int blocks = calc_blocks(conn.to_layer.size);
+    parallel_activate_vector<<<blocks, THREADS>>>(
+        spikes + conn.from_layer.index,
+        this->iz_state->get_matrix(conn.id),
+        this->iz_state->device_input + conn.to_layer.index,
+        conn.to_layer.size,
+        mask,
+        conn.opcode);
+    cudaCheckError("Failed to calculate connection activation!");
+
+#else
+    int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
+    serial_activate_vector(
+        spikes + conn.from_layer.index,
+        this->iz_state->get_matrix(conn.id),
+        this->iz_state->input + conn.to_layer.index,
+        conn.to_layer.size,
+        mask,
+        conn.opcode);
+#endif
 }
 
 void IzhikevichDriver::step_output() {
-    IzhikevichState *iz_state = (IzhikevichState*) this->state;
     int num_neurons = this->model->num_neurons;
 
 #ifdef PARALLEL
     int blocks = calc_blocks(num_neurons);
     parallel_izhikevich<<<blocks, THREADS>>>(
-        iz_state->device_voltage,
-        iz_state->device_recovery,
-        iz_state->device_input,
-        iz_state->device_neuron_parameters,
+        this->iz_state->device_voltage,
+        this->iz_state->device_recovery,
+        this->iz_state->device_input,
+        this->iz_state->device_neuron_parameters,
         num_neurons);
     cudaCheckError("Failed to update neuron voltages!");
     parallel_calc_spikes<<<blocks, THREADS>>>(
-        iz_state->device_spikes,
-        iz_state->device_voltage,
-        iz_state->device_recovery,
-        iz_state->device_neuron_parameters,
+        this->iz_state->device_spikes,
+        this->iz_state->device_voltage,
+        this->iz_state->device_recovery,
+        this->iz_state->device_neuron_parameters,
         num_neurons);
     cudaCheckError("Failed to timestep spikes!");
 #else
     serial_izhikevich(
-        iz_state->voltage,
-        iz_state->recovery,
-        iz_state->input,
-        iz_state->neuron_parameters,
+        this->iz_state->voltage,
+        this->iz_state->recovery,
+        this->iz_state->input,
+        this->iz_state->neuron_parameters,
         num_neurons);
     serial_calc_spikes(
-        iz_state->spikes,
-        iz_state->voltage,
-        iz_state->recovery,
-        iz_state->neuron_parameters,
+        this->iz_state->spikes,
+        this->iz_state->voltage,
+        this->iz_state->recovery,
+        this->iz_state->neuron_parameters,
         num_neurons);
 #endif
 }
@@ -60,62 +104,6 @@ void IzhikevichDriver::step_weights() {
     /* 5. Update weights */
 #ifdef PARALLEL
     cudaCheckError("Failed to update connection weights!");
-#endif
-}
-
-
-/*****************************************************************************/
-/************************* GENERIC IMPLEMENTATIONS ***************************/
-/*****************************************************************************/
-void iz_update_currents(Connection &conn, float* mData, int* spikes,
-                    float* currents, int num_neurons) {
-    // Determine which part of spike vector to use based on delay
-    int word_index = HISTORY_SIZE - (conn.delay / 32) - 1;
-    int mask = 1 << (conn.delay % 32);
-    spikes = &spikes[num_neurons * word_index];
-
-#ifdef PARALLEL
-    int blocks = calc_blocks(conn.to_layer.size);
-    if (conn.type == FULLY_CONNECTED) {
-        parallel_activate_matrix<<<blocks, THREADS>>>(
-            spikes + conn.from_layer.index,
-            mData,
-            currents + conn.to_layer.index,
-            conn.from_layer.size,
-            conn.to_layer.size,
-            mask,
-            conn.opcode);
-    } else if (conn.type == ONE_TO_ONE) {
-        parallel_activate_vector<<<blocks, THREADS>>>(
-            spikes + conn.from_layer.index,
-            mData,
-            currents + conn.to_layer.index,
-            conn.to_layer.size,
-            mask,
-            conn.opcode);
-    }
-    cudaCheckError("Failed to calculate connection activation!");
-
-#else
-
-    if (conn.type == FULLY_CONNECTED) {
-        serial_activate_matrix(
-            spikes + conn.from_layer.index,
-            mData,
-            currents + conn.to_layer.index,
-            conn.from_layer.size,
-            conn.to_layer.size,
-            mask,
-            conn.opcode);
-    } else if (conn.type == ONE_TO_ONE) {
-        serial_activate_vector(
-            spikes + conn.from_layer.index,
-            mData,
-            currents + conn.to_layer.index,
-            conn.to_layer.size,
-            mask,
-            conn.opcode);
-    }
 #endif
 }
 

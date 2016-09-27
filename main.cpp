@@ -85,7 +85,7 @@ void test_izhikevich(Model* model) {
         driver.state->randomize_input(0, 5);
         driver.state->randomize_input(1, 2);
         driver.timestep();
-        //print_currents(driver.state);
+        //print_currents((IzhikevichState*)driver.state);
         print_spikes((IzhikevichState*)driver.state);
     }
 
@@ -129,8 +129,8 @@ int main(void) {
         printf("  - layers      : %10d\n", model->num_layers);
         printf("  - connections : %10d\n", model->num_connections);
 
-        //test_rate_encoding(model);
-        test_izhikevich(model);
+        test_rate_encoding(model);
+        //test_izhikevich(model);
 
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);

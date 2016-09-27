@@ -18,8 +18,20 @@ class Driver {
             this->step_weights();
         }
 
+        void step_input() {
+            for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
+                Connection &conn = this->model->connections[cid];
+                if (conn.type == FULLY_CONNECTED) {
+                    step_connection_fully_connected(conn);
+                } else if (conn.type == ONE_TO_ONE) {
+                    step_connection_one_to_one(conn);
+                }
+            }
+        }
+
         /* Activates neural connections, calculating connection input */
-        virtual void step_input() = 0;
+        virtual void step_connection_fully_connected(Connection &conn) = 0;
+        virtual void step_connection_one_to_one(Connection &conn) = 0;
 
         /* Calculates neuron outputs */
         virtual void step_output() = 0;

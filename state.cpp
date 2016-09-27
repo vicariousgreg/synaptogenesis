@@ -102,8 +102,8 @@ void randomize_matrices(Model* model, float** entry_points, int depth) {
         float* temp_matrix = (float*)calloc(matrix_size, sizeof(float));
         if (temp_matrix == NULL)
             throw "Failed to allocate temporary matrix on host for randomization!";
-
 #endif
+
         // Randomize the first layer of the matrix (weights)
         // Further layers are initialized to zero.
         for (int index = 0 ; index < conn.num_weights ; ++index) {

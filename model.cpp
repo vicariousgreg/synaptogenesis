@@ -11,6 +11,7 @@ Model::Model () {
 int Model::connect_layers(int from_layer, int to_layer, bool plastic,
         int delay, float max_weight, ConnectionType type, OPCODE opcode) {
     Connection conn = Connection(
+        this->num_connections,
         this->layers[from_layer], this->layers[to_layer],
         plastic, delay, max_weight, type, opcode);
     this->connections.push_back(conn);
@@ -30,6 +31,7 @@ int Model::connect_layers_shared(int from_layer, int to_layer, int parent_id) {
     }
 
     Connection conn = Connection(
+        this->num_connections,
         this->layers[from_layer], this->layers[to_layer], parent_id);
     this->connections.push_back(conn);
     return this->num_connections++;
@@ -46,7 +48,7 @@ int Model::add_layer(int size, std::string params) {
     int start_index = this->num_neurons;
     int layer_index = this->num_layers++;
 
-    this->layers.push_back(Layer(start_index, size));
+    this->layers.push_back(Layer(layer_index, start_index, size));
 
     // Add neurons.
     for (int i = 0; i < size; ++i) {

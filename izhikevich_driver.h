@@ -10,12 +10,16 @@
 class IzhikevichDriver : public Driver {
     public:
         IzhikevichDriver () {
-            this->state = new IzhikevichState();
+            this->iz_state = new IzhikevichState();
+            this->state = this->iz_state;
         }
 
-        void step_input();
+        void step_connection_fully_connected(Connection &conn);
+        void step_connection_one_to_one(Connection &conn);
         void step_output();
         void step_weights();
+
+        IzhikevichState *iz_state;
 };
 
 

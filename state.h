@@ -13,6 +13,10 @@ class State {
         void randomize_input(int layer_id, float max);
         void clear_input(int layer_id);
 
+        float* get_matrix(int connection_id) {
+            return this->weight_matrices[connection_id];
+        }
+
         // Network model
         Model* model;
 

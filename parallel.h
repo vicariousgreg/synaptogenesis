@@ -4,6 +4,7 @@
 #ifdef PARALLEL
 
 #include <cstdio>
+#include <math.h>
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
@@ -12,7 +13,7 @@
 #define THREADS 32
 
 inline int calc_blocks(int computations) {
-    return (float) computations / THREADS;
+    return ceil((float) computations / THREADS);
 }
 
 inline void cudaSync() {

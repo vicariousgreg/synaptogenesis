@@ -11,12 +11,16 @@
 class RateEncodingDriver : public Driver {
     public:
         RateEncodingDriver () {
-            this->state = new RateEncodingState();
+            this->re_state = new RateEncodingState();
+            this->state = this->re_state;
         }
 
-        void step_input();
+        void step_connection_fully_connected(Connection &conn);
+        void step_connection_one_to_one(Connection &conn);
         void step_output();
         void step_weights();
+
+        RateEncodingState *re_state;
 };
 
 /* Generic versions to obfuscate preprocessor directives. */

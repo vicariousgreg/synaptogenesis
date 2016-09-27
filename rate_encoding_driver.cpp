@@ -4,23 +4,51 @@
 #include "rate_encoding_state.h"
 #include "constants.h"
 
-void RateEncodingDriver::step_input() {
-    RateEncodingState* state = (RateEncodingState*) this->state;
+/*****************************************************************************/
+/************************* GENERIC IMPLEMENTATIONS ***************************/
+/*****************************************************************************/
 
-    // For each weight matrix...
-    //   Update Currents using synaptic input
-    //     current = operation ( current , dot ( spikes * weights ) )
-    for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
+void RateEncodingDriver::step_connection_fully_connected(Connection &conn) {
 #ifdef PARALLEL
-        re_update_inputs(
-            this->model->connections[cid], state->weight_matrices[cid],
-            state->device_output, state->device_input, this->model->num_neurons);
+    int blocks = calc_blocks(conn.to_layer.size);
+    parallel_activate_matrix<<<blocks, THREADS>>>(
+        (float*)this->re_state->device_output + conn.from_layer.index,
+        this->re_state->get_matrix(conn.id),
+        this->re_state->device_input + conn.to_layer.index,
+        conn.from_layer.size,
+        conn.to_layer.size,
+        conn.opcode);
+    cudaCheckError("Failed to calculate connection activation!");
 #else
-        re_update_inputs(
-            this->model->connections[cid], state->weight_matrices[cid],
-            state->output, state->input, this->model->num_neurons);
+    serial_activate_matrix(
+        (float*)this->re_state->output + conn.from_layer.index,
+        this->re_state->get_matrix(conn.id),
+        this->re_state->input + conn.to_layer.index,
+        conn.from_layer.size,
+        conn.to_layer.size,
+        conn.opcode);
 #endif
-    }
+}
+
+void RateEncodingDriver::step_connection_one_to_one(Connection &conn) {
+#ifdef PARALLEL
+    int blocks = calc_blocks(conn.to_layer.size);
+    parallel_activate_vector<<<blocks, THREADS>>>(
+        (float*)this->re_state->device_output + conn.from_layer.index,
+        this->re_state->get_matrix(conn.id),
+        this->re_state->device_input + conn.to_layer.index,
+        conn.to_layer.size,
+        conn.opcode);
+    cudaCheckError("Failed to calculate connection activation!");
+#else
+
+    serial_activate_vector(
+        (float*)this->re_state->output + conn.from_layer.index,
+        this->re_state->get_matrix(conn.id),
+        this->re_state->input + conn.to_layer.index,
+        conn.to_layer.size,
+        conn.opcode);
+#endif
 }
 
 void RateEncodingDriver::step_output() {
@@ -49,51 +77,6 @@ void RateEncodingDriver::step_weights() {
 #endif
 }
 
-
-/*****************************************************************************/
-/************************* GENERIC IMPLEMENTATIONS ***************************/
-/*****************************************************************************/
-void re_update_inputs(Connection &conn, float* mData, void* outputs,
-                     float* inputs, int num_neurons) {
-#ifdef PARALLEL
-    int blocks = calc_blocks(conn.to_layer.size);
-    if (conn.type == FULLY_CONNECTED) {
-        parallel_activate_matrix<<<blocks, THREADS>>>(
-            (float*)outputs + conn.from_layer.index,
-            mData,
-            inputs + conn.to_layer.index,
-            conn.from_layer.size,
-            conn.to_layer.size,
-            conn.opcode);
-    } else if (conn.type == ONE_TO_ONE) {
-        parallel_activate_vector<<<blocks, THREADS>>>(
-            (float*)outputs + conn.from_layer.index,
-            mData,
-            inputs + conn.to_layer.index,
-            conn.to_layer.size,
-            conn.opcode);
-    }
-    cudaCheckError("Failed to calculate connection activation!");
-#else
-
-    if (conn.type == FULLY_CONNECTED) {
-        serial_activate_matrix(
-            (float*)outputs + conn.from_layer.index,
-            mData,
-            inputs + conn.to_layer.index,
-            conn.from_layer.size,
-            conn.to_layer.size,
-            conn.opcode);
-    } else if (conn.type == ONE_TO_ONE) {
-        serial_activate_vector(
-            (float*)outputs + conn.from_layer.index,
-            mData,
-            inputs + conn.to_layer.index,
-            conn.to_layer.size,
-            conn.opcode);
-    }
-#endif
-}
 
 #ifdef PARALLEL
 /*****************************************************************************/

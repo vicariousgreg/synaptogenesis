@@ -12,9 +12,13 @@ class Layer {
          * |start_index| identifies the first neuron in the layer.
          * |size| indicates the size of the layer.
          */
-        Layer(int start_index, int size) :
+        Layer(int layer_id, int start_index, int size) :
+                id(layer_id),
                 index(start_index),
                 size(size) {}
+
+        // Layer ID
+        int id;
 
         // Index of first neuron
         int index;
@@ -25,8 +29,9 @@ class Layer {
 
 class Connection {
     public:
-        Connection (Layer &from_layer, Layer &to_layer, bool plastic,
+        Connection (int conn_id, Layer &from_layer, Layer &to_layer, bool plastic,
                 int delay, float max_weight, ConnectionType type, OPCODE opcode) :
+                    id(conn_id),
                     from_layer(from_layer),
                     to_layer(to_layer),
                     plastic(plastic),
@@ -49,7 +54,8 @@ class Connection {
             }
         }
 
-        Connection(Layer &from_layer, Layer &to_layer, int parent) :
+        Connection(int conn_id, Layer &from_layer, Layer &to_layer, int parent) :
+                id(conn_id),
                 from_layer(from_layer),
                 to_layer(to_layer),
                 parent(parent) {
@@ -59,6 +65,9 @@ class Connection {
                 this->num_weights = from_layer.size;
             }
         }
+
+        // Connection ID
+        int id;
 
         // Matrix type (see enum)
         ConnectionType type;
