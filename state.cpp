@@ -97,36 +97,33 @@ void randomize_matrices(Model* model, float** entry_points, int depth) {
         int matrix_size = conn.num_weights;
         if (conn.plastic) matrix_size *= depth;
 
+        // Copy data over to a target matrix
+        // Parallel requires a temporary matrix be created and copied
+        // Serial accesses mData directly
 #ifdef PARALLEL
-        float* temp_matrix = (float*)calloc(matrix_size, sizeof(float));
-        if (temp_matrix == NULL)
+        float *target_matrix = (float*)calloc(matrix_size, sizeof(float));
+        if (target_matrix == NULL)
             throw "Failed to allocate temporary matrix on host for randomization!";
+#else
+        float *target_matrix = mData;
 #endif
 
         // Randomize the first layer of the matrix (weights)
         // Further layers are initialized to zero.
         for (int index = 0 ; index < conn.num_weights ; ++index) {
-#ifdef PARALLEL
-            temp_matrix[index] = fRand(0, conn.max_weight);
-#else
-            mData[index] = fRand(0, conn.max_weight);
-#endif
+            target_matrix[index] = fRand(0, conn.max_weight);
         }
 
         // Set up further layers if necessary (initialize to zero)
         for (int index = conn.num_weights ; index < matrix_size ; ++index) {
-#ifdef PARALLEL
-            temp_matrix[index] = 0.0;
-#else
-            mData[index] = 0.0;
-#endif
+            target_matrix[index] = 0.0;
         }
 
 #ifdef PARALLEL
-        cudaMemcpy(mData, temp_matrix,
+        cudaMemcpy(mData, target_matrix,
             matrix_size * sizeof(float), cudaMemcpyHostToDevice);
         cudaCheckError("Failed to randomize weight matrix!");
-        free(temp_matrix);
+        free(target_matrix);
 #endif
     }
 }
