@@ -1,4 +1,5 @@
 #include "model.h"
+#include "input.h"
 
 Connection::Connection (int conn_id, Layer &from_layer, Layer &to_layer,
         bool plastic, int delay, float max_weight,
@@ -90,7 +91,7 @@ int Model::add_layer(int size, std::string params) {
     return layer_index;
 }
 
-int Model::add_neuron(std::string params) {
-    this->parameter_strings.push_back(params);
-    return this->num_neurons++;
+void Model::add_input(int layer, std::string type, std::string params) {
+    Input *input = build_input(this->layers[layer], type, params);
+    this->layers[layer].input = input;
 }

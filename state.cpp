@@ -40,19 +40,6 @@ void State::set_input(int layer_id, float* input) {
 #endif
 }
 
-void State::randomize_input(int layer_id, float max) {
-    int size = this->model->layers[layer_id].size;
-    int offset = this->model->layers[layer_id].index;
-
-    for (int nid = 0 ; nid < size; ++nid) {
-        this->input[nid+offset] = fRand(0, max);
-    }
-#ifdef PARALLEL
-    // Send to GPU
-    this->set_input(layer_id, &this->input[offset]);
-#endif
-}
-
 void State::clear_input(int layer_id) {
     int size = this->model->layers[layer_id].size;
     int offset = this->model->layers[layer_id].index;

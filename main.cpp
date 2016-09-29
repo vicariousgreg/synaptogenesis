@@ -22,6 +22,8 @@ Model* build_model(std::string driver_name) {
     model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD);
     model->connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB);
     model->connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, SUB);
+    model->add_input(pos, "random", "5");
+    model->add_input(neg, "random", "2");
 
     return model;
 }
@@ -50,8 +52,6 @@ int main(void) {
         timer.start();
         int iterations = 50;
         for (int i = 0 ; i < iterations ; ++i) {
-            driver->state->randomize_input(0, 5);
-            driver->state->randomize_input(1, 2);
             driver->timestep();
             driver->print_output();
         }

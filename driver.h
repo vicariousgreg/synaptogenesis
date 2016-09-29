@@ -13,16 +13,7 @@ class Driver {
             this->step_weights();
         }
 
-        void step_input() {
-            for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
-                Connection &conn = this->model->connections[cid];
-                if (conn.type == FULLY_CONNECTED) {
-                    step_connection_fully_connected(conn);
-                } else if (conn.type == ONE_TO_ONE) {
-                    step_connection_one_to_one(conn);
-                }
-            }
-        }
+        void step_input();
 
         virtual void print_output() = 0;
 

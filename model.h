@@ -6,6 +6,8 @@
 
 #include "constants.h"
 
+class Input;
+
 class Layer {
     public:
         /* Constructor.
@@ -15,10 +17,15 @@ class Layer {
         Layer(int layer_id, int start_index, int size) :
                 id(layer_id),
                 index(start_index),
-                size(size) {}
+                size(size),
+                input(NULL) {}
 
         // Layer ID, start index, and size
         int id, index, size;
+
+        // Input driver
+        // If none, this will be null
+        Input* input;
 };
 
 class Connection {
@@ -68,9 +75,8 @@ class Model {
          *   specified by |parent_id| */
         int connect_layers_shared(int from_layer, int to_layer, int parent_id);
 
-        /* Adds a single neuron.
-         * This is called from add_layer() */
-        int add_neuron(std::string params);
+        /* Adds an input hook of the given |type| for the given |layer| */
+        void add_input(int layer, std::string type, std::string params);
 
         // Driver string indicating type of driver
         std::string driver_string;
@@ -88,6 +94,14 @@ class Model {
 
         // Parameter strings vector
         std::vector<std::string> parameter_strings;
+
+    private:
+        /* Adds a single neuron.
+         * This is called from add_layer() */
+        int add_neuron(std::string params) {
+            this->parameter_strings.push_back(params);
+            return this->num_neurons++;
+        }
 };
 
 #endif
