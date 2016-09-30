@@ -6,7 +6,7 @@
 RandomInput::RandomInput(Layer &layer, std::string params) : Input(layer) {
     this->max_value = strtof(params.c_str(), NULL);
     if (this->max_value == 0.0)
-        throw "Invalud max value for random input generator!";
+        throw "Invalid max value for random input generator!";
     this->buffer = (float*)malloc(this->layer.size * sizeof(float));
 }
 

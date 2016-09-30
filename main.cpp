@@ -14,9 +14,13 @@ static Timer timer = Timer();
 Model* build_model(std::string driver_name) {
     /* Construct the model */
     Model *model = new Model(driver_name);
-    int size = 800 * 1;
 
-    int pos = model->add_layer(1, size, "random positive");
+    int pos = model->add_layer(50, 50, "default");
+    model->add_input(pos, "image", "bird-head-small.jpg");
+
+    /*
+    int size = 800 * 1;
+    int pos = model->add_layer(50, 50, "random positive");
     int neg = model->add_layer(1, size / 4, "random negative");
     model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD);
     model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD);
@@ -24,6 +28,7 @@ Model* build_model(std::string driver_name) {
     model->connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, SUB);
     model->add_input(pos, "random", "5");
     model->add_input(neg, "random", "2");
+    */
 
     return model;
 }
