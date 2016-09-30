@@ -16,8 +16,8 @@ Model* build_model(std::string driver_name) {
     Model *model = new Model(driver_name);
     int size = 800 * 1;
 
-    int pos = model->add_layer(size, "random positive");
-    int neg = model->add_layer(size / 4, "random negative");
+    int pos = model->add_layer(1, size, "random positive");
+    int neg = model->add_layer(1, size / 4, "random negative");
     model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD);
     model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD);
     model->connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB);

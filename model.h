@@ -14,14 +14,23 @@ class Layer {
          * |start_index| identifies the first neuron in the layer.
          * |size| indicates the size of the layer.
          */
-        Layer(int layer_id, int start_index, int size) :
+        Layer(int layer_id, int start_index, int rows, int columns) :
                 id(layer_id),
                 index(start_index),
-                size(size),
+                rows(rows),
+                columns(columns),
+                size(rows * columns),
                 input(NULL) {}
 
-        // Layer ID, start index, and size
-        int id, index, size;
+        bool matches_size(Layer &other) {
+            return this->rows == other.rows and this->columns == other.columns;
+        }
+
+        // Layer ID and start index
+        int id, index;
+
+        // Layer rows, columns, and total size
+        int rows, columns, size;
 
         // Input driver
         // If none, this will be null
@@ -64,7 +73,7 @@ class Model {
         Model (std::string driver_string);
 
         /* Adds a layer to the environment with the given parameters */
-        int add_layer(int size, std::string params);
+        int add_layer(int rows, int columns, std::string params);
 
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */
@@ -98,9 +107,10 @@ class Model {
     private:
         /* Adds a single neuron.
          * This is called from add_layer() */
-        int add_neuron(std::string params) {
-            this->parameter_strings.push_back(params);
-            return this->num_neurons++;
+        void add_neurons(int count, std::string params) {
+            for (int i = 0; i < count; ++i)
+                this->parameter_strings.push_back(params);
+            this->num_neurons += count;
         }
 };
 
