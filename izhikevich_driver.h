@@ -14,8 +14,8 @@ class IzhikevichDriver : public Driver {
             this->state = this->iz_state;
         }
 
-        void step_connection_fully_connected(Connection &conn);
-        void step_connection_one_to_one(Connection &conn);
+        void step_connection_fully_connected(Connection *conn);
+        void step_connection_one_to_one(Connection *conn);
         void step_output();
         void step_weights();
 
@@ -24,7 +24,7 @@ class IzhikevichDriver : public Driver {
 
 
 /* Generic versions to obfuscate preprocessor directives. */
-void iz_update_currents(Connection &conn, float* mData, int* spikes,
+void iz_update_currents(Connection *conn, float* mData, int* spikes,
                      float* currents, int num_neurons);
 
 #ifdef PARALLEL

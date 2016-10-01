@@ -5,7 +5,7 @@
 
 class FloatPrintOutput : public Output {
     public:
-        FloatPrintOutput(Layer &layer, std::string params);
+        FloatPrintOutput(Layer *layer, std::string params);
         void report_output(State *state);
 };
 

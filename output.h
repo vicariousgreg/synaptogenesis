@@ -8,13 +8,13 @@
 
 class Output {
     public:
-        Output(Layer &layer) : layer(layer) { }
+        Output(Layer *layer) : layer(layer) { }
 
         virtual void report_output(State *state) = 0;
 
-        Layer &layer;
+        Layer *layer;
 };
 
-Output* build_output(Layer &layer, std::string type, std::string params);
+Output* build_output(Layer *layer, std::string type, std::string params);
 
 #endif

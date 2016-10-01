@@ -6,46 +6,46 @@
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void RateEncodingDriver::step_connection_fully_connected(Connection &conn) {
+void RateEncodingDriver::step_connection_fully_connected(Connection *conn) {
 #ifdef PARALLEL
-    int blocks = calc_blocks(conn.to_layer.size);
+    int blocks = calc_blocks(conn->to_layer->size);
     parallel_calc_matrix<<<blocks, THREADS>>>(
-        (float*)this->re_state->device_output + conn.from_layer.index,
-        this->re_state->get_matrix(conn.id),
-        this->re_state->device_input + conn.to_layer.index,
-        conn.from_layer.size,
-        conn.to_layer.size,
-        conn.opcode);
+        (float*)this->re_state->device_output + conn->from_layer->index,
+        this->re_state->get_matrix(conn->id),
+        this->re_state->device_input + conn->to_layer->index,
+        conn->from_layer->size,
+        conn->to_layer->size,
+        conn->opcode);
     cudaCheckError("Failed to calculate connection activation!");
 #else
     serial_calc_matrix(
-        (float*)this->re_state->output + conn.from_layer.index,
-        this->re_state->get_matrix(conn.id),
-        this->re_state->input + conn.to_layer.index,
-        conn.from_layer.size,
-        conn.to_layer.size,
-        conn.opcode);
+        (float*)this->re_state->output + conn->from_layer->index,
+        this->re_state->get_matrix(conn->id),
+        this->re_state->input + conn->to_layer->index,
+        conn->from_layer->size,
+        conn->to_layer->size,
+        conn->opcode);
 #endif
 }
 
-void RateEncodingDriver::step_connection_one_to_one(Connection &conn) {
+void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
 #ifdef PARALLEL
-    int blocks = calc_blocks(conn.to_layer.size);
+    int blocks = calc_blocks(conn->to_layer->size);
     parallel_activate_vector<<<blocks, THREADS>>>(
-        (float*)this->re_state->device_output + conn.from_layer.index,
-        this->re_state->get_matrix(conn.id),
-        this->re_state->device_input + conn.to_layer.index,
-        conn.to_layer.size,
-        conn.opcode);
+        (float*)this->re_state->device_output + conn->from_layer->index,
+        this->re_state->get_matrix(conn->id),
+        this->re_state->device_input + conn->to_layer->index,
+        conn->to_layer->size,
+        conn->opcode);
     cudaCheckError("Failed to calculate connection activation!");
 #else
 
     serial_activate_vector(
-        (float*)this->re_state->output + conn.from_layer.index,
-        this->re_state->get_matrix(conn.id),
-        this->re_state->input + conn.to_layer.index,
-        conn.to_layer.size,
-        conn.opcode);
+        (float*)this->re_state->output + conn->from_layer->index,
+        this->re_state->get_matrix(conn->id),
+        this->re_state->input + conn->to_layer->index,
+        conn->to_layer->size,
+        conn->opcode);
 #endif
 }
 

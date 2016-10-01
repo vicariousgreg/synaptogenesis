@@ -5,7 +5,7 @@
 
 class SpikePrintOutput : public Output {
     public:
-        SpikePrintOutput(Layer &layer, std::string params);
+        SpikePrintOutput(Layer *layer, std::string params);
         void report_output(State *state);
 };
 

@@ -15,18 +15,22 @@ Model* build_model(std::string driver_name, bool verbose) {
     /* Construct the model */
     Model *model = new Model(driver_name);
 
-    int pos = model->add_layer(50, 50, "default");
-    model->add_input(pos, "image", "bird-head-small.jpg");
-    model->add_output(pos, "print_spike", "");
+    int receptor = model->add_layer(50, 50, "default");
+    model->add_input(receptor, "image", "bird-head-small.jpg");
+    model->add_output(receptor, "print_spike", "");
+
+    int second = model->add_layer(50, 50, "random negative");
+    model->connect_layers(receptor, second, true, 0, .5, FULLY_CONNECTED, "", ADD);
+    //model->add_output(second, "print_spike", "");
 
     /*
     int size = 800 * 1;
     int pos = model->add_layer(50, 50, "random positive");
     int neg = model->add_layer(1, size / 4, "random negative");
-    model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD);
-    model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD);
-    model->connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB);
-    model->connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, SUB);
+    model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, "", ADD);
+    model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, "", ADD);
+    model->connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, "", SUB);
+    model->connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, "", SUB);
     model->add_input(pos, "random", "5");
     model->add_input(neg, "random", "2");
     */

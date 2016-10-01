@@ -24,8 +24,8 @@ class Layer {
                 input(NULL),
                 output(NULL) {}
 
-        bool matches_size(Layer &other) {
-            return this->rows == other.rows and this->columns == other.columns;
+        bool matches_size(Layer *other) {
+            return this->rows == other->rows and this->columns == other->columns;
         }
 
         // Layer ID and start index
@@ -45,20 +45,25 @@ class Layer {
 
 class Connection {
     public:
-        Connection (int conn_id, Layer &from_layer, Layer &to_layer, bool plastic,
-                int delay, float max_weight, ConnectionType type, OPCODE opcode);
+        Connection (int conn_id, Layer *from_layer, Layer *to_layer, bool plastic,
+                int delay, float max_weight, ConnectionType type,
+                std::string params, OPCODE opcode);
 
-        Connection(int conn_id, Layer &from_layer, Layer &to_layer, int parent);
+        Connection(int conn_id, Layer *from_layer, Layer *to_layer,
+                Connection *parent);
 
         // Connection ID
         // ID of parent matrix if this is a shared connection
         int id, parent;
 
+        // Layer parameters
+        std::string params;
+
         // Matrix type (see enum)
         ConnectionType type;
 
         // Associated layers
-        Layer from_layer, to_layer;
+        Layer *from_layer, *to_layer;
 
         // Number of weights in connection
         // Connection delay
@@ -84,7 +89,8 @@ class Model {
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */
         int connect_layers(int from_layer, int to_layer, bool plastic,
-            int delay, float max_weight, ConnectionType type, OPCODE opcode);
+            int delay, float max_weight, ConnectionType type, std::string params,
+            OPCODE opcode);
 
         /* Connects to layers, sharing weights with another connection
          *   specified by |parent_id| */
@@ -104,11 +110,11 @@ class Model {
 
         // Layers
         int num_layers;
-        std::vector<Layer> layers;
+        std::vector<Layer*> layers;
 
         // Connection matrices
         int num_connections;
-        std::vector<Connection> connections;
+        std::vector<Connection*> connections;
 
         // Parameter strings vector
         std::vector<std::string> parameter_strings;

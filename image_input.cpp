@@ -7,13 +7,13 @@
 #define cimg_display 0
 #include "CImg.h"
 
-ImageInput::ImageInput(Layer &layer, std::string params) : Input(layer) {
+ImageInput::ImageInput(Layer *layer, std::string params) : Input(layer) {
     try {
         cimg_library::CImg<unsigned char> img(params.c_str());
         width = img.width();
         height = img.height();
 
-        if (width != layer.columns or height != layer.rows) {
+        if (width != layer->columns or height != layer->rows) {
             throw "Image size does not match layer size!";
         }
 
@@ -53,5 +53,5 @@ ImageInput::ImageInput(Layer &layer, std::string params) : Input(layer) {
 }
 
 void ImageInput::feed_input(State *state) {
-    state->set_input(this->layer.id, this->gray);
+    state->set_input(this->layer->id, this->gray);
 }

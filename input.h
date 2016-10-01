@@ -8,13 +8,13 @@
 
 class Input {
     public:
-        Input(Layer &layer) : layer(layer) { }
+        Input(Layer *layer) : layer(layer) { }
 
         virtual void feed_input(State *state) = 0;
 
-        Layer &layer;
+        Layer *layer;
 };
 
-Input* build_input(Layer &layer, std::string type, std::string params);
+Input* build_input(Layer *layer, std::string type, std::string params);
 
 #endif

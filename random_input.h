@@ -5,7 +5,7 @@
 
 class RandomInput : public Input {
     public:
-        RandomInput(Layer &layer, std::string params);
+        RandomInput(Layer *layer, std::string params);
         void feed_input(State *state);
 
         float max_value;
