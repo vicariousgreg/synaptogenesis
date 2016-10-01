@@ -17,6 +17,7 @@ Model* build_model(std::string driver_name) {
 
     int pos = model->add_layer(50, 50, "default");
     model->add_input(pos, "image", "bird-head-small.jpg");
+    model->add_output(pos, "print_spike", "");
 
     /*
     int size = 800 * 1;

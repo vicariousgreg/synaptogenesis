@@ -3,6 +3,7 @@
 #include "rate_encoding_driver.h"
 
 #include "input.h"
+#include "output.h"
 
 void Driver::step_input() {
     // Run input modules
@@ -23,6 +24,17 @@ void Driver::step_input() {
             step_connection_fully_connected(conn);
         } else if (conn.type == ONE_TO_ONE) {
             step_connection_one_to_one(conn);
+        }
+    }
+}
+
+void Driver::print_output() {
+    // Run output modules
+    // If no module, skip layer
+    for (int i = 0 ; i < this->model->num_layers; ++i) {
+        Output *output = this->model->layers[i].output;
+        if (output != NULL) {
+            output->report_output(this->state);
         }
     }
 }

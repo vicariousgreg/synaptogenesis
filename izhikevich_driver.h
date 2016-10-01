@@ -14,13 +14,6 @@ class IzhikevichDriver : public Driver {
             this->state = this->iz_state;
         }
 
-        void print_output() {
-            int* spikes = (int*)this->state->get_output();
-            for (int nid = 0 ; nid < this->model->num_neurons ; ++nid)
-                std::cout << ((spikes[nid] % 2) ? '*' : ' ');
-            std::cout << "|\n";
-        }
-
         void step_connection_fully_connected(Connection &conn);
         void step_connection_one_to_one(Connection &conn);
         void step_output();

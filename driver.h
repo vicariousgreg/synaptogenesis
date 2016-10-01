@@ -14,8 +14,7 @@ class Driver {
         }
 
         void step_input();
-
-        virtual void print_output() = 0;
+        void print_output();
 
         /* Activates neural connections, calculating connection input */
         virtual void step_connection_fully_connected(Connection &conn) = 0;

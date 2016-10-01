@@ -1,5 +1,6 @@
 #include "model.h"
 #include "input.h"
+#include "output.h"
 
 Connection::Connection (int conn_id, Layer &from_layer, Layer &to_layer,
         bool plastic, int delay, float max_weight,
@@ -92,4 +93,9 @@ int Model::add_layer(int rows, int columns, std::string params) {
 void Model::add_input(int layer, std::string type, std::string params) {
     Input *input = build_input(this->layers[layer], type, params);
     this->layers[layer].input = input;
+}
+
+void Model::add_output(int layer, std::string type, std::string params) {
+    Output *output = build_output(this->layers[layer], type, params);
+    this->layers[layer].output = output;
 }

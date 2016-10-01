@@ -15,13 +15,6 @@ class RateEncodingDriver : public Driver {
             this->state = this->re_state;
         }
 
-        void print_output() {
-            float* values = (float*)this->state->get_output();
-            for (int nid = 0 ; nid < this->model->num_neurons ; ++nid)
-                std::cout << values[nid] << " ";
-            std::cout << "|\n";
-        }
-
         void step_connection_fully_connected(Connection &conn);
         void step_connection_one_to_one(Connection &conn);
         void step_output();

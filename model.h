@@ -7,6 +7,7 @@
 #include "constants.h"
 
 class Input;
+class Output;
 
 class Layer {
     public:
@@ -20,7 +21,8 @@ class Layer {
                 rows(rows),
                 columns(columns),
                 size(rows * columns),
-                input(NULL) {}
+                input(NULL),
+                output(NULL) {}
 
         bool matches_size(Layer &other) {
             return this->rows == other.rows and this->columns == other.columns;
@@ -35,6 +37,10 @@ class Layer {
         // Input driver
         // If none, this will be null
         Input* input;
+
+        // Output driver
+        // If none, this will be null
+        Output* output;
 };
 
 class Connection {
@@ -86,6 +92,9 @@ class Model {
 
         /* Adds an input hook of the given |type| for the given |layer| */
         void add_input(int layer, std::string type, std::string params);
+
+        /* Adds an output hook of the given |type| for the given |layer| */
+        void add_output(int layer, std::string type, std::string params);
 
         // Driver string indicating type of driver
         std::string driver_string;
