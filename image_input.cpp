@@ -25,7 +25,7 @@ ImageInput::ImageInput(Layer *layer, std::string params) : Input(layer) {
         float factor = 10;
 
         // Extract values from image
-        std::cout << width << "x" << height << std::endl;
+        //std::cout << width << "x" << height << std::endl;
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++) {
                 float red = factor * (float)img(c,r,0,0) / 255.0;

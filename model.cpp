@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "model.h"
 #include "input.h"
 #include "output.h"
@@ -18,14 +20,28 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
     if (delay >= (32 * HISTORY_SIZE))
         throw "Cannot implement connection delay longer than history!";
 
-    if (type == FULLY_CONNECTED) {
-        this->num_weights = from_layer->size * to_layer->size;
-    } else if (type == ONE_TO_ONE) {
-        if (from_layer->matches_size(to_layer)) {
-            this->num_weights = from_layer->size;
-        } else {
-            throw "Cannot connect differently sized layers one-to-one!";
-        }
+    std::stringstream stream(params);
+    switch (type) {
+        case(FULLY_CONNECTED):
+            break;
+        case(ONE_TO_ONE):
+            this->num_weights = from_layer->size * to_layer->size;
+            if (from_layer->matches_size(to_layer))
+                this->num_weights = from_layer->size;
+            else throw "Cannot connect differently sized layers one-to-one!";
+            break;
+        case(DIVERGENT):
+        case(CONVERGENT):
+        case(CONVOLUTIONAL):
+            stream >> this->overlap;
+            stream >> this->stride;
+            if (to_layer->rows != get_expected_rows(from_layer, type, params) or
+                to_layer->columns != get_expected_columns(from_layer, type, params))
+                throw "Unexpected destination layer size for special connection!";
+            this->num_weights = overlap * overlap * stride;
+            break;
+        default:
+            throw "Unknown layer connection type!";
     }
 }
 
@@ -40,6 +56,8 @@ Connection::Connection(int conn_id, Layer *from_layer, Layer *to_layer,
             max_weight(parent->max_weight),
             opcode(parent->opcode),
             type(parent->type),
+            overlap(parent->overlap),
+            stride(parent->stride),
             params(parent->params),
             parent(parent->id) { }
 
@@ -59,6 +77,50 @@ int Model::connect_layers(int from_layer, int to_layer, bool plastic,
         plastic, delay, max_weight, type, params, opcode);
     this->connections.push_back(conn);
     return this->num_connections++;
+}
+
+int get_expected_rows(Layer *source_layer, ConnectionType type, std::string params) {
+    int overlap, stride;
+    std::stringstream stream(params);
+
+    switch (type) {
+        case(ONE_TO_ONE):
+            return source_layer->rows;
+        case(DIVERGENT):
+            stream >> overlap;
+            stream >> stride;
+            return overlap + (stride * (source_layer->rows -1));
+        case(CONVERGENT):
+        case(CONVOLUTIONAL):
+            stream >> overlap;
+            stream >> stride;
+            return 1 + ((source_layer->rows - overlap) / stride);
+        case(FULLY_CONNECTED):
+        default:
+            throw "Invalid call to get_expected_rows!";
+    }
+}
+
+int get_expected_columns(Layer *source_layer, ConnectionType type, std::string params) {
+    int overlap, stride;
+    std::stringstream stream(params);
+
+    switch (type) {
+        case(ONE_TO_ONE):
+            return source_layer->rows;
+        case(DIVERGENT):
+            stream >> overlap;
+            stream >> stride;
+            return overlap + (stride * (source_layer->columns -1));
+        case(CONVERGENT):
+        case(CONVOLUTIONAL):
+            stream >> overlap;
+            stream >> stride;
+            return 1 + ((source_layer->columns - overlap) / stride);
+        case(FULLY_CONNECTED):
+        default:
+            throw "Invalid call to get_expected_rows!";
+    }
 }
 
 int Model::connect_layers_shared(int from_layer, int to_layer, int parent_id) {

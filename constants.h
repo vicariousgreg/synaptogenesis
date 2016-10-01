@@ -15,10 +15,16 @@
  * Fully connected represents an n x m matrix.
  * One-to-one represents an n size vector connecting two layers
  *   of idential sizes.
+ * Convergent connections converge from a larger layer to a smaller one.
+ * Divergent connections diverge from a larger layer to a smaller one.
+ * Convolutional layers are Convergent layers that share weights.
  */
 enum ConnectionType {
     FULLY_CONNECTED,
-    ONE_TO_ONE
+    ONE_TO_ONE,
+    DIVERGENT,
+    CONVERGENT,
+    CONVOLUTIONAL
 };
 
 /* Synaptic operation opcode */
