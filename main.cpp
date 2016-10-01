@@ -11,7 +11,7 @@
 
 static Timer timer = Timer();
 
-Model* build_model(std::string driver_name) {
+Model* build_model(std::string driver_name, bool verbose) {
     /* Construct the model */
     Model *model = new Model(driver_name);
 
@@ -31,10 +31,16 @@ Model* build_model(std::string driver_name) {
     model->add_input(neg, "random", "2");
     */
 
+    if (verbose) printf("Built model.\n");
+    if (verbose) printf("  - neurons     : %10d\n", model->num_neurons);
+    if (verbose) printf("  - layers      : %10d\n", model->num_layers);
+    if (verbose) printf("  - connections : %10d\n", model->num_connections);
+
+
     return model;
 }
 
-int main(void) {
+int run_simulation(Model *model, int iterations, bool verbose) {
     // Seed random number generator
     srand(time(NULL));
 
@@ -42,34 +48,29 @@ int main(void) {
         // Start timer
         timer.start();
 
-        Model *model = build_model("izhikevich");
-        printf("Built model.\n");
-        printf("  - neurons     : %10d\n", model->num_neurons);
-        printf("  - layers      : %10d\n", model->num_layers);
-        printf("  - connections : %10d\n", model->num_connections);
-
-        // Start timer
-        timer.start();
-
         Driver *driver = build_driver(model);
-        printf("Built state.\n");
-        timer.stop("Initialization");
+        if (verbose) printf("Built state.\n");
+        if (verbose) timer.stop("Initialization");
 
         timer.start();
-        int iterations = 50;
         for (int i = 0 ; i < iterations ; ++i) {
             driver->timestep();
             driver->print_output();
         }
 
         float time = timer.stop("Total time");
-        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+        if (verbose)
+            printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
 
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);
         printf("Fatal error -- exiting...\n");
         return 1;
     }
-
     return 0;
+}
+
+int main(void) {
+    Model *model = build_model("izhikevich", true);
+    return run_simulation(model, 50, true);
 }
