@@ -2,7 +2,7 @@ all:
 	make serial # parallel
 
 parallel:
-	nvcc -x cu *.cpp -DPARALLEL -o test
+	nvcc -Wno-deprecated-gpu-targets -x cu *.cpp -DPARALLEL -o test
 
 serial: serial_main.o serial_izhikevich_state.o serial_izhikevich_driver.o serial_rate_encoding_state.o serial_rate_encoding_driver.o serial_driver.o serial_model.o serial_state.o serial_input.o serial_random_input.o serial_image_input.o serial_output.o serial_float_print_output.o serial_spike_print_output.o
 	g++ -w -pthread serial*.o -o test
