@@ -1,0 +1,6 @@
+TODO:
+  - implement learning rules
+  - implement convergent / divergent connections
+  - create convoluted connections
+    - shared weights, sliding window
+  - create environment for closing input / output loop
