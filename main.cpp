@@ -61,12 +61,9 @@ int run_simulation(Model *model, int iterations, bool verbose) {
         float time = timer.stop("Total time");
         if (verbose)
             printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
-        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
-         
 #ifdef PARALLEL
         check_memory();
 #endif
-
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);
         printf("Fatal error -- exiting...\n");
