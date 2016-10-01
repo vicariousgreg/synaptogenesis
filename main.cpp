@@ -67,8 +67,6 @@ int run_simulation(Model *model, int iterations, bool verbose) {
         check_memory();
 #endif
 
->>>>>>> 0dbd55f2cd448ae8c069382bea354a9f7c37f655
-
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);
         printf("Fatal error -- exiting...\n");
