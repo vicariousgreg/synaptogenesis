@@ -106,12 +106,41 @@ void initialize_matrix(Connection* conn,
             for (int index = 0 ; index < conn->num_weights ; ++index)
                 target_matrix[index] = value;
         } else {
+            // If parallel, transpose the input...
+#ifdef PARALLEL
+            int rows, cols;
+            switch (conn->type) {
+                case (FULLY_CONNECTED):
+                    throw "Cannot specify all weights for fully connected matrix!";
+                case (DIVERGENT):
+                    throw "Cannot specify all weights for divergent matrix!";
+                case (CONVERGENT):
+                    throw "Cannot specify all weights for convergent matrix!";
+                case (ONE_TO_ONE):
+                    rows = conn->from_layer->size;
+                    cols = conn->to_layer->size;
+                    break;
+                case (CONVOLUTIONAL):
+                    rows = conn->overlap;
+                    cols = conn->overlap;
+                    break;
+            }
+            for (int col = 0 ; col < cols ; ++col) {
+                for (int row = 0 ; row < rows ; ++row) {
+                    target_matrix[row * rows + column] = value;
+                    if (index != conn->num_weights-1 and stream.eof())
+                        throw "Insufficient number of weights specified!";
+                    stream >> value;
+                }
+            }
+#else
             for (int index = 0 ; index < conn->num_weights ; ++index) {
                 target_matrix[index] = value;
                 if (index != conn->num_weights-1 and stream.eof())
                     throw "Insufficient number of weights specified!";
                 stream >> value;
             }
+#endif
         }
     } else {
         for (int index = 0 ; index < conn->num_weights ; ++index)
@@ -126,7 +155,7 @@ void initialize_matrix(Connection* conn,
 #ifdef PARALLEL
     cudaMemcpy(mData, target_matrix,
         matrix_size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaCheckError("Failed to randomize weight matrix!");
+    cudaCheckError("Failed to initialize weight matrix!");
     free(target_matrix);
 #endif
 }

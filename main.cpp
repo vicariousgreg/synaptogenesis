@@ -15,18 +15,30 @@ Model* build_model(std::string driver_name, bool verbose) {
     /* Construct the model */
     Model *model = new Model(driver_name);
 
-    int receptor = model->add_layer(50, 50, "default");
-    model->add_input(receptor, "image", "bird-head-small.jpg");
+    int receptor = model->add_layer(373, 373, "default");
+    model->add_input(receptor, "image", "bird-head.jpg");
     //model->add_output(receptor, "print_spike", "");
 
-    int vertical = model->add_layer(48, 48, "default");
-    model->connect_layers(receptor, vertical, true, 0, 5, CONVOLUTIONAL,
-        "3 1 -1 7 -1 -1 7 -1 -1 7 -1", ADD);
-    model->add_output(vertical, "print_spike", "");
+    int vertical = model->add_layer(369, 369, "default");
+    //model->connect_layers(receptor, vertical, true, 0, 5, CONVERGENT, ADD, "5 1");
+    model->connect_layers(receptor, vertical, true, 0, 5, CONVOLUTIONAL, ADD,
+        "5 1 "
+        "-0.5 -0.5 5 -0.5 -0.5 "
+        "-0.5 -0.5 5 -0.5 -0.5 "
+        "-0.5 -0.5 5 -0.5 -0.5 "
+        "-0.5 -0.5 5 -0.5 -0.5 "
+        "-0.5 -0.5 5 -0.5 -0.5");
+    //model->add_output(vertical, "print_spike", "");
 
-    int horizontal = model->add_layer(48, 48, "default");
-    model->connect_layers(receptor, horizontal, true, 0, 5, CONVOLUTIONAL,
-        "3 1 -1 -1 -1 7 7 7 -1 -1 -1", ADD);
+    int horizontal = model->add_layer(369, 369, "default");
+    //model->connect_layers(receptor, horizontal, true, 0, 5, CONVERGENT, ADD, "5 1");
+    model->connect_layers(receptor, horizontal, true, 0, 5, CONVOLUTIONAL, ADD,
+        "5 1 "
+        "-0.5 -0.5 -0.5 -0.5 -0.5 "
+        "-0.5 -0.5 -0.5 -0.5 -0.5 "
+        "5 5 5 5 5 "
+        "-0.5 -0.5 -0.5 -0.5 -0.5 "
+        "-0.5 -0.5 -0.5 -0.5 -0.5");
     model->add_output(horizontal, "print_spike", "");
 
     /*
@@ -47,10 +59,17 @@ Model* build_model(std::string driver_name, bool verbose) {
     model->add_input(neg, "random", "2");
     */
 
-    if (verbose) printf("Built model.\n");
-    if (verbose) printf("  - neurons     : %10d\n", model->num_neurons);
-    if (verbose) printf("  - layers      : %10d\n", model->num_layers);
-    if (verbose) printf("  - connections : %10d\n", model->num_connections);
+    if (verbose) {
+        printf("Built model.\n");
+        printf("  - neurons     : %10d\n", model->num_neurons);
+        printf("  - layers      : %10d\n", model->num_layers);
+        printf("  - connections : %10d\n", model->num_connections);
+        int num_weights = 0;
+        for (int i = 0; i < model->num_connections ; ++i)
+            if (model->connections[i]->parent == -1)
+                num_weights += model->connections[i]->num_weights;
+        printf("  - weights     : %10d\n", num_weights);
+    }
 
 
     return model;

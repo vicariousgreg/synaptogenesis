@@ -16,6 +16,10 @@ inline int calc_blocks(int computations) {
     return ceil((float) computations / THREADS);
 }
 
+inline int calc_blocks(int computations, int threads) {
+    return ceil((float) computations / threads);
+}
+
 inline void cudaSync() {
     cudaDeviceSynchronize();
 }

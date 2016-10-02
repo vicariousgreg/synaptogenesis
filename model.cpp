@@ -97,8 +97,8 @@ Model::Model (std::string driver_string) :
         driver_string(driver_string) {}
 
 int Model::connect_layers(int from_layer, int to_layer, bool plastic,
-        int delay, float max_weight, ConnectionType type, std::string params,
-        Opcode opcode) {
+        int delay, float max_weight, ConnectionType type, Opcode opcode,
+        std::string params) {
     Connection *conn = new Connection(
         this->num_connections,
         this->layers[from_layer], this->layers[to_layer],

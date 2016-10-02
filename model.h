@@ -105,8 +105,8 @@ class Model {
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */
         int connect_layers(int from_layer, int to_layer, bool plastic,
-            int delay, float max_weight, ConnectionType type, std::string params,
-            Opcode opcode);
+            int delay, float max_weight, ConnectionType type, Opcode opcode,
+            std::string params);
 
         /* Connects to layers, sharing weights with another connection
          *   specified by |parent_id| */

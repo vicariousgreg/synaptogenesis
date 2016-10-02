@@ -42,8 +42,7 @@ void iz_update_currents(Connection *conn, float* mData, int* spikes,
  *   running calc_matrix will access sequential data from one row.
  */
 __global__ void parallel_calc_matrix(int* spikes, float* weights,
-        float* currents, int from_size, int to_size, int mask, Opcode opcode,
-        int overlap, int stride);
+        float* currents, int from_size, int to_size, int mask, Opcode opcode);
 
 __global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_coluns, int to_rows, int to_columns,
