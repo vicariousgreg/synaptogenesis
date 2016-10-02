@@ -45,16 +45,15 @@ class Layer {
 
 /* Gets the expected row/col size of a destination layer given a |source_layer|,
  *   a connection |type| and connection |params|.
- * These functions only return meaningful values for connection types that
+ * This function only returns meaningful values for connection types that
  *   are not FULLY_CONNECTED */
-int get_expected_rows(Layer *source_layer, ConnectionType type, std::string params);
-int get_expected_columns(Layer *source_layer, ConnectionType type, std::string params);
+int get_expected_dimension(int dimension, ConnectionType type, std::string params);
 
 class Connection {
     public:
         Connection (int conn_id, Layer *from_layer, Layer *to_layer, bool plastic,
                 int delay, float max_weight, ConnectionType type,
-                std::string params, OPCODE opcode);
+                std::string params, Opcode opcode);
 
         Connection(int conn_id, Layer *from_layer, Layer *to_layer,
                 Connection *parent);
@@ -80,7 +79,7 @@ class Connection {
         int num_weights, delay;
 
         // Connection operation code
-        OPCODE opcode;
+        Opcode opcode;
 
         // Flag for whether matrix can change via learning
         bool plastic;
@@ -100,7 +99,7 @@ class Model {
          *   parameters */
         int connect_layers(int from_layer, int to_layer, bool plastic,
             int delay, float max_weight, ConnectionType type, std::string params,
-            OPCODE opcode);
+            Opcode opcode);
 
         /* Connects to layers, sharing weights with another connection
          *   specified by |parent_id| */

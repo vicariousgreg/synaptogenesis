@@ -17,11 +17,13 @@ Model* build_model(std::string driver_name, bool verbose) {
 
     int receptor = model->add_layer(50, 50, "default");
     model->add_input(receptor, "image", "bird-head-small.jpg");
-    model->add_output(receptor, "print_spike", "");
+    //model->add_output(receptor, "print_spike", "");
 
-    int second = model->add_layer(48, 48, "random negative");
-    model->connect_layers(receptor, second, true, 0, .5, CONVERGENT, "3 1", ADD);
-    //model->add_output(second, "print_spike", "");
+    int second = model->add_layer(48, 48, "default");
+    model->connect_layers(receptor, second, true, 0, 10.0, CONVOLUTIONAL, "3 1", ADD);
+    //int second = model->add_layer(50, 50, "default");
+    //model->connect_layers(receptor, second, true, 0, 10.0, FULLY_CONNECTED, "", ADD);
+    model->add_output(second, "print_spike", "");
 
     /*
     int size = 800 * 1;

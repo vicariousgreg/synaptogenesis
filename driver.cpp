@@ -22,14 +22,20 @@ void Driver::step_input() {
         Connection *conn = this->model->connections[cid];
         switch (conn->type) {
             case (FULLY_CONNECTED):
-                break;
                 step_connection_fully_connected(conn);
+                break;
             case (ONE_TO_ONE):
                 step_connection_one_to_one(conn);
                 break;
             case (DIVERGENT):
+                step_connection_divergent(conn);
+                break;
             case (CONVERGENT):
+                step_connection_convergent(conn);
+                break;
             case (CONVOLUTIONAL):
+                step_connection_convolutional(conn);
+                break;
             default:
                 throw "Unimplemented connection type!";
         }

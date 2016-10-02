@@ -6,7 +6,7 @@
 
 Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,
-        ConnectionType type, std::string params,  OPCODE opcode) :
+        ConnectionType type, std::string params,  Opcode opcode) :
             id(conn_id),
             from_layer(from_layer),
             to_layer(to_layer),
@@ -23,22 +23,42 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
     std::stringstream stream(params);
     switch (type) {
         case(FULLY_CONNECTED):
+            this->num_weights = from_layer->size * to_layer->size;
             break;
         case(ONE_TO_ONE):
-            this->num_weights = from_layer->size * to_layer->size;
             if (from_layer->matches_size(to_layer))
                 this->num_weights = from_layer->size;
             else throw "Cannot connect differently sized layers one-to-one!";
             break;
         case(DIVERGENT):
+            stream >> this->overlap;
+            stream >> this->stride;
+            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
+                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
+                throw "Unexpected destination layer size for divergent connection!";
+            this->num_weights = overlap * overlap * stride;
+            // Divergent connections use unshared mini weight matrices
+            // Each source neuron connects to overlap squared neurons
+            this->num_weights = overlap * overlap * from_layer->size;
+            break;
         case(CONVERGENT):
+            stream >> this->overlap;
+            stream >> this->stride;
+            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
+                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
+                throw "Unexpected destination layer size for convergent connection!";
+            // Convergent connections use unshared mini weight matrices
+            // Each destination neuron connects to overlap squared neurons
+            this->num_weights = overlap * overlap * to_layer->size;
+            break;
         case(CONVOLUTIONAL):
             stream >> this->overlap;
             stream >> this->stride;
-            if (to_layer->rows != get_expected_rows(from_layer, type, params) or
-                to_layer->columns != get_expected_columns(from_layer, type, params))
-                throw "Unexpected destination layer size for special connection!";
-            this->num_weights = overlap * overlap * stride;
+            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
+                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
+                throw "Unexpected destination layer size for convolutional connection!";
+            // Convolutional connections use a shared weight kernel
+            this->num_weights = overlap * overlap;
             break;
         default:
             throw "Unknown layer connection type!";
@@ -70,7 +90,7 @@ Model::Model (std::string driver_string) :
 
 int Model::connect_layers(int from_layer, int to_layer, bool plastic,
         int delay, float max_weight, ConnectionType type, std::string params,
-        OPCODE opcode) {
+        Opcode opcode) {
     Connection *conn = new Connection(
         this->num_connections,
         this->layers[from_layer], this->layers[to_layer],
@@ -79,47 +99,25 @@ int Model::connect_layers(int from_layer, int to_layer, bool plastic,
     return this->num_connections++;
 }
 
-int get_expected_rows(Layer *source_layer, ConnectionType type, std::string params) {
+int get_expected_dimension(int source_dimension, ConnectionType type, std::string params) {
     int overlap, stride;
     std::stringstream stream(params);
 
     switch (type) {
         case(ONE_TO_ONE):
-            return source_layer->rows;
+            return source_dimension;
         case(DIVERGENT):
             stream >> overlap;
             stream >> stride;
-            return overlap + (stride * (source_layer->rows -1));
+            return overlap + (stride * (source_dimension -1));
         case(CONVERGENT):
         case(CONVOLUTIONAL):
             stream >> overlap;
             stream >> stride;
-            return 1 + ((source_layer->rows - overlap) / stride);
+            return 1 + ((source_dimension - overlap) / stride);
         case(FULLY_CONNECTED):
         default:
-            throw "Invalid call to get_expected_rows!";
-    }
-}
-
-int get_expected_columns(Layer *source_layer, ConnectionType type, std::string params) {
-    int overlap, stride;
-    std::stringstream stream(params);
-
-    switch (type) {
-        case(ONE_TO_ONE):
-            return source_layer->rows;
-        case(DIVERGENT):
-            stream >> overlap;
-            stream >> stride;
-            return overlap + (stride * (source_layer->columns -1));
-        case(CONVERGENT):
-        case(CONVOLUTIONAL):
-            stream >> overlap;
-            stream >> stride;
-            return 1 + ((source_layer->columns - overlap) / stride);
-        case(FULLY_CONNECTED):
-        default:
-            throw "Invalid call to get_expected_rows!";
+            throw "Invalid call to get_expected_dimension!";
     }
 }
 

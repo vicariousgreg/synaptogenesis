@@ -16,6 +16,9 @@ class IzhikevichDriver : public Driver {
 
         void step_connection_fully_connected(Connection *conn);
         void step_connection_one_to_one(Connection *conn);
+        void step_connection_divergent(Connection *conn);
+        void step_connection_convergent(Connection *conn);
+        void step_connection_convolutional(Connection *conn);
         void step_output();
         void step_weights();
 
@@ -40,13 +43,26 @@ void iz_update_currents(Connection *conn, float* mData, int* spikes,
  *   running calc_matrix will access sequential data from one row.
  */
 __global__ void parallel_calc_matrix(int* spikes, float* weights,
-        float* currents, int from_size, int to_size, int mask, OPCODE opcode);
+        float* currents, int from_size, int to_size, int mask, Opcode opcode,
+        int overlap, int stride);
+
+__global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
+        float* currents, int from_rows, int from_coluns, int to_rows, int to_columns,
+        int mask, Opcode opcode, int overlap, int stride);
+
+__global__ void parallel_calc_matrix_convergent(int* spikes, float* weights,
+        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        int mask, Opcode opcode, int overlap, int stride);
+
+__global__ void parallel_calc_matrix_convolutional(int* spikes, float* weights,
+        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        int mask, Opcode opcode);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
  *   input weight.  Weight vectors represent one-to-one neural connections.
  */
 __global__ void parallel_activate_vector(int* spikes, float* weights,
-                    float* currents, int size, int mask, OPCODE opcode);
+                    float* currents, int size, int mask, Opcode opcode);
 
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
@@ -62,15 +78,27 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages, float* recove
 
 #else
 
-/* Serial implementation of calc_matrix function for activation of
+/* Serial implementation of calc_matrix functions for activation of
  *   neural connections */
 void serial_calc_matrix(int* spikes, float* weights, float* currents,
-                        int from_size, int to_size, int mask, OPCODE opcode);
+                        int from_size, int to_size, int mask, Opcode opcode);
+
+void serial_calc_matrix_divergent(int* spikes, float* weights,
+        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        int mask, Opcode opcode, int overlap, int stride);
+
+void serial_calc_matrix_convergent(int* spikes, float* weights,
+        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        int mask, Opcode opcode, int overlap, int stride);
+
+void serial_calc_matrix_convolutional(int* spikes, float* weights,
+        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        int mask, Opcode opcode, int overlap, int stride);
 
 /* Serial implementation of activate_vector function for activation of
  *   neural connections */
 void serial_activate_vector(int* spikes, float* weights, float* currents,
-                                        int size, int mask, OPCODE opcode);
+                                        int size, int mask, Opcode opcode);
 
 /* Serial implementation of Izhikevich voltage update function */
 void serial_izhikevich(float* voltages, float* recoveries, float* currents,

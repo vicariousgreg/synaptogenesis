@@ -28,7 +28,7 @@ enum ConnectionType {
 };
 
 /* Synaptic operation opcode */
-enum OPCODE {
+enum Opcode {
     ADD,
     SUB,
     MULT,
@@ -40,7 +40,7 @@ enum OPCODE {
 #ifdef PARALLEL
 #include "parallel.h"
 
-inline __device__ float calc(OPCODE opcode, float input, float sum) {
+inline __device__ float calc(Opcode opcode, float input, float sum) {
     switch (opcode) {
         case ADD:  return input + sum;
         case SUB:  return input - sum;
@@ -51,7 +51,7 @@ inline __device__ float calc(OPCODE opcode, float input, float sum) {
     return 0.0;
 }
 #else
-inline float calc(OPCODE opcode, float input, float sum) {
+inline float calc(Opcode opcode, float input, float sum) {
     switch (opcode) {
         case ADD:  return input + sum;
         case SUB:  return input - sum;

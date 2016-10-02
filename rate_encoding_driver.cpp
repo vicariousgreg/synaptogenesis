@@ -49,6 +49,18 @@ void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
 #endif
 }
 
+void RateEncodingDriver::step_connection_divergent(Connection *conn) {
+    throw "Divergent connection unimplemented!";
+}
+
+void RateEncodingDriver::step_connection_convergent(Connection *conn) {
+    throw "Convergent connection unimplemented!";
+}
+
+void RateEncodingDriver::step_connection_convolutional(Connection *conn) {
+    throw "Convolutional connection unimplemented!";
+}
+
 void RateEncodingDriver::step_output() {
     RateEncodingState* state = (RateEncodingState*) this->state;
 
@@ -82,7 +94,7 @@ void RateEncodingDriver::step_weights() {
 /*****************************************************************************/
 
 __global__ void parallel_calc_matrix(float* outputs, float* weights,
-        float* inputs, int from_size, int to_size, OPCODE opcode) {
+        float* inputs, int from_size, int to_size, Opcode opcode) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (col < to_size) {
@@ -95,7 +107,7 @@ __global__ void parallel_calc_matrix(float* outputs, float* weights,
 }
 
 __global__ void parallel_activate_vector(float* outputs, float* weights,
-                    float* inputs, int size, OPCODE opcode) {
+                    float* inputs, int size, Opcode opcode) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index < size) {
@@ -118,7 +130,7 @@ __global__ void parallel_activation_function(float* outputs, float* inputs,
 /*****************************************************************************/
 
 void serial_calc_matrix(float* outputs, float* weights, float* inputs,
-                        int from_size, int to_size, OPCODE opcode) {
+                        int from_size, int to_size, Opcode opcode) {
     // IMPORTANT:
     // Serial implementation is faster if matrix is interpreted in a transposed
     //    fashion compared to parallel.  In this loop, row is the destination,
@@ -134,7 +146,7 @@ void serial_calc_matrix(float* outputs, float* weights, float* inputs,
 }
 
 void serial_activate_vector(float* outputs, float* weights, float* inputs,
-                                        int size, OPCODE opcode) {
+                                        int size, Opcode opcode) {
     for (int index = 0 ; index < size ; ++index) {
         inputs[index] = calc(opcode, inputs[index],
             outputs[index] * weights[index]);

@@ -17,6 +17,9 @@ class RateEncodingDriver : public Driver {
 
         void step_connection_fully_connected(Connection *conn);
         void step_connection_one_to_one(Connection *conn);
+        void step_connection_divergent(Connection *conn);
+        void step_connection_convergent(Connection *conn);
+        void step_connection_convolutional(Connection *conn);
         void step_output();
         void step_weights();
 
@@ -36,13 +39,13 @@ class RateEncodingDriver : public Driver {
  *   running calc_matrix will access sequential data from one row.
  */
 __global__ void parallel_calc_matrix(float* outputs, float* weights,
-        float* inputs, int from_size, int to_size, OPCODE opcode);
+        float* inputs, int from_size, int to_size, Opcode opcode);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
  *   input weight.  Weight vectors represent one-to-one neural connections.
  */
 __global__ void parallel_activate_vector(float* outputs, float* weights,
-                    float* inputs, int size, OPCODE opcode);
+                    float* inputs, int size, Opcode opcode);
 
 __global__ void parallel_activation_function(float* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons);
@@ -52,12 +55,12 @@ __global__ void parallel_activation_function(float* outputs, float* inputs,
 /* Serial implementation of calc_matrix function for activation of
  *   neural connections */
 void serial_calc_matrix(float* outputs, float* weights, float* inputs,
-                        int from_size, int to_size, OPCODE opcode);
+                        int from_size, int to_size, Opcode opcode);
 
 /* Serial implementation of activate_vector function for activation of
  *   neural connections */
 void serial_activate_vector(float* outputs, float* weights, float* inputs,
-                                        int size, OPCODE opcode);
+                                        int size, Opcode opcode);
 
 void serial_activation_function(float* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons);
