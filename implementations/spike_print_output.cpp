@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "spike_print_output.h"
-#include "tools.h"
+#include "../framework/tools.h"
 
 SpikePrintOutput::SpikePrintOutput(Layer *layer, std::string params)
         : Output(layer) { }

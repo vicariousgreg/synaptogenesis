@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "float_print_output.h"
-#include "tools.h"
+#include "../framework/tools.h"
 
 FloatPrintOutput::FloatPrintOutput(Layer *layer, std::string params)
         : Output(layer) { }

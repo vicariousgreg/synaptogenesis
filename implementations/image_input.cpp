@@ -2,10 +2,10 @@
 #include <iostream>
 
 #include "image_input.h"
-#include "tools.h"
+#include "../framework/tools.h"
 
 #define cimg_display 0
-#include "CImg.h"
+#include "../libs/CImg.h"
 
 ImageInput::ImageInput(Layer *layer, std::string params) : Input(layer) {
     try {

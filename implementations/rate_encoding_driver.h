@@ -3,9 +3,9 @@
 
 #include <iostream>
 
-#include "driver.h"
+#include "../framework/driver.h"
 #include "rate_encoding_state.h"
-#include "parallel.h"
+#include "../framework/parallel.h"
 
 
 class RateEncodingDriver : public Driver {
