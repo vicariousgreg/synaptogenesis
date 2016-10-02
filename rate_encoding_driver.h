@@ -40,6 +40,10 @@ class RateEncodingDriver : public Driver {
 __global__ void parallel_calc_matrix(float* outputs, float* weights,
         float* inputs, int from_size, int to_size, Opcode opcode);
 
+__global__ void parallel_calc_matrix_convergent(float* outputs, float* weights,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
+        Opcode opcode, int overlap, int stride, bool convolutional);
+
 /* This parallel kernel calculates the input to one neuron, which only ahs one
  *   input weight.  Weight vectors represent one-to-one neural connections.
  */
@@ -55,6 +59,10 @@ __global__ void parallel_activation_function(float* outputs, float* inputs,
  *   neural connections */
 void serial_calc_matrix(float* outputs, float* weights, float* inputs,
                         int from_size, int to_size, Opcode opcode);
+
+void serial_calc_matrix_convergent(float* outputs, float* weights,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
+        Opcode opcode, int overlap, int stride, bool convolutional);
 
 /* Serial implementation of activate_vector function for activation of
  *   neural connections */

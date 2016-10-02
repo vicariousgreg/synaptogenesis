@@ -54,7 +54,35 @@ void RateEncodingDriver::step_connection_divergent(Connection *conn) {
 }
 
 void RateEncodingDriver::step_connection_convergent(Connection *conn, bool convolutional) {
-    throw "Convergent connection unimplemented!";
+#ifdef PARALLEL
+    int blocks = calc_blocks(conn->to_layer->size);
+    parallel_calc_matrix_convergent<<<blocks, THREADS>>>(
+        (float*)this->re_state->device_output + conn->from_layer->index,
+        this->re_state->get_matrix(conn->id),
+        this->re_state->device_input + conn->to_layer->index,
+        conn->from_layer->rows,
+        conn->from_layer->columns,
+        conn->to_layer->rows,
+        conn->to_layer->columns,
+        conn->opcode,
+        conn->overlap,
+        conn->stride,
+        convolutional);
+    cudaCheckError("Failed to calculate connection activation!");
+#else
+    serial_calc_matrix_convergent(
+        (float*)this->re_state->output + conn->from_layer->index,
+        this->re_state->get_matrix(conn->id),
+        this->re_state->input + conn->to_layer->index,
+        conn->from_layer->rows,
+        conn->from_layer->columns,
+        conn->to_layer->rows,
+        conn->to_layer->columns,
+        conn->opcode,
+        conn->overlap,
+        conn->stride,
+        convolutional);
+#endif
 }
 
 void RateEncodingDriver::step_output() {
@@ -102,6 +130,11 @@ __global__ void parallel_calc_matrix(float* outputs, float* weights,
     }
 }
 
+__global__ void parallel_calc_matrix_convergent(float* outputs, float* weights,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
+        Opcode opcode, int overlap, int stride, bool convolutional) {
+}
+
 __global__ void parallel_activate_vector(float* outputs, float* weights,
                     float* inputs, int size, Opcode opcode) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -138,6 +171,33 @@ void serial_calc_matrix(float* outputs, float* weights, float* inputs,
             sum += outputs[col] * weights[row*from_size + col];
         }
         inputs[row] = calc(opcode, inputs[row], sum);
+    }
+}
+
+void serial_calc_matrix_convergent(float* outputs, float* weights,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
+        Opcode opcode, int overlap, int stride, bool convolutional) {
+    // Iterate over destination neurons
+    for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
+        for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
+            float sum = 0.0;
+            int s_row = d_row * stride;
+            int s_col = d_col * stride;
+            int d_index = d_row*to_columns + d_col;
+
+            // Convolutional connections share weights, and don't use an offset
+            int kernel_offset = (convolutional) ? 0 : d_index * overlap * overlap;
+
+            // Run the kernel (unshared)
+            for (int k_row = 0 ; k_row < overlap ; ++k_row) {
+                for (int k_col = 0 ; k_col < overlap ; ++k_col) {
+                    int s_index = (s_row+k_row) * from_columns + (s_col+k_col);
+                    sum += outputs[s_index] *
+                        weights[kernel_offset + (k_row*overlap) + k_col];
+                }
+            }
+            inputs[d_index] = calc(opcode, inputs[d_index], sum);
+        }
     }
 }
 
