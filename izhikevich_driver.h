@@ -17,8 +17,7 @@ class IzhikevichDriver : public Driver {
         void step_connection_fully_connected(Connection *conn);
         void step_connection_one_to_one(Connection *conn);
         void step_connection_divergent(Connection *conn);
-        void step_connection_convergent(Connection *conn);
-        void step_connection_convolutional(Connection *conn);
+        void step_connection_convergent(Connection *conn, bool convolutional);
         void step_output();
         void step_weights();
 
@@ -52,11 +51,7 @@ __global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
 
 __global__ void parallel_calc_matrix_convergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride);
-
-__global__ void parallel_calc_matrix_convolutional(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode);
+        int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
  *   input weight.  Weight vectors represent one-to-one neural connections.
@@ -89,11 +84,7 @@ void serial_calc_matrix_divergent(int* spikes, float* weights,
 
 void serial_calc_matrix_convergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride);
-
-void serial_calc_matrix_convolutional(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride);
+        int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
 /* Serial implementation of activate_vector function for activation of
  *   neural connections */

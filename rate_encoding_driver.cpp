@@ -53,12 +53,8 @@ void RateEncodingDriver::step_connection_divergent(Connection *conn) {
     throw "Divergent connection unimplemented!";
 }
 
-void RateEncodingDriver::step_connection_convergent(Connection *conn) {
+void RateEncodingDriver::step_connection_convergent(Connection *conn, bool convolutional) {
     throw "Convergent connection unimplemented!";
-}
-
-void RateEncodingDriver::step_connection_convolutional(Connection *conn) {
-    throw "Convolutional connection unimplemented!";
 }
 
 void RateEncodingDriver::step_output() {

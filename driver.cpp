@@ -31,10 +31,10 @@ void Driver::step_input() {
                 step_connection_divergent(conn);
                 break;
             case (CONVERGENT):
-                step_connection_convergent(conn);
+                step_connection_convergent(conn, false);
                 break;
             case (CONVOLUTIONAL):
-                step_connection_convolutional(conn);
+                step_connection_convergent(conn, true);
                 break;
             default:
                 throw "Unimplemented connection type!";

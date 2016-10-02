@@ -74,11 +74,7 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn) {
     throw "Divergent connection unimplemented!";
 }
 
-void IzhikevichDriver::step_connection_convergent(Connection *conn) {
-    throw "Convergent connection unimplemented!";
-}
-
-void IzhikevichDriver::step_connection_convolutional(Connection *conn) {
+void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolutional) {
     // Determine which part of spike vector to use based on delay
     int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
     int mask = 1 << (conn->delay % 32);
@@ -86,7 +82,7 @@ void IzhikevichDriver::step_connection_convolutional(Connection *conn) {
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
     int blocks = calc_blocks(conn->to_layer->size);
-    parallel_calc_matrix_convolutional<<<blocks, THREADS>>>(
+    parallel_calc_matrix_convergent<<<blocks, THREADS>>>(
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
@@ -97,12 +93,13 @@ void IzhikevichDriver::step_connection_convolutional(Connection *conn) {
         mask,
         conn->opcode,
         conn->overlap,
-        conn->stride);
+        conn->stride,
+        convolutional);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    serial_calc_matrix_convolutional(
+    serial_calc_matrix_convergent(
         spikes + conn->from_layer->index,
         this->state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
@@ -113,7 +110,8 @@ void IzhikevichDriver::step_connection_convolutional(Connection *conn) {
         mask,
         conn->opcode,
         conn->overlap,
-        conn->stride);
+        conn->stride,
+        convolutional);
 #endif
 }
 
@@ -185,12 +183,7 @@ __global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
 
 __global__ void parallel_calc_matrix_convergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride) {
-}
-
-__global__ void parallel_calc_matrix_convolutional(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride) {
+        int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
 }
 
 __global__ void parallel_activate_vector(int* spikes, float* weights,
@@ -301,35 +294,33 @@ void serial_calc_matrix(int* spikes, float* weights, float* currents,
     }
 }
 
-void serial_calc_matrix_divergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+void serial_calc_matrix_divergent(int* spikes, float* weights, float* currents,
+        int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride) {
 }
 
-void serial_calc_matrix_convergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride) {
-}
-
-void serial_calc_matrix_convolutional(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride) {
+void serial_calc_matrix_convergent(int* spikes, float* weights, float* currents,
+        int from_rows, int from_columns, int to_rows, int to_columns,
+        int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     // Iterate over destination neurons
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
         for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
             float sum = 0.0;
             int s_row = d_row * stride;
             int s_col = d_col * stride;
+            int d_index = d_row*to_columns + d_col;
 
-            // Run the kernel
+            // Convolutional connections share weights, and don't use an offset
+            int kernel_offset = (convolutional) ? 0 : d_index * overlap * overlap;
+
+            // Run the kernel (unshared)
             for (int k_row = 0 ; k_row < overlap ; ++k_row) {
                 for (int k_col = 0 ; k_col < overlap ; ++k_col) {
                     int s_index = (s_row+k_row) * from_columns + (s_col+k_col);
-                    sum += (spikes[s_index] & mask) * weights[k_row*overlap + k_col];
+                    sum += (spikes[s_index] & mask) *
+                        weights[kernel_offset + (k_row*overlap) + k_col];
                 }
             }
-
-            int d_index = d_row*to_columns + d_col;
             currents[d_index] = calc(opcode, currents[d_index], sum);
         }
     }

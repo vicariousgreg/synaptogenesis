@@ -18,8 +18,7 @@ class RateEncodingDriver : public Driver {
         void step_connection_fully_connected(Connection *conn);
         void step_connection_one_to_one(Connection *conn);
         void step_connection_divergent(Connection *conn);
-        void step_connection_convergent(Connection *conn);
-        void step_connection_convolutional(Connection *conn);
+        void step_connection_convergent(Connection *conn, bool convolutional);
         void step_output();
         void step_weights();
 
