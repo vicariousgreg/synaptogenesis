@@ -1,6 +1,6 @@
 #include "driver.h"
-#include "../implementations/izhikevich_driver.h"
-#include "../implementations/rate_encoding_driver.h"
+#include "../implementation/izhikevich_driver.h"
+#include "../implementation/rate_encoding_driver.h"
 
 #include "input.h"
 #include "output.h"
