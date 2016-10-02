@@ -15,11 +15,14 @@ Model* build_model(std::string driver_name, bool verbose) {
     /* Construct the model */
     Model *model = new Model(driver_name);
 
-    int receptor = model->add_layer(373, 373, "default");
-    model->add_input(receptor, "image", "bird-head.jpg");
+    //int image_size = 373;
+    int image_size = 50;
+
+    int receptor = model->add_layer(image_size, image_size, "default");
+    model->add_input(receptor, "image", "bird-head-small.jpg");
     //model->add_output(receptor, "print_spike", "");
 
-    int vertical = model->add_layer(369, 369, "default");
+    int vertical = model->add_layer(image_size-4, image_size-4, "default");
     //model->connect_layers(receptor, vertical, true, 0, 5, CONVERGENT, ADD, "5 1");
     model->connect_layers(receptor, vertical, true, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
@@ -30,7 +33,7 @@ Model* build_model(std::string driver_name, bool verbose) {
         "-0.5 -0.5 5 -0.5 -0.5");
     //model->add_output(vertical, "print_spike", "");
 
-    int horizontal = model->add_layer(369, 369, "default");
+    int horizontal = model->add_layer(image_size-4, image_size-4, "default");
     //model->connect_layers(receptor, horizontal, true, 0, 5, CONVERGENT, ADD, "5 1");
     model->connect_layers(receptor, horizontal, true, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
