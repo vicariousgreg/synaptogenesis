@@ -19,7 +19,7 @@ Model* build_model(std::string driver_name, bool verbose) {
     int image_size = 50;
 
     int receptor = model->add_layer(image_size, image_size, "default");
-    model->add_input(receptor, "image", "bird-head-small.jpg");
+    model->add_input(receptor, "image", "resources/bird-head-small.jpg");
     //model->add_input(receptor, "image", "grid.png");
     //model->add_output(receptor, "print_spike", "");
 
