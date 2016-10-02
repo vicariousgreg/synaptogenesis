@@ -34,6 +34,13 @@ class Layer {
         // Layer rows, columns, and total size
         int rows, columns, size;
 
+        // Parameters for initializing connection
+        // Some types will parse values for connection construction
+        //   -> Divergent, Convergent, Convolutional
+        // In this case, the constructor will consume these values and leave
+        //   the remaining values here
+        std::string params;
+
         // Input driver
         // If none, this will be null
         Input* input;

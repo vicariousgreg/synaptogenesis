@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <sstream>
 
 #include "state.h"
 #include "tools.h"
@@ -72,47 +73,62 @@ void* allocate_device(int count, int size, void* source_data) {
 }
 #endif
 
-/* Randomizes matrices */
-void randomize_matrices(Model* model, float** entry_points, int depth) {
-    for (int i = 0 ; i < model->num_connections ; ++i) {
-        Connection *conn = model->connections[i];
-        // Skip shared connections
-        if (conn->parent != -1) continue;
-        float* mData = entry_points[i];
+/* Initializes matrix */
+void initialize_matrix(Connection* conn,
+        float* mData, int depth) {
+    // Multiply by depth if plastic
+    int matrix_size = conn->num_weights;
+    if (conn->plastic) matrix_size *= depth;
 
-        // Multiply by depth if plastic
-        int matrix_size = conn->num_weights;
-        if (conn->plastic) matrix_size *= depth;
-
-        // Copy data over to a target matrix
-        // Parallel requires a temporary matrix be created and copied
-        // Serial accesses mData directly
+    // Copy data over to a target matrix
+    // Parallel requires a temporary matrix be created and copied
+    // Serial accesses mData directly
 #ifdef PARALLEL
-        float *target_matrix = (float*)calloc(matrix_size, sizeof(float));
-        if (target_matrix == NULL)
-            throw "Failed to allocate temporary matrix on host for randomization!";
+    float *target_matrix = (float*)calloc(matrix_size, sizeof(float));
+    if (target_matrix == NULL)
+        throw "Failed to allocate temporary matrix on host for randomization!";
 #else
-        float *target_matrix = mData;
+    float *target_matrix = mData;
 #endif
 
-        // Randomize the first layer of the matrix (weights)
-        // Further layers are initialized to zero.
-        for (int index = 0 ; index < conn->num_weights ; ++index) {
-            target_matrix[index] = fRand(0, conn->max_weight);
-        }
+    // If parameter is specified, interpret it for initialization
+    // Otherwise, perform randomization
+    if (conn->params.size() > 0) {
+        std::stringstream stream(conn->params);
 
-        // Set up further layers if necessary (initialize to zero)
-        for (int index = conn->num_weights ; index < matrix_size ; ++index) {
-            target_matrix[index] = 0.0;
+        // Extract first value
+        float value;
+        stream >> value;
+
+        // If there are no more values, set all weights to first value
+        // Otherwise, read values and initialize
+        if (stream.eof()) {
+            for (int index = 0 ; index < conn->num_weights ; ++index)
+                target_matrix[index] = value;
+        } else {
+            for (int index = 0 ; index < conn->num_weights ; ++index) {
+                target_matrix[index] = value;
+                if (index != conn->num_weights-1 and stream.eof())
+                    throw "Insufficient number of weights specified!";
+                stream >> value;
+            }
         }
+    } else {
+        for (int index = 0 ; index < conn->num_weights ; ++index)
+            target_matrix[index] = fRand(0, conn->max_weight);
+    }
+
+    // Set up further layers if necessary (initialize to zero)
+    for (int index = conn->num_weights ; index < matrix_size ; ++index) {
+        target_matrix[index] = 0.0;
+    }
 
 #ifdef PARALLEL
-        cudaMemcpy(mData, target_matrix,
-            matrix_size * sizeof(float), cudaMemcpyHostToDevice);
-        cudaCheckError("Failed to randomize weight matrix!");
-        free(target_matrix);
+    cudaMemcpy(mData, target_matrix,
+        matrix_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to randomize weight matrix!");
+    free(target_matrix);
 #endif
-    }
 }
 
 float** build_weight_matrices(Model* model, int depth) {
@@ -157,6 +173,14 @@ float** build_weight_matrices(Model* model, int depth) {
             entry_points[i] = entry_points[conn->parent];
         }
     }
-    randomize_matrices(model, entry_points, depth);
+
+    // Initialize weights
+    for (int i = 0 ; i < model->num_connections ; ++i) {
+        Connection *conn = model->connections[i];
+
+        // Skip shared connections
+        if (conn->parent = -1)
+            initialize_matrix(conn, entry_points[i], depth);
+    }
     return entry_points;
 }

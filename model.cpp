@@ -15,53 +15,61 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             max_weight(max_weight),
             opcode(opcode),
             type(type),
-            params(params),
             parent(-1) {
     if (delay >= (32 * HISTORY_SIZE))
         throw "Cannot implement connection delay longer than history!";
 
-    std::stringstream stream(params);
     switch (type) {
         case(FULLY_CONNECTED):
+            this->params = params;
             this->num_weights = from_layer->size * to_layer->size;
             break;
         case(ONE_TO_ONE):
+            this->params = params;
             if (from_layer->matches_size(to_layer))
                 this->num_weights = from_layer->size;
             else throw "Cannot connect differently sized layers one-to-one!";
             break;
-        case(DIVERGENT):
-            stream >> this->overlap;
-            stream >> this->stride;
-            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
-                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
-                throw "Unexpected destination layer size for divergent connection!";
-            this->num_weights = overlap * overlap * stride;
-            // Divergent connections use unshared mini weight matrices
-            // Each source neuron connects to overlap squared neurons
-            this->num_weights = overlap * overlap * from_layer->size;
-            break;
-        case(CONVERGENT):
-            stream >> this->overlap;
-            stream >> this->stride;
-            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
-                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
-                throw "Unexpected destination layer size for convergent connection!";
-            // Convergent connections use unshared mini weight matrices
-            // Each destination neuron connects to overlap squared neurons
-            this->num_weights = overlap * overlap * to_layer->size;
-            break;
-        case(CONVOLUTIONAL):
-            stream >> this->overlap;
-            stream >> this->stride;
-            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
-                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
-                throw "Unexpected destination layer size for convolutional connection!";
-            // Convolutional connections use a shared weight kernel
-            this->num_weights = overlap * overlap;
-            break;
         default:
-            throw "Unknown layer connection type!";
+            std::stringstream stream(params);
+            // Extract overlap
+            if (stream.eof())
+                throw "Overlap for arborized connection not specified!";
+            stream >> this->overlap;
+            if (this->overlap == 1)
+                throw "Arborized connections cannot have overlap of 1!";
+
+            // Extract stride
+            if (stream.eof())
+                throw "Stride for arborized connection not specified!";
+            stream >> this->stride;
+
+            // Extract remaining parameters for later
+            if (!stream.eof()) std::getline(stream, this->params);
+
+            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
+                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
+                throw "Unexpected destination layer size for arborized connection!";
+            this->num_weights = overlap * overlap * stride;
+
+            switch (type) {
+                case(DIVERGENT):
+                    // Divergent connections use unshared mini weight matrices
+                    // Each source neuron connects to overlap squared neurons
+                    this->num_weights = overlap * overlap * from_layer->size;
+                    break;
+                case(CONVERGENT):
+                    // Convergent connections use unshared mini weight matrices
+                    // Each destination neuron connects to overlap squared neurons
+                    this->num_weights = overlap * overlap * to_layer->size;
+                    break;
+                case(CONVOLUTIONAL):
+                    // Convolutional connections use a shared weight kernel
+                    this->num_weights = overlap * overlap;
+                    break;
+                default:
+                    throw "Unknown layer connection type!";
+            }
     }
 }
 
