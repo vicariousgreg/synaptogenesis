@@ -19,12 +19,21 @@ Model* build_model(std::string driver_name, bool verbose) {
     model->add_input(receptor, "image", "bird-head-small.jpg");
     //model->add_output(receptor, "print_spike", "");
 
-    int second = model->add_layer(48, 48, "default");
-    model->connect_layers(receptor, second, true, 0, 10.0, CONVOLUTIONAL, "3 1", ADD);
+    int vertical = model->add_layer(48, 48, "default");
+    model->connect_layers(receptor, vertical, true, 0, 5, CONVOLUTIONAL,
+        "3 1 -1 7 -1 -1 7 -1 -1 7 -1", ADD);
+    model->add_output(vertical, "print_spike", "");
 
+    int horizontal = model->add_layer(48, 48, "default");
+    model->connect_layers(receptor, horizontal, true, 0, 5, CONVOLUTIONAL,
+        "3 1 -1 -1 -1 7 7 7 -1 -1 -1", ADD);
+    model->add_output(horizontal, "print_spike", "");
+
+    /*
     int third = model->add_layer(46, 46, "default");
-    model->connect_layers(second, third, true, 0, 10.0, CONVOLUTIONAL, "3 1", ADD);
+    model->connect_layers(second, third, true, 0, 10.0, CONVOLUTIONAL, "3 1 0 10 0 0 10 0 0 10 0", ADD);
     model->add_output(third, "print_spike", "");
+    */
 
     /*
     int size = 800 * 1;
