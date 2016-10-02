@@ -1,55 +1,83 @@
-all:
-	make serial # parallel
+#Compiler and Linker
+CC          := g++
+NVCC        := nvcc
 
-parallel:
-	nvcc -w -Wno-deprecated-gpu-targets -x cu *.cpp -DPARALLEL -o test
+#The Target Binary Program
+TARGET_S      := test
+TARGET_P      := parallel_test
 
-serial: build/serial/main.o build/serial/implementation/izhikevich_state.o build/serial/implementation/izhikevich_driver.o build/serial/implementation/rate_encoding_state.o build/serial/implementation/rate_encoding_driver.o build/serial/framework/driver.o build/serial/framework/model.o build/serial/framework/state.o build/serial/framework/input.o build/serial/implementation/random_input.o build/serial/implementation/image_input.o build/serial/framework/output.o build/serial/implementation/float_print_output.o build/serial/implementation/spike_print_output.o
-	g++ -w -pthread build/serial/main.o build/serial/framework/*.o build/serial/implementation/*.o -o test
+#The Directories, Source, Includes, Objects, Binary and Resources
+SRCDIR      := src
+BUILDDIR_S  := ./build/serial
+BUILDDIR_P  := ./build/parallel
+TARGETDIR   := .
+SRCEXT      := cpp
+DEPEXT      := d
+OBJEXT      := o
 
-build/serial/main.o: src/main.cpp
-	g++ -c -w src/main.cpp -o build/serial/main.o
+#Flags, Libraries and Includes
+CCFLAGS      := -w -pthread
+NVCCFLAGS    := -w -Wno-deprecated-gpu-targets -x cu -DPARALLEL
 
-build/serial/implementation/izhikevich_driver.o: src/implementation/izhikevich_driver.cpp src/implementation/izhikevich_driver.h
-	g++ -c -w src/implementation/izhikevich_driver.cpp -o build/serial/implementation/izhikevich_driver.o
+#---------------------------------------------------------------------------------
+#DO NOT EDIT BELOW THIS LINE
+#---------------------------------------------------------------------------------
+SOURCES_S     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+OBJECTS_S     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_S)/%,$(SOURCES_S:.$(SRCEXT)=.$(OBJEXT)))
 
-build/serial/implementation/izhikevich_state.o: src/implementation/izhikevich_state.cpp src/implementation/izhikevich_state.h
-	g++ -c -w src/implementation/izhikevich_state.cpp -o build/serial/implementation/izhikevich_state.o
+#Default Make
+all: serial
 
-build/serial/implementation/rate_encoding_driver.o: src/implementation/rate_encoding_driver.cpp src/implementation/rate_encoding_driver.h
-	g++ -c -w src/implementation/rate_encoding_driver.cpp -o build/serial/implementation/rate_encoding_driver.o
+serial: $(TARGET_S)
 
-build/serial/implementation/rate_encoding_state.o: src/implementation/rate_encoding_state.cpp src/implementation/rate_encoding_state.h
-	g++ -c -w src/implementation/rate_encoding_state.cpp -o build/serial/implementation/rate_encoding_state.o
+#Make the Directories
+directories:
+	@mkdir -p $(BUILDDIR_S)
+	#@mkdir -p $(BUILDDIR_P)
 
-build/serial/framework/driver.o: src/framework/driver.cpp src/framework/driver.h
-	g++ -c -w src/framework/driver.cpp -o build/serial/framework/driver.o
-
-build/serial/framework/input.o: src/framework/input.cpp src/framework/input.h
-	g++ -c -w src/framework/input.cpp -o build/serial/framework/input.o
-
-build/serial/implementation/random_input.o: src/implementation/random_input.cpp src/implementation/random_input.h
-	g++ -c -w src/implementation/random_input.cpp -o build/serial/implementation/random_input.o
-
-build/serial/implementation/image_input.o: src/implementation/image_input.cpp src/implementation/image_input.h
-	g++ -c -w -pthread src/implementation/image_input.cpp -o build/serial/implementation/image_input.o
-
-build/serial/framework/output.o: src/framework/output.cpp src/framework/output.h
-	g++ -c -w src/framework/output.cpp -o build/serial/framework/output.o
-
-build/serial/implementation/spike_print_output.o: src/implementation/spike_print_output.cpp src/implementation/spike_print_output.h
-	g++ -c -w src/implementation/spike_print_output.cpp -o build/serial/implementation/spike_print_output.o
-
-build/serial/implementation/float_print_output.o: src/implementation/float_print_output.cpp src/implementation/float_print_output.h
-	g++ -c -w -pthread src/implementation/float_print_output.cpp -o build/serial/implementation/image_output.o
-
-build/serial/framework/model.o: src/framework/model.cpp src/framework/model.h
-	g++ -c -w src/framework/model.cpp -o build/serial/framework/model.o
-
-build/serial/framework/state.o: src/framework/state.cpp src/framework/state.h
-	g++ -c -w src/framework/state.cpp -o build/serial/framework/state.o
-
-
+#Clean only Objecst
 clean:
-	find build/serial/*.o build/serial/implementation/*.o build/serial/framework/*.o | xargs rm
+	@$(RM) -rf $(BUILDDIR_S)
+	#@$(RM) -rf $(BUILDDIR_P)
 
+#Pull in dependency info for *existing* .o files
+-include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT))
+
+#Link
+$(TARGET_S): $(OBJECTS_S)
+	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^
+
+#Compile
+$(BUILDDIR_S)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p $(dir $@)
+	$(CC) $(CCFLAGS) -c -o $@ $<
+	@$(CC) $(CCFLAGS) -MM $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR_S)/$*.$(DEPEXT)
+	@cp -f $(BUILDDIR_S)/$*.$(DEPEXT) $(BUILDDIR_S)/$*.$(DEPEXT).tmp
+	@sed -e 's|.*:|$(BUILDDIR_S)/$*.$(OBJEXT):|' < $(BUILDDIR_S)/$*.$(DEPEXT).tmp > $(BUILDDIR_S)/$*.$(DEPEXT)
+	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR_S)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR_S)/$*.$(DEPEXT)
+	@rm -f $(BUILDDIR_S)/$*.$(DEPEXT).tmp
+
+#------------- PARALLEL ------------------------
+SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+OBJECTS_P     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
+
+#parallel: $(TARGET_P)
+parallel: 
+	$(NVCC) $(NVCCFLAGS) $(SOURCES) -o $(TARGETDIR)/$(TARGET_P)
+
+$(TARGET_P): $(OBJECTS_P)
+	#$(NVCC) $(NVCCFLAGS) -dlink -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
+	#$(CC) $(CCFLAGS) -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
+	$(NVCC) $(NVCCFLAGS) -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
+
+$(BUILDDIR_P)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
+	@mkdir -p $(dir $@)
+	$(NVCC) $(NVCCFLAGS) -dc -o $@ $<
+	@$(NVCC) $(NVCCFLAGS) -M $(SRCDIR)/$*.$(SRCEXT) > $(BUILDDIR_P)/$*.$(DEPEXT)
+	@cp -f $(BUILDDIR_P)/$*.$(DEPEXT) $(BUILDDIR_P)/$*.$(DEPEXT).tmp
+	@sed -e 's|.*:|$(BUILDDIR_P)/$*.$(OBJEXT):|' < $(BUILDDIR_P)/$*.$(DEPEXT).tmp > $(BUILDDIR_P)/$*.$(DEPEXT)
+	@sed -e 's/.*://' -e 's/\\$$//' < $(BUILDDIR_P)/$*.$(DEPEXT).tmp | fmt -1 | sed -e 's/^ *//' -e 's/$$/:/' >> $(BUILDDIR_P)/$*.$(DEPEXT)
+	@rm -f $(BUILDDIR_P)/$*.$(DEPEXT).tmp
+
+#Non-File Targets
+.PHONY: all remake clean

@@ -160,7 +160,7 @@ __global__ void parallel_calc_matrix_convergent(float* outputs, float* weights,
                 sum += outputs[s_index] * weights[k_index];
             }
         }
-        currents[d_index] = calc(opcode, currents[d_index], sum);
+        outputs[d_index] = calc(opcode, outputs[d_index], sum);
     }
 }
 

@@ -127,8 +127,8 @@ void initialize_matrix(Connection* conn,
             }
             for (int col = 0 ; col < cols ; ++col) {
                 for (int row = 0 ; row < rows ; ++row) {
-                    target_matrix[row * rows + column] = value;
-                    if (index != conn->num_weights-1 and stream.eof())
+                    target_matrix[row * rows + col] = value;
+                    if (row != rows-1 and col != cols-1 and stream.eof())
                         throw "Insufficient number of weights specified!";
                     stream >> value;
                 }
