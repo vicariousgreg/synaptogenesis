@@ -19,11 +19,12 @@ Model* build_model(std::string driver_name, bool verbose) {
     int image_size = 50;
 
     int receptor = model->add_layer(image_size, image_size, "default");
-    model->add_input(receptor, "image", "resources/bird-head-small.jpg");
-    //model->add_input(receptor, "image", "grid.png");
+    //model->add_input(receptor, "image", "resources/bird-head-small.jpg");
+    model->add_input(receptor, "image", "resources/grid.png");
     //model->add_output(receptor, "print_spike", "");
 
     // Vertical line detection
+    //int vertical = model->add_layer(image_size+4, image_size+4, "default");
     int vertical = model->add_layer(image_size-4, image_size-4, "default");
     model->connect_layers(receptor, vertical, true, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
@@ -35,6 +36,7 @@ Model* build_model(std::string driver_name, bool verbose) {
     //model->add_output(vertical, "print_spike", "");
 
     // Horizontal line detection
+    ///*
     int horizontal = model->add_layer(image_size-4, image_size-4, "default");
     model->connect_layers(receptor, horizontal, true, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
@@ -43,20 +45,25 @@ Model* build_model(std::string driver_name, bool verbose) {
         "10 10 10 10 10 "
         "5 5 5 5 5 "
         "-0.25 -0.25 -0.25 -0.25 -0.25");
+    //*/
     //model->add_output(horizontal, "print_spike", "");
 
     // Cross detection
-    int cross = model->add_layer(image_size-4-2, image_size-4-2, "default");
-    model->connect_layers(horizontal, cross, true, 0, 5, CONVOLUTIONAL, ADD,
-        "3 1 "
-        "-0.5 -0.5 -0.5 "
-        "2.5 5 2.5 "
-        "-0.5 -0.5 -0.5 ");
+    int cross = model->add_layer(image_size-4+2, image_size-4+2, "default");
+    //int cross = model->add_layer(image_size-4-2, image_size-4-2, "default");
+    model->connect_layers(vertical, cross, true, 0, 5, DIVERGENT, ADD, "3 1");
+    /*
     model->connect_layers(vertical, cross, true, 0, 5, CONVOLUTIONAL, ADD,
         "3 1 "
         "-0.5 2.5 -0.5 "
         "-0.5 5 -0.5 "
         "-0.5 2.5 -0.5 ");
+    model->connect_layers(horizontal, cross, true, 0, 5, CONVOLUTIONAL, ADD,
+        "3 1 "
+        "-0.5 -0.5 -0.5 "
+        "2.5 5 2.5 "
+        "-0.5 -0.5 -0.5 ");
+    */
     model->add_output(cross, "print_spike", "");
 
     /*

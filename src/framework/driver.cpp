@@ -28,7 +28,7 @@ void Driver::step_input() {
                 step_connection_one_to_one(conn);
                 break;
             case (DIVERGENT):
-                step_connection_divergent(conn);
+                step_connection_divergent(conn, false);
                 break;
             case (CONVERGENT):
                 step_connection_convergent(conn, false);

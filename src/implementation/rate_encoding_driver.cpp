@@ -49,7 +49,7 @@ void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
 #endif
 }
 
-void RateEncodingDriver::step_connection_divergent(Connection *conn) {
+void RateEncodingDriver::step_connection_divergent(Connection *conn, bool convolutional) {
     throw "Divergent connection unimplemented!";
 }
 

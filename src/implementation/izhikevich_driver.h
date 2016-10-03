@@ -16,7 +16,7 @@ class IzhikevichDriver : public Driver {
 
         void step_connection_fully_connected(Connection *conn);
         void step_connection_one_to_one(Connection *conn);
-        void step_connection_divergent(Connection *conn);
+        void step_connection_divergent(Connection *conn, bool convolutional);
         void step_connection_convergent(Connection *conn, bool convolutional);
         void step_output();
         void step_weights();
@@ -46,7 +46,7 @@ __global__ void parallel_calc_matrix(int* spikes, float* weights,
 
 __global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_coluns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride);
+        int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
 __global__ void parallel_calc_matrix_convergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
@@ -79,7 +79,7 @@ void serial_calc_matrix(int* spikes, float* weights, float* currents,
 
 void serial_calc_matrix_divergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride);
+        int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
 void serial_calc_matrix_convergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
