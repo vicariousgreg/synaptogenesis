@@ -18,7 +18,7 @@ void IzhikevichDriver::step_connection_fully_connected(Connection *conn) {
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
     int blocks = calc_blocks(conn->to_layer->size);
-    parallel_calc_matrix<<<blocks, THREADS>>>(
+    calc_matrix<<<blocks, THREADS>>>(
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
@@ -30,7 +30,7 @@ void IzhikevichDriver::step_connection_fully_connected(Connection *conn) {
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    serial_calc_matrix(
+    calc_matrix(
         spikes + conn->from_layer->index,
         this->state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
@@ -49,7 +49,7 @@ void IzhikevichDriver::step_connection_one_to_one(Connection *conn) {
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
     int blocks = calc_blocks(conn->to_layer->size);
-    parallel_activate_vector<<<blocks, THREADS>>>(
+    activate_vector<<<blocks, THREADS>>>(
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
@@ -60,7 +60,7 @@ void IzhikevichDriver::step_connection_one_to_one(Connection *conn) {
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    serial_activate_vector(
+    activate_vector(
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
@@ -81,7 +81,7 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolut
         calc_blocks(conn->to_layer->rows, 1),
         calc_blocks(conn->to_layer->columns, 128));
     dim3 threads_per_block(1, 128);
-    parallel_calc_matrix_divergent<<<blocks_per_grid, threads_per_block>>>(
+    calc_matrix_divergent<<<blocks_per_grid, threads_per_block>>>(
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
@@ -98,7 +98,7 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolut
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    serial_calc_matrix_divergent(
+    calc_matrix_divergent(
         spikes + conn->from_layer->index,
         this->state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
@@ -125,7 +125,7 @@ void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolu
         calc_blocks(conn->to_layer->rows, 1),
         calc_blocks(conn->to_layer->columns, 128));
     dim3 threads_per_block(1, 128);
-    parallel_calc_matrix_convergent<<<blocks_per_grid, threads_per_block>>>(
+    calc_matrix_convergent<<<blocks_per_grid, threads_per_block>>>(
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
@@ -142,7 +142,7 @@ void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolu
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    serial_calc_matrix_convergent(
+    calc_matrix_convergent(
         spikes + conn->from_layer->index,
         this->state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
@@ -163,14 +163,14 @@ void IzhikevichDriver::step_output() {
 
 #ifdef PARALLEL
     int blocks = calc_blocks(num_neurons);
-    parallel_izhikevich<<<blocks, THREADS>>>(
+    izhikevich<<<blocks, THREADS>>>(
         this->iz_state->device_voltage,
         this->iz_state->device_recovery,
         this->iz_state->device_input,
         this->iz_state->device_neuron_parameters,
         num_neurons);
     cudaCheckError("Failed to update neuron voltages!");
-    parallel_calc_spikes<<<blocks, THREADS>>>(
+    calc_spikes<<<blocks, THREADS>>>(
         this->iz_state->device_spikes,
         this->iz_state->device_voltage,
         this->iz_state->device_recovery,
@@ -178,13 +178,13 @@ void IzhikevichDriver::step_output() {
         num_neurons);
     cudaCheckError("Failed to timestep spikes!");
 #else
-    serial_izhikevich(
+    izhikevich(
         this->iz_state->voltage,
         this->iz_state->recovery,
         this->iz_state->input,
         this->iz_state->neuron_parameters,
         num_neurons);
-    serial_calc_spikes(
+    calc_spikes(
         this->iz_state->spikes,
         this->iz_state->voltage,
         this->iz_state->recovery,
@@ -206,7 +206,7 @@ void IzhikevichDriver::step_weights() {
 /************************ PARALLEL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-__global__ void parallel_calc_matrix(int* spikes, float* weights,
+KERNEL void calc_matrix(int* spikes, float* weights,
         float* currents, int from_size, int to_size, int mask, Opcode opcode) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -219,7 +219,7 @@ __global__ void parallel_calc_matrix(int* spikes, float* weights,
     }
 }
 
-__global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
+KERNEL void calc_matrix_divergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride) {
     /*
@@ -257,7 +257,7 @@ __global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
     */
 }
 
-__global__ void parallel_calc_matrix_convergent(int* spikes, float* weights,
+KERNEL void calc_matrix_convergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
@@ -288,7 +288,7 @@ __global__ void parallel_calc_matrix_convergent(int* spikes, float* weights,
     }
 }
 
-__global__ void parallel_activate_vector(int* spikes, float* weights,
+KERNEL void activate_vector(int* spikes, float* weights,
             float* currents, int size, int mask, Opcode opcode) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -301,7 +301,7 @@ __global__ void parallel_activate_vector(int* spikes, float* weights,
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-__global__ void parallel_izhikevich(float* voltages, float* recoveries,
+KERNEL void izhikevich(float* voltages, float* recoveries,
         float* currents, IzhikevichParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -336,7 +336,7 @@ __global__ void parallel_izhikevich(float* voltages, float* recoveries,
 /* Parallel implementation of spike update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-__global__ void parallel_calc_spikes(int* spikes, float* voltages,
+KERNEL void calc_spikes(int* spikes, float* voltages,
         float* recoveries, IzhikevichParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -380,7 +380,7 @@ __global__ void parallel_calc_spikes(int* spikes, float* voltages,
 /************************** SERIAL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void serial_calc_matrix(int* spikes, float* weights, float* currents,
+void calc_matrix(int* spikes, float* weights, float* currents,
                           int from_size, int to_size, int mask, Opcode opcode) {
     // IMPORTANT:
     // Serial implementation is faster if matrix is interpreted in a transposed
@@ -396,7 +396,7 @@ void serial_calc_matrix(int* spikes, float* weights, float* currents,
     }
 }
 
-void serial_calc_matrix_divergent(int* spikes, float* weights, float* currents,
+void calc_matrix_divergent(int* spikes, float* weights, float* currents,
         int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     int kernel_size = overlap * overlap;
@@ -430,7 +430,7 @@ void serial_calc_matrix_divergent(int* spikes, float* weights, float* currents,
     }
 }
 
-void serial_calc_matrix_convergent(int* spikes, float* weights, float* currents,
+void calc_matrix_convergent(int* spikes, float* weights, float* currents,
         int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     int kernel_size = overlap * overlap;
@@ -459,7 +459,7 @@ void serial_calc_matrix_convergent(int* spikes, float* weights, float* currents,
     }
 }
 
-void serial_activate_vector(int* spikes, float* weights,
+void activate_vector(int* spikes, float* weights,
                         float* currents, int size, int mask, Opcode opcode) {
     for (int index = 0 ; index < size ; ++index) {
         currents[index] = calc(opcode, currents[index],
@@ -467,7 +467,7 @@ void serial_activate_vector(int* spikes, float* weights,
     }
 }
 
-void serial_izhikevich(float* voltages, float* recoveries, float* currents,
+void izhikevich(float* voltages, float* recoveries, float* currents,
                 IzhikevichParameters* neuron_params, int num_neurons) {
     float voltage, recovery, current, delta_v;
     IzhikevichParameters *params;
@@ -499,7 +499,7 @@ void serial_izhikevich(float* voltages, float* recoveries, float* currents,
     }
 }
 
-void serial_calc_spikes(int* spikes, float* voltages, float* recoveries,
+void calc_spikes(int* spikes, float* voltages, float* recoveries,
                  IzhikevichParameters* neuron_params, int num_neurons) {
     int spike, new_value; 
     IzhikevichParameters *params;

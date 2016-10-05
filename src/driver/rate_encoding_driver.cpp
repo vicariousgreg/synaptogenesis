@@ -9,7 +9,7 @@
 void RateEncodingDriver::step_connection_fully_connected(Connection *conn) {
 #ifdef PARALLEL
     int blocks = calc_blocks(conn->to_layer->size);
-    parallel_calc_matrix<<<blocks, THREADS>>>(
+    calc_matrix<<<blocks, THREADS>>>(
         (float*)this->re_state->device_output + conn->from_layer->index,
         this->re_state->get_matrix(conn->id),
         this->re_state->device_input + conn->to_layer->index,
@@ -18,7 +18,7 @@ void RateEncodingDriver::step_connection_fully_connected(Connection *conn) {
         conn->opcode);
     cudaCheckError("Failed to calculate connection activation!");
 #else
-    serial_calc_matrix(
+    calc_matrix(
         (float*)this->re_state->output + conn->from_layer->index,
         this->re_state->get_matrix(conn->id),
         this->re_state->input + conn->to_layer->index,
@@ -31,7 +31,7 @@ void RateEncodingDriver::step_connection_fully_connected(Connection *conn) {
 void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
 #ifdef PARALLEL
     int blocks = calc_blocks(conn->to_layer->size);
-    parallel_activate_vector<<<blocks, THREADS>>>(
+    activate_vector<<<blocks, THREADS>>>(
         (float*)this->re_state->device_output + conn->from_layer->index,
         this->re_state->get_matrix(conn->id),
         this->re_state->device_input + conn->to_layer->index,
@@ -40,7 +40,7 @@ void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
     cudaCheckError("Failed to calculate connection activation!");
 #else
 
-    serial_activate_vector(
+    activate_vector(
         (float*)this->re_state->output + conn->from_layer->index,
         this->re_state->get_matrix(conn->id),
         this->re_state->input + conn->to_layer->index,
@@ -59,7 +59,7 @@ void RateEncodingDriver::step_connection_convergent(Connection *conn, bool convo
         calc_blocks(conn->to_layer->rows, 1),
         calc_blocks(conn->to_layer->columns, 128));
     dim3 threads_per_block(1, 128);
-    parallel_calc_matrix_convergent<<<blocks_per_grid, threads_per_block>>>(
+    calc_matrix_convergent<<<blocks_per_grid, threads_per_block>>>(
         (float*)this->re_state->device_output + conn->from_layer->index,
         this->re_state->get_matrix(conn->id),
         this->re_state->device_input + conn->to_layer->index,
@@ -73,7 +73,7 @@ void RateEncodingDriver::step_connection_convergent(Connection *conn, bool convo
         convolutional);
     cudaCheckError("Failed to calculate connection activation!");
 #else
-    serial_calc_matrix_convergent(
+    calc_matrix_convergent(
         (float*)this->re_state->output + conn->from_layer->index,
         this->re_state->get_matrix(conn->id),
         this->re_state->input + conn->to_layer->index,
@@ -93,14 +93,14 @@ void RateEncodingDriver::step_output() {
 
 #ifdef PARALLEL
     int blocks = calc_blocks(this->model->num_neurons);
-    parallel_activation_function<<<blocks, THREADS>>>(
+    activation_function<<<blocks, THREADS>>>(
         (float*)state->device_output,
         state->device_input,
         state->device_neuron_parameters,
         this->model->num_neurons);
     cudaCheckError("Failed to update neuron output!");
 #else
-    serial_activation_function(
+    activation_function(
         (float*)state->output,
         state->input,
         state->neuron_parameters,
@@ -120,7 +120,7 @@ void RateEncodingDriver::step_weights() {
 /************************ PARALLEL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-__global__ void parallel_calc_matrix(float* outputs, float* weights,
+KERNEL void calc_matrix(float* outputs, float* weights,
         float* inputs, int from_size, int to_size, Opcode opcode) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -133,7 +133,7 @@ __global__ void parallel_calc_matrix(float* outputs, float* weights,
     }
 }
 
-__global__ void parallel_calc_matrix_convergent(float* outputs, float* weights,
+KERNEL void calc_matrix_convergent(float* outputs, float* weights,
         float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
         Opcode opcode, int overlap, int stride, bool convolutional) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
@@ -164,7 +164,7 @@ __global__ void parallel_calc_matrix_convergent(float* outputs, float* weights,
     }
 }
 
-__global__ void parallel_activate_vector(float* outputs, float* weights,
+KERNEL void activate_vector(float* outputs, float* weights,
                     float* inputs, int size, Opcode opcode) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -174,7 +174,7 @@ __global__ void parallel_activate_vector(float* outputs, float* weights,
     }
 }
 
-__global__ void parallel_activation_function(float* outputs, float* inputs,
+KERNEL void activation_function(float* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < num_neurons and inputs[nid] > 0.0) {
@@ -187,7 +187,7 @@ __global__ void parallel_activation_function(float* outputs, float* inputs,
 /************************** SERIAL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void serial_calc_matrix(float* outputs, float* weights, float* inputs,
+void calc_matrix(float* outputs, float* weights, float* inputs,
                         int from_size, int to_size, Opcode opcode) {
     // IMPORTANT:
     // Serial implementation is faster if matrix is interpreted in a transposed
@@ -203,7 +203,7 @@ void serial_calc_matrix(float* outputs, float* weights, float* inputs,
     }
 }
 
-void serial_calc_matrix_convergent(float* outputs, float* weights,
+void calc_matrix_convergent(float* outputs, float* weights,
         float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
         Opcode opcode, int overlap, int stride, bool convolutional) {
     // Iterate over destination neurons
@@ -230,7 +230,7 @@ void serial_calc_matrix_convergent(float* outputs, float* weights,
     }
 }
 
-void serial_activate_vector(float* outputs, float* weights, float* inputs,
+void activate_vector(float* outputs, float* weights, float* inputs,
                                         int size, Opcode opcode) {
     for (int index = 0 ; index < size ; ++index) {
         inputs[index] = calc(opcode, inputs[index],
@@ -238,7 +238,7 @@ void serial_activate_vector(float* outputs, float* weights, float* inputs,
     }
 }
 
-void serial_activation_function(float* outputs, float* inputs,
+void activation_function(float* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons) {
     RateEncodingParameters *params;
 

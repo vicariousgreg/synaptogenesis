@@ -29,8 +29,6 @@ class IzhikevichDriver : public Driver {
 void iz_update_currents(Connection *conn, float* mData, int* spikes,
                      float* currents, int num_neurons);
 
-#ifdef PARALLEL
-
 /* Parallel implementation of activation function for activation of
  *   neural connections.  Parameters are pointers to locations in various
  *   value arrays, which allows for optimzation of memory access.  In addition,
@@ -41,63 +39,33 @@ void iz_update_currents(Connection *conn, float* mData, int* spikes,
  *   are located in a column of the matrix.  This is efficient because threads
  *   running calc_matrix will access sequential data from one row.
  */
-__global__ void parallel_calc_matrix(int* spikes, float* weights,
+KERNEL void calc_matrix(int* spikes, float* weights,
         float* currents, int from_size, int to_size, int mask, Opcode opcode);
 
-__global__ void parallel_calc_matrix_divergent(int* spikes, float* weights,
+KERNEL void calc_matrix_divergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_coluns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
-__global__ void parallel_calc_matrix_convergent(int* spikes, float* weights,
+KERNEL void calc_matrix_convergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
 /* This parallel kernel calculates the input to one neuron, which only ahs one
  *   input weight.  Weight vectors represent one-to-one neural connections.
  */
-__global__ void parallel_activate_vector(int* spikes, float* weights,
+KERNEL void activate_vector(int* spikes, float* weights,
                     float* currents, int size, int mask, Opcode opcode);
 
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-__global__ void parallel_izhikevich(float* voltages, float*recoveries, float* currents,
+KERNEL void izhikevich(float* voltages, float*recoveries, float* currents,
                 IzhikevichParameters* neuron_params, int num_neurons);
 
 /* Parallel implementation of spike update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-__global__ void parallel_calc_spikes(int* spikes, float* voltages, float* recoveries,
+KERNEL void calc_spikes(int* spikes, float* voltages, float* recoveries,
                  IzhikevichParameters* neuron_params, int num_neurons);
-
-#else
-
-/* Serial implementation of calc_matrix functions for activation of
- *   neural connections */
-void serial_calc_matrix(int* spikes, float* weights, float* currents,
-                        int from_size, int to_size, int mask, Opcode opcode);
-
-void serial_calc_matrix_divergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride, bool convolutional);
-
-void serial_calc_matrix_convergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride, bool convolutional);
-
-/* Serial implementation of activate_vector function for activation of
- *   neural connections */
-void serial_activate_vector(int* spikes, float* weights, float* currents,
-                                        int size, int mask, Opcode opcode);
-
-/* Serial implementation of Izhikevich voltage update function */
-void serial_izhikevich(float* voltages, float* recoveries, float* currents,
-                IzhikevichParameters* neuron_params, int num_neurons);
-
-/* Serial implementation of spike update function */
-void serial_calc_spikes(int* spikes, float* voltages, float* recoveries,
-                 IzhikevichParameters* neuron_params, int num_neurons);
-
-#endif
 
 #endif

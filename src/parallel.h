@@ -1,6 +1,14 @@
 #ifndef parallel_h
 #define parallel_h
 
+// Define KERNEL prefix such that it doesn't affect anything for serial version
+#ifdef PARALLEL
+#define KERNEL __global__
+#else
+#define KERNEL
+#endif
+
+
 #ifdef PARALLEL
 
 #include <cstdio>
