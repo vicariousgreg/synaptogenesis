@@ -222,39 +222,43 @@ KERNEL void calc_matrix(int* spikes, float* weights,
 KERNEL void calc_matrix_divergent(int* spikes, float* weights,
         float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
-    /*
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
     int d_index = d_row*to_columns + d_col;
 
     if (d_row < to_rows and d_col < to_columns) {
-        int kernel_size = overlap * overlap;
-        int kernel_row_size = (convolutional) ? 1 : from_rows * from_columns;
-
         float sum = 0.0;
-        int d_index = d_row*to_columns + d_col;
 
+        // Determine range of source neurons for divergent kernel
         int start_s_row = d_row / overlap;
         int start_s_col = d_col / overlap ;
         int end_s_row = (d_row + stride) / overlap;
         int end_s_col = (d_col + stride) / overlap ;
 
+        // Kernels are organized into columns
+        // One kernel per source neuron
+        //   Unless convolutional (shared kernel)
+        int kernel_size = overlap * overlap;
+        int kernel_row_size = (convolutional) ? 1 : from_rows * from_columns;
+
+        // Iterate over relevant source neurons...
         for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
             for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
-                // Convolutional connections share weights, and don't use an offset
                 int s_index = (s_row * from_columns) + s_col;
-                int kernel_offset = (convolutional) ? 0 : s_index * kernel_size;
-
                 int k_row = (d_row + ((overlap - stride) * s_row) % overlap);
                 int k_col = (d_col + ((overlap - stride) * s_col) % overlap);
-                int k_index = kernel_offset + (k_row * overlap) + k_col;
 
-                sum += (spikes[s_index] & mask) * weights[k_index];
+                // Row of matrix is the kernel index * row size (see above)
+                int weight_offset = ((k_row * overlap) + k_col) * kernel_row_size;
+                // Column of matrix is either the first column (convolutional)
+                //   or the index of the source neuron otherwise
+                int weight_col = (convolutional) ? 0 : s_index;
+
+                sum += (spikes[s_index] & mask) * weights[weight_offset + weight_col];
             }
         }
         currents[d_index] = calc(opcode, currents[d_index], sum);
     }
-    */
 }
 
 KERNEL void calc_matrix_convergent(int* spikes, float* weights,
@@ -265,22 +269,27 @@ KERNEL void calc_matrix_convergent(int* spikes, float* weights,
     int d_index = d_row*to_columns + d_col;
 
     if (d_row < to_rows and d_col < to_columns) {
-        int kernel_size = overlap * overlap;
-        int kernel_row_size = (convolutional) ? 1 : to_rows * to_columns;
-
         float sum = 0.0;
         int s_row = d_row * stride;
         int s_col = d_col * stride;
 
-        // Convolutional connections share weights, and don't use an offset
-        // In parallel version, matrix is transposed, so the offset is the index.
+        // Kernels are organized into columns
+        // One kernel per destination neuron
+        //   Unless convolutional (shared kernel)
+        int kernel_size = overlap * overlap;
+        int kernel_row_size = (convolutional) ? 1 : to_rows * to_columns;
+
+        // Column of matrix is either the first column (convolutional)
+        //   or the index of the destination neuron otherwise
         int weight_col = (convolutional) ? 0 : d_index;
 
         // Run the kernel
         for (int k_row = 0 ; k_row < overlap ; ++k_row) {
             for (int k_col = 0 ; k_col < overlap ; ++k_col) {
                 int s_index = ((s_row+k_row) * from_columns) + (s_col+k_col);
-                int weight_offset = (((k_row*overlap) + k_col) * kernel_row_size);
+
+                // Row of matrix is the kernel index * row size (see above)
+                int weight_offset = ((k_row*overlap) + k_col) * kernel_row_size;
                 sum += (spikes[s_index] & mask) * weights[weight_offset + weight_col];
             }
         }
@@ -404,25 +413,29 @@ void calc_matrix_divergent(int* spikes, float* weights, float* currents,
     // Iterate over destination neurons
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
         for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
-            float sum = 0.0;
             int d_index = d_row*to_columns + d_col;
+            float sum = 0.0;
 
+            // Determine range of source neurons for divergent kernel
             int start_s_row = d_row / overlap;
             int start_s_col = d_col / overlap ;
             int end_s_row = (d_row + stride) / overlap;
             int end_s_col = (d_col + stride) / overlap ;
 
+            // Iterate over relevant source neurons...
             for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
                 for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
-                    // Convolutional connections share weights, and don't use an offset
                     int s_index = (s_row * from_columns) + s_col;
-                    int weight_offset = (convolutional) ? 0 : s_index * kernel_size;
-
                     int k_row = (d_row + ((overlap - stride) * s_row) % overlap);
                     int k_col = (d_col + ((overlap - stride) * s_col) % overlap);
+
+                    // Row of matrix is either the first column (convolutional)
+                    //   or the index of the source neuron otherwise
+                    int weight_offset = (convolutional) ? 0 : s_index * kernel_size;
+                    // Column of matrix is the kernel index
                     int k_index = (k_row * overlap) + k_col;
 
-                    sum += (spikes[s_index] & mask) * weights[k_index + weight_offset];
+                    sum += (spikes[s_index] & mask) * weights[weight_offset + k_index];
                 }
             }
             currents[d_index] = calc(opcode, currents[d_index], sum);
@@ -438,18 +451,23 @@ void calc_matrix_convergent(int* spikes, float* weights, float* currents,
     // Iterate over destination neurons
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
         for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
+            int d_index = d_row*to_columns + d_col;
             float sum = 0.0;
+
+            // Determine starting row and column for source neurons
             int s_row = d_row * stride;
             int s_col = d_col * stride;
-            int d_index = d_row*to_columns + d_col;
 
-            // Convolutional connections share weights, and don't use an offset
+            // Row of matrix is either the first column (convolutional)
+            //   or the index of the destination neuron otherwise
             int weight_offset = (convolutional) ? 0 : d_index * kernel_size;
 
-            // Run the kernel (unshared)
+            // Run the kernel
             for (int k_row = 0 ; k_row < overlap ; ++k_row) {
                 for (int k_col = 0 ; k_col < overlap ; ++k_col) {
                     int s_index = ((s_row+k_row) * from_columns) + (s_col+k_col);
+
+                    // Column of matrix is the kernel index
                     int weight_col = (k_row*overlap) + k_col;
                     sum += (spikes[s_index] & mask) *
                         weights[weight_offset + weight_col];
