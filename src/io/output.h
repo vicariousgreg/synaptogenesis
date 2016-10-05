@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "state.h"
-#include "model.h"
+#include "state/state.h"
+#include "model/model.h"
 
 class Output {
     public:

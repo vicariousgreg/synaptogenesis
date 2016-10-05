@@ -1,8 +1,8 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "float_print_output.h"
-#include "../framework/tools.h"
+#include "io/float_print_output.h"
+#include "tools.h"
 
 FloatPrintOutput::FloatPrintOutput(Layer *layer, std::string params)
         : Output(layer) { }

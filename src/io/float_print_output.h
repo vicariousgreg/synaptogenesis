@@ -1,7 +1,7 @@
 #ifndef float_print_output_h
 #define float_print_output_h
 
-#include "../framework/output.h"
+#include "io/output.h"
 
 class FloatPrintOutput : public Output {
     public:

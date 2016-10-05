@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <sstream>
 
-#include "state.h"
+#include "state/state.h"
 #include "tools.h"
 #include "parallel.h"
 

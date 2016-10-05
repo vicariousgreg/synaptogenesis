@@ -2,9 +2,9 @@
 #include <cstdio>
 #include <string>
 
-#include "rate_encoding_state.h"
-#include "../framework/tools.h"
-#include "../framework/parallel.h"
+#include "state/rate_encoding_state.h"
+#include "tools.h"
+#include "parallel.h"
 
 /******************************************************************************
  **************************** INITIALIZATION **********************************

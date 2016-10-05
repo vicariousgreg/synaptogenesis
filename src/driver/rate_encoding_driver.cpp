@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "rate_encoding_driver.h"
+#include "driver/rate_encoding_driver.h"
 
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/

@@ -3,9 +3,9 @@
 
 #include <iostream>
 
-#include "../framework/driver.h"
-#include "izhikevich_state.h"
-#include "../framework/parallel.h"
+#include "driver/driver.h"
+#include "state/izhikevich_state.h"
+#include "parallel.h"
 
 class IzhikevichDriver : public Driver {
     public:

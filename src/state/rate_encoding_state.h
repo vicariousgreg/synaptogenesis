@@ -1,7 +1,7 @@
 #ifndef rate_encoding_state_h
 #define rate_encoding_state_h
 
-#include "../framework/state.h"
+#include "state/state.h"
 
 /* Neuron parameters class.
  * Contains parameters for Rate Encoding model */

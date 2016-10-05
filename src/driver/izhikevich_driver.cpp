@@ -1,4 +1,4 @@
-#include "izhikevich_driver.h"
+#include "driver/izhikevich_driver.h"
 
 /* Voltage threshold for neuron spiking. */
 #define SPIKE_THRESH 30

@@ -1,9 +1,9 @@
-#include "driver.h"
-#include "../implementation/izhikevich_driver.h"
-#include "../implementation/rate_encoding_driver.h"
+#include "driver/driver.h"
+#include "driver/izhikevich_driver.h"
+#include "driver/rate_encoding_driver.h"
 
-#include "input.h"
-#include "output.h"
+#include "io/input.h"
+#include "io/output.h"
 
 void Driver::step_input() {
     // Run input modules

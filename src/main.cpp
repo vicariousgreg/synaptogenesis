@@ -4,10 +4,10 @@
 #include <ctime>
 #include <string>
 
-#include "framework/model.h"
-#include "framework/state.h"
-#include "framework/driver.h"
-#include "framework/tools.h"
+#include "model/model.h"
+#include "state/state.h"
+#include "driver/driver.h"
+#include "tools.h"
 
 static Timer timer = Timer();
 

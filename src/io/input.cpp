@@ -1,6 +1,6 @@
-#include "input.h"
-#include "../implementation/random_input.h"
-#include "../implementation/image_input.h"
+#include "io/input.h"
+#include "io/random_input.h"
+#include "io/image_input.h"
 
 Input* build_input(Layer *layer, std::string type, std::string params) {
     if (type == "random")

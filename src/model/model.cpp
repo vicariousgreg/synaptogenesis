@@ -1,8 +1,8 @@
 #include <sstream>
 
-#include "model.h"
-#include "input.h"
-#include "output.h"
+#include "model/model.h"
+#include "io/input.h"
+#include "io/output.h"
 
 Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,

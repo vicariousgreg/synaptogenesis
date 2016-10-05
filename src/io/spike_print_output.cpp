@@ -1,8 +1,8 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "spike_print_output.h"
-#include "../framework/tools.h"
+#include "io/spike_print_output.h"
+#include "tools.h"
 
 SpikePrintOutput::SpikePrintOutput(Layer *layer, std::string params)
         : Output(layer) { }

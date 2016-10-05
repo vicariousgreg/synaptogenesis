@@ -1,7 +1,7 @@
 #ifndef izhikevich_state_h
 #define izhikevich_state_h
 
-#include "../framework/state.h"
+#include "state/state.h"
 
 /* Neuron parameters class.
  * Contains a,b,c,d parameters for Izhikevich model */

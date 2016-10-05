@@ -2,9 +2,9 @@
 #include <cstdio>
 #include <string>
 
-#include "izhikevich_state.h"
-#include "../framework/tools.h"
-#include "../framework/parallel.h"
+#include "state/izhikevich_state.h"
+#include "tools.h"
+#include "parallel.h"
 
 #define DEF_PARAM(name, a,b,c,d) \
     static const IzhikevichParameters name = IzhikevichParameters(a,b,c,d);

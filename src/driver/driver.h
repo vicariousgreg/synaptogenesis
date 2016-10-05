@@ -1,8 +1,8 @@
 #ifndef driver_h
 #define driver_h
 
-#include "state.h"
-#include "model.h"
+#include "state/state.h"
+#include "model/model.h"
 
 class Driver {
     public:

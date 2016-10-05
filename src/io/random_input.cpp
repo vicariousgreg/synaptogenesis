@@ -1,7 +1,7 @@
 #include <cstdlib>
 
-#include "random_input.h"
-#include "../framework/tools.h"
+#include "io/random_input.h"
+#include "tools.h"
 
 RandomInput::RandomInput(Layer *layer, std::string params) : Input(layer) {
     this->max_value = strtof(params.c_str(), NULL);

@@ -16,8 +16,8 @@ DEPEXT      := d
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CCFLAGS      := -w -pthread
-NVCCFLAGS    := -w -Wno-deprecated-gpu-targets -x cu -DPARALLEL
+CCFLAGS      := -w -pthread -Isrc
+NVCCFLAGS    := -w -Wno-deprecated-gpu-targets -x cu -DPARALLEL -Isrc
 
 #---------------------------------------------------------------------------------
 #DO NOT EDIT BELOW THIS LINE

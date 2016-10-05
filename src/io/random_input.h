@@ -1,7 +1,7 @@
 #ifndef random_input_h
 #define random_input_h
 
-#include "../framework/input.h"
+#include "io/input.h"
 
 class RandomInput : public Input {
     public:

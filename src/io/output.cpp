@@ -1,6 +1,6 @@
-#include "output.h"
-#include "../implementation/spike_print_output.h"
-#include "../implementation/float_print_output.h"
+#include "io/output.h"
+#include "io/spike_print_output.h"
+#include "io/float_print_output.h"
 
 Output* build_output(Layer *layer, std::string type, std::string params) {
     if (type == "print_spike")
