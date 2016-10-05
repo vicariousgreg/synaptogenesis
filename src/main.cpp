@@ -26,7 +26,7 @@ Model* build_model(std::string driver_name, bool verbose) {
     // Vertical line detection
     //int vertical = model->add_layer(image_size+4, image_size+4, "default");
     int vertical = model->add_layer(image_size-4, image_size-4, "default");
-    model->connect_layers(receptor, vertical, true, 0, 5, CONVOLUTIONAL, ADD,
+    model->connect_layers(receptor, vertical, true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
@@ -38,7 +38,7 @@ Model* build_model(std::string driver_name, bool verbose) {
     // Horizontal line detection
     ///*
     int horizontal = model->add_layer(image_size-4, image_size-4, "default");
-    model->connect_layers(receptor, horizontal, true, 0, 5, CONVOLUTIONAL, ADD,
+    model->connect_layers(receptor, horizontal, true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 -5 -5 -5 -5 "
         "0 0 0 0 0 "

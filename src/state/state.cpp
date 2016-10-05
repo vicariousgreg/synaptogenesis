@@ -107,27 +107,28 @@ void initialize_matrix(Connection* conn,
                 target_matrix[index] = value;
         } else {
             // If parallel, transpose the input...
+            // Parallel convergent matrices are laid out such that each
+            //   kernel is in a column
 #ifdef PARALLEL
             int rows, cols;
             switch (conn->type) {
                 case (FULLY_CONNECTED):
                     throw "Cannot specify all weights for fully connected matrix!";
+                case (CONVERGENT_CONVOLUTIONAL):
+                case (DIVERGENT_CONVOLUTIONAL):
+                    rows = conn->overlap * conn->overlap;
+                    cols = 1;
+                    break;
                 case (DIVERGENT):
-                    throw "Cannot specify all weights for divergent matrix!";
+                    rows = conn->overlap * conn->overlap;
+                    cols = conn->from_layer->size;
                 case (CONVERGENT):
-                    // Parallel convergent matrices are laid out such that each
-                    //   kernel is in a column
                     rows = conn->overlap * conn->overlap;
                     cols = conn->to_layer->size;
+                    break;
                 case (ONE_TO_ONE):
                     rows = conn->from_layer->size;
                     cols = conn->to_layer->size;
-                    break;
-                case (CONVOLUTIONAL):
-                    // Parallel convolutional matrices are like convergent
-                    //   matrices, except there's only one kernel
-                    rows = conn->overlap * conn->overlap;
-                    cols = 1;
                     break;
             }
             for (int col = 0 ; col < cols ; ++col) {

@@ -33,7 +33,10 @@ void Driver::step_input() {
             case (CONVERGENT):
                 step_connection_convergent(conn, false);
                 break;
-            case (CONVOLUTIONAL):
+            case (DIVERGENT_CONVOLUTIONAL):
+                step_connection_divergent(conn, true);
+                break;
+            case (CONVERGENT_CONVOLUTIONAL):
                 step_connection_convergent(conn, true);
                 break;
             default:

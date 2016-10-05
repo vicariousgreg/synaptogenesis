@@ -23,8 +23,9 @@ enum ConnectionType {
     FULLY_CONNECTED,
     ONE_TO_ONE,
     DIVERGENT,
+    DIVERGENT_CONVOLUTIONAL,
     CONVERGENT,
-    CONVOLUTIONAL
+    CONVERGENT_CONVOLUTIONAL
 };
 
 /* Synaptic operation opcode */
