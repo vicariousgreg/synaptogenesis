@@ -25,13 +25,9 @@ class IzhikevichDriver : public Driver {
 };
 
 
-/* Generic versions to obfuscate preprocessor directives. */
-void iz_update_currents(Connection *conn, float* mData, int* spikes,
-                     float* currents, int num_neurons);
-
 /* Parallel implementation of activation function for activation of
  *   neural connections.  Parameters are pointers to locations in various
- *   value arrays, which allows for optimzation of memory access.  In addition,
+ *   value arrays, which allows for optimization of memory access.  In addition,
  *   the size of the matrix is provided via |from_size| and to_size|.
  */
  
@@ -40,21 +36,21 @@ void iz_update_currents(Connection *conn, float* mData, int* spikes,
  *   running calc_matrix will access sequential data from one row.
  */
 KERNEL void calc_matrix(int* spikes, float* weights,
-        float* currents, int from_size, int to_size, int mask, Opcode opcode);
+        float* inputs, int from_size, int to_size, int mask, Opcode opcode);
 
 KERNEL void calc_matrix_divergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_coluns, int to_rows, int to_columns,
+        float* inputs, int from_rows, int from_coluns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
 KERNEL void calc_matrix_convergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional);
 
-/* This parallel kernel calculates the input to one neuron, which only ahs one
+/* This parallel kernel calculates the input to one neuron, which only has one
  *   input weight.  Weight vectors represent one-to-one neural connections.
  */
 KERNEL void activate_vector(int* spikes, float* weights,
-                    float* currents, int size, int mask, Opcode opcode);
+                    float* inputs, int size, int mask, Opcode opcode);
 
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single

@@ -1,4 +1,5 @@
 TODO:
   - implement learning rules
-  - implement divergent connections
+  - combine code for drivers
+  - get rid of state subclasses
   - create environment for closing input / output loop

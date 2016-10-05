@@ -207,7 +207,7 @@ void IzhikevichDriver::step_weights() {
 /*****************************************************************************/
 
 KERNEL void calc_matrix(int* spikes, float* weights,
-        float* currents, int from_size, int to_size, int mask, Opcode opcode) {
+        float* inputs, int from_size, int to_size, int mask, Opcode opcode) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (col < to_size) {
@@ -215,12 +215,12 @@ KERNEL void calc_matrix(int* spikes, float* weights,
         for (int row = 0 ; row < from_size ; ++row) {
             sum += (spikes[row] & mask) * weights[row * to_size + col];
         }
-        currents[col] = calc(opcode, currents[col], sum);
+        inputs[col] = calc(opcode, inputs[col], sum);
     }
 }
 
 KERNEL void calc_matrix_divergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
@@ -254,15 +254,16 @@ KERNEL void calc_matrix_divergent(int* spikes, float* weights,
                 //   or the index of the source neuron otherwise
                 int weight_col = (convolutional) ? 0 : s_index;
 
-                sum += (spikes[s_index] & mask) * weights[weight_offset + weight_col];
+                sum += (spikes[s_index] & mask) *
+                    weights[weight_offset + weight_col];
             }
         }
-        currents[d_index] = calc(opcode, currents[d_index], sum);
+        inputs[d_index] = calc(opcode, inputs[d_index], sum);
     }
 }
 
 KERNEL void calc_matrix_convergent(int* spikes, float* weights,
-        float* currents, int from_rows, int from_columns, int to_rows, int to_columns,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
@@ -290,19 +291,20 @@ KERNEL void calc_matrix_convergent(int* spikes, float* weights,
 
                 // Row of matrix is the kernel index * row size (see above)
                 int weight_offset = ((k_row*overlap) + k_col) * kernel_row_size;
-                sum += (spikes[s_index] & mask) * weights[weight_offset + weight_col];
+                sum += (spikes[s_index] & mask) *
+                    weights[weight_offset + weight_col];
             }
         }
-        currents[d_index] = calc(opcode, currents[d_index], sum);
+        inputs[d_index] = calc(opcode, inputs[d_index], sum);
     }
 }
 
 KERNEL void activate_vector(int* spikes, float* weights,
-            float* currents, int size, int mask, Opcode opcode) {
+            float* inputs, int size, int mask, Opcode opcode) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index < size) {
-        currents[index] = calc(opcode, currents[index],
+        inputs[index] = calc(opcode, inputs[index],
             (spikes[index] & mask) * weights[index]);
     }
 }
@@ -389,7 +391,7 @@ KERNEL void calc_spikes(int* spikes, float* voltages,
 /************************** SERIAL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void calc_matrix(int* spikes, float* weights, float* currents,
+void calc_matrix(int* spikes, float* weights, float* inputs,
                           int from_size, int to_size, int mask, Opcode opcode) {
     // IMPORTANT:
     // Serial implementation is faster if matrix is interpreted in a transposed
@@ -399,13 +401,14 @@ void calc_matrix(int* spikes, float* weights, float* currents,
     for (int row = 0 ; row < to_size ; ++row) {
         float sum = 0.0;
         for (int col = 0 ; col < from_size ; ++col) {
-            sum += (spikes[col] & mask) * weights[row*from_size + col];
+            sum += (spikes[col] & mask) *
+                weights[row*from_size + col];
         }
-        currents[row] = calc(opcode, currents[row], sum);
+        inputs[row] = calc(opcode, inputs[row], sum);
     }
 }
 
-void calc_matrix_divergent(int* spikes, float* weights, float* currents,
+void calc_matrix_divergent(int* spikes, float* weights, float* inputs,
         int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     int kernel_size = overlap * overlap;
@@ -438,12 +441,12 @@ void calc_matrix_divergent(int* spikes, float* weights, float* currents,
                     sum += (spikes[s_index] & mask) * weights[weight_offset + k_index];
                 }
             }
-            currents[d_index] = calc(opcode, currents[d_index], sum);
+            inputs[d_index] = calc(opcode, inputs[d_index], sum);
         }
     }
 }
 
-void calc_matrix_convergent(int* spikes, float* weights, float* currents,
+void calc_matrix_convergent(int* spikes, float* weights, float* inputs,
         int from_rows, int from_columns, int to_rows, int to_columns,
         int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
     int kernel_size = overlap * overlap;
@@ -473,15 +476,15 @@ void calc_matrix_convergent(int* spikes, float* weights, float* currents,
                         weights[weight_offset + weight_col];
                 }
             }
-            currents[d_index] = calc(opcode, currents[d_index], sum);
+            inputs[d_index] = calc(opcode, inputs[d_index], sum);
         }
     }
 }
 
 void activate_vector(int* spikes, float* weights,
-                        float* currents, int size, int mask, Opcode opcode) {
+        float* inputs, int size, int mask, Opcode opcode) {
     for (int index = 0 ; index < size ; ++index) {
-        currents[index] = calc(opcode, currents[index],
+        inputs[index] = calc(opcode, inputs[index],
             (spikes[index] & mask) * weights[index]);
     }
 }

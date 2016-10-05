@@ -199,7 +199,8 @@ KERNEL void calc_matrix_divergent(float* outputs, float* weights,
                 //   or the index of the source neuron otherwise
                 int weight_col = (convolutional) ? 0 : s_index;
 
-                sum += outputs[s_index] * weights[weight_offset + weight_col];
+                sum += outputs[s_index] *
+                    weights[weight_offset + weight_col];
             }
         }
         inputs[d_index] = calc(opcode, inputs[d_index], sum);
@@ -235,7 +236,8 @@ KERNEL void calc_matrix_convergent(float* outputs, float* weights,
 
                 // Row of matrix is the kernel index * row size (see above)
                 int weight_offset = ((k_row*overlap) + k_col) * kernel_row_size;
-                sum += outputs[s_index] * weights[weight_offset + weight_col];
+                sum += outputs[s_index] *
+                    weights[weight_offset + weight_col];
             }
         }
         outputs[d_index] = calc(opcode, outputs[d_index], sum);
@@ -275,7 +277,8 @@ void calc_matrix(float* outputs, float* weights, float* inputs,
     for (int row = 0 ; row < to_size ; ++row) {
         float sum = 0.0;
         for (int col = 0 ; col < from_size ; ++col) {
-            sum += outputs[col] * weights[row*from_size + col];
+            sum += outputs[col] *
+                weights[row*from_size + col];
         }
         inputs[row] = calc(opcode, inputs[row], sum);
     }

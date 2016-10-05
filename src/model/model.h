@@ -91,7 +91,7 @@ class Connection {
         // Flag for whether matrix can change via learning
         bool plastic;
 
-        // Maximum weight for randomization
+        // Maximum weight
         float max_weight;
 };
 
