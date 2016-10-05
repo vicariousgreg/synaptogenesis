@@ -28,6 +28,10 @@ class RateEncodingDriver : public Driver {
 KERNEL void calc_matrix(float* outputs, float* weights,
         float* inputs, int from_size, int to_size, Opcode opcode);
 
+KERNEL void calc_matrix_divergent(float* outputs, float* weights,
+        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
+        Opcode opcode, int overlap, int stride, bool convolutional);
+
 KERNEL void calc_matrix_convergent(float* outputs, float* weights,
         float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
         Opcode opcode, int overlap, int stride, bool convolutional);
