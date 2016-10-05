@@ -115,19 +115,24 @@ void initialize_matrix(Connection* conn,
                 case (DIVERGENT):
                     throw "Cannot specify all weights for divergent matrix!";
                 case (CONVERGENT):
-                    throw "Cannot specify all weights for convergent matrix!";
+                    // Parallel convergent matrices are laid out such that each
+                    //   kernel is in a column
+                    rows = conn->overlap * conn->overlap;
+                    cols = conn->to_layer->size;
                 case (ONE_TO_ONE):
                     rows = conn->from_layer->size;
                     cols = conn->to_layer->size;
                     break;
                 case (CONVOLUTIONAL):
-                    rows = conn->overlap;
-                    cols = conn->overlap;
+                    // Parallel convolutional matrices are like convergent
+                    //   matrices, except there's only one kernel
+                    rows = conn->overlap * conn->overlap;
+                    cols = 1;
                     break;
             }
             for (int col = 0 ; col < cols ; ++col) {
                 for (int row = 0 ; row < rows ; ++row) {
-                    target_matrix[row * rows + col] = value;
+                    target_matrix[row * cols + col] = value;
                     if (row != rows-1 and col != cols-1 and stream.eof())
                         throw "Insufficient number of weights specified!";
                     stream >> value;
