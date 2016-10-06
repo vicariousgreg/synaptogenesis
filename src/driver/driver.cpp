@@ -19,23 +19,7 @@ void Driver::step_input() {
 
     // Calculate inputs for connections
     for (int cid = 0 ; cid < this->model->num_connections; ++cid) {
-        Connection *conn = this->model->connections[cid];
-        switch (conn->type) {
-            case (FULLY_CONNECTED):
-                step_connection_fully_connected(conn);
-                break;
-            case (ONE_TO_ONE):
-                step_connection_one_to_one(conn);
-                break;
-            case (DIVERGENT):
-            case (CONVERGENT):
-            case (DIVERGENT_CONVOLUTIONAL):
-            case (CONVERGENT_CONVOLUTIONAL):
-                step_connection_arborized(conn);
-                break;
-            default:
-                throw "Unimplemented connection type!";
-        }
+        step_connection(this->model->connections[cid]);
     }
 }
 

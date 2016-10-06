@@ -23,31 +23,14 @@ RateEncodingDriver::RateEncodingDriver () {
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void RateEncodingDriver::step_connection_fully_connected(Connection *conn) {
+void RateEncodingDriver::step_connection(Connection *conn) {
 #ifdef PARALLEL
-    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
+    float* outputs = (float*)this->state->device_output;
 #else
-    float* outputs = (float*)this->state->output + conn->from_layer->index;
+    float* outputs = (float*)this->state->output;
 #endif
-    step_fully_connected<float>(this->state, conn, this->calc_input_ptr, outputs);
-}
-
-void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
-#ifdef PARALLEL
-    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
-#else
-    float* outputs = (float*)this->state->output + conn->from_layer->index;
-#endif
-    step_one_to_one<float>(this->state, conn, this->calc_input_ptr, outputs);
-}
-
-void RateEncodingDriver::step_connection_arborized(Connection *conn) {
-#ifdef PARALLEL
-    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
-#else
-    float* outputs = (float*)this->state->output + conn->from_layer->index;
-#endif
-    step_arborized<float>(this->state, conn, this->calc_input_ptr, outputs);
+    step<float>(this->state, conn, this->calc_input_ptr,
+        outputs + conn->from_layer->index);
 }
 
 void RateEncodingDriver::step_output() {
@@ -77,33 +60,18 @@ void RateEncodingDriver::step_weights() {
 }
 
 
-#ifdef PARALLEL
-/*****************************************************************************/
-/************************ PARALLEL IMPLEMENTATIONS ***************************/
-/*****************************************************************************/
-
 GLOBAL void activation_function(float* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons) {
+#ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < num_neurons and inputs[nid] > 0.0) {
         outputs[nid] = tanh(0.1*inputs[nid]);
     }
-}
-
 #else
-/*****************************************************************************/
-/************************** SERIAL IMPLEMENTATIONS ***************************/
-/*****************************************************************************/
-
-void activation_function(float* outputs, float* inputs,
-                RateEncodingParameters* neuron_params, int num_neurons) {
-    RateEncodingParameters *params;
-
     for (int nid = 0 ; nid < num_neurons; ++nid) {
         if (inputs[nid] > 0.0) {
             outputs[nid] = tanh(0.1*inputs[nid]);
         }
     }
-}
-
 #endif
+}

@@ -75,11 +75,18 @@ class Connection {
         // Matrix type (see enum)
         ConnectionType type;
 
+        // Convolutional boolean (extracted from type)
+        bool convolutional;
+
         // Overlap and stride, if relevant
         int overlap, stride;
 
         // Associated layers
         Layer *from_layer, *to_layer;
+
+        // Extracted values.
+        int from_size, from_rows, from_columns;
+        int to_size, to_rows, to_columns;
 
         // Number of weights in connection
         // Connection delay

@@ -9,7 +9,13 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
         ConnectionType type, std::string params,  Opcode opcode) :
             id(conn_id),
             from_layer(from_layer),
+            from_size(from_layer->size),
+            from_rows(from_layer->rows),
+            from_columns(from_layer->columns),
             to_layer(to_layer),
+            to_size(to_layer->size),
+            to_rows(to_layer->rows),
+            to_columns(to_layer->columns),
             plastic(plastic),
             delay(delay),
             max_weight(max_weight),
@@ -65,6 +71,7 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                     break;
                 case(DIVERGENT_CONVOLUTIONAL):
                 case(CONVERGENT_CONVOLUTIONAL):
+                    this->convolutional = true;
                     // Convolutional connections use a shared weight kernel
                     this->num_weights = overlap * overlap;
                     break;
@@ -78,13 +85,20 @@ Connection::Connection(int conn_id, Layer *from_layer, Layer *to_layer,
         Connection *parent) :
             id(conn_id),
             from_layer(from_layer),
+            from_size(from_layer->size),
+            from_rows(from_layer->rows),
+            from_columns(from_layer->columns),
             to_layer(to_layer),
+            to_size(to_layer->size),
+            to_rows(to_layer->rows),
+            to_columns(to_layer->columns),
             num_weights(parent->num_weights),
             plastic(parent->plastic),
             delay(parent->delay),
             max_weight(parent->max_weight),
             opcode(parent->opcode),
             type(parent->type),
+            convolutional(parent->convolutional),
             overlap(parent->overlap),
             stride(parent->stride),
             params(parent->params),

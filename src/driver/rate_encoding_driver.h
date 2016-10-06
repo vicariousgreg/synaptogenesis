@@ -11,9 +11,7 @@ class RateEncodingDriver : public Driver {
     public:
         RateEncodingDriver ();
 
-        void step_connection_fully_connected(Connection *conn);
-        void step_connection_one_to_one(Connection *conn);
-        void step_connection_arborized(Connection *conn);
+        void step_connection(Connection *conn);
         void step_output();
         void step_weights();
 
