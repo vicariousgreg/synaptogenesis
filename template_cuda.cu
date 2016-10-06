@@ -19,7 +19,7 @@ template <typename OUT, typename... ARGS>
 __global__ void sum(float(*func)(OUT, ARGS...), OUT* outputs, int size, float* dest, ARGS... args) {
     float s = 0.0;
     for (int i = 0 ; i < size ; ++i) {
-        s += (*func)(outputs[i], args...);
+        s += func(outputs[i], args...);
     }
     *dest = s;
 }

@@ -3,9 +3,11 @@
 
 // Define KERNEL prefix such that it doesn't affect anything for serial version
 #ifdef PARALLEL
-#define KERNEL __global__
+#define GLOBAL __global__
+#define DEVICE __device__
 #else
-#define KERNEL
+#define GLOBAL
+#define DEVICE
 #endif
 
 

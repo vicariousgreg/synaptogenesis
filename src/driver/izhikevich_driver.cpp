@@ -6,6 +6,23 @@
 /* Euler resolution for voltage update. */
 #define EULER_RES 10
 
+DEVICE float iz_calc_input(int output, int mask) {
+    return (float)(output & mask);
+}
+
+DEVICE float (*iz_calc_input_ptr)(int, int) = iz_calc_input;
+
+
+IzhikevichDriver::IzhikevichDriver () {
+    this->iz_state = new IzhikevichState();
+    this->state = this->iz_state;
+#ifdef PARALLEL
+    cudaMemcpyFromSymbol(&this->calc_input_ptr, iz_calc_input_ptr, sizeof(void *));
+#else
+    this->calc_input_ptr = iz_calc_input_ptr;
+#endif
+}
+
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
@@ -18,26 +35,28 @@ void IzhikevichDriver::step_connection_fully_connected(Connection *conn) {
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
     int blocks = calc_blocks(conn->to_layer->size);
-    calc_matrix<<<blocks, THREADS>>>(
+    calc_matrix<int, int><<<blocks, THREADS>>>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
         conn->from_layer->size,
         conn->to_layer->size,
-        mask,
-        conn->opcode);
+        conn->opcode,
+        mask);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    calc_matrix(
+    calc_matrix<int, int>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
         conn->from_layer->size,
         conn->to_layer->size,
-        mask,
-        conn->opcode);
+        conn->opcode,
+        mask);
 #endif
 }
 
@@ -49,24 +68,26 @@ void IzhikevichDriver::step_connection_one_to_one(Connection *conn) {
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
     int blocks = calc_blocks(conn->to_layer->size);
-    activate_vector<<<blocks, THREADS>>>(
+    activate_vector<int, int><<<blocks, THREADS>>>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
         conn->to_layer->size,
-        mask,
-        conn->opcode);
+        conn->opcode,
+        mask);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    activate_vector(
+    activate_vector<int, int>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
         conn->to_layer->size,
-        mask,
-        conn->opcode);
+        conn->opcode,
+        mask);
 #endif
 }
 
@@ -81,7 +102,8 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolut
         calc_blocks(conn->to_layer->rows, 1),
         calc_blocks(conn->to_layer->columns, 128));
     dim3 threads_per_block(1, 128);
-    calc_matrix_divergent<<<blocks_per_grid, threads_per_block>>>(
+    calc_matrix_divergent<int, int><<<blocks_per_grid, threads_per_block>>>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
@@ -89,16 +111,17 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolut
         conn->from_layer->columns,
         conn->to_layer->rows,
         conn->to_layer->columns,
-        mask,
         conn->opcode,
         conn->overlap,
         conn->stride,
-        convolutional);
+        convolutional,
+        mask);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    calc_matrix_divergent(
+    calc_matrix_divergent<int, int>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
@@ -106,11 +129,11 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolut
         conn->from_layer->columns,
         conn->to_layer->rows,
         conn->to_layer->columns,
-        mask,
         conn->opcode,
         conn->overlap,
         conn->stride,
-        convolutional);
+        convolutional,
+        mask);
 #endif
 }
 
@@ -125,7 +148,9 @@ void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolu
         calc_blocks(conn->to_layer->rows, 1),
         calc_blocks(conn->to_layer->columns, 128));
     dim3 threads_per_block(1, 128);
-    calc_matrix_convergent<<<blocks_per_grid, threads_per_block>>>(
+
+    calc_matrix_convergent<int, int><<<blocks_per_grid, threads_per_block>>>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->iz_state->get_matrix(conn->id),
         this->iz_state->device_input + conn->to_layer->index,
@@ -133,16 +158,17 @@ void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolu
         conn->from_layer->columns,
         conn->to_layer->rows,
         conn->to_layer->columns,
-        mask,
         conn->opcode,
         conn->overlap,
         conn->stride,
-        convolutional);
+        convolutional,
+        mask);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    calc_matrix_convergent(
+    calc_matrix_convergent<int, int>(
+        this->calc_input_ptr,
         spikes + conn->from_layer->index,
         this->state->get_matrix(conn->id),
         this->iz_state->input + conn->to_layer->index,
@@ -150,11 +176,11 @@ void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolu
         conn->from_layer->columns,
         conn->to_layer->rows,
         conn->to_layer->columns,
-        mask,
         conn->opcode,
         conn->overlap,
         conn->stride,
-        convolutional);
+        convolutional,
+        mask);
 #endif
 }
 
@@ -206,113 +232,10 @@ void IzhikevichDriver::step_weights() {
 /************************ PARALLEL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-KERNEL void calc_matrix(int* spikes, float* weights,
-        float* inputs, int from_size, int to_size, int mask, Opcode opcode) {
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (col < to_size) {
-        float sum = 0;
-        for (int row = 0 ; row < from_size ; ++row) {
-            sum += (spikes[row] & mask) * weights[row * to_size + col];
-        }
-        inputs[col] = calc(opcode, inputs[col], sum);
-    }
-}
-
-KERNEL void calc_matrix_divergent(int* spikes, float* weights,
-        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
-    int d_row = blockIdx.x * blockDim.x + threadIdx.x;
-    int d_col = blockIdx.y * blockDim.y + threadIdx.y;
-    int d_index = d_row*to_columns + d_col;
-
-    if (d_row < to_rows and d_col < to_columns) {
-        float sum = 0.0;
-
-        // Determine range of source neurons for divergent kernel
-        int start_s_row = d_row / overlap;
-        int start_s_col = d_col / overlap ;
-        int end_s_row = (d_row + stride) / overlap;
-        int end_s_col = (d_col + stride) / overlap ;
-
-        // Kernels are organized into columns
-        // One kernel per source neuron
-        //   Unless convolutional (shared kernel)
-        int kernel_size = overlap * overlap;
-        int kernel_row_size = (convolutional) ? 1 : from_rows * from_columns;
-
-        // Iterate over relevant source neurons...
-        for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
-            for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
-                int s_index = (s_row * from_columns) + s_col;
-                int k_row = (d_row + ((overlap - stride) * s_row) % overlap);
-                int k_col = (d_col + ((overlap - stride) * s_col) % overlap);
-
-                // Row of matrix is the kernel index * row size (see above)
-                int weight_offset = ((k_row * overlap) + k_col) * kernel_row_size;
-                // Column of matrix is either the first column (convolutional)
-                //   or the index of the source neuron otherwise
-                int weight_col = (convolutional) ? 0 : s_index;
-
-                sum += (spikes[s_index] & mask) *
-                    weights[weight_offset + weight_col];
-            }
-        }
-        inputs[d_index] = calc(opcode, inputs[d_index], sum);
-    }
-}
-
-KERNEL void calc_matrix_convergent(int* spikes, float* weights,
-        float* inputs, int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
-    int d_row = blockIdx.x * blockDim.x + threadIdx.x;
-    int d_col = blockIdx.y * blockDim.y + threadIdx.y;
-    int d_index = d_row*to_columns + d_col;
-
-    if (d_row < to_rows and d_col < to_columns) {
-        float sum = 0.0;
-        int s_row = d_row * stride;
-        int s_col = d_col * stride;
-
-        // Kernels are organized into columns
-        // One kernel per destination neuron
-        //   Unless convolutional (shared kernel)
-        int kernel_size = overlap * overlap;
-        int kernel_row_size = (convolutional) ? 1 : to_rows * to_columns;
-
-        // Column of matrix is either the first column (convolutional)
-        //   or the index of the destination neuron otherwise
-        int weight_col = (convolutional) ? 0 : d_index;
-
-        // Run the kernel
-        for (int k_row = 0 ; k_row < overlap ; ++k_row) {
-            for (int k_col = 0 ; k_col < overlap ; ++k_col) {
-                int s_index = ((s_row+k_row) * from_columns) + (s_col+k_col);
-
-                // Row of matrix is the kernel index * row size (see above)
-                int weight_offset = ((k_row*overlap) + k_col) * kernel_row_size;
-                sum += (spikes[s_index] & mask) *
-                    weights[weight_offset + weight_col];
-            }
-        }
-        inputs[d_index] = calc(opcode, inputs[d_index], sum);
-    }
-}
-
-KERNEL void activate_vector(int* spikes, float* weights,
-            float* inputs, int size, int mask, Opcode opcode) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (index < size) {
-        inputs[index] = calc(opcode, inputs[index],
-            (spikes[index] & mask) * weights[index]);
-    }
-}
-
 /* Parallel implementation of Izhikevich voltage update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-KERNEL void izhikevich(float* voltages, float* recoveries,
+GLOBAL void izhikevich(float* voltages, float* recoveries,
         float* currents, IzhikevichParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -347,7 +270,7 @@ KERNEL void izhikevich(float* voltages, float* recoveries,
 /* Parallel implementation of spike update function.
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
-KERNEL void calc_spikes(int* spikes, float* voltages,
+GLOBAL void calc_spikes(int* spikes, float* voltages,
         float* recoveries, IzhikevichParameters* neuron_params, int num_neurons) {
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -390,104 +313,6 @@ KERNEL void calc_spikes(int* spikes, float* voltages,
 /*****************************************************************************/
 /************************** SERIAL IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
-
-void calc_matrix(int* spikes, float* weights, float* inputs,
-                          int from_size, int to_size, int mask, Opcode opcode) {
-    // IMPORTANT:
-    // Serial implementation is faster if matrix is interpreted in a transposed
-    //    fashion compared to parallel.  In this loop, row is the destination,
-    //    column is the source.  In this way, inputs to one neuron are
-    //    contiguous in memory.
-    for (int row = 0 ; row < to_size ; ++row) {
-        float sum = 0.0;
-        for (int col = 0 ; col < from_size ; ++col) {
-            sum += (spikes[col] & mask) *
-                weights[row*from_size + col];
-        }
-        inputs[row] = calc(opcode, inputs[row], sum);
-    }
-}
-
-void calc_matrix_divergent(int* spikes, float* weights, float* inputs,
-        int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
-    int kernel_size = overlap * overlap;
-
-    // Iterate over destination neurons
-    for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
-        for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
-            int d_index = d_row*to_columns + d_col;
-            float sum = 0.0;
-
-            // Determine range of source neurons for divergent kernel
-            int start_s_row = d_row / overlap;
-            int start_s_col = d_col / overlap ;
-            int end_s_row = (d_row + stride) / overlap;
-            int end_s_col = (d_col + stride) / overlap ;
-
-            // Iterate over relevant source neurons...
-            for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
-                for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
-                    int s_index = (s_row * from_columns) + s_col;
-                    int k_row = (d_row + ((overlap - stride) * s_row) % overlap);
-                    int k_col = (d_col + ((overlap - stride) * s_col) % overlap);
-
-                    // Row of matrix is either the first column (convolutional)
-                    //   or the index of the source neuron otherwise
-                    int weight_offset = (convolutional) ? 0 : s_index * kernel_size;
-                    // Column of matrix is the kernel index
-                    int k_index = (k_row * overlap) + k_col;
-
-                    sum += (spikes[s_index] & mask) * weights[weight_offset + k_index];
-                }
-            }
-            inputs[d_index] = calc(opcode, inputs[d_index], sum);
-        }
-    }
-}
-
-void calc_matrix_convergent(int* spikes, float* weights, float* inputs,
-        int from_rows, int from_columns, int to_rows, int to_columns,
-        int mask, Opcode opcode, int overlap, int stride, bool convolutional) {
-    int kernel_size = overlap * overlap;
-
-    // Iterate over destination neurons
-    for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
-        for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
-            int d_index = d_row*to_columns + d_col;
-            float sum = 0.0;
-
-            // Determine starting row and column for source neurons
-            int s_row = d_row * stride;
-            int s_col = d_col * stride;
-
-            // Row of matrix is either the first column (convolutional)
-            //   or the index of the destination neuron otherwise
-            int weight_offset = (convolutional) ? 0 : d_index * kernel_size;
-
-            // Run the kernel
-            for (int k_row = 0 ; k_row < overlap ; ++k_row) {
-                for (int k_col = 0 ; k_col < overlap ; ++k_col) {
-                    int s_index = ((s_row+k_row) * from_columns) + (s_col+k_col);
-
-                    // Column of matrix is the kernel index
-                    int weight_col = (k_row*overlap) + k_col;
-                    sum += (spikes[s_index] & mask) *
-                        weights[weight_offset + weight_col];
-                }
-            }
-            inputs[d_index] = calc(opcode, inputs[d_index], sum);
-        }
-    }
-}
-
-void activate_vector(int* spikes, float* weights,
-        float* inputs, int size, int mask, Opcode opcode) {
-    for (int index = 0 ; index < size ; ++index) {
-        inputs[index] = calc(opcode, inputs[index],
-            (spikes[index] & mask) * weights[index]);
-    }
-}
 
 void izhikevich(float* voltages, float* recoveries, float* currents,
                 IzhikevichParameters* neuron_params, int num_neurons) {
