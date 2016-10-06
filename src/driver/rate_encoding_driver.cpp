@@ -25,123 +25,38 @@ RateEncodingDriver::RateEncodingDriver () {
 
 void RateEncodingDriver::step_connection_fully_connected(Connection *conn) {
 #ifdef PARALLEL
-    int blocks = calc_blocks(conn->to_layer->size);
-    calc_matrix<float><<<blocks, THREADS>>>(
-        this->calc_input_ptr,
-        (float*)this->re_state->device_output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->device_input + conn->to_layer->index,
-        conn->from_layer->size,
-        conn->to_layer->size,
-        conn->opcode);
-    cudaCheckError("Failed to calculate connection activation!");
+    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
 #else
-    calc_matrix<float>(
-        this->calc_input_ptr,
-        (float*)this->re_state->output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->input + conn->to_layer->index,
-        conn->from_layer->size,
-        conn->to_layer->size,
-        conn->opcode);
+    float* outputs = (float*)this->state->output + conn->from_layer->index;
 #endif
+    step_fully_connected<float>(this->state, conn, this->calc_input_ptr, outputs);
 }
 
 void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
 #ifdef PARALLEL
-    int blocks = calc_blocks(conn->to_layer->size);
-    activate_vector<float><<<blocks, THREADS>>>(
-        this->calc_input_ptr,
-        (float*)this->re_state->device_output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->device_input + conn->to_layer->index,
-        conn->to_layer->size,
-        conn->opcode);
-    cudaCheckError("Failed to calculate connection activation!");
+    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
 #else
-
-    activate_vector<float>(
-        this->calc_input_ptr,
-        (float*)this->re_state->output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->input + conn->to_layer->index,
-        conn->to_layer->size,
-        conn->opcode);
+    float* outputs = (float*)this->state->output + conn->from_layer->index;
 #endif
+    step_one_to_one<float>(this->state, conn, this->calc_input_ptr, outputs);
 }
 
 void RateEncodingDriver::step_connection_divergent(Connection *conn, bool convolutional) {
 #ifdef PARALLEL
-    dim3 blocks_per_grid(
-        calc_blocks(conn->to_layer->rows, 1),
-        calc_blocks(conn->to_layer->columns, 128));
-    dim3 threads_per_block(1, 128);
-    calc_matrix_divergent<float><<<blocks_per_grid, threads_per_block>>>(
-        this->calc_input_ptr,
-        (float*)this->re_state->device_output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->device_input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional);
-    cudaCheckError("Failed to calculate connection activation!");
+    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
 #else
-    calc_matrix_divergent<float>(
-        this->calc_input_ptr,
-        (float*)this->re_state->output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional);
+    float* outputs = (float*)this->state->output + conn->from_layer->index;
 #endif
+    step_divergent<float>(this->state, conn, convolutional, this->calc_input_ptr, outputs);
 }
 
 void RateEncodingDriver::step_connection_convergent(Connection *conn, bool convolutional) {
 #ifdef PARALLEL
-    dim3 blocks_per_grid(
-        calc_blocks(conn->to_layer->rows, 1),
-        calc_blocks(conn->to_layer->columns, 128));
-    dim3 threads_per_block(1, 128);
-    calc_matrix_convergent<float><<<blocks_per_grid, threads_per_block>>>(
-        this->calc_input_ptr,
-        (float*)this->re_state->device_output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->device_input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional);
-    cudaCheckError("Failed to calculate connection activation!");
+    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
 #else
-    calc_matrix_convergent<float>(
-        this->calc_input_ptr,
-        (float*)this->re_state->output + conn->from_layer->index,
-        this->re_state->get_matrix(conn->id),
-        this->re_state->input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional);
+    float* outputs = (float*)this->state->output + conn->from_layer->index;
 #endif
+    step_convergent<float>(this->state, conn, convolutional, this->calc_input_ptr, outputs);
 }
 
 void RateEncodingDriver::step_output() {

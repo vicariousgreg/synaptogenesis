@@ -19,15 +19,11 @@ class State {
         // Network model
         Model* model;
 
-    protected:
         // Neuron input
         float* input;
 
         // Neuron output
         void* output;
-
-        // Weight matrices
-        float** weight_matrices;
 
 #ifdef PARALLEL
         // Locations to store device copies of data.
@@ -35,6 +31,10 @@ class State {
         float* device_input;
         void* device_output;
 #endif
+
+    protected:
+        // Weight matrices
+        float** weight_matrices;
 };
 
 /* Allocates space for weight matrices and returns a double pointer

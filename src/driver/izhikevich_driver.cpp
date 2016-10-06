@@ -34,30 +34,10 @@ void IzhikevichDriver::step_connection_fully_connected(Connection *conn) {
 
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
-    int blocks = calc_blocks(conn->to_layer->size);
-    calc_matrix<int, int><<<blocks, THREADS>>>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->iz_state->get_matrix(conn->id),
-        this->iz_state->device_input + conn->to_layer->index,
-        conn->from_layer->size,
-        conn->to_layer->size,
-        conn->opcode,
-        mask);
-    cudaCheckError("Failed to calculate connection activation!");
-
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    calc_matrix<int, int>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->state->get_matrix(conn->id),
-        this->iz_state->input + conn->to_layer->index,
-        conn->from_layer->size,
-        conn->to_layer->size,
-        conn->opcode,
-        mask);
 #endif
+    step_fully_connected<int, int>(this->state, conn, this->calc_input_ptr, spikes, mask);
 }
 
 void IzhikevichDriver::step_connection_one_to_one(Connection *conn) {
@@ -67,28 +47,10 @@ void IzhikevichDriver::step_connection_one_to_one(Connection *conn) {
 
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
-    int blocks = calc_blocks(conn->to_layer->size);
-    activate_vector<int, int><<<blocks, THREADS>>>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->iz_state->get_matrix(conn->id),
-        this->iz_state->device_input + conn->to_layer->index,
-        conn->to_layer->size,
-        conn->opcode,
-        mask);
-    cudaCheckError("Failed to calculate connection activation!");
-
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    activate_vector<int, int>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->iz_state->get_matrix(conn->id),
-        this->iz_state->input + conn->to_layer->index,
-        conn->to_layer->size,
-        conn->opcode,
-        mask);
 #endif
+    step_one_to_one<int, int>(this->state, conn, this->calc_input_ptr, spikes, mask);
 }
 
 void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolutional) {
@@ -98,43 +60,10 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolut
 
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
-    dim3 blocks_per_grid(
-        calc_blocks(conn->to_layer->rows, 1),
-        calc_blocks(conn->to_layer->columns, 128));
-    dim3 threads_per_block(1, 128);
-    calc_matrix_divergent<int, int><<<blocks_per_grid, threads_per_block>>>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->iz_state->get_matrix(conn->id),
-        this->iz_state->device_input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional,
-        mask);
-    cudaCheckError("Failed to calculate connection activation!");
-
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    calc_matrix_divergent<int, int>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->state->get_matrix(conn->id),
-        this->iz_state->input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional,
-        mask);
 #endif
+    step_divergent<int, int>(this->state, conn, convolutional, this->calc_input_ptr, spikes, mask);
 }
 
 void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolutional) {
@@ -144,44 +73,10 @@ void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolu
 
 #ifdef PARALLEL
     int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
-    dim3 blocks_per_grid(
-        calc_blocks(conn->to_layer->rows, 1),
-        calc_blocks(conn->to_layer->columns, 128));
-    dim3 threads_per_block(1, 128);
-
-    calc_matrix_convergent<int, int><<<blocks_per_grid, threads_per_block>>>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->iz_state->get_matrix(conn->id),
-        this->iz_state->device_input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional,
-        mask);
-    cudaCheckError("Failed to calculate connection activation!");
-
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-    calc_matrix_convergent<int, int>(
-        this->calc_input_ptr,
-        spikes + conn->from_layer->index,
-        this->state->get_matrix(conn->id),
-        this->iz_state->input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional,
-        mask);
 #endif
+    step_convergent<int, int>(this->state, conn, convolutional, this->calc_input_ptr, spikes, mask);
 }
 
 void IzhikevichDriver::step_output() {

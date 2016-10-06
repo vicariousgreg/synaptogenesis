@@ -247,6 +247,143 @@ GLOBAL void activate_vector(float(*func)(OUT, ARGS...), OUT* outputs,
 }
 #endif
 
+template <typename OUT, typename... ARGS>
+void step_fully_connected(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
+#ifdef PARALLEL
+    int blocks = calc_blocks(conn->to_layer->size);
+    calc_matrix<OUT, ARGS...><<<blocks, THREADS>>>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->device_input + conn->to_layer->index,
+        conn->from_layer->size,
+        conn->to_layer->size,
+        conn->opcode,
+        args...);
+    cudaCheckError("Failed to calculate connection activation!");
+
+#else
+    calc_matrix<OUT, ARGS...>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->input + conn->to_layer->index,
+        conn->from_layer->size,
+        conn->to_layer->size,
+        conn->opcode,
+        args...);
+#endif
+}
+
+template <typename OUT, typename... ARGS>
+void step_one_to_one(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
+#ifdef PARALLEL
+    int blocks = calc_blocks(conn->to_layer->size);
+    activate_vector<OUT, ARGS...><<<blocks, THREADS>>>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->device_input + conn->to_layer->index,
+        conn->to_layer->size,
+        conn->opcode,
+        args...);
+    cudaCheckError("Failed to calculate connection activation!");
+
+#else
+    activate_vector<OUT, ARGS...>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->input + conn->to_layer->index,
+        conn->to_layer->size,
+        conn->opcode,
+        args...);
+#endif
+}
+
+template <typename OUT, typename... ARGS>
+void step_divergent(State* state, Connection *conn, bool convolutional, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
+#ifdef PARALLEL
+    dim3 blocks_per_grid(
+        calc_blocks(conn->to_layer->rows, 1),
+        calc_blocks(conn->to_layer->columns, 128));
+    dim3 threads_per_block(1, 128);
+    calc_matrix_divergent<OUT, ARGS...><<<blocks_per_grid, threads_per_block>>>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->device_input + conn->to_layer->index,
+        conn->from_layer->rows,
+        conn->from_layer->columns,
+        conn->to_layer->rows,
+        conn->to_layer->columns,
+        conn->opcode,
+        conn->overlap,
+        conn->stride,
+        convolutional,
+        args...);
+    cudaCheckError("Failed to calculate connection activation!");
+
+#else
+    calc_matrix_divergent<OUT, ARGS...>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->input + conn->to_layer->index,
+        conn->from_layer->rows,
+        conn->from_layer->columns,
+        conn->to_layer->rows,
+        conn->to_layer->columns,
+        conn->opcode,
+        conn->overlap,
+        conn->stride,
+        convolutional,
+        args...);
+#endif
+}
+
+template <typename OUT, typename... ARGS>
+void step_convergent(State* state, Connection *conn, bool convolutional, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
+#ifdef PARALLEL
+    dim3 blocks_per_grid(
+        calc_blocks(conn->to_layer->rows, 1),
+        calc_blocks(conn->to_layer->columns, 128));
+    dim3 threads_per_block(1, 128);
+
+    calc_matrix_convergent<OUT, ARGS...><<<blocks_per_grid, threads_per_block>>>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->device_input + conn->to_layer->index,
+        conn->from_layer->rows,
+        conn->from_layer->columns,
+        conn->to_layer->rows,
+        conn->to_layer->columns,
+        conn->opcode,
+        conn->overlap,
+        conn->stride,
+        convolutional,
+        args...);
+    cudaCheckError("Failed to calculate connection activation!");
+
+#else
+    calc_matrix_convergent<OUT, ARGS...>(
+        calc_input,
+        outputs + conn->from_layer->index,
+        state->get_matrix(conn->id),
+        state->input + conn->to_layer->index,
+        conn->from_layer->rows,
+        conn->from_layer->columns,
+        conn->to_layer->rows,
+        conn->to_layer->columns,
+        conn->opcode,
+        conn->overlap,
+        conn->stride,
+        convolutional,
+        args...);
+#endif
+}
+
 /* Instantiates a driver based on the driver_string in the given model */
 Driver* build_driver(Model* model);
 
