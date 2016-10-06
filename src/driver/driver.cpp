@@ -28,16 +28,10 @@ void Driver::step_input() {
                 step_connection_one_to_one(conn);
                 break;
             case (DIVERGENT):
-                step_connection_divergent(conn, false);
-                break;
             case (CONVERGENT):
-                step_connection_convergent(conn, false);
-                break;
             case (DIVERGENT_CONVOLUTIONAL):
-                step_connection_divergent(conn, true);
-                break;
             case (CONVERGENT_CONVOLUTIONAL):
-                step_connection_convergent(conn, true);
+                step_connection_arborized(conn);
                 break;
             default:
                 throw "Unimplemented connection type!";

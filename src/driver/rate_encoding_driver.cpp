@@ -41,22 +41,13 @@ void RateEncodingDriver::step_connection_one_to_one(Connection *conn) {
     step_one_to_one<float>(this->state, conn, this->calc_input_ptr, outputs);
 }
 
-void RateEncodingDriver::step_connection_divergent(Connection *conn, bool convolutional) {
+void RateEncodingDriver::step_connection_arborized(Connection *conn) {
 #ifdef PARALLEL
     float* outputs = (float*)this->state->device_output + conn->from_layer->index;
 #else
     float* outputs = (float*)this->state->output + conn->from_layer->index;
 #endif
-    step_divergent<float>(this->state, conn, convolutional, this->calc_input_ptr, outputs);
-}
-
-void RateEncodingDriver::step_connection_convergent(Connection *conn, bool convolutional) {
-#ifdef PARALLEL
-    float* outputs = (float*)this->state->device_output + conn->from_layer->index;
-#else
-    float* outputs = (float*)this->state->output + conn->from_layer->index;
-#endif
-    step_convergent<float>(this->state, conn, convolutional, this->calc_input_ptr, outputs);
+    step_arborized<float>(this->state, conn, this->calc_input_ptr, outputs);
 }
 
 void RateEncodingDriver::step_output() {

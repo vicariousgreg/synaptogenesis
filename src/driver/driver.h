@@ -20,8 +20,7 @@ class Driver {
         /* Activates neural connections, calculating connection input */
         virtual void step_connection_fully_connected(Connection *conn) = 0;
         virtual void step_connection_one_to_one(Connection *conn) = 0;
-        virtual void step_connection_divergent(Connection *conn, bool convolutional) = 0;
-        virtual void step_connection_convergent(Connection *conn, bool convolutional) = 0;
+        virtual void step_connection_arborized(Connection *conn) = 0;
 
         /* Calculates neuron outputs */
         virtual void step_output() = 0;
@@ -34,6 +33,8 @@ class Driver {
         Model *model;
 };
 
+/* Instantiates a driver based on the driver_string in the given model */
+Driver* build_driver(Model* model);
 
 #ifdef PARALLEL
 template <typename OUT, typename... ARGS>
@@ -302,13 +303,38 @@ void step_one_to_one(State* state, Connection *conn, float(*calc_input)(OUT, ARG
 }
 
 template <typename OUT, typename... ARGS>
-void step_divergent(State* state, Connection *conn, bool convolutional, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
+void step_arborized(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
+    void(*func)(float(*func)(OUT, ARGS...), OUT*, float*,
+        float*, int, int, int, int, Opcode, int, int, bool, ARGS...);
+    bool convolutional;
+
+    switch (conn->type) {
+        case (DIVERGENT):
+            func = &calc_matrix_divergent<OUT, ARGS...>;
+            convolutional = false;
+            break;
+        case (CONVERGENT):
+            func = &calc_matrix_convergent<OUT, ARGS...>;
+            convolutional = false;
+            break;
+        case (DIVERGENT_CONVOLUTIONAL):
+            func = &calc_matrix_divergent<OUT, ARGS...>;
+            convolutional = true;
+            break;
+        case (CONVERGENT_CONVOLUTIONAL):
+            func = &calc_matrix_convergent<OUT, ARGS...>;
+            convolutional = true;
+            break;
+        default:
+            throw "Unimplemented connection type!";
+    }
+
 #ifdef PARALLEL
     dim3 blocks_per_grid(
         calc_blocks(conn->to_layer->rows, 1),
         calc_blocks(conn->to_layer->columns, 128));
     dim3 threads_per_block(1, 128);
-    calc_matrix_divergent<OUT, ARGS...><<<blocks_per_grid, threads_per_block>>>(
+    func<<<blocks_per_grid, threads_per_block>>>(
         calc_input,
         outputs + conn->from_layer->index,
         state->get_matrix(conn->id),
@@ -325,7 +351,7 @@ void step_divergent(State* state, Connection *conn, bool convolutional, float(*c
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
-    calc_matrix_divergent<OUT, ARGS...>(
+    func(
         calc_input,
         outputs + conn->from_layer->index,
         state->get_matrix(conn->id),
@@ -341,50 +367,5 @@ void step_divergent(State* state, Connection *conn, bool convolutional, float(*c
         args...);
 #endif
 }
-
-template <typename OUT, typename... ARGS>
-void step_convergent(State* state, Connection *conn, bool convolutional, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
-#ifdef PARALLEL
-    dim3 blocks_per_grid(
-        calc_blocks(conn->to_layer->rows, 1),
-        calc_blocks(conn->to_layer->columns, 128));
-    dim3 threads_per_block(1, 128);
-
-    calc_matrix_convergent<OUT, ARGS...><<<blocks_per_grid, threads_per_block>>>(
-        calc_input,
-        outputs + conn->from_layer->index,
-        state->get_matrix(conn->id),
-        state->device_input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional,
-        args...);
-    cudaCheckError("Failed to calculate connection activation!");
-
-#else
-    calc_matrix_convergent<OUT, ARGS...>(
-        calc_input,
-        outputs + conn->from_layer->index,
-        state->get_matrix(conn->id),
-        state->input + conn->to_layer->index,
-        conn->from_layer->rows,
-        conn->from_layer->columns,
-        conn->to_layer->rows,
-        conn->to_layer->columns,
-        conn->opcode,
-        conn->overlap,
-        conn->stride,
-        convolutional,
-        args...);
-#endif
-}
-
-/* Instantiates a driver based on the driver_string in the given model */
-Driver* build_driver(Model* model);
 
 #endif

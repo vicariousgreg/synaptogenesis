@@ -53,7 +53,7 @@ void IzhikevichDriver::step_connection_one_to_one(Connection *conn) {
     step_one_to_one<int, int>(this->state, conn, this->calc_input_ptr, spikes, mask);
 }
 
-void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolutional) {
+void IzhikevichDriver::step_connection_arborized(Connection *conn) {
     // Determine which part of spike vector to use based on delay
     int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
     int mask = 1 << (conn->delay % 32);
@@ -63,20 +63,7 @@ void IzhikevichDriver::step_connection_divergent(Connection *conn, bool convolut
 #else
     int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
 #endif
-    step_divergent<int, int>(this->state, conn, convolutional, this->calc_input_ptr, spikes, mask);
-}
-
-void IzhikevichDriver::step_connection_convergent(Connection *conn, bool convolutional) {
-    // Determine which part of spike vector to use based on delay
-    int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
-    int mask = 1 << (conn->delay % 32);
-
-#ifdef PARALLEL
-    int *spikes = &this->iz_state->device_spikes[this->model->num_neurons * word_index];
-#else
-    int *spikes = &this->iz_state->spikes[this->model->num_neurons * word_index];
-#endif
-    step_convergent<int, int>(this->state, conn, convolutional, this->calc_input_ptr, spikes, mask);
+    step_arborized<int, int>(this->state, conn, this->calc_input_ptr, spikes, mask);
 }
 
 void IzhikevichDriver::step_output() {
