@@ -122,23 +122,23 @@ int Model::connect_layers(int from_id, int to_id, bool plastic,
     return this->num_connections++;
 }
 
-int get_expected_dimension(int source_dimension, ConnectionType type, std::string params) {
+int get_expected_dimension(int source_val, ConnectionType type, std::string params) {
     int overlap, stride;
     std::stringstream stream(params);
 
     switch (type) {
         case(ONE_TO_ONE):
-            return source_dimension;
+            return source_val;
         case(DIVERGENT):
         case(DIVERGENT_CONVOLUTIONAL):
             stream >> overlap;
             stream >> stride;
-            return overlap + (stride * (source_dimension -1));
+            return overlap + (stride * (source_val -1));
         case(CONVERGENT):
         case(CONVERGENT_CONVOLUTIONAL):
             stream >> overlap;
             stream >> stride;
-            return 1 + ((source_dimension - overlap) / stride);
+            return 1 + ((source_val - overlap) / stride);
         case(FULLY_CONNECTED):
         default:
             throw "Invalid call to get_expected_dimension!";

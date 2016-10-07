@@ -40,7 +40,7 @@ class Layer {
  *   a connection |type| and connection |params|.
  * This function only returns meaningful values for connection types that
  *   are not FULLY_CONNECTED */
-int get_expected_dimension(int dimension, ConnectionType type, std::string params);
+int get_expected_dimension(int source_val, ConnectionType type, std::string params);
 
 class Connection {
     public:
