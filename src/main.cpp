@@ -170,12 +170,12 @@ int main(void) {
         std::cout << "\n";
         */
 
-        /*
+        ///*
         std::cout << "Image...\n";
         model = build_image_model("izhikevich", true);
         run_simulation(model, 50, true);
         std::cout << "\n";
-        */
+        //*/
 
         ///*
         std::cout << "Convergent...\n";

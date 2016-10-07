@@ -24,10 +24,6 @@ class Layer {
                 input(NULL),
                 output(NULL) {}
 
-        bool matches_size(Layer *other) {
-            return this->rows == other->rows and this->columns == other->columns;
-        }
-
         // Layer ID and start index
         int id, index;
 
@@ -81,10 +77,8 @@ class Connection {
         // Overlap and stride, if relevant
         int overlap, stride;
 
-        // Associated layers
-        Layer *from_layer, *to_layer;
-
         // Extracted values.
+        int from_index, to_index;
         int from_size, from_rows, from_columns;
         int to_size, to_rows, to_columns;
 
@@ -111,13 +105,13 @@ class Model {
 
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */
-        int connect_layers(int from_layer, int to_layer, bool plastic,
+        int connect_layers(int from_id, int to_id, bool plastic,
             int delay, float max_weight, ConnectionType type, Opcode opcode,
             std::string params);
 
         /* Connects to layers, sharing weights with another connection
          *   specified by |parent_id| */
-        int connect_layers_shared(int from_layer, int to_layer, int parent_id);
+        int connect_layers_shared(int from_id, int to_id, int parent_id);
 
         /* Adds an input hook of the given |type| for the given |layer| */
         void add_input(int layer, std::string type, std::string params);

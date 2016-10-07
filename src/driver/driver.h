@@ -66,7 +66,7 @@ void step(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT*
     switch (conn->type) {
         case (FULLY_CONNECTED):
         case (ONE_TO_ONE):
-            blocks_per_grid = dim3(calc_blocks(conn->to_layer->size));
+            blocks_per_grid = dim3(calc_blocks(conn->to_size));
             threads_per_block = dim3(THREADS);
             break;
         case (DIVERGENT):
@@ -74,8 +74,8 @@ void step(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT*
         case (CONVERGENT):
         case (CONVERGENT_CONVOLUTIONAL):
             blocks_per_grid = dim3(
-                calc_blocks(conn->to_layer->rows, 1),
-                calc_blocks(conn->to_layer->columns, 128));
+                calc_blocks(conn->to_rows, 1),
+                calc_blocks(conn->to_columns, 128));
             threads_per_block = dim3(1, 128);
             break;
         default:
@@ -84,9 +84,9 @@ void step(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT*
 
     func<<<blocks_per_grid, threads_per_block>>>(
         calc_input,
-        outputs + conn->from_layer->index,
+        outputs + conn->from_index,
         state->get_matrix(conn->id),
-        state->device_input + conn->to_layer->index,
+        state->device_input + conn->to_index,
         *conn,
         args...);
     cudaCheckError("Failed to calculate connection activation!");
@@ -94,9 +94,9 @@ void step(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT*
 #else
     func(
         calc_input,
-        outputs + conn->from_layer->index,
+        outputs + conn->from_index,
         state->get_matrix(conn->id),
-        state->input + conn->to_layer->index,
+        state->input + conn->to_index,
         *conn,
         args...);
 #endif
