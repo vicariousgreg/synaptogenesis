@@ -20,9 +20,7 @@ class Layer {
                 index(start_index),
                 rows(rows),
                 columns(columns),
-                size(rows * columns),
-                input(NULL),
-                output(NULL) {}
+                size(rows * columns) {}
 
         // Layer ID and start index
         int id, index;
@@ -36,14 +34,6 @@ class Layer {
         // In this case, the constructor will consume these values and leave
         //   the remaining values here
         std::string params;
-
-        // Input driver
-        // If none, this will be null
-        Input* input;
-
-        // Output driver
-        // If none, this will be null
-        Output* output;
 };
 
 /* Gets the expected row/col size of a destination layer given a |source_layer|,
@@ -135,6 +125,10 @@ class Model {
 
         // Parameter strings vector
         std::vector<std::string> parameter_strings;
+
+        // Input and iutput drivers
+        std::vector<Input*> input_drivers;
+        std::vector<Output*> output_drivers;
 
     private:
         /* Adds a single neuron.

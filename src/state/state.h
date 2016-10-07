@@ -10,6 +10,7 @@ class State {
         float* get_input();
         void* get_output();
         void set_input(int layer_id, float* input);
+        void clear_all_input();
         void clear_input(int layer_id);
 
         float* get_matrix(int connection_id) {

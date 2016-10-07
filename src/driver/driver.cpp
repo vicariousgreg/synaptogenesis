@@ -6,15 +6,13 @@
 #include "io/output.h"
 
 void Driver::step_input() {
+    // Clear all input
+    this->state->clear_all_input();
+
     // Run input modules
     // If no module, clear the input
-    for (int i = 0 ; i < this->model->num_layers; ++i) {
-        Input *input = this->model->layers[i]->input;
-        if (input == NULL)
-            this->state->clear_input(i);
-        else
-            input->feed_input(this->state);
-    }
+    for (int i = 0 ; i < this->model->input_drivers.size(); ++i)
+        this->model->input_drivers[i]->feed_input(this->state);
 
     // Calculate inputs for connections
     for (int cid = 0 ; cid < this->model->num_connections; ++cid)
@@ -24,11 +22,8 @@ void Driver::step_input() {
 void Driver::print_output() {
     // Run output modules
     // If no module, skip layer
-    for (int i = 0 ; i < this->model->num_layers; ++i) {
-        Output *output = this->model->layers[i]->output;
-        if (output != NULL)
-            output->report_output(this->state);
-    }
+    for (int i = 0 ; i < this->model->output_drivers.size(); ++i)
+        this->model->output_drivers[i]->report_output(this->state);
 }
 
 Driver* build_driver(Model* model) {

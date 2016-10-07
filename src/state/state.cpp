@@ -40,6 +40,19 @@ void State::set_input(int layer_id, float* input) {
 #endif
 }
 
+void State::clear_all_input() {
+    for (int nid = 0 ; nid < this->model->num_neurons; ++nid)
+        this->input[nid] = 0.0;
+
+#ifdef PARALLEL
+    // Send to GPU
+    cudaMemcpy(this->device_input, this->input,
+        this->model->num_neurons * sizeof(float),
+        cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to set input!");
+#endif
+}
+
 void State::clear_input(int layer_id) {
     int size = this->model->layers[layer_id]->size;
     int offset = this->model->layers[layer_id]->index;
