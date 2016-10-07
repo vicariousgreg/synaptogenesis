@@ -182,7 +182,7 @@ float** build_weight_matrices(Model* model, int depth) {
     // Allocate one big glob for weights
     // Skip shared weights because they don't take up extra space
     int total_size = 0;
-    for (int i = 0 ; i < model->num_connections ; ++i) {
+    for (int i = 0 ; i < model->connections.size() ; ++i) {
         int matrix_size = model->connections[i]->num_weights;
         // If plastic, multiply by depth to make room.
         if (model->connections[i]->plastic)
@@ -204,9 +204,9 @@ float** build_weight_matrices(Model* model, int depth) {
 
     // Allocate double pointer for indexing purposes
     float** entry_points = 
-        (float**)malloc(model->num_connections * sizeof(float*));
+        (float**)malloc(model->connections.size() * sizeof(float*));
     float* curr_point = matrix_datas;
-    for (int i = 0 ; i < model->num_connections ; ++i) {
+    for (int i = 0 ; i < model->connections.size() ; ++i) {
         Connection *conn = model->connections[i];
         if (conn->parent == -1) {
             entry_points[i] = curr_point;
@@ -222,12 +222,13 @@ float** build_weight_matrices(Model* model, int depth) {
     }
 
     // Initialize weights
-    for (int i = 0 ; i < model->num_connections ; ++i) {
+    for (int i = 0 ; i < model->connections.size() ; ++i) {
         Connection *conn = model->connections[i];
 
         // Skip shared connections
         if (conn->parent = -1)
             initialize_matrix(conn, entry_points[i], depth);
     }
+
     return entry_points;
 }

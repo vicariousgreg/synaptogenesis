@@ -11,6 +11,18 @@
 
 static Timer timer = Timer();
 
+void print_model(Model *model) {
+    printf("Built model.\n");
+    printf("  - neurons     : %10d\n", model->num_neurons);
+    printf("  - layers      : %10d\n", model->layers.size());
+    printf("  - connections : %10d\n", model->connections.size());
+    int num_weights = 0;
+    for (int i = 0; i < model->connections.size() ; ++i)
+        if (model->connections[i]->parent == -1)
+            num_weights += model->connections[i]->num_weights;
+    printf("  - weights     : %10d\n", num_weights);
+}
+
 Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionType type) {
     Model *model = new Model(driver_name);
 
@@ -35,18 +47,7 @@ Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionTy
     model->connect_layers(a, b, true, 0, .5, type, ADD, "7 1");
     model->add_input(a, "random", "5");
 
-    if (verbose) {
-        printf("Built model.\n");
-        printf("  - neurons     : %10d\n", model->num_neurons);
-        printf("  - layers      : %10d\n", model->num_layers);
-        printf("  - connections : %10d\n", model->num_connections);
-        int num_weights = 0;
-        for (int i = 0; i < model->num_connections ; ++i)
-            if (model->connections[i]->parent == -1)
-                num_weights += model->connections[i]->num_weights;
-        printf("  - weights     : %10d\n", num_weights);
-    }
-
+    if (verbose) print_model(model);
     return model;
 }
 
@@ -63,18 +64,7 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
     model->add_input(pos, "random", "5");
     model->add_input(neg, "random", "2");
 
-    if (verbose) {
-        printf("Built model.\n");
-        printf("  - neurons     : %10d\n", model->num_neurons);
-        printf("  - layers      : %10d\n", model->num_layers);
-        printf("  - connections : %10d\n", model->num_connections);
-        int num_weights = 0;
-        for (int i = 0; i < model->num_connections ; ++i)
-            if (model->connections[i]->parent == -1)
-                num_weights += model->connections[i]->num_weights;
-        printf("  - weights     : %10d\n", num_weights);
-    }
-
+    if (verbose) print_model(model);
     return model;
 }
 
@@ -121,17 +111,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     model->connect_layers(horizontal, cross, true, 0, 5, ONE_TO_ONE, ADD, "10");
     model->add_output(cross, "print_spike", "");
 
-    if (verbose) {
-        printf("Built model.\n");
-        printf("  - neurons     : %10d\n", model->num_neurons);
-        printf("  - layers      : %10d\n", model->num_layers);
-        printf("  - connections : %10d\n", model->num_connections);
-        int num_weights = 0;
-        for (int i = 0; i < model->num_connections ; ++i)
-            if (model->connections[i]->parent == -1)
-                num_weights += model->connections[i]->num_weights;
-        printf("  - weights     : %10d\n", num_weights);
-    }
+    if (verbose) print_model(model);
     return model;
 }
 

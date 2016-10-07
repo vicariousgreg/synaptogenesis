@@ -107,19 +107,18 @@ Connection::Connection(int conn_id, Layer *from_layer, Layer *to_layer,
 
 Model::Model (std::string driver_string) :
         num_neurons(0),
-        num_layers(0),
-        num_connections(0),
         driver_string(driver_string) {}
 
 int Model::connect_layers(int from_id, int to_id, bool plastic,
         int delay, float max_weight, ConnectionType type, Opcode opcode,
         std::string params) {
+    int conn_id = this->connections.size();
     Connection *conn = new Connection(
-        this->num_connections,
+        conn_id,
         this->layers[from_id], this->layers[to_id],
         plastic, delay, max_weight, type, params, opcode);
     this->connections.push_back(conn);
-    return this->num_connections++;
+    return conn_id;
 }
 
 int get_expected_dimension(int source_val, ConnectionType type, std::string params) {
@@ -154,17 +153,17 @@ int Model::connect_layers_shared(int from_id, int to_id, int parent_id) {
     Connection *parent = this->connections[parent_id];
     Layer *from_layer = this->layers[from_id];
     Layer *to_layer = this->layers[to_id];
+    int conn_id = this->connections.size();
 
     if (from_layer->rows == parent->from_rows
             and from_layer->columns == parent->from_columns
             and to_layer->rows == parent->to_rows
             and to_layer->columns == parent->to_columns) {
         Connection *conn = new Connection(
-            this->num_connections,
-            from_layer, to_layer,
+            conn_id, from_layer, to_layer,
             this->connections[parent_id]);
         this->connections.push_back(conn);
-        return this->num_connections++;
+        return conn_id;
     } else {
         throw "Cannot share weights between connections of different sizes!";
     }
@@ -173,7 +172,7 @@ int Model::connect_layers_shared(int from_id, int to_id, int parent_id) {
 int Model::add_layer(int rows, int columns, std::string params) {
     // Index of first neuron for layer
     int start_index = this->num_neurons;
-    int layer_index = this->num_layers++;
+    int layer_index = this->layers.size();
 
     this->layers.push_back(new Layer(layer_index, start_index, rows, columns));
 

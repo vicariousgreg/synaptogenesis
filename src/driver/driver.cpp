@@ -15,7 +15,7 @@ void Driver::step_input() {
         this->model->input_drivers[i]->feed_input(this->state);
 
     // Calculate inputs for connections
-    for (int cid = 0 ; cid < this->model->num_connections; ++cid)
+    for (int cid = 0 ; cid < this->model->connections.size(); ++cid)
         step_connection(this->model->connections[cid]);
 }
 

@@ -44,9 +44,9 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
 
 class Connection {
     public:
-        Connection (int conn_id, Layer *from_layer, Layer *to_layer, bool plastic,
-                int delay, float max_weight, ConnectionType type,
-                std::string params, Opcode opcode);
+        Connection (int conn_id, Layer *from_layer, Layer *to_layer,
+                bool plastic, int delay, float max_weight,
+                ConnectionType type, std::string params, Opcode opcode);
 
         Connection(int conn_id, Layer *from_layer, Layer *to_layer,
                 Connection *parent);
@@ -116,11 +116,9 @@ class Model {
         int num_neurons;
 
         // Layers
-        int num_layers;
         std::vector<Layer*> layers;
 
         // Connection matrices
-        int num_connections;
         std::vector<Connection*> connections;
 
         // Parameter strings vector
