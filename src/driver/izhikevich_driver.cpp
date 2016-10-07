@@ -7,7 +7,7 @@
 #define EULER_RES 10
 
 DEVICE float iz_calc_input(int output, int mask) {
-    return (float)(output & mask);
+    return output & mask;
 }
 
 DEVICE float (*iz_calc_input_ptr)(int, int) = iz_calc_input;

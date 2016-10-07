@@ -5,7 +5,6 @@
 #include "tools.h"
 #include "parallel.h"
 
-
 float* State::get_input() {
 #ifdef PARALLEL
     // Copy from GPU to local location
