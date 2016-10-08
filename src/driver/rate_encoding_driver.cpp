@@ -29,7 +29,7 @@ void RateEncodingDriver::step_connection(Connection *conn) {
 #else
     float* outputs = (float*)this->state->output;
 #endif
-    step<float>(this->state, conn, this->calc_input_ptr, outputs);
+    step<float>(this->state, conn, outputs, this->calc_input_ptr);
 }
 
 void RateEncodingDriver::step_output() {

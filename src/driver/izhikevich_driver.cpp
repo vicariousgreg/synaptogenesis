@@ -33,8 +33,9 @@ void IzhikevichDriver::step_connection(Connection *conn) {
 #else
     int *spikes = this->iz_state->spikes;
 #endif
-    step<int, int>(this->state, conn, this->calc_input_ptr,
-        &spikes[this->model->num_neurons * word_index], mask);
+    step<int, int>(this->state, conn,
+        &spikes[this->model->num_neurons * word_index],
+        this->calc_input_ptr, mask);
 }
 
 void IzhikevichDriver::step_output() {

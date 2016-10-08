@@ -35,31 +35,49 @@ class Driver {
 /* Instantiates a driver based on the driver_string in the given model */
 Driver* build_driver(Model* model);
 
+/* Steps activation of a connection.
+ * This function is templated to allow for different driver implementations.
+ *
+ * OUT is the type of output that neurons produce.
+ * ARGS is a list of argument types for the input interpreter function.
+ *
+ * The function takes the following arguments
+ *   - state, which contains the tables of neuron properties
+ *   - connection specification
+ *   - pointer to output list to read
+ *   - input calculation function and associated arguments
+ *
+ */
 template <typename OUT, typename... ARGS>
-void step(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT* outputs, ARGS... args) {
-    void(*func)(float(*func)(OUT, ARGS...), OUT*, float*,
-        float*, Connection, ARGS...);
+void step(State* state, Connection *conn, OUT* outputs,
+        float(*calc_input)(OUT, ARGS...), ARGS... args) {
+    void(*kernel)(
+        Connection,
+        float*, float*, OUT*,
+        float(*)(OUT, ARGS...), ARGS...);
 
+    // Determine which kernel to use based on connection type
     switch (conn->type) {
         case (FULLY_CONNECTED):
-            func = &calc_matrix<OUT, ARGS...>;
+            kernel = &calc_fully_connected<OUT, ARGS...>;
             break;
         case (ONE_TO_ONE):
-            func = &calc_vector<OUT, ARGS...>;
+            kernel = &calc_one_to_one<OUT, ARGS...>;
             break;
         case (DIVERGENT):
         case (DIVERGENT_CONVOLUTIONAL):
-            func = &calc_matrix_divergent<OUT, ARGS...>;
+            kernel = &calc_divergent<OUT, ARGS...>;
             break;
         case (CONVERGENT):
         case (CONVERGENT_CONVOLUTIONAL):
-            func = &calc_matrix_convergent<OUT, ARGS...>;
+            kernel = &calc_convergent<OUT, ARGS...>;
             break;
         default:
             throw "Unimplemented connection type!";
     }
 
 #ifdef PARALLEL
+    // Calculate grid and block sizes based on type
     dim3 blocks_per_grid;
     dim3 threads_per_block;
 
@@ -82,22 +100,24 @@ void step(State* state, Connection *conn, float(*calc_input)(OUT, ARGS...), OUT*
             throw "Unimplemented connection type!";
     }
 
-    func<<<blocks_per_grid, threads_per_block>>>(
-        calc_input,
-        outputs + conn->from_index,
-        state->get_matrix(conn->id),
-        state->device_input + conn->to_index,
+    // Run the parallel kernel
+    kernel<<<blocks_per_grid, threads_per_block>>>(
         *conn,
+        state->device_input + conn->to_index,
+        state->get_matrix(conn->id),
+        outputs + conn->from_index,
+        calc_input,
         args...);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
-    func(
-        calc_input,
-        outputs + conn->from_index,
-        state->get_matrix(conn->id),
-        state->input + conn->to_index,
+    // Run the serial kernel
+    kernel(
         *conn,
+        state->input + conn->to_index,
+        state->get_matrix(conn->id),
+        outputs + conn->from_index,
+        calc_input,
         args...);
 #endif
 }
