@@ -226,7 +226,7 @@ float** build_weight_matrices(Model* model, int depth) {
         Connection *conn = model->connections[i];
 
         // Skip shared connections
-        if (conn->parent = -1)
+        if (conn->parent == -1)
             initialize_matrix(conn, entry_points[i], depth);
     }
 

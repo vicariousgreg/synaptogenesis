@@ -11,8 +11,8 @@ void Driver::step_input() {
 
     // Run input modules
     // If no module, clear the input
-    for (int i = 0 ; i < this->model->input_drivers.size(); ++i)
-        this->model->input_drivers[i]->feed_input(this->state);
+    for (int i = 0 ; i < this->model->input_modules.size(); ++i)
+        this->model->input_modules[i]->feed_input(this->state);
 
     // Calculate inputs for connections
     for (int cid = 0 ; cid < this->model->connections.size(); ++cid)
@@ -22,8 +22,8 @@ void Driver::step_input() {
 void Driver::print_output() {
     // Run output modules
     // If no module, skip layer
-    for (int i = 0 ; i < this->model->output_drivers.size(); ++i)
-        this->model->output_drivers[i]->report_output(this->state);
+    for (int i = 0 ; i < this->model->output_modules.size(); ++i)
+        this->model->output_modules[i]->report_output(this->state);
 }
 
 Driver* build_driver(Model* model) {

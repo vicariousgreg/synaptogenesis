@@ -210,10 +210,10 @@ int Model::add_layer(int rows, int columns, std::string params) {
 
 void Model::add_input(int layer, std::string type, std::string params) {
     Input *input = build_input(this->layers[layer], type, params);
-    this->input_drivers.push_back(input);
+    this->input_modules.push_back(input);
 }
 
 void Model::add_output(int layer, std::string type, std::string params) {
     Output *output = build_output(this->layers[layer], type, params);
-    this->output_drivers.push_back(output);
+    this->output_modules.push_back(output);
 }

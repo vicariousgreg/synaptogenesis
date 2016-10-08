@@ -1,6 +1,8 @@
 #ifndef constants_h
 #define constants_h
 
+#include "parallel.h"
+
 /* Size (in integers) of spike history bit vector.
  * A size of 1 indicates the usage of 1 integer, which on most systems is
  *     4 bytes, or 32 bits.  This means that a history of 32 timesteps will
@@ -28,7 +30,10 @@ enum ConnectionType {
     CONVERGENT_CONVOLUTIONAL
 };
 
-/* Synaptic operation opcode */
+/* Synaptic operation opcode
+ * Defines how activity across a connection interacts with the current state.
+ * This allows for more complex synaptic functions.
+ * */
 enum Opcode {
     ADD,
     SUB,
@@ -37,30 +42,23 @@ enum Opcode {
 };
 
 
-/* Synaptic operations */
-#ifdef PARALLEL
-#include "parallel.h"
-
-inline __device__ float calc(Opcode opcode, float input, float sum) {
+/* Synaptic operations
+ * |prior| is the current state of the neuron.
+ * |input| is the synaptic input accomulated from one connection.
+ *
+ * ADD represent traditional excitatory input
+ * SUB represent traditional inhibitory input
+ * MULT and DIV represent modulatory input that can be used for gating
+ * */
+inline DEVICE float calc(Opcode opcode, float prior, float input) {
     switch (opcode) {
-        case ADD:  return input + sum;
-        case SUB:  return input - sum;
-        case MULT: return input * (1+sum);
-        case DIV:  return input / (1+sum);
-    }
-    assert(false);
-    return 0.0;
-}
-#else
-inline float calc(Opcode opcode, float input, float sum) {
-    switch (opcode) {
-        case ADD:  return input + sum;
-        case SUB:  return input - sum;
-        case MULT: return input * (1+sum);
-        case DIV:  return input / (1+sum);
+        case ADD:  return prior + input;
+        case SUB:  return prior - input;
+        case MULT: return prior * (1+input);
+        case DIV:  return prior / (1+input);
         default: throw "Unrecognized connection operation!";
     }
+    return 0.0;
 }
-#endif
 
 #endif
