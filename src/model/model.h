@@ -103,6 +103,12 @@ class Model {
          *   specified by |parent_id| */
         int connect_layers_shared(int from_id, int to_id, int parent_id);
 
+        /* Uses expected sizes to create a new layer and connect it to the
+         *   given layer.  Returns the id of the new layer. */
+        int connect_layers_expected(int from_id, std::string new_layer_params,
+                bool plastic, int delay, float max_weight,
+                ConnectionType type, Opcode opcode, std::string params);
+
         /* Adds an input hook of the given |type| for the given |layer| */
         void add_input(int layer, std::string type, std::string params);
 
@@ -118,7 +124,7 @@ class Model {
         // Layers
         std::vector<Layer*> layers;
 
-        // Connection matrices
+        // Connections
         std::vector<Connection*> connections;
 
         // Parameter strings vector

@@ -109,18 +109,6 @@ Model::Model (std::string driver_string) :
         num_neurons(0),
         driver_string(driver_string) {}
 
-int Model::connect_layers(int from_id, int to_id, bool plastic,
-        int delay, float max_weight, ConnectionType type, Opcode opcode,
-        std::string params) {
-    int conn_id = this->connections.size();
-    Connection *conn = new Connection(
-        conn_id,
-        this->layers[from_id], this->layers[to_id],
-        plastic, delay, max_weight, type, params, opcode);
-    this->connections.push_back(conn);
-    return conn_id;
-}
-
 int get_expected_dimension(int source_val, ConnectionType type, std::string params) {
     int overlap, stride;
     std::stringstream stream(params);
@@ -142,6 +130,18 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
         default:
             throw "Invalid call to get_expected_dimension!";
     }
+}
+
+int Model::connect_layers(int from_id, int to_id, bool plastic,
+        int delay, float max_weight, ConnectionType type, Opcode opcode,
+        std::string params) {
+    int conn_id = this->connections.size();
+    Connection *conn = new Connection(
+        conn_id,
+        this->layers[from_id], this->layers[to_id],
+        plastic, delay, max_weight, type, params, opcode);
+    this->connections.push_back(conn);
+    return conn_id;
 }
 
 int Model::connect_layers_shared(int from_id, int to_id, int parent_id) {
@@ -167,6 +167,32 @@ int Model::connect_layers_shared(int from_id, int to_id, int parent_id) {
     } else {
         throw "Cannot share weights between connections of different sizes!";
     }
+}
+
+int Model::connect_layers_expected(int from_id,
+        std::string new_layer_params,bool plastic, int delay,
+        float max_weight, ConnectionType type, Opcode opcode,
+        std::string params) {
+    Layer *from_layer = this->layers[from_id];
+
+    // Determine new layer size and create
+    int expected_rows = get_expected_dimension(
+        from_layer->rows, type, params);
+    int expected_columns = get_expected_dimension(
+        from_layer->columns, type, params);
+    int new_id = add_layer(
+        expected_rows, expected_columns, new_layer_params);
+    Layer *to_layer = this->layers[new_id];
+
+    // Connect new layer to given layer
+    int conn_id = this->connections.size();
+    Connection *conn = new Connection(
+        conn_id, from_layer, to_layer,
+        plastic, delay, max_weight, type, params, opcode);
+    this->connections.push_back(conn);
+
+    // Return id of new layer
+    return new_id;
 }
 
 int Model::add_layer(int rows, int columns, std::string params) {

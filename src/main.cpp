@@ -26,25 +26,10 @@ void print_model(Model *model) {
 Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionType type) {
     Model *model = new Model(driver_name);
 
-    int diff = 6;
-    switch (type) {
-        case (CONVERGENT):
-            diff = -diff;
-            break;
-        case (CONVERGENT_CONVOLUTIONAL):
-            diff = -diff;
-            break;
-        case (DIVERGENT):
-            break;
-        case (DIVERGENT_CONVOLUTIONAL):
-            break;
-    }
-
     int rows = 1000;
     int cols = 1000;
     int a = model->add_layer(rows, cols, "random positive");
-    int b = model->add_layer(rows+diff, cols+diff, "random negative");
-    model->connect_layers(a, b, true, 0, .5, type, ADD, "7 1");
+    model->connect_layers_expected(a, "random positive" , true, 0, .5, type, ADD, "7 1");
     model->add_input(a, "random", "5");
 
     if (verbose) print_model(model);
@@ -81,9 +66,8 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //model->add_output(receptor, "print_spike", "");
 
     // Vertical line detection
-    //int vertical = model->add_layer(image_size+4, image_size+4, "default");
-    int vertical = model->add_layer(image_size-4, image_size-4, "default");
-    model->connect_layers(receptor, vertical, true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+    int vertical = model->connect_layers_expected(receptor, "default",
+        true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
@@ -93,8 +77,8 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //model->add_output(vertical, "print_spike", "");
 
     // Horizontal line detection
-    int horizontal = model->add_layer(image_size-4, image_size-4, "default");
-    model->connect_layers(receptor, horizontal, true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+    int horizontal = model->connect_layers_expected(receptor, "default",
+        true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 -5 -5 -5 -5 "
         "0 0 0 0 0 "
@@ -104,10 +88,8 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //model->add_output(horizontal, "print_spike", "");
 
     // Cross detection
-    int cross = model->add_layer(image_size-4, image_size-4, "default");
-    //int cross = model->add_layer(image_size-4+2, image_size-4+2, "default");
-    //model->connect_layers(vertical, cross, true, 0, 5, DIVERGENT, ADD, "3 1");
-    model->connect_layers(vertical, cross, true, 0, 5, ONE_TO_ONE, ADD, "10");
+    int cross = model->connect_layers_expected(vertical, "default",
+        true, 0, 5, ONE_TO_ONE, ADD, "10");
     model->connect_layers(horizontal, cross, true, 0, 5, ONE_TO_ONE, ADD, "10");
     model->add_output(cross, "print_spike", "");
 
