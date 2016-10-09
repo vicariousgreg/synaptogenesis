@@ -149,6 +149,7 @@ class Model {
 
         /* Adds a layer to the environment with the given parameters */
         int add_layer(int rows, int columns, std::string params);
+        int add_layer_from_image(std::string path, std::string params);
 
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */

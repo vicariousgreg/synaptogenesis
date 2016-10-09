@@ -4,6 +4,10 @@
 #include "io/input.h"
 #include "io/output.h"
 
+#define cimg_display 0
+#include "libs/CImg.h"
+
+
 Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,
         ConnectionType type, std::string params,  Opcode opcode) :
@@ -206,6 +210,11 @@ int Model::add_layer(int rows, int columns, std::string params) {
     this->add_neurons(rows*columns, params);
 
     return layer_index;
+}
+
+int Model::add_layer_from_image(std::string path, std::string params) {
+    cimg_library::CImg<unsigned char> img(path.c_str());
+    this->add_layer(img.height(), img.width(), params);
 }
 
 void Model::add_input(int layer, std::string type, std::string params) {

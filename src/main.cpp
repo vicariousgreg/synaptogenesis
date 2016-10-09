@@ -60,10 +60,11 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //int image_size = 373;
     int image_size = 50;
 
-    int receptor = model->add_layer(image_size, image_size, "default");
-    //model->add_input(receptor, "image", "resources/bird-head-small.jpg");
-    model->add_input(receptor, "image", "resources/grid.png");
-    //model->add_output(receptor, "print_spike", "");
+    const char* image_path = "resources/bird-head.jpg";
+    int receptor = model->add_layer_from_image(image_path, "default");
+    model->add_input(receptor, "image", image_path);
+    //model->add_input(receptor, "image", "resources/grid.png");
+    model->add_output(receptor, "print_spike", "31 1 10");
 
     // Vertical line detection
     int vertical = model->connect_layers_expected(receptor, "default",
@@ -74,7 +75,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5");
-    //model->add_output(vertical, "print_spike", "");
+    //model->add_output(vertical, "print_spike", "3 1 10");
 
     // Horizontal line detection
     int horizontal = model->connect_layers_expected(receptor, "default",
@@ -85,13 +86,13 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "10 10 10 10 10 "
         "0 0 0 0 0 "
         "-5 -5 -5 -5 -5");
-    //model->add_output(horizontal, "print_spike", "");
+    //model->add_output(horizontal, "print_spike", "3 1 10");
 
     // Cross detection
     int cross = model->connect_layers_expected(vertical, "default",
         true, 0, 5, ONE_TO_ONE, ADD, "10");
     model->connect_layers(horizontal, cross, true, 0, 5, ONE_TO_ONE, ADD, "10");
-    model->add_output(cross, "print_spike", "");
+    //model->add_output(cross, "print_spike", "3 1 10");
 
     if (verbose) print_model(model);
     return model;
@@ -106,7 +107,7 @@ void run_simulation(Model *model, int iterations, bool verbose) {
 
     Driver *driver = build_driver(model);
     if (verbose) printf("Built state.\n");
-    if (verbose) timer.stop("Initialization");
+    if (verbose) timer.query("Initialization");
 
     timer.start();
     for (int i = 0 ; i < iterations ; ++i) {
@@ -114,7 +115,7 @@ void run_simulation(Model *model, int iterations, bool verbose) {
         driver->print_output();
     }
 
-    float time = timer.stop("Total time");
+    float time = timer.query("Total time");
     if (verbose)
         printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
 #ifdef PARALLEL
@@ -135,7 +136,7 @@ int main(void) {
         ///*
         std::cout << "Image...\n";
         model = build_image_model("izhikevich", true);
-        run_simulation(model, 50, true);
+        run_simulation(model, 500, true);
         std::cout << "\n";
         //*/
 

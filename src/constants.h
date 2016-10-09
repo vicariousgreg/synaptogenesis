@@ -56,7 +56,9 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
         case SUB:  return prior - input;
         case MULT: return prior * (1+input);
         case DIV:  return prior / (1+input);
-        default: throw "Unrecognized connection operation!";
+        #ifdef PARALLEL assert(false);
+        #else default: throw "Unrecognized connection operation!";
+        #endif
     }
     return 0.0;
 }

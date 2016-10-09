@@ -26,7 +26,7 @@ class Timer {
         /* Calculates elapsed time since last start() call.
          * If |header| is provided, the time will be printed.
          */
-        float stop(const char header[]) {
+        float query(const char header[]) {
             float total = ((float)(clock() - this->start_time)) / CLOCKS_PER_SEC;
             if (header != NULL) {
                 printf("%s: %f\n", header, total);
