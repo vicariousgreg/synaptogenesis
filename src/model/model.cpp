@@ -214,7 +214,7 @@ int Model::add_layer(int rows, int columns, std::string params) {
 
 int Model::add_layer_from_image(std::string path, std::string params) {
     cimg_library::CImg<unsigned char> img(path.c_str());
-    this->add_layer(img.height(), img.width(), params);
+    return this->add_layer(img.height(), img.width(), params);
 }
 
 void Model::add_input(int layer, std::string type, std::string params) {

@@ -57,13 +57,11 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     /* Construct the model */
     Model *model = new Model(driver_name);
 
-    //int image_size = 373;
-    int image_size = 50;
-
-    const char* image_path = "resources/bird-head.jpg";
+    //const char* image_path = "resources/bird-head.jpg";
+    const char* image_path = "resources/bird-head-small.jpg";
     int receptor = model->add_layer_from_image(image_path, "default");
     model->add_input(receptor, "image", image_path);
-    //model->add_output(receptor, "print_spike", "31 1 10");
+    model->add_output(receptor, "print_spike", "24 1 30");
 
     // Vertical line detection
     int vertical = model->connect_layers_expected(receptor, "default",
@@ -103,7 +101,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "1      10  15  10  1 "
         "-.5    5   -.5 5   -.5 "
         "-.5  -.5  -1  -.5  -.5");
-    model->add_output(cross, "print_spike", "31 1 10");
+    //model->add_output(cross, "print_spike", "16 1 10");
 
     if (verbose) print_model(model);
     return model;

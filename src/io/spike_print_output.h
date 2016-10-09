@@ -13,6 +13,8 @@ class SpikePrintOutput : public Output {
     int step_size;
     int counter;
     int refresh_rate;
+    unsigned int maximum;
+    unsigned int* reverses;
 
     Timer timer;
 };
