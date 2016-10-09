@@ -63,8 +63,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     const char* image_path = "resources/bird-head.jpg";
     int receptor = model->add_layer_from_image(image_path, "default");
     model->add_input(receptor, "image", image_path);
-    //model->add_input(receptor, "image", "resources/grid.png");
-    model->add_output(receptor, "print_spike", "31 1 10");
+    //model->add_output(receptor, "print_spike", "31 1 10");
 
     // Vertical line detection
     int vertical = model->connect_layers_expected(receptor, "default",
@@ -75,7 +74,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5");
-    //model->add_output(vertical, "print_spike", "3 1 10");
+    //model->add_output(vertical, "print_spike", "31 1 10");
 
     // Horizontal line detection
     int horizontal = model->connect_layers_expected(receptor, "default",
@@ -86,13 +85,25 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "10 10 10 10 10 "
         "0 0 0 0 0 "
         "-5 -5 -5 -5 -5");
-    //model->add_output(horizontal, "print_spike", "3 1 10");
+    //model->add_output(horizontal, "print_spike", "31 1 10");
 
     // Cross detection
     int cross = model->connect_layers_expected(vertical, "default",
-        true, 0, 5, ONE_TO_ONE, ADD, "10");
-    model->connect_layers(horizontal, cross, true, 0, 5, ONE_TO_ONE, ADD, "10");
-    //model->add_output(cross, "print_spike", "3 1 10");
+        true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "5 1 "
+        "-.5  -.5 1  -.5 -.5 "
+        "-.5  5   10 5   -.5 "
+        "-1   -.5 15 -.5 -1 "
+        "-.5  5   10 5   -.5 "
+        "-.5  -.5 1  -.5 -.5");
+    model->connect_layers(horizontal, cross, true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "5 1 "
+        "-.5  -.5  -1   -.5  -.5 "
+        "-.5    5   -.5 5   -.5 "
+        "1      10  15  10  1 "
+        "-.5    5   -.5 5   -.5 "
+        "-.5  -.5  -1  -.5  -.5");
+    model->add_output(cross, "print_spike", "31 1 10");
 
     if (verbose) print_model(model);
     return model;
