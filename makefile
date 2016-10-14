@@ -22,8 +22,8 @@ NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -DPARALLEL -Isrc
 #---------------------------------------------------------------------------------
 #DO NOT EDIT BELOW THIS LINE
 #---------------------------------------------------------------------------------
-SOURCES_S     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
-OBJECTS_S     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_S)/%,$(SOURCES_S:.$(SRCEXT)=.$(OBJEXT)))
+SOURCES       := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+OBJECTS_S     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 #Default Make
 all: serial
@@ -41,7 +41,7 @@ clean:
 	#@$(RM) -rf $(BUILDDIR_P)
 
 #Pull in dependency info for *existing* .o files
--include $(OBJECTS:.$(OBJEXT)=.$(DEPEXT))
+-include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
 
 #Link
 $(TARGET_S): $(OBJECTS_S)
@@ -58,7 +58,7 @@ $(BUILDDIR_S)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@rm -f $(BUILDDIR_S)/$*.$(DEPEXT).tmp
 
 #------------- PARALLEL ------------------------
-SOURCES     := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
+SOURCES       := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 #parallel: $(TARGET_P)
