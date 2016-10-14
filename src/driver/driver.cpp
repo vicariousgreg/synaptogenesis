@@ -13,7 +13,9 @@ void Driver::step_input() {
     // If no module, clear the input
     for (int i = 0 ; i < this->model->input_modules.size(); ++i)
         this->model->input_modules[i]->feed_input(this->state);
+}
 
+void Driver::step_connections() {
     // Calculate inputs for connections
     for (int cid = 0 ; cid < this->model->connections.size(); ++cid)
         step_connection(this->model->connections[cid]);

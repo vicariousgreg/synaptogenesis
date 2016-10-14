@@ -78,8 +78,10 @@ class Connection {
         ConnectionType type;
 
         // Connection ID
-        // ID of parent matrix if this is a shared connection
-        int id, parent;
+        int id;
+
+        // Parent connection if this is a shared connection
+        Connection *parent;
 
         // Convolutional boolean (extracted from type)
         bool convolutional;
@@ -94,7 +96,7 @@ class Connection {
         //   -> Divergent, Convergent, Convolutional
         // In this case, the constructor will consume these values and leave
         //   the remaining values here
-        std::string params;
+        std::string init_params;
 
         // Extracted Layer properties
         int from_index, to_index;

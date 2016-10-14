@@ -2,7 +2,6 @@
 #define spike_print_output_h
 
 #include "io/output.h"
-#include "tools.h"
 
 class SpikePrintOutput : public Output {
     public:
@@ -15,8 +14,6 @@ class SpikePrintOutput : public Output {
     int refresh_rate;
     unsigned int maximum;
     unsigned int* reverses;
-
-    Timer timer;
 };
 
 #endif

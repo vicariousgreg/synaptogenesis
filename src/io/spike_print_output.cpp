@@ -11,16 +11,8 @@ SpikePrintOutput::SpikePrintOutput(Layer *layer, std::string params)
     std::stringstream stream(params);
     if (!stream.eof()) {
         stream >> this->history_length;
-        if (!stream.eof())
-            stream >> this->step_size;
-            if (!stream.eof())
-                stream >> this->refresh_rate;
-            else
-                throw "Insufficient parameters for spike output printer";
     } else {
         this->history_length= 1;
-        this->step_size = 1;
-        this->refresh_rate = 10;
     }
 
     // Set up maximum value
@@ -41,45 +33,38 @@ SpikePrintOutput::SpikePrintOutput(Layer *layer, std::string params)
 }
 
 void SpikePrintOutput::report_output(State *state) {
-    float time = (this->counter == 0) ? (1.0 / this->refresh_rate): this->timer.query(NULL);
-    if (this->counter++ % this->step_size == 0) {
-        while (time < (1.0 / this->refresh_rate)) time = this->timer.query(NULL);
-        this->timer.start();
-        int* spikes = (int*)state->get_output();
+    int* spikes = (int*)state->get_output();
 
-        // Print bar
-        for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
-        std::cout << "\n-----  layer id: " << this->layer->id << "-----\n";
-        for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
-        std::cout << "\n";
+    // Print bar
+    for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
+    std::cout << "\n-----  layer id: " << this->layer->id << "-----\n";
+    for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
+    std::cout << "\n";
 
-        for (int row = 0 ; row < this->layer->rows; ++row) {
-            for (int col = 0 ; col < this->layer->columns; ++col) {
-                int index = (row * this->layer->columns) + col;
-                // And to remove distant spikes
-                // Multiply by constant factor
-                // Divide by mask
-                //  -> Bins intensity into a constant number of bins
+    for (int row = 0 ; row < this->layer->rows; ++row) {
+        for (int col = 0 ; col < this->layer->columns; ++col) {
+            int index = (row * this->layer->columns) + col;
+            // And to remove distant spikes
+            // Multiply by constant factor
+            // Divide by mask
+            //  -> Bins intensity into a constant number of bins
 
-                unsigned int spike_value = (unsigned int) (spikes[index+layer->index] & this->maximum);
-                unsigned int value = this->reverses[spike_value];
-                float fraction = float(value) / this->maximum;
-                if (value > 0) {
-                    //std::cout << value << " ";
-                    //std::cout << fraction << " ";
-                    if (fraction > 0.24)      std::cout << " X";
-                    else if (fraction > 0.06) std::cout << " @";
-                    else if (fraction > 0.01) std::cout << " +";
-                    else if (fraction > 0.002) std::cout << " *";
-                    else if (fraction > 0.001) std::cout << " -";
-                    else                     std::cout << " '";
-                } else {
-                    std::cout << "  ";
-                }
+            unsigned int spike_value = (unsigned int) (spikes[index+layer->index] & this->maximum);
+            unsigned int value = this->reverses[spike_value];
+            float fraction = float(value) / this->maximum;
+            if (value > 0) {
+                //std::cout << value << " ";
+                //std::cout << fraction << " ";
+                if (fraction > 0.24)      std::cout << " X";
+                else if (fraction > 0.06) std::cout << " @";
+                else if (fraction > 0.01) std::cout << " +";
+                else if (fraction > 0.002) std::cout << " *";
+                else if (fraction > 0.001) std::cout << " -";
+                else                     std::cout << " '";
+            } else {
+                std::cout << "  ";
             }
-            std::cout << "|\n";
         }
-    } else {
-        this->timer.start();
+        std::cout << "|\n";
     }
 }

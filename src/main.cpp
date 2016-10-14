@@ -8,6 +8,7 @@
 #include "state/state.h"
 #include "driver/driver.h"
 #include "tools.h"
+#include "clock.h"
 
 static Timer timer = Timer();
 
@@ -18,7 +19,7 @@ void print_model(Model *model) {
     printf("  - connections : %10d\n", model->connections.size());
     int num_weights = 0;
     for (int i = 0; i < model->connections.size() ; ++i)
-        if (model->connections[i]->parent == -1)
+        if (model->connections[i]->parent == NULL)
             num_weights += model->connections[i]->num_weights;
     printf("  - weights     : %10d\n", num_weights);
 }
@@ -61,7 +62,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     const char* image_path = "resources/bird-head-small.jpg";
     int receptor = model->add_layer_from_image(image_path, "default");
     model->add_input(receptor, "image", image_path);
-    model->add_output(receptor, "print_spike", "24 1 30");
+    model->add_output(receptor, "print_spike", "24");
 
     // Vertical line detection
     int vertical = model->connect_layers_expected(receptor, "default",
@@ -72,7 +73,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5");
-    //model->add_output(vertical, "print_spike", "31 1 10");
+    //model->add_output(vertical, "print_spike", "31");
 
     // Horizontal line detection
     int horizontal = model->connect_layers_expected(receptor, "default",
@@ -83,7 +84,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "10 10 10 10 10 "
         "0 0 0 0 0 "
         "-5 -5 -5 -5 -5");
-    //model->add_output(horizontal, "print_spike", "31 1 10");
+    //model->add_output(horizontal, "print_spike", "31");
 
     // Cross detection
     int cross = model->connect_layers_expected(vertical, "default",
@@ -101,7 +102,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "1      10  15  10  1 "
         "-.5    5   -.5 5   -.5 "
         "-.5  -.5  -1  -.5  -.5");
-    //model->add_output(cross, "print_spike", "16 1 10");
+    //model->add_output(cross, "print_spike", "16");
 
     if (verbose) print_model(model);
     return model;
@@ -119,10 +120,9 @@ void run_simulation(Model *model, int iterations, bool verbose) {
     if (verbose) timer.query("Initialization");
 
     timer.start();
-    for (int i = 0 ; i < iterations ; ++i) {
-        driver->timestep();
-        driver->print_output();
-    }
+
+    Clock clock(20);
+    clock.run(driver, iterations);
 
     float time = timer.query("Total time");
     if (verbose)

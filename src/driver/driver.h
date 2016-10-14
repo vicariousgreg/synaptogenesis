@@ -8,14 +8,8 @@
 
 class Driver {
     public:
-        /* Cycles the environment */
-        void timestep() {
-            this->step_input();
-            this->step_output();
-            this->step_weights();
-        }
-
         void step_input();
+        void step_connections();
         void print_output();
 
         /* Activates neural connections, calculating connection input */

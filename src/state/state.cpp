@@ -105,8 +105,8 @@ void initialize_matrix(Connection* conn,
 
     // If parameter is specified, interpret it for initialization
     // Otherwise, perform randomization
-    if (conn->params.size() > 0) {
-        std::stringstream stream(conn->params);
+    if (conn->init_params.size() > 0) {
+        std::stringstream stream(conn->init_params);
 
         // Extract first value
         float value;
@@ -188,7 +188,7 @@ float** build_weight_matrices(Model* model, int depth) {
         if (model->connections[i]->plastic)
             matrix_size *= depth;
 
-        if (model->connections[i]->parent == -1)
+        if (model->connections[i]->parent == NULL)
             total_size += matrix_size;
     }
 
@@ -208,7 +208,7 @@ float** build_weight_matrices(Model* model, int depth) {
     float* curr_point = matrix_datas;
     for (int i = 0 ; i < model->connections.size() ; ++i) {
         Connection *conn = model->connections[i];
-        if (conn->parent == -1) {
+        if (conn->parent == NULL) {
             entry_points[i] = curr_point;
             // Skip over appropriate amount of memory
             // Plastic matrices might have additional layers
@@ -217,7 +217,7 @@ float** build_weight_matrices(Model* model, int depth) {
             else
                 curr_point += conn->num_weights;
         } else {
-            entry_points[i] = entry_points[conn->parent];
+            entry_points[i] = entry_points[conn->parent->id];
         }
     }
 
@@ -226,7 +226,7 @@ float** build_weight_matrices(Model* model, int depth) {
         Connection *conn = model->connections[i];
 
         // Skip shared connections
-        if (conn->parent == -1)
+        if (conn->parent == NULL)
             initialize_matrix(conn, entry_points[i], depth);
     }
 

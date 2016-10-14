@@ -33,6 +33,14 @@ class Timer {
             }
             return total;
         }
+
+        /* Waits until the duration exceeds the given limit */
+        void wait(float limit) {
+            float total;
+            do {
+                total = ((float)(clock() - this->start_time)) / CLOCKS_PER_SEC;
+            } while (total < limit);
+        }
         
     private:
         // Timestamp from last start call()

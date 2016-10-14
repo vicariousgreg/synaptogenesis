@@ -25,17 +25,17 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             max_weight(max_weight),
             opcode(opcode),
             type(type),
-            parent(-1) {
+            parent(NULL) {
     if (delay >= (32 * HISTORY_SIZE))
         throw "Cannot implement connection delay longer than history!";
 
     switch (type) {
         case(FULLY_CONNECTED):
-            this->params = params;
+            this->init_params = params;
             this->num_weights = from_size * to_size;
             break;
         case(ONE_TO_ONE):
-            this->params = params;
+            this->init_params = params;
             if (from_rows == to_rows and from_columns == to_columns)
                 this->num_weights = from_size;
             else throw "Cannot connect differently sized layers one-to-one!";
@@ -55,7 +55,7 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             stream >> this->stride;
 
             // Extract remaining parameters for later
-            if (!stream.eof()) std::getline(stream, this->params);
+            if (!stream.eof()) std::getline(stream, this->init_params);
 
             if (to_rows != get_expected_dimension(from_rows, type, params) or
                 to_columns != get_expected_dimension(from_columns, type, params))
@@ -105,8 +105,8 @@ Connection::Connection(int conn_id, Layer *from_layer, Layer *to_layer,
             convolutional(parent->convolutional),
             overlap(parent->overlap),
             stride(parent->stride),
-            params(parent->params),
-            parent(parent->id) { }
+            init_params(parent->init_params),
+            parent(parent) { }
 
 
 Model::Model (std::string driver_string) :
@@ -150,7 +150,7 @@ int Model::connect_layers(int from_id, int to_id, bool plastic,
 
 int Model::connect_layers_shared(int from_id, int to_id, int parent_id) {
     // Ensure parent doesn't have a parent
-    if (this->connections[parent_id]->parent != -1)
+    if (this->connections[parent_id]->parent != NULL)
         throw "Shared connections must refer to non-shared connection!";
 
     // Ensure that the weights can be shared by checking sizes
@@ -165,7 +165,7 @@ int Model::connect_layers_shared(int from_id, int to_id, int parent_id) {
             and to_layer->columns == parent->to_columns) {
         Connection *conn = new Connection(
             conn_id, from_layer, to_layer,
-            this->connections[parent_id]);
+            parent);
         this->connections.push_back(conn);
         return conn_id;
     } else {
