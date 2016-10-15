@@ -2,16 +2,15 @@
 #define state_h
 
 #include "model/model.h"
+#include "io/buffer.h"
 
 class State {
     public:
-        virtual void build(Model* model) = 0;
+        virtual void build(Model* model, int output_size) = 0;
 
-        float* get_input();
-        void* get_output();
-        void set_input(int layer_id, float* input);
+        void copy_input(Buffer *buffer);
+        void copy_output(Buffer *buffer);
         void clear_all_input();
-        void clear_input(int layer_id);
 
         float* get_matrix(int connection_id) {
             return this->weight_matrices[connection_id];
@@ -19,6 +18,9 @@ class State {
 
         // Network model
         Model* model;
+
+        // Size of output
+        int output_size;
 
         // Neuron input
         float* input;

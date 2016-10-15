@@ -32,8 +32,8 @@ SpikePrintOutput::SpikePrintOutput(Layer *layer, std::string params)
     }
 }
 
-void SpikePrintOutput::report_output(State *state) {
-    int* spikes = (int*)state->get_output();
+void SpikePrintOutput::report_output(Buffer *buffer) {
+    int* spikes = (int*)buffer->get_output();
 
     // Print bar
     for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";

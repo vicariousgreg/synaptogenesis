@@ -10,9 +10,9 @@ RandomInput::RandomInput(Layer *layer, std::string params) : Input(layer) {
     this->buffer = (float*)malloc(this->layer->size * sizeof(float));
 }
 
-void RandomInput::feed_input(State *state) {
+void RandomInput::feed_input(Buffer *buffer) {
     for (int nid = 0 ; nid < this->layer->size; ++nid) {
         this->buffer[nid] = fRand(0, this->max_value);
     }
-    state->set_input(this->layer->id, this->buffer);
+    buffer->set_input(this->layer->index, this->layer->size, this->buffer);
 }

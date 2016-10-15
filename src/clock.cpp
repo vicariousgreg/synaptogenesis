@@ -18,7 +18,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
 
         // Read sensory input
         std::cout << "DRIVER READ\n";
-        driver->step_input();
+        driver->step_input(clock->buffer);
 
         // Pass sensory ownership back to environment
         clock->sensory_owner = ENVIRONMENT;
@@ -26,6 +26,8 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
 
         /* Compute */
         driver->step_connections();
+        driver->step_state();
+        driver->step_weights();
 
         /* Write motor buffer */
         // Wait for motor lock
@@ -33,8 +35,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
 
         // Write motor output
         std::cout << "DRIVER WRITE\n";
-        driver->step_output();
-        driver->print_output();
+        driver->step_output(clock->buffer);
 
         // Pass motor ownership back to environment
         clock->motor_owner = ENVIRONMENT;
@@ -70,6 +71,8 @@ void Clock::run(Driver *driver, int iterations) {
     this->sensory_owner = ENVIRONMENT;
     this->motor_owner = ENVIRONMENT;
     this->clock_owner = CLOCK;
+    this->buffer = new Buffer(
+        driver->model->num_neurons, driver->get_output_size());
 
     std::thread driver_thread(driver_loop, this, driver, iterations);
     std::thread environment_thread(environment_loop, this, iterations);
@@ -86,4 +89,5 @@ void Clock::run(Driver *driver, int iterations) {
 
     driver_thread.join();
     environment_thread.join();
+    delete this->buffer;
 }

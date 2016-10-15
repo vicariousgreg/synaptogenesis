@@ -12,8 +12,10 @@ class RateEncodingDriver : public Driver {
         RateEncodingDriver ();
 
         void step_connection(Connection *conn);
-        void step_output();
+        void step_state();
         void step_weights();
+
+        int get_output_size() { return sizeof(float); }
 
         RateEncodingState *re_state;
         float(*calc_input_ptr)(float);

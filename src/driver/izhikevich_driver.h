@@ -12,8 +12,10 @@ class IzhikevichDriver : public Driver {
         IzhikevichDriver ();
 
         void step_connection(Connection *conn);
-        void step_output();
+        void step_state();
         void step_weights();
+
+        int get_output_size() { return sizeof(int); }
 
         IzhikevichState *iz_state;
         float(*calc_input_ptr)(int, int);

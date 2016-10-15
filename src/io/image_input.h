@@ -6,7 +6,7 @@
 class ImageInput : public Input {
     public:
         ImageInput(Layer *layer, std::string params);
-        void feed_input(State *state);
+        void feed_input(Buffer *buffer);
 
         int width;
         int height;

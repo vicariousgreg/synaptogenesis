@@ -38,7 +38,7 @@ void IzhikevichDriver::step_connection(Connection *conn) {
         this->calc_input_ptr, mask);
 }
 
-void IzhikevichDriver::step_output() {
+void IzhikevichDriver::step_state() {
     int num_neurons = this->model->num_neurons;
 
 #ifdef PARALLEL

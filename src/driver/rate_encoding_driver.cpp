@@ -32,7 +32,7 @@ void RateEncodingDriver::step_connection(Connection *conn) {
     step<float>(this->state, conn, outputs, this->calc_input_ptr);
 }
 
-void RateEncodingDriver::step_output() {
+void RateEncodingDriver::step_state() {
     RateEncodingState* state = (RateEncodingState*) this->state;
 
 #ifdef PARALLEL

@@ -3,20 +3,24 @@
 
 #include "state/state.h"
 #include "model/model.h"
+#include "io/buffer.h"
 #include "parallel.h"
 #include "kernel.h"
 
 class Driver {
     public:
-        void step_input();
+        void step_input(Buffer *buffer);
         void step_connections();
-        void print_output();
+        void step_output(Buffer *buffer);
+
+        /* Returns the number of bytes taken by output */
+        virtual int get_output_size() = 0;
 
         /* Activates neural connections, calculating connection input */
         virtual void step_connection(Connection *conn) = 0;
 
-        /* Calculates neuron outputs */
-        virtual void step_output() = 0;
+        /* Cycles neuron states */
+        virtual void step_state() = 0;
 
         /* Updates weights for plastic neural connections.
          * TODO: implement.  This should use STDP variant Hebbian learning */

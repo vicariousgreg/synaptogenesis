@@ -52,6 +52,6 @@ ImageInput::ImageInput(Layer *layer, std::string params) : Input(layer) {
     }
 }
 
-void ImageInput::feed_input(State *state) {
-    state->set_input(this->layer->id, this->gray);
+void ImageInput::feed_input(Buffer *buffer) {
+    buffer->set_input(this->layer->index, this->layer->size, this->gray);
 }

@@ -1,42 +1,29 @@
 #include <cstdlib>
+#include <cstring>
 #include <sstream>
 
 #include "state/state.h"
 #include "tools.h"
 #include "parallel.h"
 
-float* State::get_input() {
+void State::copy_input(Buffer *buffer) {
 #ifdef PARALLEL
     // Copy from GPU to local location
-    cudaMemcpy(this->input, this->device_input,
-        this->model->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaCheckError("Failed to copy input from device to host!");
-#endif
-    return this->input;
-}
-
-void* State::get_output() {
-#ifdef PARALLEL
-    // Copy from GPU to local location
-    cudaMemcpy(this->output, this->device_output,
-        this->model->num_neurons * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaCheckError("Failed to copy output from device to host!");
-#endif
-    return this->output;
-}
-
-void State::set_input(int layer_id, float* input) {
-    int offset = this->model->layers[layer_id]->index;
-    int size = this->model->layers[layer_id]->size;
-#ifdef PARALLEL
-    // Send to GPU
-    cudaMemcpy(&this->device_input[offset], input,
-        size * sizeof(float), cudaMemcpyHostToDevice);
-    cudaCheckError("Failed to set input!");
+    cudaMemcpy(this->device_input, buffer->get_input(),
+        this->model->num_neurons * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to copy input from host to device!");
 #else
-    for (int nid = 0 ; nid < size; ++nid) {
-        this->input[nid+offset] = input[nid];
-    }
+    memcpy(this->input, buffer->get_input(),
+        this->model->num_neurons * this->output_size);
+#endif
+}
+
+void State::copy_output(Buffer *buffer) {
+#ifdef PARALLEL
+    buffer->set_output(0, this->model->num_neurons, this->device_output);
+    cudaCheckError("Failed to copy output from device to host!");
+#else
+    buffer->set_output(0, this->model->num_neurons, this->output);
 #endif
 }
 
@@ -50,19 +37,6 @@ void State::clear_all_input() {
         this->model->num_neurons * sizeof(float),
         cudaMemcpyHostToDevice);
     cudaCheckError("Failed to set input!");
-#endif
-}
-
-void State::clear_input(int layer_id) {
-    int size = this->model->layers[layer_id]->size;
-    int offset = this->model->layers[layer_id]->index;
-
-    for (int nid = 0 ; nid < size; ++nid) {
-        this->input[nid+offset] = 0.0;
-    }
-#ifdef PARALLEL
-    // Send to GPU
-    this->set_input(layer_id, &this->input[offset]);
 #endif
 }
 

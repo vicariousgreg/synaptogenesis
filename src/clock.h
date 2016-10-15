@@ -2,6 +2,7 @@
 #include <thread>
 #include <mutex>
 #include "driver/driver.h"
+#include "io/buffer.h"
 #include "tools.h"
 
 enum Thread_ID {
@@ -15,6 +16,7 @@ class Clock {
         Clock(float refresh_rate) : time_limit(1.0 / refresh_rate) {}
         void run(Driver *driver, int iterations);
 
+        Buffer *buffer;
         Timer timer;
         float time_limit;
 

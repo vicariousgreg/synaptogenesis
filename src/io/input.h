@@ -3,14 +3,14 @@
 
 #include <string>
 
-#include "state/state.h"
+#include "io/buffer.h"
 #include "model/model.h"
 
 class Input {
     public:
         Input(Layer *layer) : layer(layer) { }
 
-        virtual void feed_input(State *state) = 0;
+        virtual void feed_input(Buffer *buffer) = 0;
 
         Layer *layer;
 };

@@ -13,7 +13,7 @@ class RateEncodingParameters {
 
 class RateEncodingState : public State {
     public:
-        void build(Model* model);
+        void build(Model* model, int output_size);
 
     private:
         friend class RateEncodingDriver;
