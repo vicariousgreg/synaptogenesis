@@ -10,6 +10,11 @@ Buffer::Buffer(int num_neurons, int output_size) {
     this->output = calloc(num_neurons, output_size);
 }
 
+void Buffer::clear_input() {
+    for (int nid = 0 ; nid < this->num_neurons; ++nid)
+        this->input[nid] = 0.0;
+}
+
 void Buffer::set_input(int offset, int size, float* source) {
     memcpy(&this->input[offset], source, size * sizeof(*this->input));
 }

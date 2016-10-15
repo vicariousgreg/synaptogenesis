@@ -10,7 +10,6 @@ class State {
 
         void copy_input(Buffer *buffer);
         void copy_output(Buffer *buffer);
-        void clear_all_input();
 
         float* get_matrix(int connection_id) {
             return this->weight_matrices[connection_id];

@@ -27,19 +27,6 @@ void State::copy_output(Buffer *buffer) {
 #endif
 }
 
-void State::clear_all_input() {
-    for (int nid = 0 ; nid < this->model->num_neurons; ++nid)
-        this->input[nid] = 0.0;
-
-#ifdef PARALLEL
-    // Send to GPU
-    cudaMemcpy(this->device_input, this->input,
-        this->model->num_neurons * sizeof(float),
-        cudaMemcpyHostToDevice);
-    cudaCheckError("Failed to set input!");
-#endif
-}
-
 void* allocate_host(int count, int size) {
     void* ptr = calloc(count, size);
     if (ptr == NULL)

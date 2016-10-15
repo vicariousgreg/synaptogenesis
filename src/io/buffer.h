@@ -9,8 +9,8 @@ class Buffer {
             free(this->output);
         }
 
+        void clear_input();
         void set_input(int offset, int size, float* source);
-
         void set_output(int offset, int size, void* source);
 
         float* get_input();
