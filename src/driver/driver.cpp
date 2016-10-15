@@ -3,7 +3,7 @@
 #include "driver/rate_encoding_driver.h"
 
 void Driver::step_input(Buffer *buffer) {
-    buffer->send_input_to(this->state);
+    this->state->get_input_from(buffer);
 }
 
 void Driver::step_connections() {
@@ -13,7 +13,7 @@ void Driver::step_connections() {
 }
 
 void Driver::step_output(Buffer *buffer) {
-    buffer->retrieve_output_from(this->state);
+    this->state->send_output_to(buffer);
 }
 
 Driver* build_driver(Model* model) {

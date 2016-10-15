@@ -2,10 +2,14 @@
 #define state_h
 
 #include "model/model.h"
+#include "io/buffer.h"
 
 class State {
     public:
         virtual void build(Model* model) = 0;
+
+        void get_input_from(Buffer *buffer);
+        void send_output_to(Buffer *buffer);
 
         float* get_matrix(int connection_id) {
             return this->weight_matrices[connection_id];
