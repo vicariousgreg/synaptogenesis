@@ -15,8 +15,7 @@ static RateEncodingParameters create_parameters(std::string str) {
     //throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-void RateEncodingState::build(Model* model, int output_size) {
-    this->output_size = output_size;
+void RateEncodingState::build(Model* model) {
     this->model = model;
     int num_neurons = model->num_neurons;
 

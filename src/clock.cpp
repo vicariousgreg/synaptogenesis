@@ -1,5 +1,6 @@
 #include <thread>
 #include "clock.h"
+#include "io/environment.h"
 
 void wait_for_permission(std::mutex *mu, Thread_ID *owner, Thread_ID me) {
     while (true) {
@@ -47,10 +48,11 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
     }
 }
 
-void environment_loop(Clock *clock, int iterations) {
+void environment_loop(Clock *clock, Environment *environment, int iterations) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), ENVIRONMENT);
+        environment->step_input(clock->buffer);
         std::cout << "ENVIRONMENT WRITE\n";
 
         clock->sensory_owner = DRIVER;
@@ -60,6 +62,7 @@ void environment_loop(Clock *clock, int iterations) {
 
         // Write motor buffer
         wait_for_permission(&(clock->motor_lock), &(clock->motor_owner), ENVIRONMENT);
+        environment->step_output(clock->buffer);
         std::cout << "ENVIRONMENT READ\n";
 
         clock->motor_owner = DRIVER;
@@ -74,8 +77,10 @@ void Clock::run(Driver *driver, int iterations) {
     this->buffer = new Buffer(
         driver->model->num_neurons, driver->get_output_size());
 
+    Environment env(driver->model);
+
     std::thread driver_thread(driver_loop, this, driver, iterations);
-    std::thread environment_thread(environment_loop, this, iterations);
+    std::thread environment_thread(environment_loop, this, &env, iterations);
 
     this->timer.start();
     for (int counter = 0; counter < iterations; ++counter) {

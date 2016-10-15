@@ -6,8 +6,31 @@
 Buffer::Buffer(int num_neurons, int output_size) {
     this->output_size = output_size;
     this->num_neurons = num_neurons;
-    this->input = (float*)calloc(num_neurons, sizeof(*input));
+    this->input = (float*)calloc(num_neurons, sizeof(float));
     this->output = calloc(num_neurons, output_size);
+}
+
+void Buffer::send_input_to(State *state) {
+#ifdef PARALLEL
+    // Copy from GPU to local location
+    cudaMemcpy(state->input, this->input,
+        this->num_neurons * sizeof(float), cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to copy input from host to device!");
+#else
+    memcpy(state->input, this->input,
+        this->num_neurons * sizeof(float));
+#endif
+}
+
+void Buffer::retrieve_output_from(State *state) {
+#ifdef PARALLEL
+    cudaMemcpy(this->output, state->output,
+        this->num_neurons * this->output_size,
+        cudaMemcpyDeviceToHost);
+#else
+    memcpy(this->output, state->output,
+        this->num_neurons * this->output_size);
+#endif
 }
 
 void Buffer::clear_input() {
@@ -17,17 +40,6 @@ void Buffer::clear_input() {
 
 void Buffer::set_input(int offset, int size, float* source) {
     memcpy(&this->input[offset], source, size * sizeof(*this->input));
-}
-
-void Buffer::set_output(int offset, int size, void* source) {
-#ifdef PARALLEL
-    cudaMemcpy(this->output + (offset * this->output_size),
-        source, size * this->output_size,
-        cudaMemcpyDeviceToHost);
-#else
-    memcpy(this->output + (offset * this->output_size),
-        source, size * this->output_size);
-#endif
 }
 
 float* Buffer::get_input() {

@@ -6,27 +6,6 @@
 #include "tools.h"
 #include "parallel.h"
 
-void State::copy_input(Buffer *buffer) {
-#ifdef PARALLEL
-    // Copy from GPU to local location
-    cudaMemcpy(this->input, buffer->get_input(),
-        this->model->num_neurons * sizeof(float), cudaMemcpyHostToDevice);
-    cudaCheckError("Failed to copy input from host to device!");
-#else
-    memcpy(this->input, buffer->get_input(),
-        this->model->num_neurons * this->output_size);
-#endif
-}
-
-void State::copy_output(Buffer *buffer) {
-#ifdef PARALLEL
-    buffer->set_output(0, this->model->num_neurons, this->output);
-    cudaCheckError("Failed to copy output from device to host!");
-#else
-    buffer->set_output(0, this->model->num_neurons, this->output);
-#endif
-}
-
 void* allocate_host(int count, int size) {
     void* ptr = calloc(count, size);
     if (ptr == NULL)

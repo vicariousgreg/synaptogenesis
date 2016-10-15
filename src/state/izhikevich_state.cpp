@@ -62,8 +62,7 @@ static IzhikevichParameters create_parameters(std::string str) {
     else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-void IzhikevichState::build(Model* model, int output_size) {
-    this->output_size = output_size;
+void IzhikevichState::build(Model* model) {
     this->model = model;
     int num_neurons = model->num_neurons;
 

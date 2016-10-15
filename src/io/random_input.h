@@ -9,7 +9,6 @@ class RandomInput : public Input {
         void feed_input(Buffer *buffer);
 
         float max_value;
-        float* buffer;
 };
 
 #endif

@@ -14,7 +14,7 @@ class IzhikevichParameters {
 
 class IzhikevichState : public State {
     public:
-        void build(Model* model, int output_size);
+        void build(Model* model);
 
         //////////////////////
         /// MODEL SPECIFIC ///
