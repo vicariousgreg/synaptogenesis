@@ -5,129 +5,8 @@
 #include <string>
 
 #include "constants.h"
-
-/* Forward declarations for input and output modules */
-class Input;
-class Output;
-
-/* Represents a two dimensional layer of neurons.
- * Layers can be constructed and connected into networks using the Model class.
- *
- * Layers contain:
- *   - unique identifier
- *   - starting index in the neural arrays
- *   - size information
- *   - parameters for matrix initialization
- *
- */
-class Layer {
-    public:
-        // Layer ID and start index
-        int id, index;
-
-        // Layer rows, columns, and total size
-        int rows, columns, size;
-
-        // Parameters for initializing neural properties
-        std::string params;
-
-    private:
-        friend class Model;
-
-        /* Constructor.
-         * |start_index| identifies the first neuron in the layer.
-         * |size| indicates the size of the layer.
-         */
-        Layer(int layer_id, int start_index, int rows, int columns) :
-                id(layer_id),
-                index(start_index),
-                rows(rows),
-                columns(columns),
-                size(rows * columns) {}
-};
-
-/* Gets the expected row/col size of a destination layer given a |source_layer|,
- *   a connection |type| and connection |params|.
- * This function only returns meaningful values for connection types that
- *   are not FULLY_CONNECTED, because they can link layers of any sizes */
-int get_expected_dimension(int source_val, ConnectionType type,
-                                            std::string params);
-
-/* Represents a connection between two neural layers.
- * Connections bridge Layers and are constructed in the Model class.
- * Connections have several types, enumerated and documented in "constants.h".
- *
- * Connections contain:
- *   - connection type enum
- *   - unique identifier
- *   - parent id if sharing weights with another connection
- *   - convolutional flag if sharing weights internally
- *   - arborization parameters (if applicable)
- *   - parameters for matrix initialization
- *   - total number of actual weights in the connection
- *   - extracted layer properties
- *   - connection delay
- *   - connection opcode (see constants.h)
- *   - plasticity boolean
- *   - maximum weight value
- *
- */
-class Connection {
-    public:
-        // Matrix type
-        ConnectionType type;
-
-        // Connection ID
-        int id;
-
-        // Parent connection if this is a shared connection
-        Connection *parent;
-
-        // Convolutional boolean (extracted from type)
-        bool convolutional;
-
-        // Arborization parameters (extracted from params)
-        // The amount of overlap and stride for arborized
-        //   (convergent/divergent) connections
-        int overlap, stride;
-
-        // Parameters for matrix construction
-        // Some types will parse values for connection construction
-        //   -> Divergent, Convergent, Convolutional
-        // In this case, the constructor will consume these values and leave
-        //   the remaining values here
-        std::string init_params;
-
-        // Extracted Layer properties
-        int from_index, to_index;
-        int from_size, from_rows, from_columns;
-        int to_size, to_rows, to_columns;
-
-        // Number of weights in connection
-        int num_weights;
-        // Connection delay
-        int delay;
-
-        // Connection operation code
-        Opcode opcode;
-
-        // Flag for whether matrix can change via learning
-        bool plastic;
-
-        // Maximum for weights
-        float max_weight;
-
-    private:
-        friend class Model;
-
-        Connection (int conn_id, Layer *from_layer, Layer *to_layer,
-                bool plastic, int delay, float max_weight,
-                ConnectionType type, std::string params, Opcode opcode);
-
-        Connection(int conn_id, Layer *from_layer, Layer *to_layer,
-                Connection *parent);
-
-};
+#include "model/layer.h"
+#include "model/connection.h"
 
 /* Represents a full neural network model.
  * Contains network graph data and parameters for layers/connections.
@@ -174,6 +53,10 @@ class Model {
 
         /* Adds an output module of the given |type| for the given |layer| */
         void add_output(int layer, std::string type, std::string params);
+
+        /* Reorganizes the model to place input and ouput layers in
+         *   contiguous memory. */
+        void rearrange();
 
         // Driver string indicating type of driver
         std::string driver_string;
