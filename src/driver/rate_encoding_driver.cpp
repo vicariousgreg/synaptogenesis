@@ -24,12 +24,7 @@ RateEncodingDriver::RateEncodingDriver () {
 /*****************************************************************************/
 
 void RateEncodingDriver::step_connection(Connection *conn) {
-#ifdef PARALLEL
-    float* outputs = (float*)this->state->device_output;
-#else
-    float* outputs = (float*)this->state->output;
-#endif
-    step<float>(this->state, conn, outputs, this->calc_input_ptr);
+    step<float>(this->state, conn, (float*)this->state->output, this->calc_input_ptr);
 }
 
 void RateEncodingDriver::step_state() {
@@ -38,9 +33,9 @@ void RateEncodingDriver::step_state() {
 #ifdef PARALLEL
     int blocks = calc_blocks(this->model->num_neurons);
     activation_function<<<blocks, THREADS>>>(
-        (float*)state->device_output,
-        state->device_input,
-        state->device_neuron_parameters,
+        (float*)state->output,
+        state->input,
+        state->neuron_parameters,
         this->model->num_neurons);
     cudaCheckError("Failed to update neuron output!");
 #else

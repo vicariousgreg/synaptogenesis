@@ -28,13 +28,8 @@ void IzhikevichDriver::step_connection(Connection *conn) {
     int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
     int mask = 1 << (conn->delay % 32);
 
-#ifdef PARALLEL
-    int *spikes = this->iz_state->device_spikes;
-#else
-    int *spikes = this->iz_state->spikes;
-#endif
     step<int, int>(this->state, conn,
-        &spikes[this->model->num_neurons * word_index],
+        &this->iz_state->spikes[this->model->num_neurons * word_index],
         this->calc_input_ptr, mask);
 }
 
@@ -44,17 +39,17 @@ void IzhikevichDriver::step_state() {
 #ifdef PARALLEL
     int blocks = calc_blocks(num_neurons);
     izhikevich<<<blocks, THREADS>>>(
-        this->iz_state->device_voltage,
-        this->iz_state->device_recovery,
-        this->iz_state->device_input,
-        this->iz_state->device_neuron_parameters,
+        this->iz_state->voltage,
+        this->iz_state->recovery,
+        this->iz_state->input,
+        this->iz_state->neuron_parameters,
         num_neurons);
     cudaCheckError("Failed to update neuron voltages!");
     calc_spikes<<<blocks, THREADS>>>(
-        this->iz_state->device_spikes,
-        this->iz_state->device_voltage,
-        this->iz_state->device_recovery,
-        this->iz_state->device_neuron_parameters,
+        this->iz_state->spikes,
+        this->iz_state->voltage,
+        this->iz_state->recovery,
+        this->iz_state->neuron_parameters,
         num_neurons);
     cudaCheckError("Failed to timestep spikes!");
 #else

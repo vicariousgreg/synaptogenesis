@@ -9,7 +9,7 @@
 void State::copy_input(Buffer *buffer) {
 #ifdef PARALLEL
     // Copy from GPU to local location
-    cudaMemcpy(this->device_input, buffer->get_input(),
+    cudaMemcpy(this->input, buffer->get_input(),
         this->model->num_neurons * sizeof(float), cudaMemcpyHostToDevice);
     cudaCheckError("Failed to copy input from host to device!");
 #else
@@ -20,7 +20,7 @@ void State::copy_input(Buffer *buffer) {
 
 void State::copy_output(Buffer *buffer) {
 #ifdef PARALLEL
-    buffer->set_output(0, this->model->num_neurons, this->device_output);
+    buffer->set_output(0, this->model->num_neurons, this->output);
     cudaCheckError("Failed to copy output from device to host!");
 #else
     buffer->set_output(0, this->model->num_neurons, this->output);

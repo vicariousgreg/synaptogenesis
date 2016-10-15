@@ -20,13 +20,6 @@ class RateEncodingState : public State {
 
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;
-
-#ifdef PARALLEL
-        // Locations to store device copies of data.
-        // When accessed, these values will be copied here from the device.
-        RateEncodingParameters* device_neuron_parameters;
-#endif
-
 };
 
 #endif

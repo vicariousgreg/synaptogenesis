@@ -101,7 +101,7 @@ void step(State* state, Connection *conn, OUT* outputs,
     // Run the parallel kernel
     kernel<<<blocks_per_grid, threads_per_block>>>(
         *conn,
-        state->device_input + conn->to_index,
+        state->input + conn->to_index,
         state->get_matrix(conn->id),
         outputs + conn->from_index,
         calc_input,

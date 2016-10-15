@@ -68,40 +68,45 @@ void IzhikevichState::build(Model* model, int output_size) {
     int num_neurons = model->num_neurons;
 
     // Local spikes for output reporting
-    this->spikes = (int*) allocate_host(num_neurons * HISTORY_SIZE, sizeof(int));
-    this->input = (float*) allocate_host(num_neurons, sizeof(float));
-    this->voltage = (float*) allocate_host(num_neurons, sizeof(float));
-    this->recovery = (float*) allocate_host(num_neurons, sizeof(float));
-    this->neuron_parameters =
+    int* local_spikes = (int*) allocate_host(num_neurons * HISTORY_SIZE, sizeof(int));
+    float* local_input = (float*) allocate_host(num_neurons, sizeof(float));
+    float* local_voltage = (float*) allocate_host(num_neurons, sizeof(float));
+    float* local_recovery = (float*) allocate_host(num_neurons, sizeof(float));
+    IzhikevichParameters* local_params =
         (IzhikevichParameters*) allocate_host(num_neurons, sizeof(IzhikevichParameters));
-
-    // Keep pointer to recent spikes
-    // This will be the output pointer
-    this->output = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
     // Fill in table
     for (int i = 0 ; i < num_neurons ; ++i) {
         std::string &param_string = model->parameter_strings[i];
         IzhikevichParameters params = create_parameters(param_string);
-        this->neuron_parameters[i] = params;
-        this->input[i] = 0;
-        this->voltage[i] = params.c;
-        this->recovery[i] = params.b * params.c;
+        local_params[i] = params;
+        local_input[i] = 0;
+        local_voltage[i] = params.c;
+        local_recovery[i] = params.b * params.c;
     }
 
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
-    this->device_input = (float*)
-        allocate_device(num_neurons, sizeof(float), this->input);
-    this->device_voltage = (float*)
-        allocate_device(num_neurons, sizeof(float), this->voltage);
-    this->device_recovery = (float*)
-        allocate_device(num_neurons, sizeof(float), this->recovery);
-    this->device_spikes = (int*)
-        allocate_device(num_neurons * HISTORY_SIZE, sizeof(int), this->spikes);
-    this->device_neuron_parameters = (IzhikevichParameters*)
-        allocate_device(num_neurons, sizeof(IzhikevichParameters), this->neuron_parameters);
-    this->device_output = (void*) &this->device_spikes[(HISTORY_SIZE-1) * num_neurons];
+    this->input = (float*)
+        allocate_device(num_neurons, sizeof(float), local_input);
+    this->voltage = (float*)
+        allocate_device(num_neurons, sizeof(float), local_voltage);
+    this->recovery = (float*)
+        allocate_device(num_neurons, sizeof(float), local_recovery);
+    this->spikes = (int*)
+        allocate_device(num_neurons * HISTORY_SIZE, sizeof(int), local_spikes);
+    this->neuron_parameters = (IzhikevichParameters*)
+        allocate_device(num_neurons, sizeof(IzhikevichParameters), local_params);
+#else
+    this->spikes = local_spikes;
+    this->input = local_input;
+    this->voltage = local_voltage;
+    this->recovery = local_recovery;
+    this->neuron_parameters = local_params;
 #endif
+    // Keep pointer to recent spikes
+    // This will be the output pointer
+    this->output = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
+
     this->weight_matrices = build_weight_matrices(model, 1);
 }

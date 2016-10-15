@@ -36,16 +36,6 @@ class IzhikevichState : public State {
 
         // Neuron parameters
         IzhikevichParameters* neuron_parameters;
-
-#ifdef PARALLEL
-        // Locations to store device copies of data.
-        // When accessed, these values will be copied here from the device.
-        int *device_spikes;
-        float *device_voltage;
-        float *device_recovery;
-        IzhikevichParameters* device_neuron_parameters;
-#endif
-
 };
 
 #endif

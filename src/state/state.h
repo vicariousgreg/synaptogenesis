@@ -27,13 +27,6 @@ class State {
         // Neuron output
         void* output;
 
-#ifdef PARALLEL
-        // Locations to store device copies of data.
-        // When accessed, these values will be copied here from the device.
-        float* device_input;
-        void* device_output;
-#endif
-
     protected:
         // Weight matrices
         float** weight_matrices;
