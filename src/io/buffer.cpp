@@ -6,8 +6,17 @@
 Buffer::Buffer(int num_neurons, int output_size) {
     this->output_size = output_size;
     this->num_neurons = num_neurons;
+
+// UNCOMMENT FOR PINNED MEMORY
+//#ifdef PARALLEL
+//    cudaMallocHost((void**) &this->input, num_neurons * sizeof(float));
+//    cudaMallocHost((void**) &this->output, num_neurons * output_size);
+//
+//    for (int i = 0; i < num_neurons; ++i) this->input[i] = 0.0;
+//#else
     this->input = (float*)calloc(num_neurons, sizeof(float));
     this->output = calloc(num_neurons, output_size);
+//#endif
 }
 
 void Buffer::send_input_to(State *state) {

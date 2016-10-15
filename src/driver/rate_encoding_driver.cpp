@@ -31,8 +31,9 @@ void RateEncodingDriver::step_state() {
     RateEncodingState* state = (RateEncodingState*) this->state;
 
 #ifdef PARALLEL
-    int blocks = calc_blocks(this->model->num_neurons);
-    activation_function<<<blocks, THREADS>>>(
+    int threads = 128;
+    int blocks = calc_blocks(this->model->num_neurons, threads);
+    activation_function<<<blocks, threads>>>(
         (float*)state->output,
         state->input,
         state->neuron_parameters,

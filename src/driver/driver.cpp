@@ -2,8 +2,8 @@
 #include "driver/izhikevich_driver.h"
 #include "driver/rate_encoding_driver.h"
 
-#include "io/input.h"
-#include "io/output.h"
+//#include "io/input.h"
+//#include "io/output.h"
 
 void Driver::step_input(Buffer *buffer) {
     buffer->send_input_to(this->state);

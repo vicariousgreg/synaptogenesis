@@ -34,11 +34,13 @@ inline void cudaSync() {
     cudaDeviceSynchronize();
 }
 
-inline void cudaCheckError(const char* msg) {
+#define cudaCheckError(msg) { gpuAssert(__FILE__, __LINE__, msg); }
+
+inline void gpuAssert(const char* file, int line, const char* msg) {
     cudaSync();
     cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) {
-        printf("Cuda failure: '%s'\n", cudaGetErrorString(e));
+        printf("Cuda failure (%s: %d): '%s'\n", file, line, cudaGetErrorString(e));
         throw msg;
     }
 }

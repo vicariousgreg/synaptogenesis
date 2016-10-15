@@ -7,8 +7,14 @@ class Buffer {
     public:
         Buffer(int num_neurons, int output_size);
         ~Buffer() {
+// UNCOMMENT FOR PINNED MEMORY
+//#ifdef PARALLEL
+//            cudaFree(this->input);
+//            cudaFree(this->output);
+//#else
             free(this->input);
             free(this->output);
+//#endif
         }
 
         void clear_input();

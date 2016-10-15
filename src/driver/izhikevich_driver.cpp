@@ -37,15 +37,16 @@ void IzhikevichDriver::step_state() {
     int num_neurons = this->model->num_neurons;
 
 #ifdef PARALLEL
-    int blocks = calc_blocks(num_neurons);
-    izhikevich<<<blocks, THREADS>>>(
+    int threads = 128;
+    int blocks = calc_blocks(num_neurons, threads);
+    izhikevich<<<blocks, threads>>>(
         this->iz_state->voltage,
         this->iz_state->recovery,
         this->iz_state->input,
         this->iz_state->neuron_parameters,
         num_neurons);
     cudaCheckError("Failed to update neuron voltages!");
-    calc_spikes<<<blocks, THREADS>>>(
+    calc_spikes<<<blocks, threads>>>(
         this->iz_state->spikes,
         this->iz_state->voltage,
         this->iz_state->recovery,
