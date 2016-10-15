@@ -53,7 +53,7 @@ class Layer {
 int get_expected_dimension(int source_val, ConnectionType type,
                                             std::string params);
 
-/* Represents a connection between two neural layrs.
+/* Represents a connection between two neural layers.
  * Connections bridge Layers and are constructed in the Model class.
  * Connections have several types, enumerated and documented in "constants.h".
  *
