@@ -34,10 +34,10 @@ int Model::connect_layers_shared(int from_id, int to_id, int parent_id) {
     Layer *to_layer = this->layers[to_id];
     int conn_id = this->connections.size();
 
-    if (from_layer->rows == parent->from_rows
-            and from_layer->columns == parent->from_columns
-            and to_layer->rows == parent->to_rows
-            and to_layer->columns == parent->to_columns) {
+    if (from_layer->rows == parent->from_layer->rows
+            and from_layer->columns == parent->from_layer->columns
+            and to_layer->rows == parent->to_layer->rows
+            and to_layer->columns == parent->to_layer->columns) {
         Connection *conn = new Connection(
             conn_id, from_layer, to_layer,
             parent);

@@ -4,8 +4,8 @@
 #include "state/state.h"
 #include "model/model.h"
 #include "io/buffer.h"
+#include "driver/kernel.h"
 #include "parallel.h"
-#include "kernel.h"
 
 class Driver {
     public:
@@ -50,8 +50,7 @@ template <typename OUT, typename... ARGS>
 void step(State* state, Connection *conn, OUT* outputs,
         float(*calc_input)(OUT, ARGS...), ARGS... args) {
     void(*kernel)(
-        Connection,
-        float*, float*, OUT*,
+        Instruction<OUT>,
         float(*)(OUT, ARGS...), ARGS...);
 
     // Determine which kernel to use based on connection type
@@ -100,23 +99,17 @@ void step(State* state, Connection *conn, OUT* outputs,
 
     // Run the parallel kernel
     kernel<<<blocks_per_grid, threads_per_block>>>(
-        *conn,
-        state->input + conn->to_index,
-        state->get_matrix(conn->id),
-        outputs + conn->from_index,
-        calc_input,
-        args...);
+        Instruction<OUT>(conn, outputs,
+            state->input, get_matrix(conn->id)),
+        calc_input, args...);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
     // Run the serial kernel
     kernel(
-        *conn,
-        state->input + conn->to_index,
-        state->get_matrix(conn->id),
-        outputs + conn->from_index,
-        calc_input,
-        args...);
+        Instruction<OUT>(conn, outputs,
+            state->input, state->get_matrix(conn->id)),
+        calc_input, args...);
 #endif
 }
 

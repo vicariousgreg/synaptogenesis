@@ -121,7 +121,7 @@ void run_simulation(Model *model, int iterations, bool verbose) {
 
     timer.start();
 
-    Clock clock(20);
+    Clock clock(10);
     clock.run(driver, iterations);
 
     float time = timer.query("Total time");

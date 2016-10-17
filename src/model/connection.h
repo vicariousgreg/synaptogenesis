@@ -58,10 +58,8 @@ class Connection {
         //   the remaining values here
         std::string init_params;
 
-        // Extracted Layer properties
-        int from_index, to_index;
-        int from_size, from_rows, from_columns;
-        int to_size, to_rows, to_columns;
+        // Connected layers
+        Layer *from_layer, *to_layer;
 
         // Number of weights in connection
         int num_weights;

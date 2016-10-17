@@ -6,14 +6,8 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,
         ConnectionType type, std::string params,  Opcode opcode) :
             id(conn_id),
-            from_index(from_layer->index),
-            from_size(from_layer->size),
-            from_rows(from_layer->rows),
-            from_columns(from_layer->columns),
-            to_index(to_layer->index),
-            to_size(to_layer->size),
-            to_rows(to_layer->rows),
-            to_columns(to_layer->columns),
+            from_layer(from_layer),
+            to_layer(to_layer),
             plastic(plastic),
             delay(delay),
             max_weight(max_weight),
@@ -26,12 +20,12 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
     switch (type) {
         case(FULLY_CONNECTED):
             this->init_params = params;
-            this->num_weights = from_size * to_size;
+            this->num_weights = from_layer->size * to_layer->size;
             break;
         case(ONE_TO_ONE):
             this->init_params = params;
-            if (from_rows == to_rows and from_columns == to_columns)
-                this->num_weights = from_size;
+            if (from_layer->rows == to_layer->rows and from_layer->columns == to_layer->columns)
+                this->num_weights = from_layer->size;
             else throw "Cannot connect differently sized layers one-to-one!";
             break;
         default:
@@ -51,8 +45,8 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             // Extract remaining parameters for later
             if (!stream.eof()) std::getline(stream, this->init_params);
 
-            if (to_rows != get_expected_dimension(from_rows, type, params) or
-                to_columns != get_expected_dimension(from_columns, type, params))
+            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
+                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
                 throw "Unexpected destination layer size for arborized connection!";
             this->num_weights = overlap * overlap * stride;
 
@@ -60,12 +54,12 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                 case(DIVERGENT):
                     // Divergent connections use unshared mini weight matrices
                     // Each source neuron connects to overlap squared neurons
-                    this->num_weights = overlap * overlap * from_size;
+                    this->num_weights = overlap * overlap * from_layer->size;
                     break;
                 case(CONVERGENT):
                     // Convergent connections use unshared mini weight matrices
                     // Each destination neuron connects to overlap squared neurons
-                    this->num_weights = overlap * overlap * to_size;
+                    this->num_weights = overlap * overlap * to_layer->size;
                     break;
                 case(DIVERGENT_CONVOLUTIONAL):
                 case(CONVERGENT_CONVOLUTIONAL):
@@ -82,14 +76,8 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
 Connection::Connection(int conn_id, Layer *from_layer, Layer *to_layer,
         Connection *parent) :
             id(conn_id),
-            from_index(from_layer->index),
-            from_size(from_layer->size),
-            from_rows(from_layer->rows),
-            from_columns(from_layer->columns),
-            to_index(to_layer->index),
-            to_size(to_layer->size),
-            to_rows(to_layer->rows),
-            to_columns(to_layer->columns),
+            from_layer(from_layer),
+            to_layer(to_layer),
             num_weights(parent->num_weights),
             plastic(parent->plastic),
             delay(parent->delay),
