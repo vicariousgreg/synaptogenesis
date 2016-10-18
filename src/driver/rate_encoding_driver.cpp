@@ -66,7 +66,7 @@ void RateEncodingDriver::step_weights() {
 GLOBAL void shift_output(float* outputs, int num_neurons) {
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < num_neurons and inputs[nid] > 0.0) {
+    if (nid < num_neurons) {
 #else
     for (int nid = 0 ; nid < num_neurons; ++nid) {
 #endif
@@ -86,14 +86,12 @@ GLOBAL void activation_function(float* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons) {
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < num_neurons and inputs[nid] > 0.0) {
-        outputs[nid] = tanh(0.1*inputs[nid]);
-    }
+    if (nid < num_neurons) {
 #else
     for (int nid = 0 ; nid < num_neurons; ++nid) {
-        if (inputs[nid] > 0.0) {
+#endif
+        if (inputs[nid] > 0.0)
             outputs[nid] = tanh(0.1*inputs[nid]);
         }
     }
-#endif
 }
