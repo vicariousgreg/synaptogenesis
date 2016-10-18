@@ -33,6 +33,7 @@ Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionTy
     model->add_input(a, "random", "5");
 
     if (verbose) print_model(model);
+    model->rearrange();
     return model;
 }
 
@@ -50,6 +51,7 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
     model->add_input(neg, "random", "2");
 
     if (verbose) print_model(model);
+    model->rearrange();
     return model;
 }
 
@@ -111,6 +113,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //model->add_output(cross, output_name, "16");
 
     if (verbose) print_model(model);
+    model->rearrange();
     return model;
 }
 

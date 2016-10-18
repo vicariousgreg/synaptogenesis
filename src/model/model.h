@@ -70,9 +70,6 @@ class Model {
         // Connections
         std::vector<Connection*> connections;
 
-        // Parameter strings vector
-        std::vector<std::string> parameter_strings;
-
         // Input and output modules
         std::vector<Input*> input_modules;
         std::vector<Output*> output_modules;
@@ -80,9 +77,7 @@ class Model {
     private:
         /* Adds a given number of neurons.
          * This is called from add_layer() */
-        void add_neurons(int count, std::string params) {
-            for (int i = 0; i < count; ++i)
-                this->parameter_strings.push_back(params);
+        void add_neurons(int count) {
             this->num_neurons += count;
         }
 };

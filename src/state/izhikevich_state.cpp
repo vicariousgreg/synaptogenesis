@@ -69,12 +69,16 @@ IzhikevichState::IzhikevichState(Model* model) : State(model, 1, sizeof(int)) {
         (IzhikevichParameters*) allocate_host(num_neurons, sizeof(IzhikevichParameters));
 
     // Fill in table
-    for (int i = 0 ; i < num_neurons ; ++i) {
-        std::string &param_string = model->parameter_strings[i];
+    for (int i = 0; i < model->layers.size(); ++i) {
+        Layer *layer = model->layers[i];
+        int start = layer->index;
+        std::string &param_string = layer->params;
         IzhikevichParameters params = create_parameters(param_string);
-        local_params[i] = params;
-        local_voltage[i] = params.c;
-        local_recovery[i] = params.b * params.c;
+        for (int j = 0 ; j < layer->size ; ++j) {
+            local_params[start+j] = params;
+            local_voltage[start+j] = params.c;
+            local_recovery[start+j] = params.b * params.c;
+        }
     }
 
 #ifdef PARALLEL

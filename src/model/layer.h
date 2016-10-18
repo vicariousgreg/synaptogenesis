@@ -37,12 +37,13 @@ class Layer {
          * |start_index| identifies the first neuron in the layer.
          * |size| indicates the size of the layer.
          */
-        Layer(int layer_id, int start_index, int rows, int columns) :
+        Layer(int layer_id, int start_index, int rows, int columns, std::string params) :
                 id(layer_id),
                 index(start_index),
                 rows(rows),
                 columns(columns),
-                size(rows * columns) {}
+                size(rows * columns),
+                params(params) {}
 };
 
 #endif

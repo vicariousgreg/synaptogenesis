@@ -20,10 +20,14 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, 1, sizeof(floa
         (RateEncodingParameters*) allocate_host(num_neurons, sizeof(RateEncodingParameters));
 
     // Fill in table
-    for (int i = 0 ; i < num_neurons ; ++i) {
-        std::string &param_string = model->parameter_strings[i];
+    for (int i = 0; i < model->layers.size(); ++i) {
+        Layer *layer = model->layers[i];
+        int start = layer->index;
+        std::string &param_string = layer->params;
         RateEncodingParameters params = create_parameters(param_string);
-        local_params[i] = params;
+        for (int j = 0 ; j < layer->size ; ++j) {
+            local_params[start+j] = params;
+        }
     }
 
 #ifdef PARALLEL
