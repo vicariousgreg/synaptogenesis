@@ -6,10 +6,7 @@
 /* Euler resolution for voltage update. */
 #define EULER_RES 10
 
-DEVICE float iz_calc_input(Output output, int mask) {
-    return output.i & mask;
-}
-
+DEVICE float iz_calc_input(Output output, int mask) { return output.i & mask; }
 DEVICE float (*iz_calc_input_ptr)(Output, int) = iz_calc_input;
 
 IzhikevichDriver::IzhikevichDriver(Model *model) {
@@ -35,32 +32,28 @@ void IzhikevichDriver::step_state() {
     int threads = 128;
     int blocks = calc_blocks(num_neurons, threads);
     izhikevich<<<blocks, threads>>>(
-        this->iz_state->voltage,
-        this->iz_state->recovery,
-        this->iz_state->input,
-        this->iz_state->neuron_parameters,
-        num_neurons);
-    cudaCheckError("Failed to update neuron voltages!");
-    calc_spikes<<<blocks, threads>>>(
-        (int*) this->iz_state->output,
-        this->iz_state->voltage,
-        this->iz_state->recovery,
-        this->iz_state->neuron_parameters,
-        num_neurons);
-    cudaCheckError("Failed to timestep spikes!");
 #else
     izhikevich(
+#endif
         this->iz_state->voltage,
         this->iz_state->recovery,
         this->iz_state->input,
         this->iz_state->neuron_parameters,
         num_neurons);
+#ifdef PARALLEL
+    cudaCheckError("Failed to update neuron voltages!");
+
+    calc_spikes<<<blocks, threads>>>(
+#else
     calc_spikes(
+#endif
         (int*) this->iz_state->output,
         this->iz_state->voltage,
         this->iz_state->recovery,
         this->iz_state->neuron_parameters,
         num_neurons);
+#ifdef PARALLEL
+    cudaCheckError("Failed to timestep spikes!");
 #endif
 }
 

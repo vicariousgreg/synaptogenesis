@@ -71,13 +71,11 @@ IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
     // Fill in table
     for (int i = 0; i < model->layers.size(); ++i) {
         Layer *layer = model->layers[i];
-        int start = layer->index;
-        std::string &param_string = layer->params;
-        IzhikevichParameters params = create_parameters(param_string);
+        IzhikevichParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
-            local_params[start+j] = params;
-            local_voltage[start+j] = params.c;
-            local_recovery[start+j] = params.b * params.c;
+            local_params[layer->index+j] = params;
+            local_voltage[layer->index+j] = params.c;
+            local_recovery[layer->index+j] = params.b * params.c;
         }
     }
 

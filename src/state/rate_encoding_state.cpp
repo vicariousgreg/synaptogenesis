@@ -6,10 +6,6 @@
 #include "tools.h"
 #include "parallel.h"
 
-/******************************************************************************
- **************************** INITIALIZATION **********************************
- ******************************************************************************/
-
 static RateEncodingParameters create_parameters(std::string str) {
     return RateEncodingParameters(0.0);
     //throw ("Unrecognized parameter string: " + str).c_str();
@@ -22,12 +18,9 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
     // Fill in table
     for (int i = 0; i < model->layers.size(); ++i) {
         Layer *layer = model->layers[i];
-        int start = layer->index;
-        std::string &param_string = layer->params;
-        RateEncodingParameters params = create_parameters(param_string);
-        for (int j = 0 ; j < layer->size ; ++j) {
-            local_params[start+j] = params;
-        }
+        RateEncodingParameters params = create_parameters(layer->params);
+        for (int j = 0 ; j < layer->size ; ++j)
+            local_params[layer->index+j] = params;
     }
 
 #ifdef PARALLEL
