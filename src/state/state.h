@@ -6,7 +6,7 @@
 
 class State {
     public:
-        State(Model *model);
+        State(Model *model, int weight_depth);
         virtual ~State();
 
         void get_input_from(Buffer *buffer);

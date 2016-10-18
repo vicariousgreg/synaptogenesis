@@ -6,8 +6,9 @@
 #include "tools.h"
 #include "parallel.h"
 
-State::State(Model *model) {
+State::State(Model *model, int weight_depth) {
     this->num_neurons = model->num_neurons;
+    this->weight_matrices = build_weight_matrices(model, weight_depth);
 }
 
 State::~State() {

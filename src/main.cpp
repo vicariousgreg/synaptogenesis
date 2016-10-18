@@ -54,6 +54,13 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
 }
 
 Model* build_image_model(std::string driver_name, bool verbose) {
+    /* Determine output type */
+    std::string output_name;
+    if (driver_name == "izhikevich")
+        output_name = "print_spike";
+    else if (driver_name == "rate_encoding")
+        output_name = "print_float";
+
     /* Construct the model */
     Model *model = new Model(driver_name);
 
@@ -61,7 +68,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     const char* image_path = "resources/bird-head-small.jpg";
     int receptor = model->add_layer_from_image(image_path, "default");
     model->add_input(receptor, "image", image_path);
-    model->add_output(receptor, "print_spike", "24");
+    model->add_output(receptor, output_name, "24");
 
     // Vertical line detection
     int vertical = model->connect_layers_expected(receptor, "default",
@@ -72,7 +79,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5");
-    //model->add_output(vertical, "print_spike", "31");
+    //model->add_output(vertical, output_name, "31");
 
     // Horizontal line detection
     int horizontal = model->connect_layers_expected(receptor, "default",
@@ -83,7 +90,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "10 10 10 10 10 "
         "0 0 0 0 0 "
         "-5 -5 -5 -5 -5");
-    //model->add_output(horizontal, "print_spike", "31");
+    //model->add_output(horizontal, output_name, "31");
 
     // Cross detection
     int cross = model->connect_layers_expected(vertical, "default",
@@ -101,7 +108,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "1      10  15  10  1 "
         "-.5    5   -.5 5   -.5 "
         "-.5  -.5  -1  -.5  -.5");
-    //model->add_output(cross, "print_spike", "16");
+    //model->add_output(cross, output_name, "16");
 
     if (verbose) print_model(model);
     return model;
@@ -133,6 +140,7 @@ void image_test() {
 
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
+    //model = build_image_model("rate_encoding", true);
     run_simulation(model, 500, true);
     std::cout << "\n";
 }
