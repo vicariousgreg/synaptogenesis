@@ -15,7 +15,7 @@ class IzhikevichDriver : public Driver {
         OutputType get_output_type() { return INT; }
         int get_timesteps_per_output() { return 32; }
 
-        void step_connections();
+        void step_connection(Instruction *inst);
         void step_state();
         void step_weights();
 

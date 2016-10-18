@@ -22,14 +22,10 @@ IzhikevichDriver::IzhikevichDriver(Model *model) {
 #endif
 }
 
-void IzhikevichDriver::step_connections() {
-    for (int i = 0; i < this->instructions.size(); ++i) {
-        Instruction *inst = this->instructions[i];
-        // Determine which part of spike vector to use based on delay
-        int mask = 1 << (inst->delay % 32);
-
-        step<int>(inst, this->calc_input_ptr, mask);
-    }
+void IzhikevichDriver::step_connection(Instruction *inst) {
+    // Determine which part of spike vector to use based on delay
+    int mask = 1 << (inst->delay % 32);
+    step<int>(inst, this->calc_input_ptr, mask);
 }
 
 void IzhikevichDriver::step_state() {

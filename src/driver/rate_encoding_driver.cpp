@@ -23,11 +23,8 @@ RateEncodingDriver::RateEncodingDriver(Model *model) {
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void RateEncodingDriver::step_connections() {
-    for (int i = 0; i < this->instructions.size(); ++i) {
-        Instruction *inst = this->instructions[i];
-        step<>(inst, this->calc_input_ptr);
-    }
+void RateEncodingDriver::step_connection(Instruction *inst) {
+    step<>(inst, this->calc_input_ptr);
 }
 
 void RateEncodingDriver::step_state() {
@@ -92,6 +89,5 @@ GLOBAL void activation_function(float* outputs, float* inputs,
 #endif
         if (inputs[nid] > 0.0)
             outputs[nid] = tanh(0.1*inputs[nid]);
-        }
     }
 }

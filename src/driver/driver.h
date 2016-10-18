@@ -18,6 +18,7 @@ class Driver {
 
         void build_instructions(Model *model, int timesteps_per_output);
         void step_input(Buffer *buffer);
+        void step_connections();
         void step_output(Buffer *buffer);
 
         /* Returns the output type of the driver */
@@ -26,8 +27,8 @@ class Driver {
         /* Returns the number of timesteps contained in one output */
         virtual int get_timesteps_per_output() = 0;
 
-        /* Activates neural connections, calculating connection input */
-        virtual void step_connections() = 0;
+        /* Activates neural connection, calculating connection input */
+        virtual void step_connection(Instruction *inst) = 0;
 
         /* Cycles neuron states */
         virtual void step_state() = 0;

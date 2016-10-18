@@ -14,7 +14,7 @@ class RateEncodingDriver : public Driver {
         OutputType get_output_type() { return FLOAT; }
         int get_timesteps_per_output() { return 1; }
 
-        void step_connections();
+        void step_connection(Instruction *inst);
         void step_state();
         void step_weights();
 

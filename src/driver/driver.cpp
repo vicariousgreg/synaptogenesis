@@ -24,6 +24,11 @@ void Driver::step_input(Buffer *buffer) {
     this->state->get_input_from(buffer);
 }
 
+void Driver::step_connections() {
+    for (int i = 0; i < this->instructions.size(); ++i)
+        this->step_connection(this->instructions[i]);
+}
+
 void Driver::step_output(Buffer *buffer) {
     this->state->send_output_to(buffer);
 }
