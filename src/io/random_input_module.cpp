@@ -1,15 +1,15 @@
 #include <cstdlib>
 
-#include "io/random_input.h"
+#include "io/random_input_module.h"
 #include "tools.h"
 
-RandomInput::RandomInput(Layer *layer, std::string params) : Input(layer) {
+RandomInputModule::RandomInputModule(Layer *layer, std::string params) : InputModule(layer) {
     this->max_value = strtof(params.c_str(), NULL);
     if (this->max_value == 0.0)
         throw "Invalid max value for random input generator!";
 }
 
-void RandomInput::feed_input(Buffer *buffer) {
+void RandomInputModule::feed_input(Buffer *buffer) {
     int offset = this->layer->index;
     float *input = buffer->get_input();
     for (int nid = 0 ; nid < this->layer->size; ++nid) {

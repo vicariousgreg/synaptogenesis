@@ -1,13 +1,13 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "io/float_print_output.h"
+#include "io/float_print_output_module.h"
 #include "tools.h"
 
-FloatPrintOutput::FloatPrintOutput(Layer *layer, std::string params)
-        : Output(layer) { }
+FloatPrintOutputModule::FloatPrintOutputModule(Layer *layer, std::string params)
+        : OutputModule(layer) { }
 
-void FloatPrintOutput::report_output(Buffer *buffer) {
+void FloatPrintOutputModule::report_output(Buffer *buffer) {
     float* inputs = (float*) buffer->get_output();
     for (int row = 0 ; row < this->layer->rows; ++row) {
         for (int col = 0 ; col < this->layer->columns; ++col) {

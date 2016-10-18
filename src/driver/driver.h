@@ -16,8 +16,8 @@ class Driver {
         void step_input(Buffer *buffer);
         void step_output(Buffer *buffer);
 
-        /* Returns the number of bytes taken by output */
-        virtual int get_output_size() = 0;
+        /* Returns the output type of the driver */
+        virtual OutputType get_output_type() = 0;
 
         /* Activates neural connections, calculating connection input */
         virtual void step_connections() = 0;
@@ -38,7 +38,7 @@ Driver* build_driver(Model* model);
 /* Steps activation of a connection.
  * This function is templated to allow for different driver implementations.
  *
- * OUT is the type of output that neurons produce.
+ * OUT_TYPE is the type of output that neurons produce.
  * ARGS is a list of argument types for the input interpreter function.
  *
  * The function takes the following arguments
@@ -48,28 +48,28 @@ Driver* build_driver(Model* model);
  *   - input calculation function and associated arguments
  *
  */
-template <typename OUT, typename... ARGS>
-void step(Instruction<OUT> *inst,
-        float(*calc_input)(OUT, ARGS...), ARGS... args) {
+template <typename OUT_TYPE, typename... ARGS>
+void step(Instruction<OUT_TYPE> *inst,
+        float(*calc_input)(OUT_TYPE, ARGS...), ARGS... args) {
     void(*kernel)(
-        Instruction<OUT>,
-        float(*)(OUT, ARGS...), ARGS...);
+        Instruction<OUT_TYPE>,
+        float(*)(OUT_TYPE, ARGS...), ARGS...);
 
     // Determine which kernel to use based on connection type
     switch (inst->type) {
         case (FULLY_CONNECTED):
-            kernel = &calc_fully_connected<OUT, ARGS...>;
+            kernel = &calc_fully_connected<OUT_TYPE, ARGS...>;
             break;
         case (ONE_TO_ONE):
-            kernel = &calc_one_to_one<OUT, ARGS...>;
+            kernel = &calc_one_to_one<OUT_TYPE, ARGS...>;
             break;
         case (DIVERGENT):
         case (DIVERGENT_CONVOLUTIONAL):
-            kernel = &calc_divergent<OUT, ARGS...>;
+            kernel = &calc_divergent<OUT_TYPE, ARGS...>;
             break;
         case (CONVERGENT):
         case (CONVERGENT_CONVOLUTIONAL):
-            kernel = &calc_convergent<OUT, ARGS...>;
+            kernel = &calc_convergent<OUT_TYPE, ARGS...>;
             break;
         default:
             throw "Unimplemented connection type!";

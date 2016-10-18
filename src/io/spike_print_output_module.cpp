@@ -2,11 +2,11 @@
 #include <iostream>
 #include <sstream>
 
-#include "io/spike_print_output.h"
+#include "io/spike_print_output_module.h"
 #include "tools.h"
 
-SpikePrintOutput::SpikePrintOutput(Layer *layer, std::string params)
-        : Output(layer),
+SpikePrintOutputModule::SpikePrintOutputModule(Layer *layer, std::string params)
+        : OutputModule(layer),
           counter(0) {
     std::stringstream stream(params);
     if (!stream.eof()) {
@@ -32,7 +32,7 @@ SpikePrintOutput::SpikePrintOutput(Layer *layer, std::string params)
     }
 }
 
-void SpikePrintOutput::report_output(Buffer *buffer) {
+void SpikePrintOutputModule::report_output(Buffer *buffer) {
     int* spikes = (int*)buffer->get_output();
 
     // Print bar

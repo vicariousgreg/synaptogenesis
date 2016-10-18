@@ -1,8 +1,6 @@
 #include <sstream>
 
 #include "model/model.h"
-#include "io/input.h"
-#include "io/output.h"
 
 #define cimg_display 0
 #include "libs/CImg.h"
@@ -93,13 +91,13 @@ int Model::add_layer_from_image(std::string path, std::string params) {
 }
 
 void Model::add_input(int layer, std::string type, std::string params) {
-    Input *input = build_input(this->layers[layer], type, params);
-    this->input_modules.push_back(input);
+    InputModule *input_module = build_input(this->layers[layer], type, params);
+    this->input_modules.push_back(input_module);
 }
 
 void Model::add_output(int layer, std::string type, std::string params) {
-    Output *output = build_output(this->layers[layer], type, params);
-    this->output_modules.push_back(output);
+    OutputModule *output_module = build_output(this->layers[layer], type, params);
+    this->output_modules.push_back(output_module);
 }
 
 static bool contains(std::vector<Layer *> layers, Layer* layer) {

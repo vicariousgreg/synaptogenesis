@@ -11,11 +11,11 @@ class RateEncodingDriver : public Driver {
     public:
         RateEncodingDriver(Model *model);
 
+        OutputType get_output_type() { return FLOAT; }
+
         void step_connections();
         void step_state();
         void step_weights();
-
-        int get_output_size() { return sizeof(float); }
 
         RateEncodingState *re_state;
         float(*calc_input_ptr)(float);

@@ -1,9 +1,11 @@
 #ifndef buffer_h
 #define buffer_h
 
+#include "constants.h"
+
 class Buffer {
     public:
-        Buffer(int num_neurons, int output_size);
+        Buffer(int num_neurons);
         ~Buffer() {
 // UNCOMMENT FOR PINNED MEMORY
 //#ifdef PARALLEL
@@ -17,17 +19,16 @@ class Buffer {
 
         void clear_input();
         void set_input(int offset, int size, float* source);
+        void set_output(int offset, int size, Output* source);
 
         float* get_input();
-        void* get_output();
+        Output* get_output();
 
-        int get_output_size() { return output_size; }
 
     private:
-        int output_size;
         int num_neurons;
         float *input;
-        void *output;
+        Output *output;
 };
 
 #endif

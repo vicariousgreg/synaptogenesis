@@ -5,10 +5,6 @@
 
 #include "constants.h"
 
-/* Forward declarations for input and output modules */
-class Input;
-class Output;
-
 /* Represents a two dimensional layer of neurons.
  * Layers can be constructed and connected into networks using the Model class.
  *

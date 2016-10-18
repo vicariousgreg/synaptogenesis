@@ -3,10 +3,11 @@
 
 #include "model/model.h"
 #include "io/buffer.h"
+#include "constants.h"
 
 class State {
     public:
-        State(Model *model, int weight_depth, int output_size);
+        State(Model *model, int weight_depth);
         virtual ~State();
 
         void get_input_from(Buffer *buffer);
@@ -23,8 +24,8 @@ class State {
         float* input;
 
         // Neuron output
-        void* output;
-        void* recent_output;
+        Output* output;
+        Output* recent_output;
 
     protected:
         // Weight matrices

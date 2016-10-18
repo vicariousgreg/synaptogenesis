@@ -15,7 +15,7 @@ static RateEncodingParameters create_parameters(std::string str) {
     //throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-RateEncodingState::RateEncodingState(Model* model) : State(model, 1, sizeof(float)) {
+RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
     RateEncodingParameters* local_params =
         (RateEncodingParameters*) allocate_host(num_neurons, sizeof(RateEncodingParameters));
 

@@ -90,8 +90,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
 
     // Build environment and buffer
     Environment env(model);
-    this->buffer = new Buffer(
-        model->num_neurons, driver->get_output_size());
+    this->buffer = new Buffer(model->num_neurons);
 
     // Launch threads
     std::thread driver_thread(driver_loop, this, driver, iterations);

@@ -7,6 +7,8 @@
 #include "constants.h"
 #include "model/layer.h"
 #include "model/connection.h"
+#include "io/input_module.h"
+#include "io/output_module.h"
 
 /* Represents a full neural network model.
  * Contains network graph data and parameters for layers/connections.
@@ -71,8 +73,8 @@ class Model {
         std::vector<Connection*> connections;
 
         // Input and output modules
-        std::vector<Input*> input_modules;
-        std::vector<Output*> output_modules;
+        std::vector<InputModule*> input_modules;
+        std::vector<OutputModule*> output_modules;
 
     private:
         /* Adds a given number of neurons.

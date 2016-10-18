@@ -13,6 +13,26 @@
  */
 #define HISTORY_SIZE 8
 
+/* Output type enumeration.
+ * Different drivers may use different output formats.
+ * This enumeration is used to keep track of this information.
+ */
+enum OutputType {
+    FLOAT,
+    INT
+};
+
+/* Output union.
+ * This is used to avoid unnecesary templating.
+ * Because all outputs will be of the same type, it would be a waste of
+ *     space to hold an enumeration in each union instance.
+ * Instead, objects should know what type the output is for all instances.
+ */
+union Output {
+    float f;
+    int i;
+};
+
 /* Matrix Type enumeration.
  * Fully connected represents an n x m matrix.
  * One-to-one represents an n size vector connecting two layers

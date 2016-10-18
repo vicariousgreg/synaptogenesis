@@ -1,13 +1,13 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "io/image_input.h"
+#include "io/image_input_module.h"
 #include "tools.h"
 
 #define cimg_display 0
 #include "libs/CImg.h"
 
-ImageInput::ImageInput(Layer *layer, std::string params) : Input(layer) {
+ImageInputModule::ImageInputModule(Layer *layer, std::string params) : InputModule(layer) {
     try {
         cimg_library::CImg<unsigned char> img(params.c_str());
         width = img.width();
@@ -52,6 +52,6 @@ ImageInput::ImageInput(Layer *layer, std::string params) : Input(layer) {
     }
 }
 
-void ImageInput::feed_input(Buffer *buffer) {
+void ImageInputModule::feed_input(Buffer *buffer) {
     buffer->set_input(this->layer->index, this->layer->size, this->gray);
 }

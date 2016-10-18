@@ -1,6 +1,6 @@
 #include "io/environment.h"
-#include "io/input.h"
-#include "io/output.h"
+#include "io/input_module.h"
+#include "io/output_module.h"
 
 void Environment::step_input(Buffer *buffer) {
     // Run input modules
