@@ -12,15 +12,14 @@ class RateEncodingDriver : public Driver {
         RateEncodingDriver(Model *model);
 
         OutputType get_output_type() { return FLOAT; }
+        int get_timesteps_per_output() { return 1; }
 
         void step_connections();
         void step_state();
         void step_weights();
 
         RateEncodingState *re_state;
-        float(*calc_input_ptr)(float);
-
-        std::vector<Instruction<float>* > instructions;
+        float(*calc_input_ptr)(Output);
 };
 
 GLOBAL void activation_function(float* outputs, float* inputs,

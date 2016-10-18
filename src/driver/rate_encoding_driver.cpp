@@ -2,11 +2,11 @@
 
 #include "driver/rate_encoding_driver.h"
 
-DEVICE float re_calc_input(float output) {
-    return output;
+DEVICE float re_calc_input(Output output) {
+    return output.f;
 }
 
-DEVICE float (*re_calc_input_ptr)(float) = re_calc_input;
+DEVICE float (*re_calc_input_ptr)(Output) = re_calc_input;
 
 RateEncodingDriver::RateEncodingDriver(Model *model) {
     this->re_state = new RateEncodingState(model);
@@ -17,21 +17,6 @@ RateEncodingDriver::RateEncodingDriver(Model *model) {
 #else
     this->calc_input_ptr = re_calc_input_ptr;
 #endif
-
-    for (int i = 0; i < model->connections.size(); ++i) {
-        Connection *conn = model->connections[i];
-        int word_index = HISTORY_SIZE - (conn->delay) - 1;
-        if (word_index < 0) throw "Invalid delay in connection!";
-
-        float* out =
-            &((float*)this->state->output)[this->state->num_neurons * word_index];
-
-        this->instructions.push_back(
-            new Instruction<float>(conn,
-                out,
-                this->state->input,
-                this->state->get_matrix(conn->id)));
-    }
 }
 
 /*****************************************************************************/
@@ -40,8 +25,8 @@ RateEncodingDriver::RateEncodingDriver(Model *model) {
 
 void RateEncodingDriver::step_connections() {
     for (int i = 0; i < this->instructions.size(); ++i) {
-        Instruction<float> *inst = this->instructions[i];
-        step<float>(inst, this->calc_input_ptr);
+        Instruction *inst = this->instructions[i];
+        step<>(inst, this->calc_input_ptr);
     }
 }
 

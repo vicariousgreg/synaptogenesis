@@ -3,10 +3,9 @@
 
 #include "model/model.h"
 
-template <typename T>
 class Instruction {
     public:
-        Instruction(Connection *conn, T *outputs,
+        Instruction(Connection *conn, Output *outputs,
             float *inputs, float *weights) :
                 type(conn->type),
                 convolutional(conn->convolutional),
@@ -36,7 +35,7 @@ class Instruction {
         int to_size, to_rows, to_columns;
         int num_weights;
 
-        T *outputs;
+        Output *outputs;
         float *inputs;
         float *weights;
 };

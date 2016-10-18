@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "driver/driver.h"
-#include "driver/instruction.h"
 #include "state/izhikevich_state.h"
 #include "parallel.h"
 
@@ -14,15 +13,14 @@ class IzhikevichDriver : public Driver {
         IzhikevichDriver(Model *model);
 
         OutputType get_output_type() { return INT; }
+        int get_timesteps_per_output() { return 32; }
 
         void step_connections();
         void step_state();
         void step_weights();
 
         IzhikevichState *iz_state;
-        float(*calc_input_ptr)(int, int);
-
-        std::vector<Instruction<int>* > instructions;
+        float(*calc_input_ptr)(Output, int);
 };
 
 /* Parallel implementation of Izhikevich voltage update function.

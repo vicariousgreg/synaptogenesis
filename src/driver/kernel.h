@@ -12,10 +12,10 @@
     //    column is the source.  In this way, inputs to one neuron are
     //    contiguous in memory.
 
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_fully_connected(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (col < inst.to_size) {
@@ -28,10 +28,10 @@ GLOBAL void calc_fully_connected(
     }
 }
 
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_one_to_one(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (index < inst.from_size) {
@@ -40,10 +40,10 @@ GLOBAL void calc_one_to_one(
     }
 }
 
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_divergent(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
     int d_index = d_row*inst.to_columns + d_col;
@@ -92,10 +92,10 @@ GLOBAL void calc_divergent(
     }
 }
 
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_convergent(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
     int d_index = d_row*inst.to_columns + d_col;
@@ -136,10 +136,10 @@ GLOBAL void calc_convergent(
     }
 }
 #else
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_fully_connected(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     for (int row = 0 ; row < inst.to_size ; ++row) {
         float sum = 0.0;
         for (int col = 0 ; col < inst.from_size ; ++col) {
@@ -150,20 +150,20 @@ GLOBAL void calc_fully_connected(
     }
 }
 
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_one_to_one(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     for (int index = 0 ; index < inst.from_size ; ++index) {
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
             extractor(inst.outputs[index], args...) * inst.weights[index]);
     }
 }
 
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_divergent(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     int kernel_size = inst.overlap * inst.overlap;
 
     // Iterate over destination neurons
@@ -205,10 +205,10 @@ GLOBAL void calc_divergent(
     }
 }
 
-template <typename OUT_TYPE, typename... ARGS>
+template <typename... ARGS>
 GLOBAL void calc_convergent(
-        Instruction<OUT_TYPE> inst,
-        float(*extractor)(OUT_TYPE, ARGS...), ARGS... args) {
+        Instruction inst,
+        float(*extractor)(Output, ARGS...), ARGS... args) {
     int kernel_size = inst.overlap * inst.overlap;
 
     // Iterate over destination neurons

@@ -6,11 +6,11 @@
 /* Euler resolution for voltage update. */
 #define EULER_RES 10
 
-DEVICE float iz_calc_input(int output, int mask) {
-    return output & mask;
+DEVICE float iz_calc_input(Output output, int mask) {
+    return output.i & mask;
 }
 
-DEVICE float (*iz_calc_input_ptr)(int, int) = iz_calc_input;
+DEVICE float (*iz_calc_input_ptr)(Output, int) = iz_calc_input;
 
 IzhikevichDriver::IzhikevichDriver(Model *model) {
     this->iz_state = new IzhikevichState(model);
@@ -20,30 +20,15 @@ IzhikevichDriver::IzhikevichDriver(Model *model) {
 #else
     this->calc_input_ptr = iz_calc_input_ptr;
 #endif
-
-    for (int i = 0; i < model->connections.size(); ++i) {
-        Connection *conn = model->connections[i];
-        int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
-        if (word_index < 0) throw "Invalid delay in connection!";
-
-        int* out =
-            &((int*)this->state->output)[this->state->num_neurons * word_index];
-
-        this->instructions.push_back(
-            new Instruction<int>(conn,
-                out,
-                this->state->input,
-                this->state->get_matrix(conn->id)));
-    }
 }
 
 void IzhikevichDriver::step_connections() {
     for (int i = 0; i < this->instructions.size(); ++i) {
-        Instruction<int> *inst = this->instructions[i];
+        Instruction *inst = this->instructions[i];
         // Determine which part of spike vector to use based on delay
         int mask = 1 << (inst->delay % 32);
 
-        step<int, int>(inst, this->calc_input_ptr, mask);
+        step<int>(inst, this->calc_input_ptr, mask);
     }
 }
 

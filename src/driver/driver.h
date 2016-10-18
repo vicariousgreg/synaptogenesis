@@ -1,10 +1,13 @@
 #ifndef driver_h
 #define driver_h
 
+#include <vector>
+
 #include "state/state.h"
 #include "model/model.h"
 #include "io/buffer.h"
 #include "driver/kernel.h"
+#include "driver/instruction.h"
 #include "parallel.h"
 
 class Driver {
@@ -13,11 +16,15 @@ class Driver {
             delete this->state;
         }
 
+        void build_instructions(Model *model, int timesteps_per_output);
         void step_input(Buffer *buffer);
         void step_output(Buffer *buffer);
 
         /* Returns the output type of the driver */
         virtual OutputType get_output_type() = 0;
+
+        /* Returns the number of timesteps contained in one output */
+        virtual int get_timesteps_per_output() = 0;
 
         /* Activates neural connections, calculating connection input */
         virtual void step_connections() = 0;
@@ -30,6 +37,7 @@ class Driver {
         virtual void step_weights() = 0;
 
         State *state;
+        std::vector<Instruction* > instructions;
 };
 
 /* Instantiates a driver based on the driver_string in the given model */
@@ -38,7 +46,6 @@ Driver* build_driver(Model* model);
 /* Steps activation of a connection.
  * This function is templated to allow for different driver implementations.
  *
- * OUT_TYPE is the type of output that neurons produce.
  * ARGS is a list of argument types for the input interpreter function.
  *
  * The function takes the following arguments
@@ -48,28 +55,28 @@ Driver* build_driver(Model* model);
  *   - input calculation function and associated arguments
  *
  */
-template <typename OUT_TYPE, typename... ARGS>
-void step(Instruction<OUT_TYPE> *inst,
-        float(*calc_input)(OUT_TYPE, ARGS...), ARGS... args) {
+template <typename... ARGS>
+void step(Instruction *inst,
+        float(*calc_input)(Output, ARGS...), ARGS... args) {
     void(*kernel)(
-        Instruction<OUT_TYPE>,
-        float(*)(OUT_TYPE, ARGS...), ARGS...);
+        Instruction,
+        float(*)(Output, ARGS...), ARGS...);
 
     // Determine which kernel to use based on connection type
     switch (inst->type) {
         case (FULLY_CONNECTED):
-            kernel = &calc_fully_connected<OUT_TYPE, ARGS...>;
+            kernel = &calc_fully_connected<ARGS...>;
             break;
         case (ONE_TO_ONE):
-            kernel = &calc_one_to_one<OUT_TYPE, ARGS...>;
+            kernel = &calc_one_to_one<ARGS...>;
             break;
         case (DIVERGENT):
         case (DIVERGENT_CONVOLUTIONAL):
-            kernel = &calc_divergent<OUT_TYPE, ARGS...>;
+            kernel = &calc_divergent<ARGS...>;
             break;
         case (CONVERGENT):
         case (CONVERGENT_CONVOLUTIONAL):
-            kernel = &calc_convergent<OUT_TYPE, ARGS...>;
+            kernel = &calc_convergent<ARGS...>;
             break;
         default:
             throw "Unimplemented connection type!";
