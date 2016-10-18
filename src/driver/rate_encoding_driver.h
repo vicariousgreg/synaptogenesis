@@ -9,9 +9,7 @@
 
 class RateEncodingDriver : public Driver {
     public:
-        RateEncodingDriver();
-
-        void build_instructions();
+        RateEncodingDriver(Model *model);
 
         void step_connections();
         void step_state();

@@ -6,26 +6,40 @@
 #include "tools.h"
 #include "parallel.h"
 
+State::State(Model *model) {
+    this->num_neurons = model->num_neurons;
+}
+
+State::~State() {
+#ifdef PARALLEL
+    cudaFree(this->input);
+    cudaFree(this->weight_matrices[0]);
+#else
+    free(this->input);
+    free(this->weight_matrices[0]);
+#endif
+}
+
 void State::get_input_from(Buffer *buffer) {
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->input, buffer->get_input(),
-        this->model->num_neurons * sizeof(float), cudaMemcpyHostToDevice);
+        this->num_neurons * sizeof(float), cudaMemcpyHostToDevice);
     cudaCheckError("Failed to copy input from host to device!");
 #else
     memcpy(this->input, buffer->get_input(),
-        this->model->num_neurons * sizeof(float));
+        this->num_neurons * sizeof(float));
 #endif
 }
 
 void State::send_output_to(Buffer *buffer) {
 #ifdef PARALLEL
     cudaMemcpy(buffer->get_output(), this->output,
-        this->model->num_neurons * buffer->get_output_size(),
+        this->num_neurons * buffer->get_output_size(),
         cudaMemcpyDeviceToHost);
 #else
     memcpy(buffer->get_output(), this->output,
-        this->model->num_neurons * buffer->get_output_size());
+        this->num_neurons * buffer->get_output_size());
 #endif
 }
 

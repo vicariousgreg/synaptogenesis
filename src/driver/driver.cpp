@@ -13,13 +13,10 @@ void Driver::step_output(Buffer *buffer) {
 Driver* build_driver(Model* model) {
     Driver* driver;
     if (model->driver_string == "izhikevich")
-        driver = new IzhikevichDriver();
+        driver = new IzhikevichDriver(model);
     else if (model->driver_string == "rate_encoding")
-        driver = new RateEncodingDriver();
+        driver = new RateEncodingDriver(model);
     else
         throw "Unrecognized driver type!";
-    driver->state->build(model);
-    driver->model = model;
-    driver->build_instructions();
     return driver;
 }

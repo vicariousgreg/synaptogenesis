@@ -6,7 +6,8 @@
 
 class State {
     public:
-        virtual void build(Model* model) = 0;
+        State(Model *model);
+        virtual ~State();
 
         void get_input_from(Buffer *buffer);
         void send_output_to(Buffer *buffer);
@@ -15,8 +16,8 @@ class State {
             return this->weight_matrices[connection_id];
         }
 
-        // Network model
-        Model* model;
+        // Number of neurons
+        int num_neurons;
 
         // Neuron input
         float* input;

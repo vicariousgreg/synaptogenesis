@@ -8,8 +8,8 @@ DEVICE float re_calc_input(float output) {
 
 DEVICE float (*re_calc_input_ptr)(float) = re_calc_input;
 
-RateEncodingDriver::RateEncodingDriver() {
-    this->re_state = new RateEncodingState();
+RateEncodingDriver::RateEncodingDriver(Model *model) {
+    this->re_state = new RateEncodingState(model);
     this->state = this->re_state;
 
 #ifdef PARALLEL
@@ -17,11 +17,9 @@ RateEncodingDriver::RateEncodingDriver() {
 #else
     this->calc_input_ptr = re_calc_input_ptr;
 #endif
-}
 
-void RateEncodingDriver::build_instructions() {
-    for (int i = 0; i < this->model->connections.size(); ++i) {
-        Connection *conn = this->model->connections[i];
+    for (int i = 0; i < model->connections.size(); ++i) {
+        Connection *conn = model->connections[i];
         this->instructions.push_back(
             new Instruction<float>(conn,
                 (float*) this->state->output,
@@ -46,19 +44,19 @@ void RateEncodingDriver::step_state() {
 
 #ifdef PARALLEL
     int threads = 128;
-    int blocks = calc_blocks(this->model->num_neurons, threads);
+    int blocks = calc_blocks(this->state->num_neurons, threads);
     activation_function<<<blocks, threads>>>(
         (float*)state->output,
         state->input,
         state->neuron_parameters,
-        this->model->num_neurons);
+        this->state->num_neurons);
     cudaCheckError("Failed to update neuron output!");
 #else
     activation_function(
         (float*)state->output,
         state->input,
         state->neuron_parameters,
-        this->model->num_neurons);
+        this->state->num_neurons);
 #endif
 }
 

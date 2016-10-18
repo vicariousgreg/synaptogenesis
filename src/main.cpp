@@ -6,7 +6,6 @@
 
 #include "model/model.h"
 #include "state/state.h"
-#include "driver/driver.h"
 #include "tools.h"
 #include "clock.h"
 
@@ -112,70 +111,60 @@ void run_simulation(Model *model, int iterations, bool verbose) {
     // Seed random number generator
     srand(time(NULL));
 
-    // Start timer
-    timer.start();
-
-    Driver *driver = build_driver(model);
-    if (verbose) printf("Built state.\n");
-    if (verbose) timer.query("Initialization");
-
-    timer.start();
-
     Clock clock(10);
-    clock.run(driver, iterations);
 
-    float time = timer.query("Total time");
-    if (verbose)
-        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+    clock.run(model, iterations, verbose);
 #ifdef PARALLEL
     check_memory();
 #endif
 }
 
+void stress_test() {
+    Model *model;
+
+    std::cout << "Stress...\n";
+    model = build_stress_model("izhikevich", true);
+    run_simulation(model, 50, true);
+    std::cout << "\n";
+}
+
+void image_test() {
+    Model *model;
+
+    std::cout << "Image...\n";
+    model = build_image_model("izhikevich", true);
+    //run_simulation(model, 500, true);
+    run_simulation(model, 10, true);
+    std::cout << "\n";
+}
+
+void varied_test() {
+    Model *model;
+
+    std::cout << "Convergent...\n";
+    model = build_arborized_model("izhikevich", true, CONVERGENT);
+    run_simulation(model, 50, true);
+    std::cout << "\n";
+
+    std::cout << "Convergent convolutional...\n";
+    model = build_arborized_model("izhikevich", true, CONVERGENT_CONVOLUTIONAL);
+    run_simulation(model, 50, true);
+    std::cout << "\n";
+
+    std::cout << "Divergent...\n";
+    model = build_arborized_model("izhikevich", true, DIVERGENT);
+    run_simulation(model, 50, true);
+    std::cout << "\n";
+
+    std::cout << "Divergent convolutional...\n";
+    model = build_arborized_model("izhikevich", true, DIVERGENT_CONVOLUTIONAL);
+    run_simulation(model, 50, true);
+    std::cout << "\n";
+}
+
 int main(void) {
     try {
-        Model *model;
-        /*
-        std::cout << "Stress...\n";
-        model = build_stress_model("izhikevich", true);
-        run_simulation(model, 50, true);
-        std::cout << "\n";
-        */
-
-        ///*
-        std::cout << "Image...\n";
-        model = build_image_model("izhikevich", true);
-        run_simulation(model, 500, true);
-        std::cout << "\n";
-        //*/
-
-        ///*
-        std::cout << "Convergent...\n";
-        model = build_arborized_model("izhikevich", true, CONVERGENT);
-        run_simulation(model, 50, true);
-        std::cout << "\n";
-        //*/
-
-        ///*
-        std::cout << "Convergent convolutional...\n";
-        model = build_arborized_model("izhikevich", true, CONVERGENT_CONVOLUTIONAL);
-        run_simulation(model, 50, true);
-        std::cout << "\n";
-        //*/
-
-        ///*
-        std::cout << "Divergent...\n";
-        model = build_arborized_model("izhikevich", true, DIVERGENT);
-        run_simulation(model, 50, true);
-        std::cout << "\n";
-        //*/
-
-        ///*
-        std::cout << "Divergent convolutional...\n";
-        model = build_arborized_model("izhikevich", true, DIVERGENT_CONVOLUTIONAL);
-        run_simulation(model, 50, true);
-        std::cout << "\n";
-        //*/
+        image_test();
 
         return 0;
     } catch (const char* msg) {

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
-#include "driver/driver.h"
+#include "model/model.h"
 #include "io/buffer.h"
 #include "tools.h"
 
@@ -14,7 +14,7 @@ enum Thread_ID {
 class Clock {
     public:
         Clock(float refresh_rate) : time_limit(1.0 / refresh_rate) {}
-        void run(Driver *driver, int iterations);
+        void run(Model *model, int iterations, bool verbose);
 
         Buffer *buffer;
         Timer timer;

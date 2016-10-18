@@ -12,19 +12,17 @@ DEVICE float iz_calc_input(int output, int mask) {
 
 DEVICE float (*iz_calc_input_ptr)(int, int) = iz_calc_input;
 
-IzhikevichDriver::IzhikevichDriver() {
-    this->iz_state = new IzhikevichState();
+IzhikevichDriver::IzhikevichDriver(Model *model) {
+    this->iz_state = new IzhikevichState(model);
     this->state = this->iz_state;
 #ifdef PARALLEL
     cudaMemcpyFromSymbol(&this->calc_input_ptr, iz_calc_input_ptr, sizeof(void *));
 #else
     this->calc_input_ptr = iz_calc_input_ptr;
 #endif
-}
 
-void IzhikevichDriver::build_instructions() {
-    for (int i = 0; i < this->model->connections.size(); ++i) {
-        Connection *conn = this->model->connections[i];
+    for (int i = 0; i < model->connections.size(); ++i) {
+        Connection *conn = model->connections[i];
         this->instructions.push_back(
             new Instruction<int>(conn,
                 (int*) this->state->output,
@@ -45,7 +43,7 @@ void IzhikevichDriver::step_connections() {
 }
 
 void IzhikevichDriver::step_state() {
-    int num_neurons = this->model->num_neurons;
+    int num_neurons = this->state->num_neurons;
 
 #ifdef PARALLEL
     int threads = 128;

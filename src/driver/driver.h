@@ -9,10 +9,12 @@
 
 class Driver {
     public:
+        virtual ~Driver() {
+            delete this->state;
+        }
+
         void step_input(Buffer *buffer);
         void step_output(Buffer *buffer);
-
-        virtual void build_instructions() = 0;
 
         /* Returns the number of bytes taken by output */
         virtual int get_output_size() = 0;
@@ -28,7 +30,6 @@ class Driver {
         virtual void step_weights() = 0;
 
         State *state;
-        Model *model;
 };
 
 /* Instantiates a driver based on the driver_string in the given model */

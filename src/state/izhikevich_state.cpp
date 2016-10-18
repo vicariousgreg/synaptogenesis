@@ -62,10 +62,7 @@ static IzhikevichParameters create_parameters(std::string str) {
     else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-void IzhikevichState::build(Model* model) {
-    this->model = model;
-    int num_neurons = model->num_neurons;
-
+IzhikevichState::IzhikevichState(Model* model) : State(model) {
     // Local spikes for output reporting
     int* local_spikes = (int*) allocate_host(num_neurons * HISTORY_SIZE, sizeof(int));
     float* local_input = (float*) allocate_host(num_neurons, sizeof(float));
@@ -108,4 +105,18 @@ void IzhikevichState::build(Model* model) {
     this->output = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 
     this->weight_matrices = build_weight_matrices(model, 1);
+}
+
+IzhikevichState::~IzhikevichState() {
+#ifdef PARALLEL
+    cudaFree(this->voltage);
+    cudaFree(this->recovery);
+    cudaFree(this->spikes);
+    cudaFree(this->neuron_parameters);
+#else
+    free(this->voltage);
+    free(this->recovery);
+    free(this->spikes);
+    free(this->neuron_parameters);
+#endif
 }

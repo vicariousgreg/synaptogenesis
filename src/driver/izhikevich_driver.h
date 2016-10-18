@@ -11,9 +11,7 @@
 
 class IzhikevichDriver : public Driver {
     public:
-        IzhikevichDriver();
-
-        void build_instructions();
+        IzhikevichDriver(Model *model);
 
         void step_connections();
         void step_state();
