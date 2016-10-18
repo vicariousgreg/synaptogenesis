@@ -62,10 +62,7 @@ static IzhikevichParameters create_parameters(std::string str) {
     else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
-    // Local spikes for output reporting
-    int* local_spikes = (int*) allocate_host(num_neurons * HISTORY_SIZE, sizeof(int));
-    float* local_input = (float*) allocate_host(num_neurons, sizeof(float));
+IzhikevichState::IzhikevichState(Model* model) : State(model, 1, sizeof(int)) {
     float* local_voltage = (float*) allocate_host(num_neurons, sizeof(float));
     float* local_recovery = (float*) allocate_host(num_neurons, sizeof(float));
     IzhikevichParameters* local_params =
@@ -76,45 +73,36 @@ IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
         std::string &param_string = model->parameter_strings[i];
         IzhikevichParameters params = create_parameters(param_string);
         local_params[i] = params;
-        local_input[i] = 0;
         local_voltage[i] = params.c;
         local_recovery[i] = params.b * params.c;
     }
 
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
-    this->input = (float*)
-        allocate_device(num_neurons, sizeof(float), local_input);
     this->voltage = (float*)
         allocate_device(num_neurons, sizeof(float), local_voltage);
     this->recovery = (float*)
         allocate_device(num_neurons, sizeof(float), local_recovery);
-    this->spikes = (int*)
-        allocate_device(num_neurons * HISTORY_SIZE, sizeof(int), local_spikes);
     this->neuron_parameters = (IzhikevichParameters*)
         allocate_device(num_neurons, sizeof(IzhikevichParameters), local_params);
+    free(local_voltage);
+    free(recovery);
+    free(local_params);
 #else
-    this->spikes = local_spikes;
-    this->input = local_input;
     this->voltage = local_voltage;
     this->recovery = local_recovery;
     this->neuron_parameters = local_params;
 #endif
-    // Keep pointer to recent spikes
-    // This will be the output pointer
-    this->output = &this->spikes[(HISTORY_SIZE-1) * num_neurons];
 }
 
 IzhikevichState::~IzhikevichState() {
 #ifdef PARALLEL
     cudaFree(this->voltage);
     cudaFree(this->recovery);
-    cudaFree(this->spikes);
     cudaFree(this->neuron_parameters);
 #else
     free(this->voltage);
     free(this->recovery);
-    free(this->spikes);
     free(this->neuron_parameters);
 #endif
 }

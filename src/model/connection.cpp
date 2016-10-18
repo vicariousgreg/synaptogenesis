@@ -14,9 +14,6 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             opcode(opcode),
             type(type),
             parent(NULL) {
-    if (delay >= (32 * HISTORY_SIZE))
-        throw "Cannot implement connection delay longer than history!";
-
     switch (type) {
         case(FULLY_CONNECTED):
             this->init_params = params;

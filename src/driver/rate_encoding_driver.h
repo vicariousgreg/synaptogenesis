@@ -25,5 +25,6 @@ class RateEncodingDriver : public Driver {
 
 GLOBAL void activation_function(float* outputs, float* inputs,
                 RateEncodingParameters* neuron_params, int num_neurons);
+GLOBAL void shift_output(float* outputs, int num_neurons);
 
 #endif

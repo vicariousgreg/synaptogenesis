@@ -23,9 +23,15 @@ IzhikevichDriver::IzhikevichDriver(Model *model) {
 
     for (int i = 0; i < model->connections.size(); ++i) {
         Connection *conn = model->connections[i];
+        int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
+        if (word_index < 0) throw "Invalid delay in connection!";
+
+        int* out =
+            &((int*)this->state->output)[this->state->num_neurons * word_index];
+
         this->instructions.push_back(
             new Instruction<int>(conn,
-                (int*) this->state->output,
+                out,
                 this->state->input,
                 this->state->get_matrix(conn->id)));
     }
@@ -35,7 +41,6 @@ void IzhikevichDriver::step_connections() {
     for (int i = 0; i < this->instructions.size(); ++i) {
         Instruction<int> *inst = this->instructions[i];
         // Determine which part of spike vector to use based on delay
-        int word_index = HISTORY_SIZE - (inst->delay / 32) - 1;
         int mask = 1 << (inst->delay % 32);
 
         step<int, int>(inst, this->calc_input_ptr, mask);
@@ -56,7 +61,7 @@ void IzhikevichDriver::step_state() {
         num_neurons);
     cudaCheckError("Failed to update neuron voltages!");
     calc_spikes<<<blocks, threads>>>(
-        this->iz_state->spikes,
+        (int*) this->iz_state->output,
         this->iz_state->voltage,
         this->iz_state->recovery,
         this->iz_state->neuron_parameters,
@@ -70,7 +75,7 @@ void IzhikevichDriver::step_state() {
         this->iz_state->neuron_parameters,
         num_neurons);
     calc_spikes(
-        this->iz_state->spikes,
+        (int*) this->iz_state->output,
         this->iz_state->voltage,
         this->iz_state->recovery,
         this->iz_state->neuron_parameters,

@@ -6,7 +6,7 @@
 
 class State {
     public:
-        State(Model *model, int weight_depth);
+        State(Model *model, int weight_depth, int output_size);
         virtual ~State();
 
         void get_input_from(Buffer *buffer);
@@ -24,6 +24,7 @@ class State {
 
         // Neuron output
         void* output;
+        void* recent_output;
 
     protected:
         // Weight matrices

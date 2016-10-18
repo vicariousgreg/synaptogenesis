@@ -15,9 +15,7 @@ static RateEncodingParameters create_parameters(std::string str) {
     //throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
-    float* local_output = (float*) allocate_host(num_neurons, sizeof(float));
-    float* local_input = (float*) allocate_host(num_neurons, sizeof(float));
+RateEncodingState::RateEncodingState(Model* model) : State(model, 1, sizeof(float)) {
     RateEncodingParameters* local_params =
         (RateEncodingParameters*) allocate_host(num_neurons, sizeof(RateEncodingParameters));
 
@@ -26,20 +24,14 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
         std::string &param_string = model->parameter_strings[i];
         RateEncodingParameters params = create_parameters(param_string);
         local_params[i] = params;
-        local_input[i] = 0;
     }
 
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
-    this->input = (float*)
-        allocate_device(num_neurons, sizeof(float), local_input);
-    this->output = (float*)
-        allocate_device(num_neurons, sizeof(float), local_output);
     this->neuron_parameters = (RateEncodingParameters*)
         allocate_device(num_neurons, sizeof(RateEncodingParameters), local_params);
+    free(local_params);
 #else
-    this->input = local_input;
-    this->output = local_output;
     this->neuron_parameters = local_params;
 #endif
 }
@@ -47,9 +39,7 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
 RateEncodingState::~RateEncodingState() {
 #ifdef PARALLEL
     cudaFree(this->neuron_parameters);
-    cudaFree(this->output);
 #else
     free(this->neuron_parameters);
-    free(this->output);
 #endif
 }
