@@ -133,8 +133,7 @@ void image_test() {
 
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
-    //run_simulation(model, 500, true);
-    run_simulation(model, 10, true);
+    run_simulation(model, 500, true);
     std::cout << "\n";
 }
 
@@ -164,7 +163,9 @@ void varied_test() {
 
 int main(void) {
     try {
+        //stress_test();
         image_test();
+        //varied_test();
 
         return 0;
     } catch (const char* msg) {
