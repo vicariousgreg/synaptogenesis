@@ -6,12 +6,6 @@ void Driver::step_input(Buffer *buffer) {
     this->state->get_input_from(buffer);
 }
 
-void Driver::step_connections() {
-    // Calculate inputs for connections
-    for (int cid = 0 ; cid < this->model->connections.size(); ++cid)
-        step_connection(this->model->connections[cid]);
-}
-
 void Driver::step_output(Buffer *buffer) {
     this->state->send_output_to(buffer);
 }
@@ -26,5 +20,6 @@ Driver* build_driver(Model* model) {
         throw "Unrecognized driver type!";
     driver->state->build(model);
     driver->model = model;
+    driver->build_instructions();
     return driver;
 }

@@ -8,7 +8,7 @@ DEVICE float re_calc_input(float output) {
 
 DEVICE float (*re_calc_input_ptr)(float) = re_calc_input;
 
-RateEncodingDriver::RateEncodingDriver () {
+RateEncodingDriver::RateEncodingDriver() {
     this->re_state = new RateEncodingState();
     this->state = this->re_state;
 
@@ -19,12 +19,26 @@ RateEncodingDriver::RateEncodingDriver () {
 #endif
 }
 
+void RateEncodingDriver::build_instructions() {
+    for (int i = 0; i < this->model->connections.size(); ++i) {
+        Connection *conn = this->model->connections[i];
+        this->instructions.push_back(
+            new Instruction<float>(conn,
+                (float*) this->state->output,
+                this->state->input,
+                this->state->get_matrix(conn->id)));
+    }
+}
+
 /*****************************************************************************/
 /************************* GENERIC IMPLEMENTATIONS ***************************/
 /*****************************************************************************/
 
-void RateEncodingDriver::step_connection(Connection *conn) {
-    step<float>(this->state, conn, (float*)this->state->output, this->calc_input_ptr);
+void RateEncodingDriver::step_connections() {
+    for (int i = 0; i < this->instructions.size(); ++i) {
+        Instruction<float> *inst = this->instructions[i];
+        step<float>(inst, this->calc_input_ptr);
+    }
 }
 
 void RateEncodingDriver::step_state() {

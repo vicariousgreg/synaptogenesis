@@ -2,16 +2,20 @@
 #define izhikevich_driver_h
 
 #include <iostream>
+#include <vector>
 
 #include "driver/driver.h"
+#include "driver/instruction.h"
 #include "state/izhikevich_state.h"
 #include "parallel.h"
 
 class IzhikevichDriver : public Driver {
     public:
-        IzhikevichDriver ();
+        IzhikevichDriver();
 
-        void step_connection(Connection *conn);
+        void build_instructions();
+
+        void step_connections();
         void step_state();
         void step_weights();
 
@@ -19,6 +23,8 @@ class IzhikevichDriver : public Driver {
 
         IzhikevichState *iz_state;
         float(*calc_input_ptr)(int, int);
+
+        std::vector<Instruction<int>* > instructions;
 };
 
 /* Parallel implementation of Izhikevich voltage update function.

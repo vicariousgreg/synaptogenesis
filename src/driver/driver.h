@@ -10,14 +10,15 @@
 class Driver {
     public:
         void step_input(Buffer *buffer);
-        void step_connections();
         void step_output(Buffer *buffer);
+
+        virtual void build_instructions() = 0;
 
         /* Returns the number of bytes taken by output */
         virtual int get_output_size() = 0;
 
         /* Activates neural connections, calculating connection input */
-        virtual void step_connection(Connection *conn) = 0;
+        virtual void step_connections() = 0;
 
         /* Cycles neuron states */
         virtual void step_state() = 0;
@@ -47,14 +48,14 @@ Driver* build_driver(Model* model);
  *
  */
 template <typename OUT, typename... ARGS>
-void step(State* state, Connection *conn, OUT* outputs,
+void step(Instruction<OUT> *inst,
         float(*calc_input)(OUT, ARGS...), ARGS... args) {
     void(*kernel)(
         Instruction<OUT>,
         float(*)(OUT, ARGS...), ARGS...);
 
     // Determine which kernel to use based on connection type
-    switch (conn->type) {
+    switch (inst->type) {
         case (FULLY_CONNECTED):
             kernel = &calc_fully_connected<OUT, ARGS...>;
             break;
@@ -78,10 +79,10 @@ void step(State* state, Connection *conn, OUT* outputs,
     dim3 blocks_per_grid;
     dim3 threads_per_block;
 
-    switch (conn->type) {
+    switch (inst->type) {
         case (FULLY_CONNECTED):
         case (ONE_TO_ONE):
-            blocks_per_grid = dim3(calc_blocks(conn->to_size));
+            blocks_per_grid = dim3(calc_blocks(inst->to_size));
             threads_per_block = dim3(THREADS);
             break;
         case (DIVERGENT):
@@ -89,8 +90,8 @@ void step(State* state, Connection *conn, OUT* outputs,
         case (CONVERGENT):
         case (CONVERGENT_CONVOLUTIONAL):
             blocks_per_grid = dim3(
-                calc_blocks(conn->to_rows, 1),
-                calc_blocks(conn->to_columns, 128));
+                calc_blocks(inst->to_rows, 1),
+                calc_blocks(inst->to_columns, 128));
             threads_per_block = dim3(1, 128);
             break;
         default:
@@ -99,17 +100,13 @@ void step(State* state, Connection *conn, OUT* outputs,
 
     // Run the parallel kernel
     kernel<<<blocks_per_grid, threads_per_block>>>(
-        Instruction<OUT>(conn, outputs,
-            state->input, get_matrix(conn->id)),
-        calc_input, args...);
+        *inst, calc_input, args...);
     cudaCheckError("Failed to calculate connection activation!");
 
 #else
     // Run the serial kernel
     kernel(
-        Instruction<OUT>(conn, outputs,
-            state->input, state->get_matrix(conn->id)),
-        calc_input, args...);
+        *inst, calc_input, args...);
 #endif
 }
 

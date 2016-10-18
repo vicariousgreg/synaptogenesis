@@ -9,9 +9,11 @@
 
 class RateEncodingDriver : public Driver {
     public:
-        RateEncodingDriver ();
+        RateEncodingDriver();
 
-        void step_connection(Connection *conn);
+        void build_instructions();
+
+        void step_connections();
         void step_state();
         void step_weights();
 
@@ -19,6 +21,8 @@ class RateEncodingDriver : public Driver {
 
         RateEncodingState *re_state;
         float(*calc_input_ptr)(float);
+
+        std::vector<Instruction<float>* > instructions;
 };
 
 GLOBAL void activation_function(float* outputs, float* inputs,

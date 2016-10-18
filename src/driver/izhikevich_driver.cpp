@@ -12,8 +12,7 @@ DEVICE float iz_calc_input(int output, int mask) {
 
 DEVICE float (*iz_calc_input_ptr)(int, int) = iz_calc_input;
 
-
-IzhikevichDriver::IzhikevichDriver () {
+IzhikevichDriver::IzhikevichDriver() {
     this->iz_state = new IzhikevichState();
     this->state = this->iz_state;
 #ifdef PARALLEL
@@ -23,14 +22,26 @@ IzhikevichDriver::IzhikevichDriver () {
 #endif
 }
 
-void IzhikevichDriver::step_connection(Connection *conn) {
-    // Determine which part of spike vector to use based on delay
-    int word_index = HISTORY_SIZE - (conn->delay / 32) - 1;
-    int mask = 1 << (conn->delay % 32);
+void IzhikevichDriver::build_instructions() {
+    for (int i = 0; i < this->model->connections.size(); ++i) {
+        Connection *conn = this->model->connections[i];
+        this->instructions.push_back(
+            new Instruction<int>(conn,
+                (int*) this->state->output,
+                this->state->input,
+                this->state->get_matrix(conn->id)));
+    }
+}
 
-    step<int, int>(this->state, conn,
-        &this->iz_state->spikes[this->model->num_neurons * word_index],
-        this->calc_input_ptr, mask);
+void IzhikevichDriver::step_connections() {
+    for (int i = 0; i < this->instructions.size(); ++i) {
+        Instruction<int> *inst = this->instructions[i];
+        // Determine which part of spike vector to use based on delay
+        int word_index = HISTORY_SIZE - (inst->delay / 32) - 1;
+        int mask = 1 << (inst->delay % 32);
+
+        step<int, int>(inst, this->calc_input_ptr, mask);
+    }
 }
 
 void IzhikevichDriver::step_state() {
