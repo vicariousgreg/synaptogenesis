@@ -27,10 +27,10 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
         clock->sensory_lock.unlock();
 
         /* Compute */
-        driver->step_input_connections();
-        driver->step_io_connections();
-        driver->step_output_connections();
-        driver->step_internal_connections();
+        driver->step_connections(INPUT);
+        driver->step_connections(INPUT_OUTPUT);
+        driver->step_connections(OUTPUT);
+        driver->step_connections(INTERNAL);
         driver->step_state();
         driver->step_weights();
 

@@ -67,12 +67,8 @@ class Model {
         int num_neurons;
 
         // Layers
-        //std::vector<Layer*> layers[LAYER_TYPE_SIZE];
-        std::vector<Layer*> input_layers;
-        std::vector<Layer*> io_layers;
-        std::vector<Layer*> output_layers;
-        std::vector<Layer*> internal_layers;
-        std::vector<Layer*> layers;
+        std::vector<Layer*> layers[LAYER_TYPE_SIZE];
+        std::vector<Layer*> all_layers;
 
         // Connections
         std::vector<Connection*> connections;

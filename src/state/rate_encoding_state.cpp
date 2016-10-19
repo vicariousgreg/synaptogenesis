@@ -16,8 +16,8 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
         (RateEncodingParameters*) allocate_host(num_neurons, sizeof(RateEncodingParameters));
 
     // Fill in table
-    for (int i = 0; i < model->layers.size(); ++i) {
-        Layer *layer = model->layers[i];
+    for (int i = 0; i < model->all_layers.size(); ++i) {
+        Layer *layer = model->all_layers[i];
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
             local_params[layer->index+j] = params;

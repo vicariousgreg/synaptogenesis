@@ -14,7 +14,7 @@ static Timer timer = Timer();
 void print_model(Model *model) {
     printf("Built model.\n");
     printf("  - neurons     : %10d\n", model->num_neurons);
-    printf("  - layers      : %10d\n", model->layers.size());
+    printf("  - layers      : %10d\n", model->all_layers.size());
     printf("  - connections : %10d\n", model->connections.size());
     int num_weights = 0;
     for (int i = 0; i < model->connections.size() ; ++i)
