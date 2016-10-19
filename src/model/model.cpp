@@ -9,7 +9,7 @@ Model::Model (std::string driver_string) :
         num_neurons(0),
         driver_string(driver_string) {}
 
-int Model::connect_layers(Layer* from_layer, Layer* to_layer, bool plastic,
+Connection* Model::connect_layers(Layer* from_layer, Layer* to_layer, bool plastic,
         int delay, float max_weight, ConnectionType type, Opcode opcode,
         std::string params) {
     int conn_id = this->connections.size();
@@ -19,16 +19,15 @@ int Model::connect_layers(Layer* from_layer, Layer* to_layer, bool plastic,
     this->connections.push_back(conn);
     from_layer->add_output_connection(conn);
     to_layer->add_input_connection(conn);
-    return conn_id;
+    return conn;
 }
 
-int Model::connect_layers_shared(Layer* from_layer, Layer* to_layer, int parent_id) {
+Connection* Model::connect_layers_shared(Layer* from_layer, Layer* to_layer, Connection* parent) {
     // Ensure parent doesn't have a parent
-    if (this->connections[parent_id]->parent != NULL)
+    if (parent->parent != NULL)
         throw "Shared connections must refer to non-shared connection!";
 
     // Ensure that the weights can be shared by checking sizes
-    Connection *parent = this->connections[parent_id];
     int conn_id = this->connections.size();
 
     if (from_layer->rows == parent->from_layer->rows
@@ -41,7 +40,7 @@ int Model::connect_layers_shared(Layer* from_layer, Layer* to_layer, int parent_
         this->connections.push_back(conn);
         from_layer->add_output_connection(conn);
         to_layer->add_input_connection(conn);
-        return conn_id;
+        return conn;
     } else {
         throw "Cannot share weights between connections of different sizes!";
     }

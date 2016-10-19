@@ -36,19 +36,21 @@ class Model {
 
         /* Connects two layers, creating a weight matrix with the given 
          *   parameters */
-        int connect_layers(Layer* from_layer, Layer* to_layer, bool plastic,
-            int delay, float max_weight, ConnectionType type, Opcode opcode,
-            std::string params);
+        Connection* connect_layers(Layer* from_layer, Layer* to_layer,
+            bool plastic, int delay, float max_weight, ConnectionType type,
+            Opcode opcode, std::string params);
 
         /* Connects to layers, sharing weights with another connection
          *   specified by |parent_id| */
-        int connect_layers_shared(Layer* from_layer, Layer* to_layer, int parent_id);
+        Connection* connect_layers_shared(
+            Layer* from_layer, Layer* to_layer, int parent_id);
 
         /* Uses expected sizes to create a new layer and connect it to the
          *   given layer.  Returns the id of the new layer. */
-        Layer* connect_layers_expected(Layer *from_layer, std::string new_layer_params,
-                bool plastic, int delay, float max_weight,
-                ConnectionType type, Opcode opcode, std::string params);
+        Layer* connect_layers_expected(Layer *from_layer,
+            std::string new_layer_params,
+            bool plastic, int delay, float max_weight,
+            ConnectionType type, Opcode opcode, std::string params);
 
         /* Adds an input module of the given |type| for the given |layer| */
         void add_input_module(Layer *layer, std::string type, std::string params);
