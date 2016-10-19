@@ -77,7 +77,6 @@ Layer* Model::add_layer(int rows, int columns, std::string params) {
 
     Layer* layer = new Layer(layer_index, start_index, rows, columns, params);
     this->all_layers.push_back(layer);
-    this->layers[INTERNAL].push_back(layer);
 
     // Add neurons.
     this->add_neurons(rows*columns);
@@ -94,7 +93,6 @@ void Model::add_input_module(Layer* layer, std::string type, std::string params)
     layer->add_input_module();
     InputModule *input_module = build_input(layer, type, params);
     this->input_modules.push_back(input_module);
-    this->sort_layers();
 }
 
 void Model::add_output_module(Layer* layer, std::string type, std::string params) {
@@ -102,7 +100,6 @@ void Model::add_output_module(Layer* layer, std::string type, std::string params
 
     OutputModule *output_module = build_output(layer, type, params);
     this->output_modules.push_back(output_module);
-    this->sort_layers();
 }
 
 static bool contains(std::vector<Layer *> layers, Layer* layer) {

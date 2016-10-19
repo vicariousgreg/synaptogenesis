@@ -12,8 +12,8 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
                     (conn->delay / timesteps_per_output);
                 if (word_index < 0) throw "Invalid delay in connection!";
 
-                Output* out =
-                    &this->state->output[this->state->total_neurons * word_index];
+                Output* out = this->state->output + 
+                    (this->state->total_neurons * word_index);
 
                 Instruction *inst =
                     new Instruction(conn,

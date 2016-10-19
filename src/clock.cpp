@@ -11,7 +11,7 @@ void wait_for_permission(std::mutex *mu, Thread_ID *owner, Thread_ID me) {
     }
 }
 
-void driver_loop(Clock *clock, Driver *driver, int iterations) {
+void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
     for (int i = 0; i < iterations; ++i) {
         /* Read sensory buffer */
         // Wait for sensory and clock locks
@@ -19,7 +19,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
         wait_for_permission(&(clock->clock_lock), &(clock->clock_owner), DRIVER);
 
         // Read sensory input
-        std::cout << "DRIVER READ\n";
+        if (verbose) std::cout << "DRIVER READ\n";
         driver->step_input(clock->buffer);
 
         // Pass sensory ownership back to environment
@@ -42,7 +42,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
         wait_for_permission(&(clock->motor_lock), &(clock->motor_owner), DRIVER);
 
         // Write motor output
-        std::cout << "DRIVER WRITE\n";
+        if (verbose) std::cout << "DRIVER WRITE\n";
         driver->step_output(clock->buffer);
 
         // Pass motor ownership back to environment
@@ -55,12 +55,12 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
     }
 }
 
-void environment_loop(Clock *clock, Environment *environment, int iterations) {
+void environment_loop(Clock *clock, Environment *environment, int iterations, bool verbose) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), ENVIRONMENT);
         environment->step_input(clock->buffer);
-        std::cout << "ENVIRONMENT WRITE\n";
+        if (verbose) std::cout << "ENVIRONMENT WRITE\n";
 
         clock->sensory_owner = DRIVER;
         clock->sensory_lock.unlock();
@@ -70,7 +70,7 @@ void environment_loop(Clock *clock, Environment *environment, int iterations) {
         // Write motor buffer
         wait_for_permission(&(clock->motor_lock), &(clock->motor_owner), ENVIRONMENT);
         environment->step_output(clock->buffer);
-        std::cout << "ENVIRONMENT READ\n";
+        if (verbose) std::cout << "ENVIRONMENT READ\n";
 
         clock->motor_owner = DRIVER;
         clock->motor_lock.unlock();
@@ -106,8 +106,8 @@ void Clock::run(Model *model, int iterations, bool verbose) {
         output_start_index, output_size);
 
     // Launch threads
-    std::thread driver_thread(driver_loop, this, driver, iterations);
-    std::thread environment_thread(environment_loop, this, &env, iterations);
+    std::thread driver_thread(driver_loop, this, driver, iterations, verbose);
+    std::thread environment_thread(environment_loop, this, &env, iterations, verbose);
 
     // Run iterations
     outer_timer.start();
