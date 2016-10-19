@@ -91,17 +91,14 @@ Layer* Model::add_layer_from_image(std::string path, std::string params) {
 }
 
 void Model::add_input_module(Layer* layer, std::string type, std::string params) {
-    if (layer->has_input_module) throw "Layer already has input module!";
-    layer->has_input_module = true;
-
+    layer->add_input_module();
     InputModule *input_module = build_input(layer, type, params);
     this->input_modules.push_back(input_module);
     this->sort_layers();
 }
 
 void Model::add_output_module(Layer* layer, std::string type, std::string params) {
-    if (layer->has_output_module) throw "Layer already has input module!";
-    layer->has_output_module = true;
+    layer->add_output_module();
 
     OutputModule *output_module = build_output(layer, type, params);
     this->output_modules.push_back(output_module);
@@ -121,14 +118,7 @@ void Model::sort_layers() {
     // Sort layers
     for (int i = 0 ; i < this->all_layers.size(); ++i) {
         Layer *layer = this->all_layers[i];
-        if (layer->has_input_module and layer->has_output_module)
-            layers[INPUT_OUTPUT].push_back(layer);
-        else if (layer->has_input_module)
-            layers[INPUT].push_back(layer);
-        else if (layer->has_output_module)
-            layers[OUTPUT].push_back(layer);
-        else
-            layers[INTERNAL].push_back(layer);
+            layers[layer->type].push_back(layer);
     }
 
     // Clear old list

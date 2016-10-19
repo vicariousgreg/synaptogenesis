@@ -29,8 +29,8 @@ class Layer {
         // Parameters for initializing neural properties
         std::string params;
 
-        // Flags for whether layer has input or output modules
-        bool has_input_module, has_output_module;
+        // Layer type (input, output, input/output, internal)
+        LayerType type;
 
         // Indices relative to input/output, if relevant
         int input_index, output_index;
@@ -53,8 +53,7 @@ class Layer {
                 columns(columns),
                 size(rows * columns),
                 params(params),
-                has_input_module(false),
-                has_output_module(false),
+                type(INTERNAL),
                 input_index(0),
                 output_index(0) {}
 
@@ -64,6 +63,24 @@ class Layer {
 
         void add_output_connection(Connection* connection) {
             this->output_connections.push_back(connection);
+        }
+
+        void add_input_module() {
+            if (this->type == OUTPUT)
+                this->type = INPUT_OUTPUT;
+            else if (this->type == INPUT or this->type == INPUT_OUTPUT)
+                throw "Layer cannot have more than one input module!";
+            else
+                this->type = INPUT;
+        }
+
+        void add_output_module() {
+            if (this->type == INPUT)
+                this->type = INPUT_OUTPUT;
+            else if (this->type == OUTPUT or this->type == INPUT_OUTPUT)
+                throw "Layer cannot have more than one output module!";
+            else
+                this->type = OUTPUT;
         }
 };
 

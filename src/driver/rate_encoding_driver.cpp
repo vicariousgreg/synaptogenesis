@@ -1,6 +1,16 @@
 #include <math.h>
 
 #include "driver/rate_encoding_driver.h"
+#include "parallel.h"
+
+/* Activation function */
+GLOBAL void activation_function(float* outputs, float* inputs,
+                RateEncodingParameters* neuron_params,
+                int start_index, int count);
+
+/* Output shifter */
+GLOBAL void shift_output(float* outputs,
+                int start_index, int count, int num_neurons);
 
 DEVICE float re_calc_input(Output output) { return output.f; }
 DEVICE float (*re_calc_input_ptr)(Output) = re_calc_input;
