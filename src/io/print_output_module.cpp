@@ -7,7 +7,7 @@
 
 PrintOutputModule::PrintOutputModule(Layer *layer,
         std::string params, std::string &driver_type)
-        : OutputModule(layer, driver_type),
+        : Module(layer, driver_type),
           counter(0) {
     std::stringstream stream(params);
     if (!stream.eof()) {

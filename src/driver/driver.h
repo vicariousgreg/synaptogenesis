@@ -20,9 +20,9 @@ class Driver {
 
         void step_input(Buffer *buffer);
         void step_connections();
-        void step_connections(LayerType layer_type);
+        void step_connections(IOType layer_type);
         void step_state();
-        void step_state(LayerType layer_type);
+        void step_state(IOType layer_type);
         void step_output(Buffer *buffer);
         void step_weights();
 

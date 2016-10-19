@@ -39,7 +39,7 @@ void Driver::step_connections() {
         this->update_connection(all_instructions[i]);
 }
 
-void Driver::step_connections(LayerType layer_type) {
+void Driver::step_connections(IOType layer_type) {
     for (int i = 0; i < instructions[layer_type].size(); ++i)
         this->update_connection(instructions[layer_type][i]);
 }
@@ -48,7 +48,7 @@ void Driver::step_state() {
     this->update_state(0, this->state->total_neurons);
 }
 
-void Driver::step_state(LayerType layer_type) {
+void Driver::step_state(IOType layer_type) {
     int start_index = this->state->start_index[layer_type];
     int count = this->state->num_neurons[layer_type];
     if (count > 0)

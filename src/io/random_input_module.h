@@ -1,13 +1,16 @@
 #ifndef random_input_module_h
 #define random_input_module_h
 
-#include "io/input_module.h"
+#include "io/module.h"
 
-class RandomInputModule : public InputModule {
+class RandomInputModule : public Module {
     public:
-        RandomInputModule(Layer *layer, std::string params);
+        RandomInputModule(Layer *layer,
+            std::string params, std::string &driver_type);
         void feed_input(Buffer *buffer);
+        virtual IOType get_type() { return INPUT; }
 
+    private:
         float max_value;
 };
 

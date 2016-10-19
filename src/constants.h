@@ -33,14 +33,14 @@ union Output {
     int i;
 };
 
-/* Layer type enumeration.
+/* IO type enumeration.
  * Indicates sensorimotor connectivity.
  * Input layers receive sensory input from the environment.
  * Output layers send motor output to the environment.
  * Input/Output layers do both.
  * Internal layers do neither.
  */
-enum LayerType {
+enum IOType {
     INPUT,
     INPUT_OUTPUT,
     OUTPUT,

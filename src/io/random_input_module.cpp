@@ -3,7 +3,9 @@
 #include "io/random_input_module.h"
 #include "tools.h"
 
-RandomInputModule::RandomInputModule(Layer *layer, std::string params) : InputModule(layer) {
+RandomInputModule::RandomInputModule(Layer *layer,
+        std::string params, std::string &driver_type)
+        : Module(layer, driver_type) {
     this->max_value = strtof(params.c_str(), NULL);
     if (this->max_value == 0.0)
         throw "Invalid max value for random input generator!";

@@ -7,8 +7,7 @@
 #include "constants.h"
 #include "model/layer.h"
 #include "model/connection.h"
-#include "io/input_module.h"
-#include "io/output_module.h"
+#include "io/module.h"
 
 /* Represents a full neural network model.
  * Contains network graph data and parameters for layers/connections.
@@ -22,9 +21,8 @@
  *       a source layer and connection parameters
  *
  *  In addition, input and output modules can be attached to layers using
- *    add_input_module() and add_output_module().  These modules contain hooks
- *    for driving input to a layer or extracting and using output of a layer.
- *
+ *    add_module(). These modules contain hooks for driving input to a layer
+ *    and extracting and using output of a layer.
  */
 class Model {
     public:
@@ -34,7 +32,7 @@ class Model {
         Layer* add_layer(int rows, int columns, std::string params);
         Layer* add_layer_from_image(std::string path, std::string params);
 
-        /* Connects two layers, creating a weight matrix with the given 
+        /* Connects two layers, creating a weight matrix with the given
          *   parameters */
         Connection* connect_layers(Layer* from_layer, Layer* to_layer,
             bool plastic, int delay, float max_weight, ConnectionType type,
@@ -52,11 +50,8 @@ class Model {
             bool plastic, int delay, float max_weight,
             ConnectionType type, Opcode opcode, std::string params);
 
-        /* Adds an input module of the given |type| for the given |layer| */
-        void add_input_module(Layer *layer, std::string type, std::string params);
-
-        /* Adds an output module of the given |type| for the given |layer| */
-        void add_output_module(Layer *layer, std::string type, std::string params);
+        /* Adds a module of the given |type| for the given |layer| */
+        void add_module(Layer *layer, std::string type, std::string params);
 
         /* Reorganizes the model to place input and ouput layers in
          *   contiguous memory. */
@@ -76,8 +71,7 @@ class Model {
         std::vector<Connection*> connections;
 
         // Input and output modules
-        std::vector<InputModule*> input_modules;
-        std::vector<OutputModule*> output_modules;
+        std::vector<Module*> modules;
 
     private:
         /* Adds a given number of neurons.

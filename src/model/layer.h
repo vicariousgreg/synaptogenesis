@@ -30,7 +30,7 @@ class Layer {
         std::string params;
 
         // Layer type (input, output, input/output, internal)
-        LayerType type;
+        IOType type;
 
         // Indices relative to input/output, if relevant
         int input_index, output_index;
@@ -65,22 +65,22 @@ class Layer {
             this->output_connections.push_back(connection);
         }
 
-        void add_input_module() {
-            if (this->type == OUTPUT)
-                this->type = INPUT_OUTPUT;
-            else if (this->type == INPUT or this->type == INPUT_OUTPUT)
+        void add_module(IOType new_type) {
+            if ((this->type == INPUT or this->type == INPUT_OUTPUT)
+                and (new_type == INPUT or new_type == INPUT_OUTPUT))
                 throw "Layer cannot have more than one input module!";
-            else
-                this->type = INPUT;
-        }
-
-        void add_output_module() {
-            if (this->type == INPUT)
-                this->type = INPUT_OUTPUT;
-            else if (this->type == OUTPUT or this->type == INPUT_OUTPUT)
-                throw "Layer cannot have more than one output module!";
-            else
-                this->type = OUTPUT;
+            else if (new_type == INPUT_OUTPUT)
+                this->type = new_type;
+            else if (new_type == INPUT)
+                if (this->type == OUTPUT)
+                    this->type = INPUT_OUTPUT;
+                else
+                    this->type = new_type;
+            else if (new_type == OUTPUT)
+                if (this->type == INPUT)
+                    this->type = INPUT_OUTPUT;
+                else
+                    this->type = new_type;
         }
 };
 

@@ -89,17 +89,10 @@ Layer* Model::add_layer_from_image(std::string path, std::string params) {
     return this->add_layer(img.height(), img.width(), params);
 }
 
-void Model::add_input_module(Layer* layer, std::string type, std::string params) {
-    layer->add_input_module();
-    InputModule *input_module = build_input(layer, type, params);
-    this->input_modules.push_back(input_module);
-}
-
-void Model::add_output_module(Layer* layer, std::string type, std::string params) {
-    layer->add_output_module();
-
-    OutputModule *output_module = build_output(layer, type, params, this->driver_string);
-    this->output_modules.push_back(output_module);
+void Model::add_module(Layer* layer, std::string type, std::string params) {
+    Module *module = build_module(layer, type, params, this->driver_string);
+    layer->add_module(module->get_type());
+    this->modules.push_back(module);
 }
 
 static bool contains(std::vector<Layer *> layers, Layer* layer) {
