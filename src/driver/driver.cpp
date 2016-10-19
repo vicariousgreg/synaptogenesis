@@ -6,8 +6,8 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
     for (int layer_type = 0; layer_type < LAYER_TYPE_SIZE; ++layer_type) {
         for (int i = 0; i < model->layers[layer_type].size(); ++i) {
             Layer *layer = model->layers[layer_type][i];
-            for (int i = 0; i < layer->input_connections.size(); ++i) {
-                Connection *conn = layer->input_connections[i];
+            for (int j = 0; j < layer->input_connections.size(); ++j) {
+                Connection *conn = layer->input_connections[j];
                 int word_index = HISTORY_SIZE - 1 -
                     (conn->delay / timesteps_per_output);
                 if (word_index < 0) throw "Invalid delay in connection!";
