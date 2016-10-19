@@ -63,10 +63,10 @@ static IzhikevichParameters create_parameters(std::string str) {
 }
 
 IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
-    float* local_voltage = (float*) allocate_host(num_neurons, sizeof(float));
-    float* local_recovery = (float*) allocate_host(num_neurons, sizeof(float));
+    float* local_voltage = (float*) allocate_host(total_neurons, sizeof(float));
+    float* local_recovery = (float*) allocate_host(total_neurons, sizeof(float));
     IzhikevichParameters* local_params =
-        (IzhikevichParameters*) allocate_host(num_neurons, sizeof(IzhikevichParameters));
+        (IzhikevichParameters*) allocate_host(total_neurons, sizeof(IzhikevichParameters));
 
     // Fill in table
     for (int i = 0; i < model->all_layers.size(); ++i) {
@@ -82,11 +82,11 @@ IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
     this->voltage = (float*)
-        allocate_device(num_neurons, sizeof(float), local_voltage);
+        allocate_device(total_neurons, sizeof(float), local_voltage);
     this->recovery = (float*)
-        allocate_device(num_neurons, sizeof(float), local_recovery);
+        allocate_device(total_neurons, sizeof(float), local_recovery);
     this->neuron_parameters = (IzhikevichParameters*)
-        allocate_device(num_neurons, sizeof(IzhikevichParameters), local_params);
+        allocate_device(total_neurons, sizeof(IzhikevichParameters), local_params);
     free(local_voltage);
     free(recovery);
     free(local_params);

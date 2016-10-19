@@ -19,8 +19,12 @@ class Driver {
         void build_instructions(Model *model, int timesteps_per_output);
 
         void step_input(Buffer *buffer);
+        void step_connections();
         void step_connections(LayerType layer_type);
+        void step_state();
+        void step_state(LayerType layer_type);
         void step_output(Buffer *buffer);
+        void step_weights();
 
         /* Returns the output type of the driver */
         virtual OutputType get_output_type() = 0;
@@ -29,17 +33,18 @@ class Driver {
         virtual int get_timesteps_per_output() = 0;
 
         /* Activates neural connection, calculating connection input */
-        virtual void step_connection(Instruction *inst) = 0;
+        virtual void update_connection(Instruction *inst) = 0;
 
         /* Cycles neuron states */
-        virtual void step_state() = 0;
+        virtual void update_state(int start_index, int count) = 0;
 
         /* Updates weights for plastic neural connections.
          * TODO: implement.  This should use STDP variant Hebbian learning */
-        virtual void step_weights() = 0;
+        virtual void update_weights(Instruction *inst) = 0;
 
         State *state;
         std::vector<Instruction* > instructions[LAYER_TYPE_SIZE];
+        std::vector<Instruction* > all_instructions;
 };
 
 /* Instantiates a driver based on the driver_string in the given model */
@@ -51,11 +56,9 @@ Driver* build_driver(Model* model);
  * ARGS is a list of argument types for the input interpreter function.
  *
  * The function takes the following arguments
- *   - state, which contains the tables of neuron properties
- *   - connection specification
+ *   - instruction, which contains all necessary computational data
  *   - pointer to output list to read
  *   - input calculation function and associated arguments
- *
  */
 template <typename... ARGS>
 void step(Instruction *inst,

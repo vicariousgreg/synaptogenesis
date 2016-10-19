@@ -7,36 +7,49 @@
 #include "parallel.h"
 
 State::State(Model *model, int weight_depth) {
-    this->num_neurons = model->num_neurons;
+    // Get neuron counts
+    this->total_neurons = model->num_neurons;
+
+    for (int layer_type = 0; layer_type < LAYER_TYPE_SIZE; ++layer_type) {
+        std::vector<Layer*> layers = model->layers[layer_type];
+        int size = 0;
+        for (int i = 0; i < layers.size(); ++i)
+            size += layers[i]->size;
+        this->start_index[layer_type] = (size > 0) ? layers[0]->index : 0;
+        this->num_neurons[layer_type] = size;
+    }
+
     this->weight_matrices = build_weight_matrices(model, weight_depth);
 
     Output* local_output = (Output*) allocate_host(
-        num_neurons * HISTORY_SIZE, sizeof(Output));
-    float* local_input = (float*) allocate_host(num_neurons, sizeof(float));
+        this->total_neurons * HISTORY_SIZE, sizeof(Output));
+    float* local_input = (float*) allocate_host(this->total_neurons, sizeof(float));
 
-    for (int i = 0 ; i < num_neurons; ++i)
+    for (int i = 0 ; i < this->total_neurons; ++i)
         local_input[i] = 0;
 
 #ifdef PARALLEL
     this->input = (float*)
-        allocate_device(num_neurons, sizeof(float), local_input);
+        allocate_device(this->total_neurons, sizeof(float), local_input);
     this->output = (Output*)
-        allocate_device(num_neurons * HISTORY_SIZE, sizeof(Output), local_output);
+        allocate_device(this->total_neurons * HISTORY_SIZE, sizeof(Output), local_output);
 #else
     this->input = local_input;
     this->output = local_output;
 #endif
-    this->recent_output = this->output + ((HISTORY_SIZE-1) * num_neurons);
+    this->recent_output = this->output + ((HISTORY_SIZE-1) * this->total_neurons);
 }
 
 State::~State() {
 #ifdef PARALLEL
     cudaFree(this->input);
     cudaFree(this->output);
+    cudaFree(this->weight_matrices);
     cudaFree(this->weight_matrices[0]);
 #else
     free(this->input);
     free(this->output);
+    free(this->weight_matrices);
     free(this->weight_matrices[0]);
 #endif
 }
@@ -45,22 +58,22 @@ void State::get_input_from(Buffer *buffer) {
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->input, buffer->get_input(),
-        this->num_neurons * sizeof(float), cudaMemcpyHostToDevice);
+        this->total_neurons * sizeof(float), cudaMemcpyHostToDevice);
     cudaCheckError("Failed to copy input from host to device!");
 #else
     memcpy(this->input, buffer->get_input(),
-        this->num_neurons * sizeof(float));
+        this->total_neurons * sizeof(float));
 #endif
 }
 
 void State::send_output_to(Buffer *buffer) {
 #ifdef PARALLEL
     cudaMemcpy(buffer->get_output(), this->recent_output,
-        this->num_neurons * sizeof(Output),
+        this->total_neurons * sizeof(Output),
         cudaMemcpyDeviceToHost);
 #else
     memcpy(buffer->get_output(), this->recent_output,
-        this->num_neurons * sizeof(Output));
+        this->total_neurons * sizeof(Output));
 #endif
 }
 

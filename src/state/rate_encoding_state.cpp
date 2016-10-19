@@ -13,7 +13,7 @@ static RateEncodingParameters create_parameters(std::string str) {
 
 RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
     RateEncodingParameters* local_params =
-        (RateEncodingParameters*) allocate_host(num_neurons, sizeof(RateEncodingParameters));
+        (RateEncodingParameters*) allocate_host(total_neurons, sizeof(RateEncodingParameters));
 
     // Fill in table
     for (int i = 0; i < model->all_layers.size(); ++i) {
@@ -26,7 +26,7 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
     this->neuron_parameters = (RateEncodingParameters*)
-        allocate_device(num_neurons, sizeof(RateEncodingParameters), local_params);
+        allocate_device(total_neurons, sizeof(RateEncodingParameters), local_params);
     free(local_params);
 #else
     this->neuron_parameters = local_params;

@@ -18,7 +18,9 @@ class State {
         }
 
         // Number of neurons
-        int num_neurons;
+        int total_neurons;
+        int num_neurons[LAYER_TYPE_SIZE];
+        int start_index[LAYER_TYPE_SIZE];
 
         // Neuron input
         float* input;

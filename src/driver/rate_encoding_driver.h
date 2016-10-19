@@ -14,16 +14,18 @@ class RateEncodingDriver : public Driver {
         OutputType get_output_type() { return FLOAT; }
         int get_timesteps_per_output() { return 1; }
 
-        void step_connection(Instruction *inst);
-        void step_state();
-        void step_weights();
+        void update_connection(Instruction *inst);
+        void update_state(int start_index, int count);
+        void update_weights(Instruction *inst);
 
         RateEncodingState *re_state;
         float(*calc_input_ptr)(Output);
 };
 
 GLOBAL void activation_function(float* outputs, float* inputs,
-                RateEncodingParameters* neuron_params, int num_neurons);
-GLOBAL void shift_output(float* outputs, int num_neurons);
+                RateEncodingParameters* neuron_params,
+                int start_index, int count);
+GLOBAL void shift_output(float* outputs,
+                int start_index, int count, int num_neurons);
 
 #endif

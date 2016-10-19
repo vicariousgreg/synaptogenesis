@@ -19,18 +19,16 @@ IzhikevichDriver::IzhikevichDriver(Model *model) {
 #endif
 }
 
-void IzhikevichDriver::step_connection(Instruction *inst) {
+void IzhikevichDriver::update_connection(Instruction *inst) {
     // Determine which part of spike vector to use based on delay
     int mask = 1 << (inst->delay % 32);
     step<int>(inst, this->calc_input_ptr, mask);
 }
 
-void IzhikevichDriver::step_state() {
-    int num_neurons = this->state->num_neurons;
-
+void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     int threads = 128;
-    int blocks = calc_blocks(num_neurons, threads);
+    int blocks = calc_blocks(count, threads);
     izhikevich<<<blocks, threads>>>(
 #else
     izhikevich(
@@ -39,7 +37,7 @@ void IzhikevichDriver::step_state() {
         this->iz_state->recovery,
         this->iz_state->input,
         this->iz_state->neuron_parameters,
-        num_neurons);
+        start_index, count);
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron voltages!");
 
@@ -51,13 +49,13 @@ void IzhikevichDriver::step_state() {
         this->iz_state->voltage,
         this->iz_state->recovery,
         this->iz_state->neuron_parameters,
-        num_neurons);
+        start_index, count, this->state->total_neurons);
 #ifdef PARALLEL
     cudaCheckError("Failed to timestep spikes!");
 #endif
 }
 
-void IzhikevichDriver::step_weights() {
+void IzhikevichDriver::update_weights(Instruction *inst) {
     /* 5. Update weights */
 #ifdef PARALLEL
     cudaCheckError("Failed to update connection weights!");
@@ -69,7 +67,8 @@ void IzhikevichDriver::step_weights() {
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
 GLOBAL void izhikevich(float* voltages, float* recoveries,
-        float* currents, IzhikevichParameters* neuron_params, int num_neurons) {
+        float* currents, IzhikevichParameters* neuron_params,
+        int start_index, int count) {
     float voltage, recovery, current, delta_v;
     IzhikevichParameters *params;
 
@@ -79,9 +78,10 @@ GLOBAL void izhikevich(float* voltages, float* recoveries,
     //     Euler's method with #defined resolution
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < num_neurons) {
+    if (nid < count) {
+        nid += start_index;
 #else
-    for (int nid = 0 ; nid < num_neurons; ++nid) {
+    for (int nid = start_index ; nid < count+start_index; ++nid) {
 #endif
         float voltage = voltages[nid];
         float recovery = recoveries[nid];
@@ -110,7 +110,8 @@ GLOBAL void izhikevich(float* voltages, float* recoveries,
  * Each thread calculates for one neuron.  Because this is a single
  *   dimensional calculation, few optimizations are possible. */
 GLOBAL void calc_spikes(int* spikes, float* voltages,
-        float* recoveries, IzhikevichParameters* neuron_params, int num_neurons) {
+        float* recoveries, IzhikevichParameters* neuron_params,
+        int start_index, int count, int num_neurons) {
     int spike, new_value; 
     IzhikevichParameters *params;
 
@@ -118,9 +119,10 @@ GLOBAL void calc_spikes(int* spikes, float* voltages,
     // Determine spikes.
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < num_neurons) {
+    if (nid < count) {
+        nid += start_index;
 #else
-    for (int nid = 0; nid < num_neurons; ++nid) {
+    for (int nid = start_index; nid < start_index+count; ++nid) {
 #endif
         int spike = voltages[nid] >= SPIKE_THRESH;
 

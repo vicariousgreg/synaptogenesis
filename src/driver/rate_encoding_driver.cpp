@@ -15,21 +15,21 @@ RateEncodingDriver::RateEncodingDriver(Model *model) {
 #endif
 }
 
-void RateEncodingDriver::step_connection(Instruction *inst) {
+void RateEncodingDriver::update_connection(Instruction *inst) {
     step<>(inst, this->calc_input_ptr);
 }
 
-void RateEncodingDriver::step_state() {
+void RateEncodingDriver::update_state(int start_index, int count) {
     RateEncodingState* state = (RateEncodingState*) this->state;
 
 #ifdef PARALLEL
     int threads = 128;
-    int blocks = calc_blocks(this->state->num_neurons, threads);
+    int blocks = calc_blocks(count, threads);
     shift_output<<<blocks, threads>>>(
 #else
     shift_output(
 #endif
-        (float*)state->output, this->state->num_neurons);
+        (float*)state->output, start_index, count, this->state->total_neurons);
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron output!");
 
@@ -40,25 +40,26 @@ void RateEncodingDriver::step_state() {
         (float*)state->recent_output,
         state->input,
         state->neuron_parameters,
-        this->state->num_neurons);
+        start_index, count);
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron output!");
 #endif
 }
 
-void RateEncodingDriver::step_weights() {
+void RateEncodingDriver::update_weights(Instruction *inst) {
 #ifdef PARALLEL
     cudaCheckError("Failed to update connection weights!");
 #endif
 }
 
 
-GLOBAL void shift_output(float* outputs, int num_neurons) {
+GLOBAL void shift_output(float* outputs,
+        int start_index, int count, int num_neurons) {
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < num_neurons) {
+    if (nid < count) {
 #else
-    for (int nid = 0 ; nid < num_neurons; ++nid) {
+    for (int nid = start_index ; nid < start_index+count; ++nid) {
 #endif
         float curr_value, next_value = outputs[nid];
         int index;
@@ -72,12 +73,14 @@ GLOBAL void shift_output(float* outputs, int num_neurons) {
 }
 
 GLOBAL void activation_function(float* outputs, float* inputs,
-                RateEncodingParameters* neuron_params, int num_neurons) {
+                RateEncodingParameters* neuron_params,
+                int start_index, int count) {
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < num_neurons) {
+    if (nid < count) {
+        nid += start_index;
 #else
-    for (int nid = 0 ; nid < num_neurons; ++nid) {
+    for (int nid = start_index ; nid < start_index+count; ++nid) {
 #endif
         float input = inputs[nid];
         outputs[nid] = (input > 0.0) ? tanh(0.1*input) : 0.0;

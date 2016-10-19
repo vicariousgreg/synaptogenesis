@@ -31,7 +31,10 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
         driver->step_connections(INPUT_OUTPUT);
         driver->step_connections(OUTPUT);
         driver->step_connections(INTERNAL);
-        driver->step_state();
+        driver->step_state(INPUT);
+        driver->step_state(INPUT_OUTPUT);
+        driver->step_state(OUTPUT);
+        driver->step_state(INTERNAL);
         driver->step_weights();
 
         /* Write motor buffer */
