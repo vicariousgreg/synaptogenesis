@@ -17,9 +17,15 @@ class Driver {
         }
 
         void build_instructions(Model *model, int timesteps_per_output);
+
         void step_input(Buffer *buffer);
-        void step_connections();
         void step_output(Buffer *buffer);
+
+        void step_connections(std::vector<Instruction*> &instructions);
+        void step_input_connections() { this->step_connections(this->input_instructions); }
+        void step_io_connections() { this->step_connections(this->io_instructions); }
+        void step_output_connections() { this->step_connections(this->output_instructions); }
+        void step_internal_connections() { this->step_connections(this->internal_instructions); }
 
         /* Returns the output type of the driver */
         virtual OutputType get_output_type() = 0;
@@ -38,7 +44,10 @@ class Driver {
         virtual void step_weights() = 0;
 
         State *state;
-        std::vector<Instruction* > instructions;
+        std::vector<Instruction* > input_instructions;
+        std::vector<Instruction* > io_instructions;
+        std::vector<Instruction* > output_instructions;
+        std::vector<Instruction* > internal_instructions;
 };
 
 /* Instantiates a driver based on the driver_string in the given model */

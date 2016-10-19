@@ -1,9 +1,12 @@
 #ifndef layer_h
 #define layer_h
 
+#include <vector>
 #include <string>
 
 #include "constants.h"
+
+class Connection;
 
 /* Represents a two dimensional layer of neurons.
  * Layers can be constructed and connected into networks using the Model class.
@@ -26,6 +29,13 @@ class Layer {
         // Parameters for initializing neural properties
         std::string params;
 
+        // Flags for whether layer has input or output modules
+        bool has_input_module, has_output_module;
+
+        // Input and output connections
+        std::vector<Connection*> input_connections;
+        std::vector<Connection*> output_connections;
+
     private:
         friend class Model;
 
@@ -39,7 +49,17 @@ class Layer {
                 rows(rows),
                 columns(columns),
                 size(rows * columns),
-                params(params) {}
+                params(params),
+                has_input_module(false),
+                has_output_module(false) {}
+
+        void add_input_connection(Connection* connection) {
+            this->input_connections.push_back(connection);
+        }
+
+        void add_output_connection(Connection* connection) {
+            this->output_connections.push_back(connection);
+        }
 };
 
 #endif

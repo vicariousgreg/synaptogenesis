@@ -33,13 +33,28 @@ union Output {
     int i;
 };
 
+/* Layer type enumeration.
+ * Indicates sensorimotor connectivity.
+ * Input layers receive sensory input from the environment.
+ * Output layers send motor output to the environment.
+ * Input/Output layers do both.
+ * Internal layers do neither.
+ */
+enum LayerType {
+    INPUT,
+    OUTPUT,
+    INPUT_OUTPUT,
+    INTERNAL,
+    LAYER_TYPE_SIZE
+};
+
 /* Matrix Type enumeration.
  * Fully connected represents an n x m matrix.
  * One-to-one represents an n size vector connecting two layers
  *   of idential sizes.
  * Convergent connections converge from a larger layer to a smaller one.
  * Divergent connections diverge from a larger layer to a smaller one.
- * Convolutional layers are Convergent layers that share weights.
+ * Convolutional layers share weights.
  */
 enum ConnectionType {
     FULLY_CONNECTED,

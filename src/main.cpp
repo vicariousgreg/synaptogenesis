@@ -28,12 +28,11 @@ Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionTy
 
     int rows = 1000;
     int cols = 1000;
-    int a = model->add_layer(rows, cols, "random positive");
+    Layer *a = model->add_layer(rows, cols, "random positive");
     model->connect_layers_expected(a, "random positive" , true, 0, .5, type, ADD, "7 1");
-    model->add_input(a, "random", "5");
+    model->add_input_module(a, "random", "5");
 
     if (verbose) print_model(model);
-    model->rearrange();
     return model;
 }
 
@@ -41,17 +40,16 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
     Model *model = new Model(driver_name);
 
     int size = 800 * 20;
-    int pos = model->add_layer(1, size, "random positive");
-    int neg = model->add_layer(1, size / 4, "random negative");
+    Layer *pos = model->add_layer(1, size, "random positive");
+    Layer *neg = model->add_layer(1, size / 4, "random negative");
     model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB, "");
     model->connect_layers(neg, neg, true, 0, 1, FULLY_CONNECTED, SUB, "");
-    model->add_input(pos, "random", "5");
-    model->add_input(neg, "random", "2");
+    model->add_input_module(pos, "random", "5");
+    model->add_input_module(neg, "random", "2");
 
     if (verbose) print_model(model);
-    model->rearrange();
     return model;
 }
 
@@ -68,12 +66,12 @@ Model* build_image_model(std::string driver_name, bool verbose) {
 
     //const char* image_path = "resources/bird-head.jpg";
     const char* image_path = "resources/bird-head-small.jpg";
-    int receptor = model->add_layer_from_image(image_path, "default");
-    model->add_input(receptor, "image", image_path);
-    model->add_output(receptor, output_name, "24");
+    Layer *receptor = model->add_layer_from_image(image_path, "default");
+    model->add_input_module(receptor, "image", image_path);
+    model->add_output_module(receptor, output_name, "24");
 
     // Vertical line detection
-    int vertical = model->connect_layers_expected(receptor, "default",
+    Layer *vertical = model->connect_layers_expected(receptor, "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 0 10 0 -5 "
@@ -81,10 +79,10 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5");
-    //model->add_output(vertical, output_name, "31");
+    //model->add_output_module(vertical, output_name, "31");
 
     // Horizontal line detection
-    int horizontal = model->connect_layers_expected(receptor, "default",
+    Layer *horizontal = model->connect_layers_expected(receptor, "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 -5 -5 -5 -5 "
@@ -92,10 +90,10 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "10 10 10 10 10 "
         "0 0 0 0 0 "
         "-5 -5 -5 -5 -5");
-    //model->add_output(horizontal, output_name, "31");
+    //model->add_output_module(horizontal, output_name, "31");
 
     // Cross detection
-    int cross = model->connect_layers_expected(vertical, "default",
+    Layer *cross = model->connect_layers_expected(vertical, "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-.5  -.5 1  -.5 -.5 "
@@ -110,10 +108,9 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "1      10  15  10  1 "
         "-.5    5   -.5 5   -.5 "
         "-.5  -.5  -1  -.5  -.5");
-    //model->add_output(cross, output_name, "16");
+    //model->add_output_module(cross, output_name, "16");
 
     if (verbose) print_model(model);
-    model->rearrange();
     return model;
 }
 
