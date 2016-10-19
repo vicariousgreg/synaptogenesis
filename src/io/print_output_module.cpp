@@ -2,11 +2,12 @@
 #include <iostream>
 #include <sstream>
 
-#include "io/spike_print_output_module.h"
+#include "io/print_output_module.h"
 #include "tools.h"
 
-SpikePrintOutputModule::SpikePrintOutputModule(Layer *layer, std::string params)
-        : OutputModule(layer),
+PrintOutputModule::PrintOutputModule(Layer *layer,
+        std::string params, std::string &driver_type)
+        : OutputModule(layer, driver_type),
           counter(0) {
     std::stringstream stream(params);
     if (!stream.eof()) {
@@ -28,12 +29,12 @@ SpikePrintOutputModule::SpikePrintOutputModule(Layer *layer, std::string params)
             reverse |= copy % 2;
             copy >>= 1;
         }
-        this->reverses[i] = reverse ;
+        this->reverses[i] = reverse;
     }
 }
 
-void SpikePrintOutputModule::report_output(Buffer *buffer) {
-    int* spikes = (int*)buffer->get_output();
+void PrintOutputModule::report_output(Buffer *buffer) {
+    Output* output = buffer->get_output();
 
     // Print bar
     for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
@@ -49,10 +50,17 @@ void SpikePrintOutputModule::report_output(Buffer *buffer) {
             // Divide by mask
             //  -> Bins intensity into a constant number of bins
 
-            unsigned int spike_value = (unsigned int) (spikes[index+layer->output_index] & this->maximum);
-            unsigned int value = this->reverses[spike_value];
-            float fraction = float(value) / this->maximum;
-            if (value > 0) {
+            float fraction;
+            Output out_value = output[index+layer->output_index];
+            if (this->driver_type == "izhikevich") {
+                unsigned int spike_value = (unsigned int) (out_value.i & this->maximum);
+                unsigned int value = this->reverses[spike_value];
+                fraction = float(value) / this->maximum;
+            } else if (this->driver_type == "rate_encoding") {
+                fraction = out_value.f;
+            } else {
+            }
+            if (fraction > 0) {
                 //std::cout << value << " ";
                 //std::cout << fraction << " ";
                 if (fraction > 0.24)      std::cout << " X";

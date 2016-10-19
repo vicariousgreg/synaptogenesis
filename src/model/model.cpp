@@ -98,7 +98,7 @@ void Model::add_input_module(Layer* layer, std::string type, std::string params)
 void Model::add_output_module(Layer* layer, std::string type, std::string params) {
     layer->add_output_module();
 
-    OutputModule *output_module = build_output(layer, type, params);
+    OutputModule *output_module = build_output(layer, type, params, this->driver_string);
     this->output_modules.push_back(output_module);
 }
 

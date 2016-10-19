@@ -56,10 +56,7 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
 Model* build_image_model(std::string driver_name, bool verbose) {
     /* Determine output type */
     std::string output_name;
-    if (driver_name == "izhikevich")
-        output_name = "print_spike";
-    else if (driver_name == "rate_encoding")
-        output_name = "print_float";
+    output_name = "print";
 
     /* Construct the model */
     Model *model = new Model(driver_name);
@@ -118,7 +115,7 @@ void run_simulation(Model *model, int iterations, bool verbose) {
     // Seed random number generator
     srand(time(NULL));
 
-    Clock clock(10);
+    Clock clock(10000000);
 
     clock.run(model, iterations, verbose);
 #ifdef PARALLEL
