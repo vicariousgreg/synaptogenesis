@@ -3,13 +3,15 @@
 
 #include "parallel.h"
 
-/* Size (in integers) of spike history bit vector.
- * A size of 1 indicates the usage of 1 integer, which on most systems is
+/* Size (in Outputs) of output history.
+ * A size of 1 indicates the usage of 1 Output, which on most systems is
  *     4 bytes, or 32 bits.  This means that a history of 32 timesteps will
- *     be kept for neuron spikes.
+ *     be kept for neuron spikes, as they are represented by a single bit.
+ *     For rate encoding, one Output is used for timestep.  Much more space
+ *     is needed to hold longer delays in such a network.
  * The history size limits the longest connection delay possible, and also
  *     affects learning for STDP rules that use more than just the most
- *     recent spike.
+ *     recent Output.
  */
 #define HISTORY_SIZE 8
 
@@ -91,10 +93,10 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
         case SUB:  return prior - input;
         case MULT: return prior * (1+input);
         case DIV:  return prior / (1+input);
-        #ifdef PARALLEL assert(false);
-        #else default: throw "Unrecognized connection operation!";
-        #endif
     }
+    #ifdef PARALLEL assert(false);
+    #else throw "Unrecognized connection operation!";
+    #endif
     return 0.0;
 }
 
