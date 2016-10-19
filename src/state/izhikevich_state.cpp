@@ -88,7 +88,7 @@ IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
     this->neuron_parameters = (IzhikevichParameters*)
         allocate_device(total_neurons, sizeof(IzhikevichParameters), local_params);
     free(local_voltage);
-    free(recovery);
+    free(local_recovery);
     free(local_params);
 #else
     this->voltage = local_voltage;

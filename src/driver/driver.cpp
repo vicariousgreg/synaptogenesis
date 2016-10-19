@@ -46,9 +46,10 @@ void Driver::step_state() {
 }
 
 void Driver::step_state(LayerType layer_type) {
-    this->update_state(
-        this->state->start_index[layer_type],
-        this->state->num_neurons[layer_type]);
+    int start_index = this->state->start_index[layer_type];
+    int count = this->state->num_neurons[layer_type];
+    if (count > 0)
+        this->update_state(start_index, count);
 }
 
 void Driver::step_output(Buffer *buffer) {

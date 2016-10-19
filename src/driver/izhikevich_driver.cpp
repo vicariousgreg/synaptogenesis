@@ -25,10 +25,13 @@ void IzhikevichDriver::update_connection(Instruction *inst) {
     step<int>(inst, this->calc_input_ptr, mask);
 }
 
+#include <iostream>
+
 void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     int threads = 128;
     int blocks = calc_blocks(count, threads);
+    std::cout << blocks << " " << threads << "\n";
     izhikevich<<<blocks, threads>>>(
 #else
     izhikevich(

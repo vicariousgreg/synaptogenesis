@@ -144,14 +144,14 @@ void initialize_matrix(Connection* conn,
                     break;
                 case (DIVERGENT):
                     rows = conn->overlap * conn->overlap;
-                    cols = conn->from_size;
+                    cols = conn->from_layer->size;
                 case (CONVERGENT):
                     rows = conn->overlap * conn->overlap;
-                    cols = conn->to_size;
+                    cols = conn->to_layer->size;
                     break;
                 case (ONE_TO_ONE):
-                    rows = conn->from_size;
-                    cols = conn->to_size;
+                    rows = conn->from_layer->size;
+                    cols = conn->to_layer->size;
                     break;
             }
             for (int col = 0 ; col < cols ; ++col) {
