@@ -33,12 +33,12 @@ serial: $(TARGET_S)
 #Make the Directories
 directories:
 	@mkdir -p $(BUILDDIR_S)
-	#@mkdir -p $(BUILDDIR_P)
+	@mkdir -p $(BUILDDIR_P)
 
 #Clean only Objecst
 clean:
 	@$(RM) -rf $(BUILDDIR_S)
-	#@$(RM) -rf $(BUILDDIR_P)
+	@$(RM) -rf $(BUILDDIR_P)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
@@ -61,14 +61,13 @@ $(BUILDDIR_S)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 SOURCES       := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-#parallel: $(TARGET_P)
-parallel: 
-	$(NVCC) $(NVCCFLAGS) $(SOURCES) -o $(TARGETDIR)/$(TARGET_P)
+parallel: $(TARGET_P)
+
+#Pull in dependency info for *existing* .o files
+-include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
 $(TARGET_P): $(OBJECTS_P)
-	#$(NVCC) $(NVCCFLAGS) -dlink -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
-	#$(CC) $(CCFLAGS) -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
-	$(NVCC) $(NVCCFLAGS) -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
+	$(NVCC) -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
