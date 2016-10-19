@@ -60,6 +60,7 @@ State::~State() {
 void State::get_input_from(Buffer *buffer) {
     int index = this->start_index[INPUT];
     int count = this->num_neurons[INPUT] + this->num_neurons[INPUT_OUTPUT];
+    if (count == 0) return;
 #ifdef PARALLEL
     // Copy from GPU to local location
     cudaMemcpy(this->input + index, buffer->get_input(),
@@ -74,6 +75,7 @@ void State::get_input_from(Buffer *buffer) {
 void State::send_output_to(Buffer *buffer) {
     int index = this->start_index[INPUT_OUTPUT];
     int count = this->num_neurons[INPUT_OUTPUT] + this->num_neurons[OUTPUT];
+    if (count == 0) return;
 #ifdef PARALLEL
     cudaMemcpy(buffer->get_output(), this->recent_output + index,
         count * sizeof(Output),
