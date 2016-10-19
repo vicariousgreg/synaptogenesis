@@ -1,5 +1,3 @@
-#include <sstream>
-
 #include "model/model.h"
 
 #define cimg_display 0
@@ -9,9 +7,9 @@ Model::Model (std::string driver_string) :
         num_neurons(0),
         driver_string(driver_string) {}
 
-Connection* Model::connect_layers(Layer* from_layer, Layer* to_layer, bool plastic,
-        int delay, float max_weight, ConnectionType type, Opcode opcode,
-        std::string params) {
+Connection* Model::connect_layers(Layer* from_layer, Layer* to_layer,
+        bool plastic, int delay, float max_weight,
+        ConnectionType type, Opcode opcode, std::string params) {
     int conn_id = this->connections.size();
     Connection *conn = new Connection(
         conn_id, from_layer, to_layer,
@@ -22,7 +20,8 @@ Connection* Model::connect_layers(Layer* from_layer, Layer* to_layer, bool plast
     return conn;
 }
 
-Connection* Model::connect_layers_shared(Layer* from_layer, Layer* to_layer, Connection* parent) {
+Connection* Model::connect_layers_shared(
+        Layer* from_layer, Layer* to_layer, Connection* parent) {
     // Ensure parent doesn't have a parent
     if (parent->parent != NULL)
         throw "Shared connections must refer to non-shared connection!";
@@ -135,10 +134,14 @@ void Model::sort_layers() {
     // Clear old list
     // Add in order: input, IO, output, internal
     all_layers.clear();
-    all_layers.insert(this->all_layers.end(), layers[INPUT].begin(), layers[INPUT].end());
-    all_layers.insert(this->all_layers.end(), layers[INPUT_OUTPUT].begin(), layers[INPUT_OUTPUT].end());
-    all_layers.insert(this->all_layers.end(), layers[OUTPUT].begin(), layers[OUTPUT].end());
-    all_layers.insert(this->all_layers.end(), layers[INTERNAL].begin(), layers[INTERNAL].end());
+    all_layers.insert(this->all_layers.end(),
+        layers[INPUT].begin(), layers[INPUT].end());
+    all_layers.insert(this->all_layers.end(),
+        layers[INPUT_OUTPUT].begin(), layers[INPUT_OUTPUT].end());
+    all_layers.insert(this->all_layers.end(),
+        layers[OUTPUT].begin(), layers[OUTPUT].end());
+    all_layers.insert(this->all_layers.end(),
+        layers[INTERNAL].begin(), layers[INTERNAL].end());
 
     // Adjust indices and ids
     int start_index = 0;

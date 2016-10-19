@@ -43,7 +43,7 @@ class Model {
         /* Connects to layers, sharing weights with another connection
          *   specified by |parent_id| */
         Connection* connect_layers_shared(
-            Layer* from_layer, Layer* to_layer, int parent_id);
+            Layer* from_layer, Layer* to_layer, Connection* parent);
 
         /* Uses expected sizes to create a new layer and connect it to the
          *   given layer.  Returns the id of the new layer. */
