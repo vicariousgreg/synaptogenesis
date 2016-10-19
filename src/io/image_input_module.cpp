@@ -53,5 +53,5 @@ ImageInputModule::ImageInputModule(Layer *layer, std::string params) : InputModu
 }
 
 void ImageInputModule::feed_input(Buffer *buffer) {
-    buffer->set_input(this->layer->index, this->layer->size, this->gray);
+    buffer->set_input(this->layer->input_index, this->layer->size, this->gray);
 }

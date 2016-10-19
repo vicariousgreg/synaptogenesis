@@ -10,13 +10,16 @@ State::State(Model *model, int weight_depth) {
     // Get neuron counts
     this->total_neurons = model->num_neurons;
 
+    int curr_index = 0;
     for (int layer_type = 0; layer_type < LAYER_TYPE_SIZE; ++layer_type) {
         std::vector<Layer*> layers = model->layers[layer_type];
         int size = 0;
         for (int i = 0; i < layers.size(); ++i)
             size += layers[i]->size;
-        this->start_index[layer_type] = (size > 0) ? layers[0]->index : 0;
+
+        this->start_index[layer_type] = curr_index;
         this->num_neurons[layer_type] = size;
+        curr_index += size;
     }
 
     this->weight_matrices = build_weight_matrices(model, weight_depth);
@@ -44,36 +47,40 @@ State::~State() {
 #ifdef PARALLEL
     cudaFree(this->input);
     cudaFree(this->output);
-    cudaFree(this->weight_matrices);
     cudaFree(this->weight_matrices[0]);
+    cudaFree(this->weight_matrices);
 #else
     free(this->input);
     free(this->output);
-    free(this->weight_matrices);
     free(this->weight_matrices[0]);
+    free(this->weight_matrices);
 #endif
 }
 
 void State::get_input_from(Buffer *buffer) {
+    int index = this->start_index[INPUT];
+    int count = this->num_neurons[INPUT] + this->num_neurons[INPUT_OUTPUT];
 #ifdef PARALLEL
     // Copy from GPU to local location
-    cudaMemcpy(this->input, buffer->get_input(),
-        this->total_neurons * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(this->input + start_index, buffer->get_input(),
+        count * sizeof(float), cudaMemcpyHostToDevice);
     cudaCheckError("Failed to copy input from host to device!");
 #else
-    memcpy(this->input, buffer->get_input(),
-        this->total_neurons * sizeof(float));
+    memcpy(this->input + index, buffer->get_input(),
+        count * sizeof(float));
 #endif
 }
 
 void State::send_output_to(Buffer *buffer) {
+    int index = this->start_index[INPUT_OUTPUT];
+    int count = this->num_neurons[INPUT_OUTPUT] + this->num_neurons[OUTPUT];
 #ifdef PARALLEL
-    cudaMemcpy(buffer->get_output(), this->recent_output,
-        this->total_neurons * sizeof(Output),
+    cudaMemcpy(buffer->get_output(), this->recent_output + index,
+        count * sizeof(Output),
         cudaMemcpyDeviceToHost);
 #else
-    memcpy(buffer->get_output(), this->recent_output,
-        this->total_neurons * sizeof(Output));
+    memcpy(buffer->get_output(), this->recent_output + index,
+        count * sizeof(Output));
 #endif
 }
 

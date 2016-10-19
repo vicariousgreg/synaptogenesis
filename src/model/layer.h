@@ -32,6 +32,9 @@ class Layer {
         // Flags for whether layer has input or output modules
         bool has_input_module, has_output_module;
 
+        // Indices relative to input/output, if relevant
+        int input_index, output_index;
+
         // Input and output connections
         std::vector<Connection*> input_connections;
         std::vector<Connection*> output_connections;
@@ -51,7 +54,9 @@ class Layer {
                 size(rows * columns),
                 params(params),
                 has_input_module(false),
-                has_output_module(false) {}
+                has_output_module(false),
+                input_index(0),
+                output_index(0) {}
 
         void add_input_connection(Connection* connection) {
             this->input_connections.push_back(connection);

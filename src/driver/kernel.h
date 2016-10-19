@@ -4,13 +4,17 @@
 #include "driver/instruction.h"
 #include "parallel.h"
 
+inline GLOBAL void clear_data(float* data, int count) {
 #ifdef PARALLEL
+    int nid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (nid < count)
+#else
+    for (int nid = 0; nid < count; ++nid)
+#endif
+        data[nid] = 0.0;
+}
 
-    // IMPORTANT:
-    // Serial implementation is faster if matrix is interpreted in a transposed
-    //    fashion compared to parallel.  In this loop, row is the destination,
-    //    column is the source.  In this way, inputs to one neuron are
-    //    contiguous in memory.
+#ifdef PARALLEL
 
 template <typename... ARGS>
 GLOBAL void calc_fully_connected(
@@ -136,6 +140,14 @@ GLOBAL void calc_convergent(
     }
 }
 #else
+
+/* IMPORTANT:
+ * Serial implementation is faster if matrix is interpreted in a transposed
+ *    fashion compared to parallel.  In this loop, row is the destination,
+ *    column is the source.  In this way, inputs to one neuron are
+ *    contiguous in memory.
+ */
+
 template <typename... ARGS>
 GLOBAL void calc_fully_connected(
         Instruction inst,

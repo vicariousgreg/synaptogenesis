@@ -50,6 +50,18 @@ class Driver {
 /* Instantiates a driver based on the driver_string in the given model */
 Driver* build_driver(Model* model);
 
+inline void clear_input(float* input, int offset, int num_neurons) {
+#ifdef PARALLEL
+    int threads = 128;
+    int blocks = calc_blocks(count, threads);
+    clear_data<<<blocks, threads>>>(
+#else
+    clear_data(
+#endif
+        input + offset,
+        num_neurons - offset);
+}
+
 /* Steps activation of a connection.
  * This function is templated to allow for different driver implementations.
  *

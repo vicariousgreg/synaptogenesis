@@ -49,7 +49,7 @@ void SpikePrintOutputModule::report_output(Buffer *buffer) {
             // Divide by mask
             //  -> Bins intensity into a constant number of bins
 
-            unsigned int spike_value = (unsigned int) (spikes[index+layer->index] & this->maximum);
+            unsigned int spike_value = (unsigned int) (spikes[index+layer->output_index] & this->maximum);
             unsigned int value = this->reverses[spike_value];
             float fraction = float(value) / this->maximum;
             if (value > 0) {

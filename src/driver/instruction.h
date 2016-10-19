@@ -1,7 +1,7 @@
 #ifndef instruction_h
 #define instruction_h
 
-#include "model/model.h"
+#include "model/connection.h"
 
 class Instruction {
     public:

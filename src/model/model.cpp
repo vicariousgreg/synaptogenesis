@@ -150,4 +150,22 @@ void Model::sort_layers() {
         all_layers[i]->index = start_index;
         start_index += all_layers[i]->size;
     }
+
+    // Set input and output indices
+    int input_index = 0;
+    for (int i = 0 ; i < layers[INPUT].size(); ++i) {
+        layers[INPUT][i]->input_index = input_index;
+        input_index += layers[INPUT][i]->size;
+    }
+    int output_index = 0;
+    for (int i = 0 ; i < layers[INPUT_OUTPUT].size(); ++i) {
+        layers[INPUT_OUTPUT][i]->input_index = input_index;
+        layers[INPUT_OUTPUT][i]->output_index = output_index;
+        input_index += layers[INPUT_OUTPUT][i]->size;
+        output_index += layers[INPUT_OUTPUT][i]->size;
+    }
+    for (int i = 0 ; i < layers[OUTPUT].size(); ++i) {
+        layers[OUTPUT][i]->output_index = output_index;
+        output_index += layers[OUTPUT][i]->size;
+    }
 }

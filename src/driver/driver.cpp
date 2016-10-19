@@ -29,6 +29,9 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
 
 void Driver::step_input(Buffer *buffer) {
     this->state->get_input_from(buffer);
+    clear_input(this->state->input,
+        this->state->start_index[OUTPUT],
+        this->state->total_neurons);
 }
 
 void Driver::step_connections() {

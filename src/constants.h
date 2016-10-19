@@ -42,8 +42,8 @@ union Output {
  */
 enum LayerType {
     INPUT,
-    OUTPUT,
     INPUT_OUTPUT,
+    OUTPUT,
     INTERNAL,
     LAYER_TYPE_SIZE
 };

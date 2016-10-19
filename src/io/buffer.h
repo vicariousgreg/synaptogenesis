@@ -5,7 +5,8 @@
 
 class Buffer {
     public:
-        Buffer(int num_neurons);
+        Buffer(int input_start_index, int input_size,
+            int output_start_index, int output_size);
         ~Buffer() {
 // UNCOMMENT FOR PINNED MEMORY
 //#ifdef PARALLEL
@@ -26,7 +27,10 @@ class Buffer {
 
 
     private:
-        int num_neurons;
+        int input_index;
+        int input_size;
+        int output_index;
+        int output_size;
         float *input;
         Output *output;
 };
