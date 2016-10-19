@@ -47,7 +47,7 @@ enum IOType {
     INPUT_OUTPUT,
     OUTPUT,
     INTERNAL,
-    LAYER_TYPE_SIZE
+    IO_TYPE_SIZE
 };
 
 /* Matrix Type enumeration.

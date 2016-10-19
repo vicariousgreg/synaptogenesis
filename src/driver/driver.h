@@ -43,7 +43,7 @@ class Driver {
         virtual void update_weights(Instruction *inst) = 0;
 
         State *state;
-        std::vector<Instruction* > instructions[LAYER_TYPE_SIZE];
+        std::vector<Instruction* > instructions[IO_TYPE_SIZE];
         std::vector<Instruction* > all_instructions;
 };
 

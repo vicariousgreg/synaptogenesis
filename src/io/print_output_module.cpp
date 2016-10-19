@@ -12,6 +12,8 @@ PrintOutputModule::PrintOutputModule(Layer *layer,
     std::stringstream stream(params);
     if (!stream.eof()) {
         stream >> this->history_length;
+        if (this->history_length <= 0 or this->history_length > 8 * sizeof(Output))
+            throw "Bad history length parameter for PrintOutputModule!";
     } else {
         this->history_length= 1;
     }

@@ -3,7 +3,7 @@
 #include "driver/rate_encoding_driver.h"
 
 void Driver::build_instructions(Model *model, int timesteps_per_output) {
-    for (int layer_type = 0; layer_type < LAYER_TYPE_SIZE; ++layer_type) {
+    for (int layer_type = 0; layer_type < IO_TYPE_SIZE; ++layer_type) {
         for (int i = 0; i < model->layers[layer_type].size(); ++i) {
             Layer *layer = model->layers[layer_type][i];
             for (int j = 0; j < layer->input_connections.size(); ++j) {

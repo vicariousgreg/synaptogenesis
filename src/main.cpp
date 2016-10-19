@@ -115,7 +115,8 @@ void run_simulation(Model *model, int iterations, bool verbose) {
     // Seed random number generator
     srand(time(NULL));
 
-    Clock clock(10000000);
+    //Clock clock(10);
+    Clock clock;  // No refresh rate synchronization
 
     clock.run(model, iterations, verbose);
 #ifdef PARALLEL

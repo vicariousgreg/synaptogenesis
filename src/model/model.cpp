@@ -100,28 +100,21 @@ static bool contains(std::vector<Layer *> layers, Layer* layer) {
 }
 
 void Model::sort_layers() {
-    layers[INPUT].clear();
-    layers[INPUT_OUTPUT].clear();
-    layers[OUTPUT].clear();
-    layers[INTERNAL].clear();
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        layers[i].clear();
 
     // Sort layers
     for (int i = 0 ; i < this->all_layers.size(); ++i) {
         Layer *layer = this->all_layers[i];
-            layers[layer->type].push_back(layer);
+        layers[layer->type].push_back(layer);
     }
 
     // Clear old list
     // Add in order: input, IO, output, internal
     all_layers.clear();
-    all_layers.insert(this->all_layers.end(),
-        layers[INPUT].begin(), layers[INPUT].end());
-    all_layers.insert(this->all_layers.end(),
-        layers[INPUT_OUTPUT].begin(), layers[INPUT_OUTPUT].end());
-    all_layers.insert(this->all_layers.end(),
-        layers[OUTPUT].begin(), layers[OUTPUT].end());
-    all_layers.insert(this->all_layers.end(),
-        layers[INTERNAL].begin(), layers[INTERNAL].end());
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        all_layers.insert(this->all_layers.end(),
+            layers[i].begin(), layers[i].end());
 
     // Adjust indices and ids
     int start_index = 0;

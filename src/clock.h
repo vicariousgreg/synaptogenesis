@@ -1,6 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <climits>
 #include "model/model.h"
 #include "io/buffer.h"
 #include "tools.h"
@@ -13,7 +14,7 @@ enum Thread_ID {
 
 class Clock {
     public:
-        Clock(float refresh_rate) : time_limit(1.0 / refresh_rate) {}
+        Clock(float refresh_rate = INT_MAX) : time_limit(1.0 / refresh_rate) {}
         void run(Model *model, int iterations, bool verbose);
 
         Buffer *buffer;

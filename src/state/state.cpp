@@ -15,7 +15,7 @@ State::State(Model *model, int weight_depth) {
 
     // Determine start indices and number of neurons for each type
     int curr_index = 0;
-    for (int layer_type = 0; layer_type < LAYER_TYPE_SIZE; ++layer_type) {
+    for (int layer_type = 0; layer_type < IO_TYPE_SIZE; ++layer_type) {
         std::vector<Layer*> layers = model->layers[layer_type];
         int size = 0;
         for (int i = 0; i < layers.size(); ++i)
