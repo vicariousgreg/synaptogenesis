@@ -62,7 +62,7 @@ void State::get_input_from(Buffer *buffer) {
     int count = this->num_neurons[INPUT] + this->num_neurons[INPUT_OUTPUT];
 #ifdef PARALLEL
     // Copy from GPU to local location
-    cudaMemcpy(this->input + start_index, buffer->get_input(),
+    cudaMemcpy(this->input + index, buffer->get_input(),
         count * sizeof(float), cudaMemcpyHostToDevice);
     cudaCheckError("Failed to copy input from host to device!");
 #else

@@ -53,7 +53,7 @@ Driver* build_driver(Model* model);
 inline void clear_input(float* input, int offset, int num_neurons) {
 #ifdef PARALLEL
     int threads = 128;
-    int blocks = calc_blocks(count, threads);
+    int blocks = calc_blocks(num_neurons - offset, threads);
     clear_data<<<blocks, threads>>>(
 #else
     clear_data(
