@@ -14,6 +14,8 @@ class Driver {
     public:
         virtual ~Driver() {
             delete this->state;
+            for (int i = 0; i < this->all_instructions.size(); ++i)
+                delete this->all_instructions[i];
         }
 
         void build_instructions(Model *model, int timesteps_per_output);

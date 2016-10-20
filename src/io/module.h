@@ -11,6 +11,7 @@ class Module {
         Module(Layer *layer, std::string &driver_type)
             : layer(layer),
               driver_type(driver_type) { }
+        virtual ~Module() {}
 
         /* Override to implement input and output functionality.
          * If unused, do not override */

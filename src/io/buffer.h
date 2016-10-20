@@ -8,14 +8,15 @@ class Buffer {
         Buffer(int input_start_index, int input_size,
             int output_start_index, int output_size);
         ~Buffer() {
-// UNCOMMENT FOR PINNED MEMORY
-//#ifdef PARALLEL
-//            cudaFree(this->input);
-//            cudaFree(this->output);
-//#else
+#ifdef PARALLEL
+            // Free pinned memory
+            cudaFree(this->input);
+            cudaFree(this->output);
+#else
+            // Free non-pinned memory
             free(this->input);
             free(this->output);
-//#endif
+#endif
         }
 
         void clear_input();

@@ -131,6 +131,8 @@ void stress_test() {
     model = build_stress_model("izhikevich", true);
     run_simulation(model, 50, true);
     std::cout << "\n";
+
+    delete model;
 }
 
 void image_test() {
@@ -141,6 +143,8 @@ void image_test() {
     //model = build_image_model("rate_encoding", true);
     run_simulation(model, 500, true);
     std::cout << "\n";
+
+    delete model;
 }
 
 void varied_test() {
@@ -150,21 +154,25 @@ void varied_test() {
     model = build_arborized_model("izhikevich", true, CONVERGENT);
     run_simulation(model, 50, true);
     std::cout << "\n";
+    delete model;
 
     std::cout << "Convergent convolutional...\n";
     model = build_arborized_model("izhikevich", true, CONVERGENT_CONVOLUTIONAL);
     run_simulation(model, 50, true);
     std::cout << "\n";
+    delete model;
 
     std::cout << "Divergent...\n";
     model = build_arborized_model("izhikevich", true, DIVERGENT);
     run_simulation(model, 50, true);
     std::cout << "\n";
+    delete model;
 
     std::cout << "Divergent convolutional...\n";
     model = build_arborized_model("izhikevich", true, DIVERGENT_CONVOLUTIONAL);
     run_simulation(model, 50, true);
     std::cout << "\n";
+    delete model;
 }
 
 int main(void) {

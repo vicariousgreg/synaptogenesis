@@ -7,6 +7,10 @@ class PrintOutputModule : public Module {
     public:
         PrintOutputModule(Layer *layer,
             std::string params, std::string &driver_type);
+        virtual ~PrintOutputModule() {
+            free(this->reverses);
+        }
+
         void report_output(Buffer *buffer);
         virtual IOType get_type() { return OUTPUT; }
 

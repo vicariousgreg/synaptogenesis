@@ -7,6 +7,13 @@ class ImageInputModule : public Module {
     public:
         ImageInputModule(Layer *layer,
             std::string params, std::string &driver_type);
+        virtual ~ImageInputModule() {
+            free(this->gray);
+            free(this->red);
+            free(this->green);
+            free(this->blue);
+        }
+
         void feed_input(Buffer *buffer);
         virtual IOType get_type() { return INPUT; }
 
