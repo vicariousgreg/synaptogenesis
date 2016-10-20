@@ -14,28 +14,21 @@ void wait_for_permission(std::mutex *mu, Thread_ID *owner, Thread_ID me) {
 void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
     for (int i = 0; i < iterations; ++i) {
         /* Read sensory buffer */
-        // Wait for sensory and clock locks
-        wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), DRIVER);
+        // Wait for clock and sensory locks
         wait_for_permission(&(clock->clock_lock), &(clock->clock_owner), DRIVER);
+        wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), DRIVER);
 
         // Read sensory input
         if (verbose) std::cout << "DRIVER READ\n";
-        driver->step_input(clock->buffer);
+        driver->environment_input(clock->buffer);
 
         // Pass sensory ownership back to environment
         clock->sensory_owner = ENVIRONMENT;
         clock->sensory_lock.unlock();
 
-        /* Compute */
-        driver->step_connections(INPUT);
-        driver->step_connections(INPUT_OUTPUT);
-        driver->step_connections(OUTPUT);
-        driver->step_connections(INTERNAL);
-        driver->step_state(INPUT);
-        driver->step_state(INPUT_OUTPUT);
-        driver->step_state(OUTPUT);
-        driver->step_state(INTERNAL);
-        driver->step_weights();
+        /* Compute for output */
+        driver->null_input();
+        driver->output_calculation();
 
         /* Write motor buffer */
         // Wait for motor lock
@@ -43,7 +36,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
 
         // Write motor output
         if (verbose) std::cout << "DRIVER WRITE\n";
-        driver->step_output(clock->buffer);
+        driver->environment_output(clock->buffer);
 
         // Pass motor ownership back to environment
         clock->motor_owner = ENVIRONMENT;
@@ -52,6 +45,11 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
         // Pass clock ownership back to clock
         clock->clock_owner = CLOCK;
         clock->clock_lock.unlock();
+
+        // Finish computations
+        driver->input_calculation();
+        driver->internal_calculation();
+        driver->step_weights();
     }
 }
 
@@ -104,6 +102,11 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     this->buffer = new Buffer(
         input_start_index, input_size,
         output_start_index, output_size);
+
+#ifdef PARALLEL
+    // Ensure device is synchronized without errors
+    cudaCheckError("Clock device synchronization failed!");
+#endif
 
     // Launch threads
     std::thread driver_thread(driver_loop, this, driver, iterations, verbose);

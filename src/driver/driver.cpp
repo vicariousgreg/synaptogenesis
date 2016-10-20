@@ -27,12 +27,46 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
     }
 }
 
-void Driver::step_input(Buffer *buffer) {
+///////
+
+void Driver::environment_input(Buffer *buffer) {
     this->state->get_input_from(buffer);
+}
+
+void Driver::null_input() {
     clear_input(this->state->input,
         this->state->start_index[OUTPUT],
         this->state->total_neurons);
 }
+
+void Driver::output_calculation() {
+    step_connections(INPUT_OUTPUT);
+    step_state(INPUT_OUTPUT);
+    step_connections(OUTPUT);
+    step_state(OUTPUT);
+}
+
+void Driver::input_calculation() {
+    step_connections(INPUT);
+    step_state(INPUT);
+}
+
+void Driver::internal_calculation() {
+    step_connections(INTERNAL);
+    step_state(INTERNAL);
+}
+
+void Driver::environment_output(Buffer *buffer) {
+    this->state->send_output_to(buffer);
+}
+
+void Driver::step_weights() {
+    for (int i = 0; i < all_instructions.size(); ++i)
+        this->update_weights(all_instructions[i]);
+}
+
+
+///////
 
 void Driver::step_connections() {
     for (int i = 0; i < all_instructions.size(); ++i)
@@ -53,15 +87,6 @@ void Driver::step_state(IOType layer_type) {
     int count = this->state->num_neurons[layer_type];
     if (count > 0)
         this->update_state(start_index, count);
-}
-
-void Driver::step_output(Buffer *buffer) {
-    this->state->send_output_to(buffer);
-}
-
-void Driver::step_weights() {
-    for (int i = 0; i < all_instructions.size(); ++i)
-        this->update_weights(all_instructions[i]);
 }
 
 Driver* build_driver(Model* model) {

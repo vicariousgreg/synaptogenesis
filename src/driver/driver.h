@@ -18,13 +18,19 @@ class Driver {
 
         void build_instructions(Model *model, int timesteps_per_output);
 
-        void step_input(Buffer *buffer);
+        // New Hooks
+        void environment_input(Buffer *buffer);
+        void null_input();
+        void output_calculation();
+        void environment_output(Buffer *buffer);
+        void input_calculation();
+        void internal_calculation();
+        void step_weights();
+
         void step_connections();
         void step_connections(IOType layer_type);
         void step_state();
         void step_state(IOType layer_type);
-        void step_output(Buffer *buffer);
-        void step_weights();
 
         /* Returns the output type of the driver */
         virtual OutputType get_output_type() = 0;
@@ -126,7 +132,7 @@ void step(Instruction *inst,
     // Run the parallel kernel
     kernel<<<blocks_per_grid, threads_per_block>>>(
         *inst, calc_input, args...);
-    cudaCheckError("Failed to calculate connection activation!");
+    //cudaCheckError("Failed to calculate connection activation!");
 
 #else
     // Run the serial kernel
