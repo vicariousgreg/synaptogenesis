@@ -24,21 +24,21 @@ class Driver {
         void build_instructions(Model *model, int timesteps_per_output);
 
         // Main hooks
-        void stage_one(Buffer *buffer);
-        void stage_two();
-        void stage_three();
-        void stage_four(Buffer *buffer);
-        void stage_five();
-        void step_weights();
+        void stage_input(Buffer *buffer);
+        void stage_calc_output();
+        void stage_send_output(Buffer *buffer);
+        void stage_remaining();
 
         void step_connections(std::vector<Instruction* > instructions);
         void step_all_connections();
-        void step_connections_a();
-        void step_connections_b();
-        void step_connections_c();
-        void step_connections_d();
+        void step_connections_i();
+        void step_connections_io();
+        void step_connections_xo();
+        void step_connections_x();
+        void step_connections_other();
         void step_all_states();
         void step_states(IOType layer_type);
+        void step_weights();
 
         /* Returns the output type of the driver */
         virtual OutputType get_output_type() = 0;
@@ -61,14 +61,24 @@ class Driver {
         void step(Instruction *inst, float(*calc_input)(Output, ARGS...), ARGS... args);
 
         State *state;
-        std::vector<Instruction* > instructions_a,
-            instructions_b, instructions_c, instructions_d;
+        std::vector<Instruction* >
+            instructions_i,
+            instructions_io,
+            instructions_xo,
+            instructions_x,
+            instructions_other;
         std::vector<Instruction* > all_instructions;
 
 #ifdef PARALLEL
         cudaStream_t io_stream;
         cudaStream_t kernel_streams[NUM_KERNEL_STREAMS];
         cudaStream_t *curr_stream;
+
+        cudaEvent_t input_event;
+        cudaEvent_t clear_event;
+        cudaEvent_t io_event;
+        cudaEvent_t xo_event;
+        cudaEvent_t output_event;
 #else
 #endif
 };

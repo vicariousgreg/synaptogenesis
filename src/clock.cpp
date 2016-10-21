@@ -20,15 +20,14 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
 
         // Read sensory input
         if (verbose) std::cout << "DRIVER READ\n";
-        driver->stage_one(clock->buffer);
+        driver->stage_input(clock->buffer);
 
         // Pass sensory ownership back to environment
         clock->sensory_owner = ENVIRONMENT;
         clock->sensory_lock.unlock();
 
         /* Compute for output */
-        driver->stage_two();
-        driver->stage_three();
+        driver->stage_calc_output();
 
         /* Write motor buffer */
         // Wait for motor lock
@@ -36,7 +35,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
 
         // Write motor output
         if (verbose) std::cout << "DRIVER WRITE\n";
-        driver->stage_four(clock->buffer);
+        driver->stage_send_output(clock->buffer);
 
         // Pass motor ownership back to environment
         clock->motor_owner = ENVIRONMENT;
@@ -47,8 +46,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
         clock->clock_lock.unlock();
 
         // Finish computations
-        driver->stage_five();
-        driver->step_weights();
+        driver->stage_remaining();
     }
 }
 

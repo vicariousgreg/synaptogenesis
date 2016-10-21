@@ -92,8 +92,8 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     /* Construct the model */
     Model *model = new Model(driver_name);
 
-    const char* image_path = "resources/bird-head.jpg";
-    //const char* image_path = "resources/bird-head-small.jpg";
+    //const char* image_path = "resources/bird-head.jpg";
+    const char* image_path = "resources/bird-head-small.jpg";
     Layer *receptor = model->add_layer_from_image(image_path, "default");
     model->add_module(receptor, "image_input", image_path);
     model->add_module(receptor, output_name, "24");
@@ -136,7 +136,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
         "1      10  15  10  1 "
         "-.5    5   -.5 5   -.5 "
         "-.5  -.5  -1  -.5  -.5");
-    model->add_module(cross, output_name, "24");
+    //model->add_module(cross, output_name, "24");
 
     if (verbose) print_model(model);
     return model;
@@ -183,8 +183,8 @@ void image_test() {
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
-    //run_simulation(model, 500, true);
-    run_simulation(model, 10, true);
+    run_simulation(model, 500, true);
+    //run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;
@@ -221,8 +221,8 @@ void varied_test() {
 int main(void) {
     try {
         //stress_test();
-        layers_test();
-        //image_test();
+        //layers_test();
+        image_test();
         //varied_test();
 
         return 0;
