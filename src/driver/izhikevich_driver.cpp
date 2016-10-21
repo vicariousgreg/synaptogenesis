@@ -15,7 +15,7 @@ GLOBAL void calc_spikes(int* spikes, float* voltages, float* recoveries,
 #define SPIKE_THRESH 30
 
 /* Euler resolution for voltage update. */
-#define EULER_RES 10
+#define EULER_RES 2
 
 DEVICE float iz_calc_input(Output output, int mask) { return output.i & mask; }
 DEVICE float (*iz_calc_input_ptr)(Output, int) = iz_calc_input;
@@ -107,11 +107,11 @@ GLOBAL void izhikevich(float* voltages, float* recoveries,
             delta_v = (0.04 * voltage * voltage) +
                             (5*voltage) + 140 - recovery + current;
             voltage += delta_v / EULER_RES;
-            //recovery += params->a * ((params->b * voltage) - recovery)
-            //                / EULER_RES;
+            recovery += params->a * ((params->b * voltage) - recovery)
+                            / EULER_RES;
         }
 
-        recovery += params->a * ((params->b * voltage) - recovery);
+        //recovery += params->a * ((params->b * voltage) - recovery);
         voltages[nid] = voltage;
         recoveries[nid] = recovery;
     }

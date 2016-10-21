@@ -4,11 +4,21 @@
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <chrono>
+
+using CClock = std::chrono::high_resolution_clock;
+using Time_point = CClock::time_point;
+using std::chrono::milliseconds;
+using std::chrono::duration_cast;
 
 /* Calculates a random float between |fMin| and |fMax| */
 inline float fRand(float fMin, float fMax) {
     float f = (float)rand() / RAND_MAX;
     return fMin + f * (fMax - fMin);
+}
+
+static float get_diff(Time_point a, Time_point b) {
+    return (float)duration_cast<milliseconds>(a - b).count() / 1000;
 }
 
 /* Timer class.
@@ -20,14 +30,15 @@ class Timer {
     public:
         /* Sets a start time */
         void start() {
-            this->start_time = clock();
+            start_time = CClock::now();
         }
 
         /* Calculates elapsed time since last start() call.
          * If |header| is provided, the time will be printed.
          */
         float query(const char header[]) {
-            float total = ((float)(clock() - this->start_time)) / CLOCKS_PER_SEC;
+            Time_point curr_time = CClock::now();
+            float total = get_diff(curr_time, this->start_time);
             if (header != NULL) {
                 printf("%s: %f\n", header, total);
             }
@@ -37,14 +48,16 @@ class Timer {
         /* Waits until the duration exceeds the given limit */
         void wait(float limit) {
             float total;
+            Time_point curr_time;
             do {
-                total = ((float)(clock() - this->start_time)) / CLOCKS_PER_SEC;
+                curr_time = CClock::now();
+                total = get_diff(curr_time, this->start_time);
             } while (total < limit);
         }
         
     private:
         // Timestamp from last start call()
-        clock_t start_time;
+        Time_point start_time;
 };
 
 #endif
