@@ -57,13 +57,13 @@ State::~State() {
     cudaFree(this->input);
     cudaFree(this->output);
     cudaFree(this->weight_matrices[0]);
-    cudaFree(this->weight_matrices);
 #else
     free(this->input);
     free(this->output);
     free(this->weight_matrices[0]);
-    free(this->weight_matrices);
 #endif
+    // This is on the host regardless
+    free(this->weight_matrices);
 }
 
 #ifdef PARALLEL
