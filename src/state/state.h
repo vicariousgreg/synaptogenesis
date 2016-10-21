@@ -10,8 +10,13 @@ class State {
         State(Model *model, int weight_depth);
         virtual ~State();
 
+#ifdef PARALLEL
+        void get_input_from(Buffer *buffer, cudaStream_t stream);
+        void send_output_to(Buffer *buffer, cudaStream_t stream);
+#else
         void get_input_from(Buffer *buffer);
         void send_output_to(Buffer *buffer);
+#endif
 
         float* get_matrix(int connection_id) {
             return this->weight_matrices[connection_id];

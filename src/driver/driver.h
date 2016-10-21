@@ -1,6 +1,8 @@
 #ifndef driver_h
 #define driver_h
 
+#define NUM_KERNEL_STREAMS 3
+
 #include <vector>
 
 #include "state/state.h"
@@ -12,6 +14,7 @@
 
 class Driver {
     public:
+        Driver();
         virtual ~Driver() {
             delete this->state;
             for (int i = 0; i < this->all_instructions.size(); ++i)
@@ -20,19 +23,22 @@ class Driver {
 
         void build_instructions(Model *model, int timesteps_per_output);
 
-        // New Hooks
-        void environment_input(Buffer *buffer);
-        void null_input();
-        void output_calculation();
-        void environment_output(Buffer *buffer);
-        void input_calculation();
-        void internal_calculation();
+        // Main hooks
+        void stage_one(Buffer *buffer);
+        void stage_two();
+        void stage_three();
+        void stage_four(Buffer *buffer);
+        void stage_five();
         void step_weights();
 
-        void step_connections();
-        void step_connections(IOType layer_type);
-        void step_state();
-        void step_state(IOType layer_type);
+        void step_connections(std::vector<Instruction* > instructions);
+        void step_all_connections();
+        void step_connections_a();
+        void step_connections_b();
+        void step_connections_c();
+        void step_connections_d();
+        void step_all_states();
+        void step_states(IOType layer_type);
 
         /* Returns the output type of the driver */
         virtual OutputType get_output_type() = 0;
@@ -50,24 +56,39 @@ class Driver {
          * TODO: implement.  This should use STDP variant Hebbian learning */
         virtual void update_weights(Instruction *inst) = 0;
 
+        void clear_input(float* input, int offset, int num_neurons);
+        template <typename... ARGS>
+        void step(Instruction *inst, float(*calc_input)(Output, ARGS...), ARGS... args);
+
         State *state;
-        std::vector<Instruction* > instructions[IO_TYPE_SIZE];
+        std::vector<Instruction* > instructions_a,
+            instructions_b, instructions_c, instructions_d;
         std::vector<Instruction* > all_instructions;
+
+#ifdef PARALLEL
+        cudaStream_t io_stream;
+        cudaStream_t kernel_streams[NUM_KERNEL_STREAMS];
+        cudaStream_t *curr_stream;
+#else
+#endif
 };
 
 /* Instantiates a driver based on the driver_string in the given model */
 Driver* build_driver(Model* model);
 
-inline void clear_input(float* input, int offset, int num_neurons) {
+inline void Driver::clear_input(float* input, int offset, int num_neurons) {
 #ifdef PARALLEL
     int threads = 128;
     int blocks = calc_blocks(num_neurons - offset, threads);
-    clear_data<<<blocks, threads>>>(
-#else
-    clear_data(
-#endif
+    // Use the current stream, as set by the driver
+    clear_data<<<blocks, threads, 0, *this->curr_stream>>>(
         input + offset,
         num_neurons - offset);
+#else
+    clear_data(
+        input + offset,
+        num_neurons - offset);
+#endif
 }
 
 /* Steps activation of a connection.
@@ -81,7 +102,7 @@ inline void clear_input(float* input, int offset, int num_neurons) {
  *   - input calculation function and associated arguments
  */
 template <typename... ARGS>
-void step(Instruction *inst,
+void Driver::step(Instruction *inst,
         float(*calc_input)(Output, ARGS...), ARGS... args) {
     void(*kernel)(
         Instruction,
@@ -132,7 +153,8 @@ void step(Instruction *inst,
     }
 
     // Run the parallel kernel
-    kernel<<<blocks_per_grid, threads_per_block>>>(
+    // Use the current stream, as set by the driver
+    kernel<<<blocks_per_grid, threads_per_block, 0, *this->curr_stream>>>(
         *inst, calc_input, args...);
     //cudaCheckError("Failed to calculate connection activation!");
 

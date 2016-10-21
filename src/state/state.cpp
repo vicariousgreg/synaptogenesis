@@ -66,19 +66,34 @@ State::~State() {
 #endif
 }
 
+#ifdef PARALLEL
+void State::get_input_from(Buffer *buffer, cudaStream_t stream) {
+    int index = this->start_index[INPUT];
+    int count = this->num_neurons[INPUT] + this->num_neurons[INPUT_OUTPUT];
+    if (count != 0) {
+        // Copy to GPU from local location
+        cudaMemcpyAsync(this->input + index, buffer->get_input(),
+            count * sizeof(float), cudaMemcpyHostToDevice, stream);
+        cudaCheckError("Failed to copy input from host to device!");
+    }
+}
+void State::send_output_to(Buffer *buffer, cudaStream_t stream) {
+    int index = this->start_index[INPUT_OUTPUT];
+    int count = this->num_neurons[INPUT_OUTPUT] + this->num_neurons[OUTPUT];
+    if (count != 0) {
+        // Copy from GPU to local location
+        cudaMemcpyAsync(buffer->get_output(), this->recent_output + index,
+            count * sizeof(Output), cudaMemcpyDeviceToHost, stream);
+    }
+}
+
+#else
 void State::get_input_from(Buffer *buffer) {
     int index = this->start_index[INPUT];
     int count = this->num_neurons[INPUT] + this->num_neurons[INPUT_OUTPUT];
     if (count != 0) {
-#ifdef PARALLEL
-        // Copy to GPU from local location
-        cudaMemcpy(this->input + index, buffer->get_input(),
-            count * sizeof(float), cudaMemcpyHostToDevice);
-        cudaCheckError("Failed to copy input from host to device!");
-#else
         memcpy(this->input + index, buffer->get_input(),
             count * sizeof(float));
-#endif
     }
 }
 
@@ -86,17 +101,11 @@ void State::send_output_to(Buffer *buffer) {
     int index = this->start_index[INPUT_OUTPUT];
     int count = this->num_neurons[INPUT_OUTPUT] + this->num_neurons[OUTPUT];
     if (count != 0) {
-#ifdef PARALLEL
-        // Copy from GPU to local location
-        cudaMemcpy(buffer->get_output(), this->recent_output + index,
-            count * sizeof(Output),
-            cudaMemcpyDeviceToHost);
-#else
         memcpy(buffer->get_output(), this->recent_output + index,
             count * sizeof(Output));
-#endif
     }
 }
+#endif
 
 void* allocate_host(int count, int size) {
     void* ptr = calloc(count, size);

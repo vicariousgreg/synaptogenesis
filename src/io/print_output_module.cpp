@@ -36,6 +36,7 @@ PrintOutputModule::PrintOutputModule(Layer *layer,
 }
 
 void PrintOutputModule::report_output(Buffer *buffer) {
+    return;
     Output* output = buffer->get_output();
 
     // Print bar

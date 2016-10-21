@@ -20,7 +20,7 @@ GLOBAL void calc_spikes(int* spikes, float* voltages, float* recoveries,
 DEVICE float iz_calc_input(Output output, int mask) { return output.i & mask; }
 DEVICE float (*iz_calc_input_ptr)(Output, int) = iz_calc_input;
 
-IzhikevichDriver::IzhikevichDriver(Model *model) {
+IzhikevichDriver::IzhikevichDriver(Model *model) : Driver() {
     this->iz_state = new IzhikevichState(model);
     this->state = this->iz_state;
 #ifdef PARALLEL
@@ -40,7 +40,7 @@ void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     int threads = 128;
     int blocks = calc_blocks(count, threads);
-    izhikevich<<<blocks, threads>>>(
+    izhikevich<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
     izhikevich(
 #endif
@@ -52,7 +52,7 @@ void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     //cudaCheckError("Failed to update neuron voltages!");
 
-    calc_spikes<<<blocks, threads>>>(
+    calc_spikes<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
     calc_spikes(
 #endif

@@ -3,6 +3,9 @@
 #include "io/random_input_module.h"
 #include "io/image_input_module.h"
 
+#include "io/dummy_input_module.h"
+#include "io/dummy_output_module.h"
+
 Module* build_module(Layer *layer, std::string type,
         std::string params, std::string &driver_type) {
     if (type == "random_input")
@@ -11,6 +14,10 @@ Module* build_module(Layer *layer, std::string type,
         return new ImageInputModule(layer, params, driver_type);
     else if (type == "print_output")
         return new PrintOutputModule(layer, params, driver_type);
+    else if (type == "dummy_input")
+        return new DummyInputModule(layer, params, driver_type);
+    else if (type == "dummy_output")
+        return new DummyOutputModule(layer, params, driver_type);
     else
         throw "Unrecognized output type!";
 }

@@ -2,62 +2,157 @@
 #include "driver/izhikevich_driver.h"
 #include "driver/rate_encoding_driver.h"
 
+Driver::Driver() {
+#ifdef PARALLEL
+    cudaStreamCreate(&this->io_stream);
+
+    for (int i = 0; i < NUM_KERNEL_STREAMS; ++i)
+        cudaStreamCreate(&this->kernel_streams[i]);
+    this->curr_stream = &this->kernel_streams[0];
+#endif
+}
+
 void Driver::build_instructions(Model *model, int timesteps_per_output) {
-    for (int layer_type = 0; layer_type < IO_TYPE_SIZE; ++layer_type) {
-        for (int i = 0; i < model->layers[layer_type].size(); ++i) {
-            Layer *layer = model->layers[layer_type][i];
-            for (int j = 0; j < layer->input_connections.size(); ++j) {
-                Connection *conn = layer->input_connections[j];
-                int word_index = HISTORY_SIZE - 1 -
-                    (conn->delay / timesteps_per_output);
-                if (word_index < 0) throw "Invalid delay in connection!";
+    for (int i = 0; i < model->connections.size(); ++i) {
+        Connection *conn = model->connections[i];
+        Layer *from_layer = conn->from_layer;
+        Layer *to_layer = conn->to_layer;
 
-                Output* out = this->state->output + 
-                    (this->state->total_neurons * word_index);
+        // Set up word index
+        int word_index = HISTORY_SIZE - 1 -
+            (conn->delay / timesteps_per_output);
+        if (word_index < 0) throw "Invalid delay in connection!";
 
-                Instruction *inst =
-                    new Instruction(conn,
-                        out,
-                        this->state->input,
-                        this->state->get_matrix(conn->id));
-                this->instructions[layer_type].push_back(inst);
-                this->all_instructions.push_back(inst);
-            }
+        // Create instruction
+        Output* out = this->state->output + 
+            (this->state->total_neurons * word_index);
+        Instruction *inst =
+            new Instruction(conn,
+                out,
+                this->state->input,
+                this->state->get_matrix(conn->id));
+        this->all_instructions.push_back(inst);
+
+        // Determine which category it falls in
+        if (from_layer->type == INPUT_OUTPUT or
+            from_layer->type == OUTPUT) {
+            // B instructions depend on IO or O output and environment input
+            if (to_layer->type == INPUT or
+                to_layer->type == INPUT_OUTPUT)
+                this->instructions_b.push_back(inst);
+            // B instructions depend on IO or O output only
+            else
+                this->instructions_a.push_back(inst);
+        // C instructions calculate for IO/O connections but don't fall into A or B
+        } else if (to_layer->type == INPUT_OUTPUT or to_layer->type == OUTPUT) {
+            this->instructions_c.push_back(inst);
+        // D instructions are everything else
+        } else {
+            this->instructions_d.push_back(inst);
         }
     }
 }
 
 ///////
 
-void Driver::environment_input(Buffer *buffer) {
-    this->state->get_input_from(buffer);
-}
+void Driver::stage_one(Buffer *buffer){
+#ifdef PARALLEL
+    // Ensure full synchronization
+    cudaStreamSynchronize(this->kernel_streams[0]);
+    cudaStreamSynchronize(this->kernel_streams[1]);
 
-void Driver::null_input() {
+    // Launch input clearing on kernel stream 0
+    this->curr_stream = &this->kernel_streams[0];
     clear_input(this->state->input,
         this->state->start_index[OUTPUT],
         this->state->total_neurons);
+    step_connections_a();
+
+    // Launch input copy on io stream
+    this->state->get_input_from(buffer, this->io_stream);
+
+    // Wait for input copy to finish
+    cudaStreamSynchronize(this->io_stream);
+#else
+    this->state->get_input_from(buffer);
+    clear_input(this->state->input,
+        this->state->start_index[OUTPUT],
+        this->state->total_neurons);
+#endif
 }
 
-void Driver::output_calculation() {
-    step_connections(INPUT_OUTPUT);
-    step_state(INPUT_OUTPUT);
-    step_connections(OUTPUT);
-    step_state(OUTPUT);
+void Driver::stage_two(){
+#ifdef PARALLEL
+    // Wait for input clearing to finish
+    cudaStreamSynchronize(this->kernel_streams[0]);
+
+    // Launch connection computations for a, b, and c on separate streams
+    this->curr_stream = &this->kernel_streams[1];
+    step_connections_b();
+    this->curr_stream = &this->kernel_streams[2];
+    step_connections_c();
+#else
+    step_connections_a();
+    step_connections_b();
+    step_connections_c();
+#endif
 }
 
-void Driver::input_calculation() {
-    step_connections(INPUT);
-    step_state(INPUT);
+void Driver::stage_three() {
+#ifdef PARALLEL
+    // Wait for stage two to finish
+    cudaStreamSynchronize(this->kernel_streams[0]);
+    cudaStreamSynchronize(this->kernel_streams[1]);
+    cudaStreamSynchronize(this->kernel_streams[2]);
+
+    // Compute state/output for IO and O layers on separate streams
+    this->curr_stream = &this->kernel_streams[0];
+    step_states(INPUT_OUTPUT);
+
+    this->curr_stream = &this->kernel_streams[1];
+    step_states(OUTPUT);
+#else
+    step_states(INPUT_OUTPUT);
+    step_states(OUTPUT);
+#endif
 }
 
-void Driver::internal_calculation() {
-    step_connections(INTERNAL);
-    step_state(INTERNAL);
-}
+void Driver::stage_four(Buffer *buffer){
+#ifdef PARALLEL
+    // Wait for computation to finish
+    cudaStreamSynchronize(this->kernel_streams[0]);
+    cudaStreamSynchronize(this->kernel_streams[1]);
 
-void Driver::environment_output(Buffer *buffer) {
+    // Launch output copy
+    this->state->send_output_to(buffer, this->io_stream);
+
+    // Wait for output copy to return
+    cudaStreamSynchronize(this->io_stream);
+#else
     this->state->send_output_to(buffer);
+#endif
+}
+
+void Driver::stage_five(){
+#ifdef PARALLEL
+    // Launch D instructions
+    this->curr_stream = &this->kernel_streams[0];
+    step_connections_d();
+
+    // Wait for D computation
+    cudaStreamSynchronize(this->kernel_streams[0]);
+
+    // Compute state/output for I and In layers on separate streams
+    this->curr_stream = &this->kernel_streams[0];
+    step_states(INPUT);
+
+    this->curr_stream = &this->kernel_streams[1];
+    step_states(INTERNAL);
+#else
+    step_connections_d();
+    step_states(INPUT);
+    step_states(INTERNAL);
+#endif
 }
 
 void Driver::step_weights() {
@@ -68,21 +163,23 @@ void Driver::step_weights() {
 
 ///////
 
-void Driver::step_connections() {
-    for (int i = 0; i < all_instructions.size(); ++i)
-        this->update_connection(all_instructions[i]);
+void Driver::step_connections(std::vector<Instruction* > instructions) {
+    for (int i = 0; i < instructions.size(); ++i)
+        this->update_connection(instructions[i]);
 }
 
-void Driver::step_connections(IOType layer_type) {
-    for (int i = 0; i < instructions[layer_type].size(); ++i)
-        this->update_connection(instructions[layer_type][i]);
-}
+void Driver::step_all_connections() { step_connections(this->all_instructions); }
+void Driver::step_connections_a() { step_connections(this->instructions_a); }
+void Driver::step_connections_b() { step_connections(this->instructions_b); }
+void Driver::step_connections_c() { step_connections(this->instructions_c); }
+void Driver::step_connections_d() { step_connections(this->instructions_d); }
 
-void Driver::step_state() {
+
+void Driver::step_all_states() {
     this->update_state(0, this->state->total_neurons);
 }
 
-void Driver::step_state(IOType layer_type) {
+void Driver::step_states(IOType layer_type) {
     int start_index = this->state->start_index[layer_type];
     int count = this->state->num_neurons[layer_type];
     if (count > 0)

@@ -15,7 +15,7 @@ GLOBAL void shift_output(float* outputs,
 DEVICE float re_calc_input(Output output) { return output.f; }
 DEVICE float (*re_calc_input_ptr)(Output) = re_calc_input;
 
-RateEncodingDriver::RateEncodingDriver(Model *model) {
+RateEncodingDriver::RateEncodingDriver(Model *model) : Driver() {
     this->re_state = new RateEncodingState(model);
     this->state = this->re_state;
 #ifdef PARALLEL
@@ -35,7 +35,7 @@ void RateEncodingDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     int threads = 128;
     int blocks = calc_blocks(count, threads);
-    shift_output<<<blocks, threads>>>(
+    shift_output<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
     shift_output(
 #endif
@@ -43,7 +43,7 @@ void RateEncodingDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     //cudaCheckError("Failed to update neuron output!");
 
-    activation_function<<<blocks, threads>>>(
+    activation_function<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
     activation_function(
 #endif
