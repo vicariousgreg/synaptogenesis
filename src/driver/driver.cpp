@@ -9,12 +9,6 @@ Driver::Driver() {
     for (int i = 0; i < NUM_KERNEL_STREAMS; ++i)
         cudaStreamCreate(&this->kernel_streams[i]);
     this->curr_stream = &this->kernel_streams[0];
-
-    cudaEventCreate(&input_event);
-    cudaEventCreate(&clear_event);
-    cudaEventCreate(&io_event);
-    cudaEventCreate(&xo_event);
-    cudaEventCreate(&output_event);
 #endif
 }
 
@@ -61,6 +55,62 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
 ///////
 void Driver::stage_input(Buffer *buffer) {
 #ifdef PARALLEL
+    // Create events
+    cudaEventCreate(&input_stream_event, cudaEventDisableTiming);
+    cudaEventCreate(&io_event, cudaEventDisableTiming);
+    cudaEventCreate(&xo_event, cudaEventDisableTiming);
+    cudaEventCreate(&output_calc_event, cudaEventDisableTiming);
+    cudaEventCreate(&output_stream_event, cudaEventDisableTiming);
+
+    // Start input clearing
+    this->curr_stream = &this->kernel_streams[0];
+    clear_input(this->state->input,
+        this->state->start_index[OUTPUT],
+        this->state->total_neurons);
+
+    // Perform XO connection computation once clearing is done
+    this->curr_stream = &this->kernel_streams[0];
+    step_connections_xo();
+    cudaEventRecord(this->xo_event, *this->curr_stream);
+
+    // Start input streaming
+    this->state->get_input_from(buffer, this->io_stream);
+    cudaEventRecord(this->input_stream_event, this->io_stream);
+
+    // Perform IO connection computation once input is done
+    this->curr_stream = &this->kernel_streams[1];
+    cudaStreamWaitEvent(*this->curr_stream, this->input_stream_event, 0);
+    step_connections_io();
+    cudaEventRecord(this->io_event, *this->curr_stream);
+
+    // Wait for IO and XO computations to do rest of output computation
+    this->curr_stream = &this->kernel_streams[0];
+    cudaStreamWaitEvent(*this->curr_stream, this->io_event, 0);
+    cudaStreamWaitEvent(*this->curr_stream, this->xo_event, 0);
+    step_states(INPUT_OUTPUT);
+    step_states(OUTPUT);
+    cudaEventRecord(this->output_calc_event, *this->curr_stream);
+
+    // Wait for output calculation to finish up
+    this->curr_stream = &this->kernel_streams[0];
+    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
+    step_connections_i();
+    step_states(INPUT);
+
+    this->curr_stream = &this->kernel_streams[1];
+    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
+    step_connections_x();
+    step_states(INTERNAL);
+
+    // Finally, once everything is done, update weights
+    this->curr_stream = &this->kernel_streams[0];
+    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
+    this->curr_stream = &this->kernel_streams[1];
+    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
+    step_weights();
+
+    // Wait for input stream to return
+    cudaEventSynchronize(this->input_stream_event);
 #else
     this->state->get_input_from(buffer);
 #endif
@@ -81,6 +131,12 @@ void Driver::stage_calc_output() {
 
 void Driver::stage_send_output(Buffer *buffer) {
 #ifdef PARALLEL
+    // Wait for output calculation to complete
+    cudaEventSynchronize(this->output_calc_event);
+
+    // Start stream, and wait for it to return
+    this->state->send_output_to(buffer, this->io_stream);
+    cudaEventSynchronize(this->output_stream_event);
 #else
     this->state->send_output_to(buffer);
 #endif
@@ -88,6 +144,14 @@ void Driver::stage_send_output(Buffer *buffer) {
 
 void Driver::stage_remaining() {
 #ifdef PARALLEL
+    // Synchronize, then delete events
+    cudaSync();
+    cudaCheckError(NULL);
+    cudaEventDestroy(input_stream_event);
+    cudaEventDestroy(io_event);
+    cudaEventDestroy(xo_event);
+    cudaEventDestroy(output_calc_event);
+    cudaEventDestroy(output_stream_event);
 #else
     step_connections_i();
     step_connections_x();

@@ -19,7 +19,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
         wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), DRIVER);
 
         // Read sensory input
-        if (verbose) std::cout << "DRIVER READ\n";
+//        if (verbose) std::cout << "DRIVER READ\n";
         driver->stage_input(clock->buffer);
 
         // Pass sensory ownership back to environment
@@ -34,7 +34,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
         wait_for_permission(&(clock->motor_lock), &(clock->motor_owner), DRIVER);
 
         // Write motor output
-        if (verbose) std::cout << "DRIVER WRITE\n";
+//        if (verbose) std::cout << "DRIVER WRITE\n";
         driver->stage_send_output(clock->buffer);
 
         // Pass motor ownership back to environment
@@ -55,7 +55,7 @@ void environment_loop(Clock *clock, Environment *environment, int iterations, bo
         // Write sensory buffer
         wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), ENVIRONMENT);
         environment->step_input(clock->buffer);
-        if (verbose) std::cout << "ENVIRONMENT WRITE\n";
+//        if (verbose) std::cout << "ENVIRONMENT WRITE\n";
 
         clock->sensory_owner = DRIVER;
         clock->sensory_lock.unlock();
@@ -65,7 +65,7 @@ void environment_loop(Clock *clock, Environment *environment, int iterations, bo
         // Write motor buffer
         wait_for_permission(&(clock->motor_lock), &(clock->motor_owner), ENVIRONMENT);
         environment->step_output(clock->buffer);
-        if (verbose) std::cout << "ENVIRONMENT READ\n";
+//        if (verbose) std::cout << "ENVIRONMENT READ\n";
 
         clock->motor_owner = DRIVER;
         clock->motor_lock.unlock();
@@ -129,6 +129,10 @@ void Clock::run(Model *model, int iterations, bool verbose) {
         float time = outer_timer.query("Total time");
         printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
     }
+
+#ifdef PARALLEL
+    check_memory();
+#endif
 
     delete this->buffer;
     delete driver;

@@ -38,7 +38,7 @@ void IzhikevichDriver::update_connection(Instruction *inst) {
 
 void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
-    int threads = 128;
+    int threads = IDEAL_THREADS;
     int blocks = calc_blocks(count, threads);
     izhikevich<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
@@ -50,7 +50,7 @@ void IzhikevichDriver::update_state(int start_index, int count) {
         this->iz_state->neuron_parameters,
         start_index, count);
 #ifdef PARALLEL
-    //cudaCheckError("Failed to update neuron voltages!");
+    cudaCheckError("Failed to update neuron voltages!");
 
     calc_spikes<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
@@ -62,7 +62,7 @@ void IzhikevichDriver::update_state(int start_index, int count) {
         this->iz_state->neuron_parameters,
         start_index, count, this->state->total_neurons);
 #ifdef PARALLEL
-    //cudaCheckError("Failed to timestep spikes!");
+    cudaCheckError("Failed to timestep spikes!");
 #endif
 }
 

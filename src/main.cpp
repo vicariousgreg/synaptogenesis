@@ -39,7 +39,7 @@ Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionTy
 Model* build_stress_model(std::string driver_name, bool verbose) {
     Model *model = new Model(driver_name);
 
-    int size = 800 * 20;
+    int size = 800 * 19;
     Layer *pos = model->add_layer(1, size, "random positive");
     Layer *neg = model->add_layer(1, size / 4, "random negative");
     model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD, "");
@@ -143,16 +143,9 @@ Model* build_image_model(std::string driver_name, bool verbose) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    // Seed random number generator
-    srand(time(NULL));
-
     //Clock clock(10);
     Clock clock;  // No refresh rate synchronization
-
     clock.run(model, iterations, verbose);
-#ifdef PARALLEL
-    check_memory();
-#endif
 }
 
 void stress_test() {
@@ -160,7 +153,7 @@ void stress_test() {
 
     std::cout << "Stress...\n";
     model = build_stress_model("izhikevich", true);
-    run_simulation(model, 50, true);
+    run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;
@@ -171,6 +164,7 @@ void layers_test() {
 
     std::cout << "Layers...\n";
     model = build_layers_model("izhikevich", true);
+    //model = build_layers_model("rate_encoding", true);
     run_simulation(model, 50, true);
     std::cout << "\n";
 
@@ -219,10 +213,13 @@ void varied_test() {
 }
 
 int main(void) {
+    // Seed random number generator
+    srand(time(NULL));
+
     try {
-        //stress_test();
+        stress_test();
         //layers_test();
-        image_test();
+        //image_test();
         //varied_test();
 
         return 0;

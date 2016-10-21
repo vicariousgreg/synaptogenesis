@@ -74,7 +74,6 @@ void State::get_input_from(Buffer *buffer, cudaStream_t stream) {
         // Copy to GPU from local location
         cudaMemcpyAsync(this->input + index, buffer->get_input(),
             count * sizeof(float), cudaMemcpyHostToDevice, stream);
-        cudaCheckError("Failed to copy input from host to device!");
     }
 }
 void State::send_output_to(Buffer *buffer, cudaStream_t stream) {

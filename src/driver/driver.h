@@ -74,11 +74,12 @@ class Driver {
         cudaStream_t kernel_streams[NUM_KERNEL_STREAMS];
         cudaStream_t *curr_stream;
 
-        cudaEvent_t input_event;
-        cudaEvent_t clear_event;
-        cudaEvent_t io_event;
-        cudaEvent_t xo_event;
-        cudaEvent_t output_event;
+        cudaEvent_t
+            input_stream_event,
+            io_event,
+            xo_event,
+            output_calc_event,
+            output_stream_event;
 #else
 #endif
 };
@@ -87,18 +88,20 @@ class Driver {
 Driver* build_driver(Model* model);
 
 inline void Driver::clear_input(float* input, int offset, int num_neurons) {
+    int count = num_neurons - offset;
+    if (count > 0) {
 #ifdef PARALLEL
-    int threads = 128;
-    int blocks = calc_blocks(num_neurons - offset, threads);
-    // Use the current stream, as set by the driver
-    clear_data<<<blocks, threads, 0, *this->curr_stream>>>(
-        input + offset,
-        num_neurons - offset);
+        int threads = IDEAL_THREADS;
+        int blocks = calc_blocks(count, threads);
+        // Use the current stream, as set by the driver
+        clear_data<<<blocks, threads, 0, *this->curr_stream>>>(
+            input + offset,
+            num_neurons - offset);
+        cudaCheckError("Failed to clear inputs!");
 #else
-    clear_data(
-        input + offset,
-        num_neurons - offset);
+        clear_data(input + offset, count);
 #endif
+    }
 }
 
 /* Steps activation of a connection.
@@ -142,12 +145,13 @@ void Driver::step(Instruction *inst,
     // Calculate grid and block sizes based on type
     dim3 blocks_per_grid;
     dim3 threads_per_block;
+    int threads = MAX_THREADS;
 
     switch (inst->type) {
         case (FULLY_CONNECTED):
         case (ONE_TO_ONE):
             blocks_per_grid = dim3(calc_blocks(inst->to_size));
-            threads_per_block = dim3(THREADS);
+            threads_per_block = dim3(threads);
             break;
         case (DIVERGENT):
         case (DIVERGENT_CONVOLUTIONAL):
@@ -155,8 +159,8 @@ void Driver::step(Instruction *inst,
         case (CONVERGENT_CONVOLUTIONAL):
             blocks_per_grid = dim3(
                 calc_blocks(inst->to_rows, 1),
-                calc_blocks(inst->to_columns, 128));
-            threads_per_block = dim3(1, 128);
+                calc_blocks(inst->to_columns, threads));
+            threads_per_block = dim3(1, threads);
             break;
         default:
             throw "Unimplemented connection type!";
@@ -166,7 +170,7 @@ void Driver::step(Instruction *inst,
     // Use the current stream, as set by the driver
     kernel<<<blocks_per_grid, threads_per_block, 0, *this->curr_stream>>>(
         *inst, calc_input, args...);
-    //cudaCheckError("Failed to calculate connection activation!");
+    cudaCheckError("Failed to calculate connection activation!");
 
 #else
     // Run the serial kernel
