@@ -17,6 +17,8 @@ void driver_loop(Clock *clock, Driver *driver, int iterations, bool verbose) {
         /* Read sensory buffer */
         // Wait for clock and sensory locks
         wait_for_permission(&(clock->clock_lock), &(clock->clock_owner), DRIVER);
+        driver->stage_clear();
+
         wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), DRIVER);
 
         // Read sensory input

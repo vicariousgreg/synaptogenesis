@@ -8,7 +8,6 @@
 #include "parallel.h"
 #include "constants.h"
 
-class Driver;
 class StreamCluster;
 
 class Stream {
@@ -30,10 +29,10 @@ class Stream {
 #endif
         }
 
-        void execute(Driver *driver);
-        void execute(Driver *driver, int to_execute);
-        void execute(Driver *driver, IOType type);
-        void update_weights(Driver *driver);
+        void execute();
+        void execute(int to_execute);
+        void execute(IOType type);
+        void update_weights();
 
         void add_instruction(Instruction *inst, IOType from_type) {
             this->last_index[from_type] = instructions.size();
@@ -79,9 +78,9 @@ class StreamCluster {
         }
 
         void reset();
-        void execute(Driver *driver);
-        void execute(Driver *driver, IOType type);
-        void update_weights(Driver *driver);
+        void execute();
+        void execute(IOType type);
+        void update_weights();
         bool is_done();
         bool is_done(IOType type);
 #ifdef PARALLEL

@@ -1,4 +1,5 @@
 #include "driver/driver.h"
+#include "driver/scheduler.h"
 #include "driver/izhikevich_driver.h"
 #include "driver/rate_encoding_driver.h"
 
@@ -42,21 +43,21 @@ void Driver::wait_event(IOType to_type, cudaEvent_t event) {
 }
 #endif
 
-void Driver::launch_from(IOType from_type) {
+void Driver::schedule_from(IOType from_type) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        stream_clusters[i].execute(this, from_type);
+        stream_clusters[i].execute(from_type);
 }
 
-void Driver::launch_to(IOType to_type) {
-    stream_clusters[to_type].execute(this);
+void Driver::schedule_to(IOType to_type) {
+    stream_clusters[to_type].execute();
 }
 
-void Driver::launch(IOType from_type, IOType to_type) {
-    stream_clusters[to_type].execute(this, from_type);
+void Driver::schedule(IOType from_type, IOType to_type) {
+    stream_clusters[to_type].execute(from_type);
 }
 
 ///////
-void Driver::stage_input(Buffer *buffer) {
+void Driver::stage_clear() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         stream_clusters[i].reset();
 
@@ -76,10 +77,6 @@ void Driver::stage_input(Buffer *buffer) {
         this->state->total_neurons);
     cudaEventRecord(this->clear_event, *this->curr_stream);
 
-    // Start input streaming
-    this->state->get_input_from(buffer, this->io_stream);
-    cudaEventRecord(this->input_event, this->io_stream);
-
     // Ensure all layer streams wait for appropriate input
     wait_event(INPUT, this->input_event);
     wait_event(INPUT_OUTPUT, this->input_event);
@@ -87,10 +84,11 @@ void Driver::stage_input(Buffer *buffer) {
     wait_event(INTERNAL, this->clear_event);
 
     // Launch output relevant computations
-    launch_from(OUTPUT);
-    launch_from(INPUT_OUTPUT);
-    launch_to(OUTPUT);
-    launch_to(INPUT_OUTPUT);
+    schedule_from(OUTPUT);
+    schedule_from(INPUT_OUTPUT);
+    schedule_to(OUTPUT);
+    schedule_to(INPUT_OUTPUT);
+    Scheduler::get_instance()->dispatch(this);
 
     // Wait for output computations to finish
     for (int i = 0; i < IO_TYPE_SIZE; ++i) {
@@ -107,8 +105,9 @@ void Driver::stage_input(Buffer *buffer) {
     cudaEventRecord(this->output_calc_event, *this->curr_stream);
 
     // Launch remaining calculations
-    launch_to(INPUT);
-    launch_to(INTERNAL);
+    schedule_to(INPUT);
+    schedule_to(INTERNAL);
+    Scheduler::get_instance()->dispatch(this);
     // Block kernel stream until they are done
     stream_clusters[INPUT].block_stream(this->kernel_stream);
     stream_clusters[INTERNAL].block_stream(this->kernel_stream);
@@ -121,6 +120,24 @@ void Driver::stage_input(Buffer *buffer) {
     // Wait for input stream to return
     cudaEventSynchronize(this->input_event);
 #else
+    clear_input(this->state->input,
+        this->state->start_index[OUTPUT],
+        this->state->total_neurons);
+#endif
+}
+
+void Driver::stage_input(Buffer *buffer) {
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        stream_clusters[i].reset();
+
+#ifdef PARALLEL
+    // Start input streaming
+    this->state->get_input_from(buffer, this->io_stream);
+    cudaEventRecord(this->input_event, this->io_stream);
+
+    // Wait for input stream to return
+    cudaEventSynchronize(this->input_event);
+#else
     this->state->get_input_from(buffer);
 #endif
 }
@@ -128,13 +145,11 @@ void Driver::stage_input(Buffer *buffer) {
 void Driver::stage_calc_output() {
 #ifdef PARALLEL
 #else
-    clear_input(this->state->input,
-        this->state->start_index[OUTPUT],
-        this->state->total_neurons);
-    launch_from(OUTPUT);
-    launch_from(INPUT_OUTPUT);
-    launch_to(OUTPUT);
-    launch_to(INPUT_OUTPUT);
+    schedule_from(OUTPUT);
+    schedule_from(INPUT_OUTPUT);
+    schedule_to(OUTPUT);
+    schedule_to(INPUT_OUTPUT);
+    Scheduler::get_instance()->dispatch(this);
     step_states(INPUT_OUTPUT);
     step_states(OUTPUT);
 #endif
@@ -159,8 +174,9 @@ void Driver::stage_remaining() {
     cudaSync();
     cudaCheckError(NULL);
 #else
-    launch_to(INPUT);
-    launch_to(INTERNAL);
+    schedule_to(INPUT);
+    schedule_to(INTERNAL);
+    Scheduler::get_instance()->dispatch(this);
     step_states(INPUT);
     step_states(INTERNAL);
     step_weights();

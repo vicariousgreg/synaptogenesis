@@ -1,35 +1,35 @@
 #include <vector>
 #include "driver/stream.h"
-#include "driver/driver.h"
+#include "driver/scheduler.h"
 
-void Stream::execute(Driver *driver, int to_execute) {
-    if (executed < to_execute) {
+void Stream::execute(int to_execute) {
+    while (executed < to_execute) {
 #ifdef PARALLEL
-        // Set the stream and launch
-        driver->curr_stream = &this->cuda_stream;
-#endif
-        while (executed < to_execute)
-            driver->update_connection(instructions[executed++]);
-#ifdef PARALLEL
-        for (int i = 0; i < IO_TYPE_SIZE; ++i) {
+        Scheduler::get_instance()->schedule_execution(&this->cuda_stream, instructions[executed++]);
+        for (int i = 0; i < IO_TYPE_SIZE; ++i)
             if (executed == last_index[i] + 1)
                 cudaEventRecord(events[i], cuda_stream);
-        }
+#else
+        Scheduler::get_instance()->schedule_execution(instructions[executed++]);
 #endif
     }
 }
 
-void Stream::execute(Driver *driver) {
-    this->execute(driver, instructions.size());
+void Stream::execute() {
+    this->execute(instructions.size());
 }
 
-void Stream::execute(Driver *driver, IOType type) {
-    this->execute(driver, last_index[type] + 1);
+void Stream::execute(IOType type) {
+    this->execute(last_index[type] + 1);
 }
 
-void Stream::update_weights(Driver *driver) {
+void Stream::update_weights() {
     for (int i = 0; i < instructions.size(); ++i)
-        driver->update_weights(instructions[i]);
+#ifdef PARALLEL
+        Scheduler::get_instance()->schedule_weight_update(&this->cuda_stream, instructions[i]);
+#else
+        Scheduler::get_instance()->schedule_weight_update(instructions[i]);
+#endif
 }
 
 bool Stream::is_done() {
@@ -63,19 +63,19 @@ void StreamCluster::reset() {
         it->second->reset();
 }
 
-void StreamCluster::execute(Driver *driver) {
+void StreamCluster::execute() {
     for (auto it = streams.begin(); it != streams.end(); ++it)
-        it->second->execute(driver);
+        it->second->execute();
 }
 
-void StreamCluster::execute(Driver *driver, IOType type) {
+void StreamCluster::execute(IOType type) {
     for (auto it = streams.begin(); it != streams.end(); ++it)
-        it->second->execute(driver, type);
+        it->second->execute(type);
 }
 
-void StreamCluster::update_weights(Driver *driver) {
+void StreamCluster::update_weights() {
     for (auto it = streams.begin(); it != streams.end(); ++it)
-        it->second->update_weights(driver);
+        it->second->update_weights();
 }
 
 bool StreamCluster::is_done() {

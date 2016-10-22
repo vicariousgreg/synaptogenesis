@@ -30,11 +30,12 @@ class Driver {
 #ifdef PARALLEL
         void wait_event(IOType to_type, cudaEvent_t event);
 #endif
-        void launch_from(IOType from_type);
-        void launch_to(IOType to_type);
-        void launch(IOType from_type, IOType to_type);
+        void schedule_from(IOType from_type);
+        void schedule_to(IOType to_type);
+        void schedule(IOType from_type, IOType to_type);
 
         // Main hooks
+        void stage_clear();
         void stage_input(Buffer *buffer);
         void stage_calc_output();
         void stage_send_output(Buffer *buffer);

@@ -88,10 +88,12 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     /* Determine output type */
     std::string output_name;
     output_name = "print_output";
+    //output_name = "dummy_output";
 
     /* Construct the model */
     Model *model = new Model(driver_name);
 
+    //const char* image_path = "resources/bird.jpg";
     //const char* image_path = "resources/bird-head.jpg";
     const char* image_path = "resources/bird-head-small.jpg";
     Layer *receptor = model->add_layer_from_image(image_path, "default");
@@ -218,8 +220,8 @@ int main(void) {
 
     try {
         //stress_test();
-        layers_test();
-        //image_test();
+        //layers_test();
+        image_test();
         //varied_test();
 
         return 0;
