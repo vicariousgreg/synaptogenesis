@@ -38,29 +38,29 @@ class Model {
         }
 
         /* Adds a layer to the environment with the given parameters */
-        Layer* add_layer(std::string name, int rows, int columns, std::string params);
-        Layer* add_layer_from_image(std::string name, std::string path, std::string params);
+        void add_layer(std::string name, int rows, int columns, std::string params);
+        void add_layer_from_image(std::string name, std::string path, std::string params);
 
         /* Connects two layers, creating a weight matrix with the given
          *   parameters */
-        Connection* connect_layers(Layer* from_layer, Layer* to_layer,
+        Connection* connect_layers(std::string from_layer_name, std::string to_layer_name,
             bool plastic, int delay, float max_weight, ConnectionType type,
             Opcode opcode, std::string params);
 
         /* Connects to layers, sharing weights with another connection
          *   specified by |parent_id| */
         Connection* connect_layers_shared(
-            Layer* from_layer, Layer* to_layer, Connection* parent);
+            std::string from_layer_name, std::string to_layer_name, Connection* parent);
 
         /* Uses expected sizes to create a new layer and connect it to the
          *   given layer.  Returns the id of the new layer. */
-        Layer* connect_layers_expected(std::string name,
-            Layer *from_layer, std::string new_layer_params,
+        void connect_layers_expected(
+            std::string from_layer_name, std::string to_layer_name, std::string new_layer_params,
             bool plastic, int delay, float max_weight,
             ConnectionType type, Opcode opcode, std::string params);
 
         /* Adds a module of the given |type| for the given |layer| */
-        void add_module(Layer *layer, std::string type, std::string params);
+        void add_module(std::string layer, std::string type, std::string params);
 
         /* Reorganizes the model to place input and ouput layers in
          *   contiguous memory. */
@@ -84,6 +84,13 @@ class Model {
         std::vector<Module*> modules;
 
     private:
+        Layer* find_layer(std::string name) {
+            if (layers_by_name.find(name) != layers_by_name.end())
+                return layers_by_name.find(name)->second;
+            else
+                return NULL;
+        }
+
         /* Adds a given number of neurons.
          * This is called from add_layer() */
         void add_neurons(int count) {

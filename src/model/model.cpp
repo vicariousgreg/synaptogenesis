@@ -7,9 +7,15 @@ Model::Model (std::string driver_string) :
         num_neurons(0),
         driver_string(driver_string) {}
 
-Connection* Model::connect_layers(Layer* from_layer, Layer* to_layer,
+Connection* Model::connect_layers(
+        std::string from_layer_name, std::string to_layer_name,
         bool plastic, int delay, float max_weight,
         ConnectionType type, Opcode opcode, std::string params) {
+    Layer *from_layer = find_layer(from_layer_name);
+    Layer *to_layer = find_layer(to_layer_name);
+    if (from_layer == NULL or to_layer == NULL)
+        throw "Could not find layer!";
+
     int conn_id = this->connections.size();
     Connection *conn = new Connection(
         conn_id, from_layer, to_layer,
@@ -21,10 +27,16 @@ Connection* Model::connect_layers(Layer* from_layer, Layer* to_layer,
 }
 
 Connection* Model::connect_layers_shared(
-        Layer* from_layer, Layer* to_layer, Connection* parent) {
+        std::string from_layer_name, std::string to_layer_name,
+        Connection* parent) {
     // Ensure parent doesn't have a parent
     if (parent->parent != NULL)
         throw "Shared connections must refer to non-shared connection!";
+
+    Layer *from_layer = find_layer(from_layer_name);
+    Layer *to_layer = find_layer(to_layer_name);
+    if (from_layer == NULL or to_layer == NULL)
+        throw "Could not find layer!";
 
     // Ensure that the weights can be shared by checking sizes
     int conn_id = this->connections.size();
@@ -45,17 +57,22 @@ Connection* Model::connect_layers_shared(
     }
 }
 
-Layer* Model::connect_layers_expected(std::string name, Layer* from_layer,
+void Model::connect_layers_expected(
+        std::string from_layer_name, std::string to_layer_name,
         std::string new_layer_params, bool plastic, int delay,
         float max_weight, ConnectionType type, Opcode opcode,
         std::string params) {
+    Layer *from_layer = find_layer(from_layer_name);
+    if (from_layer == NULL)
+        throw "Could not find layer!";
+
     // Determine new layer size and create
     int expected_rows = get_expected_dimension(
         from_layer->rows, type, params);
     int expected_columns = get_expected_dimension(
         from_layer->columns, type, params);
-    Layer *to_layer = add_layer(name,
-        expected_rows, expected_columns, new_layer_params);
+    add_layer(to_layer_name, expected_rows, expected_columns, new_layer_params);
+    Layer *to_layer = find_layer(to_layer_name);
 
     // Connect new layer to given layer
     int conn_id = this->connections.size();
@@ -65,12 +82,9 @@ Layer* Model::connect_layers_expected(std::string name, Layer* from_layer,
     this->connections.push_back(conn);
     from_layer->add_output_connection(conn);
     to_layer->add_input_connection(conn);
-
-    // Return new layer
-    return to_layer;
 }
 
-Layer* Model::add_layer(std::string name, int rows, int columns, std::string params) {
+void Model::add_layer(std::string name, int rows, int columns, std::string params) {
     if (this->layers_by_name.find(name) != this->layers_by_name.end())
         throw "Repeated layer name!";
 
@@ -84,16 +98,18 @@ Layer* Model::add_layer(std::string name, int rows, int columns, std::string par
 
     // Add neurons.
     this->add_neurons(rows*columns);
-
-    return layer;
 }
 
-Layer* Model::add_layer_from_image(std::string name, std::string path, std::string params) {
+void Model::add_layer_from_image(std::string name, std::string path, std::string params) {
     cimg_library::CImg<unsigned char> img(path.c_str());
-    return this->add_layer(name, img.height(), img.width(), params);
+    this->add_layer(name, img.height(), img.width(), params);
 }
 
-void Model::add_module(Layer* layer, std::string type, std::string params) {
+void Model::add_module(std::string layer_name, std::string type, std::string params) {
+    Layer *layer = find_layer(layer_name);
+    if (layer == NULL)
+        throw "Could not find layer!";
+
     Module *module = build_module(layer, type, params, this->driver_string);
     layer->add_module(module->get_type());
     this->modules.push_back(module);
