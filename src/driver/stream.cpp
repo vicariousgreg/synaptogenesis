@@ -8,7 +8,7 @@ void Stream::schedule_execution(int to_schedule) {
         Scheduler::get_instance()->schedule_execution(&this->cuda_stream, instructions[scheduled++]);
         for (int i = 0; i < IO_TYPE_SIZE; ++i)
             if (scheduled == last_index[i] + 1)
-                cudaEventRecord(events[i], cuda_stream);
+                cudaEventRecord(*events[i], cuda_stream);
 #else
         Scheduler::get_instance()->schedule_execution(instructions[scheduled++]);
 #endif
@@ -38,7 +38,7 @@ bool Stream::is_done() {
 
 bool Stream::is_done(IOType type) {
 #ifdef PARALLEL
-    return cudaEventQuery(events[type]) == cudaSuccess;
+    return cudaEventQuery(*events[type]) == cudaSuccess;
 #else
     return scheduled > last_index[type];
 #endif
@@ -53,8 +53,8 @@ bool Stream::is_running() {
 }
 
 #ifdef PARALLEL
-void Stream::wait_event(cudaEvent_t event) {
-    cudaStreamWaitEvent(this->cuda_stream, event, 0);
+void Stream::wait_event(cudaEvent_t *event) {
+    cudaStreamWaitEvent(this->cuda_stream, *event, 0);
 }
 #endif
 
@@ -94,20 +94,20 @@ bool StreamCluster::is_done(IOType type) {
 }
 
 #ifdef PARALLEL
-void StreamCluster::wait_event(cudaEvent_t event) {
+void StreamCluster::wait_event(cudaEvent_t *event) {
     for (auto it = streams.begin(); it != streams.end(); ++it)
         it->second->wait_event(event);
 }
 
 void StreamCluster::block_stream(cudaStream_t stream) {
     for (auto it = streams.begin(); it != streams.end(); ++it)
-        cudaStreamWaitEvent(stream, it->second->finished_event, 0);
+        cudaStreamWaitEvent(stream, *it->second->finished_event, 0);
 }
 
 void StreamCluster::block_stream(cudaStream_t stream, IOType type) {
     for (auto it = streams.begin(); it != streams.end(); ++it) {
         for (int i = 0; i < IO_TYPE_SIZE; ++i)
-            cudaStreamWaitEvent(stream, it->second->events[i], 0);
+            cudaStreamWaitEvent(stream, *it->second->events[i], 0);
     }
 }
 #endif

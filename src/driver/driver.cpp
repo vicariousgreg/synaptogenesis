@@ -8,6 +8,18 @@ Driver::Driver() {
     cudaStreamCreate(&this->io_stream);
     cudaStreamCreate(&this->kernel_stream);
     this->curr_stream = &this->kernel_stream;
+
+    input_event = new cudaEvent_t;
+    clear_event = new cudaEvent_t;
+    output_calc_event = new cudaEvent_t;
+    output_event = new cudaEvent_t;
+
+    unsigned int flags = cudaEventDisableTiming;
+    unsigned int io_flags = flags & cudaEventBlockingSync;
+    cudaEventCreateWithFlags(input_event, io_flags);
+    cudaEventCreateWithFlags(clear_event, flags);
+    cudaEventCreateWithFlags(output_calc_event, flags);
+    cudaEventCreateWithFlags(output_event, io_flags);
 #endif
 }
 
@@ -38,7 +50,7 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
 }
 
 #ifdef PARALLEL
-void Driver::wait_event(IOType to_type, cudaEvent_t event) {
+void Driver::wait_event(IOType to_type, cudaEvent_t *event) {
     stream_clusters[to_type].wait_event(event);
 }
 #endif
@@ -60,17 +72,17 @@ void Driver::stage_clear() {
     // Create events
     unsigned int flags = cudaEventDisableTiming;
     unsigned int io_flags = flags & cudaEventBlockingSync;
-    cudaEventCreateWithFlags(&input_event, io_flags);
-    cudaEventCreateWithFlags(&clear_event, flags);
-    cudaEventCreateWithFlags(&output_calc_event, flags);
-    cudaEventCreateWithFlags(&output_event, io_flags);
+    cudaEventCreateWithFlags(input_event, io_flags);
+    cudaEventCreateWithFlags(clear_event, flags);
+    cudaEventCreateWithFlags(output_calc_event, flags);
+    cudaEventCreateWithFlags(output_event, io_flags);
 
     // Start input clearing
     this->curr_stream = &this->kernel_stream;
     clear_input(this->state->input,
         this->state->start_index[OUTPUT],
         this->state->total_neurons);
-    cudaEventRecord(this->clear_event, *this->curr_stream);
+    cudaEventRecord(*this->clear_event, *this->curr_stream);
 
     // Ensure all layer streams wait for appropriate input
     wait_event(INPUT, this->input_event);
@@ -79,8 +91,8 @@ void Driver::stage_clear() {
     wait_event(INTERNAL, this->clear_event);
 
     // Launch output relevant computations
-    schedule_from(OUTPUT);
     schedule_from(INPUT_OUTPUT);
+    schedule_from(OUTPUT);
     schedule_to(OUTPUT);
     schedule_to(INPUT_OUTPUT);
     Scheduler::get_instance()->dispatch(this);
@@ -97,7 +109,7 @@ void Driver::stage_clear() {
     this->curr_stream = &this->kernel_stream;
     step_states(INPUT_OUTPUT);
     step_states(OUTPUT);
-    cudaEventRecord(this->output_calc_event, *this->curr_stream);
+    cudaEventRecord(*this->output_calc_event, *this->curr_stream);
 
     // Launch remaining calculations
     schedule_to(INPUT);
@@ -113,7 +125,7 @@ void Driver::stage_clear() {
     step_states(INTERNAL);
 
     // Wait for input stream to return
-    cudaEventSynchronize(this->input_event);
+    cudaEventSynchronize(*this->input_event);
 #else
     clear_input(this->state->input,
         this->state->start_index[OUTPUT],
@@ -128,10 +140,10 @@ void Driver::stage_input(Buffer *buffer) {
 #ifdef PARALLEL
     // Start input streaming
     this->state->get_input_from(buffer, this->io_stream);
-    cudaEventRecord(this->input_event, this->io_stream);
+    cudaEventRecord(*this->input_event, this->io_stream);
 
     // Wait for input stream to return
-    cudaEventSynchronize(this->input_event);
+    cudaEventSynchronize(*this->input_event);
 #else
     this->state->get_input_from(buffer);
 #endif
@@ -153,11 +165,11 @@ void Driver::stage_calc_output() {
 void Driver::stage_send_output(Buffer *buffer) {
 #ifdef PARALLEL
     // Wait for output calculation to complete
-    cudaEventSynchronize(this->output_calc_event);
+    cudaEventSynchronize(*this->output_calc_event);
 
     // Start stream, and wait for it to return
     this->state->send_output_to(buffer, this->io_stream);
-    cudaEventSynchronize(this->output_event);
+    cudaEventSynchronize(*this->output_event);
 #else
     this->state->send_output_to(buffer);
 #endif

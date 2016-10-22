@@ -17,15 +17,30 @@ class Stream {
                 last_index[i] = 0;
 #ifdef PARALLEL
             cudaStreamCreate(&cuda_stream);
+            finished_event = new cudaEvent_t;
+            for (int i = 0; i < IO_TYPE_SIZE; ++i)
+                events[i] = new cudaEvent_t;
+#endif
+            reset();
+        }
+
+        virtual ~Stream() {
+#ifdef PARALLEL
+            for (int i = 0; i < IO_TYPE_SIZE; ++i) {
+                cudaEventDestroy(*events[i]);
+                delete events[i];
+            }
+            cudaEventDestroy(*finished_event);
+            delete finished_event;
 #endif
         }
 
         void reset() {
             this->scheduled = 0;
 #ifdef PARALLEL
-            cudaEventCreateWithFlags(&finished_event, cudaEventDisableTiming);
+            cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
             for (int i = 0; i < IO_TYPE_SIZE; ++i)
-                cudaEventCreateWithFlags(&events[i], cudaEventDisableTiming);
+                cudaEventCreateWithFlags(events[i], cudaEventDisableTiming);
 #endif
         }
 
@@ -44,7 +59,7 @@ class Stream {
         bool is_running();
 
 #ifdef PARALLEL
-        void wait_event(cudaEvent_t event);
+        void wait_event(cudaEvent_t *event);
 #endif
 
     private:
@@ -55,8 +70,8 @@ class Stream {
         Layer *to_layer;
         std::vector<Instruction *> instructions;
 #ifdef PARALLEL
-        cudaEvent_t events[IO_TYPE_SIZE];
-        cudaEvent_t finished_event;
+        cudaEvent_t *events[IO_TYPE_SIZE];
+        cudaEvent_t *finished_event;
         cudaStream_t cuda_stream;
 #endif
 };
@@ -64,6 +79,11 @@ class Stream {
 class StreamCluster {
     public:
         StreamCluster() {}
+        virtual ~StreamCluster() {
+            for (auto it = streams.begin(); it != streams.end(); ++it) {
+                delete it->second;
+            }
+        }
 
         void add_instruction(Layer *layer, Instruction *inst, IOType from_type) {
             std::map<Layer*, Stream*>::iterator it = streams.find(layer);
@@ -84,7 +104,7 @@ class StreamCluster {
         bool is_done();
         bool is_done(IOType type);
 #ifdef PARALLEL
-        void wait_event(cudaEvent_t event);
+        void wait_event(cudaEvent_t *event);
         void block_stream(cudaStream_t stream);
         void block_stream(cudaStream_t stream, IOType type);
 #endif

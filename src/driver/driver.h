@@ -19,16 +19,20 @@ class Driver {
             for (int i = 0; i < this->all_instructions.size(); ++i)
                 delete this->all_instructions[i];
 #ifdef PARALLEL
-            cudaEventDestroy(input_event);
-            cudaEventDestroy(clear_event);
-            cudaEventDestroy(output_calc_event);
-            cudaEventDestroy(output_event);
+            cudaEventDestroy(*input_event);
+            cudaEventDestroy(*clear_event);
+            cudaEventDestroy(*output_calc_event);
+            cudaEventDestroy(*output_event);
+            delete input_event;
+            delete clear_event;
+            delete output_calc_event;
+            delete output_event;
 #endif
         }
 
         void build_instructions(Model *model, int timesteps_per_output);
 #ifdef PARALLEL
-        void wait_event(IOType to_type, cudaEvent_t event);
+        void wait_event(IOType to_type, cudaEvent_t *event);
 #endif
         void schedule_from(IOType from_type);
         void schedule_to(IOType to_type);
@@ -75,10 +79,10 @@ class Driver {
         cudaStream_t *curr_stream;
 
         cudaEvent_t
-            input_event,
-            clear_event,
-            output_calc_event,
-            output_event;
+            *input_event,
+            *clear_event,
+            *output_calc_event,
+            *output_event;
 #else
 #endif
 };
