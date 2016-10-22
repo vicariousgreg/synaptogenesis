@@ -45,18 +45,13 @@ void Driver::wait_event(IOType to_type, cudaEvent_t event) {
 
 void Driver::schedule_from(IOType from_type) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        stream_clusters[i].execute(from_type);
+        stream_clusters[i].schedule_execution(from_type);
 }
 
 void Driver::schedule_to(IOType to_type) {
-    stream_clusters[to_type].execute();
+    stream_clusters[to_type].schedule_execution();
 }
 
-void Driver::schedule(IOType from_type, IOType to_type) {
-    stream_clusters[to_type].execute(from_type);
-}
-
-///////
 void Driver::stage_clear() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         stream_clusters[i].reset();
@@ -170,7 +165,7 @@ void Driver::stage_send_output(Buffer *buffer) {
 
 void Driver::stage_remaining() {
 #ifdef PARALLEL
-    // Synchronize, then delete events
+    // Synchronize and check for errors
     cudaSync();
     cudaCheckError(NULL);
 #else
@@ -184,8 +179,6 @@ void Driver::stage_remaining() {
 }
 
 
-///////
-
 void Driver::step_all_states() {
     this->update_state(0, this->state->total_neurons);
 }
@@ -198,8 +191,9 @@ void Driver::step_states(IOType layer_type) {
 }
 
 void Driver::step_weights() {
-    for (int i = 0; i < all_instructions.size(); ++i)
-        this->update_weights(all_instructions[i]);
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        stream_clusters[i].schedule_weight_update();
+    Scheduler::get_instance()->dispatch(this);
 }
 
 Driver* build_driver(Model* model) {

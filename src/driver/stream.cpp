@@ -2,28 +2,28 @@
 #include "driver/stream.h"
 #include "driver/scheduler.h"
 
-void Stream::execute(int to_execute) {
-    while (executed < to_execute) {
+void Stream::schedule_execution(int to_schedule) {
+    while (scheduled < to_schedule) {
 #ifdef PARALLEL
-        Scheduler::get_instance()->schedule_execution(&this->cuda_stream, instructions[executed++]);
+        Scheduler::get_instance()->schedule_execution(&this->cuda_stream, instructions[scheduled++]);
         for (int i = 0; i < IO_TYPE_SIZE; ++i)
-            if (executed == last_index[i] + 1)
+            if (scheduled == last_index[i] + 1)
                 cudaEventRecord(events[i], cuda_stream);
 #else
-        Scheduler::get_instance()->schedule_execution(instructions[executed++]);
+        Scheduler::get_instance()->schedule_execution(instructions[scheduled++]);
 #endif
     }
 }
 
-void Stream::execute() {
-    this->execute(instructions.size());
+void Stream::schedule_execution() {
+    this->schedule_execution(instructions.size());
 }
 
-void Stream::execute(IOType type) {
-    this->execute(last_index[type] + 1);
+void Stream::schedule_execution(IOType type) {
+    this->schedule_execution(last_index[type] + 1);
 }
 
-void Stream::update_weights() {
+void Stream::schedule_weight_update() {
     for (int i = 0; i < instructions.size(); ++i)
 #ifdef PARALLEL
         Scheduler::get_instance()->schedule_weight_update(&this->cuda_stream, instructions[i]);
@@ -33,14 +33,14 @@ void Stream::update_weights() {
 }
 
 bool Stream::is_done() {
-    return (executed == instructions.size()) and (not is_running());
+    return (scheduled == instructions.size()) and (not is_running());
 }
 
 bool Stream::is_done(IOType type) {
 #ifdef PARALLEL
     return cudaEventQuery(events[type]) == cudaSuccess;
 #else
-    return executed > last_index[type];
+    return scheduled > last_index[type];
 #endif
 }
 
@@ -63,19 +63,19 @@ void StreamCluster::reset() {
         it->second->reset();
 }
 
-void StreamCluster::execute() {
+void StreamCluster::schedule_execution() {
     for (auto it = streams.begin(); it != streams.end(); ++it)
-        it->second->execute();
+        it->second->schedule_execution();
 }
 
-void StreamCluster::execute(IOType type) {
+void StreamCluster::schedule_execution(IOType type) {
     for (auto it = streams.begin(); it != streams.end(); ++it)
-        it->second->execute(type);
+        it->second->schedule_execution(type);
 }
 
-void StreamCluster::update_weights() {
+void StreamCluster::schedule_weight_update() {
     for (auto it = streams.begin(); it != streams.end(); ++it)
-        it->second->update_weights();
+        it->second->schedule_weight_update();
 }
 
 bool StreamCluster::is_done() {

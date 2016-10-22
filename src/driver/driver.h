@@ -32,7 +32,6 @@ class Driver {
 #endif
         void schedule_from(IOType from_type);
         void schedule_to(IOType to_type);
-        void schedule(IOType from_type, IOType to_type);
 
         // Main hooks
         void stage_clear();

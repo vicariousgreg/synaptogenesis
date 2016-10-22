@@ -12,7 +12,7 @@ class StreamCluster;
 
 class Stream {
     public:
-        Stream(Layer *layer) : to_layer(layer), executed(0) {
+        Stream(Layer *layer) : to_layer(layer), scheduled(0) {
             for (int i = 0; i < IO_TYPE_SIZE; ++i)
                 last_index[i] = 0;
 #ifdef PARALLEL
@@ -21,7 +21,7 @@ class Stream {
         }
 
         void reset() {
-            this->executed = 0;
+            this->scheduled = 0;
 #ifdef PARALLEL
             cudaEventCreateWithFlags(&finished_event, cudaEventDisableTiming);
             for (int i = 0; i < IO_TYPE_SIZE; ++i)
@@ -29,10 +29,10 @@ class Stream {
 #endif
         }
 
-        void execute();
-        void execute(int to_execute);
-        void execute(IOType type);
-        void update_weights();
+        void schedule_execution();
+        void schedule_execution(int to_schedule);
+        void schedule_execution(IOType type);
+        void schedule_weight_update();
 
         void add_instruction(Instruction *inst, IOType from_type) {
             this->last_index[from_type] = instructions.size();
@@ -50,7 +50,7 @@ class Stream {
     private:
         friend class StreamCluster;
 
-        int executed;
+        int scheduled;
         int last_index[IO_TYPE_SIZE];
         Layer *to_layer;
         std::vector<Instruction *> instructions;
@@ -78,9 +78,9 @@ class StreamCluster {
         }
 
         void reset();
-        void execute();
-        void execute(IOType type);
-        void update_weights();
+        void schedule_execution();
+        void schedule_execution(IOType type);
+        void schedule_weight_update();
         bool is_done();
         bool is_done(IOType type);
 #ifdef PARALLEL
