@@ -29,7 +29,7 @@ inline int calc_threads(int computations) {
     return IDEAL_THREADS;
 }
 
-inline int calc_blocks(int computations) {
+inline int calc_blocks(int computations, int threads=IDEAL_THREADS) {
     return ceil((float) computations / calc_threads(computations));
 }
 

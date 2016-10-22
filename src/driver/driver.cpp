@@ -5,10 +5,8 @@
 Driver::Driver() {
 #ifdef PARALLEL
     cudaStreamCreate(&this->io_stream);
-
-    for (int i = 0; i < NUM_KERNEL_STREAMS; ++i)
-        cudaStreamCreate(&this->kernel_streams[i]);
-    this->curr_stream = &this->kernel_streams[0];
+    cudaStreamCreate(&this->kernel_stream);
+    this->curr_stream = &this->kernel_stream;
 #endif
 }
 
@@ -33,86 +31,95 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
                 this->state->get_matrix(conn->id));
         this->all_instructions.push_back(inst);
 
-        // Determine which category it falls in
-        if (to_layer->type == INPUT) {
-            if (from_layer->type == INPUT or from_layer->type == INTERNAL)
-                this->instructions_i.push_back(inst);
-            else
-                this->instructions_io.push_back(inst);
-        } else if (to_layer->type == INPUT_OUTPUT) {
-            this->instructions_io.push_back(inst);
-        } else if (to_layer->type == OUTPUT) {
-            this->instructions_xo.push_back(inst);
-        } else if (to_layer->type == INTERNAL) {
-            if (from_layer->type == INPUT or from_layer->type == INTERNAL)
-                this->instructions_x.push_back(inst);
-            else
-                this->instructions_xo.push_back(inst);
-        }
+        // Stream cluster
+        stream_clusters[to_layer->type].add_instruction(to_layer, inst, from_layer->type);
     }
+}
+
+#ifdef PARALLEL
+void Driver::wait_event(IOType to_type, cudaEvent_t event) {
+    stream_clusters[to_type].wait_event(event);
+}
+#endif
+
+void Driver::launch_from(IOType from_type) {
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        stream_clusters[i].execute(this, from_type);
+}
+
+void Driver::launch_to(IOType to_type) {
+    stream_clusters[to_type].execute(this);
+}
+
+void Driver::launch(IOType from_type, IOType to_type) {
+    stream_clusters[to_type].execute(this, from_type);
 }
 
 ///////
 void Driver::stage_input(Buffer *buffer) {
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        stream_clusters[i].reset();
+
 #ifdef PARALLEL
     // Create events
     unsigned int flags = cudaEventDisableTiming;
     unsigned int io_flags = flags & cudaEventBlockingSync;
-    cudaEventCreateWithFlags(&input_stream_event, io_flags);
-    cudaEventCreateWithFlags(&io_event, flags);
-    cudaEventCreateWithFlags(&xo_event, flags);
-    cudaEventCreateWithFlags(&output_calc_event, io_flags);
-    cudaEventCreateWithFlags(&output_stream_event, io_flags);
+    cudaEventCreateWithFlags(&input_event, io_flags);
+    cudaEventCreateWithFlags(&clear_event, flags);
+    cudaEventCreateWithFlags(&output_calc_event, flags);
+    cudaEventCreateWithFlags(&output_event, io_flags);
 
     // Start input clearing
-    this->curr_stream = &this->kernel_streams[0];
+    this->curr_stream = &this->kernel_stream;
     clear_input(this->state->input,
         this->state->start_index[OUTPUT],
         this->state->total_neurons);
-
-    // Perform XO connection computation once clearing is done
-    this->curr_stream = &this->kernel_streams[0];
-    step_connections_xo();
-    cudaEventRecord(this->xo_event, *this->curr_stream);
+    cudaEventRecord(this->clear_event, *this->curr_stream);
 
     // Start input streaming
     this->state->get_input_from(buffer, this->io_stream);
-    cudaEventRecord(this->input_stream_event, this->io_stream);
+    cudaEventRecord(this->input_event, this->io_stream);
 
-    // Perform IO connection computation once input is done
-    this->curr_stream = &this->kernel_streams[1];
-    cudaStreamWaitEvent(*this->curr_stream, this->input_stream_event, 0);
-    step_connections_io();
-    cudaEventRecord(this->io_event, *this->curr_stream);
+    // Ensure all layer streams wait for appropriate input
+    wait_event(INPUT, this->input_event);
+    wait_event(INPUT_OUTPUT, this->input_event);
+    wait_event(OUTPUT, this->clear_event);
+    wait_event(INTERNAL, this->clear_event);
 
-    // Wait for IO and XO computations to do rest of output computation
-    this->curr_stream = &this->kernel_streams[0];
-    cudaStreamWaitEvent(*this->curr_stream, this->io_event, 0);
-    cudaStreamWaitEvent(*this->curr_stream, this->xo_event, 0);
+    // Launch output relevant computations
+    launch_from(OUTPUT);
+    launch_from(INPUT_OUTPUT);
+    launch_to(OUTPUT);
+    launch_to(INPUT_OUTPUT);
+
+    // Wait for output computations to finish
+    for (int i = 0; i < IO_TYPE_SIZE; ++i) {
+        stream_clusters[i].block_stream(this->kernel_stream, OUTPUT);
+        stream_clusters[i].block_stream(this->kernel_stream, INPUT_OUTPUT);
+    }
+    stream_clusters[INPUT_OUTPUT].block_stream(this->kernel_stream);
+    stream_clusters[OUTPUT].block_stream(this->kernel_stream);
+
+    // Output state computation
+    this->curr_stream = &this->kernel_stream;
     step_states(INPUT_OUTPUT);
     step_states(OUTPUT);
     cudaEventRecord(this->output_calc_event, *this->curr_stream);
 
-    // Wait for output calculation to finish up
-    this->curr_stream = &this->kernel_streams[0];
-    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
-    step_connections_i();
-    step_states(INPUT);
+    // Launch remaining calculations
+    launch_to(INPUT);
+    launch_to(INTERNAL);
+    // Block kernel stream until they are done
+    stream_clusters[INPUT].block_stream(this->kernel_stream);
+    stream_clusters[INTERNAL].block_stream(this->kernel_stream);
 
-    this->curr_stream = &this->kernel_streams[1];
-    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
-    step_connections_x();
+    // Launch final state computations
+    this->curr_stream = &this->kernel_stream;
+    step_states(INPUT);
     step_states(INTERNAL);
 
-    // Finally, once everything is done, update weights
-    this->curr_stream = &this->kernel_streams[0];
-    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
-    this->curr_stream = &this->kernel_streams[1];
-    cudaStreamWaitEvent(*this->curr_stream, this->output_calc_event, 0);
-    step_weights();
-
     // Wait for input stream to return
-    cudaEventSynchronize(this->input_stream_event);
+    cudaEventSynchronize(this->input_event);
 #else
     this->state->get_input_from(buffer);
 #endif
@@ -124,8 +131,10 @@ void Driver::stage_calc_output() {
     clear_input(this->state->input,
         this->state->start_index[OUTPUT],
         this->state->total_neurons);
-    step_connections_io();
-    step_connections_xo();
+    launch_from(OUTPUT);
+    launch_from(INPUT_OUTPUT);
+    launch_to(OUTPUT);
+    launch_to(INPUT_OUTPUT);
     step_states(INPUT_OUTPUT);
     step_states(OUTPUT);
 #endif
@@ -138,7 +147,7 @@ void Driver::stage_send_output(Buffer *buffer) {
 
     // Start stream, and wait for it to return
     this->state->send_output_to(buffer, this->io_stream);
-    cudaEventSynchronize(this->output_stream_event);
+    cudaEventSynchronize(this->output_event);
 #else
     this->state->send_output_to(buffer);
 #endif
@@ -149,14 +158,9 @@ void Driver::stage_remaining() {
     // Synchronize, then delete events
     cudaSync();
     cudaCheckError(NULL);
-    cudaEventDestroy(input_stream_event);
-    cudaEventDestroy(io_event);
-    cudaEventDestroy(xo_event);
-    cudaEventDestroy(output_calc_event);
-    cudaEventDestroy(output_stream_event);
 #else
-    step_connections_i();
-    step_connections_x();
+    launch_to(INPUT);
+    launch_to(INTERNAL);
     step_states(INPUT);
     step_states(INTERNAL);
     step_weights();
@@ -165,18 +169,6 @@ void Driver::stage_remaining() {
 
 
 ///////
-
-void Driver::step_connections(std::vector<Instruction* > instructions) {
-    for (int i = 0; i < instructions.size(); ++i)
-        this->update_connection(instructions[i]);
-}
-
-void Driver::step_all_connections() { step_connections(this->all_instructions); }
-void Driver::step_connections_i() { step_connections(this->instructions_i); }
-void Driver::step_connections_io() { step_connections(this->instructions_io); }
-void Driver::step_connections_xo() { step_connections(this->instructions_xo); }
-void Driver::step_connections_x() { step_connections(this->instructions_x); }
-
 
 void Driver::step_all_states() {
     this->update_state(0, this->state->total_neurons);

@@ -1,8 +1,6 @@
 #ifndef driver_h
 #define driver_h
 
-#define NUM_KERNEL_STREAMS 3
-
 #include <vector>
 
 #include "state/state.h"
@@ -10,6 +8,7 @@
 #include "io/buffer.h"
 #include "driver/kernel.h"
 #include "driver/instruction.h"
+#include "driver/stream.h"
 #include "parallel.h"
 
 class Driver {
@@ -19,9 +18,21 @@ class Driver {
             delete this->state;
             for (int i = 0; i < this->all_instructions.size(); ++i)
                 delete this->all_instructions[i];
+#ifdef PARALLEL
+            cudaEventDestroy(input_event);
+            cudaEventDestroy(clear_event);
+            cudaEventDestroy(output_calc_event);
+            cudaEventDestroy(output_event);
+#endif
         }
 
         void build_instructions(Model *model, int timesteps_per_output);
+#ifdef PARALLEL
+        void wait_event(IOType to_type, cudaEvent_t event);
+#endif
+        void launch_from(IOType from_type);
+        void launch_to(IOType to_type);
+        void launch(IOType from_type, IOType to_type);
 
         // Main hooks
         void stage_input(Buffer *buffer);
@@ -29,13 +40,6 @@ class Driver {
         void stage_send_output(Buffer *buffer);
         void stage_remaining();
 
-        void step_connections(std::vector<Instruction* > instructions);
-        void step_all_connections();
-        void step_connections_i();
-        void step_connections_io();
-        void step_connections_xo();
-        void step_connections_x();
-        void step_connections_other();
         void step_all_states();
         void step_states(IOType layer_type);
         void step_weights();
@@ -61,25 +65,20 @@ class Driver {
         void step(Instruction *inst, float(*calc_input)(Output, ARGS...), ARGS... args);
 
         State *state;
-        std::vector<Instruction* >
-            instructions_i,
-            instructions_io,
-            instructions_xo,
-            instructions_x,
-            instructions_other;
         std::vector<Instruction* > all_instructions;
+        StreamCluster stream_clusters[IO_TYPE_SIZE];
 
 #ifdef PARALLEL
+
         cudaStream_t io_stream;
-        cudaStream_t kernel_streams[NUM_KERNEL_STREAMS];
+        cudaStream_t kernel_stream;
         cudaStream_t *curr_stream;
 
         cudaEvent_t
-            input_stream_event,
-            io_event,
-            xo_event,
+            input_event,
+            clear_event,
             output_calc_event,
-            output_stream_event;
+            output_event;
 #else
 #endif
 };
