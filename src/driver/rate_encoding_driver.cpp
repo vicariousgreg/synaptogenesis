@@ -33,8 +33,8 @@ void RateEncodingDriver::update_state(int start_index, int count) {
     RateEncodingState* state = (RateEncodingState*) this->state;
 
 #ifdef PARALLEL
-    int threads = IDEAL_THREADS;
-    int blocks = calc_blocks(count, threads);
+    int threads = calc_threads(count);
+    int blocks = calc_blocks(count);
     shift_output<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
     shift_output(

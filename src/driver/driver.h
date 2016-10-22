@@ -91,8 +91,8 @@ inline void Driver::clear_input(float* input, int offset, int num_neurons) {
     int count = num_neurons - offset;
     if (count > 0) {
 #ifdef PARALLEL
-        int threads = IDEAL_THREADS;
-        int blocks = calc_blocks(count, threads);
+        int threads = calc_threads(count);
+        int blocks = calc_blocks(count);
         // Use the current stream, as set by the driver
         clear_data<<<blocks, threads, 0, *this->curr_stream>>>(
             input + offset,
@@ -145,7 +145,7 @@ void Driver::step(Instruction *inst,
     // Calculate grid and block sizes based on type
     dim3 blocks_per_grid;
     dim3 threads_per_block;
-    int threads = MAX_THREADS;
+    int threads = calc_threads(inst->to_size);
 
     switch (inst->type) {
         case (FULLY_CONNECTED):
@@ -158,8 +158,8 @@ void Driver::step(Instruction *inst,
         case (CONVERGENT):
         case (CONVERGENT_CONVOLUTIONAL):
             blocks_per_grid = dim3(
-                calc_blocks(inst->to_rows, 1),
-                calc_blocks(inst->to_columns, threads));
+                inst->to_rows,
+                calc_blocks(inst->to_columns));
             threads_per_block = dim3(1, threads);
             break;
         default:

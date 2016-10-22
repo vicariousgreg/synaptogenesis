@@ -56,27 +56,27 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
 Model* build_layers_model(std::string driver_name, bool verbose) {
     Model *model = new Model(driver_name);
 
-    int size = 1000000;
+    int size = 1000;
     Layer *a = model->add_layer(1, size, "random positive");
     model->add_module(a, "dummy_input", "");
 
-    Layer *c = model->add_layer(1, size, "random positive");
-    model->connect_layers(a, c, true, 0, .5, ONE_TO_ONE, ADD, "");
-    Layer *d = model->add_layer(1, size, "random positive");
-    model->connect_layers(a, d, true, 0, .5, ONE_TO_ONE, ADD, "");
-    Layer *e = model->add_layer(1, size, "random positive");
-    model->connect_layers(a, e, true, 0, .5, ONE_TO_ONE, ADD, "");
+    Layer *c = model->add_layer(10, size, "random positive");
+    model->connect_layers(a, c, true, 0, .5, FULLY_CONNECTED, ADD, "");
+    Layer *d = model->add_layer(10, size, "random positive");
+    model->connect_layers(a, d, true, 0, .5, FULLY_CONNECTED, ADD, "");
+    Layer *e = model->add_layer(10, size, "random positive");
+    model->connect_layers(a, e, true, 0, .5, FULLY_CONNECTED, ADD, "");
 
     Layer *f = model->add_layer(1, size, "random positive");
-    model->connect_layers(c, f, true, 0, .5, ONE_TO_ONE, ADD, "");
+    model->connect_layers(c, f, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->add_module(f, "dummy_output", "");
 
     Layer *g = model->add_layer(1, size, "random positive");
-    model->connect_layers(d, g, true, 0, .5, ONE_TO_ONE, ADD, "");
-    model->connect_layers(f, g, true, 0, .5, ONE_TO_ONE, ADD, "");
+    model->connect_layers(d, g, true, 0, .5, FULLY_CONNECTED, ADD, "");
+    model->connect_layers(f, g, true, 0, .5, FULLY_CONNECTED, ADD, "");
 
     Layer *b = model->add_layer(1, size, "random positive");
-    model->connect_layers(f, b, true, 0, .5, ONE_TO_ONE, ADD, "");
+    model->connect_layers(f, b, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->add_module(b, "dummy_input", "");
     model->add_module(b, "dummy_output", "");
 
@@ -165,7 +165,7 @@ void layers_test() {
     std::cout << "Layers...\n";
     model = build_layers_model("izhikevich", true);
     //model = build_layers_model("rate_encoding", true);
-    run_simulation(model, 50, true);
+    run_simulation(model, 500, true);
     std::cout << "\n";
 
     delete model;
@@ -217,8 +217,8 @@ int main(void) {
     srand(time(NULL));
 
     try {
-        stress_test();
-        //layers_test();
+        //stress_test();
+        layers_test();
         //image_test();
         //varied_test();
 

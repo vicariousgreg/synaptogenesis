@@ -38,8 +38,8 @@ void IzhikevichDriver::update_connection(Instruction *inst) {
 
 void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
-    int threads = IDEAL_THREADS;
-    int blocks = calc_blocks(count, threads);
+    int threads = calc_threads(count);
+    int blocks = calc_blocks(count);
     izhikevich<<<blocks, threads, 0, *this->curr_stream>>>(
 #else
     izhikevich(

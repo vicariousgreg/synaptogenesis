@@ -56,11 +56,13 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
 void Driver::stage_input(Buffer *buffer) {
 #ifdef PARALLEL
     // Create events
-    cudaEventCreate(&input_stream_event, cudaEventDisableTiming);
-    cudaEventCreate(&io_event, cudaEventDisableTiming);
-    cudaEventCreate(&xo_event, cudaEventDisableTiming);
-    cudaEventCreate(&output_calc_event, cudaEventDisableTiming);
-    cudaEventCreate(&output_stream_event, cudaEventDisableTiming);
+    unsigned int flags = cudaEventDisableTiming;
+    unsigned int io_flags = flags & cudaEventBlockingSync;
+    cudaEventCreateWithFlags(&input_stream_event, io_flags);
+    cudaEventCreateWithFlags(&io_event, flags);
+    cudaEventCreateWithFlags(&xo_event, flags);
+    cudaEventCreateWithFlags(&output_calc_event, io_flags);
+    cudaEventCreateWithFlags(&output_stream_event, io_flags);
 
     // Start input clearing
     this->curr_stream = &this->kernel_streams[0];

@@ -25,12 +25,12 @@
 #define MAX_THREADS 1024
 #define MAX_BLOCKS 65535
 
-inline int calc_blocks(int computations) {
-    return ceil((float) computations / IDEAL_THREADS);
+inline int calc_threads(int computations) {
+    return IDEAL_THREADS;
 }
 
-inline int calc_blocks(int computations, int threads) {
-    return ceil((float) computations / threads);
+inline int calc_blocks(int computations) {
+    return ceil((float) computations / calc_threads(computations));
 }
 
 inline void cudaSync() {

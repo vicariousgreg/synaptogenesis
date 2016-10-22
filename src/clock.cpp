@@ -8,6 +8,7 @@ void wait_for_permission(std::mutex *mu, Thread_ID *owner, Thread_ID me) {
         mu->lock();
         if (*owner == me) return;
         else mu->unlock();
+        std::this_thread::yield();
     }
 }
 
