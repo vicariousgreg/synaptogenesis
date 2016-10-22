@@ -11,14 +11,23 @@ Buffer::Buffer(int input_start_index, int input_size,
         output_size(output_size) {
 #ifdef PARALLEL
     // Allocate pinned memory
-    cudaMallocHost((void**) &this->input, input_size * sizeof(float));
-    cudaMallocHost((void**) &this->output, output_size * sizeof(Output));
+    if (input_size > 0)
+        cudaMallocHost((void**) &this->input, input_size * sizeof(float));
+    else this->input = NULL;
+    if (output_size > 0)
+        cudaMallocHost((void**) &this->output, output_size * sizeof(Output));
+    else this->output = NULL;
 
     for (int i = 0; i < input_size; ++i) this->input[i] = 0.0;
 #else
     // Allocate unpinned memory
-    this->input = (float*)calloc(input_size, sizeof(float));
-    this->output = (Output*)calloc(output_size, sizeof(Output));
+    if (input_size > 0)
+        this->input = (float*)calloc(input_size, sizeof(float));
+    else this->input = NULL;
+
+    if (output_size > 0)
+        this->output = (Output*)calloc(output_size, sizeof(Output));
+    else this->output = NULL;
 #endif
 }
 

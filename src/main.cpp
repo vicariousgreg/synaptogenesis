@@ -28,9 +28,10 @@ Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionTy
 
     int rows = 1000;
     int cols = 1000;
-    Layer *a = model->add_layer(rows, cols, "random positive");
-    model->connect_layers_expected(a, "random positive" , true, 0, .5, type, ADD, "7 1");
+    Layer *a = model->add_layer("a", rows, cols, "random positive");
+    Layer *b = model->connect_layers_expected("b", a, "random positive" , true, 0, .5, type, ADD, "7 1");
     model->add_module(a, "random_input", "5");
+    //model->add_module(b, "dummy_output", "5");
 
     if (verbose) print_model(model);
     return model;
@@ -40,8 +41,8 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
     Model *model = new Model(driver_name);
 
     int size = 800 * 19;
-    Layer *pos = model->add_layer(1, size, "random positive");
-    Layer *neg = model->add_layer(1, size / 4, "random negative");
+    Layer *pos = model->add_layer("pos", 1, size, "random positive");
+    Layer *neg = model->add_layer("neg", 1, size / 4, "random negative");
     model->connect_layers(pos, pos, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->connect_layers(pos, neg, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->connect_layers(neg, pos, true, 0, 1, FULLY_CONNECTED, SUB, "");
@@ -57,25 +58,25 @@ Model* build_layers_model(std::string driver_name, bool verbose) {
     Model *model = new Model(driver_name);
 
     int size = 1000;
-    Layer *a = model->add_layer(1, size, "random positive");
+    Layer *a = model->add_layer("a", 1, size, "random positive");
     model->add_module(a, "dummy_input", "");
 
-    Layer *c = model->add_layer(10, size, "random positive");
+    Layer *c = model->add_layer("c", 10, size, "random positive");
     model->connect_layers(a, c, true, 0, .5, FULLY_CONNECTED, ADD, "");
-    Layer *d = model->add_layer(10, size, "random positive");
+    Layer *d = model->add_layer("d", 10, size, "random positive");
     model->connect_layers(a, d, true, 0, .5, FULLY_CONNECTED, ADD, "");
-    Layer *e = model->add_layer(10, size, "random positive");
+    Layer *e = model->add_layer("e", 10, size, "random positive");
     model->connect_layers(a, e, true, 0, .5, FULLY_CONNECTED, ADD, "");
 
-    Layer *f = model->add_layer(1, size, "random positive");
+    Layer *f = model->add_layer("f", 1, size, "random positive");
     model->connect_layers(c, f, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->add_module(f, "dummy_output", "");
 
-    Layer *g = model->add_layer(1, size, "random positive");
+    Layer *g = model->add_layer("g", 1, size, "random positive");
     model->connect_layers(d, g, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->connect_layers(f, g, true, 0, .5, FULLY_CONNECTED, ADD, "");
 
-    Layer *b = model->add_layer(1, size, "random positive");
+    Layer *b = model->add_layer("b", 1, size, "random positive");
     model->connect_layers(f, b, true, 0, .5, FULLY_CONNECTED, ADD, "");
     model->add_module(b, "dummy_input", "");
     model->add_module(b, "dummy_output", "");
@@ -96,12 +97,12 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //const char* image_path = "resources/bird.jpg";
     //const char* image_path = "resources/bird-head.jpg";
     const char* image_path = "resources/bird-head-small.jpg";
-    Layer *receptor = model->add_layer_from_image(image_path, "default");
+    Layer *receptor = model->add_layer_from_image("photoreceptor", image_path, "default");
     model->add_module(receptor, "image_input", image_path);
     model->add_module(receptor, output_name, "24");
 
     // Vertical line detection
-    Layer *vertical = model->connect_layers_expected(receptor, "default",
+    Layer *vertical = model->connect_layers_expected("vertical", receptor, "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 0 10 0 -5 "
@@ -112,7 +113,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //model->add_module(vertical, output_name, "24");
 
     // Horizontal line detection
-    Layer *horizontal = model->connect_layers_expected(receptor, "default",
+    Layer *horizontal = model->connect_layers_expected("horizontal", receptor, "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 -5 -5 -5 -5 "
@@ -123,7 +124,7 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     //model->add_module(horizontal, output_name, "24");
 
     // Cross detection
-    Layer *cross = model->connect_layers_expected(vertical, "default",
+    Layer *cross = model->connect_layers_expected("cross", vertical, "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
         "-.5  -.5 1  -.5 -.5 "
@@ -179,8 +180,8 @@ void image_test() {
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
-    run_simulation(model, 500, true);
-    //run_simulation(model, 10, true);
+    //run_simulation(model, 500, true);
+    run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;

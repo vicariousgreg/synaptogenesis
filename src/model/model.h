@@ -2,6 +2,7 @@
 #define model_h
 
 #include <vector>
+#include <map>
 #include <string>
 
 #include "constants.h"
@@ -37,8 +38,8 @@ class Model {
         }
 
         /* Adds a layer to the environment with the given parameters */
-        Layer* add_layer(int rows, int columns, std::string params);
-        Layer* add_layer_from_image(std::string path, std::string params);
+        Layer* add_layer(std::string name, int rows, int columns, std::string params);
+        Layer* add_layer_from_image(std::string name, std::string path, std::string params);
 
         /* Connects two layers, creating a weight matrix with the given
          *   parameters */
@@ -53,8 +54,8 @@ class Model {
 
         /* Uses expected sizes to create a new layer and connect it to the
          *   given layer.  Returns the id of the new layer. */
-        Layer* connect_layers_expected(Layer *from_layer,
-            std::string new_layer_params,
+        Layer* connect_layers_expected(std::string name,
+            Layer *from_layer, std::string new_layer_params,
             bool plastic, int delay, float max_weight,
             ConnectionType type, Opcode opcode, std::string params);
 
@@ -74,6 +75,7 @@ class Model {
         // Layers
         std::vector<Layer*> layers[IO_TYPE_SIZE];
         std::vector<Layer*> all_layers;
+        std::map<std::string, Layer*> layers_by_name;
 
         // Connections
         std::vector<Connection*> connections;

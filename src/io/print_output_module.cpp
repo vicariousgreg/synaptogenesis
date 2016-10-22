@@ -40,7 +40,7 @@ void PrintOutputModule::report_output(Buffer *buffer) {
 
     // Print bar
     for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
-    std::cout << "\n-----  layer id: " << this->layer->id << "-----\n";
+    std::cout << "\n-----  layer: " << this->layer->name << " -----\n";
     for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
     std::cout << "\n";
 

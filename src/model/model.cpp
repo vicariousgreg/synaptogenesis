@@ -45,7 +45,7 @@ Connection* Model::connect_layers_shared(
     }
 }
 
-Layer* Model::connect_layers_expected(Layer* from_layer,
+Layer* Model::connect_layers_expected(std::string name, Layer* from_layer,
         std::string new_layer_params, bool plastic, int delay,
         float max_weight, ConnectionType type, Opcode opcode,
         std::string params) {
@@ -54,7 +54,7 @@ Layer* Model::connect_layers_expected(Layer* from_layer,
         from_layer->rows, type, params);
     int expected_columns = get_expected_dimension(
         from_layer->columns, type, params);
-    Layer *to_layer = add_layer(
+    Layer *to_layer = add_layer(name,
         expected_rows, expected_columns, new_layer_params);
 
     // Connect new layer to given layer
@@ -70,13 +70,17 @@ Layer* Model::connect_layers_expected(Layer* from_layer,
     return to_layer;
 }
 
-Layer* Model::add_layer(int rows, int columns, std::string params) {
+Layer* Model::add_layer(std::string name, int rows, int columns, std::string params) {
+    if (this->layers_by_name.find(name) != this->layers_by_name.end())
+        throw "Repeated layer name!";
+
     // Index of first neuron for layer
     int start_index = this->num_neurons;
     int layer_index = this->all_layers.size();
 
-    Layer* layer = new Layer(layer_index, start_index, rows, columns, params);
+    Layer* layer = new Layer(name, start_index, rows, columns, params);
     this->all_layers.push_back(layer);
+    this->layers_by_name[name] = layer;
 
     // Add neurons.
     this->add_neurons(rows*columns);
@@ -84,9 +88,9 @@ Layer* Model::add_layer(int rows, int columns, std::string params) {
     return layer;
 }
 
-Layer* Model::add_layer_from_image(std::string path, std::string params) {
+Layer* Model::add_layer_from_image(std::string name, std::string path, std::string params) {
     cimg_library::CImg<unsigned char> img(path.c_str());
-    return this->add_layer(img.height(), img.width(), params);
+    return this->add_layer(name, img.height(), img.width(), params);
 }
 
 void Model::add_module(Layer* layer, std::string type, std::string params) {
@@ -119,7 +123,6 @@ void Model::sort_layers() {
     // Adjust indices and ids
     int start_index = 0;
     for (int i = 0 ; i < all_layers.size(); ++i) {
-        all_layers[i]->id = i;
         all_layers[i]->index = start_index;
         start_index += all_layers[i]->size;
     }

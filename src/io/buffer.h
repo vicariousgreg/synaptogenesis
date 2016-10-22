@@ -10,12 +10,12 @@ class Buffer {
         ~Buffer() {
 #ifdef PARALLEL
             // Free pinned memory
-            cudaFree(this->input);
-            cudaFree(this->output);
+            if (input_size > 0) cudaFreeHost(this->input);
+            if (output_size > 0) cudaFreeHost(this->output);
 #else
             // Free non-pinned memory
-            free(this->input);
-            free(this->output);
+            if (input_size > 0) free(this->input);
+            if (output_size > 0) free(this->output);
 #endif
         }
 
