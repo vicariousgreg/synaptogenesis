@@ -56,10 +56,10 @@ GLOBAL void calc_divergent(
         float sum = 0.0;
 
         // Determine range of source neurons for divergent kernel
-        int start_s_row = d_row / inst.overlap;
-        int start_s_col = d_col / inst.overlap ;
-        int end_s_row = (d_row + inst.stride) / inst.overlap;
-        int end_s_col = (d_col + inst.stride) / inst.overlap ;
+        int start_s_row = (d_row + inst.fray - inst.overlap + inst.stride) / inst.stride;
+        int start_s_col = (d_col + inst.fray - inst.overlap + inst.stride) / inst.stride;
+        int end_s_row = (d_row + inst.fray) / inst.stride;
+        int end_s_col = (d_col + inst.fray) / inst.stride;
 
         // Kernels are organized into columns
         // One kernel per source neuron
@@ -71,6 +71,10 @@ GLOBAL void calc_divergent(
         // Iterate over relevant source neurons...
         for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
             for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
+                // Avoid making connections with non-existent neurons!
+                if (s_row < 0 or s_row >= inst.from_rows
+                    or s_col < 0 or s_col >= inst.from_columns)
+                    continue;
                 int s_index = (s_row * inst.from_columns) + s_col;
                 int k_row =
                     (d_row + ((inst.overlap - inst.stride) * s_row)
@@ -106,8 +110,8 @@ GLOBAL void calc_convergent(
 
     if (d_row < inst.to_rows and d_col < inst.to_columns) {
         float sum = 0.0;
-        int s_row = d_row * inst.stride;
-        int s_col = d_col * inst.stride;
+        int s_row = d_row * inst.stride + inst.fray;
+        int s_col = d_col * inst.stride + inst.fray;
 
         // Kernels are organized into columns
         // One kernel per destination neuron
@@ -123,9 +127,15 @@ GLOBAL void calc_convergent(
         // Run the kernel
         for (int k_row = 0 ; k_row < inst.overlap ; ++k_row) {
             for (int k_col = 0 ; k_col < inst.overlap ; ++k_col) {
-                int s_index =
-                    ((s_row+k_row) * inst.from_columns)
-                    + (s_col+k_col);
+                int k_s_row = s_row + k_row;
+                int k_s_col = s_col + k_row;
+                // The connection is frayed if the layers are the same size
+                // Avoid making connections with non-existent neurons!
+                if (inst.fray > 0 and (k_s_row < 0 or k_s_row >= inst.to_rows
+                    or k_s_col < 0 or k_s_col >= inst.to_columns))
+                    continue;
+
+                int s_index = k_s_row * inst.from_columns + k_s_col;
 
                 // Row of matrix is the kernel index * row size (see above)
                 int weight_offset =
@@ -149,7 +159,7 @@ GLOBAL void calc_convergent(
  */
 
 template <typename... ARGS>
-GLOBAL void calc_fully_connected(
+void calc_fully_connected(
         Instruction inst,
         float(*extractor)(Output, ARGS...), ARGS... args) {
     for (int row = 0 ; row < inst.to_size ; ++row) {
@@ -163,7 +173,7 @@ GLOBAL void calc_fully_connected(
 }
 
 template <typename... ARGS>
-GLOBAL void calc_one_to_one(
+void calc_one_to_one(
         Instruction inst,
         float(*extractor)(Output, ARGS...), ARGS... args) {
     for (int index = 0 ; index < inst.from_size ; ++index) {
@@ -173,7 +183,7 @@ GLOBAL void calc_one_to_one(
 }
 
 template <typename... ARGS>
-GLOBAL void calc_divergent(
+void calc_divergent(
         Instruction inst,
         float(*extractor)(Output, ARGS...), ARGS... args) {
     int kernel_size = inst.overlap * inst.overlap;
@@ -185,14 +195,19 @@ GLOBAL void calc_divergent(
             float sum = 0.0;
 
             // Determine range of source neurons for divergent kernel
-            int start_s_row = d_row / inst.overlap;
-            int start_s_col = d_col / inst.overlap ;
-            int end_s_row = (d_row + inst.stride) / inst.overlap;
-            int end_s_col = (d_col + inst.stride) / inst.overlap ;
+            int start_s_row = (d_row + inst.fray - inst.overlap + inst.stride) / inst.stride;
+            int start_s_col = (d_col + inst.fray - inst.overlap + inst.stride) / inst.stride;
+            int end_s_row = (d_row + inst.fray) / inst.stride;
+            int end_s_col = (d_col + inst.fray) / inst.stride;
 
             // Iterate over relevant source neurons...
             for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
                 for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
+                    // Avoid making connections with non-existent neurons!
+                    if (s_row < 0 or s_row >= inst.from_rows
+                        or s_col < 0 or s_col >= inst.from_columns)
+                        continue;
+
                     int s_index = (s_row * inst.from_columns) + s_col;
                     int k_row =
                         (d_row + ((inst.overlap - inst.stride) * s_row)
@@ -218,7 +233,7 @@ GLOBAL void calc_divergent(
 }
 
 template <typename... ARGS>
-GLOBAL void calc_convergent(
+void calc_convergent(
         Instruction inst,
         float(*extractor)(Output, ARGS...), ARGS... args) {
     int kernel_size = inst.overlap * inst.overlap;
@@ -230,8 +245,8 @@ GLOBAL void calc_convergent(
             float sum = 0.0;
 
             // Determine starting row and column for source neurons
-            int s_row = d_row * inst.stride;
-            int s_col = d_col * inst.stride;
+            int s_row = d_row * inst.stride + inst.fray;
+            int s_col = d_col * inst.stride + inst.fray;
 
             // Row of matrix is either the first column (convolutional)
             //   or the index of the destination neuron otherwise
@@ -241,9 +256,15 @@ GLOBAL void calc_convergent(
             // Run the kernel
             for (int k_row = 0 ; k_row < inst.overlap ; ++k_row) {
                 for (int k_col = 0 ; k_col < inst.overlap ; ++k_col) {
-                    int s_index =
-                        ((s_row+k_row) * inst.from_columns)
-                        + (s_col+k_col);
+                    int k_s_row = s_row + k_row;
+                    int k_s_col = s_col + k_row;
+                    // The connection is frayed if the layers are the same size
+                    // Avoid making connections with non-existent neurons!
+                    if (inst.fray > 0 and (k_s_row < 0 or k_s_row >= inst.to_rows
+                        or k_s_col < 0 or k_s_col >= inst.to_columns))
+                        continue;
+
+                    int s_index = k_s_row * inst.from_columns + k_s_col;
 
                     // Column of matrix is the kernel index
                     int weight_col = (k_row * inst.overlap) + k_col;

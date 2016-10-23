@@ -42,8 +42,16 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             // Extract remaining parameters for later
             if (!stream.eof()) std::getline(stream, this->init_params);
 
-            if (to_layer->rows != get_expected_dimension(from_layer->rows, type, params) or
-                to_layer->columns != get_expected_dimension(from_layer->columns, type, params))
+            // If the layers are the same size, arborized connections can be
+            //     accommodated.  If not, the layers must meet size expectations
+            if (not
+                    (to_layer->rows == from_layer->rows
+                    and to_layer->columns == from_layer->columns)
+                and
+                    (to_layer->rows !=
+                        get_expected_dimension(from_layer->rows, type, params)
+                    or to_layer->columns !=
+                        get_expected_dimension(from_layer->columns, type, params)))
                 throw "Unexpected destination layer size for arborized connection!";
             this->num_weights = overlap * overlap * stride;
 

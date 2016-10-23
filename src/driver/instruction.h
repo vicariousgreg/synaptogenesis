@@ -22,13 +22,18 @@ class Instruction {
                 num_weights(conn->num_weights),
                 outputs(outputs + conn->from_layer->index),
                 inputs(inputs + conn->to_layer->index),
-                weights(weights) {}
+                weights(weights) {
+            this->fray = 
+                (to_rows == from_rows and to_columns == from_columns)
+                    ? overlap / 2 : 0;
+        }
 
         ConnectionType type;
         bool convolutional;
         Opcode opcode;
 
         int overlap, stride;
+        int fray;
         int delay;
 
         int from_size, from_rows, from_columns;

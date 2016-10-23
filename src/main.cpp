@@ -23,6 +23,25 @@ void print_model(Model *model) {
     printf("  - weights     : %10d\n", num_weights);
 }
 
+Model* build_self_connected_model(std::string driver_name, bool verbose) {
+    Model *model = new Model(driver_name);
+
+    int rows = 1000;
+    int cols = 1000;
+    model->add_layer("a", rows, cols, "random positive");
+    model->connect_layers("a", "a", true, 0, .5, CONVERGENT_CONVOLUTIONAL, ADD, "7 1");
+    model->add_module("a", "random_input", "5");
+    //model->add_module("a", "dummy_output", "5");
+
+    model->add_layer("b", rows, cols, "random positive");
+    model->connect_layers("b", "b", true, 0, .5, DIVERGENT_CONVOLUTIONAL, ADD, "7 1");
+    model->add_module("b", "random_input", "5");
+    //model->add_module("b", "dummy_output", "5");
+
+    if (verbose) print_model(model);
+    return model;
+}
+
 Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionType type) {
     Model *model = new Model(driver_name);
 
@@ -95,8 +114,8 @@ Model* build_image_model(std::string driver_name, bool verbose) {
     Model *model = new Model(driver_name);
 
     //const char* image_path = "resources/bird.jpg";
-    //const char* image_path = "resources/bird-head.jpg";
-    const char* image_path = "resources/bird-head-small.jpg";
+    const char* image_path = "resources/bird-head.jpg";
+    //const char* image_path = "resources/bird-head-small.jpg";
     model->add_layer_from_image("photoreceptor", image_path, "default");
     model->add_module("photoreceptor", "image_input", image_path);
     model->add_module("photoreceptor", output_name, "24");
@@ -181,7 +200,7 @@ void image_test() {
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
     //run_simulation(model, 500, true);
-    run_simulation(model, 10, true);
+    run_simulation(model, 1, true);
     std::cout << "\n";
 
     delete model;
@@ -189,6 +208,12 @@ void image_test() {
 
 void varied_test() {
     Model *model;
+
+    std::cout << "Self connected...\n";
+    model = build_self_connected_model("izhikevich", true);
+    run_simulation(model, 50, true);
+    std::cout << "\n";
+    delete model;
 
     std::cout << "Convergent...\n";
     model = build_arborized_model("izhikevich", true, CONVERGENT);
@@ -222,8 +247,8 @@ int main(void) {
     try {
         //stress_test();
         //layers_test();
-        image_test();
-        //varied_test();
+        //image_test();
+        varied_test();
 
         return 0;
     } catch (const char* msg) {
