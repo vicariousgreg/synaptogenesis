@@ -7,6 +7,7 @@
 #include "constants.h"
 
 class Connection;
+class Module;
 
 /* Represents a two dimensional layer of neurons.
  * Layers can be constructed and connected into networks using the Model class.
@@ -42,6 +43,9 @@ class Layer {
         std::vector<Connection*> input_connections;
         std::vector<Connection*> output_connections;
 
+        Module *input_module;
+        Module *output_module;
+
     private:
         friend class Model;
 
@@ -49,16 +53,7 @@ class Layer {
          * |start_index| identifies the first neuron in the layer.
          * |size| indicates the size of the layer.
          */
-        Layer(std::string name, int start_index, int rows, int columns, std::string params) :
-                name(name),
-                index(start_index),
-                rows(rows),
-                columns(columns),
-                size(rows * columns),
-                params(params),
-                type(INTERNAL),
-                input_index(0),
-                output_index(0) {}
+        Layer(std::string name, int start_index, int rows, int columns, std::string params);
 
         void add_input_connection(Connection* connection) {
             this->input_connections.push_back(connection);
@@ -68,23 +63,7 @@ class Layer {
             this->output_connections.push_back(connection);
         }
 
-        void add_module(IOType new_type) {
-            if ((this->type == INPUT or this->type == INPUT_OUTPUT)
-                and (new_type == INPUT or new_type == INPUT_OUTPUT))
-                throw "Layer cannot have more than one input module!";
-            else if (new_type == INPUT_OUTPUT)
-                this->type = new_type;
-            else if (new_type == INPUT)
-                if (this->type == OUTPUT)
-                    this->type = INPUT_OUTPUT;
-                else
-                    this->type = new_type;
-            else if (new_type == OUTPUT)
-                if (this->type == INPUT)
-                    this->type = INPUT_OUTPUT;
-                else
-                    this->type = new_type;
-        }
+        void add_module(Module *module);
 };
 
 #endif

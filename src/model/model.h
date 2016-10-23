@@ -33,8 +33,6 @@ class Model {
                 delete this->connections[i];
             for (int i = 0; i < this->all_layers.size(); ++i)
                 delete this->all_layers[i];
-            for (int i = 0; i < this->modules.size(); ++i)
-                delete this->modules[i];
         }
 
         /* Adds a layer to the environment with the given parameters */
@@ -79,9 +77,6 @@ class Model {
 
         // Connections
         std::vector<Connection*> connections;
-
-        // Input and output modules
-        std::vector<Module*> modules;
 
     private:
         Layer* find_layer(std::string name) {

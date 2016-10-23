@@ -111,8 +111,7 @@ void Model::add_module(std::string layer_name, std::string type, std::string par
         throw "Could not find layer!";
 
     Module *module = build_module(layer, type, params, this->driver_string);
-    layer->add_module(module->get_type());
-    this->modules.push_back(module);
+    layer->add_module(module);
 }
 
 static bool contains(std::vector<Layer *> layers, Layer* layer) {
