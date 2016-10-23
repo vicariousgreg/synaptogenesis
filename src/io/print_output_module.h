@@ -6,12 +6,12 @@
 class PrintOutputModule : public Module {
     public:
         PrintOutputModule(Layer *layer,
-            std::string params, std::string &driver_type);
+            std::string params);
         virtual ~PrintOutputModule() {
             free(this->reverses);
         }
 
-        void report_output(Buffer *buffer);
+        void report_output(Buffer *buffer, OutputType output_type);
         virtual IOType get_type() { return OUTPUT; }
 
     private:

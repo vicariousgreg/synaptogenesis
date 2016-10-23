@@ -7,9 +7,6 @@
 #include "parallel.h"
 
 State::State(Model *model, int weight_depth) {
-    // Sort model layers, to ensure memory continuity for I/O layers
-    model->sort_layers();
-
     // Get neuron counts
     this->total_neurons = model->num_neurons;
 

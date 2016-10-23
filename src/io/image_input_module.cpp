@@ -7,9 +7,8 @@
 #define cimg_display 0
 #include "libs/CImg.h"
 
-ImageInputModule::ImageInputModule(Layer *layer,
-        std::string params, std::string &driver_type)
-        : Module(layer, driver_type) {
+ImageInputModule::ImageInputModule(Layer *layer, std::string params)
+        : Module(layer) {
     try {
         cimg_library::CImg<unsigned char> img(params.c_str());
         width = img.width();

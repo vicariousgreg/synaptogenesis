@@ -5,9 +5,7 @@
 
 class DummyInputModule : public Module {
     public:
-        DummyInputModule(Layer *layer,
-            std::string params, std::string &driver_type)
-                : Module(layer, driver_type) {}
+        DummyInputModule(Layer *layer, std::string params) : Module(layer) {}
 
         virtual IOType get_type() { return INPUT; }
 };

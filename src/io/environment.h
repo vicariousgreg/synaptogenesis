@@ -6,7 +6,7 @@
 
 class Environment {
     public:
-        Environment(Model *model);
+        Environment(Model *model, OutputType output_type);
         virtual ~Environment() {
             for (int i = 0; i < this->input_modules.size(); ++i)
                 delete this->input_modules[i];
@@ -18,6 +18,7 @@ class Environment {
         void step_output(Buffer *buffer);
 
     private:
+        OutputType output_type;
         std::vector<Module*> input_modules;
         std::vector<Module*> output_modules;
 };

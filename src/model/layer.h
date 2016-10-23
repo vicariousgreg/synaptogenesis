@@ -48,12 +48,14 @@ class Layer {
 
     private:
         friend class Model;
+        friend class Structure;
 
         /* Constructor.
          * |start_index| identifies the first neuron in the layer.
          * |size| indicates the size of the layer.
          */
         Layer(std::string name, int start_index, int rows, int columns, std::string params);
+        Layer(std::string name, int rows, int columns, std::string params);
 
         void add_input_connection(Connection* connection) {
             this->input_connections.push_back(connection);

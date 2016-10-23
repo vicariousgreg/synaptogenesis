@@ -8,22 +8,14 @@
 #include "constants.h"
 #include "model/layer.h"
 #include "model/connection.h"
+#include "model/structure.h"
 #include "io/module.h"
 
 /* Represents a full neural network model.
  * Contains network graph data and parameters for layers/connections.
  *
- * Layers can be created using add_layer()
- * Layers can be connected in a few ways:
- *   - connect_layers() connects two layers with given parameters
- *   - connect_layers_shared() connects two layers, sharing weights with
- *       another connection and inheriting its properties
- *   - connect_layers_expected() extrapolates destination layer size given
- *       a source layer and connection parameters
- *
- *  In addition, input and output modules can be attached to layers using
- *    add_module(). These modules contain hooks for driving input to a layer
- *    and extracting and using output of a layer.
+ * Models are built up using Structures, which are subgraphs of the full
+ *     network.  They can be built individually and added to the model.
  */
 class Model {
     public:
@@ -35,34 +27,12 @@ class Model {
                 delete this->all_layers[i];
         }
 
-        /* Adds a layer to the environment with the given parameters */
-        void add_layer(std::string name, int rows, int columns, std::string params);
-        void add_layer_from_image(std::string name, std::string path, std::string params);
+        void add_structure(Structure *structure);
 
-        /* Connects two layers, creating a weight matrix with the given
-         *   parameters */
-        Connection* connect_layers(std::string from_layer_name, std::string to_layer_name,
-            bool plastic, int delay, float max_weight, ConnectionType type,
-            Opcode opcode, std::string params);
-
-        /* Connects to layers, sharing weights with another connection
-         *   specified by |parent_id| */
-        Connection* connect_layers_shared(
-            std::string from_layer_name, std::string to_layer_name, Connection* parent);
-
-        /* Uses expected sizes to create a new layer and connect it to the
-         *   given layer.  Returns the id of the new layer. */
-        void connect_layers_expected(
-            std::string from_layer_name, std::string to_layer_name, std::string new_layer_params,
-            bool plastic, int delay, float max_weight,
-            ConnectionType type, Opcode opcode, std::string params);
-
-        /* Adds a module of the given |type| for the given |layer| */
-        void add_module(std::string layer, std::string type, std::string params);
-
-        /* Reorganizes the model to place input and ouput layers in
+        /* Extracts layers and connections from structures.
+         * Reorganizes the model to place input and ouput layers in
          *   contiguous memory. */
-        void sort_layers();
+        void build();
 
         // Driver string indicating type of driver
         std::string driver_string;
@@ -70,22 +40,17 @@ class Model {
         // Total number of neurons
         int num_neurons;
 
+        // Map of names to structures
+        std::map<std::string, Structure*> structures;
+
         // Layers
         std::vector<Layer*> layers[IO_TYPE_SIZE];
         std::vector<Layer*> all_layers;
-        std::map<std::string, Layer*> layers_by_name;
 
         // Connections
         std::vector<Connection*> connections;
 
     private:
-        Layer* find_layer(std::string name) {
-            if (layers_by_name.find(name) != layers_by_name.end())
-                return layers_by_name.find(name)->second;
-            else
-                return NULL;
-        }
-
         /* Adds a given number of neurons.
          * This is called from add_layer() */
         void add_neurons(int count) {

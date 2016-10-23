@@ -5,9 +5,8 @@
 #include "io/print_output_module.h"
 #include "tools.h"
 
-PrintOutputModule::PrintOutputModule(Layer *layer,
-        std::string params, std::string &driver_type)
-        : Module(layer, driver_type),
+PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)
+        : Module(layer),
           counter(0) {
     std::stringstream stream(params);
     if (!stream.eof()) {
@@ -35,7 +34,7 @@ PrintOutputModule::PrintOutputModule(Layer *layer,
     }
 }
 
-void PrintOutputModule::report_output(Buffer *buffer) {
+void PrintOutputModule::report_output(Buffer *buffer, OutputType output_type) {
     Output* output = buffer->get_output();
 
     // Print bar
@@ -54,13 +53,15 @@ void PrintOutputModule::report_output(Buffer *buffer) {
 
             float fraction;
             Output out_value = output[index+layer->output_index];
-            if (this->driver_type == "izhikevich") {
-                unsigned int spike_value = (unsigned int) (out_value.i & this->maximum);
-                unsigned int value = this->reverses[spike_value];
-                fraction = float(value) / this->maximum;
-            } else if (this->driver_type == "rate_encoding") {
-                fraction = out_value.f;
-            } else {
+            switch (output_type) {
+                case FLOAT:
+                    fraction = out_value.f;
+                    break;
+                case INT:
+                    unsigned int spike_value = (unsigned int) (out_value.i & this->maximum);
+                    unsigned int value = this->reverses[spike_value];
+                    fraction = float(value) / this->maximum;
+                    break;
             }
             if (fraction > 0) {
                 //std::cout << value << " ";

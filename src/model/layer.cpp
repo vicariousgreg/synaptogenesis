@@ -1,4 +1,5 @@
 #include "io/module.h"
+#include "layer.h"
 
 Layer::Layer(std::string name, int start_index, int rows, int columns, std::string params) :
         name(name),
@@ -12,6 +13,9 @@ Layer::Layer(std::string name, int start_index, int rows, int columns, std::stri
         output_index(0),
         input_module(NULL),
         output_module(NULL) {}
+
+Layer::Layer(std::string name, int rows, int columns, std::string params) :
+    Layer(name, 0, rows, columns, params) { }
 
 void Layer::add_module(Module *module) {
     IOType new_type = module->get_type();

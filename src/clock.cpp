@@ -93,7 +93,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     }
 
     // Build environment and buffer
-    Environment env(model);
+    Environment env(model, driver->get_output_type());
     int input_output_size = driver->state->num_neurons[INPUT_OUTPUT];
     int input_size = input_output_size + driver->state->num_neurons[INPUT];
     int output_size = input_output_size + driver->state->num_neurons[OUTPUT];

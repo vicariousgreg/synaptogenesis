@@ -5,8 +5,7 @@
 
 class ImageInputModule : public Module {
     public:
-        ImageInputModule(Layer *layer,
-            std::string params, std::string &driver_type);
+        ImageInputModule(Layer *layer, std::string params);
         virtual ~ImageInputModule() {
             free(this->gray);
             free(this->red);

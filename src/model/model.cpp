@@ -7,125 +7,35 @@ Model::Model (std::string driver_string) :
         num_neurons(0),
         driver_string(driver_string) {}
 
-Connection* Model::connect_layers(
-        std::string from_layer_name, std::string to_layer_name,
-        bool plastic, int delay, float max_weight,
-        ConnectionType type, Opcode opcode, std::string params) {
-    Layer *from_layer = find_layer(from_layer_name);
-    Layer *to_layer = find_layer(to_layer_name);
-    if (from_layer == NULL or to_layer == NULL)
-        throw "Could not find layer!";
+void Model::add_structure(Structure *structure) {
+    if (this->structures.find(structure->name) != this->structures.end())
+        throw "Repeated structure name!";
+    this->structures[structure->name] = structure;
 
-    int conn_id = this->connections.size();
-    Connection *conn = new Connection(
-        conn_id, from_layer, to_layer,
-        plastic, delay, max_weight, type, params, opcode);
-    this->connections.push_back(conn);
-    from_layer->add_output_connection(conn);
-    to_layer->add_input_connection(conn);
-    return conn;
+    // Add connections
+    connections.insert(connections.end(),
+        structure->connections.begin(), structure->connections.end());
+    build();
 }
 
-Connection* Model::connect_layers_shared(
-        std::string from_layer_name, std::string to_layer_name,
-        Connection* parent) {
-    // Ensure parent doesn't have a parent
-    if (parent->parent != NULL)
-        throw "Shared connections must refer to non-shared connection!";
-
-    Layer *from_layer = find_layer(from_layer_name);
-    Layer *to_layer = find_layer(to_layer_name);
-    if (from_layer == NULL or to_layer == NULL)
-        throw "Could not find layer!";
-
-    // Ensure that the weights can be shared by checking sizes
-    int conn_id = this->connections.size();
-
-    if (from_layer->rows == parent->from_layer->rows
-            and from_layer->columns == parent->from_layer->columns
-            and to_layer->rows == parent->to_layer->rows
-            and to_layer->columns == parent->to_layer->columns) {
-        Connection *conn = new Connection(
-            conn_id, from_layer, to_layer,
-            parent);
-        this->connections.push_back(conn);
-        from_layer->add_output_connection(conn);
-        to_layer->add_input_connection(conn);
-        return conn;
-    } else {
-        throw "Cannot share weights between connections of different sizes!";
-    }
-}
-
-void Model::connect_layers_expected(
-        std::string from_layer_name, std::string to_layer_name,
-        std::string new_layer_params, bool plastic, int delay,
-        float max_weight, ConnectionType type, Opcode opcode,
-        std::string params) {
-    Layer *from_layer = find_layer(from_layer_name);
-    if (from_layer == NULL)
-        throw "Could not find layer!";
-
-    // Determine new layer size and create
-    int expected_rows = get_expected_dimension(
-        from_layer->rows, type, params);
-    int expected_columns = get_expected_dimension(
-        from_layer->columns, type, params);
-    add_layer(to_layer_name, expected_rows, expected_columns, new_layer_params);
-    Layer *to_layer = find_layer(to_layer_name);
-
-    // Connect new layer to given layer
-    int conn_id = this->connections.size();
-    Connection *conn = new Connection(
-        conn_id, from_layer, to_layer,
-        plastic, delay, max_weight, type, params, opcode);
-    this->connections.push_back(conn);
-    from_layer->add_output_connection(conn);
-    to_layer->add_input_connection(conn);
-}
-
-void Model::add_layer(std::string name, int rows, int columns, std::string params) {
-    if (this->layers_by_name.find(name) != this->layers_by_name.end())
-        throw "Repeated layer name!";
-
-    // Index of first neuron for layer
-    int start_index = this->num_neurons;
-    int layer_index = this->all_layers.size();
-
-    Layer* layer = new Layer(name, start_index, rows, columns, params);
-    this->all_layers.push_back(layer);
-    this->layers_by_name[name] = layer;
-
-    // Add neurons.
-    this->add_neurons(rows*columns);
-}
-
-void Model::add_layer_from_image(std::string name, std::string path, std::string params) {
-    cimg_library::CImg<unsigned char> img(path.c_str());
-    this->add_layer(name, img.height(), img.width(), params);
-}
-
-void Model::add_module(std::string layer_name, std::string type, std::string params) {
-    Layer *layer = find_layer(layer_name);
-    if (layer == NULL)
-        throw "Could not find layer!";
-
-    Module *module = build_module(layer, type, params, this->driver_string);
-    layer->add_module(module);
-}
-
-static bool contains(std::vector<Layer *> layers, Layer* layer) {
-    return find(layers.begin(), layers.end(), layer) != layers.end();
-}
-
-void Model::sort_layers() {
+void Model::build() {
+    all_layers.clear();
+    this->num_neurons = 0;
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         layers[i].clear();
+
+    // Extract layers and connections from structures
+    for (auto it = structures.begin(); it != structures.end(); ++it) {
+        Structure *structure = it->second;
+        all_layers.insert(all_layers.end(),
+            structure->layers.begin(), structure->layers.end());
+    }
 
     // Sort layers
     for (int i = 0 ; i < this->all_layers.size(); ++i) {
         Layer *layer = this->all_layers[i];
         layers[layer->type].push_back(layer);
+        this->num_neurons += layer->size;
     }
 
     // Clear old list

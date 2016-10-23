@@ -5,8 +5,7 @@
 
 class RandomInputModule : public Module {
     public:
-        RandomInputModule(Layer *layer,
-            std::string params, std::string &driver_type);
+        RandomInputModule(Layer *layer, std::string params);
         void feed_input(Buffer *buffer);
         virtual IOType get_type() { return INPUT; }
 

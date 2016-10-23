@@ -77,6 +77,7 @@ class Connection {
 
     private:
         friend class Model;
+        friend class Structure;
 
         Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                 bool plastic, int delay, float max_weight,
