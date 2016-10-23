@@ -76,24 +76,20 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                     throw "Unknown layer connection type!";
             }
     }
+
+    // Assuming all went well, connect the layers
+    from_layer->add_output_connection(this);
+    to_layer->add_input_connection(this);
 }
 
 Connection::Connection(int conn_id, Layer *from_layer, Layer *to_layer,
         Connection *parent) :
-            id(conn_id),
-            from_layer(from_layer),
-            to_layer(to_layer),
-            num_weights(parent->num_weights),
-            plastic(parent->plastic),
-            delay(parent->delay),
-            max_weight(parent->max_weight),
-            opcode(parent->opcode),
-            type(parent->type),
-            convolutional(parent->convolutional),
-            overlap(parent->overlap),
-            stride(parent->stride),
-            init_params(parent->init_params),
-            parent(parent) { }
+            Connection(conn_id, from_layer, to_layer,
+                        parent->plastic, parent->delay,
+                        parent->max_weight, parent->type,
+                        parent->init_params, parent->opcode) {
+    this->parent = parent;
+}
 
 int get_expected_dimension(int source_val, ConnectionType type, std::string params) {
     int overlap, stride;

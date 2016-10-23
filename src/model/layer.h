@@ -49,6 +49,7 @@ class Layer {
     private:
         friend class Model;
         friend class Structure;
+        friend class Connection;
 
         /* Constructor.
          * |start_index| identifies the first neuron in the layer.

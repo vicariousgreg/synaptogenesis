@@ -124,11 +124,11 @@ Model* build_image_model(std::string driver_name, bool verbose) {
 
     //const char* image_path = "resources/bird.jpg";
     //const char* image_path = "resources/bird-head.jpg";
-    //const char* image_path = "resources/bird-head-small.jpg";
-    const char* image_path = "resources/grid.png";
+    const char* image_path = "resources/bird-head-small.jpg";
+    //const char* image_path = "resources/grid.png";
     structure->add_layer_from_image("photoreceptor", image_path, "default");
     structure->add_module("photoreceptor", "image_input", image_path);
-    //structure->add_module("photoreceptor", output_name, "24");
+    structure->add_module("photoreceptor", output_name, "24");
 
     // Vertical line detection
     structure->connect_layers_expected("photoreceptor", "vertical", "default",

@@ -5,6 +5,44 @@
 
 Structure::Structure (std::string name) : name(name) { }
 
+void Structure::connect(
+        Structure *from_structure, std::string from_layer_name,
+        Structure *to_structure, std::string to_layer_name,
+        bool plastic, int delay, float max_weight, ConnectionType type,
+        Opcode opcode, std::string params) {
+    Layer *from_layer = from_structure->find_layer(from_layer_name);
+    Layer *to_layer = to_structure->find_layer(from_layer_name);
+    if (from_layer == NULL or to_layer == NULL)
+        throw "Could not find layer!";
+
+    to_structure->connect_layers(
+        from_layer, to_layer,
+        plastic, delay, max_weight,
+        type, opcode, params);
+}
+
+Connection* Structure::connect_layers(
+        Layer *from_layer, Layer *to_layer,
+        bool plastic, int delay, float max_weight,
+        ConnectionType type, Opcode opcode, std::string params) {
+    int conn_id = this->connections.size();
+    Connection *conn = new Connection(
+        conn_id, from_layer, to_layer,
+        plastic, delay, max_weight, type, params, opcode);
+    this->connections.push_back(conn);
+    return conn;
+}
+
+Connection* Structure::connect_layers(
+        Layer *from_layer, Layer *to_layer,
+        Connection *parent) {
+    int conn_id = this->connections.size();
+    Connection *conn = new Connection(
+        conn_id, from_layer, to_layer, parent);
+    this->connections.push_back(conn);
+    return conn;
+}
+
 Connection* Structure::connect_layers(
         std::string from_layer_name, std::string to_layer_name,
         bool plastic, int delay, float max_weight,
@@ -13,15 +51,9 @@ Connection* Structure::connect_layers(
     Layer *to_layer = find_layer(to_layer_name);
     if (from_layer == NULL or to_layer == NULL)
         throw "Could not find layer!";
-
-    int conn_id = this->connections.size();
-    Connection *conn = new Connection(
-        conn_id, from_layer, to_layer,
-        plastic, delay, max_weight, type, params, opcode);
-    this->connections.push_back(conn);
-    from_layer->add_output_connection(conn);
-    to_layer->add_input_connection(conn);
-    return conn;
+    return connect_layers(from_layer, to_layer,
+        plastic, delay, max_weight,
+        type, opcode, params);
 }
 
 Connection* Structure::connect_layers_shared(
@@ -37,25 +69,18 @@ Connection* Structure::connect_layers_shared(
         throw "Could not find layer!";
 
     // Ensure that the weights can be shared by checking sizes
-    int conn_id = this->connections.size();
-
     if (from_layer->rows == parent->from_layer->rows
             and from_layer->columns == parent->from_layer->columns
             and to_layer->rows == parent->to_layer->rows
             and to_layer->columns == parent->to_layer->columns) {
-        Connection *conn = new Connection(
-            conn_id, from_layer, to_layer,
-            parent);
-        this->connections.push_back(conn);
-        from_layer->add_output_connection(conn);
-        to_layer->add_input_connection(conn);
-        return conn;
+        return connect_layers(
+            from_layer, to_layer, parent);
     } else {
         throw "Cannot share weights between connections of different sizes!";
     }
 }
 
-void Structure::connect_layers_expected(
+Connection* Structure::connect_layers_expected(
         std::string from_layer_name, std::string to_layer_name,
         std::string new_layer_params, bool plastic, int delay,
         float max_weight, ConnectionType type, Opcode opcode,
@@ -73,13 +98,10 @@ void Structure::connect_layers_expected(
     Layer *to_layer = find_layer(to_layer_name);
 
     // Connect new layer to given layer
-    int conn_id = this->connections.size();
-    Connection *conn = new Connection(
-        conn_id, from_layer, to_layer,
-        plastic, delay, max_weight, type, params, opcode);
-    this->connections.push_back(conn);
-    from_layer->add_output_connection(conn);
-    to_layer->add_input_connection(conn);
+    Connection *conn = connect_layers(
+        from_layer, to_layer,
+        plastic, delay, max_weight, type, opcode, params);
+    return conn;
 }
 
 void Structure::add_layer(std::string name, int rows, int columns, std::string params) {

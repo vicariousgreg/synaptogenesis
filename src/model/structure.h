@@ -30,6 +30,13 @@ class Structure {
         Structure (std::string name);
         virtual ~Structure() { }
 
+        static void connect(
+            Structure *from_structure, std::string from_layer_name,
+            Structure *to_structure, std::string to_layer_name,
+            bool plastic, int delay, float max_weight, ConnectionType type,
+            Opcode opcode, std::string params);
+
+
         /* Adds a layer to the environment with the given parameters */
         void add_layer(std::string name, int rows, int columns, std::string params);
         void add_layer_from_image(std::string name, std::string path, std::string params);
@@ -47,7 +54,7 @@ class Structure {
 
         /* Uses expected sizes to create a new layer and connect it to the
          *   given layer.  Returns the id of the new layer. */
-        void connect_layers_expected(
+        Connection* connect_layers_expected(
             std::string from_layer_name, std::string to_layer_name, std::string new_layer_params,
             bool plastic, int delay, float max_weight,
             ConnectionType type, Opcode opcode, std::string params);
@@ -66,6 +73,15 @@ class Structure {
         std::vector<Connection*> connections;
 
     private:
+        Connection* connect_layers(
+                Layer *from_layer, Layer *to_layer,
+                bool plastic, int delay, float max_weight,
+                ConnectionType type, Opcode opcode, std::string params);
+
+        Connection* connect_layers(
+                Layer *from_layer, Layer *to_layer,
+                Connection *parent);
+
         Layer* find_layer(std::string name) {
             if (layers_by_name.find(name) != layers_by_name.end())
                 return layers_by_name.find(name)->second;
