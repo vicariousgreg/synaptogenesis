@@ -48,9 +48,6 @@ class Driver {
         void step_states(IOType layer_type);
         void step_weights();
 
-        /* Returns the output type of the driver */
-        virtual OutputType get_output_type() = 0;
-
         /* Returns the number of timesteps contained in one output */
         virtual int get_timesteps_per_output() = 0;
 

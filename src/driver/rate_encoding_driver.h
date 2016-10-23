@@ -10,7 +10,6 @@ class RateEncodingDriver : public Driver {
     public:
         RateEncodingDriver(Model *model);
 
-        OutputType get_output_type() { return FLOAT; }
         int get_timesteps_per_output() { return 1; }
 
         void update_connection(Instruction *inst);

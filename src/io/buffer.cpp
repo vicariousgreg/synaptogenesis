@@ -3,12 +3,10 @@
 #include "io/buffer.h"
 #include "parallel.h"
 
-Buffer::Buffer(int input_start_index, int input_size,
-    int output_start_index, int output_size) :
-        input_index(input_start_index),
+Buffer::Buffer(int input_size, int output_size, OutputType output_type) :
         input_size(input_size),
-        output_index(output_start_index),
-        output_size(output_size) {
+        output_size(output_size),
+        output_type(output_type) {
 #ifdef PARALLEL
     // Allocate pinned memory
     if (input_size > 0)
@@ -42,12 +40,4 @@ void Buffer::set_input(int offset, int size, float* source) {
 
 void Buffer::set_output(int offset, int size, Output* source) {
     memcpy(&this->output[offset], source, size * sizeof(Output));
-}
-
-float* Buffer::get_input() {
-    return this->input;
-}
-
-Output* Buffer::get_output() {
-    return this->output;
 }

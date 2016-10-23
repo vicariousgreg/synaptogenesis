@@ -5,8 +5,7 @@
 
 class Buffer {
     public:
-        Buffer(int input_start_index, int input_size,
-            int output_start_index, int output_size);
+        Buffer(int input_size, int output_size, OutputType output_type);
         ~Buffer() {
 #ifdef PARALLEL
             // Free pinned memory
@@ -23,14 +22,13 @@ class Buffer {
         void set_input(int offset, int size, float* source);
         void set_output(int offset, int size, Output* source);
 
-        float* get_input();
-        Output* get_output();
-
+        float* get_input() { return this->input; }
+        Output* get_output() { return this->output; }
+        OutputType get_output_type() { return this->output_type; }
 
     private:
-        int input_index;
+        OutputType output_type;
         int input_size;
-        int output_index;
         int output_size;
         float *input;
         Output *output;

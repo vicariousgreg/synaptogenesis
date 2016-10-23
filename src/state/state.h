@@ -12,13 +12,15 @@ class State {
         State(Model *model, Attributes *attributes, int weight_depth);
         virtual ~State();
 
+        Buffer* get_buffer() { return this->buffer; }
+
 #ifdef PARALLEL
         void get_input_from(Buffer *buffer, cudaStream_t stream) {
             this->attributes->get_input_from(buffer, stream);
         }
 
         void send_output_to(Buffer *buffer, cudaStream_t stream) {
-            this->attributes->get_input_from(buffer, stream);
+            this->attributes->send_output_to(buffer, stream);
         }
 
 #else
@@ -37,6 +39,7 @@ class State {
         }
 
         Attributes *attributes;
+        Buffer *buffer;
 
     protected:
         // Weight matrices

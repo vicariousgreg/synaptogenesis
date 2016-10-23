@@ -7,7 +7,7 @@
 
 class Attributes {
     public:
-        Attributes(Model *model);
+        Attributes(Model *model, OutputType output_type);
         virtual ~Attributes();
 
 #ifdef PARALLEL
@@ -27,6 +27,7 @@ class Attributes {
         float* input;
 
         // Neuron output
+        OutputType output_type;
         Output* output;
         Output* recent_output;
 };

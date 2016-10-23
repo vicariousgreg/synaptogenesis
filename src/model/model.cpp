@@ -1,8 +1,5 @@
 #include "model/model.h"
 
-#define cimg_display 0
-#include "libs/CImg.h"
-
 Model::Model (std::string driver_string) :
         num_neurons(0),
         driver_string(driver_string) {}

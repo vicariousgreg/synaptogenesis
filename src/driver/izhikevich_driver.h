@@ -11,7 +11,6 @@ class IzhikevichDriver : public Driver {
     public:
         IzhikevichDriver(Model *model);
 
-        OutputType get_output_type() { return INT; }
         int get_timesteps_per_output() { return 32; }
 
         void update_connection(Instruction *inst);

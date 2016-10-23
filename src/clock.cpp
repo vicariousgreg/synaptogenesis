@@ -93,15 +93,8 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     }
 
     // Build environment and buffer
-    Environment env(model, driver->get_output_type());
-    int input_output_size = driver->state->attributes->num_neurons[INPUT_OUTPUT];
-    int input_size = input_output_size + driver->state->attributes->num_neurons[INPUT];
-    int output_size = input_output_size + driver->state->attributes->num_neurons[OUTPUT];
-    int input_start_index = driver->state->attributes->start_index[INPUT];
-    int output_start_index = driver->state->attributes->start_index[OUTPUT];
-    this->buffer = new Buffer(
-        input_start_index, input_size,
-        output_start_index, output_size);
+    Environment env(model);
+    this->buffer = driver->state->get_buffer();
 
 #ifdef PARALLEL
     // Ensure device is synchronized without errors
@@ -137,6 +130,5 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     check_memory();
 #endif
 
-    delete this->buffer;
     delete driver;
 }

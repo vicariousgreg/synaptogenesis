@@ -6,7 +6,8 @@
 #include "tools.h"
 #include "parallel.h"
 
-Attributes::Attributes(Model *model) {
+Attributes::Attributes(Model *model, OutputType output_type) :
+        output_type(output_type) {
     // Get neuron counts
     this->total_neurons = model->num_neurons;
 

@@ -11,7 +11,7 @@ class PrintOutputModule : public Module {
             free(this->reverses);
         }
 
-        void report_output(Buffer *buffer, OutputType output_type);
+        void report_output(Buffer *buffer);
         virtual IOType get_type() { return OUTPUT; }
 
     private:

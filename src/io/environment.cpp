@@ -1,8 +1,7 @@
 #include "io/environment.h"
 #include "io/module.h"
 
-Environment::Environment(Model *model, OutputType output_type)
-        : output_type(output_type) {
+Environment::Environment(Model *model) {
     // Extract modules
     for (int i = 0; i < model->all_layers.size(); ++i) {
         Module *input_module = model->all_layers[i]->input_module;
@@ -24,6 +23,6 @@ void Environment::step_output(Buffer *buffer) {
     // Run output modules
     // If no module, skip layer
     for (int i = 0 ; i < this->output_modules.size(); ++i)
-        this->output_modules[i]->report_output(buffer, output_type);
+        this->output_modules[i]->report_output(buffer);
 }
 
