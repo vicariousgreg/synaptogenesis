@@ -1,7 +1,7 @@
 #include "io/environment.h"
 #include "io/module.h"
 
-Environment::Environment(Model *model) {
+Environment::Environment(Model *model, Buffer *buffer) : buffer(buffer) {
     // Extract modules
     for (int i = 0; i < model->all_layers.size(); ++i) {
         Module *input_module = model->all_layers[i]->input_module;
@@ -13,13 +13,13 @@ Environment::Environment(Model *model) {
     }
 }
 
-void Environment::step_input(Buffer *buffer) {
+void Environment::step_input() {
     // Run input modules
     for (int i = 0 ; i < this->input_modules.size(); ++i)
         this->input_modules[i]->feed_input(buffer);
 }
 
-void Environment::step_output(Buffer *buffer) {
+void Environment::step_output() {
     // Run output modules
     // If no module, skip layer
     for (int i = 0 ; i < this->output_modules.size(); ++i)

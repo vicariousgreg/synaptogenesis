@@ -9,14 +9,14 @@
 State::State(Model *model, Attributes *attributes, int weight_depth)
         : attributes(attributes),
           weight_matrices(new WeightMatrices(model, weight_depth)) {
-    int input_output_size = attributes->num_neurons[INPUT_OUTPUT];
-    int input_size = input_output_size + attributes->num_neurons[INPUT];
-    int output_size = input_output_size + attributes->num_neurons[OUTPUT];
+    int input_output_size = attributes->get_num_neurons(INPUT_OUTPUT);
+    int input_size = input_output_size + attributes->get_num_neurons(INPUT);
+    int output_size = input_output_size + attributes->get_num_neurons(OUTPUT);
 
     this->buffer = new Buffer(
-        input_output_size + attributes->num_neurons[INPUT],
-        input_output_size + attributes->num_neurons[OUTPUT],
-        attributes->output_type);
+        input_output_size + attributes->get_num_neurons(INPUT),
+        input_output_size + attributes->get_num_neurons(OUTPUT),
+        attributes->get_output_type());
 }
 
 State::~State() {

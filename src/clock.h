@@ -17,7 +17,6 @@ class Clock {
         Clock(float refresh_rate = INT_MAX) : time_limit(1.0 / refresh_rate) {}
         void run(Model *model, int iterations, bool verbose);
 
-        Buffer *buffer;
         Timer timer;
         float time_limit;
 

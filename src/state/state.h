@@ -15,20 +15,20 @@ class State {
         Buffer* get_buffer() { return this->buffer; }
 
 #ifdef PARALLEL
-        void get_input_from(Buffer *buffer, cudaStream_t stream) {
+        void get_input_from(cudaStream_t stream) {
             this->attributes->get_input_from(buffer, stream);
         }
 
-        void send_output_to(Buffer *buffer, cudaStream_t stream) {
+        void send_output_to(cudaStream_t stream) {
             this->attributes->send_output_to(buffer, stream);
         }
 
 #else
-        void get_input_from(Buffer *buffer) {
+        void get_input_from() {
             this->attributes->get_input_from(buffer);
         }
 
-        void send_output_to(Buffer *buffer) {
+        void send_output_to() {
             this->attributes->send_output_to(buffer);
         }
 

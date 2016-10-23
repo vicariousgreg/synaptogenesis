@@ -47,7 +47,7 @@ void IzhikevichDriver::update_state(int start_index, int count) {
 #endif
         this->iz_attributes->voltage,
         this->iz_attributes->recovery,
-        this->iz_attributes->input,
+        this->iz_attributes->get_input(),
         this->iz_attributes->neuron_parameters,
         start_index, count);
 #ifdef PARALLEL
@@ -57,11 +57,11 @@ void IzhikevichDriver::update_state(int start_index, int count) {
 #else
     calc_spikes(
 #endif
-        (int*) this->iz_attributes->output,
+        (int*) this->iz_attributes->get_output(),
         this->iz_attributes->voltage,
         this->iz_attributes->recovery,
         this->iz_attributes->neuron_parameters,
-        start_index, count, iz_attributes->total_neurons);
+        start_index, count, iz_attributes->get_num_neurons());
 #ifdef PARALLEL
     cudaCheckError("Failed to timestep spikes!");
 #endif

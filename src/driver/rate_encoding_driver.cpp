@@ -38,7 +38,7 @@ void RateEncodingDriver::update_state(int start_index, int count) {
 #else
     shift_output(
 #endif
-        (float*)re_attributes->output, start_index, count, re_attributes->total_neurons);
+        (float*)re_attributes->get_output(), start_index, count, re_attributes->get_num_neurons());
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron output!");
 
@@ -46,8 +46,8 @@ void RateEncodingDriver::update_state(int start_index, int count) {
 #else
     activation_function(
 #endif
-        (float*)re_attributes->recent_output,
-        re_attributes->input,
+        (float*)re_attributes->get_recent_output(),
+        re_attributes->get_input(),
         re_attributes->neuron_parameters,
         start_index, count);
 #ifdef PARALLEL

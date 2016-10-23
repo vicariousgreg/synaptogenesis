@@ -35,12 +35,11 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
         if (word_index < 0) throw "Invalid delay in connection!";
 
         // Create instruction
-        Output* out = this->state->attributes->output +
-            (this->state->attributes->total_neurons * word_index);
+        Output* out = this->state->attributes->get_output(word_index);
         Instruction *inst =
             new Instruction(conn,
                 out,
-                this->state->attributes->input,
+                this->state->attributes->get_input(),
                 this->state->get_matrix(conn->id));
         this->all_instructions.push_back(inst);
 
@@ -79,9 +78,7 @@ void Driver::stage_clear() {
 
     // Start input clearing
     this->curr_stream = &this->kernel_stream;
-    clear_input(this->state->attributes->input,
-        this->state->attributes->start_index[OUTPUT],
-        this->state->attributes->total_neurons);
+    clear_input();
     cudaEventRecord(*this->clear_event, *this->curr_stream);
 
     // Ensure all layer streams wait for appropriate input
@@ -127,25 +124,23 @@ void Driver::stage_clear() {
     // Wait for input stream to return
     cudaEventSynchronize(*this->input_event);
 #else
-    clear_input(this->state->attributes->input,
-        this->state->attributes->start_index[OUTPUT],
-        this->state->attributes->total_neurons);
+    clear_input();
 #endif
 }
 
-void Driver::stage_input(Buffer *buffer) {
+void Driver::stage_input() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         stream_clusters[i].reset();
 
 #ifdef PARALLEL
     // Start input streaming
-    this->state->get_input_from(buffer, this->io_stream);
+    this->state->get_input_from(this->io_stream);
     cudaEventRecord(*this->input_event, this->io_stream);
 
     // Wait for input stream to return
     cudaEventSynchronize(*this->input_event);
 #else
-    this->state->get_input_from(buffer);
+    this->state->get_input_from();
 #endif
 }
 
@@ -162,16 +157,16 @@ void Driver::stage_calc_output() {
 #endif
 }
 
-void Driver::stage_send_output(Buffer *buffer) {
+void Driver::stage_send_output() {
 #ifdef PARALLEL
     // Wait for output calculation to complete
     cudaEventSynchronize(*this->output_calc_event);
 
     // Start stream, and wait for it to return
-    this->state->send_output_to(buffer, this->io_stream);
+    this->state->send_output_to(this->io_stream);
     cudaEventSynchronize(*this->output_event);
 #else
-    this->state->send_output_to(buffer);
+    this->state->send_output_to();
 #endif
 }
 
@@ -192,12 +187,12 @@ void Driver::stage_remaining() {
 
 
 void Driver::step_all_states() {
-    this->update_state(0, this->state->attributes->total_neurons);
+    this->update_state(0, this->state->attributes->get_num_neurons());
 }
 
 void Driver::step_states(IOType layer_type) {
-    int start_index = this->state->attributes->start_index[layer_type];
-    int count = this->state->attributes->num_neurons[layer_type];
+    int start_index = this->state->attributes->get_start_index(layer_type);
+    int count = this->state->attributes->get_num_neurons(layer_type);
     if (count > 0)
         this->update_state(start_index, count);
 }

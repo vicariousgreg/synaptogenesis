@@ -5,7 +5,6 @@
 
 #include "state/state.h"
 #include "model/model.h"
-#include "io/buffer.h"
 #include "driver/kernel.h"
 #include "driver/instruction.h"
 #include "driver/stream.h"
@@ -39,9 +38,9 @@ class Driver {
 
         // Main hooks
         void stage_clear();
-        void stage_input(Buffer *buffer);
+        void stage_input();
         void stage_calc_output();
-        void stage_send_output(Buffer *buffer);
+        void stage_send_output();
         void stage_remaining();
 
         void step_all_states();
@@ -61,7 +60,7 @@ class Driver {
          * TODO: implement.  This should use STDP variant Hebbian learning */
         virtual void update_weights(Instruction *inst) = 0;
 
-        void clear_input(float* input, int offset, int num_neurons);
+        void clear_input();
         template <typename... ARGS>
         void step(Instruction *inst, float(*calc_input)(Output, ARGS...), ARGS... args);
 
@@ -87,16 +86,17 @@ class Driver {
 /* Instantiates a driver based on the driver_string in the given model */
 Driver* build_driver(Model* model);
 
-inline void Driver::clear_input(float* input, int offset, int num_neurons) {
-    int count = num_neurons - offset;
+inline void Driver::clear_input() {
+    float *input = this->state->attributes->get_input();
+    int offset = this->state->attributes->get_start_index(OUTPUT);
+    int count = this->state->attributes->get_num_neurons() - offset;
     if (count > 0) {
 #ifdef PARALLEL
         int threads = calc_threads(count);
         int blocks = calc_blocks(count);
         // Use the current stream, as set by the driver
         clear_data<<<blocks, threads, 0, *this->curr_stream>>>(
-            input + offset,
-            num_neurons - offset);
+            input + offset, count);
         cudaCheckError("Failed to clear inputs!");
 #else
         clear_data(input + offset, count);

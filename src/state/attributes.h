@@ -18,9 +18,23 @@ class Attributes {
         void send_output_to(Buffer *buffer);
 #endif
 
+        float* get_input() { return input; }
+        OutputType get_output_type() { return output_type; }
+        Output* get_recent_output() { return recent_output; }
+        Output* get_output(int word_index = 0) {
+            return output + (total_neurons * word_index);
+        }
+
+        int get_num_neurons() { return total_neurons; }
+        int get_num_neurons(IOType type) { return num_neurons[type]; }
+        int get_start_index(IOType type) { return start_index[type]; }
+
+    protected:
         // Number of neurons
         int total_neurons;
         int num_neurons[IO_TYPE_SIZE];
+
+        // Start indices by type
         int start_index[IO_TYPE_SIZE];
 
         // Neuron input
