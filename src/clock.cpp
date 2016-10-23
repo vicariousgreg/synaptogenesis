@@ -3,76 +3,60 @@
 #include "io/environment.h"
 #include "driver/driver.h"
 
-void wait_for_permission(std::mutex *mu, Thread_ID *owner, Thread_ID me) {
-    while (true) {
-        mu->lock();
-        if (*owner == me) return;
-        else mu->unlock();
-        std::this_thread::yield();
-    }
-}
-
 void driver_loop(Clock *clock, Driver *driver, int iterations) {
     for (int i = 0; i < iterations; ++i) {
         // Wait for clock signal, then start clearing inputs
-        wait_for_permission(&(clock->clock_lock), &(clock->clock_owner), DRIVER);
+        clock->clock_lock.wait(DRIVER);
         driver->stage_clear();
 
         // Read sensory input
-        wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), DRIVER);
+        clock->sensory_lock.wait(DRIVER);
         driver->stage_input();
-        clock->sensory_owner = ENVIRONMENT;
-        clock->sensory_lock.unlock();
+        clock->sensory_lock.pass(ENVIRONMENT);
 
         // Calculate output
         driver->stage_calc_output();
 
         // Write motor output
-        wait_for_permission(&(clock->motor_lock), &(clock->motor_owner), DRIVER);
+        clock->motor_lock.wait(DRIVER);
         driver->stage_send_output();
-        clock->motor_owner = ENVIRONMENT;
-        clock->motor_lock.unlock();
+        clock->motor_lock.pass(ENVIRONMENT);
+        clock->clock_lock.pass(CLOCK);
 
         // Finish computations
         driver->stage_remaining();
-        clock->clock_owner = CLOCK;
-        clock->clock_lock.unlock();
     }
 }
 
 void environment_loop(Clock *clock, Environment *environment, int iterations) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
-        wait_for_permission(&(clock->sensory_lock), &(clock->sensory_owner), ENVIRONMENT);
+        clock->sensory_lock.wait(ENVIRONMENT);
         environment->step_input();
-        clock->sensory_owner = DRIVER;
-        clock->sensory_lock.unlock();
+        clock->sensory_lock.pass(DRIVER);
 
         // Compute
 
         // Write motor buffer
-        wait_for_permission(&(clock->motor_lock), &(clock->motor_owner), ENVIRONMENT);
+        clock->motor_lock.wait(ENVIRONMENT);
         environment->step_output();
-        clock->motor_owner = DRIVER;
-        clock->motor_lock.unlock();
+        clock->motor_lock.pass(DRIVER);
     }
 }
 
 void Clock::run(Model *model, int iterations, bool verbose) {
     // Initialization
-    this->sensory_owner = ENVIRONMENT;
-    this->motor_owner = ENVIRONMENT;
-    this->clock_owner = CLOCK;
-
-    Timer outer_timer;
+    this->sensory_lock.set_owner(ENVIRONMENT);
+    this->motor_lock.set_owner(ENVIRONMENT);
+    this->clock_lock.set_owner(CLOCK);
 
     // Build driver
-    outer_timer.start();
+    run_timer.reset();
 
     Driver *driver = build_driver(model);
     if (verbose) {
         printf("Built state.\n");
-        outer_timer.query("Initialization");
+        run_timer.query("Initialization");
     }
 
     // Build environment and buffer
@@ -88,15 +72,14 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     std::thread environment_thread(environment_loop, this, &env, iterations);
 
     // Run iterations
-    outer_timer.start();
-    this->timer.start();
+    run_timer.reset();
+    iteration_timer.reset();
     for (int counter = 0; counter < iterations; ++counter) {
-        this->timer.wait(this->time_limit);
-        this->timer.start();
+        iteration_timer.wait(this->time_limit);
+        iteration_timer.reset();
 
-        wait_for_permission(&(this->clock_lock), &(this->clock_owner), CLOCK);
-        this->clock_owner = DRIVER;
-        this->clock_lock.unlock();
+        this->clock_lock.wait(CLOCK);
+        this->clock_lock.pass(DRIVER);
     }
 
     driver_thread.join();
@@ -104,7 +87,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
 
     // Report time if verbose
     if (verbose) {
-        float time = outer_timer.query("Total time");
+        float time = run_timer.query("Total time");
         printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
     }
 

@@ -48,7 +48,7 @@ static float get_diff(Time_point a, Time_point b) {
 class Timer {
     public:
         /* Sets a start time */
-        void start() {
+        void reset() {
             start_time = CClock::now();
         }
 
@@ -76,7 +76,7 @@ class Timer {
         
     private:
         // Timestamp from last start call()
-        Time_point start_time;
+        Time_point start_time = CClock::now();
 };
 
 #endif
