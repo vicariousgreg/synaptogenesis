@@ -3,6 +3,7 @@
 #include <string>
 
 #include "state/izhikevich_attributes.h"
+#include "driver/izhikevich_kernel.h"
 #include "tools.h"
 #include "parallel.h"
 
@@ -106,5 +107,36 @@ IzhikevichAttributes::~IzhikevichAttributes() {
     free(this->voltage);
     free(this->recovery);
     free(this->neuron_parameters);
+#endif
+}
+
+#ifdef PARALLEL
+void IzhikevichAttributes::update(int start_index, int count, cudaStream_t &stream) {
+    int threads = calc_threads(count);
+    int blocks = calc_blocks(count);
+    izhikevich<<<blocks, threads, 0, stream>>>(
+#else
+void IzhikevichAttributes::update(int start_index, int count) {
+    izhikevich(
+#endif
+        voltage,
+        recovery,
+        input,
+        neuron_parameters,
+        start_index, count);
+#ifdef PARALLEL
+    cudaCheckError("Failed to update neuron voltages!");
+
+    calc_spikes<<<blocks, threads, 0, stream>>>(
+#else
+    calc_spikes(
+#endif
+        (int*) output,
+        voltage,
+        recovery,
+        neuron_parameters,
+        start_index, count, total_neurons);
+#ifdef PARALLEL
+    cudaCheckError("Failed to timestep spikes!");
 #endif
 }

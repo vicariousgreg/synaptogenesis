@@ -1,16 +1,4 @@
-#include "driver/izhikevich_driver.h"
-#include "state/state.h"
-#include "parallel.h"
-
-/* Izhikevich voltage update function */
-GLOBAL void izhikevich(float* voltages, float*recoveries, float* currents,
-                IzhikevichParameters* neuron_params,
-                int start_index, int count);
-
-/* Spike update function */
-GLOBAL void calc_spikes(int* spikes, float* voltages, float* recoveries,
-                 IzhikevichParameters* neuron_params,
-                 int start_index, int count, int num_neurons);
+#include "driver/izhikevich_kernel.h"
 
 /* Voltage threshold for neuron spiking. */
 #define SPIKE_THRESH 30
@@ -18,52 +6,6 @@ GLOBAL void calc_spikes(int* spikes, float* voltages, float* recoveries,
 /* Euler resolution for voltage update. */
 #define EULER_RES 2
 
-IzhikevichDriver::IzhikevichDriver(Model *model) : Driver() {
-    this->iz_attributes = new IzhikevichAttributes(model);
-    this->state = new State(model, this->iz_attributes, 1);
-}
-
-void IzhikevichDriver::update_state(int start_index, int count) {
-#ifdef PARALLEL
-    int threads = calc_threads(count);
-    int blocks = calc_blocks(count);
-    izhikevich<<<blocks, threads, 0, this->kernel_stream>>>(
-#else
-    izhikevich(
-#endif
-        this->iz_attributes->voltage,
-        this->iz_attributes->recovery,
-        this->iz_attributes->get_input(),
-        this->iz_attributes->neuron_parameters,
-        start_index, count);
-#ifdef PARALLEL
-    cudaCheckError("Failed to update neuron voltages!");
-
-    calc_spikes<<<blocks, threads, 0, this->kernel_stream>>>(
-#else
-    calc_spikes(
-#endif
-        (int*) this->iz_attributes->get_output(),
-        this->iz_attributes->voltage,
-        this->iz_attributes->recovery,
-        this->iz_attributes->neuron_parameters,
-        start_index, count, iz_attributes->get_num_neurons());
-#ifdef PARALLEL
-    cudaCheckError("Failed to timestep spikes!");
-#endif
-}
-
-void IzhikevichDriver::update_weights(Instruction *inst) {
-    /* 5. Update weights */
-#ifdef PARALLEL
-    //cudaCheckError("Failed to update connection weights!");
-#endif
-}
-
-
-/* Parallel implementation of Izhikevich voltage update function.
- * Each thread calculates for one neuron.  Because this is a single
- *   dimensional calculation, few optimizations are possible. */
 GLOBAL void izhikevich(float* voltages, float* recoveries,
         float* currents, IzhikevichParameters* neuron_params,
         int start_index, int count) {
@@ -104,9 +46,6 @@ GLOBAL void izhikevich(float* voltages, float* recoveries,
     }
 }
 
-/* Parallel implementation of spike update function.
- * Each thread calculates for one neuron.  Because this is a single
- *   dimensional calculation, few optimizations are possible. */
 GLOBAL void calc_spikes(int* spikes, float* voltages,
         float* recoveries, IzhikevichParameters* neuron_params,
         int start_index, int count, int num_neurons) {

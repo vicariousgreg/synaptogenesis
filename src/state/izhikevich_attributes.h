@@ -17,6 +17,12 @@ class IzhikevichAttributes : public Attributes {
         IzhikevichAttributes(Model* model);
         ~IzhikevichAttributes();
 
+#ifdef PARALLEL
+        void update(int start_index, int count, cudaStream_t &stream);
+#else
+        void update(int start_index, int count);
+#endif
+
         //////////////////////
         /// MODEL SPECIFIC ///
         //////////////////////

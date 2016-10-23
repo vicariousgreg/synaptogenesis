@@ -1,28 +1,12 @@
 #include "driver/driver.h"
 #include "driver/scheduler.h"
-#include "driver/izhikevich_driver.h"
-#include "driver/rate_encoding_driver.h"
+#include "state/izhikevich_attributes.h"
+#include "state/rate_encoding_attributes.h"
 
-Driver::Driver() {
-#ifdef PARALLEL
-    cudaStreamCreate(&this->io_stream);
-    cudaStreamCreate(&this->kernel_stream);
-
-    input_event = new cudaEvent_t;
-    clear_event = new cudaEvent_t;
-    output_calc_event = new cudaEvent_t;
-    output_event = new cudaEvent_t;
-
-    unsigned int flags = cudaEventDisableTiming;
-    unsigned int io_flags = flags & cudaEventBlockingSync;
-    cudaEventCreateWithFlags(input_event, io_flags);
-    cudaEventCreateWithFlags(clear_event, flags);
-    cudaEventCreateWithFlags(output_calc_event, flags);
-    cudaEventCreateWithFlags(output_event, io_flags);
-#endif
-}
-
-void Driver::build_instructions(Model *model, int timesteps_per_output) {
+Driver::Driver(Model *model, State *state) : state(state) {
+    OutputType output_type = state->attributes->get_output_type();
+    // Build instructions
+    int timesteps_per_output = get_timesteps_per_output(output_type);
     for (int i = 0; i < model->connections.size(); ++i) {
         Connection *conn = model->connections[i];
         Layer *from_layer = conn->from_layer;
@@ -46,6 +30,40 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
         // Stream cluster
         stream_clusters[to_layer->type].add_instruction(to_layer, inst, from_layer->type);
     }
+
+#ifdef PARALLEL
+    // Build streams and events
+    cudaStreamCreate(&this->io_stream);
+    cudaStreamCreate(&this->kernel_stream);
+
+    input_event = new cudaEvent_t;
+    clear_event = new cudaEvent_t;
+    output_calc_event = new cudaEvent_t;
+    output_event = new cudaEvent_t;
+
+    unsigned int flags = cudaEventDisableTiming;
+    unsigned int io_flags = flags & cudaEventBlockingSync;
+    cudaEventCreateWithFlags(input_event, io_flags);
+    cudaEventCreateWithFlags(clear_event, flags);
+    cudaEventCreateWithFlags(output_calc_event, flags);
+    cudaEventCreateWithFlags(output_event, io_flags);
+#endif
+}
+
+Driver::~Driver() {
+    delete this->state;
+    for (int i = 0; i < this->all_instructions.size(); ++i)
+        delete this->all_instructions[i];
+#ifdef PARALLEL
+    cudaEventDestroy(*input_event);
+    cudaEventDestroy(*clear_event);
+    cudaEventDestroy(*output_calc_event);
+    cudaEventDestroy(*output_event);
+    delete input_event;
+    delete clear_event;
+    delete output_calc_event;
+    delete output_event;
+#endif
 }
 
 #ifdef PARALLEL
@@ -131,13 +149,13 @@ void Driver::stage_input() {
 
 #ifdef PARALLEL
     // Start input streaming
-    this->state->get_input_from(this->io_stream);
+    this->state->get_input(this->io_stream);
     cudaEventRecord(*this->input_event, this->io_stream);
 
     // Wait for input stream to return
     cudaEventSynchronize(*this->input_event);
 #else
-    this->state->get_input_from();
+    this->state->get_input();
 #endif
 }
 
@@ -160,10 +178,10 @@ void Driver::stage_send_output() {
     cudaEventSynchronize(*this->output_calc_event);
 
     // Start stream, and wait for it to return
-    this->state->send_output_to(this->io_stream);
+    this->state->send_output(this->io_stream);
     cudaEventSynchronize(*this->output_event);
 #else
-    this->state->send_output_to();
+    this->state->send_output();
 #endif
 }
 
@@ -184,14 +202,22 @@ void Driver::stage_remaining() {
 
 
 void Driver::step_all_states() {
-    this->update_state(0, this->state->attributes->get_num_neurons());
+#ifdef PARALLEL
+    this->state->attributes->update(0, this->state->attributes->get_num_neurons(), this->kernel_stream);
+#else
+    this->state->attributes->update(0, this->state->attributes->get_num_neurons());
+#endif
 }
 
 void Driver::step_states(IOType layer_type) {
     int start_index = this->state->attributes->get_start_index(layer_type);
     int count = this->state->attributes->get_num_neurons(layer_type);
     if (count > 0)
-        this->update_state(start_index, count);
+#ifdef PARALLEL
+        this->state->attributes->update(start_index, count, this->kernel_stream);
+#else
+        this->state->attributes->update(start_index, count);
+#endif
 }
 
 void Driver::step_weights() {
@@ -283,13 +309,12 @@ void Driver::step_connection(Instruction *inst) {
 
 
 Driver* build_driver(Model* model) {
-    Driver* driver;
+    State* state;
     if (model->driver_string == "izhikevich")
-        driver = new IzhikevichDriver(model);
+        state = new State(model, new IzhikevichAttributes(model), 1);
     else if (model->driver_string == "rate_encoding")
-        driver = new RateEncodingDriver(model);
+        state = new State(model, new RateEncodingAttributes(model), 1);
     else
         throw "Unrecognized driver type!";
-    driver->build_instructions(model, driver->get_timesteps_per_output());
-    return driver;
+    return new Driver(model, state);
 }

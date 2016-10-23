@@ -31,7 +31,6 @@ void Scheduler::dispatch(Driver *driver) {
         for (auto it = execute_schedule.begin(); it != execute_schedule.end(); ++it) {
             if (i < it->second.size()) {
                 done = false;
-                driver->curr_stream = it->first;
                 driver->step_connection(it->second[i], it->first);
             }
         }
@@ -46,7 +45,6 @@ void Scheduler::dispatch(Driver *driver) {
         for (auto it = weight_update_schedule.begin(); it != weight_update_schedule.end(); ++it) {
             if (i < it->second.size()) {
                 done = false;
-                driver->curr_stream = it->first;
                 driver->update_weights(it->second[i]);
             }
         }

@@ -12,24 +12,8 @@
 
 class Driver {
     public:
-        Driver();
-        virtual ~Driver() {
-            delete this->state;
-            for (int i = 0; i < this->all_instructions.size(); ++i)
-                delete this->all_instructions[i];
-#ifdef PARALLEL
-            cudaEventDestroy(*input_event);
-            cudaEventDestroy(*clear_event);
-            cudaEventDestroy(*output_calc_event);
-            cudaEventDestroy(*output_event);
-            delete input_event;
-            delete clear_event;
-            delete output_calc_event;
-            delete output_event;
-#endif
-        }
-
-        void build_instructions(Model *model, int timesteps_per_output);
+        Driver(Model *model, State *state);
+        virtual ~Driver();
 
 #ifdef PARALLEL
         void wait_event(IOType to_type, cudaEvent_t *event);
@@ -48,15 +32,12 @@ class Driver {
         void step_states(IOType layer_type);
         void step_weights();
 
-        /* Returns the number of timesteps contained in one output */
-        virtual int get_timesteps_per_output() = 0;
-
         /* Cycles neuron states */
-        virtual void update_state(int start_index, int count) = 0;
+        //virtual void update_state(int start_index, int count) = 0;
 
         /* Updates weights for plastic neural connections.
          * TODO: implement.  This should use STDP variant Hebbian learning */
-        virtual void update_weights(Instruction *inst) = 0;
+        void update_weights(Instruction *inst) { }
 
         /* Clears input of non-input neurons */
         void clear_input();

@@ -1,17 +1,28 @@
 #include "kernel.h"
 #include "parallel.h"
 
-static DEVICE float extractor(Instruction &inst, Output &output) {
-    switch (inst.output_type) {
+typedef float(*EXTRACTOR)(Instruction&, Output&);
+
+static DEVICE float extract_float(Instruction &inst, Output &output) {
+    return output.f;
+}
+
+static DEVICE float extract_int(Instruction &inst, Output &output) {
+    return output.i;
+}
+
+static DEVICE float extract_bit(Instruction &inst, Output &output) {
+    return output.i & (1 << (inst.delay % 32));
+}
+
+static DEVICE EXTRACTOR get_extractor(OutputType output_type) {
+    switch (output_type) {
         case FLOAT:
-            return output.f;
-            break;
+            return extract_float;
         case INT:
-            return output.i;
-            break;
+            return extract_int;
         case BIT:
-            return output.i & (1 << (inst.delay % 32));
-            break;
+            return extract_bit;
     }
 }
 
@@ -29,6 +40,7 @@ GLOBAL void clear_data(float* data, int count) {
 
 GLOBAL void calc_fully_connected(Instruction inst) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
+    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (col < inst.to_size) {
         float sum = 0;
@@ -42,6 +54,7 @@ GLOBAL void calc_fully_connected(Instruction inst) {
 
 GLOBAL void calc_one_to_one(Instruction inst) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
+    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (index < inst.from_size) {
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
@@ -53,6 +66,7 @@ GLOBAL void calc_divergent(Instruction inst) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
     int d_index = d_row*inst.to_columns + d_col;
+    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (d_row < inst.to_rows and d_col < inst.to_columns) {
         float sum = 0.0;
@@ -106,6 +120,7 @@ GLOBAL void calc_convergent(Instruction inst) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
     int d_index = d_row*inst.to_columns + d_col;
+    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (d_row < inst.to_rows and d_col < inst.to_columns) {
         float sum = 0.0;
@@ -158,6 +173,7 @@ GLOBAL void calc_convergent(Instruction inst) {
  */
 
 void calc_fully_connected(Instruction inst) {
+    EXTRACTOR extractor = get_extractor(inst.output_type);
     for (int row = 0 ; row < inst.to_size ; ++row) {
         float sum = 0.0;
         for (int col = 0 ; col < inst.from_size ; ++col) {
@@ -169,6 +185,7 @@ void calc_fully_connected(Instruction inst) {
 }
 
 void calc_one_to_one(Instruction inst) {
+    EXTRACTOR extractor = get_extractor(inst.output_type);
     for (int index = 0 ; index < inst.from_size ; ++index) {
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
             extractor(inst, inst.outputs[index]) * inst.weights[index]);
@@ -176,6 +193,7 @@ void calc_one_to_one(Instruction inst) {
 }
 
 void calc_divergent(Instruction inst) {
+    EXTRACTOR extractor = get_extractor(inst.output_type);
     int kernel_size = inst.overlap * inst.overlap;
 
     // Iterate over destination neurons
@@ -223,6 +241,7 @@ void calc_divergent(Instruction inst) {
 }
 
 void calc_convergent(Instruction inst) {
+    EXTRACTOR extractor = get_extractor(inst.output_type);
     int kernel_size = inst.overlap * inst.overlap;
 
     // Iterate over destination neurons

@@ -25,6 +25,17 @@ enum OutputType {
     INT
 };
 
+/* Returns the number of timesteps represented by one Output value */
+inline int get_timesteps_per_output(OutputType output_type) {
+    switch (output_type) {
+        case FLOAT:
+        case INT:
+            return 1;
+        case BIT:
+            return sizeof(int) * 8;
+    }
+}
+
 /* Output union.
  * This is used to avoid unnecesary templating.
  * Because all outputs will be of the same type, it would be a waste of

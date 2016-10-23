@@ -58,7 +58,7 @@ Attributes::~Attributes() {
 }
 
 #ifdef PARALLEL
-void Attributes::get_input_from(Buffer *buffer, cudaStream_t stream) {
+void Attributes::get_input_from(Buffer *buffer, cudaStream_t &stream) {
     int index = this->start_index[INPUT];
     int count = this->num_neurons[INPUT] + this->num_neurons[INPUT_OUTPUT];
     if (count != 0) {
@@ -67,7 +67,7 @@ void Attributes::get_input_from(Buffer *buffer, cudaStream_t stream) {
             count * sizeof(float), cudaMemcpyHostToDevice, stream);
     }
 }
-void Attributes::send_output_to(Buffer *buffer, cudaStream_t stream) {
+void Attributes::send_output_to(Buffer *buffer, cudaStream_t &stream) {
     int index = this->start_index[INPUT_OUTPUT];
     int count = this->num_neurons[INPUT_OUTPUT] + this->num_neurons[OUTPUT];
     if (count != 0) {

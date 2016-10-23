@@ -12,27 +12,27 @@ class State {
         State(Model *model, Attributes *attributes, int weight_depth);
         virtual ~State();
 
-        Buffer* get_buffer() { return this->buffer; }
-
 #ifdef PARALLEL
-        void get_input_from(cudaStream_t stream) {
+        void get_input(cudaStream_t stream) {
             this->attributes->get_input_from(buffer, stream);
         }
 
-        void send_output_to(cudaStream_t stream) {
+        void send_output(cudaStream_t stream) {
             this->attributes->send_output_to(buffer, stream);
         }
 
 #else
-        void get_input_from() {
+        void get_input() {
             this->attributes->get_input_from(buffer);
         }
 
-        void send_output_to() {
+        void send_output() {
             this->attributes->send_output_to(buffer);
         }
 
 #endif
+
+        Buffer* get_buffer() { return this->buffer; }
 
         float* get_matrix(int connection_id) {
             return this->weight_matrices->get_matrix(connection_id);
