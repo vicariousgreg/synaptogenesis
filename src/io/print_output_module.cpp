@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <climits>
 #include <iostream>
 #include <sstream>
 
@@ -59,6 +60,9 @@ void PrintOutputModule::report_output(Buffer *buffer) {
                     fraction = out_value.f;
                     break;
                 case INT:
+                    fraction = (float)out_value.i / INT_MAX;
+                    break;
+                case BIT:
                     unsigned int spike_value = (unsigned int) (out_value.i & this->maximum);
                     unsigned int value = this->reverses[spike_value];
                     fraction = float(value) / this->maximum;

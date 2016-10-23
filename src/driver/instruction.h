@@ -6,7 +6,7 @@
 class Instruction {
     public:
         Instruction(Connection *conn, Output *outputs,
-            float *inputs, float *weights) :
+            OutputType output_type, float *inputs, float *weights) :
                 type(conn->type),
                 convolutional(conn->convolutional),
                 opcode(conn->opcode),
@@ -21,6 +21,7 @@ class Instruction {
                 to_columns(conn->to_layer->columns),
                 num_weights(conn->num_weights),
                 outputs(outputs + conn->from_layer->index),
+                output_type(output_type),
                 inputs(inputs + conn->to_layer->index),
                 weights(weights) {
             this->fray = 
@@ -40,6 +41,7 @@ class Instruction {
         int to_size, to_rows, to_columns;
         int num_weights;
 
+        OutputType output_type;
         Output *outputs;
         float *inputs;
         float *weights;

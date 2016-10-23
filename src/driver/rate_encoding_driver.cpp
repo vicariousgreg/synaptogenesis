@@ -13,28 +13,16 @@ GLOBAL void activation_function(float* outputs, float* inputs,
 GLOBAL void shift_output(float* outputs,
                 int start_index, int count, int num_neurons);
 
-DEVICE float re_calc_input(Output output) { return output.f; }
-DEVICE float (*re_calc_input_ptr)(Output) = re_calc_input;
-
 RateEncodingDriver::RateEncodingDriver(Model *model) : Driver() {
     this->re_attributes = new RateEncodingAttributes(model);
     this->state = new State(model, this->re_attributes, 1);
-#ifdef PARALLEL
-    cudaMemcpyFromSymbol(&this->calc_input_ptr, re_calc_input_ptr, sizeof(void *));
-#else
-    this->calc_input_ptr = re_calc_input_ptr;
-#endif
-}
-
-void RateEncodingDriver::update_connection(Instruction *inst) {
-    step<>(inst, this->calc_input_ptr);
 }
 
 void RateEncodingDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
-    shift_output<<<blocks, threads, 0, *this->curr_stream>>>(
+    shift_output<<<blocks, threads, 0, this->kernel_stream>>>(
 #else
     shift_output(
 #endif
@@ -42,7 +30,7 @@ void RateEncodingDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron output!");
 
-    activation_function<<<blocks, threads, 0, *this->curr_stream>>>(
+    activation_function<<<blocks, threads, 0, this->kernel_stream>>>(
 #else
     activation_function(
 #endif

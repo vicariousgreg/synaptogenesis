@@ -62,7 +62,7 @@ static IzhikevichParameters create_parameters(std::string str) {
     else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, INT) {
+IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT) {
     float* local_voltage = (float*) allocate_host(total_neurons, sizeof(float));
     float* local_recovery = (float*) allocate_host(total_neurons, sizeof(float));
     IzhikevichParameters* local_params =

@@ -32,7 +32,7 @@ void Scheduler::dispatch(Driver *driver) {
             if (i < it->second.size()) {
                 done = false;
                 driver->curr_stream = it->first;
-                driver->update_connection(it->second[i]);
+                driver->step_connection(it->second[i], it->first);
             }
         }
     }
@@ -53,7 +53,7 @@ void Scheduler::dispatch(Driver *driver) {
     }
 #else
     for (int i = 0; i < execute_schedule.size(); ++i)
-        driver->update_connection(execute_schedule[i]);
+        driver->step_connection(execute_schedule[i]);
     execute_schedule.clear();
     for (int i = 0; i < weight_update_schedule.size(); ++i) {
         driver->update_weights(weight_update_schedule[i]);

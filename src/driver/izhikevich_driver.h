@@ -13,12 +13,10 @@ class IzhikevichDriver : public Driver {
 
         int get_timesteps_per_output() { return 32; }
 
-        void update_connection(Instruction *inst);
         void update_state(int start_index, int count);
         void update_weights(Instruction *inst);
 
         IzhikevichAttributes *iz_attributes;
-        float(*calc_input_ptr)(Output, int);
 };
 
 #endif

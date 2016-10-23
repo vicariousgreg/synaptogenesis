@@ -18,30 +18,16 @@ GLOBAL void calc_spikes(int* spikes, float* voltages, float* recoveries,
 /* Euler resolution for voltage update. */
 #define EULER_RES 2
 
-DEVICE float iz_calc_input(Output output, int mask) { return output.i & mask; }
-DEVICE float (*iz_calc_input_ptr)(Output, int) = iz_calc_input;
-
 IzhikevichDriver::IzhikevichDriver(Model *model) : Driver() {
     this->iz_attributes = new IzhikevichAttributes(model);
     this->state = new State(model, this->iz_attributes, 1);
-#ifdef PARALLEL
-    cudaMemcpyFromSymbol(&this->calc_input_ptr, iz_calc_input_ptr, sizeof(void *));
-#else
-    this->calc_input_ptr = iz_calc_input_ptr;
-#endif
-}
-
-void IzhikevichDriver::update_connection(Instruction *inst) {
-    // Determine which part of spike vector to use based on delay
-    int mask = 1 << (inst->delay % 32);
-    step<int>(inst, this->calc_input_ptr, mask);
 }
 
 void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
-    izhikevich<<<blocks, threads, 0, *this->curr_stream>>>(
+    izhikevich<<<blocks, threads, 0, this->kernel_stream>>>(
 #else
     izhikevich(
 #endif
@@ -53,7 +39,7 @@ void IzhikevichDriver::update_state(int start_index, int count) {
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron voltages!");
 
-    calc_spikes<<<blocks, threads, 0, *this->curr_stream>>>(
+    calc_spikes<<<blocks, threads, 0, this->kernel_stream>>>(
 #else
     calc_spikes(
 #endif

@@ -7,7 +7,6 @@ Driver::Driver() {
 #ifdef PARALLEL
     cudaStreamCreate(&this->io_stream);
     cudaStreamCreate(&this->kernel_stream);
-    this->curr_stream = &this->kernel_stream;
 
     input_event = new cudaEvent_t;
     clear_event = new cudaEvent_t;
@@ -39,6 +38,7 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
         Instruction *inst =
             new Instruction(conn,
                 out,
+                this->state->attributes->get_output_type(),
                 this->state->attributes->get_input(),
                 this->state->get_matrix(conn->id));
         this->all_instructions.push_back(inst);
@@ -77,9 +77,8 @@ void Driver::stage_clear() {
     cudaEventCreateWithFlags(output_event, io_flags);
 
     // Start input clearing
-    this->curr_stream = &this->kernel_stream;
     clear_input();
-    cudaEventRecord(*this->clear_event, *this->curr_stream);
+    cudaEventRecord(*this->clear_event, this->kernel_stream);
 
     // Ensure all layer streams wait for appropriate input
     wait_event(INPUT, this->input_event);
@@ -103,10 +102,9 @@ void Driver::stage_clear() {
     stream_clusters[OUTPUT].block_stream(this->kernel_stream);
 
     // Output state computation
-    this->curr_stream = &this->kernel_stream;
     step_states(INPUT_OUTPUT);
     step_states(OUTPUT);
-    cudaEventRecord(*this->output_calc_event, *this->curr_stream);
+    cudaEventRecord(*this->output_calc_event, this->kernel_stream);
 
     // Launch remaining calculations
     schedule_to(INPUT);
@@ -117,7 +115,6 @@ void Driver::stage_clear() {
     stream_clusters[INTERNAL].block_stream(this->kernel_stream);
 
     // Launch final state computations
-    this->curr_stream = &this->kernel_stream;
     step_states(INPUT);
     step_states(INTERNAL);
 
@@ -202,6 +199,88 @@ void Driver::step_weights() {
         stream_clusters[i].schedule_weight_update();
     Scheduler::get_instance()->dispatch(this);
 }
+
+void Driver::clear_input() {
+    float *input = this->state->attributes->get_input();
+    int offset = this->state->attributes->get_start_index(OUTPUT);
+    int count = this->state->attributes->get_num_neurons() - offset;
+    if (count > 0) {
+#ifdef PARALLEL
+        int threads = calc_threads(count);
+        int blocks = calc_blocks(count);
+        // Use the kernel stream
+        clear_data<<<blocks, threads, 0, this->kernel_stream>>>(
+            input + offset, count);
+        cudaCheckError("Failed to clear inputs!");
+#else
+        clear_data(input + offset, count);
+#endif
+    }
+}
+
+#ifdef PARALLEL
+void Driver::step_connection(Instruction *inst, cudaStream_t *stream) {
+#else
+void Driver::step_connection(Instruction *inst) {
+#endif
+    void(*kernel)(Instruction);
+
+    // Determine which kernel to use based on connection type
+    switch (inst->type) {
+        case (FULLY_CONNECTED):
+            kernel = &calc_fully_connected;
+            break;
+        case (ONE_TO_ONE):
+            kernel = &calc_one_to_one;
+            break;
+        case (DIVERGENT):
+        case (DIVERGENT_CONVOLUTIONAL):
+            kernel = &calc_divergent;
+            break;
+        case (CONVERGENT):
+        case (CONVERGENT_CONVOLUTIONAL):
+            kernel = &calc_convergent;
+            break;
+        default:
+            throw "Unimplemented connection type!";
+    }
+
+#ifdef PARALLEL
+    // Calculate grid and block sizes based on type
+    dim3 blocks_per_grid;
+    dim3 threads_per_block;
+    int threads = calc_threads(inst->to_size);
+
+    switch (inst->type) {
+        case (FULLY_CONNECTED):
+        case (ONE_TO_ONE):
+            blocks_per_grid = dim3(calc_blocks(inst->to_size));
+            threads_per_block = dim3(threads);
+            break;
+        case (DIVERGENT):
+        case (DIVERGENT_CONVOLUTIONAL):
+        case (CONVERGENT):
+        case (CONVERGENT_CONVOLUTIONAL):
+            blocks_per_grid = dim3(
+                inst->to_rows,
+                calc_blocks(inst->to_columns));
+            threads_per_block = dim3(1, threads);
+            break;
+        default:
+            throw "Unimplemented connection type!";
+    }
+
+    // Run the parallel kernel
+    kernel<<<blocks_per_grid, threads_per_block, 0, *stream>>>(
+        *inst);
+    cudaCheckError("Failed to calculate connection activation!");
+
+#else
+    // Run the serial kernel
+    kernel(*inst);
+#endif
+}
+
 
 Driver* build_driver(Model* model) {
     Driver* driver;

@@ -21,6 +21,7 @@
  */
 enum OutputType {
     FLOAT,
+    BIT,
     INT
 };
 
