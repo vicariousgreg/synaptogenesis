@@ -5,7 +5,7 @@
 
 Structure::Structure (std::string name) : name(name) { }
 
-void Structure::connect(
+Connection* Structure::connect(
         Structure *from_structure, std::string from_layer_name,
         Structure *to_structure, std::string to_layer_name,
         bool plastic, int delay, float max_weight, ConnectionType type,
@@ -15,7 +15,7 @@ void Structure::connect(
     if (from_layer == NULL or to_layer == NULL)
         throw "Could not find layer!";
 
-    to_structure->connect_layers(
+    return to_structure->connect_layers(
         from_layer, to_layer,
         plastic, delay, max_weight,
         type, opcode, params);

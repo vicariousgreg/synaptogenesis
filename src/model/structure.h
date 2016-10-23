@@ -30,7 +30,7 @@ class Structure {
         Structure (std::string name);
         virtual ~Structure() { }
 
-        static void connect(
+        static Connection* connect(
             Structure *from_structure, std::string from_layer_name,
             Structure *to_structure, std::string to_layer_name,
             bool plastic, int delay, float max_weight, ConnectionType type,
