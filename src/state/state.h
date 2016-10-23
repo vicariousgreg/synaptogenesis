@@ -3,52 +3,44 @@
 
 #include "model/model.h"
 #include "io/buffer.h"
+#include "state/weight_matrices.h"
+#include "state/attributes.h"
 #include "constants.h"
 
 class State {
     public:
-        State(Model *model, int weight_depth);
+        State(Model *model, Attributes *attributes, int weight_depth);
         virtual ~State();
 
 #ifdef PARALLEL
-        void get_input_from(Buffer *buffer, cudaStream_t stream);
-        void send_output_to(Buffer *buffer, cudaStream_t stream);
+        void get_input_from(Buffer *buffer, cudaStream_t stream) {
+            this->attributes->get_input_from(buffer, stream);
+        }
+
+        void send_output_to(Buffer *buffer, cudaStream_t stream) {
+            this->attributes->get_input_from(buffer, stream);
+        }
+
 #else
-        void get_input_from(Buffer *buffer);
-        void send_output_to(Buffer *buffer);
+        void get_input_from(Buffer *buffer) {
+            this->attributes->get_input_from(buffer);
+        }
+
+        void send_output_to(Buffer *buffer) {
+            this->attributes->send_output_to(buffer);
+        }
+
 #endif
 
         float* get_matrix(int connection_id) {
-            return this->weight_matrices[connection_id];
+            return this->weight_matrices->get_matrix(connection_id);
         }
 
-        // Number of neurons
-        int total_neurons;
-        int num_neurons[IO_TYPE_SIZE];
-        int start_index[IO_TYPE_SIZE];
-
-        // Neuron input
-        float* input;
-
-        // Neuron output
-        Output* output;
-        Output* recent_output;
+        Attributes *attributes;
 
     protected:
         // Weight matrices
-        float** weight_matrices;
+        WeightMatrices *weight_matrices;
 };
-
-/* Allocates space for weight matrices and returns a double pointer
- *  containing pointers to starting points for each matrix */
-float** build_weight_matrices(Model* model, int depth);
-
-/* Allocates data on the host */
-void* allocate_host(int count, int size);
-
-#ifdef PARALLEL
-/* Allocates data on the device */
-void* allocate_device(int count, int size, void* source);
-#endif
 
 #endif

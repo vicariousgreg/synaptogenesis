@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "driver/driver.h"
-#include "state/izhikevich_state.h"
+#include "state/izhikevich_attributes.h"
 
 class IzhikevichDriver : public Driver {
     public:
@@ -18,7 +18,7 @@ class IzhikevichDriver : public Driver {
         void update_state(int start_index, int count);
         void update_weights(Instruction *inst);
 
-        IzhikevichState *iz_state;
+        IzhikevichAttributes *iz_attributes;
         float(*calc_input_ptr)(Output, int);
 };
 

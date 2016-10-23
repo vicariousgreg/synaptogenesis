@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "driver/rate_encoding_driver.h"
+#include "state/state.h"
 #include "parallel.h"
 
 /* Activation function */
@@ -16,8 +17,8 @@ DEVICE float re_calc_input(Output output) { return output.f; }
 DEVICE float (*re_calc_input_ptr)(Output) = re_calc_input;
 
 RateEncodingDriver::RateEncodingDriver(Model *model) : Driver() {
-    this->re_state = new RateEncodingState(model);
-    this->state = this->re_state;
+    this->re_attributes = new RateEncodingAttributes(model);
+    this->state = new State(model, this->re_attributes, 1);
 #ifdef PARALLEL
     cudaMemcpyFromSymbol(&this->calc_input_ptr, re_calc_input_ptr, sizeof(void *));
 #else
@@ -30,8 +31,6 @@ void RateEncodingDriver::update_connection(Instruction *inst) {
 }
 
 void RateEncodingDriver::update_state(int start_index, int count) {
-    RateEncodingState* state = (RateEncodingState*) this->state;
-
 #ifdef PARALLEL
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
@@ -39,7 +38,7 @@ void RateEncodingDriver::update_state(int start_index, int count) {
 #else
     shift_output(
 #endif
-        (float*)state->output, start_index, count, this->state->total_neurons);
+        (float*)re_attributes->output, start_index, count, re_attributes->total_neurons);
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron output!");
 
@@ -47,9 +46,9 @@ void RateEncodingDriver::update_state(int start_index, int count) {
 #else
     activation_function(
 #endif
-        (float*)state->recent_output,
-        state->input,
-        state->neuron_parameters,
+        (float*)re_attributes->recent_output,
+        re_attributes->input,
+        re_attributes->neuron_parameters,
         start_index, count);
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron output!");

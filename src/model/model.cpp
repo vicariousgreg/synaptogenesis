@@ -11,24 +11,27 @@ void Model::add_structure(Structure *structure) {
     if (this->structures.find(structure->name) != this->structures.end())
         throw "Repeated structure name!";
     this->structures[structure->name] = structure;
-
-    // Add connections
-    connections.insert(connections.end(),
-        structure->connections.begin(), structure->connections.end());
     build();
 }
 
 void Model::build() {
     all_layers.clear();
+    connections.clear();
     this->num_neurons = 0;
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         layers[i].clear();
 
     // Extract layers and connections from structures
+    int conn_id = 0;
     for (auto it = structures.begin(); it != structures.end(); ++it) {
         Structure *structure = it->second;
         all_layers.insert(all_layers.end(),
             structure->layers.begin(), structure->layers.end());
+
+        for (auto it = structure->connections.begin(); it != structure->connections.end(); ++it) {
+            connections.push_back(*it);
+            (*it)->id = conn_id++;
+        }
     }
 
     // Sort layers

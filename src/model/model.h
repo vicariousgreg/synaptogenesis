@@ -25,6 +25,8 @@ class Model {
                 delete this->connections[i];
             for (int i = 0; i < this->all_layers.size(); ++i)
                 delete this->all_layers[i];
+            for (auto it = structures.begin(); it != structures.end(); ++it)
+                delete it->second;
         }
 
         void add_structure(Structure *structure);

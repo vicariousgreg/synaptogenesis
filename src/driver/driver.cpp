@@ -35,12 +35,12 @@ void Driver::build_instructions(Model *model, int timesteps_per_output) {
         if (word_index < 0) throw "Invalid delay in connection!";
 
         // Create instruction
-        Output* out = this->state->output + 
-            (this->state->total_neurons * word_index);
+        Output* out = this->state->attributes->output +
+            (this->state->attributes->total_neurons * word_index);
         Instruction *inst =
             new Instruction(conn,
                 out,
-                this->state->input,
+                this->state->attributes->input,
                 this->state->get_matrix(conn->id));
         this->all_instructions.push_back(inst);
 
@@ -79,9 +79,9 @@ void Driver::stage_clear() {
 
     // Start input clearing
     this->curr_stream = &this->kernel_stream;
-    clear_input(this->state->input,
-        this->state->start_index[OUTPUT],
-        this->state->total_neurons);
+    clear_input(this->state->attributes->input,
+        this->state->attributes->start_index[OUTPUT],
+        this->state->attributes->total_neurons);
     cudaEventRecord(*this->clear_event, *this->curr_stream);
 
     // Ensure all layer streams wait for appropriate input
@@ -127,9 +127,9 @@ void Driver::stage_clear() {
     // Wait for input stream to return
     cudaEventSynchronize(*this->input_event);
 #else
-    clear_input(this->state->input,
-        this->state->start_index[OUTPUT],
-        this->state->total_neurons);
+    clear_input(this->state->attributes->input,
+        this->state->attributes->start_index[OUTPUT],
+        this->state->attributes->total_neurons);
 #endif
 }
 
@@ -192,12 +192,12 @@ void Driver::stage_remaining() {
 
 
 void Driver::step_all_states() {
-    this->update_state(0, this->state->total_neurons);
+    this->update_state(0, this->state->attributes->total_neurons);
 }
 
 void Driver::step_states(IOType layer_type) {
-    int start_index = this->state->start_index[layer_type];
-    int count = this->state->num_neurons[layer_type];
+    int start_index = this->state->attributes->start_index[layer_type];
+    int count = this->state->attributes->num_neurons[layer_type];
     if (count > 0)
         this->update_state(start_index, count);
 }

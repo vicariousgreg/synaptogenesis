@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <string>
 
-#include "state/izhikevich_state.h"
+#include "state/izhikevich_attributes.h"
 #include "tools.h"
 #include "parallel.h"
 
@@ -62,7 +62,7 @@ static IzhikevichParameters create_parameters(std::string str) {
     else throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
+IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model) {
     float* local_voltage = (float*) allocate_host(total_neurons, sizeof(float));
     float* local_recovery = (float*) allocate_host(total_neurons, sizeof(float));
     IzhikevichParameters* local_params =
@@ -97,7 +97,7 @@ IzhikevichState::IzhikevichState(Model* model) : State(model, 1) {
 #endif
 }
 
-IzhikevichState::~IzhikevichState() {
+IzhikevichAttributes::~IzhikevichAttributes() {
 #ifdef PARALLEL
     cudaFree(this->voltage);
     cudaFree(this->recovery);

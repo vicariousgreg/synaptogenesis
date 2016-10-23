@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "driver/driver.h"
-#include "state/rate_encoding_state.h"
+#include "state/rate_encoding_attributes.h"
 
 class RateEncodingDriver : public Driver {
     public:
@@ -17,7 +17,7 @@ class RateEncodingDriver : public Driver {
         void update_state(int start_index, int count);
         void update_weights(Instruction *inst);
 
-        RateEncodingState *re_state;
+        RateEncodingAttributes *re_attributes;
         float(*calc_input_ptr)(Output);
 };
 

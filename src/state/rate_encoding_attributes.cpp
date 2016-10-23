@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <string>
 
-#include "state/rate_encoding_state.h"
+#include "state/rate_encoding_attributes.h"
 #include "tools.h"
 #include "parallel.h"
 
@@ -11,7 +11,7 @@ static RateEncodingParameters create_parameters(std::string str) {
     //throw ("Unrecognized parameter string: " + str).c_str();
 }
 
-RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
+RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model) {
     RateEncodingParameters* local_params =
         (RateEncodingParameters*) allocate_host(total_neurons, sizeof(RateEncodingParameters));
 
@@ -33,7 +33,7 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, 1) {
 #endif
 }
 
-RateEncodingState::~RateEncodingState() {
+RateEncodingAttributes::~RateEncodingAttributes() {
 #ifdef PARALLEL
     cudaFree(this->neuron_parameters);
 #else

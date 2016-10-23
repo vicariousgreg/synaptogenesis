@@ -17,6 +17,25 @@ inline float fRand(float fMin, float fMax) {
     return fMin + f * (fMax - fMin);
 }
 
+inline void* allocate_host(int count, int size) {
+    void* ptr = calloc(count, size);
+    if (ptr == NULL)
+        throw "Failed to allocate space on host for neuron state!";
+    return ptr;
+}
+
+#ifdef PARALLEL
+inline void* allocate_device(int count, int size, void* source_data) {
+    void* ptr;
+    cudaMalloc(&ptr, count * size);
+    cudaCheckError("Failed to allocate memory on device for neuron state!");
+    if (source_data != NULL)
+        cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to initialize memory on device for neuron state!");
+    return ptr;
+}
+#endif
+
 static float get_diff(Time_point a, Time_point b) {
     return (float)duration_cast<milliseconds>(a - b).count() / 1000;
 }
