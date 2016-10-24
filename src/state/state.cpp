@@ -7,9 +7,9 @@
 #include "tools.h"
 #include "parallel.h"
 
-State::State(Model *model, Attributes *attributes, int weight_depth)
-        : attributes(attributes),
-          weight_matrices(new WeightMatrices(model, weight_depth)) {
+State::State(Model *model)
+        : attributes(build_attributes(model)),
+          weight_matrices(new WeightMatrices(model, 1)) {
     int input_output_size = attributes->get_num_neurons(INPUT_OUTPUT);
     int input_size = input_output_size + attributes->get_num_neurons(INPUT);
     int output_size = input_output_size + attributes->get_num_neurons(OUTPUT);

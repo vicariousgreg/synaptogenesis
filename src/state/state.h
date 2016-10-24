@@ -9,7 +9,7 @@
 
 class State {
     public:
-        State(Model *model, Attributes *attributes, int weight_depth);
+        State(Model *model);
         virtual ~State();
 
         /* Resets the state, clearing any non-sensory input

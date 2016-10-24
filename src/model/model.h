@@ -19,7 +19,7 @@
  */
 class Model {
     public:
-        Model (std::string driver_string);
+        Model (std::string engine_name);
         virtual ~Model() {
             for (int i = 0; i < this->connections.size(); ++i)
                 delete this->connections[i];
@@ -37,7 +37,7 @@ class Model {
         void build();
 
         // Driver string indicating type of driver
-        std::string driver_string;
+        std::string engine_name;
 
         // Total number of neurons
         int num_neurons;

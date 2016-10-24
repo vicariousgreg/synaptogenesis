@@ -1,8 +1,8 @@
 #include "model/model.h"
 
-Model::Model (std::string driver_string) :
+Model::Model (std::string engine_name) :
         num_neurons(0),
-        driver_string(driver_string) {}
+        engine_name(engine_name) {}
 
 void Model::add_structure(Structure *structure) {
     if (this->structures.find(structure->name) != this->structures.end())

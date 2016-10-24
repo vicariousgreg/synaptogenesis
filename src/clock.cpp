@@ -54,7 +54,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     // Build driver
     run_timer.reset();
 
-    Driver *driver = build_driver(model);
+    Driver *driver = new Driver(model);
     if (verbose) {
         printf("Built state.\n");
         run_timer.query("Initialization");

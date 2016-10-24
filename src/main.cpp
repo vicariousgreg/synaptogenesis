@@ -23,8 +23,8 @@ void print_model(Model *model) {
     printf("  - weights     : %10d\n", num_weights);
 }
 
-Model* build_self_connected_model(std::string driver_name, bool verbose) {
-    Model *model = new Model(driver_name);
+Model* build_self_connected_model(std::string engine_name, bool verbose) {
+    Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
     int rows = 1000;
@@ -44,8 +44,8 @@ Model* build_self_connected_model(std::string driver_name, bool verbose) {
     return model;
 }
 
-Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionType type) {
-    Model *model = new Model(driver_name);
+Model* build_arborized_model(std::string engine_name, bool verbose, ConnectionType type) {
+    Model *model = new Model(engine_name);
     Structure *structure = new Structure("Arborized");
 
     int rows = 1000;
@@ -60,8 +60,8 @@ Model* build_arborized_model(std::string driver_name, bool verbose, ConnectionTy
     return model;
 }
 
-Model* build_stress_model(std::string driver_name, bool verbose) {
-    Model *model = new Model(driver_name);
+Model* build_stress_model(std::string engine_name, bool verbose) {
+    Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
     int size = 800 * 19;
@@ -79,8 +79,8 @@ Model* build_stress_model(std::string driver_name, bool verbose) {
     return model;
 }
 
-Model* build_layers_model(std::string driver_name, bool verbose) {
-    Model *model = new Model(driver_name);
+Model* build_layers_model(std::string engine_name, bool verbose) {
+    Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
     int size = 1000;
@@ -112,14 +112,14 @@ Model* build_layers_model(std::string driver_name, bool verbose) {
     return model;
 }
 
-Model* build_image_model(std::string driver_name, bool verbose) {
+Model* build_image_model(std::string engine_name, bool verbose) {
     /* Determine output type */
     std::string output_name;
     output_name = "print_output";
     //output_name = "dummy_output";
 
     /* Construct the model */
-    Model *model = new Model(driver_name);
+    Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
     //const char* image_path = "resources/bird.jpg";

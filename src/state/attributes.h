@@ -49,4 +49,6 @@ class Attributes {
         Output* recent_output;
 };
 
+Attributes *build_attributes(Model *model);
+
 #endif

@@ -3,8 +3,21 @@
 #include <sstream>
 
 #include "state/attributes.h"
+#include "state/izhikevich_attributes.h"
+#include "state/rate_encoding_attributes.h"
 #include "tools.h"
 #include "parallel.h"
+
+Attributes *build_attributes(Model *model) {
+    Attributes *attributes;
+    if (model->engine_name == "izhikevich")
+        attributes = new IzhikevichAttributes(model);
+    else if (model->engine_name == "rate_encoding")
+        attributes = new RateEncodingAttributes(model);
+    else
+        throw "Unrecognized driver type!";
+    return attributes;
+}
 
 Attributes::Attributes(Model *model, OutputType output_type) :
         output_type(output_type) {
