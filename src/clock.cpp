@@ -25,6 +25,7 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
 
         // Finish computations
         driver->stage_remaining();
+        driver->stage_weights();
     }
 }
 

@@ -210,8 +210,8 @@ void image_test() {
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
-    run_simulation(model, 500, true);
-    //run_simulation(model, 10, true);
+    //run_simulation(model, 500, true);
+    run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;

@@ -1,6 +1,5 @@
 #include "driver/scheduler.h"
-
-Scheduler *Scheduler::scheduler = 0;
+#include "driver/driver.h"
 
 #ifdef PARALLEL
 void Scheduler::schedule_execution(cudaStream_t *stream, Instruction *inst) {

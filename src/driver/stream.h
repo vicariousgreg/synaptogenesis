@@ -3,51 +3,26 @@
 
 #include <vector>
 #include <map>
-#include "model/layer.h"
+#include "model/model.h"
+#include "driver/scheduler.h"
 #include "driver/instruction.h"
 #include "parallel.h"
 #include "constants.h"
 
+class Driver;
 class StreamCluster;
 
 class Stream {
     public:
-        Stream(Layer *layer) : to_layer(layer), scheduled(0) {
-            for (int i = 0; i < IO_TYPE_SIZE; ++i)
-                last_index[i] = 0;
-#ifdef PARALLEL
-            cudaStreamCreate(&cuda_stream);
-            finished_event = new cudaEvent_t;
-            for (int i = 0; i < IO_TYPE_SIZE; ++i)
-                events[i] = new cudaEvent_t;
-#endif
-            reset();
-        }
+        Stream(Layer *layer);
+        virtual ~Stream();
 
-        virtual ~Stream() {
-#ifdef PARALLEL
-            for (int i = 0; i < IO_TYPE_SIZE; ++i) {
-                cudaEventDestroy(*events[i]);
-                delete events[i];
-            }
-            cudaEventDestroy(*finished_event);
-            delete finished_event;
-#endif
-        }
+        void reset();
 
-        void reset() {
-            this->scheduled = 0;
-#ifdef PARALLEL
-            cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
-            for (int i = 0; i < IO_TYPE_SIZE; ++i)
-                cudaEventCreateWithFlags(events[i], cudaEventDisableTiming);
-#endif
-        }
-
-        void schedule_execution();
-        void schedule_execution(int to_schedule);
-        void schedule_execution(IOType type);
-        void schedule_weight_update();
+        void schedule_execution(Scheduler *scheduler);
+        void schedule_execution(int to_schedule, Scheduler *scheduler);
+        void schedule_execution(IOType type, Scheduler *scheduler);
+        void schedule_weight_update(Scheduler *scheduler);
 
         void add_instruction(Instruction *inst, IOType from_type) {
             this->last_index[from_type] = instructions.size();
@@ -78,39 +53,25 @@ class Stream {
 
 class StreamCluster {
     public:
-        StreamCluster() {}
-        virtual ~StreamCluster() {
-            for (auto it = streams.begin(); it != streams.end(); ++it) {
-                delete it->second;
-            }
-        }
-
-        void add_instruction(Layer *layer, Instruction *inst, IOType from_type) {
-            std::map<Layer*, Stream*>::iterator it = streams.find(layer);
-            Stream *stream;
-            if (it != streams.end()) {
-                stream = it->second;
-            } else {
-                stream = new Stream(layer);
-            }
-            stream->add_instruction(inst, from_type);
-            streams[layer] = stream;
-        }
+        StreamCluster(Model *model, State *state);
+        virtual ~StreamCluster();
 
         void reset();
-        void schedule_execution();
-        void schedule_execution(IOType type);
+        void schedule_execution_from(IOType from_type);
+        void schedule_execution_to(IOType to_type);
         void schedule_weight_update();
+        void dispatch(Driver *driver);
         bool is_done();
         bool is_done(IOType type);
 #ifdef PARALLEL
-        void wait_event(cudaEvent_t *event);
-        void block_stream(cudaStream_t stream);
-        void block_stream(cudaStream_t stream, IOType type);
+        void wait_event(IOType to_type, cudaEvent_t *event);
+        void block_stream_to(IOType to_type, cudaStream_t stream);
+        void block_stream_from(IOType from_type, cudaStream_t stream);
 #endif
 
     private:
-        std::map<Layer*, Stream*> streams;
+        std::map<Layer*, Stream*> streams[IO_TYPE_SIZE];
+        Scheduler *scheduler;
 };
 
 #endif

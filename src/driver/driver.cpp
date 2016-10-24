@@ -1,47 +1,16 @@
 #include "driver/driver.h"
-#include "driver/scheduler.h"
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
 
-Driver::Driver(Model *model, State *state) : state(state) {
-    // Build instructions
-    for (int i = 0; i < model->connections.size(); ++i) {
-        Connection *conn = model->connections[i];
-
-        // Create instruction
-        Instruction *inst = new Instruction(conn, this->state);
-        this->all_instructions.push_back(inst);
-
-        // Stream cluster
-        stream_clusters[conn->to_layer->type].add_instruction(
-            conn->to_layer, inst, conn->from_layer->type);
-    }
-}
+Driver::Driver(Model *model, State *state)
+        : state(state), stream_cluster(model, state) { }
 
 Driver::~Driver() {
     delete this->state;
-    for (int i = 0; i < this->all_instructions.size(); ++i)
-        delete this->all_instructions[i];
-}
-
-#ifdef PARALLEL
-void Driver::wait_event(IOType to_type, cudaEvent_t *event) {
-    stream_clusters[to_type].wait_event(event);
-}
-#endif
-
-void Driver::schedule_from(IOType from_type) {
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        stream_clusters[i].schedule_execution(from_type);
-}
-
-void Driver::schedule_to(IOType to_type) {
-    stream_clusters[to_type].schedule_execution();
 }
 
 void Driver::stage_clear() {
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        stream_clusters[i].reset();
+    stream_cluster.reset();
 
 #ifdef PARALLEL
     // Initialize state for timestep
@@ -51,36 +20,35 @@ void Driver::stage_clear() {
     this->state->clear_input();
 
     // Ensure all layer streams wait for appropriate input
-    wait_event(INPUT, this->state->input_event);
-    wait_event(INPUT_OUTPUT, this->state->input_event);
-    wait_event(OUTPUT, this->state->clear_event);
-    wait_event(INTERNAL, this->state->clear_event);
+    stream_cluster.wait_event(INPUT, this->state->input_event);
+    stream_cluster.wait_event(INPUT_OUTPUT, this->state->input_event);
+    stream_cluster.wait_event(OUTPUT, this->state->clear_event);
+    stream_cluster.wait_event(INTERNAL, this->state->clear_event);
 
     // Launch output relevant computations
-    schedule_from(INPUT_OUTPUT);
-    schedule_from(OUTPUT);
-    schedule_to(OUTPUT);
-    schedule_to(INPUT_OUTPUT);
-    Scheduler::get_instance()->dispatch(this);
+    stream_cluster.schedule_execution_from(INPUT_OUTPUT);
+    stream_cluster.schedule_execution_from(OUTPUT);
+    stream_cluster.schedule_execution_to(OUTPUT);
+    stream_cluster.schedule_execution_to(INPUT_OUTPUT);
+    stream_cluster.dispatch(this);
 
     // Wait for output computations to finish
-    for (int i = 0; i < IO_TYPE_SIZE; ++i) {
-        stream_clusters[i].block_stream(this->state->state_stream, OUTPUT);
-        stream_clusters[i].block_stream(this->state->state_stream, INPUT_OUTPUT);
-    }
-    stream_clusters[INPUT_OUTPUT].block_stream(this->state->state_stream);
-    stream_clusters[OUTPUT].block_stream(this->state->state_stream);
+    stream_cluster.block_stream_from(OUTPUT, this->state->state_stream);
+    stream_cluster.block_stream_from(INPUT_OUTPUT, this->state->state_stream);
+
+    stream_cluster.block_stream_to(INPUT_OUTPUT, this->state->state_stream);
+    stream_cluster.block_stream_to(OUTPUT, this->state->state_stream);
 
     // Output state computation
     this->state->step_output_states();
 
     // Launch remaining calculations
-    schedule_to(INPUT);
-    schedule_to(INTERNAL);
-    Scheduler::get_instance()->dispatch(this);
+    stream_cluster.schedule_execution_to(INPUT);
+    stream_cluster.schedule_execution_to(INTERNAL);
+    stream_cluster.dispatch(this);
     // Block kernel stream until they are done
-    stream_clusters[INPUT].block_stream(this->state->state_stream);
-    stream_clusters[INTERNAL].block_stream(this->state->state_stream);
+    stream_cluster.block_stream_to(INPUT, this->state->state_stream);
+    stream_cluster.block_stream_to(INTERNAL, this->state->state_stream);
 
     // Launch final state computations
     this->state->step_non_output_states();
@@ -93,9 +61,6 @@ void Driver::stage_clear() {
 }
 
 void Driver::stage_input() {
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        stream_clusters[i].reset();
-
 #ifdef PARALLEL
     // Start input streaming
     this->state->get_input();
@@ -110,11 +75,11 @@ void Driver::stage_input() {
 void Driver::stage_calc_output() {
 #ifdef PARALLEL
 #else
-    schedule_from(OUTPUT);
-    schedule_from(INPUT_OUTPUT);
-    schedule_to(OUTPUT);
-    schedule_to(INPUT_OUTPUT);
-    Scheduler::get_instance()->dispatch(this);
+    stream_cluster.schedule_execution_from(OUTPUT);
+    stream_cluster.schedule_execution_from(INPUT_OUTPUT);
+    stream_cluster.schedule_execution_to(OUTPUT);
+    stream_cluster.schedule_execution_to(INPUT_OUTPUT);
+    stream_cluster.dispatch(this);
     this->state->step_output_states();
 #endif
 }
@@ -138,19 +103,17 @@ void Driver::stage_remaining() {
     cudaSync();
     cudaCheckError(NULL);
 #else
-    schedule_to(INPUT);
-    schedule_to(INTERNAL);
-    Scheduler::get_instance()->dispatch(this);
+    stream_cluster.schedule_execution_to(INPUT);
+    stream_cluster.schedule_execution_to(INTERNAL);
+    stream_cluster.dispatch(this);
     this->state->step_non_output_states();
-    step_weights();
 #endif
 }
 
 
-void Driver::step_weights() {
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        stream_clusters[i].schedule_weight_update();
-    Scheduler::get_instance()->dispatch(this);
+void Driver::stage_weights() {
+    stream_cluster.schedule_weight_update();
+    stream_cluster.dispatch(this);
 }
 
 Driver* build_driver(Model* model) {
