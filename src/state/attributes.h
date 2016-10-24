@@ -10,16 +10,6 @@ class Attributes {
         Attributes(Model *model, OutputType output_type);
         virtual ~Attributes();
 
-#ifdef PARALLEL
-        virtual void update(int start_index, int count, cudaStream_t &stream) = 0;
-        void get_input_from(Buffer *buffer, cudaStream_t &stream);
-        void send_output_to(Buffer *buffer, cudaStream_t &stream);
-#else
-        virtual void update(int start_index, int count) = 0;
-        void get_input_from(Buffer *buffer);
-        void send_output_to(Buffer *buffer);
-#endif
-
         float* get_input() { return input; }
         OutputType get_output_type() { return output_type; }
         Output* get_recent_output() { return recent_output; }
@@ -32,6 +22,17 @@ class Attributes {
         int get_start_index(IOType type) { return start_index[type]; }
 
     protected:
+        friend class State;
+#ifdef PARALLEL
+        virtual void update(int start_index, int count, cudaStream_t &stream) = 0;
+        void get_input_from(Buffer *buffer, cudaStream_t &stream);
+        void send_output_to(Buffer *buffer, cudaStream_t &stream);
+#else
+        virtual void update(int start_index, int count) = 0;
+        void get_input_from(Buffer *buffer);
+        void send_output_to(Buffer *buffer);
+#endif
+
         // Number of neurons
         int total_neurons;
         int num_neurons[IO_TYPE_SIZE];

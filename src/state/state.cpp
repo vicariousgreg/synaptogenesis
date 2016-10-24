@@ -30,7 +30,7 @@ State::State(Model *model, Attributes *attributes, int weight_depth)
     output_calc_event = new cudaEvent_t;
     output_event = new cudaEvent_t;
 
-    this->initialize();
+    this->reset();
 #endif
 }
 
@@ -53,45 +53,18 @@ State::~State() {
 #endif
 }
 
+void State::reset() {
 #ifdef PARALLEL
-void State::initialize() {
-    // Create events
+    // Reset events
     unsigned int flags = cudaEventDisableTiming;
     unsigned int io_flags = flags & cudaEventBlockingSync;
     cudaEventCreateWithFlags(input_event, io_flags);
     cudaEventCreateWithFlags(clear_event, flags);
     cudaEventCreateWithFlags(output_calc_event, flags);
     cudaEventCreateWithFlags(output_event, io_flags);
-}
 #endif
 
-void State::update(int start_index, int count) {
-#ifdef PARALLEL
-    this->attributes->update(start_index, count, state_stream);
-#else
-    this->attributes->update(start_index, count);
-#endif
-}
-
-void State::get_input() {
-#ifdef PARALLEL
-    this->attributes->get_input_from(buffer, io_stream);
-    cudaEventRecord(*this->input_event, this->io_stream);
-#else
-    this->attributes->get_input_from(buffer);
-#endif
-}
-
-void State::send_output() {
-#ifdef PARALLEL
-    this->attributes->send_output_to(buffer, io_stream);
-    cudaEventRecord(*this->output_event, this->io_stream);
-#else
-    this->attributes->send_output_to(buffer);
-#endif
-}
-
-void State::clear_input() {
+    // Clear inputs that aren't connected to sensory input
     float *input = this->attributes->get_input();
     int offset = this->attributes->get_start_index(OUTPUT);
     int count = this->attributes->get_num_neurons() - offset;
@@ -112,26 +85,64 @@ void State::clear_input() {
 #endif
 }
 
-void State::step_output_states() {
-    step_state(INPUT_OUTPUT);
-    step_state(OUTPUT);
+void State::update_states(int start_index, int count) {
+#ifdef PARALLEL
+    this->attributes->update(start_index, count, state_stream);
+#else
+    this->attributes->update(start_index, count);
+#endif
+}
+
+void State::get_input() {
+#ifdef PARALLEL
+    this->attributes->get_input_from(buffer, io_stream);
+    cudaEventRecord(*this->input_event, this->io_stream);
+#else
+    this->attributes->get_input_from(buffer);
+#endif
+}
+
+void State::send_output() {
+#ifdef PARALLEL
+    // Make sure to wait for output calc event
+    cudaStreamWaitEvent(this->io_stream, *this->output_calc_event, 0);
+    this->attributes->send_output_to(buffer, io_stream);
+    cudaEventRecord(*this->output_event, this->io_stream);
+#else
+    this->attributes->send_output_to(buffer);
+#endif
+}
+
+#ifdef PARALLEL
+void State::wait_for_input() {
+    cudaEventSynchronize(*this->input_event);
+}
+
+void State::wait_for_output() {
+    cudaEventSynchronize(*this->output_event);
+}
+#endif
+
+void State::update_output_states() {
+    update_states(INPUT_OUTPUT);
+    update_states(OUTPUT);
 #ifdef PARALLEL
     cudaEventRecord(*this->output_calc_event, this->state_stream);
 #endif
 }
 
-void State::step_non_output_states() {
-    step_state(INPUT);
-    step_state(INTERNAL);
+void State::update_non_output_states() {
+    update_states(INPUT);
+    update_states(INTERNAL);
 }
 
-void State::step_all_states() {
-    this->update(0, attributes->get_num_neurons());
+void State::update_all_states() {
+    this->update_states(0, attributes->get_num_neurons());
 }
 
-void State::step_state(IOType layer_type) {
+void State::update_states(IOType layer_type) {
     int start_index = attributes->get_start_index(layer_type);
     int count = attributes->get_num_neurons(layer_type);
     if (count > 0)
-        this->update(start_index, count);
+        this->update_states(start_index, count);
 }

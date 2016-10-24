@@ -93,7 +93,7 @@ void Stream::wait_event(cudaEvent_t *event) {
 #endif
 
 StreamCluster::StreamCluster(Model *model, State *state)
-        : scheduler(new Scheduler){
+        : state(state), scheduler(new Scheduler) {
     // Build instructions
     for (int i = 0; i < model->connections.size(); ++i) {
         Connection *conn = model->connections[i];
@@ -124,10 +124,33 @@ StreamCluster::~StreamCluster() {
             delete it->second;
 }
 
+void StreamCluster::schedule_output_calculations() {
+    // Launch output relevant computations
+    schedule_execution_from(INPUT_OUTPUT);
+    schedule_execution_from(OUTPUT);
+    schedule_execution_to(OUTPUT);
+    schedule_execution_to(INPUT_OUTPUT);
+}
+
+void StreamCluster::schedule_non_output_calculations() {
+    // Launch output relevant computations
+    schedule_execution_to(INPUT);
+    schedule_execution_to(INTERNAL);
+}
+
 void StreamCluster::reset() {
+    // Reset streams
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
             it->second->reset();
+
+#ifdef PARALLEL
+    // Ensure all layer streams wait for appropriate input
+    wait_event(INPUT, this->state->input_event);
+    wait_event(INPUT_OUTPUT, this->state->input_event);
+    wait_event(OUTPUT, this->state->clear_event);
+    wait_event(INTERNAL, this->state->clear_event);
+#endif
 }
 
 void StreamCluster::schedule_execution_from(IOType from_type) {
@@ -182,5 +205,17 @@ void StreamCluster::block_stream_from(IOType from_type, cudaStream_t stream) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
             cudaStreamWaitEvent(stream, *it->second->events[from_type], 0);
+}
+
+void StreamCluster::block_state_on_output_calculations() {
+    block_stream_from(OUTPUT, state->state_stream);
+    block_stream_from(INPUT_OUTPUT, state->state_stream);
+    block_stream_to(INPUT_OUTPUT, state->state_stream);
+    block_stream_to(OUTPUT, state->state_stream);
+}
+
+void StreamCluster::block_state_on_non_output_calculations() {
+    block_stream_to(INPUT, this->state->state_stream);
+    block_stream_to(INTERNAL, this->state->state_stream);
 }
 #endif

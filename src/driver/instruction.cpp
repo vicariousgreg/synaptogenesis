@@ -14,7 +14,7 @@ Instruction::Instruction(Connection *conn, State *state) :
         to_rows(conn->to_layer->rows),
         to_columns(conn->to_layer->columns),
         num_weights(conn->num_weights),
-        output_type(state->attributes->get_output_type()),
+        output_type(state->get_attributes()->get_output_type()),
         inputs(inputs + conn->to_layer->index),
         weights(state->get_matrix(conn->id)) {
 
@@ -24,8 +24,8 @@ Instruction::Instruction(Connection *conn, State *state) :
         (conn->delay / timesteps_per_output);
     if (word_index < 0) throw "Invalid delay in connection!";
 
-    outputs = state->attributes->get_output(word_index) + conn->from_layer->index,
-    inputs = state->attributes->get_input() + conn->to_layer->index;
+    outputs = state->get_attributes()->get_output(word_index) + conn->from_layer->index,
+    inputs = state->get_attributes()->get_input() + conn->to_layer->index;
 
     this->fray = 
         (to_rows == from_rows and to_columns == from_columns)
