@@ -5,11 +5,14 @@
 #include "state/rate_encoding_attributes.h"
 #include "driver/rate_encoding_kernel.h"
 #include "tools.h"
+#include "error_manager.h"
 #include "parallel.h"
 
 static RateEncodingParameters create_parameters(std::string str) {
     return RateEncodingParameters(0.0);
-    //throw ("Unrecognized parameter string: " + str).c_str();
+
+    //ErrorManager::get_instance()->log_error(
+    //    "Unrecognized parameter string: " + str);
 }
 
 RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model, FLOAT) {

@@ -1,5 +1,6 @@
+#include "model/layer.h"
 #include "io/module.h"
-#include "layer.h"
+#include "error_manager.h"
 
 Layer::Layer(std::string name, int start_index, int rows, int columns, std::string params) :
         name(name),
@@ -23,22 +24,26 @@ void Layer::add_module(Module *module) {
     switch (new_type) {
         case INPUT:
             if (this->input_module != NULL)
-                throw "Layer cannot have more than one input module!";
+                ErrorManager::get_instance()->log_error(
+                    "Layer cannot have more than one input module!");
             this->input_module = module;
             break;
         case OUTPUT:
             if (this->output_module != NULL)
-                throw "Layer cannot have more than one output module!";
+                ErrorManager::get_instance()->log_error(
+                    "Layer cannot have more than one output module!");
             this->output_module = module;
             break;
         case INPUT_OUTPUT:
             if (this->input_module != NULL or this->output_module != NULL)
-                throw "Layer cannot have more than one input/output module!";
+                ErrorManager::get_instance()->log_error(
+                    "Layer cannot have more than one input/output module!");
             this->input_module = module;
             this->output_module = module;
             break;
         default:
-            throw "Unrecognized module type!";
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized module type!");
     }
 
     if (this->input_module != NULL and this->output_module != NULL)

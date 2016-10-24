@@ -1,6 +1,7 @@
 #include <sstream>
 
-#include "connection.h"
+#include "model/connection.h"
+#include "error_manager.h"
 
 Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,
@@ -23,20 +24,25 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             this->init_params = params;
             if (from_layer->rows == to_layer->rows and from_layer->columns == to_layer->columns)
                 this->num_weights = from_layer->size;
-            else throw "Cannot connect differently sized layers one-to-one!";
+            else
+                ErrorManager::get_instance()->log_error(
+                    "Cannot connect differently sized layers one-to-one!");
             break;
         default:
             std::stringstream stream(params);
             // Extract overlap
             if (stream.eof())
-                throw "Overlap for arborized connection not specified!";
+                ErrorManager::get_instance()->log_error(
+                    "Overlap for arborized connection not specified!");
             stream >> this->overlap;
             if (this->overlap == 1)
-                throw "Arborized connections cannot have overlap of 1!";
+                ErrorManager::get_instance()->log_error(
+                    "Arborized connections cannot have overlap of 1!");
 
             // Extract stride
             if (stream.eof())
-                throw "Stride for arborized connection not specified!";
+                ErrorManager::get_instance()->log_error(
+                    "Stride for arborized connection not specified!");
             stream >> this->stride;
 
             // Extract remaining parameters for later
@@ -52,7 +58,8 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                         get_expected_dimension(from_layer->rows, type, params)
                     or to_layer->columns !=
                         get_expected_dimension(from_layer->columns, type, params)))
-                throw "Unexpected destination layer size for arborized connection!";
+                ErrorManager::get_instance()->log_error(
+                    "Unexpected destination layer size for arborized connection!");
             this->num_weights = overlap * overlap * stride;
 
             switch (type) {
@@ -73,7 +80,8 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                     this->num_weights = overlap * overlap;
                     break;
                 default:
-                    throw "Unknown layer connection type!";
+                    ErrorManager::get_instance()->log_error(
+                        "Unknown layer connection type!");
             }
     }
 
@@ -110,6 +118,7 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
             return 1 + ((source_val - overlap) / stride);
         case(FULLY_CONNECTED):
         default:
-            throw "Invalid call to get_expected_dimension!";
+            ErrorManager::get_instance()->log_error(
+                "Invalid call to get_expected_dimension!");
     }
 }
