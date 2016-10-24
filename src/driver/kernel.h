@@ -1,7 +1,11 @@
 #ifndef kernel_h
 #define kernel_h
 
-#include "driver/instruction.h"
+#include "parallel.h"
+
+class Instruction;
+
+typedef void(*KERNEL)(Instruction);
 
 GLOBAL void clear_data(float* data, int count);
 

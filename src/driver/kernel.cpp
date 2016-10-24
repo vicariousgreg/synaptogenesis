@@ -1,5 +1,6 @@
 #include "kernel.h"
 #include "parallel.h"
+#include "driver/instruction.h"
 
 typedef float(*EXTRACTOR)(Instruction&, Output&);
 

@@ -28,8 +28,6 @@ class Driver {
         void stage_send_output();
         void stage_remaining();
 
-        void step_all_states();
-        void step_states(IOType layer_type);
         void step_weights();
 
         /* Cycles neuron states */
@@ -42,29 +40,10 @@ class Driver {
         /* Clears input of non-input neurons */
         void clear_input();
         /* Steps activation of a connection */
-#ifdef PARALLEL
-        void step_connection(Instruction *inst, cudaStream_t *stream);
-#else
-        void step_connection(Instruction *inst);
-#endif
 
         State *state;
         std::vector<Instruction* > all_instructions;
         StreamCluster stream_clusters[IO_TYPE_SIZE];
-
-#ifdef PARALLEL
-
-        cudaStream_t io_stream;
-        cudaStream_t kernel_stream;
-        cudaStream_t *curr_stream;
-
-        cudaEvent_t
-            *input_event,
-            *clear_event,
-            *output_calc_event,
-            *output_event;
-#else
-#endif
 };
 
 /* Instantiates a driver based on the driver_string in the given model */

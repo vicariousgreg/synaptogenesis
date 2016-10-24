@@ -2,36 +2,26 @@
 #define instruction_h
 
 #include "model/connection.h"
+#include "state/state.h"
+#include "driver/kernel.h"
+#include "parallel.h"
 
 class Instruction {
     public:
-        Instruction(Connection *conn, Output *outputs,
-            OutputType output_type, float *inputs, float *weights) :
-                type(conn->type),
-                convolutional(conn->convolutional),
-                opcode(conn->opcode),
-                overlap(conn->overlap),
-                stride(conn->stride),
-                delay(conn->delay),
-                from_size(conn->from_layer->size),
-                from_rows(conn->from_layer->rows),
-                from_columns(conn->from_layer->columns),
-                to_size(conn->to_layer->size),
-                to_rows(conn->to_layer->rows),
-                to_columns(conn->to_layer->columns),
-                num_weights(conn->num_weights),
-                outputs(outputs + conn->from_layer->index),
-                output_type(output_type),
-                inputs(inputs + conn->to_layer->index),
-                weights(weights) {
-            this->fray = 
-                (to_rows == from_rows and to_columns == from_columns)
-                    ? overlap / 2 : 0;
-        }
+        Instruction(Connection *conn, State *state);
+
+#ifdef PARALLEL
+        void execute(cudaStream_t *stream);
+        dim3 blocks_per_grid;
+        dim3 threads_per_block;
+#else
+        void execute();
+#endif
 
         ConnectionType type;
         bool convolutional;
         Opcode opcode;
+        KERNEL kernel;
 
         int overlap, stride;
         int fray;

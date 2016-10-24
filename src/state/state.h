@@ -13,24 +13,19 @@ class State {
         virtual ~State();
 
 #ifdef PARALLEL
-        void get_input(cudaStream_t stream) {
-            this->attributes->get_input_from(buffer, stream);
-        }
-
-        void send_output(cudaStream_t stream) {
-            this->attributes->send_output_to(buffer, stream);
-        }
-
-#else
-        void get_input() {
-            this->attributes->get_input_from(buffer);
-        }
-
-        void send_output() {
-            this->attributes->send_output_to(buffer);
-        }
-
+        void initialize();
 #endif
+
+        void clear_input();
+        void update(int start_index, int count);
+
+        void get_input();
+        void send_output();
+
+        void step_output_states();
+        void step_non_output_states();
+        void step_all_states();
+        void step_state(IOType layer_type);
 
         Buffer* get_buffer() { return this->buffer; }
 
@@ -42,8 +37,21 @@ class State {
         Buffer *buffer;
 
     protected:
+        friend class Driver;
+
         // Weight matrices
         WeightMatrices *weight_matrices;
+
+#ifdef PARALLEL
+        cudaStream_t io_stream;
+        cudaStream_t state_stream;
+
+        cudaEvent_t
+            *input_event,
+            *clear_event,
+            *output_calc_event,
+            *output_event;
+#endif
 };
 
 #endif

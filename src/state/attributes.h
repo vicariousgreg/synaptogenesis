@@ -10,7 +10,6 @@ class Attributes {
         Attributes(Model *model, OutputType output_type);
         virtual ~Attributes();
 
-
 #ifdef PARALLEL
         virtual void update(int start_index, int count, cudaStream_t &stream) = 0;
         void get_input_from(Buffer *buffer, cudaStream_t &stream);
