@@ -3,7 +3,7 @@
 
 #include "state/state.h"
 #include "model/model.h"
-#include "driver/stream.h"
+#include "driver/stream_cluster.h"
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
 #include "parallel.h"
