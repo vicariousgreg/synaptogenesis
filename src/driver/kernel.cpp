@@ -2,29 +2,64 @@
 #include "parallel.h"
 #include "driver/instruction.h"
 
-typedef float(*EXTRACTOR)(Instruction&, Output&);
+// Device pointers for memcpyFromSymbol
+DEVICE EXTRACTOR x_float = extract_float;
+DEVICE EXTRACTOR x_int = extract_int;
+DEVICE EXTRACTOR x_bit = extract_bit;
 
-static DEVICE float extract_float(Instruction &inst, Output &output) {
-    return output.f;
+void get_kernel(KERNEL *dest, ConnectionType conn_type) {
+    switch (conn_type) {
+        case (FULLY_CONNECTED):
+            *dest = calc_fully_connected;
+            break;
+        case (ONE_TO_ONE):
+            *dest = calc_one_to_one;
+            break;
+        case (DIVERGENT):
+        case (DIVERGENT_CONVOLUTIONAL):
+            *dest = calc_divergent;
+            break;
+        case (CONVERGENT):
+        case (CONVERGENT_CONVOLUTIONAL):
+            *dest = calc_convergent;
+            break;
+        default:
+            throw "Unimplemented connection type!";
+    }
 }
 
-static DEVICE float extract_int(Instruction &inst, Output &output) {
-    return output.i;
-}
-
-static DEVICE float extract_bit(Instruction &inst, Output &output) {
-    return output.i & (1 << (inst.delay % 32));
-}
-
-static DEVICE EXTRACTOR get_extractor(OutputType output_type) {
+void get_extractor(EXTRACTOR *dest, OutputType output_type) {
+#ifdef PARALLEL
     switch (output_type) {
         case FLOAT:
-            return extract_float;
+            cudaMemcpyFromSymbol(dest, x_float, sizeof(void *));
+            break;
         case INT:
-            return extract_int;
+            cudaMemcpyFromSymbol(dest, x_int, sizeof(void *));
+            break;
         case BIT:
-            return extract_bit;
+            cudaMemcpyFromSymbol(dest, x_bit, sizeof(void *));
+            break;
     }
+#else
+    switch (output_type) {
+        case FLOAT:
+            *dest = extract_float;
+            break;
+        case INT:
+            *dest = extract_int;
+            break;
+        case BIT:
+            *dest = extract_bit;
+            break;
+    }
+#endif
+}
+
+DEVICE float extract_float(Instruction &inst, Output &out) { return out.f; }
+DEVICE float extract_int(Instruction &inst, Output &out) { return out.i; }
+DEVICE float extract_bit(Instruction &inst, Output &out) {
+    return out.i & (1 << (inst.delay % 32));
 }
 
 GLOBAL void clear_data(float* data, int count) {
@@ -38,15 +73,13 @@ GLOBAL void clear_data(float* data, int count) {
 }
 
 #ifdef PARALLEL
-
 GLOBAL void calc_fully_connected(Instruction inst) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
-    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (col < inst.to_size) {
         float sum = 0;
         for (int row = 0 ; row < inst.from_size ; ++row) {
-            sum += extractor(inst, inst.outputs[row])
+            sum += inst.extractor(inst, inst.outputs[row])
                 * inst.weights[row * inst.to_size + col];
         }
         inst.inputs[col] = calc(inst.opcode, inst.inputs[col], sum);
@@ -55,11 +88,10 @@ GLOBAL void calc_fully_connected(Instruction inst) {
 
 GLOBAL void calc_one_to_one(Instruction inst) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (index < inst.from_size) {
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
-            extractor(inst, inst.outputs[index]) * inst.weights[index]);
+            inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
     }
 }
 
@@ -67,7 +99,6 @@ GLOBAL void calc_divergent(Instruction inst) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
     int d_index = d_row*inst.to_columns + d_col;
-    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (d_row < inst.to_rows and d_col < inst.to_columns) {
         float sum = 0.0;
@@ -109,7 +140,7 @@ GLOBAL void calc_divergent(Instruction inst) {
                 int weight_col = (inst.convolutional)
                                  ? 0 : s_index;
 
-                sum += extractor(inst, inst.outputs[s_index]) *
+                sum += inst.extractor(inst, inst.outputs[s_index]) *
                     inst.weights[weight_offset + weight_col];
             }
         }
@@ -121,7 +152,6 @@ GLOBAL void calc_convergent(Instruction inst) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
     int d_index = d_row*inst.to_columns + d_col;
-    EXTRACTOR extractor = get_extractor(inst.output_type);
 
     if (d_row < inst.to_rows and d_col < inst.to_columns) {
         float sum = 0.0;
@@ -157,7 +187,7 @@ GLOBAL void calc_convergent(Instruction inst) {
                     ((k_row*inst.overlap) + k_col)
                     * kernel_row_size;
 
-                sum += extractor(inst, inst.outputs[s_index]) *
+                sum += inst.extractor(inst, inst.outputs[s_index]) *
                     inst.weights[weight_offset + weight_col];
             }
         }
@@ -174,11 +204,10 @@ GLOBAL void calc_convergent(Instruction inst) {
  */
 
 void calc_fully_connected(Instruction inst) {
-    EXTRACTOR extractor = get_extractor(inst.output_type);
     for (int row = 0 ; row < inst.to_size ; ++row) {
         float sum = 0.0;
         for (int col = 0 ; col < inst.from_size ; ++col) {
-            sum += extractor(inst, inst.outputs[col]) *
+            sum += inst.extractor(inst, inst.outputs[col]) *
                 inst.weights[row*inst.from_size + col];
         }
         inst.inputs[row] = calc(inst.opcode, inst.inputs[row], sum);
@@ -186,15 +215,13 @@ void calc_fully_connected(Instruction inst) {
 }
 
 void calc_one_to_one(Instruction inst) {
-    EXTRACTOR extractor = get_extractor(inst.output_type);
     for (int index = 0 ; index < inst.from_size ; ++index) {
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
-            extractor(inst, inst.outputs[index]) * inst.weights[index]);
+            inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
     }
 }
 
 void calc_divergent(Instruction inst) {
-    EXTRACTOR extractor = get_extractor(inst.output_type);
     int kernel_size = inst.overlap * inst.overlap;
 
     // Iterate over destination neurons
@@ -232,7 +259,7 @@ void calc_divergent(Instruction inst) {
                     // Column of matrix is the kernel index
                     int k_index = (k_row * inst.overlap) + k_col;
 
-                    sum += extractor(inst, inst.outputs[s_index]) *
+                    sum += inst.extractor(inst, inst.outputs[s_index]) *
                         inst.weights[weight_offset + k_index];
                 }
             }
@@ -242,7 +269,6 @@ void calc_divergent(Instruction inst) {
 }
 
 void calc_convergent(Instruction inst) {
-    EXTRACTOR extractor = get_extractor(inst.output_type);
     int kernel_size = inst.overlap * inst.overlap;
 
     // Iterate over destination neurons
@@ -275,7 +301,7 @@ void calc_convergent(Instruction inst) {
 
                     // Column of matrix is the kernel index
                     int weight_col = (k_row * inst.overlap) + k_col;
-                    sum += extractor(inst, inst.outputs[s_index]) *
+                    sum += inst.extractor(inst, inst.outputs[s_index]) *
                         inst.weights[weight_offset + weight_col];
                 }
             }

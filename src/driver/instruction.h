@@ -22,6 +22,7 @@ class Instruction {
         bool convolutional;
         Opcode opcode;
         KERNEL kernel;
+        EXTRACTOR extractor;
 
         int overlap, stride;
         int fray;

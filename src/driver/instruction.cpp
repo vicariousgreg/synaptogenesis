@@ -30,25 +30,9 @@ Instruction::Instruction(Connection *conn, State *state) :
     this->fray = 
         (to_rows == from_rows and to_columns == from_columns)
             ? overlap / 2 : 0;
-    // Determine which kernel to use based on connection type
-    switch (type) {
-        case (FULLY_CONNECTED):
-            kernel = calc_fully_connected;
-            break;
-        case (ONE_TO_ONE):
-            kernel = calc_one_to_one;
-            break;
-        case (DIVERGENT):
-        case (DIVERGENT_CONVOLUTIONAL):
-            kernel = calc_divergent;
-            break;
-        case (CONVERGENT):
-        case (CONVERGENT_CONVOLUTIONAL):
-            kernel = calc_convergent;
-            break;
-        default:
-            throw "Unimplemented connection type!";
-    }
+
+    get_kernel(&this->kernel, type);
+    get_extractor(&this->extractor, output_type);
 
 #ifdef PARALLEL
     // Calculate grid and block sizes based on type
