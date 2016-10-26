@@ -5,6 +5,8 @@
 #include "model/model.h"
 #include "io/buffer.h"
 #include "tools.h"
+#include "io/environment.h"
+#include "driver/driver.h"
 
 enum Thread_ID {
     CLOCK,
@@ -47,6 +49,10 @@ class Clock {
         Lock clock_lock;
 
     private:
+        void driver_loop(Driver *driver, int iterations);
+        void environment_loop(Environment *environment, int iterations);
+        void clock_loop(int iterations, bool verbose);
+
         Timer run_timer;
         Timer iteration_timer;
         float time_limit;

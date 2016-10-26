@@ -1,27 +1,24 @@
-#include <thread>
 #include "clock.h"
-#include "io/environment.h"
-#include "driver/driver.h"
 
-void driver_loop(Clock *clock, Driver *driver, int iterations) {
+void Clock::driver_loop(Driver *driver, int iterations) {
     for (int i = 0; i < iterations; ++i) {
         // Wait for clock signal, then start clearing inputs
-        clock->clock_lock.wait(DRIVER);
+        this->clock_lock.wait(DRIVER);
         driver->stage_clear();
 
         // Read sensory input
-        clock->sensory_lock.wait(DRIVER);
+        this->sensory_lock.wait(DRIVER);
         driver->stage_input();
-        clock->sensory_lock.pass(ENVIRONMENT);
+        this->sensory_lock.pass(ENVIRONMENT);
 
         // Calculate output
         driver->stage_calc_output();
 
         // Write motor output
-        clock->motor_lock.wait(DRIVER);
+        this->motor_lock.wait(DRIVER);
         driver->stage_send_output();
-        clock->motor_lock.pass(ENVIRONMENT);
-        clock->clock_lock.pass(CLOCK);
+        this->motor_lock.pass(ENVIRONMENT);
+        this->clock_lock.pass(CLOCK);
 
         // Finish computations
         driver->stage_remaining();
@@ -29,20 +26,43 @@ void driver_loop(Clock *clock, Driver *driver, int iterations) {
     }
 }
 
-void environment_loop(Clock *clock, Environment *environment, int iterations) {
+void Clock::environment_loop(Environment *environment, int iterations) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
-        clock->sensory_lock.wait(ENVIRONMENT);
+        this->sensory_lock.wait(ENVIRONMENT);
         environment->step_input();
-        clock->sensory_lock.pass(DRIVER);
+        this->sensory_lock.pass(DRIVER);
 
         // Compute
 
         // Write motor buffer
-        clock->motor_lock.wait(ENVIRONMENT);
+        this->motor_lock.wait(ENVIRONMENT);
         environment->step_output();
-        clock->motor_lock.pass(DRIVER);
+        this->motor_lock.pass(DRIVER);
     }
+}
+
+void Clock::clock_loop(int iterations, bool verbose) {
+    // Run iterations
+    this->run_timer.reset();
+    this->iteration_timer.reset();
+    for (int counter = 0; counter < iterations; ++counter) {
+        this->iteration_timer.wait(this->time_limit);
+        this->iteration_timer.reset();
+
+        this->clock_lock.wait(CLOCK);
+        this->clock_lock.pass(DRIVER);
+    }
+
+    // Report time if verbose
+    if (verbose) {
+        float time = this->run_timer.query("Total time");
+        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+    }
+
+#ifdef PARALLEL
+    check_memory();
+#endif
 }
 
 void Clock::run(Model *model, int iterations, bool verbose) {
@@ -69,32 +89,13 @@ void Clock::run(Model *model, int iterations, bool verbose) {
 #endif
 
     // Launch threads
-    std::thread driver_thread(driver_loop, this, driver, iterations);
-    std::thread environment_thread(environment_loop, this, &env, iterations);
-
-    // Run iterations
-    run_timer.reset();
-    iteration_timer.reset();
-    for (int counter = 0; counter < iterations; ++counter) {
-        iteration_timer.wait(this->time_limit);
-        iteration_timer.reset();
-
-        this->clock_lock.wait(CLOCK);
-        this->clock_lock.pass(DRIVER);
-    }
+    std::thread driver_thread(&Clock::driver_loop, this, driver, iterations);
+    std::thread environment_thread(&Clock::environment_loop, this, &env, iterations);
+    std::thread clock_thread(&Clock::clock_loop, this, iterations, verbose);
 
     driver_thread.join();
     environment_thread.join();
-
-    // Report time if verbose
-    if (verbose) {
-        float time = run_timer.query("Total time");
-        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
-    }
-
-#ifdef PARALLEL
-    check_memory();
-#endif
+    clock_thread.join();
 
     delete driver;
 }
