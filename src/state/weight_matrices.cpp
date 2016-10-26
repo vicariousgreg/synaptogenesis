@@ -4,6 +4,7 @@
 
 #include "state/state.h"
 #include "tools.h"
+#include "error_manager.h"
 #include "parallel.h"
 
 static void initialize_matrix(Connection* conn,
@@ -30,7 +31,8 @@ WeightMatrices::WeightMatrices(Model *model, int weight_depth) {
 #else
     matrix_datas = (float*)malloc(total_size * sizeof(float));
     if (matrix_datas == NULL)
-        throw "Failed to allocate space for weight matrices!";
+        ErrorManager::get_instance()->log_error(
+            "Failed to allocate space for weight matrices!");
 #endif
 
     // Allocate double pointer for indexing purposes
@@ -77,7 +79,8 @@ static void initialize_matrix(Connection* conn,
 #ifdef PARALLEL
     float *target_matrix = (float*)calloc(matrix_size, sizeof(float));
     if (target_matrix == NULL)
-        throw "Failed to allocate temporary matrix on host for randomization!";
+        ErrorManager::get_instance()->log_error(
+            "Failed to allocate temporary matrix on host for randomization!");
 #else
     float *target_matrix = mData;
 #endif
@@ -104,7 +107,8 @@ static void initialize_matrix(Connection* conn,
             int rows, cols;
             switch (conn->type) {
                 case (FULLY_CONNECTED):
-                    throw "Cannot specify all weights for fully connected matrix!";
+                    ErrorManager::get_instance()->log_error(
+                        "Cannot specify all weights for fully connected matrix!");
                 case (CONVERGENT_CONVOLUTIONAL):
                 case (DIVERGENT_CONVOLUTIONAL):
                     rows = conn->overlap * conn->overlap;
@@ -126,7 +130,8 @@ static void initialize_matrix(Connection* conn,
                 for (int row = 0 ; row < rows ; ++row) {
                     target_matrix[row * cols + col] = value;
                     if (row != rows-1 and col != cols-1 and stream.eof())
-                        throw "Insufficient number of weights specified!";
+                        ErrorManager::get_instance()->log_error(
+                            "Insufficient number of weights specified!");
                     stream >> value;
                 }
             }
@@ -134,7 +139,8 @@ static void initialize_matrix(Connection* conn,
             for (int index = 0 ; index < conn->num_weights ; ++index) {
                 target_matrix[index] = value;
                 if (index != conn->num_weights-1 and stream.eof())
-                    throw "Insufficient number of weights specified!";
+                    ErrorManager::get_instance()->log_error(
+                        "Insufficient number of weights specified!");
                 stream >> value;
             }
 #endif

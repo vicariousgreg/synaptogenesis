@@ -5,6 +5,7 @@
 #include "state/izhikevich_attributes.h"
 #include "driver/izhikevich_kernel.h"
 #include "tools.h"
+#include "error_manager.h"
 #include "parallel.h"
 
 #define DEF_PARAM(name, a,b,c,d) \
@@ -60,7 +61,9 @@ static IzhikevichParameters create_parameters(std::string str) {
     else if (str == "resonator")          return RESONATOR;
     else if (str == "photoreceptor")      return PHOTORECEPTOR;
     else if (str == "horizontal")         return HORIZONTAL;
-    else throw ("Unrecognized parameter string: " + str).c_str();
+    else
+        ErrorManager::get_instance()->log_error(
+            "Unrecognizer parameter string: " + str);
 }
 
 IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT) {

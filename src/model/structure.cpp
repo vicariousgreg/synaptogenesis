@@ -1,4 +1,5 @@
 #include "model/structure.h"
+#include "error_manager.h"
 
 #define cimg_display 0
 #include "libs/CImg.h"
@@ -12,8 +13,12 @@ Connection* Structure::connect(
         Opcode opcode, std::string params) {
     Layer *from_layer = from_structure->find_layer(from_layer_name);
     Layer *to_layer = to_structure->find_layer(from_layer_name);
-    if (from_layer == NULL or to_layer == NULL)
-        throw "Could not find layer!";
+    if (from_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + from_layer_name + "\"!");
+    if (to_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + to_layer_name + "\"!");
 
     return to_structure->connect_layers(
         from_layer, to_layer,
@@ -49,8 +54,12 @@ Connection* Structure::connect_layers(
         ConnectionType type, Opcode opcode, std::string params) {
     Layer *from_layer = find_layer(from_layer_name);
     Layer *to_layer = find_layer(to_layer_name);
-    if (from_layer == NULL or to_layer == NULL)
-        throw "Could not find layer!";
+    if (from_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + from_layer_name + "\"!");
+    if (to_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + to_layer_name + "\"!");
     return connect_layers(from_layer, to_layer,
         plastic, delay, max_weight,
         type, opcode, params);
@@ -59,14 +68,18 @@ Connection* Structure::connect_layers(
 Connection* Structure::connect_layers_shared(
         std::string from_layer_name, std::string to_layer_name,
         Connection* parent) {
-    // Ensure parent doesn't have a parent
-    if (parent->parent != NULL)
-        throw "Shared connections must refer to non-shared connection!";
+    // If parent has a parent, follow up and find the original connection
+    while (parent->parent != NULL)
+        parent = parent->parent;
 
     Layer *from_layer = find_layer(from_layer_name);
     Layer *to_layer = find_layer(to_layer_name);
-    if (from_layer == NULL or to_layer == NULL)
-        throw "Could not find layer!";
+    if (from_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + from_layer_name + "\"!");
+    if (to_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + to_layer_name + "\"!");
 
     // Ensure that the weights can be shared by checking sizes
     if (from_layer->rows == parent->from_layer->rows
@@ -76,7 +89,8 @@ Connection* Structure::connect_layers_shared(
         return connect_layers(
             from_layer, to_layer, parent);
     } else {
-        throw "Cannot share weights between connections of different sizes!";
+        ErrorManager::get_instance()->log_error(
+            "Cannot share weights between connections of different sizes!");
     }
 }
 
@@ -87,7 +101,8 @@ Connection* Structure::connect_layers_expected(
         std::string params) {
     Layer *from_layer = find_layer(from_layer_name);
     if (from_layer == NULL)
-        throw "Could not find layer!";
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + from_layer_name + "\"!");
 
     // Determine new layer size and create
     int expected_rows = get_expected_dimension(
@@ -106,7 +121,8 @@ Connection* Structure::connect_layers_expected(
 
 void Structure::add_layer(std::string name, int rows, int columns, std::string params) {
     if (this->layers_by_name.find(name) != this->layers_by_name.end())
-        throw "Repeated layer name!";
+        ErrorManager::get_instance()->log_error(
+            "Repeated layer name!");
 
     Layer* layer = new Layer(name, rows, columns, params);
     this->layers.push_back(layer);
@@ -121,7 +137,8 @@ void Structure::add_layer_from_image(std::string name, std::string path, std::st
 void Structure::add_module(std::string layer_name, std::string type, std::string params) {
     Layer *layer = find_layer(layer_name);
     if (layer == NULL)
-        throw "Could not find layer!";
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + layer_name + "\"!");
 
     Module *module = build_module(layer, type, params);
     layer->add_module(module);

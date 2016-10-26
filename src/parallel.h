@@ -20,6 +20,8 @@
 #include "device_launch_parameters.h"
 #include "assert.h"
 
+#include "error_manager.h"
+
 #define WARP_SIZE 32
 #define IDEAL_THREADS 128
 #define MAX_THREADS 1024
@@ -43,7 +45,7 @@ inline void gpuAssert(const char* file, int line, const char* msg) {
     cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) {
         printf("Cuda failure (%s: %d): '%s'\n", file, line, cudaGetErrorString(e));
-        throw msg;
+        ErrorManager::get_instance()->log_error(msg);
     }
 }
 

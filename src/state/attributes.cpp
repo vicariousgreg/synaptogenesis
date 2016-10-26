@@ -6,6 +6,7 @@
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
 #include "tools.h"
+#include "error_manager.h"
 #include "parallel.h"
 
 Attributes *build_attributes(Model *model) {
@@ -15,7 +16,8 @@ Attributes *build_attributes(Model *model) {
     else if (model->engine_name == "rate_encoding")
         attributes = new RateEncodingAttributes(model);
     else
-        throw "Unrecognized driver type!";
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized driver type!");
     return attributes;
 }
 

@@ -1,4 +1,5 @@
 #include "model/model.h"
+#include "error_manager.h"
 
 Model::Model (std::string engine_name) :
         num_neurons(0),
@@ -6,7 +7,8 @@ Model::Model (std::string engine_name) :
 
 void Model::add_structure(Structure *structure) {
     if (this->structures.find(structure->name) != this->structures.end())
-        throw "Repeated structure name!";
+        ErrorManager::get_instance()->log_error(
+            "Repeated structure name!");
     this->structures[structure->name] = structure;
     build();
 }

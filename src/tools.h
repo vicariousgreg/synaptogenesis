@@ -6,6 +6,8 @@
 #include <ctime>
 #include <chrono>
 
+#include "error_manager.h"
+
 using CClock = std::chrono::high_resolution_clock;
 using Time_point = CClock::time_point;
 using std::chrono::milliseconds;
@@ -20,7 +22,8 @@ inline float fRand(float fMin, float fMax) {
 inline void* allocate_host(int count, int size) {
     void* ptr = calloc(count, size);
     if (ptr == NULL)
-        throw "Failed to allocate space on host for neuron state!";
+        ErrorManager::get_instance()->log_error(
+            "Failed to allocate space on host for neuron state!");
     return ptr;
 }
 
