@@ -3,15 +3,44 @@ import struct
 import sys
 
 class Layer:
-    def __init__(self, index, rows, columns):
+    def __init__(self, index, rows, columns, out_type):
         self.output = [0] * (rows * columns)
+        if out_type == "float":
+            self.print_out = self.print_float
+        elif out_type == "int":
+            self.print_out = self.print_int
+        elif out_type == "bit":
+            self.print_out = self.print_bit
+        else: raise
+
         self.index = index
         self.rows = rows
         self.columns = columns
         self.size = rows * columns
+
         print("Layer: (index=%d, rows=%d, cols=%d)" % (index, rows, columns))
 
-    def print_out(self):
+    def print_float(self):
+        print("=" * 80)
+        out = ""
+        for i in xrange(self.rows):
+            for j in xrange(self.columns):
+                index = i * self.columns + j
+                val = self.output[index]
+
+                if (val > 0.75):    out += " X";
+                elif (val > 0.65):  out += " @";
+                elif (val > 0.50):  out += " +";
+                elif (val > 0.25): out += " *";
+                elif (val > 0.10): out += " -";
+                else:               out += " '";
+            out += "\n"
+        print(out)
+
+    def print_int(self):
+        pass
+
+    def print_bit(self):
         print("=" * 80)
         chars = "XXXXXX@@@@@@@@@++++++++++-----------''''............"
         out = ""
@@ -34,13 +63,28 @@ class Layer:
             out += "\n"
         print(out)
 
-def read_int(f):
+def read_val(f, fmt):
     line = os.read(f, 4)
     if len(line) > 0:
-        return struct.unpack('i', line)[0]
+        return struct.unpack(fmt, line)[0]
     else: raise OSError
 
-def main(fifo_name):
+def read_vals(f, fmt, count, dest):
+    line = os.read(f, count * 4)
+    if len(line) > 0:
+        for i in xrange(count):
+            dest[i] = struct.unpack_from(fmt, line, i * 4)[0]
+    else: raise OSError
+
+def main(fifo_name, out_type):
+    if out_type == "float":
+        fmt = 'f'
+    elif out_type == "int":
+        fmt = 'i'
+    elif out_type == "bit":
+        fmt = 'i'
+    else: raise
+
     # Data
     layers = []
     output_size = 0
@@ -50,30 +94,30 @@ def main(fifo_name):
 
     ### Read preliminary information
     # Number of layers
-    num_layers = read_int(io)
+    num_layers = read_val(io, 'i')
 
     # Read layer information
     for i in xrange(num_layers):
-        index = read_int(io)
-        rows = read_int(io)
-        columns = read_int(io)
+        index = read_val(io, 'i')
+        rows = read_val(io, 'i')
+        columns = read_val(io, 'i')
         output_size += rows * columns
-        layers.append(Layer(index, rows, columns))
+        layers.append(Layer(index, rows, columns, out_type))
 
     # Reading loop
     done = False
     while not done:
-        for layer in layers:
-            line = os.read(io, layer.size * 4)
-            if len(line) > 0:
-                for i in xrange(layer.size):
-                    layer.output[i] = struct.unpack_from('i', line, i * 4)[0]
-                #print(len([x for x in layer.output if x > 0]), layer.size)
-            else: done = True
-        for layer in layers:
-            layer.print_out()
+        try:
+            # Read
+            for layer in layers:
+                read_vals(io, fmt, layer.size, layer.output)
+            # Print
+            for layer in layers:
+                layer.print_out()
+        except OSError: break
 
 if __name__ == "__main__":
     fifo_name = sys.argv[1]
-    main(fifo_name)
+    out_type = sys.argv[2]
+    main(fifo_name, out_type)
     print("Exiting!")

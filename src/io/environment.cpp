@@ -49,8 +49,20 @@ void Environment::ui_init() {
 
     // Launch UI python process
     std::string head = "python src/pcnn_ui.py ";
+    std::string out_type;
+    switch (this->buffer->output_type) {
+        case FLOAT:
+            out_type = " float ";
+            break;
+        case INT:
+            out_type = " int ";
+            break;
+        case BIT:
+            out_type = " bit ";
+            break;
+    }
     std::string tail = " &";
-    std::string command = head + this->fifo_name + tail;
+    std::string command = head + this->fifo_name + out_type + tail;
     system(command.c_str());
     this->fifo_fd = open(this->fifo_name, O_WRONLY);
 

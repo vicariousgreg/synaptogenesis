@@ -1,5 +1,0 @@
-TODO:
-  - implement learning rules
-  - combine code for drivers
-  - get rid of state subclasses
-  - create environment for closing input / output loop
