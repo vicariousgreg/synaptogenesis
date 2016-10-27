@@ -48,7 +48,10 @@ void Environment::ui_init() {
     mkfifo(this->fifo_name, 0666);
 
     // Launch UI python process
-    system("python src/pcnn_ui.py &");
+    std::string head = "python src/pcnn_ui.py ";
+    std::string tail = " &";
+    std::string command = head + this->fifo_name + tail;
+    system(command.c_str());
     this->fifo_fd = open(this->fifo_name, O_WRONLY);
 
     /* Send preliminary information */
