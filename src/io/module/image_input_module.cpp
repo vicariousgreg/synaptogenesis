@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "io/image_input_module.h"
+#include "io/module/image_input_module.h"
 #include "util/tools.h"
 
 #define cimg_display 0

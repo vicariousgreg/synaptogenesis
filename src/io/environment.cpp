@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 #include "io/environment.h"
-#include "io/module.h"
+#include "io/module/module.h"
 
 Environment::Environment(Model *model, Buffer *buffer) : buffer(buffer) {
     // Extract modules

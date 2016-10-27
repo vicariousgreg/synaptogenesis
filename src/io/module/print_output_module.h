@@ -1,7 +1,7 @@
 #ifndef print_output_module_h
 #define print_output_module_h
 
-#include "io/module.h"
+#include "io/module/module.h"
 
 class PrintOutputModule : public Module {
     public:

@@ -9,7 +9,7 @@
 #include "model/layer.h"
 #include "model/connection.h"
 #include "model/structure.h"
-#include "io/module.h"
+#include "io/module/module.h"
 
 /* Represents a full neural network model.
  * Contains network graph data and parameters for layers/connections.

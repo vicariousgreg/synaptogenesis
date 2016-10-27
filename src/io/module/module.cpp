@@ -1,10 +1,10 @@
-#include "io/module.h"
-#include "io/print_output_module.h"
-#include "io/random_input_module.h"
-#include "io/image_input_module.h"
+#include "io/module/module.h"
+#include "io/module/print_output_module.h"
+#include "io/module/random_input_module.h"
+#include "io/module/image_input_module.h"
 
-#include "io/dummy_input_module.h"
-#include "io/dummy_output_module.h"
+#include "io/module/dummy_input_module.h"
+#include "io/module/dummy_output_module.h"
 
 Module* build_module(Layer *layer, std::string type,
         std::string params) {

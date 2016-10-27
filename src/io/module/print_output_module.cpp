@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "io/print_output_module.h"
+#include "io/module/print_output_module.h"
 #include "util/tools.h"
 
 PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)

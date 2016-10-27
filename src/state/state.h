@@ -20,7 +20,7 @@ class State {
         void get_input();
 
         /* Sends motor output to the environment buffer */
-        void send_output(bool mock=false);
+        void send_output();
 
         /* If parallel, callers may want to wait for input events */
         void wait_for_input();

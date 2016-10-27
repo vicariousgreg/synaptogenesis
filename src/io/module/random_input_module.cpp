@@ -1,6 +1,6 @@
 #include <cstdlib>
 
-#include "io/random_input_module.h"
+#include "io/module/random_input_module.h"
 #include "util/tools.h"
 
 RandomInputModule::RandomInputModule(Layer *layer, std::string params)

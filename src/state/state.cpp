@@ -102,16 +102,14 @@ void State::get_input() {
 #endif
 }
 
-void State::send_output(bool mock) {
+void State::send_output() {
 #ifdef PARALLEL
     // Make sure to wait for output calc event
-    if (not mock) {
-        cudaStreamWaitEvent(this->io_stream, *this->output_calc_event, 0);
-        this->attributes->send_output_to(buffer, io_stream);
-    }
+    cudaStreamWaitEvent(this->io_stream, *this->output_calc_event, 0);
+    this->attributes->send_output_to(buffer, io_stream);
     cudaEventRecord(*this->output_event, this->io_stream);
 #else
-    if (not mock) this->attributes->send_output_to(buffer);
+    this->attributes->send_output_to(buffer);
 #endif
 }
 

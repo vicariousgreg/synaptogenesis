@@ -1,7 +1,7 @@
 #ifndef image_input_module_h
 #define image_input_module_h
 
-#include "io/module.h"
+#include "io/module/module.h"
 
 class ImageInputModule : public Module {
     public:

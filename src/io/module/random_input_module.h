@@ -1,7 +1,7 @@
 #ifndef random_input_module_h
 #define random_input_module_h
 
-#include "io/module.h"
+#include "io/module/module.h"
 
 class RandomInputModule : public Module {
     public:

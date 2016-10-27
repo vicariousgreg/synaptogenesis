@@ -8,7 +8,7 @@
 #include "util/constants.h"
 #include "model/layer.h"
 #include "model/connection.h"
-#include "io/module.h"
+#include "io/module/module.h"
 
 /* Represents a neural structure in a network model.
  * Contains network graph data and parameters for layers/connections.
