@@ -5,9 +5,9 @@
 #include "state/attributes.h"
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
-#include "tools.h"
-#include "error_manager.h"
-#include "parallel.h"
+#include "util/tools.h"
+#include "util/error_manager.h"
+#include "util/parallel.h"
 
 Attributes *build_attributes(Model *model) {
     Attributes *attributes;

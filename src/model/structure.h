@@ -5,7 +5,7 @@
 #include <map>
 #include <string>
 
-#include "constants.h"
+#include "util/constants.h"
 #include "model/layer.h"
 #include "model/connection.h"
 #include "io/module.h"

@@ -5,7 +5,7 @@
 #include "io/buffer.h"
 #include "state/weight_matrices.h"
 #include "state/attributes.h"
-#include "constants.h"
+#include "util/constants.h"
 
 class State {
     public:
@@ -22,11 +22,9 @@ class State {
         /* Sends motor output to the environment buffer */
         void send_output();
 
-#ifdef PARALLEL
         /* If parallel, callers may want to wait for input events */
         void wait_for_input();
         void wait_for_output();
-#endif
 
         /* Updates |count| neuron states from |start_index| */
         void update_states(int start_index, int count);

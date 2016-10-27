@@ -2,7 +2,7 @@
 #define izhikevich_kernel_h
 
 #include "state/izhikevich_attributes.h"
-#include "parallel.h"
+#include "util/parallel.h"
 
 /* Izhikevich voltage update function */
 GLOBAL void izhikevich(float* voltages, float*recoveries, float* currents,

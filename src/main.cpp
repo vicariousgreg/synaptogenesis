@@ -6,7 +6,7 @@
 
 #include "model/model.h"
 #include "state/state.h"
-#include "tools.h"
+#include "util/tools.h"
 #include "clock.h"
 
 static Timer timer = Timer();
@@ -115,20 +115,20 @@ Model* build_layers_model(std::string engine_name, bool verbose) {
 Model* build_image_model(std::string engine_name, bool verbose) {
     /* Determine output type */
     std::string output_name;
-    output_name = "print_output";
-    //output_name = "dummy_output";
+    //output_name = "print_output";
+    output_name = "dummy_output";
 
     /* Construct the model */
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
     //const char* image_path = "resources/bird.jpg";
-    //const char* image_path = "resources/bird-head.jpg";
-    const char* image_path = "resources/bird-head-small.jpg";
+    const char* image_path = "resources/bird-head.jpg";
+    //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
     structure->add_layer_from_image("photoreceptor", image_path, "default");
     structure->add_module("photoreceptor", "image_input", image_path);
-    structure->add_module("photoreceptor", output_name, "24");
+    //structure->add_module("photoreceptor", output_name, "24");
 
     // Vertical line detection
     structure->connect_layers_expected("photoreceptor", "vertical", "default",
@@ -168,7 +168,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
         "1      10  15  10  1 "
         "-.5    5   -.5 5   -.5 "
         "-.5  -.5  -1  -.5  -.5");
-    //structure->add_module("cross", output_name, "24");
+    structure->add_module("cross", output_name, "24");
 
     model->add_structure(structure);
     if (verbose) print_model(model);
@@ -178,7 +178,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
 void run_simulation(Model *model, int iterations, bool verbose) {
     //Clock clock(10);
     Clock clock;  // No refresh rate synchronization
-    clock.run(model, iterations, verbose);
+    clock.run(model, iterations, 5, verbose);
 }
 
 void stress_test() {
@@ -210,8 +210,9 @@ void image_test() {
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
-    //run_simulation(model, 500, true);
-    run_simulation(model, 10, true);
+    //run_simulation(model, 10000, true);
+    run_simulation(model, 500, true);
+    //run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;

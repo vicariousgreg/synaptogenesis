@@ -1,7 +1,7 @@
 #ifndef constants_h
 #define constants_h
 
-#include "parallel.h"
+#include "util/parallel.h"
 
 /* Size (in Outputs) of output history.
  * A size of 1 indicates the usage of 1 Output, which on most systems is

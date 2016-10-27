@@ -3,7 +3,7 @@
 
 #include "model/model.h"
 #include "io/buffer.h"
-#include "constants.h"
+#include "util/constants.h"
 
 class Attributes {
     public:

@@ -4,8 +4,8 @@
 
 #include "state/state.h"
 #include "driver/kernel.h"
-#include "tools.h"
-#include "parallel.h"
+#include "util/tools.h"
+#include "util/parallel.h"
 
 State::State(Model *model)
         : attributes(build_attributes(model)),
@@ -113,15 +113,17 @@ void State::send_output() {
 #endif
 }
 
-#ifdef PARALLEL
 void State::wait_for_input() {
+#ifdef PARALLEL
     cudaEventSynchronize(*this->input_event);
+#endif
 }
 
 void State::wait_for_output() {
+#ifdef PARALLEL
     cudaEventSynchronize(*this->output_event);
-}
 #endif
+}
 
 void State::update_output_states() {
     update_states(INPUT_OUTPUT);

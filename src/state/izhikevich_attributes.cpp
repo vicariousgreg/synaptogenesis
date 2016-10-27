@@ -4,9 +4,9 @@
 
 #include "state/izhikevich_attributes.h"
 #include "driver/izhikevich_kernel.h"
-#include "tools.h"
-#include "error_manager.h"
-#include "parallel.h"
+#include "util/tools.h"
+#include "util/error_manager.h"
+#include "util/parallel.h"
 
 #define DEF_PARAM(name, a,b,c,d) \
     static const IzhikevichParameters name = IzhikevichParameters(a,b,c,d);

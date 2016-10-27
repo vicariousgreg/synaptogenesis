@@ -7,20 +7,21 @@
 class Environment {
     public:
         Environment(Model *model, Buffer *buffer);
-        virtual ~Environment() {
-            for (int i = 0; i < this->input_modules.size(); ++i)
-                delete this->input_modules[i];
-            for (int i = 0; i < this->output_modules.size(); ++i)
-                delete this->output_modules[i];
-        }
+        virtual ~Environment();
 
         void step_input();
         void step_output();
+
+        void ui_init();
+        void ui_update();
 
     private:
         Buffer *buffer;
         std::vector<Module*> input_modules;
         std::vector<Module*> output_modules;
+
+        const char *fifo_name = "/tmp/pcnn_fifo";
+        int fifo_fd;
 };
 
 #endif

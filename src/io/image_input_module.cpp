@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "io/image_input_module.h"
-#include "tools.h"
+#include "util/tools.h"
 
 #define cimg_display 0
 #include "libs/CImg.h"

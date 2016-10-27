@@ -2,9 +2,10 @@
 #include <thread>
 #include <mutex>
 #include <climits>
+
 #include "model/model.h"
 #include "io/buffer.h"
-#include "tools.h"
+#include "util/tools.h"
 #include "io/environment.h"
 #include "driver/driver.h"
 
@@ -49,9 +50,15 @@ class Clock {
         Lock clock_lock;
 
     private:
-        void driver_loop(Driver *driver, int iterations);
-        void environment_loop(Environment *environment, int iterations);
-        void clock_loop(int iterations, bool verbose);
+        void driver_loop();
+        void environment_loop();
+        void clock_loop();
+
+        int iterations;
+        int environment_rate;
+        bool verbose;
+        Driver *driver;
+        Environment *environment;
 
         Timer run_timer;
         Timer iteration_timer;

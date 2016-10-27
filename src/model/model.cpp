@@ -1,5 +1,5 @@
 #include "model/model.h"
-#include "error_manager.h"
+#include "util/error_manager.h"
 
 Model::Model (std::string engine_name) :
         num_neurons(0),

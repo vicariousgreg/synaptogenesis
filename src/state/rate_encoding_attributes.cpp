@@ -4,9 +4,9 @@
 
 #include "state/rate_encoding_attributes.h"
 #include "driver/rate_encoding_kernel.h"
-#include "tools.h"
-#include "error_manager.h"
-#include "parallel.h"
+#include "util/tools.h"
+#include "util/error_manager.h"
+#include "util/parallel.h"
 
 static RateEncodingParameters create_parameters(std::string str) {
     return RateEncodingParameters(0.0);

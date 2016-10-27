@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include "driver/instruction.h"
-#include "parallel.h"
+#include "util/parallel.h"
 
 class Driver;
 

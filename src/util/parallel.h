@@ -1,5 +1,5 @@
-#ifndef parallel_h
-#define parallel_h
+#ifndef util/parallel.h
+#define util/parallel.h
 
 // Define KERNEL prefix such that it doesn't affect anything for serial version
 #ifdef PARALLEL
@@ -20,7 +20,7 @@
 #include "device_launch_parameters.h"
 #include "assert.h"
 
-#include "error_manager.h"
+#include "util/error_manager.h"
 
 #define WARP_SIZE 32
 #define IDEAL_THREADS 128

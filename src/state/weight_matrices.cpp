@@ -3,9 +3,9 @@
 #include <sstream>
 
 #include "state/state.h"
-#include "tools.h"
-#include "error_manager.h"
-#include "parallel.h"
+#include "util/tools.h"
+#include "util/error_manager.h"
+#include "util/parallel.h"
 
 static void initialize_matrix(Connection* conn,
         float* mData, int weight_depth);
@@ -64,6 +64,16 @@ WeightMatrices::WeightMatrices(Model *model, int weight_depth) {
     }
 
     this->matrices = entry_points;
+}
+
+WeightMatrices::~WeightMatrices() {
+#ifdef PARALLEL
+    cudaFree(this->matrices[0]);
+#else
+    free(this->matrices[0]);
+#endif
+    // This is on the host regardless
+    free(this->matrices);
 }
 
 /* Initializes matrix */

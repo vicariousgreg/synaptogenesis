@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "io/buffer.h"
-#include "parallel.h"
+#include "util/parallel.h"
 
 Buffer::Buffer(int input_size, int output_size, OutputType output_type) :
         input_size(input_size),
@@ -26,6 +26,18 @@ Buffer::Buffer(int input_size, int output_size, OutputType output_type) :
     if (output_size > 0)
         this->output = (Output*)calloc(output_size, sizeof(Output));
     else this->output = NULL;
+#endif
+}
+
+Buffer::~Buffer() {
+#ifdef PARALLEL
+    // Free pinned memory
+    if (input_size > 0) cudaFreeHost(this->input);
+    if (output_size > 0) cudaFreeHost(this->output);
+#else
+    // Free non-pinned memory
+    if (input_size > 0) free(this->input);
+    if (output_size > 0) free(this->output);
 #endif
 }
 

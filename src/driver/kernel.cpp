@@ -1,5 +1,5 @@
 #include "kernel.h"
-#include "parallel.h"
+#include "util/parallel.h"
 #include "driver/instruction.h"
 
 // Device pointers for memcpyFromSymbol

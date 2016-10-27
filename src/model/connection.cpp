@@ -1,7 +1,7 @@
 #include <sstream>
 
 #include "model/connection.h"
-#include "error_manager.h"
+#include "util/error_manager.h"
 
 Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,

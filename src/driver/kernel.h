@@ -1,8 +1,8 @@
 #ifndef kernel_h
 #define kernel_h
 
-#include "parallel.h"
-#include "constants.h"
+#include "util/parallel.h"
+#include "util/constants.h"
 
 class Instruction;
 

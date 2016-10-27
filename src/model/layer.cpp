@@ -1,6 +1,6 @@
 #include "model/layer.h"
 #include "io/module.h"
-#include "error_manager.h"
+#include "util/error_manager.h"
 
 Layer::Layer(std::string name, int start_index, int rows, int columns, std::string params) :
         name(name),

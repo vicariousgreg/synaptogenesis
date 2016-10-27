@@ -4,7 +4,8 @@
 #include "state/state.h"
 #include "model/model.h"
 #include "driver/stream_cluster.h"
-#include "parallel.h"
+#include "driver/instruction.h"
+#include "util/parallel.h"
 
 class Driver {
     public:

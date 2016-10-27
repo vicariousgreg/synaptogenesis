@@ -4,7 +4,7 @@
 #include <string>
 
 #include "layer.h"
-#include "constants.h"
+#include "util/constants.h"
 
 /* Gets the expected row/col size of a destination layer given a |source_layer|,
  *   a connection |type| and connection |params|.
@@ -15,7 +15,7 @@ int get_expected_dimension(int source_val, ConnectionType type,
 
 /* Represents a connection between two neural layers.
  * Connections bridge Layers and are constructed in the Model class.
- * Connections have several types, enumerated and documented in "constants.h".
+ * Connections have several types, enumerated and documented in "util/constants.h".
  *
  * Connections contain:
  *   - connection type enum
@@ -27,7 +27,7 @@ int get_expected_dimension(int source_val, ConnectionType type,
  *   - total number of actual weights in the connection
  *   - extracted layer properties
  *   - connection delay
- *   - connection opcode (see constants.h)
+ *   - connection opcode (see util/constants.h)
  *   - plasticity boolean
  *   - maximum weight value
  *

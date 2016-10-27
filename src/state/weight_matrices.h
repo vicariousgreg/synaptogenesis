@@ -2,20 +2,12 @@
 #define weight_matrices_h
 
 #include "model/model.h"
-#include "constants.h"
+#include "util/constants.h"
 
 class WeightMatrices {
     public:
         WeightMatrices(Model *model, int weight_depth);
-        virtual ~WeightMatrices() {
-#ifdef PARALLEL
-            cudaFree(this->matrices[0]);
-#else
-            free(this->matrices[0]);
-#endif
-            // This is on the host regardless
-            free(this->matrices);
-        }
+        virtual ~WeightMatrices();
 
 
         float* get_matrix(int connection_id) {

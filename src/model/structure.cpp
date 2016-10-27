@@ -1,5 +1,5 @@
 #include "model/structure.h"
-#include "error_manager.h"
+#include "util/error_manager.h"
 
 #define cimg_display 0
 #include "libs/CImg.h"

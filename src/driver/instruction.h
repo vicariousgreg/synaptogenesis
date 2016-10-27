@@ -4,7 +4,7 @@
 #include "model/connection.h"
 #include "state/state.h"
 #include "driver/kernel.h"
-#include "parallel.h"
+#include "util/parallel.h"
 
 class Instruction {
     public:

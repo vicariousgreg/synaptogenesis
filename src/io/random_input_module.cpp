@@ -1,7 +1,7 @@
 #include <cstdlib>
 
 #include "io/random_input_module.h"
-#include "tools.h"
+#include "util/tools.h"
 
 RandomInputModule::RandomInputModule(Layer *layer, std::string params)
         : Module(layer) {

@@ -5,8 +5,8 @@
 #include "model/layer.h"
 #include "driver/scheduler.h"
 #include "driver/instruction.h"
-#include "parallel.h"
-#include "constants.h"
+#include "util/parallel.h"
+#include "util/constants.h"
 
 class Driver;
 class StreamCluster;
