@@ -1,4 +1,4 @@
 find src | \
-  grep "\(\.h\|\.cpp\)" | \
+  grep "\(\.h\|\.cpp\|.py\)" | \
   grep -v "CImg" | 
   xargs cloc
