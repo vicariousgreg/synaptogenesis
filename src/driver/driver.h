@@ -19,7 +19,7 @@ class Driver {
         void stage_clear();
         void stage_input();
         void stage_calc_output();
-        void stage_send_output();
+        void stage_send_output(bool mock=false);
         void stage_remaining();
         void stage_weights();
 

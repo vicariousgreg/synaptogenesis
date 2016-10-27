@@ -50,13 +50,13 @@ void Driver::stage_calc_output() {
 #endif
 }
 
-void Driver::stage_send_output() {
+void Driver::stage_send_output(bool mock) {
     // Stream output
-    this->state->send_output();
+    this->state->send_output(mock);
 
 #ifdef PARALLEL
     // Wait for it to finish
-    this->state->wait_for_output();
+    if (not mock) this->state->wait_for_output();
 #endif
 }
 

@@ -16,7 +16,11 @@ void Clock::driver_loop() {
 
         // Write motor output
         this->motor_lock.wait(DRIVER);
-        this->driver->stage_send_output();
+        if (i % this->environment_rate == 0) {
+            this->driver->stage_send_output();
+        } else {
+            this->driver->stage_send_output(true);
+        }
         this->motor_lock.pass(ENVIRONMENT);
         this->clock_lock.pass(CLOCK);
 
@@ -37,11 +41,12 @@ void Clock::environment_loop() {
 
         // Compute
 
-        // Read motor buffer
         this->motor_lock.wait(ENVIRONMENT);
-        this->environment->step_output();
-        if (i % this->environment_rate == 0)
+        if (i % this->environment_rate == 0) {
+            // Read motor buffer
+            this->environment->step_output();
             this->environment->ui_update();
+        }
         this->motor_lock.pass(DRIVER);
     }
 }
