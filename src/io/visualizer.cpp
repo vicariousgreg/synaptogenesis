@@ -16,8 +16,6 @@ Visualizer::~Visualizer() {
 }
 
 void Visualizer::add_layer(Layer *layer, bool input, bool output) {
-    std::cout << input << std::endl;
-    std::cout << output << std::endl;
     this->layer_infos.push_back(LayerInfo(layer, input, output));
 }
 
@@ -62,7 +60,7 @@ void Visualizer::ui_init() {
 }
 
 void Visualizer::ui_update() {
-    std::cout << "C++\n";
+    //std::cout << "C++\n";
     for (int i = 0; i < this->layer_infos.size(); ++i) {
         LayerInfo info = this->layer_infos[i];
         if (info.is_output != 0)
