@@ -3,6 +3,8 @@
 
 #include "model/model.h"
 #include "io/buffer.h"
+#include "io/module/module.h"
+#include "io/visualizer.h"
 
 class Environment {
     public:
@@ -17,6 +19,7 @@ class Environment {
 
     private:
         Buffer *buffer;
+        Visualizer *visualizer;
         std::vector<Module*> input_modules;
         std::vector<Module*> output_modules;
 

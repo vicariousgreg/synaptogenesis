@@ -116,7 +116,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
     /* Determine output type */
     std::string output_name;
     //output_name = "print_output";
-    output_name = "dummy_output";
+    output_name = "visualizer_output";
 
     /* Construct the model */
     Model *model = new Model(engine_name);
@@ -212,8 +212,8 @@ void image_test() {
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
     //run_simulation(model, 10000, true);
-    run_simulation(model, 500, true);
-    //run_simulation(model, 10, true);
+    //run_simulation(model, 500, true);
+    run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;

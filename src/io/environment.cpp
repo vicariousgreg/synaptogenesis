@@ -1,21 +1,44 @@
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdlib.h>
+#include <vector>
 
 #include "io/environment.h"
 #include "io/module/module.h"
+#include "io/module/visualizer_input_module.h"
+#include "io/module/visualizer_output_module.h"
 
-Environment::Environment(Model *model, Buffer *buffer) : buffer(buffer) {
+Environment::Environment(Model *model, Buffer *buffer)
+        : buffer(buffer),
+          visualizer(NULL) {
     // Extract modules
     for (int i = 0; i < model->all_layers.size(); ++i) {
-        Module *input_module = model->all_layers[i]->input_module;
-        Module *output_module = model->all_layers[i]->output_module;
-        if (input_module != NULL)
+        Layer *layer = model->all_layers[i];
+        bool visualizer_input = false;
+        bool visualizer_output = false;
+
+        // Add input module
+        // If visualizer input module, set flag
+        Module *input_module = layer->input_module;
+        if (input_module != NULL) {
             this->input_modules.push_back(input_module);
-        if (output_module != NULL)
+            visualizer_input =
+                dynamic_cast<VisualizerInputModule*>(input_module) != NULL;
+        }
+
+        // Add output modules
+        // If visualizer output module is found, set flag
+        std::vector<Module*> output_modules = layer->output_modules;
+        for (int j = 0; j < output_modules.size(); ++j) {
+            Module *output_module = output_modules[j];
             this->output_modules.push_back(output_module);
+
+            visualizer_output |=
+                dynamic_cast<VisualizerOutputModule*>(output_module) != NULL;
+        }
+
+        if (visualizer_input or visualizer_output) {
+            if (visualizer == NULL)
+                visualizer = new Visualizer(buffer);
+            visualizer->add_layer(layer, visualizer_input, visualizer_output);
+        }
     }
 }
 
@@ -24,8 +47,8 @@ Environment::~Environment() {
         delete this->input_modules[i];
     for (int i = 0; i < this->output_modules.size(); ++i)
         delete this->output_modules[i];
-    unlink(this->fifo_name);
-    close(this->fifo_fd);
+    if (visualizer != NULL)
+        delete visualizer;
 }
 
 void Environment::step_input() {
@@ -41,46 +64,12 @@ void Environment::step_output() {
         this->output_modules[i]->report_output(buffer);
 }
 
-#include <iostream>
-
 void Environment::ui_init() {
-    // Create FIFO for UI interaction
-    mkfifo(this->fifo_name, 0666);
-
-    // Launch UI python process
-    std::string head = "python src/pcnn_ui.py ";
-    std::string out_type;
-    switch (this->buffer->output_type) {
-        case FLOAT:
-            out_type = " float ";
-            break;
-        case INT:
-            out_type = " int ";
-            break;
-        case BIT:
-            out_type = " bit ";
-            break;
-    }
-    std::string tail = " &";
-    std::string command = head + this->fifo_name + out_type + tail;
-    system(command.c_str());
-    this->fifo_fd = open(this->fifo_name, O_WRONLY);
-
-    /* Send preliminary information */
-    // Number of output modules
-    int num_output_modules = this->output_modules.size();
-    write(this->fifo_fd, &num_output_modules, sizeof(int));
-
-    // Layer information
-    for (int i = 0; i < this->output_modules.size(); ++i) {
-        Layer *layer = this->output_modules[i]->layer;
-        write(this->fifo_fd, &layer->output_index, sizeof(int));
-        write(this->fifo_fd, &layer->rows, sizeof(int));
-        write(this->fifo_fd, &layer->columns, sizeof(int));
-    }
+    if (visualizer != NULL)
+        visualizer->ui_init();
 }
 
 void Environment::ui_update() {
-    //std::cout << "C++\n";
-    write(this->fifo_fd, buffer->get_output(), buffer->output_size * sizeof(Output));
+    if (visualizer != NULL)
+        visualizer->ui_update();
 }

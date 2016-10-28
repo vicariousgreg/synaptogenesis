@@ -1,9 +1,10 @@
 import os
 import struct
 import sys
+import gtk
 
 class Layer:
-    def __init__(self, index, rows, columns, out_type):
+    def __init__(self, input_index, output_index, rows, columns, is_input, is_output, out_type):
         self.output = [0] * (rows * columns)
         if out_type == "float":
             self.print_out = self.print_float
@@ -13,12 +14,18 @@ class Layer:
             self.print_out = self.print_bit
         else: raise
 
-        self.index = index
+        self.input_index = input_index
+        self.output_index = output_index
         self.rows = rows
         self.columns = columns
+        self.is_input = is_input
+        self.is_output = is_output
         self.size = rows * columns
 
-        print("Layer: (index=%d, rows=%d, cols=%d)" % (index, rows, columns))
+        print("Layer: (input_index=%d, output_index=%d, rows=%d, "
+                      "cols=%d, is_input=%s, is_output=%s)" %
+                (input_index, output_index, rows,
+                 columns, is_input, is_output))
 
     def print_float(self):
         print("=" * 80)
@@ -63,6 +70,32 @@ class Layer:
             out += "\n"
         print(out)
 
+class PyApp(gtk.Window):
+    def __init__(self):
+        super(PyApp, self).__init__()
+        self.set_title("Buttons")
+        self.set_size_request(250, 200)
+        self.set_position(gtk.WIN_POS_CENTER)
+
+        btn1 = gtk.Button("Button")
+        btn1.set_sensitive(False)
+        btn2 = gtk.Button("Button")
+        btn3 = gtk.Button(stock=gtk.STOCK_CLOSE)
+        btn4 = gtk.Button("Button")
+        btn4.set_size_request(80, 40)
+
+        fixed = gtk.Fixed()
+
+        fixed.put(btn1, 20, 30)
+        fixed.put(btn2, 100, 30)
+        fixed.put(btn3, 20, 80)
+        fixed.put(btn4, 100, 80)
+
+        self.connect("destroy", gtk.main_quit)
+
+        self.add(fixed)
+        self.show_all()
+
 def read_val(f, fmt):
     line = os.read(f, 4)
     if len(line) > 0:
@@ -98,11 +131,14 @@ def main(fifo_name, out_type):
 
     # Read layer information
     for i in xrange(num_layers):
-        index = read_val(io, 'i')
+        input_index = read_val(io, 'i')
+        output_index = read_val(io, 'i')
         rows = read_val(io, 'i')
         columns = read_val(io, 'i')
+        is_input = read_val(io, 'i')
+        is_output = read_val(io, 'i')
         output_size += rows * columns
-        layers.append(Layer(index, rows, columns, out_type))
+        layers.append(Layer(input_index, output_index, rows, columns, is_input != 0, is_output != 0, out_type))
 
     # Reading loop
     done = False
@@ -110,7 +146,8 @@ def main(fifo_name, out_type):
         try:
             # Read
             for layer in layers:
-                read_vals(io, fmt, layer.size, layer.output)
+                if layer.is_output:
+                    read_vals(io, fmt, layer.size, layer.output)
             # Print
             for layer in layers:
                 layer.print_out()
@@ -120,4 +157,7 @@ if __name__ == "__main__":
     fifo_name = sys.argv[1]
     out_type = sys.argv[2]
     main(fifo_name, out_type)
+    PyApp()
+    gtk.main()
+
     print("Exiting!")

@@ -44,7 +44,7 @@ class Layer {
         std::vector<Connection*> output_connections;
 
         Module *input_module;
-        Module *output_module;
+        std::vector<Module*> output_modules;
 
     private:
         friend class Model;
