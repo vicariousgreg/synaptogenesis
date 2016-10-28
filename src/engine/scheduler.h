@@ -3,10 +3,10 @@
 
 #include <vector>
 #include <map>
-#include "driver/instruction.h"
+#include "engine/instruction.h"
 #include "util/parallel.h"
 
-class Driver;
+class Engine;
 
 class Scheduler {
     public:
@@ -17,7 +17,7 @@ class Scheduler {
         void schedule_execution(Instruction *inst);
         void schedule_weight_update(Instruction *inst);
 #endif
-        void dispatch(Driver *driver);
+        void dispatch(Engine *engine);
 
     private:
 #ifdef PARALLEL

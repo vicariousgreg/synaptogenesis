@@ -1,4 +1,4 @@
-#include "driver/stream.h"
+#include "engine/stream.h"
 
 Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)

@@ -16,7 +16,7 @@
 #define HISTORY_SIZE 1
 
 /* Output type enumeration.
- * Different drivers may use different output formats.
+ * Different engines may use different output formats.
  * This enumeration is used to keep track of this information.
  */
 enum OutputType {

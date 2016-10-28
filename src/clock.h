@@ -7,7 +7,7 @@
 #include "io/buffer.h"
 #include "util/tools.h"
 #include "io/environment.h"
-#include "driver/driver.h"
+#include "engine/engine.h"
 
 enum Thread_ID {
     CLOCK,
@@ -50,14 +50,14 @@ class Clock {
         Lock clock_lock;
 
     private:
-        void driver_loop();
+        void engine_loop();
         void environment_loop();
         void clock_loop();
 
         int iterations;
         int environment_rate;
         bool verbose;
-        Driver *driver;
+        Engine *engine;
         Environment *environment;
 
         Timer run_timer;

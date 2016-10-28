@@ -76,6 +76,7 @@ if __name__ == "__main__":
     # Open the FIFO
     io = os.open(fifo_name, os.O_RDONLY)
 
+    # Read layer information from FIFO
     layers = read_layers(io)
 
     # Launch read thread

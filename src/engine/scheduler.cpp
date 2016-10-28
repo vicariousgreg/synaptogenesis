@@ -1,5 +1,5 @@
-#include "driver/scheduler.h"
-#include "driver/driver.h"
+#include "engine/scheduler.h"
+#include "engine/engine.h"
 
 #ifdef PARALLEL
 void Scheduler::schedule_execution(cudaStream_t *stream, Instruction *inst) {
@@ -22,7 +22,7 @@ void Scheduler::schedule_weight_update(Instruction *inst) {
 
 #endif
 
-void Scheduler::dispatch(Driver *driver) {
+void Scheduler::dispatch(Engine *engine) {
 #ifdef PARALLEL
     bool done = false;
     for (int i = 0; not done; ++i) {
@@ -44,7 +44,7 @@ void Scheduler::dispatch(Driver *driver) {
         for (auto it = weight_update_schedule.begin(); it != weight_update_schedule.end(); ++it) {
             if (i < it->second.size()) {
                 done = false;
-                driver->update_weights(it->second[i]);
+                engine->update_weights(it->second[i]);
             }
         }
     }
@@ -54,7 +54,7 @@ void Scheduler::dispatch(Driver *driver) {
     }
     execute_schedule.clear();
     for (int i = 0; i < weight_update_schedule.size(); ++i) {
-        driver->update_weights(weight_update_schedule[i]);
+        engine->update_weights(weight_update_schedule[i]);
     }
     weight_update_schedule.clear();
 #endif

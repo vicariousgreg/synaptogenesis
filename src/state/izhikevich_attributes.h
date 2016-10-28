@@ -32,7 +32,7 @@ class IzhikevichAttributes : public Attributes {
         float* get_recovery();
 
     private:
-        friend class IzhikevichDriver;
+        friend class IzhikevichEngine;
 
         // Neuron Attributes
         float *voltage;

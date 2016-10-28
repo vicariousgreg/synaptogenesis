@@ -1,19 +1,19 @@
-#ifndef driver_h
-#define driver_h
+#ifndef engine_h
+#define engine_h
 
 #include "state/state.h"
 #include "model/model.h"
-#include "driver/stream_cluster.h"
-#include "driver/instruction.h"
+#include "engine/stream_cluster.h"
+#include "engine/instruction.h"
 #include "util/parallel.h"
 
-class Driver {
+class Engine {
     public:
-        Driver(Model *model)
+        Engine(Model *model)
                 : state(new State(model)),
                   stream_cluster(model, state) { }
 
-        virtual ~Driver() { delete this->state; }
+        virtual ~Engine() { delete this->state; }
 
         // Main hooks
         void stage_clear();

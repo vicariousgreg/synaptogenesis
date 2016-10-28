@@ -3,7 +3,7 @@
 #include <string>
 
 #include "state/rate_encoding_attributes.h"
-#include "driver/rate_encoding_kernel.h"
+#include "engine/rate_encoding_kernel.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"

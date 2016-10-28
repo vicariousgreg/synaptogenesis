@@ -1,4 +1,4 @@
-#include "driver/instruction.h"
+#include "engine/instruction.h"
 
 Instruction::Instruction(Connection *conn, State *state) :
         type(conn->type),

@@ -3,12 +3,12 @@
 
 #include <map>
 #include "model/model.h"
-#include "driver/stream.h"
-#include "driver/scheduler.h"
+#include "engine/stream.h"
+#include "engine/scheduler.h"
 #include "util/parallel.h"
 #include "util/constants.h"
 
-class Driver;
+class Engine;
 class StreamCluster;
 
 class StreamCluster {
@@ -23,7 +23,7 @@ class StreamCluster {
         void schedule_execution_from(IOType from_type);
         void schedule_execution_to(IOType to_type);
         void schedule_weight_update();
-        void dispatch(Driver *driver);
+        void dispatch(Engine *engine);
         bool is_done();
         bool is_done(IOType type);
 #ifdef PARALLEL

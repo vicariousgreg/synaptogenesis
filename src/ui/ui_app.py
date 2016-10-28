@@ -23,7 +23,7 @@ class PyApp(gtk.Window):
         fixed.put(btn3, 20, 80)
         fixed.put(btn4, 100, 80)
 
-        #self.connect("destroy", gtk.main_quit)
+        self.connect("destroy", gtk.main_quit)
 
         self.add(fixed)
         self.show_all()

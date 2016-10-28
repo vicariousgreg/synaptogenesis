@@ -3,7 +3,7 @@
 #include <sstream>
 
 #include "state/state.h"
-#include "driver/kernel.h"
+#include "engine/kernel.h"
 #include "util/tools.h"
 #include "util/parallel.h"
 

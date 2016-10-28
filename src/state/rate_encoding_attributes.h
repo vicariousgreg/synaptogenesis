@@ -23,7 +23,7 @@ class RateEncodingAttributes : public Attributes {
 #endif
 
     private:
-        friend class RateEncodingDriver;
+        friend class RateEncodingEngine;
 
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;

@@ -3,7 +3,7 @@
 #include <string>
 
 #include "state/izhikevich_attributes.h"
-#include "driver/izhikevich_kernel.h"
+#include "engine/izhikevich_kernel.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"

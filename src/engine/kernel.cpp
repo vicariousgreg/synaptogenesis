@@ -1,6 +1,6 @@
 #include "kernel.h"
 #include "util/parallel.h"
-#include "driver/instruction.h"
+#include "engine/instruction.h"
 
 // Device pointers for memcpyFromSymbol
 DEVICE EXTRACTOR x_float = extract_float;

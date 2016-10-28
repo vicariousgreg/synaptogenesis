@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "driver/rate_encoding_kernel.h"
+#include "engine/rate_encoding_kernel.h"
 
 GLOBAL void shift_output(float* outputs,
         int start_index, int count, int num_neurons) {

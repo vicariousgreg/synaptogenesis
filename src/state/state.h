@@ -49,7 +49,7 @@ class State {
         }
 
     protected:
-        //friend class Driver;
+        //friend class Engine;
         friend class StreamCluster;
 
         // Weight matrices

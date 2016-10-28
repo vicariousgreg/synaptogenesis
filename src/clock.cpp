@@ -1,28 +1,28 @@
 #include "clock.h"
 
-void Clock::driver_loop() {
+void Clock::engine_loop() {
     for (int i = 0; i < iterations; ++i) {
         // Wait for clock signal, then start clearing inputs
         this->clock_lock.wait(DRIVER);
-        this->driver->stage_clear();
+        this->engine->stage_clear();
 
         // Read sensory input
         this->sensory_lock.wait(DRIVER);
-        this->driver->stage_input();
+        this->engine->stage_input();
         this->sensory_lock.pass(ENVIRONMENT);
 
         // Calculate output
-        this->driver->stage_calc_output();
+        this->engine->stage_calc_output();
 
         // Write motor output
         this->motor_lock.wait(DRIVER);
-        this->driver->stage_send_output();
+        this->engine->stage_send_output();
         this->motor_lock.pass(ENVIRONMENT);
         this->clock_lock.pass(CLOCK);
 
         // Finish computations
-        this->driver->stage_remaining();
-        this->driver->stage_weights();
+        this->engine->stage_remaining();
+        this->engine->stage_weights();
     }
 }
 
@@ -75,16 +75,16 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
     this->motor_lock.set_owner(ENVIRONMENT);
     this->clock_lock.set_owner(CLOCK);
 
-    // Build driver
+    // Build engine
     run_timer.reset();
-    this->driver = new Driver(model);
+    this->engine = new Engine(model);
     if (verbose) {
         printf("Built state.\n");
         run_timer.query("Initialization");
     }
 
     // Build environment and buffer
-    this->environment = new Environment(model, this->driver->state->get_buffer());
+    this->environment = new Environment(model, this->engine->state->get_buffer());
 
     // Set iterations and verbose
     this->verbose = verbose;
@@ -97,16 +97,16 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
 #endif
 
     // Launch threads
-    std::thread driver_thread(&Clock::driver_loop, this);
+    std::thread engine_thread(&Clock::engine_loop, this);
     std::thread environment_thread(&Clock::environment_loop, this);
     std::thread clock_thread(&Clock::clock_loop, this);
 
-    driver_thread.join();
+    engine_thread.join();
     environment_thread.join();
     clock_thread.join();
 
-    delete this->driver;
+    delete this->engine;
     delete this->environment;
-    this->driver = NULL;
+    this->engine = NULL;
     this->environment = NULL;
 }

@@ -17,7 +17,7 @@ Attributes *build_attributes(Model *model) {
         attributes = new RateEncodingAttributes(model);
     else
         ErrorManager::get_instance()->log_error(
-            "Unrecognized driver type!");
+            "Unrecognized engine type!");
     return attributes;
 }
 

@@ -3,12 +3,12 @@
 
 #include <vector>
 #include "model/layer.h"
-#include "driver/scheduler.h"
-#include "driver/instruction.h"
+#include "engine/scheduler.h"
+#include "engine/instruction.h"
 #include "util/parallel.h"
 #include "util/constants.h"
 
-class Driver;
+class Engine;
 class StreamCluster;
 
 class Stream {

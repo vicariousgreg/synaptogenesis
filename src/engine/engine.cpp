@@ -1,6 +1,6 @@
-#include "driver/driver.h"
+#include "engine/engine.h"
 
-void Driver::stage_clear() {
+void Engine::stage_clear() {
     // Reset stream cluster and state for timestep
     stream_cluster.reset();
     this->state->reset();
@@ -31,7 +31,7 @@ void Driver::stage_clear() {
 #endif
 }
 
-void Driver::stage_input() {
+void Engine::stage_input() {
     // Start input streaming
     this->state->get_input();
 
@@ -41,7 +41,7 @@ void Driver::stage_input() {
 #endif
 }
 
-void Driver::stage_calc_output() {
+void Engine::stage_calc_output() {
 #ifdef PARALLEL
 #else
     stream_cluster.schedule_output_calculations();
@@ -50,7 +50,7 @@ void Driver::stage_calc_output() {
 #endif
 }
 
-void Driver::stage_send_output() {
+void Engine::stage_send_output() {
     // Stream output
     this->state->send_output();
 
@@ -60,7 +60,7 @@ void Driver::stage_send_output() {
 #endif
 }
 
-void Driver::stage_remaining() {
+void Engine::stage_remaining() {
 #ifdef PARALLEL
     // Synchronize and check for errors
     cudaSync();
@@ -72,7 +72,7 @@ void Driver::stage_remaining() {
 #endif
 }
 
-void Driver::stage_weights() {
+void Engine::stage_weights() {
     stream_cluster.schedule_weight_update();
     stream_cluster.dispatch(this);
 }

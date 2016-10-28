@@ -36,7 +36,7 @@ class Model {
          *   contiguous memory. */
         void build();
 
-        // Driver string indicating type of driver
+        // Engine string indicating type of engine
         std::string engine_name;
 
         // Total number of neurons

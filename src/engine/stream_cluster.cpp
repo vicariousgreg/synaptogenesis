@@ -1,6 +1,6 @@
 #include <vector>
-#include "driver/stream_cluster.h"
-#include "driver/driver.h"
+#include "engine/stream_cluster.h"
+#include "engine/engine.h"
 
 StreamCluster::StreamCluster(Model *model, State *state)
         : state(state), scheduler(new Scheduler) {
@@ -80,8 +80,8 @@ void StreamCluster::schedule_weight_update() {
             it->second->schedule_weight_update(scheduler);
 }
 
-void StreamCluster::dispatch(Driver *driver) {
-    scheduler->dispatch(driver);
+void StreamCluster::dispatch(Engine *engine) {
+    scheduler->dispatch(engine);
 }
 
 bool StreamCluster::is_done() {

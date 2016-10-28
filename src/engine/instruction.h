@@ -3,7 +3,7 @@
 
 #include "model/connection.h"
 #include "state/state.h"
-#include "driver/kernel.h"
+#include "engine/kernel.h"
 #include "util/parallel.h"
 
 class Instruction {
