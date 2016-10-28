@@ -27,8 +27,6 @@ void Clock::driver_loop() {
 }
 
 void Clock::environment_loop() {
-    this->environment->ui_init();
-
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         this->sensory_lock.wait(ENVIRONMENT);

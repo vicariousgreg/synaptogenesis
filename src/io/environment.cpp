@@ -39,7 +39,10 @@ Environment::Environment(Model *model, Buffer *buffer)
                 visualizer = new Visualizer(buffer);
             visualizer->add_layer(layer, visualizer_input, visualizer_output);
         }
+
     }
+    if (visualizer != NULL)
+        visualizer->ui_init();
 }
 
 Environment::~Environment() {
@@ -62,11 +65,6 @@ void Environment::step_output() {
     // If no module, skip layer
     for (int i = 0 ; i < this->output_modules.size(); ++i)
         this->output_modules[i]->report_output(buffer);
-}
-
-void Environment::ui_init() {
-    if (visualizer != NULL)
-        visualizer->ui_init();
 }
 
 void Environment::ui_update() {
