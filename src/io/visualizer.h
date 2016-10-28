@@ -35,6 +35,7 @@ class Visualizer {
         std::vector<LayerInfo> layer_infos;
 
         const char *fifo_name = "/tmp/pcnn_fifo";
+        const char *ui_script = "src/ui/ui_main.py";
         int fifo_fd;
 };
 

@@ -138,7 +138,10 @@ def main(fifo_name, out_type):
         is_input = read_val(io, 'i')
         is_output = read_val(io, 'i')
         output_size += rows * columns
-        layers.append(Layer(input_index, output_index, rows, columns, is_input != 0, is_output != 0, out_type))
+        layers.append(Layer(input_index, output_index,
+            rows, columns,
+            is_input != 0, is_output != 0,
+            out_type))
 
     # Reading loop
     done = False

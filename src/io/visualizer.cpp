@@ -26,21 +26,22 @@ void Visualizer::ui_init() {
     mkfifo(this->fifo_name, 0666);
 
     // Launch UI python process
-    std::string head = "python src/pcnn_ui.py ";
-    std::string out_type;
+    std::string command = "python ";
+    command.append(this->ui_script);
+    command.append(" ");
+    command.append(this->fifo_name);
     switch (this->buffer->output_type) {
         case FLOAT:
-            out_type = " float ";
+            command.append(" float ");
             break;
         case INT:
-            out_type = " int ";
+            command.append(" int ");
             break;
         case BIT:
-            out_type = " bit ";
+            command.append(" bit ");
             break;
     }
-    std::string tail = " &";
-    std::string command = head + this->fifo_name + out_type + tail;
+    command.append(" &");
     system(command.c_str());
     this->fifo_fd = open(this->fifo_name, O_WRONLY);
 
