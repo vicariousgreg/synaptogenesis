@@ -9,6 +9,8 @@
 #include "util/tools.h"
 #include "clock.h"
 
+#include "ui.h"
+
 static Timer timer = Timer();
 
 void print_model(Model *model) {
@@ -211,9 +213,9 @@ void image_test() {
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
-    run_simulation(model, 10000, true);
+    //run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
-    //run_simulation(model, 10, true);
+    run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;
@@ -253,7 +255,7 @@ void varied_test() {
     delete model;
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(NULL));
 
@@ -263,6 +265,7 @@ int main(void) {
         image_test();
         //varied_test();
 
+        launch(argc, argv);
         return 0;
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);

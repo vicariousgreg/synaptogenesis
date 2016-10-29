@@ -1,3 +1,25 @@
+#Default Make
+all: serial
+
+COREPATH := src/core
+UIPATH   := src/ui
+UILIBPATH := $(UIPATH)/ui.a
+
+#---------------------------------------------------------------------------------
+#  UI BUILDING
+#---------------------------------------------------------------------------------
+
+$(UILIBPATH): $(UIPATH)/ui.o
+	ar rvs $(UILIBPATH) $(UIPATH)/ui.o
+
+$(UIPATH)/ui.o: $(UIPATH)/ui.cpp
+	g++ -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/ui.cpp -o $(UIPATH)/ui.o $(LIBS)
+
+
+#---------------------------------------------------------------------------------
+#  CORE BUILDING
+#---------------------------------------------------------------------------------
+
 #Compiler and Linker
 CC          := g++
 NVCC        := nvcc
@@ -7,7 +29,7 @@ TARGET_S      := test
 TARGET_P      := parallel_test
 
 #The Directories, Source, Includes, Objects, Binary and Resources
-SRCDIR      := src
+SRCDIR      := $(COREPATH)
 BUILDDIR_S  := ./build/serial
 BUILDDIR_P  := ./build/parallel
 TARGETDIR   := .
@@ -16,17 +38,14 @@ DEPEXT      := d
 OBJEXT      := o
 
 #Flags, Libraries and Includes
-CCFLAGS      := -w -std=c++11 -pthread -Isrc
-NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -DPARALLEL -Isrc
+CCFLAGS      := -w -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH)
+NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -DPARALLEL -I$(COREPATH) -I$(UIPATH)
+NVCCLINK     := -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart
+LIBS         := `pkg-config --libs gtkmm-3.0`
 
-#---------------------------------------------------------------------------------
-#DO NOT EDIT BELOW THIS LINE
-#---------------------------------------------------------------------------------
+#------------- SERIAL ------------------------
 SOURCES       := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
-
-#Default Make
-all: serial
 
 serial: $(TARGET_S)
 
@@ -35,17 +54,18 @@ directories:
 	@mkdir -p $(BUILDDIR_S)
 	@mkdir -p $(BUILDDIR_P)
 
-#Clean only Objecst
+#Clean only Objects
 clean:
 	@$(RM) -rf $(BUILDDIR_S)
 	@$(RM) -rf $(BUILDDIR_P)
+	@find $(UIPATH) | grep "\.[oa]" | xargs $(RM)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
 
 #Link
-$(TARGET_S): $(OBJECTS_S)
-	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^
+$(TARGET_S): $(UILIBPATH) $(OBJECTS_S)
+	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
 
 #Compile
 $(BUILDDIR_S)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
@@ -66,8 +86,8 @@ parallel: $(TARGET_P)
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
-$(TARGET_P): $(OBJECTS_P)
-	$(NVCC) -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart -o $(TARGETDIR)/$(TARGET_P) $^
+$(TARGET_P): $(UILIBPATH) $(OBJECTS_P)
+	$(NVCC) $(NVCCLINK) -o $(TARGETDIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)

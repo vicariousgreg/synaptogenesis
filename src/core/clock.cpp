@@ -39,7 +39,7 @@ void Clock::environment_loop() {
         this->environment->step_output();
         if (i % this->environment_rate == 0) {
             // Read motor buffer
-            this->environment->ui_update();
+            //this->environment->ui_update();
         }
         this->motor_lock.pass(DRIVER);
     }

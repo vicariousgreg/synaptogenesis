@@ -41,8 +41,8 @@ Environment::Environment(Model *model, Buffer *buffer)
         }
 
     }
-    if (visualizer != NULL)
-        visualizer->ui_init();
+    //if (visualizer != NULL)
+    //    visualizer->ui_init();
 }
 
 Environment::~Environment() {

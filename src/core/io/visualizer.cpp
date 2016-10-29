@@ -11,8 +11,8 @@
 Visualizer::Visualizer(Buffer *buffer) : buffer(buffer) { }
 
 Visualizer::~Visualizer() {
-    unlink(this->fifo_name);
-    close(this->fifo_fd);
+    //unlink(this->fifo_name);
+    //close(this->fifo_fd);
 }
 
 void Visualizer::add_layer(Layer *layer, bool input, bool output) {
