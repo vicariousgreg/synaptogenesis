@@ -176,7 +176,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    //Clock clock(10);
+    //Clock clock(1);
     Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
@@ -211,9 +211,9 @@ void image_test() {
     std::cout << "Image...\n";
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
-    //run_simulation(model, 10000, true);
+    run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
-    run_simulation(model, 10, true);
+    //run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;

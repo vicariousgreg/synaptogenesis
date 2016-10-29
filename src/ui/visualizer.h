@@ -3,6 +3,7 @@
 
 #include "model/layer.h"
 #include "io/buffer.h"
+#include "layer_info.h"
 
 class GUI;
 
