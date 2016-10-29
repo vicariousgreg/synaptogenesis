@@ -36,9 +36,9 @@ void Clock::environment_loop() {
         // Compute
 
         this->motor_lock.wait(ENVIRONMENT);
+        this->environment->step_output();
         if (i % this->environment_rate == 0) {
             // Read motor buffer
-            this->environment->step_output();
             this->environment->ui_update();
         }
         this->motor_lock.pass(DRIVER);
@@ -57,6 +57,8 @@ void Clock::clock_loop() {
         this->clock_lock.pass(DRIVER);
     }
     this->clock_lock.wait(CLOCK);
+    this->motor_lock.wait(ENVIRONMENT);
+    this->sensory_lock.wait(ENVIRONMENT);
 
     // Report time if verbose
     if (verbose) {

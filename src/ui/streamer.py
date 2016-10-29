@@ -4,7 +4,7 @@ import struct
 import gtk
 import gobject
 
-from layer import Layer
+from layer import Layer, convert_spikes
 
 class Streamer:
     def __init__(self, fifo_name, out_type):
@@ -22,16 +22,17 @@ class Streamer:
         else: raise
 
     def read_output(self, rows, columns, dest):
-        for i in xrange(rows):
-            for j in xrange(columns):
-                index = i * columns + j
-                line = ""
-                while len(line) == 0:
-                    line = os.read(self.fifo, 4)
-                val = struct.unpack(self.fmt, line)[0]
-                dest[i][j][0] = val
-                dest[i][j][1] = val
-                dest[i][j][2] = val
+        line = os.read(self.fifo, rows * columns * 4)
+        if len(line) == 0: return False
+        else:
+            for i in xrange(rows):
+                for j in xrange(columns):
+                    index = i * columns + j
+                    val = convert_spikes(struct.unpack_from(self.fmt, line, index * 4)[0])
+                    dest[i][j][0] = val
+                    dest[i][j][1] = val
+                    dest[i][j][2] = val
+            return True
 
     def read_val(self, fmt):
         line = os.read(self.fifo, 4)
@@ -73,16 +74,20 @@ class Streamer:
                 self.out_type))
         return layers
 
-    def read_loop(self, layers, sender):
+    def read_loop(self, layers, read_sender, kill_sender):
         # Reading loop
-        while True:
+        done = False
+        while not done:
             try:
                 # Read
                 for layer in layers:
                     if layer.is_output:
-                        self.read_output(layer.rows, layer.columns, layer.pixbuf.get_pixels_array())
+                        if not (self.read_output(
+                            layer.rows, layer.columns, layer.pixbuf.get_pixels_array())):
+                            done = True
                 # Print
                 #for layer in layers:
                 #    layer.print_out()
             except OSError: break
-            sender.send()
+            read_sender.send()
+        kill_sender.send()

@@ -139,7 +139,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5");
-    structure->add_module("vertical", output_name, "24");
+    //structure->add_module("vertical", output_name, "24");
 
     // Horizontal line detection
     structure->connect_layers_expected("photoreceptor", "horizontal", "default",
@@ -150,7 +150,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
         "10 10 10 10 10 "
         "0 0 0 0 0 "
         "-5 -5 -5 -5 -5");
-    structure->add_module("horizontal", output_name, "24");
+    //structure->add_module("horizontal", output_name, "24");
 
     // Cross detection
     structure->connect_layers_expected("vertical", "cross", "default",
@@ -178,7 +178,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
 void run_simulation(Model *model, int iterations, bool verbose) {
     //Clock clock(10);
     Clock clock;  // No refresh rate synchronization
-    clock.run(model, iterations, 5, verbose);
+    clock.run(model, iterations, 16, verbose);
     //clock.run(model, iterations, 1, verbose);
 }
 
@@ -212,7 +212,7 @@ void image_test() {
     model = build_image_model("izhikevich", true);
     //model = build_image_model("rate_encoding", true);
     //run_simulation(model, 10000, true);
-    run_simulation(model, 500, true);
+    run_simulation(model, 100, true);
     //run_simulation(model, 10, true);
     std::cout << "\n";
 

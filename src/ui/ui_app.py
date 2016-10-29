@@ -33,14 +33,16 @@ class PyApp(gtk.Window):
         fixed = gtk.Fixed()
         self.images = []
         curr_columns = 0
+        max_rows = 0
         for layer in layers:
             image = gtk.Image()
             image.set_from_pixbuf(layer.pixbuf)
             self.images.append(image)
             fixed.put(image, curr_columns, 0)
             curr_columns += layer.columns
+            max_rows = max(max_rows, layer.rows)
 
-        self.set_size_request(curr_columns, 200)
+        self.set_size_request(curr_columns, max_rows)
 
         #fixed.put(btn1, 20, 30)
         #fixed.put(btn2, 100, 30)
@@ -50,18 +52,21 @@ class PyApp(gtk.Window):
         self.connect("destroy", gtk.main_quit)
         self.add(fixed)
 
-    def register_sender(self, signal_name):
+    def register_sender(self, signal_name, callback):
         sender = Sender(signal_name)
         gobject.signal_new(signal_name, Sender,
             gobject.SIGNAL_RUN_FIRST, gobject.TYPE_NONE, ())
-        sender.connect(signal_name, self.user_callback)
+        sender.connect(signal_name, callback)
         return sender
 
     def run(self):
         self.show_all()
         gtk.main()
 
-    def user_callback(self, sender):
+    def update(self, sender):
         for layer,image in zip(self.layers, self.images):
             image.set_from_pixbuf(layer.pixbuf)
         #print "user callback reacts to read_signal"
+
+    def kill(self, sender):
+        gtk.main_quit()
