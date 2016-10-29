@@ -1,7 +1,10 @@
+from gtk.gdk import Pixbuf, COLORSPACE_RGB
+
 class Layer:
     def __init__(self, input_index, output_index,
             rows, columns, is_input, is_output, out_type):
-        self.output = [0] * (rows * columns)
+        self.pixbuf = Pixbuf(COLORSPACE_RGB, False, 8, columns, rows)
+        pix = self.pixbuf.get_pixels_array()
         if out_type == "float":
             self.print_out = self.print_float
         elif out_type == "int":
@@ -26,10 +29,10 @@ class Layer:
     def print_float(self):
         print("=" * 80)
         out = ""
+        pixels = self.pixbuf.get_pixels_array()
         for i in xrange(self.rows):
             for j in xrange(self.columns):
-                index = i * self.columns + j
-                val = self.output[index]
+                val = pixels[i][j][0]
 
                 if (val > 0.75):    out += " X";
                 elif (val > 0.65):  out += " @";
@@ -47,10 +50,10 @@ class Layer:
         print("=" * 80)
         chars = "XXXXXX@@@@@@@@@++++++++++-----------''''............"
         out = ""
+        pixels = self.pixbuf.get_pixels_array()
         for i in xrange(self.rows):
             for j in xrange(self.columns):
-                index = i * self.columns + j
-                val = self.output[index]
+                val = pixels[i][j][0]
                 if val == 0:
                     out += "  "
                 else:
