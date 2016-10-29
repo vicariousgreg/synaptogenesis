@@ -1,5 +1,7 @@
-#ifndef util/parallel.h
-#define util/parallel.h
+#ifndef parallel_h
+#define parallel_h
+
+#include "constants.h"
 
 // Define KERNEL prefix such that it doesn't affect anything for serial version
 #ifdef PARALLEL
@@ -62,6 +64,17 @@ inline void check_memory() {
     printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
         used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
 }
+
+inline void* allocate_device(int count, int size, void* source_data) {
+    void* ptr;
+    cudaMalloc(&ptr, count * size);
+    cudaCheckError("Failed to allocate memory on device for neuron state!");
+    if (source_data != NULL)
+        cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
+    cudaCheckError("Failed to initialize memory on device for neuron state!");
+    return ptr;
+}
+
 #endif
 
 #endif

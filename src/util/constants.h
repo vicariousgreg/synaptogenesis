@@ -1,8 +1,6 @@
 #ifndef constants_h
 #define constants_h
 
-#include "util/parallel.h"
-
 /* Size (in Outputs) of output history.
  * A size of 1 indicates the usage of 1 Output, which on most systems is
  *     4 bytes, or 32 bits.  This means that a history of 32 timesteps will
@@ -89,27 +87,5 @@ enum Opcode {
     MULT,
     DIV
 };
-
-
-/* Synaptic operations
- * |prior| is the current state of the neuron.
- * |input| is the synaptic input accomulated from one connection.
- *
- * ADD represent traditional excitatory input
- * SUB represent traditional inhibitory input
- * MULT and DIV represent modulatory input that can be used for gating
- * */
-inline DEVICE float calc(Opcode opcode, float prior, float input) {
-    switch (opcode) {
-        case ADD:  return prior + input;
-        case SUB:  return prior - input;
-        case MULT: return prior * (1+input);
-        case DIV:  return prior / (1+input);
-    }
-    #ifdef PARALLEL assert(false);
-    #else throw "Unrecognized connection operation!";
-    #endif
-    return 0.0;
-}
 
 #endif

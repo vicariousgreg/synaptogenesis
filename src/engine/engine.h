@@ -5,7 +5,6 @@
 #include "model/model.h"
 #include "engine/stream_cluster.h"
 #include "engine/instruction.h"
-#include "util/parallel.h"
 
 class Engine {
     public:
