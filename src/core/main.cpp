@@ -176,8 +176,8 @@ Model* build_image_model(std::string engine_name, bool verbose) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    //Clock clock(1);
-    Clock clock;  // No refresh rate synchronization
+    Clock clock(10);
+    //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
 }

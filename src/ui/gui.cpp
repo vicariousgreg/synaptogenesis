@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-GUI::GUI() {
+GUI::GUI(Buffer *buffer) : buffer(buffer) {
     int argc = 0;
     char **argv = NULL;
     app =
@@ -12,8 +12,7 @@ GUI::GUI() {
     window = new Gtk::Window();
     window->set_default_size(200, 200);
 
-    signal_update.connect(sigc::mem_fun(
-        this, &GUI::update) );
+    dispatcher.connect(sigc::mem_fun(*this, &GUI::update));
 }
 
 
@@ -30,14 +29,12 @@ void GUI::add_layer(LayerInfo layer_info) {
             layer_info.layer->columns,
             layer_info.layer->rows);
     guint8* data = pix->get_pixels();
-    /*
     for (int j = 0; j < layer_info.layer->size; ++j) {
         data[j*4 + 0] = 0;
         data[j*4 + 1] = 0;
         data[j*4 + 2] = 0;
         data[j*4 + 3] = 255;
     }
-    */
     auto image = new Gtk::Image(pix);
 
     this->pixbufs.push_back(pix);
@@ -54,9 +51,27 @@ void GUI::launch() {
 }
 
 void GUI::update() {
+    /*
+    // Copy data over
+    for (int i = 0; i < layers.size(); ++i) {
+        LayerInfo &info = layers[i];
+        if (info.output) {
+            guint8* data = pixbufs[i]->get_pixels();
+            //guint8* data = images[i]->get_pixbuf()->get_pixels();
+            int output_index = info.layer->output_index;
+            Output *output = buffer->get_output() + output_index;
+            for (int j = 0; j < info.layer->size; ++j) {
+                guint8 val = (guint8)output[j].i;
+                data[j*4 + 0] = val;
+                data[j*4 + 1] = val;
+                data[j*4 + 2] = val;
+                data[j*4 + 3] = 255;
+            }
+        }
+    }
+    */
+
     for (int i = 0; i < images.size(); ++i) {
         images[i]->set(this->pixbufs[i]);
     }
-
-    this->done = true;
 }

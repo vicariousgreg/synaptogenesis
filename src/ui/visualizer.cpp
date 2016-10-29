@@ -4,7 +4,7 @@
 #include <iostream>
 
 Visualizer::Visualizer(Buffer *buffer) : buffer(buffer) {
-    this->gui = new GUI();
+    this->gui = new GUI(buffer);
 }
 
 Visualizer::~Visualizer() {
@@ -24,8 +24,8 @@ void Visualizer::update() {
     for (int i = 0; i < gui->layers.size(); ++i) {
         LayerInfo &info = gui->layers[i];
         if (info.output) {
-            //guint8* data = gui->pixbufs[i]->get_pixels();
-            guint8* data = gui->images[i]->get_pixbuf()->get_pixels();
+            guint8* data = gui->pixbufs[i]->get_pixels();
+            //guint8* data = images[i]->get_pixbuf()->get_pixels();
             int output_index = info.layer->output_index;
             Output *output = buffer->get_output() + output_index;
             for (int j = 0; j < info.layer->size; ++j) {
@@ -39,7 +39,5 @@ void Visualizer::update() {
     }
 
     // Signal GUI to update
-    this->gui->done = false;
-    this->gui->signal_update.emit();
-    while (!this->gui->done) ;
+    this->gui->dispatcher.emit();
 }
