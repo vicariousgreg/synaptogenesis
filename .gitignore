@@ -1,5 +1,6 @@
 *.o
 *.d
+*.a
 *.pyc
 test
 parallel_test

@@ -1,19 +1,20 @@
 #Default Make
-all: serial
+all: directories serial
 
-COREPATH := src/core
-UIPATH   := src/ui
-UILIBPATH := $(UIPATH)/ui.a
+COREPATH    := src/core
+UIPATH      := src/ui
+BUILDDIR_UI := build/ui
+UILIBPATH   := $(BUILDDIR_UI)/ui.a
 
 #---------------------------------------------------------------------------------
 #  UI BUILDING
 #---------------------------------------------------------------------------------
 
-$(UILIBPATH): $(UIPATH)/ui.o
-	ar rvs $(UILIBPATH) $(UIPATH)/ui.o
+$(UILIBPATH): $(BUILDDIR_UI)/ui.o
+	ar rvs $(UILIBPATH) $(BUILDDIR_UI)/ui.o
 
-$(UIPATH)/ui.o: $(UIPATH)/ui.cpp
-	g++ -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/ui.cpp -o $(UIPATH)/ui.o $(LIBS)
+$(BUILDDIR_UI)/ui.o: $(UIPATH)/ui.cpp
+	g++ -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/ui.cpp -o $(BUILDDIR_UI)/ui.o $(LIBS)
 
 
 #---------------------------------------------------------------------------------
@@ -53,12 +54,13 @@ serial: $(TARGET_S)
 directories:
 	@mkdir -p $(BUILDDIR_S)
 	@mkdir -p $(BUILDDIR_P)
+	@mkdir -p $(BUILDDIR_UI)
 
 #Clean only Objects
 clean:
 	@$(RM) -rf $(BUILDDIR_S)
 	@$(RM) -rf $(BUILDDIR_P)
-	@find $(UIPATH) | grep "\.[oa]" | xargs $(RM)
+	@$(RM) -rf $(BUILDDIR_UI)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
