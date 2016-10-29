@@ -83,29 +83,38 @@ Model* build_layers_model(std::string engine_name, bool verbose) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
-    int size = 1000;
-    structure->add_layer("a", 1, size, "random positive");
-    structure->add_module("a", "dummy_input", "");
+    int size = 100;
+    structure->add_layer("a", size, size, "random positive");
+    structure->add_module("a", "random_input", "10");
 
-    structure->add_layer("c", 10, size, "random positive");
-    structure->connect_layers("a", "c", true, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->add_layer("d", 10, size, "random positive");
-    structure->connect_layers("a", "d", true, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->add_layer("e", 10, size, "random positive");
-    structure->connect_layers("a", "e", true, 0, .5, FULLY_CONNECTED, ADD, "");
+    structure->add_layer("c", size, size, "random positive");
+    structure->connect_layers("a", "c", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
+    structure->add_layer("d", size, size, "random positive");
+    structure->connect_layers("a", "d", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
+    structure->add_layer("e", size, size, "random positive");
+    structure->connect_layers("a", "e", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
 
-    structure->add_layer("f", 1, size, "random positive");
-    structure->connect_layers("c", "f", true, 0, .5, FULLY_CONNECTED, ADD, "");
+    structure->add_layer("f", size, size, "random positive");
+    structure->connect_layers("c", "f", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
     structure->add_module("f", "dummy_output", "");
 
-    structure->add_layer("g", 1, size, "random positive");
-    structure->connect_layers("d", "g", true, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->connect_layers("f", "g", true, 0, .5, FULLY_CONNECTED, ADD, "");
+    structure->add_layer("g", size, size, "random positive");
+    structure->connect_layers("d", "g", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("f", "g", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
 
-    structure->add_layer("b", 1, size, "random positive");
-    structure->connect_layers("f", "b", true, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->add_module("b", "dummy_input", "");
-    structure->add_module("b", "dummy_output", "");
+    structure->add_layer("b", size, size, "random positive");
+    structure->connect_layers("f", "b", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
+    structure->add_module("b", "random_input", "10");
+    //structure->add_module("b", "dummy_output", "");
+
+    std::string output_name = "visualizer_output";
+    structure->add_module("a", output_name, "");
+    structure->add_module("b", output_name, "");
+    structure->add_module("c", output_name, "");
+    structure->add_module("d", output_name, "");
+    structure->add_module("e", output_name, "");
+    structure->add_module("f", output_name, "");
+    structure->add_module("g", output_name, "");
 
     model->add_structure(structure);
     if (verbose) print_model(model);
@@ -114,9 +123,8 @@ Model* build_layers_model(std::string engine_name, bool verbose) {
 
 Model* build_image_model(std::string engine_name, bool verbose) {
     /* Determine output type */
-    std::string output_name;
-    //output_name = "print_output";
-    output_name = "visualizer_output";
+    //std::string output_name = "print_output";
+    std::string output_name = "visualizer_output";
 
     /* Construct the model */
     Model *model = new Model(engine_name);
@@ -139,7 +147,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5 "
         "-5 0 10 0 -5");
-    //structure->add_module("vertical", output_name, "24");
+    structure->add_module("vertical", output_name, "24");
 
     // Horizontal line detection
     structure->connect_layers_expected("photoreceptor", "horizontal", "default",
@@ -150,7 +158,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
         "10 10 10 10 10 "
         "0 0 0 0 0 "
         "-5 -5 -5 -5 -5");
-    //structure->add_module("horizontal", output_name, "24");
+    structure->add_module("horizontal", output_name, "24");
 
     // Cross detection
     structure->connect_layers_expected("vertical", "cross", "default",
@@ -168,7 +176,7 @@ Model* build_image_model(std::string engine_name, bool verbose) {
         "1      10  15  10  1 "
         "-.5    5   -.5 5   -.5 "
         "-.5  -.5  -1  -.5  -.5");
-    //structure->add_module("cross", output_name, "24");
+    structure->add_module("cross", output_name, "24");
 
     model->add_structure(structure);
     if (verbose) print_model(model);
@@ -176,8 +184,8 @@ Model* build_image_model(std::string engine_name, bool verbose) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(10);
-    //Clock clock;  // No refresh rate synchronization
+    //Clock clock(10);
+    Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
 }
@@ -199,7 +207,7 @@ void layers_test() {
     std::cout << "Layers...\n";
     model = build_layers_model("izhikevich", true);
     //model = build_layers_model("rate_encoding", true);
-    run_simulation(model, 500, true);
+    run_simulation(model, 100000, true);
     std::cout << "\n";
 
     delete model;

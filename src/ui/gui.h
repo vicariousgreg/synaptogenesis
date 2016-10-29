@@ -24,6 +24,7 @@ class GUI {
         Buffer *buffer;
         Glib::RefPtr<Gtk::Application> app;
         Gtk::Window *window;
+        Gtk::Grid *grid;
 };
 
 #endif

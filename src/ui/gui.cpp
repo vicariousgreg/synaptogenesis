@@ -10,7 +10,9 @@ GUI::GUI(Buffer *buffer) : buffer(buffer) {
                 "org.gtkmm.examples.base");
 
     window = new Gtk::Window();
-    window->set_default_size(200, 200);
+    grid = new Gtk::Grid();
+
+    window->add(*grid);
 
     dispatcher.connect(sigc::mem_fun(*this, &GUI::update));
 }
@@ -40,7 +42,8 @@ void GUI::add_layer(LayerInfo layer_info) {
     this->pixbufs.push_back(pix);
     this->images.push_back(image);
 
-    this->window->add(*Gtk::manage(image));
+    this->grid->add(*Gtk::manage(image));
+    this->grid->show_all();
 
 }
 
