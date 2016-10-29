@@ -13,6 +13,9 @@ class Sender(gobject.GObject):
 
 gobject.type_register(Sender)
 
+def rescale(pixbuf):
+    return pixbuf.scale_simple(500, 500, gtk.gdk.INTERP_BILINEAR)
+
 
 class PyApp(gtk.Window):
     def __init__(self, layers):
@@ -32,17 +35,13 @@ class PyApp(gtk.Window):
 
         fixed = gtk.Fixed()
         self.images = []
-        curr_columns = 0
-        max_rows = 0
-        for layer in layers:
+        for i,layer in enumerate(layers):
             image = gtk.Image()
-            image.set_from_pixbuf(layer.pixbuf)
+            image.set_from_pixbuf(rescale(layer.pixbuf))
             self.images.append(image)
-            fixed.put(image, curr_columns, 0)
-            curr_columns += layer.columns
-            max_rows = max(max_rows, layer.rows)
+            fixed.put(image, i*500, 0)
 
-        self.set_size_request(curr_columns, max_rows)
+        self.set_size_request(500 * len(layers), 500)
 
         #fixed.put(btn1, 20, 30)
         #fixed.put(btn2, 100, 30)
@@ -65,7 +64,8 @@ class PyApp(gtk.Window):
 
     def update(self, sender):
         for layer,image in zip(self.layers, self.images):
-            image.set_from_pixbuf(layer.pixbuf)
+            image.set_from_pixbuf(rescale(layer.pixbuf))
+
         #print "user callback reacts to read_signal"
 
     def kill(self, sender):
