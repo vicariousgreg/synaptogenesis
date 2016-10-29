@@ -4,7 +4,7 @@
 #include "model/model.h"
 #include "io/buffer.h"
 #include "io/module/module.h"
-#include "io/visualizer.h"
+#include "visualizer.h"
 
 class Environment {
     public:
@@ -13,6 +13,7 @@ class Environment {
 
         void step_input();
         void step_output();
+        void ui_launch();
         void ui_update();
 
     private:

@@ -9,8 +9,6 @@
 #include "util/tools.h"
 #include "clock.h"
 
-#include "ui.h"
-
 static Timer timer = Timer();
 
 void print_model(Model *model) {
@@ -265,7 +263,6 @@ int main(int argc, char *argv[]) {
         image_test();
         //varied_test();
 
-        launch(argc, argv);
         return 0;
     } catch (const char* msg) {
         printf("\n\nERROR: %s\n", msg);

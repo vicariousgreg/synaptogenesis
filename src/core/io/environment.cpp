@@ -41,8 +41,6 @@ Environment::Environment(Model *model, Buffer *buffer)
         }
 
     }
-    //if (visualizer != NULL)
-    //    visualizer->ui_init();
 }
 
 Environment::~Environment() {
@@ -67,7 +65,12 @@ void Environment::step_output() {
         this->output_modules[i]->report_output(buffer);
 }
 
+void Environment::ui_launch() {
+    if (visualizer != NULL)
+        visualizer->launch();
+}
+
 void Environment::ui_update() {
     if (visualizer != NULL)
-        visualizer->ui_update();
+        visualizer->update();
 }

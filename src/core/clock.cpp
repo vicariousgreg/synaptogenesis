@@ -39,7 +39,7 @@ void Clock::environment_loop() {
         this->environment->step_output();
         if (i % this->environment_rate == 0) {
             // Read motor buffer
-            //this->environment->ui_update();
+            this->environment->ui_update();
         }
         this->motor_lock.pass(DRIVER);
     }
@@ -102,6 +102,8 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
     std::thread engine_thread(&Clock::engine_loop, this);
     std::thread environment_thread(&Clock::environment_loop, this);
     std::thread clock_thread(&Clock::clock_loop, this);
+
+    this->environment->ui_launch();
 
     engine_thread.join();
     environment_thread.join();

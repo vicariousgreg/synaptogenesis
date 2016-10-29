@@ -4,18 +4,20 @@ all: directories serial
 COREPATH    := src/core
 UIPATH      := src/ui
 BUILDDIR_UI := build/ui
-UILIBPATH   := $(BUILDDIR_UI)/ui.a
+UILIBPATH   := $(BUILDDIR_UI)/visualizer.a
 
 #---------------------------------------------------------------------------------
 #  UI BUILDING
 #---------------------------------------------------------------------------------
 
-$(UILIBPATH): $(BUILDDIR_UI)/ui.o
-	ar rvs $(UILIBPATH) $(BUILDDIR_UI)/ui.o
+$(UILIBPATH): $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o
+	ar rvs $(UILIBPATH) $(BUILDDIR_UI)/*.o
 
-$(BUILDDIR_UI)/ui.o: $(UIPATH)/ui.cpp
-	g++ -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/ui.cpp -o $(BUILDDIR_UI)/ui.o $(LIBS)
+$(BUILDDIR_UI)/visualizer.o: $(UIPATH)/visualizer.cpp $(UIPATH)/visualizer.h $(UIPATH)/gui.h
+	g++ -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/visualizer.cpp -o $(BUILDDIR_UI)/visualizer.o $(LIBS)
 
+$(BUILDDIR_UI)/gui.o: $(UIPATH)/gui.cpp $(UIPATH)/gui.h
+	g++ -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/gui.cpp -o $(BUILDDIR_UI)/gui.o $(LIBS)
 
 #---------------------------------------------------------------------------------
 #  CORE BUILDING
