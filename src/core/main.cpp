@@ -23,7 +23,7 @@ void print_model(Model *model) {
     printf("  - weights     : %10d\n", num_weights);
 }
 
-Model* build_self_connected_model(std::string engine_name, bool verbose) {
+Model* build_self_connected_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
@@ -31,20 +31,21 @@ Model* build_self_connected_model(std::string engine_name, bool verbose) {
     int cols = 1000;
     structure->add_layer("a", rows, cols, "random positive");
     structure->connect_layers("a", "a", true, 0, .5, CONVERGENT_CONVOLUTIONAL, ADD, "7 1");
-    structure->add_module("a", "random_input", "5");
-    //structure->add_module("a", "dummy_output", "5");
 
     structure->add_layer("b", rows, cols, "random positive");
     structure->connect_layers("b", "b", true, 0, .5, DIVERGENT_CONVOLUTIONAL, ADD, "7 1");
+
+    // Modules
+    structure->add_module("a", "random_input", "5");
+    //structure->add_module("a", "dummy_output", "5");
     structure->add_module("b", "random_input", "5");
     //structure->add_module("b", "dummy_output", "5");
 
     model->add_structure(structure);
-    if (verbose) print_model(model);
     return model;
 }
 
-Model* build_arborized_model(std::string engine_name, bool verbose, ConnectionType type) {
+Model* build_arborized_model(std::string engine_name, ConnectionType type) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("Arborized");
 
@@ -52,15 +53,16 @@ Model* build_arborized_model(std::string engine_name, bool verbose, ConnectionTy
     int cols = 1000;
     structure->add_layer("a", rows, cols, "random positive");
     structure->connect_layers_expected("a", "b", "random positive" , true, 0, .5, type, ADD, "7 1");
+
+    // Modules
     structure->add_module("a", "random_input", "5");
     //structure->add_module("b", "dummy_output", "5");
 
     model->add_structure(structure);
-    if (verbose) print_model(model);
     return model;
 }
 
-Model* build_stress_model(std::string engine_name, bool verbose) {
+Model* build_stress_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
@@ -71,21 +73,21 @@ Model* build_stress_model(std::string engine_name, bool verbose) {
     structure->connect_layers("pos", "neg", true, 0, .5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("neg", "pos", true, 0, 1, FULLY_CONNECTED, SUB, "");
     structure->connect_layers("neg", "neg", true, 0, 1, FULLY_CONNECTED, SUB, "");
+
+    // Modules
     structure->add_module("pos", "random_input", "5");
     structure->add_module("neg", "random_input", "2");
 
     model->add_structure(structure);
-    if (verbose) print_model(model);
     return model;
 }
 
-Model* build_layers_model(std::string engine_name, bool verbose) {
+Model* build_layers_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("Self-connected");
 
     int size = 100;
     structure->add_layer("a", size, size, "random positive");
-    structure->add_module("a", "random_input", "10");
 
     structure->add_layer("c", size, size, "random positive");
     structure->connect_layers("a", "c", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
@@ -96,7 +98,6 @@ Model* build_layers_model(std::string engine_name, bool verbose) {
 
     structure->add_layer("f", size, size, "random positive");
     structure->connect_layers("c", "f", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
-    structure->add_module("f", "dummy_output", "");
 
     structure->add_layer("g", size, size, "random positive");
     structure->connect_layers("d", "g", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
@@ -104,6 +105,10 @@ Model* build_layers_model(std::string engine_name, bool verbose) {
 
     structure->add_layer("b", size, size, "random positive");
     structure->connect_layers("f", "b", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD, "5 1");
+
+    // Modules
+    structure->add_module("a", "random_input", "10");
+    structure->add_module("f", "dummy_output", "");
     structure->add_module("b", "random_input", "10");
     //structure->add_module("b", "dummy_output", "");
 
@@ -117,11 +122,10 @@ Model* build_layers_model(std::string engine_name, bool verbose) {
     structure->add_module("g", output_name, "");
 
     model->add_structure(structure);
-    if (verbose) print_model(model);
     return model;
 }
 
-Model* build_image_model(std::string engine_name, bool verbose) {
+Model* build_image_model(std::string engine_name) {
     /* Determine output type */
     //std::string output_name = "print_output";
     std::string output_name = "visualizer_output";
@@ -132,60 +136,124 @@ Model* build_image_model(std::string engine_name, bool verbose) {
 
     //const char* image_path = "resources/bird.jpg";
     const char* image_path = "resources/bird-head.jpg";
+    //const char* image_path = "resources/pattern.jpg";
     //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
     structure->add_layer_from_image("photoreceptor", image_path, "default");
-    structure->add_module("photoreceptor", "image_input", image_path);
-    structure->add_module("photoreceptor", output_name, "24");
 
     // Vertical line detection
     structure->connect_layers_expected("photoreceptor", "vertical", "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
-        "5 1 "
-        "-5 0 10 0 -5 "
-        "-5 0 10 0 -5 "
-        "-5 0 10 0 -5 "
-        "-5 0 10 0 -5 "
-        "-5 0 10 0 -5");
-    structure->add_module("vertical", output_name, "24");
+        "11 1 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+        "-5 -5  0  0  5 10  5  0  0 -5 -5 ");
+    structure->connect_layers("vertical", "vertical", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "3 1 "
+        "-5  5 -5 "
+        "-5  5 -5 "
+        "-5  5 -5 ");
 
     // Horizontal line detection
     structure->connect_layers_expected("photoreceptor", "horizontal", "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
-        "5 1 "
-        "-5 -5 -5 -5 -5 "
-        "0 0 0 0 0 "
-        "10 10 10 10 10 "
-        "0 0 0 0 0 "
-        "-5 -5 -5 -5 -5");
-    structure->add_module("horizontal", output_name, "24");
+        "11 1 "
+        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
+        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
+        " 0  0  0  0  0  0  0  0  0  0  0 "
+        " 0  0  0  0  0  0  0  0  0  0  0 "
+        " 5  5  5  5  5  5  5  5  5  5  5 "
+        "10 10 10 10 10 10 10 10 10 10 10 "
+        " 5  5  5  5  5  5  5  5  5  5  5 "
+        " 0  0  0  0  0  0  0  0  0  0  0 "
+        " 0  0  0  0  0  0  0  0  0  0  0 "
+        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
+        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 ");
+    structure->connect_layers("horizontal", "horizontal", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "3 1 "
+        "-5 -5 -5 "
+        " 5  5  5 "
+        "-5 -5 -5 ");
 
     // Cross detection
     structure->connect_layers_expected("vertical", "cross", "default",
         true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
-        "-.5  -.5 1  -.5 -.5 "
-        "-.5  5   10 5   -.5 "
-        "-1   -.5 15 -.5 -1 "
-        "-.5  5   10 5   -.5 "
-        "-.5  -.5 1  -.5 -.5");
+        "-5  0 10  0 -5 "
+        "-5  0 10  0 -5 "
+        "-5  0 10  0 -5 "
+        "-5  0 10  0 -5 "
+        "-5  0 10  0 -5 ");
     structure->connect_layers("horizontal", "cross", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
         "5 1 "
-        "-.5  -.5  -1   -.5  -.5 "
-        "-.5    5   -.5 5   -.5 "
-        "1      10  15  10  1 "
-        "-.5    5   -.5 5   -.5 "
-        "-.5  -.5  -1  -.5  -.5");
-    structure->add_module("cross", output_name, "24");
+        "-5 -5 -5 -5 -5 "
+        " 0  0  0  0  0 "
+        "10 10 10 10 10 "
+        " 0  0  0  0  0 "
+        "-5 -5 -5 -5 -5 ");
+
+    // Forward slash
+    structure->connect_layers_expected("photoreceptor", "forward_slash", "default",
+        true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "9 1 "
+        " 0  0  0  0 -5 -5  0  5 10 "
+        " 0  0  0 -5 -5  0  5 10  5 "
+        " 0  0 -5 -5  0  5 10  5  0 "
+        " 0 -5 -5  0  5 10  5  0 -5 "
+        "-5 -5  0  5 10  5  0 -5 -5 "
+        "-5  0  5 10  5  0 -5 -5  0 "
+        " 0  5 10  5  0 -5 -5  0  0 "
+        " 5 10  5  0 -5 -5  0  0  0 "
+        "10  5  0 -5 -5  0  0  0  0 ");
+    structure->connect_layers("forward_slash", "forward_slash", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "3 1 "
+        "-5  0  5 "
+        " 0  5  0 "
+        " 5  0 -5 ");
+
+    // Back slash
+    structure->connect_layers_expected("photoreceptor", "back_slash", "default",
+        true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "9 1 "
+        "10  5  0 -5 -5  0  0  0  0 "
+        " 5 10  5  0 -5 -5  0  0  0 "
+        " 0  5 10  5  0 -5 -5  0  0 "
+        "-5  0  5 10  5  0 -5 -5  0 "
+        "-5 -5  0  5 10  5  0 -5 -5 "
+        " 0 -5 -5  0  5 10  5  0 -5 "
+        " 0  0 -5 -5  0  5 10  5  0 "
+        " 0  0  0 -5 -5  0  5 10  5 "
+        " 0  0  0  0 -5 -5  0  5 10 ");
+    structure->connect_layers("back_slash", "back_slash", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
+        "3 1 "
+        " 5  0 -5 "
+        " 0  5  0 "
+        "-5  0  5 ");
+
+    // Modules
+    structure->add_module("photoreceptor", "image_input", image_path);
+    structure->add_module("photoreceptor", output_name, "8");
+    structure->add_module("vertical", output_name, "8");
+    structure->add_module("horizontal", output_name, "8");
+    structure->add_module("forward_slash", output_name, "8");
+    structure->add_module("back_slash", output_name, "8");
+    //structure->add_module("cross", output_name, "8");
 
     model->add_structure(structure);
-    if (verbose) print_model(model);
     return model;
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    //Clock clock(10);
-    Clock clock;  // No refresh rate synchronization
+    Clock clock(10);
+    //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
 }
@@ -194,7 +262,8 @@ void stress_test() {
     Model *model;
 
     std::cout << "Stress...\n";
-    model = build_stress_model("izhikevich", true);
+    model = build_stress_model("izhikevich");
+    print_model(model);
     run_simulation(model, 10, true);
     std::cout << "\n";
 
@@ -205,8 +274,9 @@ void layers_test() {
     Model *model;
 
     std::cout << "Layers...\n";
-    model = build_layers_model("izhikevich", true);
-    //model = build_layers_model("rate_encoding", true);
+    model = build_layers_model("izhikevich");
+    //model = build_layers_model("rate_encoding");
+    print_model(model);
     run_simulation(model, 100000, true);
     std::cout << "\n";
 
@@ -217,8 +287,9 @@ void image_test() {
     Model *model;
 
     std::cout << "Image...\n";
-    model = build_image_model("izhikevich", true);
+    model = build_image_model("izhikevich");
     //model = build_image_model("rate_encoding", true);
+    print_model(model);
     run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
     //run_simulation(model, 10, true);
@@ -231,31 +302,36 @@ void varied_test() {
     Model *model;
 
     std::cout << "Self connected...\n";
-    model = build_self_connected_model("izhikevich", true);
+    model = build_self_connected_model("izhikevich");
+    print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";
     delete model;
 
     std::cout << "Convergent...\n";
-    model = build_arborized_model("izhikevich", true, CONVERGENT);
+    model = build_arborized_model("izhikevich", CONVERGENT);
+    print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";
     delete model;
 
     std::cout << "Convergent convolutional...\n";
-    model = build_arborized_model("izhikevich", true, CONVERGENT_CONVOLUTIONAL);
+    model = build_arborized_model("izhikevich", CONVERGENT_CONVOLUTIONAL);
+    print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";
     delete model;
 
     std::cout << "Divergent...\n";
-    model = build_arborized_model("izhikevich", true, DIVERGENT);
+    model = build_arborized_model("izhikevich", DIVERGENT);
+    print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";
     delete model;
 
     std::cout << "Divergent convolutional...\n";
-    model = build_arborized_model("izhikevich", true, DIVERGENT_CONVOLUTIONAL);
+    model = build_arborized_model("izhikevich", DIVERGENT_CONVOLUTIONAL);
+    print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";
     delete model;
