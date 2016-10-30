@@ -157,10 +157,12 @@ Model* build_image_model(std::string engine_name) {
         "-5 -5  0  0  5 10  5  0  0 -5 -5 "
         "-5 -5  0  0  5 10  5  0  0 -5 -5 ");
     structure->connect_layers("vertical", "vertical", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
-        "3 1 "
-        "-5  5 -5 "
-        "-5  5 -5 "
-        "-5  5 -5 ");
+        "5 1 "
+        "-5  0  5  0 -5 "
+        "-5  0  5  0 -5 "
+        "-5  0  5  0 -5 "
+        "-5  0  5  0 -5 "
+        "-5  0  5  0 -5 ");
 
     // Horizontal line detection
     structure->connect_layers_expected("photoreceptor", "horizontal", "default",
@@ -178,10 +180,12 @@ Model* build_image_model(std::string engine_name) {
         "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
         "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 ");
     structure->connect_layers("horizontal", "horizontal", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
-        "3 1 "
-        "-5 -5 -5 "
-        " 5  5  5 "
-        "-5 -5 -5 ");
+        "5 1 "
+        "-5 -5 -5 -5 -5 "
+        " 0  0  0  0  0 "
+        " 5  5  5  5  5 "
+        " 0  0  0  0  0 "
+        "-5 -5 -5 -5 -5 ");
 
     // Cross detection
     structure->connect_layers_expected("vertical", "cross", "default",
@@ -214,10 +218,12 @@ Model* build_image_model(std::string engine_name) {
         " 5 10  5  0 -5 -5  0  0  0 "
         "10  5  0 -5 -5  0  0  0  0 ");
     structure->connect_layers("forward_slash", "forward_slash", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
-        "3 1 "
-        "-5  0  5 "
-        " 0  5  0 "
-        " 5  0 -5 ");
+        "5 1 "
+        " 0  0 -5  0  5 "
+        " 0 -5  0  5  0 "
+        "-5  0  5  0 -5 "
+        " 0  5  0 -5  0 "
+        " 5  0 -5  0  0 ");
 
     // Back slash
     structure->connect_layers_expected("photoreceptor", "back_slash", "default",
@@ -233,10 +239,12 @@ Model* build_image_model(std::string engine_name) {
         " 0  0  0 -5 -5  0  5 10  5 "
         " 0  0  0  0 -5 -5  0  5 10 ");
     structure->connect_layers("back_slash", "back_slash", true, 0, 5, CONVERGENT_CONVOLUTIONAL, ADD,
-        "3 1 "
-        " 5  0 -5 "
-        " 0  5  0 "
-        "-5  0  5 ");
+        "5 1 "
+        " 5  0 -5  0  0 "
+        " 0  5  0 -5  0 "
+        "-5  0  5  0 -5 "
+        " 0 -5  0  5  0 "
+        " 0  0 -5  0  5 ");
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
