@@ -3,10 +3,10 @@
 #include <iostream>
 
 GUI::GUI(Buffer *buffer) : buffer(buffer) {
-    int argc = 0;
-    char **argv = NULL;
+    int argc = 1;
+    const char *argv[] = { "" };
     app =
-        Gtk::Application::create(argc, argv,
+        Gtk::Application::create(argc, (char **&)argv,
                 "org.gtkmm.examples.base");
 
     window = new Gtk::Window();
