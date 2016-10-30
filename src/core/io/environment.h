@@ -21,9 +21,6 @@ class Environment {
         Visualizer *visualizer;
         std::vector<Module*> input_modules;
         std::vector<Module*> output_modules;
-
-        const char *fifo_name = "/tmp/pcnn_fifo";
-        int fifo_fd;
 };
 
 #endif

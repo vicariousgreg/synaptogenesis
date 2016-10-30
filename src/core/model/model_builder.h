@@ -13,7 +13,7 @@ class ModelBuilder {
         void ui_init();
 
     private:
-        const char *fifo_name = "/tmp/pcnn_fifo";
+        const char *fifo_name = "/tmp/synaptogenesis_fifo";
         const char *script = "src/core/python/model_builder.py";
         int fifo_fd;
 };

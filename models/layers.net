@@ -1,0 +1,43 @@
+(model izhikevich)
+(structure "layers")
+
+(def size 100)
+
+(layer "a" rows=size cols=size params="random positive")
+(layer "c" rows=size cols=size params="random positive")
+(connect "a" "c" plastic=true delay=0 max_weight=5 type=convergent
+        convolutional=true opcode=add params="5 1")
+
+(layer "d" rows=size cols=size params="random positive")
+(connect "a" "d" plastic=true delay=0 max_weight=5 type=convergent
+        convolutional=true opcode=add params="5 1")
+
+(layer "e" rows=size cols=size params="random positive")
+(connect "a" "d" plastic=true delay=0 max_weight=5 type=convergent
+        convolutional=true opcode=add params="5 1")
+
+(layer "f" rows=size cols=size params="random positive")
+(connect "c" "f" plastic=true delay=0 max_weight=5 type=convergent
+        convolutional=true opcode=add params="5 1")
+
+(layer "g" rows=size cols=size params="random positive")
+(connect "d" "g" plastic=true delay=0 max_weight=5 type=convergent
+        convolutional=true opcode=add params="5 1")
+(connect "f" "g" plastic=true delay=0 max_weight=5 type=convergent
+        convolutional=true opcode=add params="5 1")
+
+(layer "b" rows=size cols=size params="random positive")
+(connect "f" "b" plastic=true delay=0 max_weight=5 type=convergent
+        convolutional=true opcode=add params="5 1")
+
+(module "a" "random_input" "10")
+(module "f" "dummy_output")
+(module "b" "random_input" "10")
+
+(module "a" "visualizer_output")
+(module "b" "visualizer_output")
+(module "c" "visualizer_output")
+(module "d" "visualizer_output")
+(module "e" "visualizer_output")
+(module "f" "visualizer_output")
+(module "g" "visualizer_output")

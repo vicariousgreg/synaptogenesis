@@ -27,6 +27,11 @@ void ModelBuilder::load(std::string path) {
     system(command.c_str());
 
     this->fifo_fd = open(this->fifo_name, O_RDONLY);
+    char buffer[1000];
+    while (read(this->fifo_fd, buffer, 1000) > 0) {
+        std::cout << buffer << std::endl;
+    }
+
     unlink(this->fifo_name);
     close(this->fifo_fd);
 }
