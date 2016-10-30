@@ -6,6 +6,7 @@
 #include "io/module/visualizer_output_module.h"
 #include "io/module/dummy_input_module.h"
 #include "io/module/dummy_output_module.h"
+#include "util/error_manager.h"
 
 Module* build_module(Layer *layer, std::string type,
         std::string params) {
@@ -24,5 +25,6 @@ Module* build_module(Layer *layer, std::string type,
     else if (type == "dummy_output")
         return new DummyOutputModule(layer, params);
     else
-        throw "Unrecognized output type!";
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized output type!");
 }

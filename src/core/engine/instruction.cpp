@@ -1,4 +1,5 @@
 #include "engine/instruction.h"
+#include "util/error_manager.h"
 
 Instruction::Instruction(Connection *conn, State *state) :
         type(conn->type),
@@ -22,7 +23,9 @@ Instruction::Instruction(Connection *conn, State *state) :
     int timesteps_per_output = get_timesteps_per_output(output_type);
     int word_index = HISTORY_SIZE - 1 -
         (conn->delay / timesteps_per_output);
-    if (word_index < 0) throw "Invalid delay in connection!";
+    if (word_index < 0)
+        ErrorManager::get_instance()->log_error(
+            "Invalid delay in connection!");
 
     outputs = state->get_attributes()->get_output(word_index) + conn->from_layer->index,
     inputs = state->get_attributes()->get_input() + conn->to_layer->index;
@@ -54,7 +57,8 @@ Instruction::Instruction(Connection *conn, State *state) :
             threads_per_block = dim3(1, threads);
             break;
         default:
-            throw "Unimplemented connection type!";
+            ErrorManager::get_instance()->log_error(
+                "Unimplemented connection type!");
     }
 #endif
 }

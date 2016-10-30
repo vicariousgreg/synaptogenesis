@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "util/parallel.h"
 #include "engine/instruction.h"
+#include "util/error_manager.h"
 
 // Device pointers for memcpyFromSymbol
 DEVICE EXTRACTOR x_float = extract_float;
@@ -24,7 +25,8 @@ void get_kernel(KERNEL *dest, ConnectionType conn_type) {
             *dest = calc_convergent;
             break;
         default:
-            throw "Unimplemented connection type!";
+            ErrorManager::get_instance()->log_error(
+                "Unimplemented connection type!");
     }
 }
 

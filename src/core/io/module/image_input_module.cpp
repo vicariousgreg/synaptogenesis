@@ -3,6 +3,7 @@
 
 #include "io/module/image_input_module.h"
 #include "util/tools.h"
+#include "util/error_manager.h"
 
 #define cimg_display 0
 #include "libs/CImg.h"
@@ -15,7 +16,8 @@ ImageInputModule::ImageInputModule(Layer *layer, std::string params)
         height = img.height();
 
         if (width != layer->columns or height != layer->rows) {
-            throw "Image size does not match layer size!";
+            ErrorManager::get_instance()->log_error(
+                "Image size does not match layer size!");
         }
 
         this->gray = (float*)malloc(width * height * sizeof(float));
@@ -49,7 +51,8 @@ ImageInputModule::ImageInputModule(Layer *layer, std::string params)
         }
     } catch (cimg_library::CImgIOException e) {
         printf("Image %s could not be opened!\n", params.c_str());
-        throw "Could not construct image input driver!";
+        ErrorManager::get_instance()->log_error(
+            "Could not construct image input driver!");
     }
 }
 
