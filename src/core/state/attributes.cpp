@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
 
 #include "state/attributes.h"
 #include "state/izhikevich_attributes.h"

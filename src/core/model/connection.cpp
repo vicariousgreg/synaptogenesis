@@ -38,6 +38,9 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             if (this->overlap == 1)
                 ErrorManager::get_instance()->log_error(
                     "Arborized connections cannot have overlap of 1!");
+            else if (this->overlap % 2 == 1)
+                ErrorManager::get_instance()->log_error(
+                    "Arborized connections cannot have an even overlap!");
 
             // Extract stride
             if (stream.eof())

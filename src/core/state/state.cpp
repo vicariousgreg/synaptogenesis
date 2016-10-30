@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <cstring>
-#include <sstream>
 
 #include "state/state.h"
 #include "engine/kernel.h"
