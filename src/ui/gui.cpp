@@ -3,10 +3,12 @@
 #include <iostream>
 
 GUI::GUI(Buffer *buffer) : buffer(buffer) {
+    // Mock arguments
     int argc = 1;
-    const char *argv[] = { "" };
+    char **argv = (char**)malloc(sizeof(char*));
+    argv[0] = " ";
     app =
-        Gtk::Application::create(argc, (char **&)argv,
+        Gtk::Application::create(argc, argv,
                 "org.gtkmm.examples.base");
 
     window = new Gtk::Window();
