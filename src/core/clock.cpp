@@ -2,11 +2,9 @@
 
 void Clock::engine_loop() {
     this->run_timer.reset();
-    this->iteration_timer.reset();
 
     for (int i = 0; i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
-        this->iteration_timer.wait(this->time_limit);
         this->iteration_timer.reset();
 
         this->engine->stage_clear();
@@ -27,6 +25,8 @@ void Clock::engine_loop() {
         // Finish computations
         this->engine->stage_remaining();
         this->engine->stage_weights();
+
+        this->iteration_timer.wait(this->time_limit);
     }
 
     // Report time if verbose

@@ -1,9 +1,14 @@
 #include "model/model.h"
+#include "model/model_builder.h"
 #include "util/error_manager.h"
 
 Model::Model (std::string engine_name) :
         num_neurons(0),
         engine_name(engine_name) {}
+
+Model* Model::load(std::string path) {
+    return load_model(path);
+}
 
 void Model::add_structure(Structure *structure) {
     if (this->structures.find(structure->name) != this->structures.end())

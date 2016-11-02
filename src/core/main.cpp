@@ -5,7 +5,6 @@
 #include <string>
 
 #include "model/model.h"
-#include "model/model_builder.h"
 #include "state/state.h"
 #include "util/tools.h"
 #include "clock.h"
@@ -349,8 +348,6 @@ void varied_test() {
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(NULL));
-
-    ModelBuilder().load("models/layers.net");
 
     try {
         //stress_test();

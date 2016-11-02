@@ -29,6 +29,8 @@ class Model {
                 delete it->second;
         }
 
+        static Model* load(std::string path);
+
         void add_structure(Structure *structure);
 
         /* Extracts layers and connections from structures.
