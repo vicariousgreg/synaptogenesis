@@ -61,7 +61,7 @@ void get_extractor(EXTRACTOR *dest, OutputType output_type) {
 DEVICE float extract_float(Instruction &inst, Output &out) { return out.f; }
 DEVICE float extract_int(Instruction &inst, Output &out) { return out.i; }
 DEVICE float extract_bit(Instruction &inst, Output &out) {
-    return out.i & (1 << (inst.delay % 32));
+    return (out.i >> inst.delay) & 1;
 }
 
 GLOBAL void clear_data(float* data, int count) {
