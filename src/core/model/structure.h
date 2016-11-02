@@ -59,6 +59,13 @@ class Structure {
             bool plastic, int delay, float max_weight,
             ConnectionType type, Opcode opcode, std::string params);
 
+        /* Uses given layer sizes to create a new layer and connect it to the
+         *   given layer.  Returns the id of the new layer. */
+        Connection* connect_layers_matching(
+            std::string from_layer_name, std::string to_layer_name, std::string new_layer_params,
+            bool plastic, int delay, float max_weight,
+            ConnectionType type, Opcode opcode, std::string params);
+
         /* Adds a module of the given |type| for the given |layer| */
         void add_module(std::string layer, std::string type, std::string params);
 

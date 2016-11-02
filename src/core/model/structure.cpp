@@ -119,6 +119,27 @@ Connection* Structure::connect_layers_expected(
     return conn;
 }
 
+Connection* Structure::connect_layers_matching(
+        std::string from_layer_name, std::string to_layer_name,
+        std::string new_layer_params, bool plastic, int delay,
+        float max_weight, ConnectionType type, Opcode opcode,
+        std::string params) {
+    Layer *from_layer = find_layer(from_layer_name);
+    if (from_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + from_layer_name + "\"!");
+
+    // Determine new layer size and create
+    add_layer(to_layer_name, from_layer->rows, from_layer->columns, new_layer_params);
+    Layer *to_layer = find_layer(to_layer_name);
+
+    // Connect new layer to given layer
+    Connection *conn = connect_layers(
+        from_layer, to_layer,
+        plastic, delay, max_weight, type, opcode, params);
+    return conn;
+}
+
 void Structure::add_layer(std::string name, int rows, int columns, std::string params) {
     if (this->layers_by_name.find(name) != this->layers_by_name.end())
         ErrorManager::get_instance()->log_error(
