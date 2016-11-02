@@ -120,6 +120,7 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
             stream >> stride;
             return 1 + ((source_val - overlap) / stride);
         case(FULLY_CONNECTED):
+            return source_val;
         default:
             ErrorManager::get_instance()->log_error(
                 "Invalid call to get_expected_dimension!");
