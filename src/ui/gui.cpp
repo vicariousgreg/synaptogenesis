@@ -13,15 +13,16 @@ GUI::GUI(Buffer *buffer) : buffer(buffer) {
 
     window = new Gtk::Window();
     grid = new Gtk::Grid();
-
     window->add(*grid);
-
     dispatcher.connect(sigc::mem_fun(*this, &GUI::update));
+
+    free(argv);
 }
 
 
 GUI::~GUI() {
     delete this->window;
+    delete this->grid;
 }
 
 void GUI::add_layer(LayerInfo layer_info) {

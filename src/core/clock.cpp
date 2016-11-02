@@ -1,9 +1,14 @@
 #include "clock.h"
 
 void Clock::engine_loop() {
+    this->run_timer.reset();
+    this->iteration_timer.reset();
+
     for (int i = 0; i < iterations; ++i) {
-        // Wait for clock signal, then start clearing inputs
-        this->clock_lock.wait(DRIVER);
+        // Wait for timer, then start clearing inputs
+        this->iteration_timer.wait(this->time_limit);
+        this->iteration_timer.reset();
+
         this->engine->stage_clear();
 
         // Read sensory input
@@ -18,12 +23,21 @@ void Clock::engine_loop() {
         this->motor_lock.wait(DRIVER);
         this->engine->stage_send_output();
         this->motor_lock.pass(ENVIRONMENT);
-        this->clock_lock.pass(CLOCK);
 
         // Finish computations
         this->engine->stage_remaining();
         this->engine->stage_weights();
     }
+
+    // Report time if verbose
+    if (verbose) {
+        float time = this->run_timer.query("Total time");
+        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+    }
+
+#ifdef PARALLEL
+    check_memory();
+#endif
 }
 
 void Clock::environment_loop() {
@@ -45,37 +59,10 @@ void Clock::environment_loop() {
     }
 }
 
-void Clock::clock_loop() {
-    // Run iterations
-    this->run_timer.reset();
-    this->iteration_timer.reset();
-    for (int counter = 0; counter < iterations; ++counter) {
-        this->iteration_timer.wait(this->time_limit);
-        this->iteration_timer.reset();
-
-        this->clock_lock.wait(CLOCK);
-        this->clock_lock.pass(DRIVER);
-    }
-    this->clock_lock.wait(CLOCK);
-    this->motor_lock.wait(ENVIRONMENT);
-    this->sensory_lock.wait(ENVIRONMENT);
-
-    // Report time if verbose
-    if (verbose) {
-        float time = this->run_timer.query("Total time");
-        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
-    }
-
-#ifdef PARALLEL
-    check_memory();
-#endif
-}
-
 void Clock::run(Model *model, int iterations, int environment_rate, bool verbose) {
     // Initialization
     this->sensory_lock.set_owner(ENVIRONMENT);
     this->motor_lock.set_owner(ENVIRONMENT);
-    this->clock_lock.set_owner(CLOCK);
 
     // Build engine
     run_timer.reset();
@@ -101,14 +88,15 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
     // Launch threads
     std::thread engine_thread(&Clock::engine_loop, this);
     std::thread environment_thread(&Clock::environment_loop, this);
-    std::thread clock_thread(&Clock::clock_loop, this);
 
-    this->environment->ui_launch();
+    // Launch UI
+    //this->environment->ui_launch();
 
+    // Wait for threads
     engine_thread.join();
     environment_thread.join();
-    clock_thread.join();
 
+    // Free memory for engine and environment
     delete this->engine;
     delete this->environment;
     this->engine = NULL;

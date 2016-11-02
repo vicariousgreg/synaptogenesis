@@ -47,12 +47,10 @@ class Clock {
 
         Lock sensory_lock;
         Lock motor_lock;
-        Lock clock_lock;
 
     private:
         void engine_loop();
         void environment_loop();
-        void clock_loop();
 
         int iterations;
         int environment_rate;
