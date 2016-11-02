@@ -90,7 +90,7 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
     std::thread environment_thread(&Clock::environment_loop, this);
 
     // Launch UI
-    //this->environment->ui_launch();
+    this->environment->ui_launch();
 
     // Wait for threads
     engine_thread.join();
