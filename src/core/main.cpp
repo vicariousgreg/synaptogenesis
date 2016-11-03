@@ -281,22 +281,24 @@ Model* build_reentrant_image_model(std::string engine_name) {
 
     // Create reentrant pair
     structure->connect_layers_matching("rand1", "rand2", "default",
-        true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "11 1 1");
+        true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "9 1 1");
     structure->connect_layers("rand2", "rand1",
-        true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "11 1 1");
+        true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "9 1 1");
 
     // Inhibitory self connections
     structure->connect_layers("rand1", "rand1",
-        true, 0, 0.5, CONVERGENT_CONVOLUTIONAL, SUB, "11 1 0.5");
+        true, 0, 1, CONVERGENT_CONVOLUTIONAL, SUB, "5 1 10");
 
     structure->connect_layers("rand2", "rand2",
-        true, 0, 0.5, CONVERGENT_CONVOLUTIONAL, SUB, "11 1 0.5");
+        true, 0, 1, CONVERGENT_CONVOLUTIONAL, SUB, "5 1 10");
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
     structure->add_module("photoreceptor", output_name, "8");
     structure->add_module("rand1", output_name, "8");
     structure->add_module("rand2", output_name, "8");
+    // Add random driver to second layer
+    structure->add_module("rand2", "random_input", "5");
 
     model->add_structure(structure);
     return model;
