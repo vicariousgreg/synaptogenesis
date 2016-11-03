@@ -57,7 +57,6 @@ void GUI::launch() {
 }
 
 void GUI::update() {
-    /*
     // Copy data over
     for (int i = 0; i < layers.size(); ++i) {
         LayerInfo &info = layers[i];
@@ -75,7 +74,6 @@ void GUI::update() {
             }
         }
     }
-    */
 
     for (int i = 0; i < images.size(); ++i) {
         images[i]->set(this->pixbufs[i]);

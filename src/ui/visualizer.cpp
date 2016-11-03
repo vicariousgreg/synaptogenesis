@@ -41,6 +41,7 @@ void Visualizer::launch() {
 
 void Visualizer::update() {
     // Copy data over
+    /*
     for (int i = 0; i < gui->layers.size(); ++i) {
         LayerInfo &info = gui->layers[i];
         if (info.output) {
@@ -56,6 +57,7 @@ void Visualizer::update() {
             }
         }
     }
+    */
 
     // Signal GUI to update
     this->gui->dispatcher.emit();
