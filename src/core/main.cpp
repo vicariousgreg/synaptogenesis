@@ -259,8 +259,51 @@ Model* build_image_model(std::string engine_name) {
     return model;
 }
 
+Model* build_reentrant_image_model(std::string engine_name) {
+    /* Determine output type */
+    //std::string output_name = "print_output";
+    std::string output_name = "visualizer_output";
+
+    /* Construct the model */
+    Model *model = new Model(engine_name);
+    Structure *structure = new Structure("Self-connected");
+
+    //const char* image_path = "resources/bird.jpg";
+    const char* image_path = "resources/bird-head.jpg";
+    //const char* image_path = "resources/pattern.jpg";
+    //const char* image_path = "resources/bird-head-small.jpg";
+    //const char* image_path = "resources/grid.png";
+    structure->add_layer_from_image("photoreceptor", image_path, "default");
+
+    // Connect first layer to receptor
+    structure->connect_layers_matching("photoreceptor", "rand1", "default",
+        true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "21 1 1");
+
+    // Create reentrant pair
+    structure->connect_layers_matching("rand1", "rand2", "default",
+        true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "11 1 1");
+    structure->connect_layers("rand2", "rand1",
+        true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "11 1 1");
+
+    // Inhibitory self connections
+    structure->connect_layers("rand1", "rand1",
+        true, 0, 0.5, CONVERGENT_CONVOLUTIONAL, SUB, "11 1 0.5");
+
+    structure->connect_layers("rand2", "rand2",
+        true, 0, 0.5, CONVERGENT_CONVOLUTIONAL, SUB, "11 1 0.5");
+
+    // Modules
+    structure->add_module("photoreceptor", "image_input", image_path);
+    structure->add_module("photoreceptor", output_name, "8");
+    structure->add_module("rand1", output_name, "8");
+    structure->add_module("rand2", output_name, "8");
+
+    model->add_structure(structure);
+    return model;
+}
+
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(10);
+    Clock clock(5);
     //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
@@ -286,6 +329,21 @@ void layers_test() {
     //model = build_layers_model("rate_encoding");
     print_model(model);
     run_simulation(model, 100000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
+void reentrant_image_test() {
+    Model *model;
+
+    std::cout << "Image...\n";
+    model = build_reentrant_image_model("izhikevich");
+    //model = build_image_model("rate_encoding", true);
+    print_model(model);
+    run_simulation(model, 10000, true);
+    //run_simulation(model, 100, true);
+    //run_simulation(model, 10, true);
     std::cout << "\n";
 
     delete model;
@@ -352,7 +410,8 @@ int main(int argc, char *argv[]) {
     try {
         //stress_test();
         //layers_test();
-        image_test();
+        //image_test();
+        reentrant_image_test();
         //varied_test();
 
         return 0;
