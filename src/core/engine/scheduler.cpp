@@ -53,7 +53,7 @@ void Scheduler::dispatch(Engine *engine) {
         for (auto it = weight_update_schedule.begin(); it != weight_update_schedule.end(); ++it) {
             if (i < it->second.size()) {
                 done = false;
-                engine->update_weights(it->second[i]);
+                it->second[i]->update(it->first);
             }
         }
     }
@@ -63,7 +63,7 @@ void Scheduler::dispatch(Engine *engine) {
     }
     execute_schedule.clear();
     for (int i = 0; i < weight_update_schedule.size(); ++i) {
-        engine->update_weights(weight_update_schedule[i]);
+        weight_update_schedule[i]->update();
     }
     weight_update_schedule.clear();
 #endif

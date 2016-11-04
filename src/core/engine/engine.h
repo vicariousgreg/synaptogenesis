@@ -22,13 +22,6 @@ class Engine {
         void stage_remaining();
         void stage_weights();
 
-        /* Cycles neuron states */
-        //virtual void update_state(int start_index, int count) = 0;
-
-        /* Updates weights for plastic neural connections.
-         * TODO: implement.  This should use STDP variant Hebbian learning */
-        void update_weights(Instruction *inst) { }
-
         State *state;
         StreamCluster stream_cluster;
 };

@@ -12,17 +12,21 @@ class Instruction {
 
 #ifdef PARALLEL
         void execute(cudaStream_t *stream);
+        void update(cudaStream_t *stream);
         dim3 blocks_per_grid;
         dim3 threads_per_block;
 #else
         void execute();
+        void update();
 #endif
 
         ConnectionType type;
         bool convolutional;
         Opcode opcode;
-        KERNEL kernel;
+
         EXTRACTOR extractor;
+        ACTIVATOR activator;
+        UPDATER updater;
 
         int overlap, stride;
         int fray;

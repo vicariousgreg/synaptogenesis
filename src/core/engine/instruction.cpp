@@ -34,8 +34,9 @@ Instruction::Instruction(Connection *conn, State *state) :
         (to_rows == from_rows and to_columns == from_columns)
             ? overlap / 2 : 0;
 
-    get_kernel(&this->kernel, type);
     get_extractor(&this->extractor, output_type);
+    get_activator(&this->activator, type);
+    get_updater(&this->updater, type);
 
 #ifdef PARALLEL
     // Calculate grid and block sizes based on type
@@ -63,10 +64,18 @@ Instruction::Instruction(Connection *conn, State *state) :
 
 #ifdef PARALLEL
 void Instruction::execute(cudaStream_t *stream) {
-    kernel<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
+    activator<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
+}
+
+void Instruction::update(cudaStream_t *stream) {
+    updater<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
 }
 #else
 void Instruction::execute() {
-    kernel(*this);
+    activator(*this);
+}
+
+void Instruction::update() {
+    updater(*this);
 }
 #endif

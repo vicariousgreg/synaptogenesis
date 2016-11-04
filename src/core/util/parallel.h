@@ -3,7 +3,7 @@
 
 #include "constants.h"
 
-// Define KERNEL prefix such that it doesn't affect anything for serial version
+// Define prefixes such that it doesn't affect anything for serial version
 #ifdef PARALLEL
 #define GLOBAL __global__
 #define DEVICE __device__

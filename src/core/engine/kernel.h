@@ -34,11 +34,18 @@ DEVICE float extract_float(Instruction &inst, Output &out);
 DEVICE float extract_int(Instruction &inst, Output &out);
 DEVICE float extract_bit(Instruction &inst, Output &out);
 
-/* Kernels are responsible for performing connection computation */
-typedef void(*KERNEL)(Instruction);
-void get_kernel(KERNEL *dest, ConnectionType conn_type);
+/* Activators are responsible for performing connection computation */
+typedef void(*ACTIVATOR)(Instruction);
+void get_activator(ACTIVATOR *dest, ConnectionType conn_type);
 GLOBAL void calc_fully_connected(Instruction inst);
 GLOBAL void calc_one_to_one(Instruction inst);
 GLOBAL void calc_convergent(Instruction inst);
+
+/* Updaters are responsible for updating connection weights */
+typedef void(*UPDATER)(Instruction);
+void get_updater(UPDATER *dest, ConnectionType conn_type);
+GLOBAL void update_fully_connected(Instruction inst);
+GLOBAL void update_one_to_one(Instruction inst);
+GLOBAL void update_convergent(Instruction inst);
 
 #endif

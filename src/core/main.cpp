@@ -314,17 +314,17 @@ Model* build_alignment_model(std::string engine_name) {
     Structure *structure = new Structure("alignment");
 
     structure->add_layer("input_layer", 1, 20, "default");
-    structure->add_layer("exc_field", 200, 200, "default");
-    structure->add_layer("inh_field", 200, 200, "default");
+    structure->add_layer("exc_field", 500, 500, "default");
+    structure->add_layer("inh_field", 500, 500, "default");
 
     structure->connect_layers("input_layer", "exc_field",
         true, 0, 10, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_field", "exc_field",
-        true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+        true, 0, 5, CONVERGENT, ADD, "5 1");
     structure->connect_layers("exc_field", "inh_field",
-        true, 0, 5, CONVOLUTIONAL, ADD, "9 1");
+        true, 0, 5, CONVERGENT, ADD, "9 1");
     structure->connect_layers("inh_field", "exc_field",
-        true, 0, 5, CONVOLUTIONAL, DIV, "7 1");
+        true, 0, 10, CONVERGENT, DIV, "7 1 10");
 
     // Modules
     structure->add_module("input_layer", "random_input", "10");
@@ -370,7 +370,7 @@ void layers_test() {
 void reentrant_image_test() {
     Model *model;
 
-    std::cout << "Image...\n";
+    std::cout << "Reentrant Image...\n";
     model = build_reentrant_image_model("izhikevich");
     print_model(model);
     run_simulation(model, 10000, true);
@@ -399,7 +399,7 @@ void image_test() {
 void alignment_test() {
     Model *model;
 
-    std::cout << "Image...\n";
+    std::cout << "Alignment...\n";
     model = build_alignment_model("izhikevich");
     print_model(model);
     run_simulation(model, 10000, true);
