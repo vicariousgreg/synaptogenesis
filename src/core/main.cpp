@@ -33,7 +33,7 @@ Model* build_self_connected_model(std::string engine_name) {
     structure->connect_layers("a", "a", true, 0, .5, CONVERGENT_CONVOLUTIONAL, ADD, "7 1");
 
     structure->add_layer("b", rows, cols, "random positive");
-    structure->connect_layers("b", "b", true, 0, .5, DIVERGENT_CONVOLUTIONAL, ADD, "7 1");
+    structure->connect_layers("b", "b", true, 0, .5, CONVERGENT_CONVOLUTIONAL, ADD, "7 1");
 
     // Modules
     structure->add_module("a", "random_input", "5");
@@ -276,36 +276,36 @@ Model* build_reentrant_image_model(std::string engine_name) {
     structure->add_layer_from_image("photoreceptor", image_path, "default");
 
     // Connect first layer to receptor
-    structure->connect_layers_matching("photoreceptor", "rand1", "default",
+    structure->connect_layers_matching("photoreceptor", "layer1", "default",
         true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "21 1 1");
 
     // Create reentrant pair
-    structure->connect_layers_matching("rand1", "rand2", "default",
+    structure->connect_layers_matching("layer1", "layer2", "default",
         true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "9 1 1");
-    structure->connect_layers("rand2", "rand1",
+    structure->connect_layers("layer2", "layer1",
         true, 0, 1, CONVERGENT_CONVOLUTIONAL, ADD, "9 1 1");
 
     // Inhibitory self connections
-    structure->connect_layers("rand1", "rand1",
+    structure->connect_layers("layer1", "layer1",
         true, 0, 1, CONVERGENT_CONVOLUTIONAL, SUB, "5 1 10");
 
-    structure->connect_layers("rand2", "rand2",
+    structure->connect_layers("layer2", "layer2",
         true, 0, 1, CONVERGENT_CONVOLUTIONAL, SUB, "5 1 10");
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
     structure->add_module("photoreceptor", output_name, "8");
-    structure->add_module("rand1", output_name, "8");
-    structure->add_module("rand2", output_name, "8");
+    structure->add_module("layer1", output_name, "8");
+    structure->add_module("layer2", output_name, "8");
     // Add random driver to second layer
-    structure->add_module("rand2", "random_input", "5");
+    structure->add_module("layer2", "random_input", "5");
 
     model->add_structure(structure);
     return model;
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(5);
+    Clock clock(10);
     //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
@@ -385,20 +385,6 @@ void varied_test() {
 
     std::cout << "Convergent convolutional...\n";
     model = build_arborized_model("izhikevich", CONVERGENT_CONVOLUTIONAL);
-    print_model(model);
-    run_simulation(model, 50, true);
-    std::cout << "\n";
-    delete model;
-
-    std::cout << "Divergent...\n";
-    model = build_arborized_model("izhikevich", DIVERGENT);
-    print_model(model);
-    run_simulation(model, 50, true);
-    std::cout << "\n";
-    delete model;
-
-    std::cout << "Divergent convolutional...\n";
-    model = build_arborized_model("izhikevich", DIVERGENT_CONVOLUTIONAL);
     print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";

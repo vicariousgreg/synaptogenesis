@@ -16,10 +16,6 @@ void get_kernel(KERNEL *dest, ConnectionType conn_type) {
         case (ONE_TO_ONE):
             *dest = calc_one_to_one;
             break;
-        case (DIVERGENT):
-        case (DIVERGENT_CONVOLUTIONAL):
-            *dest = calc_divergent;
-            break;
         case (CONVERGENT):
         case (CONVERGENT_CONVOLUTIONAL):
             *dest = calc_convergent;
@@ -97,59 +93,6 @@ GLOBAL void calc_one_to_one(Instruction inst) {
     }
 }
 
-GLOBAL void calc_divergent(Instruction inst) {
-    int d_row = blockIdx.x * blockDim.x + threadIdx.x;
-    int d_col = blockIdx.y * blockDim.y + threadIdx.y;
-    int d_index = d_row*inst.to_columns + d_col;
-
-    if (d_row < inst.to_rows and d_col < inst.to_columns) {
-        float sum = 0.0;
-
-        // Determine range of source neurons for divergent kernel
-        int start_s_row = (d_row - inst.fray - inst.overlap + inst.stride) / inst.stride;
-        int start_s_col = (d_col - inst.fray - inst.overlap + inst.stride) / inst.stride;
-        int end_s_row = (d_row - inst.fray) / inst.stride;
-        int end_s_col = (d_col - inst.fray) / inst.stride;
-
-        // Kernels are organized into columns
-        // One kernel per source neuron
-        //   Unless convolutional (shared kernel)
-        int kernel_size = inst.overlap * inst.overlap;
-        int kernel_row_size = (inst.convolutional)
-                              ? 1 : inst.from_rows * inst.from_columns;
-
-        // Iterate over relevant source neurons...
-        for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
-            for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
-                // Avoid making connections with non-existent neurons!
-                if (s_row < 0 or s_row >= inst.from_rows
-                    or s_col < 0 or s_col >= inst.from_columns)
-                    continue;
-                int s_index = (s_row * inst.from_columns) + s_col;
-                int k_row =
-                    (d_row + ((inst.overlap - inst.stride) * s_row)
-                    % inst.overlap);
-                int k_col =
-                    (d_col + ((inst.overlap - inst.stride) * s_col)
-                    % inst.overlap);
-
-                // Row of matrix is the kernel index * row size (see above)
-                int weight_offset =
-                    ((k_row * inst.overlap) + k_col)
-                    * kernel_row_size;
-                // Column of matrix is either the first column (convolutional)
-                //   or the index of the source neuron otherwise
-                int weight_col = (inst.convolutional)
-                                 ? 0 : s_index;
-
-                sum += inst.extractor(inst, inst.outputs[s_index]) *
-                    inst.weights[weight_offset + weight_col];
-            }
-        }
-        inst.inputs[d_index] = calc(inst.opcode, inst.inputs[d_index], sum);
-    }
-}
-
 GLOBAL void calc_convergent(Instruction inst) {
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
@@ -220,53 +163,6 @@ void calc_one_to_one(Instruction inst) {
     for (int index = 0 ; index < inst.from_size ; ++index) {
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
             inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
-    }
-}
-
-void calc_divergent(Instruction inst) {
-    int kernel_size = inst.overlap * inst.overlap;
-
-    // Iterate over destination neurons
-    for (int d_row = 0 ; d_row < inst.to_rows ; ++d_row) {
-        for (int d_col = 0 ; d_col < inst.to_columns ; ++d_col) {
-            int d_index = d_row*inst.to_columns + d_col;
-            float sum = 0.0;
-
-            // Determine range of source neurons for divergent kernel
-            int start_s_row = (d_row - inst.fray - inst.overlap + inst.stride) / inst.stride;
-            int start_s_col = (d_col - inst.fray - inst.overlap + inst.stride) / inst.stride;
-            int end_s_row = (d_row - inst.fray) / inst.stride;
-            int end_s_col = (d_col - inst.fray) / inst.stride;
-
-            // Iterate over relevant source neurons...
-            for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
-                for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) {
-                    // Avoid making connections with non-existent neurons!
-                    if (s_row < 0 or s_row >= inst.from_rows
-                        or s_col < 0 or s_col >= inst.from_columns)
-                        continue;
-
-                    int s_index = (s_row * inst.from_columns) + s_col;
-                    int k_row =
-                        (d_row + ((inst.overlap - inst.stride) * s_row)
-                        % inst.overlap);
-                    int k_col =
-                        (d_col + ((inst.overlap - inst.stride) * s_col)
-                        % inst.overlap);
-
-                    // Row of matrix is either the first column (convolutional)
-                    //   or the index of the source neuron otherwise
-                    int weight_offset = (inst.convolutional)
-                                        ? 0 : s_index * kernel_size;
-                    // Column of matrix is the kernel index
-                    int k_index = (k_row * inst.overlap) + k_col;
-
-                    sum += inst.extractor(inst, inst.outputs[s_index]) *
-                        inst.weights[weight_offset + k_index];
-                }
-            }
-            inst.inputs[d_index] = calc(inst.opcode, inst.inputs[d_index], sum);
-        }
     }
 }
 

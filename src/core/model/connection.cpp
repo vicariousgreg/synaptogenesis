@@ -66,17 +66,11 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             this->num_weights = overlap * overlap * stride;
 
             switch (type) {
-                case(DIVERGENT):
-                    // Divergent connections use unshared mini weight matrices
-                    // Each source neuron connects to overlap squared neurons
-                    this->num_weights = overlap * overlap * from_layer->size;
-                    break;
                 case(CONVERGENT):
                     // Convergent connections use unshared mini weight matrices
                     // Each destination neuron connects to overlap squared neurons
                     this->num_weights = overlap * overlap * to_layer->size;
                     break;
-                case(DIVERGENT_CONVOLUTIONAL):
                 case(CONVERGENT_CONVOLUTIONAL):
                     this->convolutional = true;
                     // Convolutional connections use a shared weight kernel
@@ -109,11 +103,6 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
     switch (type) {
         case(ONE_TO_ONE):
             return source_val;
-        case(DIVERGENT):
-        case(DIVERGENT_CONVOLUTIONAL):
-            stream >> overlap;
-            stream >> stride;
-            return overlap + (stride * (source_val -1));
         case(CONVERGENT):
         case(CONVERGENT_CONVOLUTIONAL):
             stream >> overlap;

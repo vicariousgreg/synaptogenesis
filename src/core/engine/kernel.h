@@ -39,7 +39,6 @@ typedef void(*KERNEL)(Instruction);
 void get_kernel(KERNEL *dest, ConnectionType conn_type);
 GLOBAL void calc_fully_connected(Instruction inst);
 GLOBAL void calc_one_to_one(Instruction inst);
-GLOBAL void calc_divergent(Instruction inst);
 GLOBAL void calc_convergent(Instruction inst);
 
 #endif

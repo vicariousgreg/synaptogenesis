@@ -48,7 +48,7 @@ class Connection {
 
         // Arborization parameters (extracted from params)
         // The amount of overlap and stride for arborized
-        //   (convergent/divergent) connections
+        //   (convergent) connections
         int overlap, stride;
 
         // Parameters for matrix construction

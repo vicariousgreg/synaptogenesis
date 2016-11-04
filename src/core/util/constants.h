@@ -65,14 +65,11 @@ enum IOType {
  * One-to-one represents an n size vector connecting two layers
  *   of idential sizes.
  * Convergent connections converge from a larger layer to a smaller one.
- * Divergent connections diverge from a larger layer to a smaller one.
  * Convolutional layers share weights.
  */
 enum ConnectionType {
     FULLY_CONNECTED,
     ONE_TO_ONE,
-    DIVERGENT,
-    DIVERGENT_CONVOLUTIONAL,
     CONVERGENT,
     CONVERGENT_CONVOLUTIONAL
 };
