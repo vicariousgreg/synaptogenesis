@@ -74,11 +74,15 @@ GLOBAL void clear_data(float* data, int count) {
 /****************************** CONNECTION KERNELS ****************************/
 /******************************************************************************/
 
-/* IMPORTANT:
+/* Parallel and Serial kernels are combined using preprocessor directives.
+ * The Parallel versions determine an index based on the CUDA thread/block.
+ * The Serial versions perform iterations over all of the neurons.
+ *
+ * IMPORTANT:
  * Serial implementation is faster if matrix is interpreted in a transposed
- *    fashion compared to parallel.  In this loop, row is the destination,
- *    column is the source.  In this way, inputs to one neuron are
- *    contiguous in memory.
+ *    fashion compared to parallel.  For serial loops, row is the destination,
+ *    column is the source.  This way, inputs to one neuron are contiguous in
+ *    memory.
  */
 
 GLOBAL void calc_fully_connected(Instruction inst) {
@@ -108,15 +112,12 @@ GLOBAL void calc_one_to_one(Instruction inst) {
 #ifdef PARALLEL
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < inst.from_size) {
-        inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
-            inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
-    }
 #else
     for (int index = 0 ; index < inst.from_size ; ++index) {
+#endif
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
             inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
     }
-#endif
 }
 
 GLOBAL void calc_convergent(Instruction inst) {
@@ -128,7 +129,6 @@ GLOBAL void calc_convergent(Instruction inst) {
     int d_index = d_row*inst.to_columns + d_col;
     if (d_row < inst.to_rows and d_col < inst.to_columns) {
 #else
-    // Iterate over destination neurons
     for (int d_row = 0 ; d_row < inst.to_rows ; ++d_row) {
         for (int d_col = 0 ; d_col < inst.to_columns ; ++d_col) {
             int d_index = d_row * inst.to_columns + d_col;
@@ -184,8 +184,7 @@ GLOBAL void calc_convergent(Instruction inst) {
                 }
             }
             inst.inputs[d_index] = calc(inst.opcode, inst.inputs[d_index], sum);
-#ifdef PARALLEL
-#else
+#ifndef PARALLEL
         }
 #endif
     }
