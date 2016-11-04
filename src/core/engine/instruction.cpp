@@ -48,7 +48,7 @@ Instruction::Instruction(Connection *conn, State *state) :
             threads_per_block = dim3(threads);
             break;
         case (CONVERGENT):
-        case (CONVERGENT_CONVOLUTIONAL):
+        case (CONVOLUTIONAL):
             blocks_per_grid = dim3(
                 to_rows,
                 calc_blocks(to_columns));

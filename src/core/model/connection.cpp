@@ -71,7 +71,7 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                     // Each destination neuron connects to overlap squared neurons
                     this->num_weights = overlap * overlap * to_layer->size;
                     break;
-                case(CONVERGENT_CONVOLUTIONAL):
+                case(CONVOLUTIONAL):
                     this->convolutional = true;
                     // Convolutional connections use a shared weight kernel
                     this->num_weights = overlap * overlap;
@@ -104,7 +104,7 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
         case(ONE_TO_ONE):
             return source_val;
         case(CONVERGENT):
-        case(CONVERGENT_CONVOLUTIONAL):
+        case(CONVOLUTIONAL):
             stream >> overlap;
             stream >> stride;
             return 1 + ((source_val - overlap) / stride);

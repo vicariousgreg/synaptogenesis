@@ -17,7 +17,7 @@ void get_kernel(KERNEL *dest, ConnectionType conn_type) {
             *dest = calc_one_to_one;
             break;
         case (CONVERGENT):
-        case (CONVERGENT_CONVOLUTIONAL):
+        case (CONVOLUTIONAL):
             *dest = calc_convergent;
             break;
         default:

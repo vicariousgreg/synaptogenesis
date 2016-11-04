@@ -119,7 +119,7 @@ static void initialize_matrix(Connection* conn,
                 case (FULLY_CONNECTED):
                     ErrorManager::get_instance()->log_error(
                         "Cannot specify all weights for fully connected matrix!");
-                case (CONVERGENT_CONVOLUTIONAL):
+                case (CONVOLUTIONAL):
                     rows = conn->overlap * conn->overlap;
                     cols = 1;
                     break;
