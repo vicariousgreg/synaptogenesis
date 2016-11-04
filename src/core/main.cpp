@@ -304,6 +304,37 @@ Model* build_reentrant_image_model(std::string engine_name) {
     return model;
 }
 
+Model* build_alignment_model(std::string engine_name) {
+    /* Determine output type */
+    //std::string output_name = "print_output";
+    std::string output_name = "visualizer_output";
+
+    /* Construct the model */
+    Model *model = new Model(engine_name);
+    Structure *structure = new Structure("alignment");
+
+    structure->add_layer("input_layer", 1, 20, "default");
+    structure->add_layer("exc_field", 200, 200, "default");
+    structure->add_layer("inh_field", 200, 200, "default");
+
+    structure->connect_layers("input_layer", "exc_field",
+        true, 0, 10, FULLY_CONNECTED, ADD, "");
+    structure->connect_layers("exc_field", "exc_field",
+        true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("exc_field", "inh_field",
+        true, 0, 5, CONVOLUTIONAL, ADD, "9 1");
+    structure->connect_layers("inh_field", "exc_field",
+        true, 0, 5, CONVOLUTIONAL, DIV, "7 1");
+
+    // Modules
+    structure->add_module("input_layer", "random_input", "10");
+    structure->add_module("exc_field", output_name, "8");
+    structure->add_module("inh_field", output_name, "8");
+
+    model->add_structure(structure);
+    return model;
+}
+
 void run_simulation(Model *model, int iterations, bool verbose) {
     Clock clock(10);
     //Clock clock;  // No refresh rate synchronization
@@ -341,7 +372,6 @@ void reentrant_image_test() {
 
     std::cout << "Image...\n";
     model = build_reentrant_image_model("izhikevich");
-    //model = build_image_model("rate_encoding", true);
     print_model(model);
     run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
@@ -360,6 +390,20 @@ void image_test() {
     print_model(model);
     run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
+    //run_simulation(model, 10, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
+void alignment_test() {
+    Model *model;
+
+    std::cout << "Image...\n";
+    model = build_alignment_model("izhikevich");
+    print_model(model);
+    run_simulation(model, 10000, true);
+    //run_simulation(model, 1000, true);
     //run_simulation(model, 10, true);
     std::cout << "\n";
 
@@ -399,7 +443,8 @@ int main(int argc, char *argv[]) {
         //stress_test();
         //layers_test();
         //image_test();
-        reentrant_image_test();
+        //reentrant_image_test();
+        alignment_test();
         //varied_test();
 
         return 0;
