@@ -191,7 +191,7 @@ void calc_convergent(Instruction inst) {
                     int k_s_col = s_col + k_col;
                     // The connection is frayed if the layers are the same size
                     // Avoid making connections with non-existent neurons!
-                    if (inst.fray > 0 and (k_s_row < 0 or k_s_row >= inst.to_rows
+                    if (inst.fray != 0 and (k_s_row < 0 or k_s_row >= inst.to_rows
                         or k_s_col < 0 or k_s_col >= inst.to_columns))
                         continue;
 
