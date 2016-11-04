@@ -38,9 +38,11 @@ void Stream::schedule_execution(int to_schedule, Scheduler *scheduler) {
     while (scheduled < to_schedule) {
 #ifdef PARALLEL
         scheduler->schedule_execution(&this->cuda_stream, instructions[scheduled++]);
+
+        // If necessary, schedule events
         for (int i = 0; i < IO_TYPE_SIZE; ++i)
             if (scheduled == last_index[i] + 1)
-                cudaEventRecord(*events[i], cuda_stream);
+                scheduler->schedule_event(&this->cuda_stream, events[i]);
 #else
         scheduler->schedule_execution(instructions[scheduled++]);
 #endif

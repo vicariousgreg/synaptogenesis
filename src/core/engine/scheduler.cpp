@@ -3,17 +3,21 @@
 
 #ifdef PARALLEL
 void Scheduler::schedule_execution(cudaStream_t *stream, Instruction *inst) {
-    execute_schedule[stream].push_back(inst);
+    execute_schedule[stream].push_back(QueueItem(inst));
 }
 
 void Scheduler::schedule_weight_update(cudaStream_t *stream, Instruction *inst) {
     weight_update_schedule[stream].push_back(inst);
 }
 
+void Scheduler::schedule_event(cudaStream_t *stream, cudaEvent_t *event) {
+    execute_schedule[stream].push_back(QueueItem(event));
+}
+
 #else
 
 void Scheduler::schedule_execution(Instruction *inst) {
-    execute_schedule.push_back(inst);
+    execute_schedule.push_back(QueueItem(inst));
 }
 
 void Scheduler::schedule_weight_update(Instruction *inst) {
@@ -29,8 +33,13 @@ void Scheduler::dispatch(Engine *engine) {
         done = true;
         for (auto it = execute_schedule.begin(); it != execute_schedule.end(); ++it) {
             if (i < it->second.size()) {
+                cudaStream_t *stream = it->first;
+                QueueItem &item = it->second[i];
                 done = false;
-                it->second[i]->execute(it->first);
+                if (item.inst != NULL)
+                    item.inst->execute(stream);
+                else if (item.event != NULL)
+                    cudaEventRecord(*item.event, *stream);
             }
         }
     }
@@ -50,7 +59,7 @@ void Scheduler::dispatch(Engine *engine) {
     }
 #else
     for (int i = 0; i < execute_schedule.size(); ++i) {
-        execute_schedule[i]->execute();
+        execute_schedule[i].inst->execute();
     }
     execute_schedule.clear();
     for (int i = 0; i < weight_update_schedule.size(); ++i) {

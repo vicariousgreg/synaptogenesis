@@ -89,7 +89,7 @@ GLOBAL void calc_fully_connected(Instruction inst) {
 #ifdef PARALLEL
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     if (col < inst.to_size) {
-        float sum = 0;
+        float sum = 0.0;
         for (int row = 0 ; row < inst.from_size ; ++row) {
             sum += inst.extractor(inst, inst.outputs[row])
                 * inst.weights[row * inst.to_size + col];
@@ -101,7 +101,7 @@ GLOBAL void calc_fully_connected(Instruction inst) {
         float sum = 0.0;
         for (int col = 0 ; col < inst.from_size ; ++col) {
             sum += inst.extractor(inst, inst.outputs[col]) *
-                inst.weights[row*inst.from_size + col];
+                inst.weights[row * inst.from_size + col];
         }
         inst.inputs[row] = calc(inst.opcode, inst.inputs[row], sum);
     }
@@ -111,9 +111,9 @@ GLOBAL void calc_fully_connected(Instruction inst) {
 GLOBAL void calc_one_to_one(Instruction inst) {
 #ifdef PARALLEL
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < inst.from_size) {
+    if (index < inst.to_size) {
 #else
-    for (int index = 0 ; index < inst.from_size ; ++index) {
+    for (int index = 0 ; index < inst.to_size ; ++index) {
 #endif
         inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
             inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
