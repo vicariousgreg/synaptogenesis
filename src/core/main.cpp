@@ -36,9 +36,9 @@ Model* build_self_connected_model(std::string engine_name) {
     structure->connect_layers("b", "b", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
 
     // Modules
-    structure->add_module("a", "random_input", "5");
+    structure->add_module("a", "noise_input", "5");
     //structure->add_module("a", "dummy_output", "5");
-    structure->add_module("b", "random_input", "5");
+    structure->add_module("b", "noise_input", "5");
     //structure->add_module("b", "dummy_output", "5");
 
     model->add_structure(structure);
@@ -55,7 +55,7 @@ Model* build_arborized_model(std::string engine_name, ConnectionType type) {
     structure->connect_layers_expected("a", "b", "random positive" , false, 0, .5, type, ADD, "7 1");
 
     // Modules
-    structure->add_module("a", "random_input", "5");
+    structure->add_module("a", "noise_input", "5");
     //structure->add_module("b", "dummy_output", "5");
 
     model->add_structure(structure);
@@ -75,8 +75,8 @@ Model* build_stress_model(std::string engine_name) {
     structure->connect_layers("neg", "neg", false, 0, 1, FULLY_CONNECTED, SUB, "");
 
     // Modules
-    structure->add_module("pos", "random_input", "5");
-    structure->add_module("neg", "random_input", "2");
+    structure->add_module("pos", "noise_input", "5");
+    structure->add_module("neg", "noise_input", "2");
 
     model->add_structure(structure);
     return model;
@@ -107,9 +107,9 @@ Model* build_layers_model(std::string engine_name) {
     structure->connect_layers("f", "b", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
     // Modules
-    structure->add_module("a", "random_input", "10");
+    structure->add_module("a", "noise_input", "10");
     structure->add_module("f", "dummy_output", "");
-    structure->add_module("b", "random_input", "10");
+    structure->add_module("b", "noise_input", "10");
     //structure->add_module("b", "dummy_output", "");
 
     std::string output_name = "visualizer_output";
@@ -298,7 +298,7 @@ Model* build_reentrant_image_model(std::string engine_name) {
     structure->add_module("layer1", output_name, "8");
     structure->add_module("layer2", output_name, "8");
     // Add random driver to second layer
-    structure->add_module("layer2", "random_input", "5");
+    structure->add_module("layer2", "noise_input", "5");
 
     model->add_structure(structure);
     return model;
@@ -316,6 +316,7 @@ Model* build_alignment_model(std::string engine_name) {
     structure->add_layer("input_layer", 1, 20, "default");
     structure->add_layer("exc_field", 250, 250, "default");
     structure->add_layer("inh_field", 250, 250, "default");
+    //structure->add_layer("output", 1, 1, "default");
 
     structure->connect_layers("input_layer", "exc_field",
         false, 0, 10, FULLY_CONNECTED, ADD, "");
@@ -326,10 +327,14 @@ Model* build_alignment_model(std::string engine_name) {
     structure->connect_layers("inh_field", "exc_field",
         false, 0, 5, CONVERGENT, DIV, "5 1 1");
 
+    //structure->connect_layers("exc_field", "output",
+    //    true, 0, 0.1, FULLY_CONNECTED, ADD, "0.00001");
+
     // Modules
-    structure->add_module("input_layer", "random_input", "10");
+    structure->add_module("input_layer", "random_input", "10 250");
     structure->add_module("exc_field", output_name, "8");
-    structure->add_module("inh_field", output_name, "8");
+    //structure->add_module("inh_field", output_name, "8");
+    //structure->add_module("output", "print_rate", "8");
 
     model->add_structure(structure);
     return model;

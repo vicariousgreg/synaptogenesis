@@ -205,8 +205,8 @@ GLOBAL void calc_convergent(Instruction inst) {
 #define MOD_RATE 0.1
 #define MOD_DECAY 0.01
 #define MOD_MAX 10.0
-#define SUM_COEFFICIENT 0.1
-#define WEIGHT_DECAY 0.01
+#define SUM_COEFFICIENT 0.3
+#define WEIGHT_DECAY 0.05
 
 void get_updater(UPDATER *dest, ConnectionType conn_type) {
     switch (conn_type) {
@@ -377,11 +377,9 @@ GLOBAL void update_convergent(Instruction inst) {
                     float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
                                         - (WEIGHT_DECAY * (old_weight - baseline[weight_index]));
                     inst.weights[weight_index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
-                    /*
                     if (weight_index == 19) // and old_weight > new_weight)
                         printf("(%d    %10f ->  %10f    %c )\n", weight_index, old_weight, new_weight,
                                                 (new_weight > old_weight) ? '+' : '-');
-                    */
                 }
             }
 #ifndef PARALLEL

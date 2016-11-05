@@ -10,6 +10,8 @@ class RandomInputModule : public Module {
         virtual IOType get_type() { return INPUT; }
 
     private:
+        int timesteps;
+        int shuffle_rate;
         float max_value;
         float *random_values;
 };
