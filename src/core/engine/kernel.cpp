@@ -202,11 +202,11 @@ GLOBAL void calc_convergent(Instruction inst) {
 /********************** CONNECTION UPDATER KERNELS ****************************/
 /******************************************************************************/
 
-#define MOD_RATE 0.1
+#define MOD_RATE 0.3
 #define MOD_DECAY 0.01
 #define MOD_MAX 10.0
-#define SUM_COEFFICIENT 0.3
-#define WEIGHT_DECAY 0.05
+#define SUM_COEFFICIENT 0.5
+#define WEIGHT_DECAY 0.025
 
 void get_updater(UPDATER *dest, ConnectionType conn_type) {
     switch (conn_type) {
