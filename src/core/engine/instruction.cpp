@@ -5,6 +5,8 @@ Instruction::Instruction(Connection *conn, State *state) :
         type(conn->type),
         convolutional(conn->convolutional),
         opcode(conn->opcode),
+        plastic(conn->plastic),
+        max_weight(conn->max_weight),
         overlap(conn->overlap),
         stride(conn->stride),
         delay(conn->delay),
@@ -36,7 +38,10 @@ Instruction::Instruction(Connection *conn, State *state) :
 
     get_extractor(&this->extractor, output_type);
     get_activator(&this->activator, type);
-    get_updater(&this->updater, type);
+    if (plastic)
+        get_updater(&this->updater, type);
+    else
+        this->updater = NULL;
 
 #ifdef PARALLEL
     // Calculate grid and block sizes based on type
@@ -76,6 +81,6 @@ void Instruction::execute() {
 }
 
 void Instruction::update() {
-    updater(*this);
+    if (updater != NULL) updater(*this);
 }
 #endif

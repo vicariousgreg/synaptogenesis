@@ -57,6 +57,9 @@ void Scheduler::dispatch(Engine *engine) {
             }
         }
     }
+    for (auto it = weight_update_schedule.begin(); it != weight_update_schedule.end(); ++it) {
+        it->second.clear();
+    }
 #else
     for (int i = 0; i < execute_schedule.size(); ++i) {
         execute_schedule[i].inst->execute();

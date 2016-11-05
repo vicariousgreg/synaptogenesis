@@ -59,10 +59,11 @@ void Stream::schedule_execution(IOType type, Scheduler *scheduler) {
 
 void Stream::schedule_weight_update(Scheduler *scheduler) {
     for (int i = 0; i < instructions.size(); ++i)
+        if (instructions[i]->plastic)
 #ifdef PARALLEL
-        scheduler->schedule_weight_update(&this->cuda_stream, instructions[i]);
+            scheduler->schedule_weight_update(&this->cuda_stream, instructions[i]);
 #else
-        scheduler->schedule_weight_update(instructions[i]);
+            scheduler->schedule_weight_update(instructions[i]);
 #endif
 }
 

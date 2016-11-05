@@ -35,6 +35,8 @@ class Instruction {
         int from_size, from_rows, from_columns;
         int to_size, to_rows, to_columns;
         int num_weights;
+        bool plastic;
+        float max_weight;
 
         OutputType output_type;
         Output *outputs;

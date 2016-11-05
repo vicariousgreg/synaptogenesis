@@ -30,10 +30,10 @@ Model* build_self_connected_model(std::string engine_name) {
     int rows = 1000;
     int cols = 1000;
     structure->add_layer("a", rows, cols, "random positive");
-    structure->connect_layers("a", "a", true, 0, .5, CONVOLUTIONAL, ADD, "7 1");
+    structure->connect_layers("a", "a", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
 
     structure->add_layer("b", rows, cols, "random positive");
-    structure->connect_layers("b", "b", true, 0, .5, CONVOLUTIONAL, ADD, "7 1");
+    structure->connect_layers("b", "b", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
 
     // Modules
     structure->add_module("a", "random_input", "5");
@@ -52,7 +52,7 @@ Model* build_arborized_model(std::string engine_name, ConnectionType type) {
     int rows = 1000;
     int cols = 1000;
     structure->add_layer("a", rows, cols, "random positive");
-    structure->connect_layers_expected("a", "b", "random positive" , true, 0, .5, type, ADD, "7 1");
+    structure->connect_layers_expected("a", "b", "random positive" , false, 0, .5, type, ADD, "7 1");
 
     // Modules
     structure->add_module("a", "random_input", "5");
@@ -69,10 +69,10 @@ Model* build_stress_model(std::string engine_name) {
     int size = 800 * 19;
     structure->add_layer("pos", 1, size, "random positive");
     structure->add_layer("neg", 1, size / 4, "random negative");
-    structure->connect_layers("pos", "pos", true, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->connect_layers("pos", "neg", true, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->connect_layers("neg", "pos", true, 0, 1, FULLY_CONNECTED, SUB, "");
-    structure->connect_layers("neg", "neg", true, 0, 1, FULLY_CONNECTED, SUB, "");
+    structure->connect_layers("pos", "pos", false, 0, .5, FULLY_CONNECTED, ADD, "");
+    structure->connect_layers("pos", "neg", false, 0, .5, FULLY_CONNECTED, ADD, "");
+    structure->connect_layers("neg", "pos", false, 0, 1, FULLY_CONNECTED, SUB, "");
+    structure->connect_layers("neg", "neg", false, 0, 1, FULLY_CONNECTED, SUB, "");
 
     // Modules
     structure->add_module("pos", "random_input", "5");
@@ -90,21 +90,21 @@ Model* build_layers_model(std::string engine_name) {
     structure->add_layer("a", size, size, "random positive");
 
     structure->add_layer("c", size, size, "random positive");
-    structure->connect_layers("a", "c", true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("a", "c", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
     structure->add_layer("d", size, size, "random positive");
-    structure->connect_layers("a", "d", true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("a", "d", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
     structure->add_layer("e", size, size, "random positive");
-    structure->connect_layers("a", "e", true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("a", "e", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
     structure->add_layer("f", size, size, "random positive");
-    structure->connect_layers("c", "f", true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("c", "f", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
     structure->add_layer("g", size, size, "random positive");
-    structure->connect_layers("d", "g", true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-    structure->connect_layers("f", "g", true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("d", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("f", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
     structure->add_layer("b", size, size, "random positive");
-    structure->connect_layers("f", "b", true, 0, 5, CONVOLUTIONAL, ADD, "5 1");
+    structure->connect_layers("f", "b", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
     // Modules
     structure->add_module("a", "random_input", "10");
@@ -143,7 +143,7 @@ Model* build_image_model(std::string engine_name) {
 
     // Vertical line detection
     structure->connect_layers_expected("photoreceptor", "vertical", "default",
-        true, 0, 5, CONVOLUTIONAL, ADD,
+        false, 0, 5, CONVOLUTIONAL, ADD,
         "11 1 "
         "-5 -5  0  0  5 10  5  0  0 -5 -5 "
         "-5 -5  0  0  5 10  5  0  0 -5 -5 "
@@ -156,7 +156,7 @@ Model* build_image_model(std::string engine_name) {
         "-5 -5  0  0  5 10  5  0  0 -5 -5 "
         "-5 -5  0  0  5 10  5  0  0 -5 -5 "
         "-5 -5  0  0  5 10  5  0  0 -5 -5 ");
-    structure->connect_layers("vertical", "vertical", true, 0, 5, CONVOLUTIONAL, ADD,
+    structure->connect_layers("vertical", "vertical", false, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
         "-5  0  5  0 -5 "
         "-5  0  5  0 -5 "
@@ -166,7 +166,7 @@ Model* build_image_model(std::string engine_name) {
 
     // Horizontal line detection
     structure->connect_layers_expected("photoreceptor", "horizontal", "default",
-        true, 0, 5, CONVOLUTIONAL, ADD,
+        false, 0, 5, CONVOLUTIONAL, ADD,
         "11 1 "
         "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
         "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
@@ -179,7 +179,7 @@ Model* build_image_model(std::string engine_name) {
         " 0  0  0  0  0  0  0  0  0  0  0 "
         "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
         "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 ");
-    structure->connect_layers("horizontal", "horizontal", true, 0, 5, CONVOLUTIONAL, ADD,
+    structure->connect_layers("horizontal", "horizontal", false, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 -5 -5 -5 -5 "
         " 0  0  0  0  0 "
@@ -189,14 +189,14 @@ Model* build_image_model(std::string engine_name) {
 
     // Cross detection
     structure->connect_layers_expected("vertical", "cross", "default",
-        true, 0, 5, CONVOLUTIONAL, ADD,
+        false, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
         "-5  0 10  0 -5 "
         "-5  0 10  0 -5 "
         "-5  0 10  0 -5 "
         "-5  0 10  0 -5 "
         "-5  0 10  0 -5 ");
-    structure->connect_layers("horizontal", "cross", true, 0, 5, CONVOLUTIONAL, ADD,
+    structure->connect_layers("horizontal", "cross", false, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
         "-5 -5 -5 -5 -5 "
         " 0  0  0  0  0 "
@@ -206,7 +206,7 @@ Model* build_image_model(std::string engine_name) {
 
     // Forward slash
     structure->connect_layers_expected("photoreceptor", "forward_slash", "default",
-        true, 0, 5, CONVOLUTIONAL, ADD,
+        false, 0, 5, CONVOLUTIONAL, ADD,
         "9 1 "
         " 0  0  0  0 -5 -5  0  5 10 "
         " 0  0  0 -5 -5  0  5 10  5 "
@@ -217,7 +217,7 @@ Model* build_image_model(std::string engine_name) {
         " 0  5 10  5  0 -5 -5  0  0 "
         " 5 10  5  0 -5 -5  0  0  0 "
         "10  5  0 -5 -5  0  0  0  0 ");
-    structure->connect_layers("forward_slash", "forward_slash", true, 0, 5, CONVOLUTIONAL, ADD,
+    structure->connect_layers("forward_slash", "forward_slash", false, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
         " 0  0 -5  0  5 "
         " 0 -5  0  5  0 "
@@ -227,7 +227,7 @@ Model* build_image_model(std::string engine_name) {
 
     // Back slash
     structure->connect_layers_expected("photoreceptor", "back_slash", "default",
-        true, 0, 5, CONVOLUTIONAL, ADD,
+        false, 0, 5, CONVOLUTIONAL, ADD,
         "9 1 "
         "10  5  0 -5 -5  0  0  0  0 "
         " 5 10  5  0 -5 -5  0  0  0 "
@@ -238,7 +238,7 @@ Model* build_image_model(std::string engine_name) {
         " 0  0 -5 -5  0  5 10  5  0 "
         " 0  0  0 -5 -5  0  5 10  5 "
         " 0  0  0  0 -5 -5  0  5 10 ");
-    structure->connect_layers("back_slash", "back_slash", true, 0, 5, CONVOLUTIONAL, ADD,
+    structure->connect_layers("back_slash", "back_slash", false, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
         " 5  0 -5  0  0 "
         " 0  5  0 -5  0 "
@@ -277,20 +277,20 @@ Model* build_reentrant_image_model(std::string engine_name) {
 
     // Connect first layer to receptor
     structure->connect_layers_matching("photoreceptor", "layer1", "default",
-        true, 0, 1, CONVOLUTIONAL, ADD, "21 1 1");
+        false, 0, 1, CONVOLUTIONAL, ADD, "21 1 1");
 
     // Create reentrant pair
     structure->connect_layers_matching("layer1", "layer2", "default",
-        true, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
+        false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
     structure->connect_layers("layer2", "layer1",
-        true, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
+        false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
 
     // Inhibitory self connections
     structure->connect_layers("layer1", "layer1",
-        true, 0, 1, CONVOLUTIONAL, SUB, "5 1 10");
+        false, 0, 1, CONVOLUTIONAL, SUB, "5 1 10");
 
     structure->connect_layers("layer2", "layer2",
-        true, 0, 1, CONVOLUTIONAL, SUB, "5 1 10");
+        false, 0, 1, CONVOLUTIONAL, SUB, "5 1 10");
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
@@ -306,7 +306,7 @@ Model* build_reentrant_image_model(std::string engine_name) {
 
 Model* build_alignment_model(std::string engine_name) {
     /* Determine output type */
-    //std::string output_name = "print_output";
+    //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
     /* Construct the model */
@@ -314,17 +314,17 @@ Model* build_alignment_model(std::string engine_name) {
     Structure *structure = new Structure("alignment");
 
     structure->add_layer("input_layer", 1, 20, "default");
-    structure->add_layer("exc_field", 500, 500, "default");
-    structure->add_layer("inh_field", 500, 500, "default");
+    structure->add_layer("exc_field", 250, 250, "default");
+    structure->add_layer("inh_field", 250, 250, "default");
 
     structure->connect_layers("input_layer", "exc_field",
         true, 0, 10, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_field", "exc_field",
-        true, 0, 5, CONVERGENT, ADD, "5 1");
+        true, 0, 10, CONVERGENT, ADD, "5 1");
     structure->connect_layers("exc_field", "inh_field",
         true, 0, 5, CONVERGENT, ADD, "9 1");
     structure->connect_layers("inh_field", "exc_field",
-        true, 0, 10, CONVERGENT, DIV, "7 1 10");
+        false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
     // Modules
     structure->add_module("input_layer", "random_input", "10");
@@ -336,7 +336,7 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(10);
+    Clock clock(30);
     //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
