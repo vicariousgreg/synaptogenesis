@@ -202,6 +202,12 @@ GLOBAL void calc_convergent(Instruction inst) {
 /********************** CONNECTION UPDATER KERNELS ****************************/
 /******************************************************************************/
 
+#define MOD_RATE 0.1
+#define MOD_DECAY 0.01
+#define MOD_MAX 10.0
+#define SUM_COEFFICIENT 0.1
+#define WEIGHT_DECAY 0.01
+
 void get_updater(UPDATER *dest, ConnectionType conn_type) {
     switch (conn_type) {
         case (FULLY_CONNECTED):
@@ -220,36 +226,88 @@ void get_updater(UPDATER *dest, ConnectionType conn_type) {
     }
 }
 
+#include <iostream>
+
 GLOBAL void update_fully_connected(Instruction inst) {
+    // Pointer to modifying substance level and weight baseline
+    float *baseline = inst.weights + inst.num_weights;
+    float *mod = inst.weights + (2*inst.num_weights);
+
 #ifdef PARALLEL
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     if (col < inst.to_size) {
+        float sum = inst.inputs[col];
         for (int row = 0 ; row < inst.from_size ; ++row) {
-            /* Do stuff to weight */
+            int index = row * inst.to_size + col;
+
+            // Update modifying substance
+            float val = inst.extractor(inst, inst.outputs[row]);
+            float old_mod = mod[index];
+            float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+            mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+
+            // Update weight
+            float old_weight = inst.weights[index];
+            float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
+                                - (WEIGHT_DECAY * (old_weight - baseline[index]));
+            inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
         }
     }
 #else
     for (int row = 0 ; row < inst.to_size ; ++row) {
+        float sum = inst.inputs[row];
         for (int col = 0 ; col < inst.from_size ; ++col) {
-            /* Do stuff to weight */
+            int index = row * inst.from_size + col;
+
+            // Update modifying substance
+            float val = inst.extractor(inst, inst.outputs[col]);
+            float old_mod = mod[index];
+            float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+            mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+
+            // Update weight
+            float old_weight = inst.weights[index];
+            float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
+                                - (WEIGHT_DECAY * (old_weight - baseline[index]));
+            inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
+            if (old_weight != new_weight) printf("(%10f ->  %10f    %c )\n", old_weight, new_weight, (new_weight > old_weight) ? '+' : '-');
         }
     }
+    std::cout << std::endl;
 #endif
 }
 
 GLOBAL void update_one_to_one(Instruction inst) {
+    // Pointer to modifying substance level and weight baseline
+    float *baseline = inst.weights + inst.num_weights;
+    float *mod = inst.weights + (2*inst.num_weights);
+
 #ifdef PARALLEL
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < inst.to_size) {
 #else
     for (int index = 0 ; index < inst.to_size ; ++index) {
 #endif
-        /* Do stuff to weight */
+        // Update modifying substance
+        float val = inst.extractor(inst, inst.outputs[index]);
+        float old_mod = mod[index];
+        float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+        mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+
+        // Update weight
+        float old_weight = inst.weights[index];
+        float new_weight = old_weight + (new_mod * inst.inputs[index] * SUM_COEFFICIENT)
+                            - (WEIGHT_DECAY * (old_weight - baseline[index]));
+        inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
     }
 }
 
 GLOBAL void update_convergent(Instruction inst) {
     int kernel_size = inst.overlap * inst.overlap;
+
+    // Pointer to modifying substance level and weight baseline
+    float *baseline = inst.weights + inst.num_weights;
+    float *mod = inst.weights + (2*inst.num_weights);
 
 #ifdef PARALLEL
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
@@ -261,6 +319,7 @@ GLOBAL void update_convergent(Instruction inst) {
         for (int d_col = 0 ; d_col < inst.to_columns ; ++d_col) {
             int d_index = d_row * inst.to_columns + d_col;
 #endif
+            float sum = inst.inputs[d_index];
 
             // Determine starting row and column for source neurons
             int s_row = d_row * inst.stride - inst.fray;
@@ -306,7 +365,23 @@ GLOBAL void update_convergent(Instruction inst) {
                     int weight_col = (k_row * inst.overlap) + k_col;
 #endif
 
-                    /* Do stuff to weight */
+                    // Update modifying substance
+                    int weight_index = weight_offset + weight_col;
+                    float val = inst.extractor(inst, inst.outputs[s_index]);
+                    float old_mod = mod[weight_index];
+                    float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+                    mod[weight_index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+
+                    // Update weight
+                    float old_weight = inst.weights[weight_index];
+                    float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
+                                        - (WEIGHT_DECAY * (old_weight - baseline[weight_index]));
+                    inst.weights[weight_index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
+                    /*
+                    if (weight_index == 19) // and old_weight > new_weight)
+                        printf("(%d    %10f ->  %10f    %c )\n", weight_index, old_weight, new_weight,
+                                                (new_weight > old_weight) ? '+' : '-');
+                    */
                 }
             }
 #ifndef PARALLEL

@@ -156,9 +156,16 @@ static void initialize_matrix(Connection* conn,
             target_matrix[index] = fRand(0, conn->max_weight);
     }
 
-    // Set up further layers if necessary (initialize to zero)
-    for (int index = conn->num_weights ; index < matrix_size ; ++index) {
-        target_matrix[index] = 0.0;
+    if (conn->plastic) {
+        // Set up baseline weight
+        for (int index = 0 ; index < conn->num_weights ; ++index) {
+            target_matrix[conn->num_weights + index] = target_matrix[index];
+        }
+
+        // Set up further layers if necessary (initialize to zero)
+        for (int index = 2*conn->num_weights ; index < matrix_size ; ++index) {
+            target_matrix[index] = 0.0;
+        }
     }
 
 #ifdef PARALLEL

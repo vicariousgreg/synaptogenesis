@@ -318,13 +318,13 @@ Model* build_alignment_model(std::string engine_name) {
     structure->add_layer("inh_field", 250, 250, "default");
 
     structure->connect_layers("input_layer", "exc_field",
-        true, 0, 10, FULLY_CONNECTED, ADD, "");
+        false, 0, 10, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_field", "exc_field",
-        true, 0, 10, CONVERGENT, ADD, "5 1");
+        true, 0, 10, CONVERGENT, ADD, "5 1 1");
     structure->connect_layers("exc_field", "inh_field",
-        true, 0, 5, CONVERGENT, ADD, "9 1");
+        true, 0, 5, CONVERGENT, ADD, "7 1 1");
     structure->connect_layers("inh_field", "exc_field",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        false, 0, 5, CONVERGENT, DIV, "5 1 1");
 
     // Modules
     structure->add_module("input_layer", "random_input", "10");
@@ -336,7 +336,7 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(30);
+    Clock clock(20);
     //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);

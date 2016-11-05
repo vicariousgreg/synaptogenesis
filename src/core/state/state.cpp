@@ -8,7 +8,7 @@
 
 State::State(Model *model)
         : attributes(build_attributes(model)),
-          weight_matrices(new WeightMatrices(model, 1)) {
+          weight_matrices(new WeightMatrices(model, 3)) {
     int input_output_size = attributes->get_num_neurons(INPUT_OUTPUT);
     int input_size = input_output_size + attributes->get_num_neurons(INPUT);
     int output_size = input_output_size + attributes->get_num_neurons(OUTPUT);

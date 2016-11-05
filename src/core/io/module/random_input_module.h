@@ -11,6 +11,7 @@ class RandomInputModule : public Module {
 
     private:
         float max_value;
+        float *random_values;
 };
 
 #endif
