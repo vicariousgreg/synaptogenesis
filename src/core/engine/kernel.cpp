@@ -1,3 +1,4 @@
+#include <cmath>
 #include "kernel.h"
 #include "util/parallel.h"
 #include "engine/instruction.h"
@@ -208,6 +209,15 @@ GLOBAL void calc_convergent(Instruction inst) {
 #define SUM_COEFFICIENT 0.5
 #define WEIGHT_DECAY 0.025
 
+/*
+#define MOD_RATE 0.3
+#define MOD_DECAY 0.01
+#define MOD_MAX 10.0
+#define SUM_COEFFICIENT 0.5
+#define WEIGHT_DECAY 0.025
+*/
+
+
 void get_updater(UPDATER *dest, ConnectionType conn_type) {
     switch (conn_type) {
         case (FULLY_CONNECTED):
@@ -248,6 +258,7 @@ GLOBAL void update_fully_connected(Instruction inst) {
 
             // Update weight
             float old_weight = inst.weights[index];
+            //float new_weight = old_weight + (pow(new_mod, 4) * sum * SUM_COEFFICIENT)
             float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
                                 - (WEIGHT_DECAY * (old_weight - baseline[index]));
             inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
@@ -267,13 +278,13 @@ GLOBAL void update_fully_connected(Instruction inst) {
 
             // Update weight
             float old_weight = inst.weights[index];
+            //float new_weight = old_weight + (pow(new_mod, 4) * sum * SUM_COEFFICIENT)
             float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
                                 - (WEIGHT_DECAY * (old_weight - baseline[index]));
             inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
-            if (old_weight != new_weight) printf("(%10f ->  %10f    %c )\n", old_weight, new_weight, (new_weight > old_weight) ? '+' : '-');
+            //if (old_weight != new_weight) printf("(%10f ->  %10f    %c )\n", old_weight, new_weight, (new_weight > old_weight) ? '+' : '-');
         }
     }
-    std::cout << std::endl;
 #endif
 }
 
@@ -374,12 +385,15 @@ GLOBAL void update_convergent(Instruction inst) {
 
                     // Update weight
                     float old_weight = inst.weights[weight_index];
+                    //float new_weight = old_weight + (pow(new_mod, 4) * sum * SUM_COEFFICIENT)
                     float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
                                         - (WEIGHT_DECAY * (old_weight - baseline[weight_index]));
                     inst.weights[weight_index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
+                    /*
                     if (weight_index == 19) // and old_weight > new_weight)
                         printf("(%d    %10f ->  %10f    %c )\n", weight_index, old_weight, new_weight,
                                                 (new_weight > old_weight) ? '+' : '-');
+                    */
                 }
             }
 #ifndef PARALLEL

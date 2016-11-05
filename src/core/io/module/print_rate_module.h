@@ -12,6 +12,7 @@ class PrintRateModule : public Module {
         virtual IOType get_type() { return OUTPUT; }
 
     private:
+        int rate;
         float *totals;
         int timesteps;
 };

@@ -333,7 +333,7 @@ Model* build_alignment_model(std::string engine_name) {
     // Modules
     structure->add_module("input_layer", "random_input", "10 100");
     structure->add_module("exc_field", output_name, "8");
-    //structure->add_module("inh_field", output_name, "8");
+    structure->add_module("inh_field", output_name, "8");
     //structure->add_module("output", "print_rate", "8");
 
     model->add_structure(structure);
