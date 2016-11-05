@@ -43,6 +43,8 @@ void Stream::schedule_execution(int to_schedule, Scheduler *scheduler) {
         for (int i = 0; i < IO_TYPE_SIZE; ++i)
             if (scheduled == last_index[i] + 1)
                 scheduler->schedule_event(&this->cuda_stream, events[i]);
+        if (scheduled == this->instructions.size())
+            scheduler->schedule_event(&this->cuda_stream, finished_event);
 #else
         scheduler->schedule_execution(instructions[scheduled++]);
 #endif
