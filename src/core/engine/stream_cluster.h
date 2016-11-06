@@ -16,7 +16,8 @@ class StreamCluster {
         StreamCluster(Model *model, State *state);
         virtual ~StreamCluster();
 
-        void schedule_output_calculations();
+        void schedule_clear_output_calculations();
+        void schedule_input_output_calculations();
         void schedule_non_output_calculations();
 
         void reset();

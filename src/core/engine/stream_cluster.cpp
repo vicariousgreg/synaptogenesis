@@ -34,11 +34,29 @@ StreamCluster::~StreamCluster() {
             delete it->second;
 }
 
-void StreamCluster::schedule_output_calculations() {
-    // Launch output relevant computations
+void StreamCluster::schedule_clear_output_calculations() {
+#ifdef PARALLEL
+    // Ensure all layer streams wait for clear event
+    wait_event(OUTPUT, this->state->clear_event);
+    wait_event(INTERNAL, this->state->clear_event);
+#endif
+
+    // Launch clear output relevant computations
+    schedule_execution_to(OUTPUT);
+}
+
+void StreamCluster::schedule_input_output_calculations() {
+#ifdef PARALLEL
+    // Ensure all layer streams wait for input event
+    // This function should not be called until this event has been
+    //   scheduled to be recorded
+    wait_event(INPUT, this->state->input_event);
+    wait_event(INPUT_OUTPUT, this->state->input_event);
+#endif
+
+    // Launch input output relevant computations
     schedule_execution_from(INPUT_OUTPUT);
     schedule_execution_from(OUTPUT);
-    schedule_execution_to(OUTPUT);
     schedule_execution_to(INPUT_OUTPUT);
 }
 
@@ -53,14 +71,6 @@ void StreamCluster::reset() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
             it->second->reset();
-
-#ifdef PARALLEL
-    // Ensure all layer streams wait for appropriate input
-    wait_event(INPUT, this->state->input_event);
-    wait_event(INPUT_OUTPUT, this->state->input_event);
-    wait_event(OUTPUT, this->state->clear_event);
-    wait_event(INTERNAL, this->state->clear_event);
-#endif
 }
 
 void StreamCluster::schedule_execution_from(IOType from_type) {

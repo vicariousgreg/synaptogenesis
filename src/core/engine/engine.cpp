@@ -4,13 +4,20 @@ void Engine::stage_clear() {
     // Reset stream cluster and state for timestep
     this->state->reset();
     stream_cluster.reset();
+    stream_cluster.schedule_clear_output_calculations();
+    stream_cluster.dispatch(this);
+}
+
+void Engine::stage_input() {
+    // Start input streaming
+    this->state->get_input();
 
 #ifdef PARALLEL
     // If parallel, schedule everything now
     // Events will ensure processing waits until ready
 
     // Launch output relevant computations
-    stream_cluster.schedule_output_calculations();
+    stream_cluster.schedule_input_output_calculations();
     stream_cluster.dispatch(this);
 
     // Wait for output computations to finish
@@ -32,15 +39,8 @@ void Engine::stage_clear() {
     // Schedule and launch weight updates
     stream_cluster.schedule_weight_update();
     stream_cluster.dispatch(this);
-#endif
-}
 
-void Engine::stage_input() {
-    // Start input streaming
-    this->state->get_input();
-
-#ifdef PARALLEL
-    // Wait for it to finish
+    // Wait for input to finish
     this->state->wait_for_input();
 #endif
 }

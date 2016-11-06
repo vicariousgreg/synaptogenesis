@@ -309,7 +309,7 @@ Model* build_alignment_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("alignment");
 
-    int resolution = 128;
+    int resolution = 250;
     structure->add_layer("input_layer", 1, 20, "default");
     structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
     structure->add_layer("inh_thalamus", resolution, resolution, "default");
