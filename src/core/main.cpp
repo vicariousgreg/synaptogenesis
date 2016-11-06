@@ -305,36 +305,46 @@ Model* build_reentrant_image_model(std::string engine_name) {
 }
 
 Model* build_alignment_model(std::string engine_name) {
-    /* Determine output type */
-    //std::string output_name = "dummy_output";
-    std::string output_name = "visualizer_output";
-
     /* Construct the model */
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("alignment");
 
+    int resolution = 128;
     structure->add_layer("input_layer", 1, 20, "default");
-    structure->add_layer("exc_field", 350, 350, "default");
-    structure->add_layer("inh_field", 350, 350, "default");
-    //structure->add_layer("output", 1, 1, "default");
+    structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
+    structure->add_layer("inh_thalamus", resolution, resolution, "default");
+    structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
+    structure->add_layer("inh_cortex", resolution, resolution, "default");
 
-    structure->connect_layers("input_layer", "exc_field",
+    structure->connect_layers("input_layer", "exc_thalamus",
         false, 0, 10, FULLY_CONNECTED, ADD, "");
-    structure->connect_layers("exc_field", "exc_field",
-        true, 2, 10, CONVERGENT, ADD, "7 1 1");
-    structure->connect_layers("exc_field", "inh_field",
+    structure->connect_layers("exc_thalamus", "exc_cortex",
+        true, 0, 10, CONVERGENT, ADD, "7 1 1");
+    structure->connect_layers("exc_cortex", "inh_cortex",
         true, 0, 5, CONVERGENT, ADD, "9 1 1");
-    structure->connect_layers("inh_field", "exc_field",
-        false, 0, 5, CONVERGENT, DIV, "7 1 5");
+    structure->connect_layers("exc_cortex", "exc_cortex",
+        true, 2, 5, CONVERGENT, ADD, "5 1 1");
+    structure->connect_layers("inh_cortex", "exc_cortex",
+        false, 0, 5, CONVERGENT, DIV, "5 1 1");
+    structure->connect_layers("exc_cortex", "inh_thalamus",
+        true, 0, 5, CONVERGENT, ADD, "7 1 1");
+    structure->connect_layers("inh_thalamus", "exc_thalamus",
+        false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
-    //structure->connect_layers("exc_field", "output",
-    //    true, 0, 0.1, FULLY_CONNECTED, ADD, "0.00001");
+    structure->connect_layers_matching("exc_cortex", "output_layer", "default",
+        true, 0, 1, CONVERGENT, ADD, "15 1 0.01");
 
     // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
     structure->add_module("input_layer", "random_input", "10 100");
-    structure->add_module("exc_field", output_name, "8");
-    structure->add_module("inh_field", output_name, "8");
-    //structure->add_module("output", "print_rate", "8");
+    structure->add_module("exc_thalamus", "noise_input", "0.25");
+    structure->add_module("exc_thalamus", output_name, "8");
+    structure->add_module("exc_cortex", output_name, "8");
+    structure->add_module("inh_cortex", output_name, "8");
+    structure->add_module("inh_thalamus", output_name, "8");
+    structure->add_module("output_layer", output_name, "8");
 
     model->add_structure(structure);
     return model;
@@ -407,8 +417,8 @@ void alignment_test() {
     std::cout << "Alignment...\n";
     model = build_alignment_model("izhikevich");
     print_model(model);
-    run_simulation(model, 10000, true);
-    //run_simulation(model, 1000, true);
+    //run_simulation(model, 10000, true);
+    run_simulation(model, 100, true);
     //run_simulation(model, 10, true);
     std::cout << "\n";
 

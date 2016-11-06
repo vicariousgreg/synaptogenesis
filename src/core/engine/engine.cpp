@@ -2,8 +2,8 @@
 
 void Engine::stage_clear() {
     // Reset stream cluster and state for timestep
-    stream_cluster.reset();
     this->state->reset();
+    stream_cluster.reset();
 
 #ifdef PARALLEL
     // If parallel, schedule everything now
@@ -28,6 +28,10 @@ void Engine::stage_clear() {
 
     // Launch final state computations
     this->state->update_non_output_states();
+
+    // Schedule and launch weight updates
+    stream_cluster.schedule_weight_update();
+    stream_cluster.dispatch(this);
 #endif
 }
 
@@ -62,9 +66,6 @@ void Engine::stage_send_output() {
 
 void Engine::stage_remaining() {
 #ifdef PARALLEL
-    // Synchronize and check for errors
-    cudaSync();
-    cudaCheckError(NULL);
 #else
     stream_cluster.schedule_non_output_calculations();
     stream_cluster.dispatch(this);
@@ -73,6 +74,12 @@ void Engine::stage_remaining() {
 }
 
 void Engine::stage_weights() {
+#ifdef PARALLEL
+    // Synchronize and check for errors
+    cudaSync();
+    cudaCheckError(NULL);
+#else
     stream_cluster.schedule_weight_update();
     stream_cluster.dispatch(this);
+#endif
 }

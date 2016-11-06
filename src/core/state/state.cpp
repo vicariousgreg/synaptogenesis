@@ -28,8 +28,6 @@ State::State(Model *model)
     clear_event = new cudaEvent_t;
     output_calc_event = new cudaEvent_t;
     output_event = new cudaEvent_t;
-
-    this->reset();
 #endif
 }
 
@@ -78,6 +76,7 @@ void State::reset() {
         cudaCheckError("Failed to clear inputs!");
     }
     cudaEventRecord(*this->clear_event, this->state_stream);
+    cudaStreamWaitEvent(this->state_stream, *this->input_event, 0);
 #else
     if (count > 0)
         clear_data(input + offset, count);

@@ -82,6 +82,7 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
 
 #ifdef PARALLEL
     // Ensure device is synchronized without errors
+    cudaSync();
     cudaCheckError("Clock device synchronization failed!");
 #endif
 
