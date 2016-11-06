@@ -45,13 +45,14 @@ RandomInputModule::RandomInputModule(Layer *layer, std::string params)
 void RandomInputModule::feed_input(Buffer *buffer) {
     timesteps++;
 
+    if (timesteps % shuffle_rate == 0) {
+        std::cout << "============================ SHUFFLE\n";
+        shuffle(this->random_values, this->max_value, layer->size);
+    }
+
     int offset = this->layer->input_index;
     float *input = buffer->get_input();
     for (int nid = 0 ; nid < this->layer->size; ++nid) {
         input[offset + nid] = this->random_values[nid];
-    }
-    if (timesteps % shuffle_rate == 0) {
-        std::cout << "============================ SHUFFLE\n";
-        shuffle(this->random_values, this->max_value, layer->size);
     }
 }

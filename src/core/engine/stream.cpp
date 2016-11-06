@@ -13,8 +13,6 @@ Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
 }
 
 Stream::~Stream() {
-    for (int i = 0; i < this->instructions.size(); ++i)
-        delete this->instructions[i];
 #ifdef PARALLEL
     for (int i = 0; i < IO_TYPE_SIZE; ++i) {
         cudaEventDestroy(*events[i]);

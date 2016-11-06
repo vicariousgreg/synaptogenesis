@@ -67,6 +67,7 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
     // Build engine
     run_timer.reset();
     this->engine = new Engine(model);
+    //this->engine->disable_learning();
     if (verbose) {
         printf("Built state.\n");
         run_timer.query("Initialization");

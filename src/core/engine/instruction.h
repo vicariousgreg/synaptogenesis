@@ -10,6 +10,8 @@ class Instruction {
     public:
         Instruction(Connection *conn, State *state);
 
+        void disable_learning();
+
 #ifdef PARALLEL
         void execute(cudaStream_t *stream);
         void update(cudaStream_t *stream);

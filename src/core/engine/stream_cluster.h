@@ -5,6 +5,7 @@
 #include "model/model.h"
 #include "engine/stream.h"
 #include "engine/scheduler.h"
+#include "engine/instruction.h"
 #include "util/parallel.h"
 #include "util/constants.h"
 
@@ -15,6 +16,8 @@ class StreamCluster {
     public:
         StreamCluster(Model *model, State *state);
         virtual ~StreamCluster();
+
+        void disable_learning();
 
         void schedule_clear_output_calculations();
         void schedule_input_output_calculations();
@@ -39,6 +42,7 @@ class StreamCluster {
         State *state;
         Scheduler *scheduler;
         std::map<Layer*, Stream*> streams[IO_TYPE_SIZE];
+        std::vector<Instruction*> all_instructions;
 };
 
 #endif

@@ -1,5 +1,9 @@
 #include "engine/engine.h"
 
+void Engine::disable_learning() {
+    this->stream_cluster.disable_learning();
+}
+
 void Engine::stage_clear() {
     // Reset stream cluster and state for timestep
     this->state->reset();

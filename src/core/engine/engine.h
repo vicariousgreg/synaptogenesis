@@ -14,6 +14,8 @@ class Engine {
 
         virtual ~Engine() { delete this->state; }
 
+        void disable_learning();
+
         // Main hooks
         void stage_clear();
         void stage_input();

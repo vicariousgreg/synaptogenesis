@@ -24,6 +24,9 @@ StreamCluster::StreamCluster(Model *model, State *state)
         }
         stream->add_instruction(inst, from_layer->type);
         streams[to_layer->type][to_layer] = stream;
+
+        // Add to global list
+        all_instructions.push_back(inst);
     }
 }
 
@@ -32,6 +35,14 @@ StreamCluster::~StreamCluster() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
             delete it->second;
+
+    for (int i = 0; i < this->all_instructions.size(); ++i)
+        delete this->all_instructions[i];
+}
+
+void StreamCluster::disable_learning() {
+    for (int i = 0; i < all_instructions.size(); ++i)
+        all_instructions[i]->disable_learning();
 }
 
 void StreamCluster::schedule_clear_output_calculations() {

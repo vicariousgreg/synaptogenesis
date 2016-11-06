@@ -67,13 +67,18 @@ Instruction::Instruction(Connection *conn, State *state) :
 #endif
 }
 
+void Instruction::disable_learning() {
+    this->plastic = false;
+}
+
 #ifdef PARALLEL
 void Instruction::execute(cudaStream_t *stream) {
     activator<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
 }
 
 void Instruction::update(cudaStream_t *stream) {
-    updater<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
+    if (this->plastic)
+        updater<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
 }
 #else
 void Instruction::execute() {
@@ -81,6 +86,6 @@ void Instruction::execute() {
 }
 
 void Instruction::update() {
-    if (updater != NULL) updater(*this);
+    if (this->plastic) updater(*this);
 }
 #endif
