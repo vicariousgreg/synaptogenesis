@@ -4,6 +4,22 @@
 #include "engine/instruction.h"
 #include "util/error_manager.h"
 
+
+#define MOD_RATE 0.3
+#define MOD_DECAY 0.01
+#define MOD_MAX 10.0
+#define SUM_COEFFICIENT 0.5
+#define WEIGHT_DECAY 0.025
+
+/*
+#define MOD_RATE 0.3
+#define MOD_DECAY 0.01
+#define MOD_MAX 10.0
+#define SUM_COEFFICIENT 0.5
+#define WEIGHT_DECAY 0.025
+*/
+
+
 /******************************************************************************/
 /************************** OUTPUT EXTRACTORS *********************************/
 /******************************************************************************/
@@ -95,13 +111,25 @@ void get_activator(ACTIVATOR *dest, ConnectionType conn_type) {
 }
 
 GLOBAL void calc_fully_connected(Instruction inst) {
+    // Pointer to modifying substance level
+    float *mod = inst.weights + (2*inst.num_weights);
+
 #ifdef PARALLEL
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     if (col < inst.to_size) {
         float sum = 0.0;
         for (int row = 0 ; row < inst.from_size ; ++row) {
-            sum += inst.extractor(inst, inst.outputs[row])
-                * inst.weights[row * inst.to_size + col];
+            int index = row * inst.to_size + col;
+            float val = inst.extractor(inst, inst.outputs[row])
+                        * inst.weights[index];
+            sum += val;
+
+            // If plastic, update modifying substance
+            if (inst.plastic) {
+                float old_mod = mod[index];
+                float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+                mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+            }
         }
         inst.inputs[col] = calc(inst.opcode, inst.inputs[col], sum);
     }
@@ -109,8 +137,18 @@ GLOBAL void calc_fully_connected(Instruction inst) {
     for (int row = 0 ; row < inst.to_size ; ++row) {
         float sum = 0.0;
         for (int col = 0 ; col < inst.from_size ; ++col) {
-            sum += inst.extractor(inst, inst.outputs[col]) *
-                inst.weights[row * inst.from_size + col];
+            int index = row * inst.from_size + col;
+            float val = inst.extractor(inst, inst.outputs[col])
+                        * inst.weights[index];
+            sum += val;
+
+            // If plastic, update modifying substance
+            if (inst.plastic) {
+                float old_mod = mod[index];
+                float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+                mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+            }
+
         }
         inst.inputs[row] = calc(inst.opcode, inst.inputs[row], sum);
     }
@@ -118,30 +156,44 @@ GLOBAL void calc_fully_connected(Instruction inst) {
 }
 
 GLOBAL void calc_one_to_one(Instruction inst) {
+    // Pointer to modifying substance level
+    float *mod = inst.weights + (2*inst.num_weights);
+
 #ifdef PARALLEL
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < inst.to_size) {
 #else
     for (int index = 0 ; index < inst.to_size ; ++index) {
 #endif
-        inst.inputs[index] = calc(inst.opcode, inst.inputs[index],
+        float val = calc(inst.opcode, inst.inputs[index],
             inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
+        inst.inputs[index] = val;
+
+        // Update modifying substance
+        // If plastic, update modifying substance
+        if (inst.plastic) {
+            float old_mod = mod[index];
+            float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+            mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+        }
     }
 }
 
 GLOBAL void calc_convergent(Instruction inst) {
+    // Pointer to modifying substance level
+    float *mod = inst.weights + (2*inst.num_weights);
+
     int kernel_size = inst.overlap * inst.overlap;
 
 #ifdef PARALLEL
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
-    int d_index = d_row*inst.to_columns + d_col;
     if (d_row < inst.to_rows and d_col < inst.to_columns) {
 #else
     for (int d_row = 0 ; d_row < inst.to_rows ; ++d_row) {
         for (int d_col = 0 ; d_col < inst.to_columns ; ++d_col) {
-            int d_index = d_row * inst.to_columns + d_col;
 #endif
+            int d_index = d_row * inst.to_columns + d_col;
             float sum = 0.0;
 
             // Determine starting row and column for source neurons
@@ -156,7 +208,7 @@ GLOBAL void calc_convergent(Instruction inst) {
             // One kernel per destination neuron
             //   Unless convolutional (shared kernel)
             int kernel_row_size = (inst.convolutional)
-                                  ? 1 : inst.to_rows * inst.to_columns;
+                                  ? 1 : inst.to_size;
 #else
             // Row of matrix is either the first column (convolutional)
             //   or the index of the destination neuron otherwise
@@ -187,9 +239,19 @@ GLOBAL void calc_convergent(Instruction inst) {
                     // Column of matrix is the kernel index
                     int weight_col = (k_row * inst.overlap) + k_col;
 #endif
+                    int weight_index = weight_offset + weight_col;
 
-                    sum += inst.extractor(inst, inst.outputs[s_index]) *
-                        inst.weights[weight_offset + weight_col];
+                    float val = inst.extractor(inst, inst.outputs[s_index])
+                                    * inst.weights[weight_index];
+                    sum += val;
+
+                    // Update modifying substance
+                    // If plastic, update modifying substance
+                    if (inst.plastic and not inst.convolutional) {
+                        float old_mod = mod[weight_index];
+                        float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
+                        mod[weight_index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
+                    }
                 }
             }
             inst.inputs[d_index] = calc(inst.opcode, inst.inputs[d_index], sum);
@@ -202,21 +264,6 @@ GLOBAL void calc_convergent(Instruction inst) {
 /******************************************************************************/
 /********************** CONNECTION UPDATER KERNELS ****************************/
 /******************************************************************************/
-
-#define MOD_RATE 0.3
-#define MOD_DECAY 0.01
-#define MOD_MAX 10.0
-#define SUM_COEFFICIENT 0.5
-#define WEIGHT_DECAY 0.025
-
-/*
-#define MOD_RATE 0.3
-#define MOD_DECAY 0.01
-#define MOD_MAX 10.0
-#define SUM_COEFFICIENT 0.5
-#define WEIGHT_DECAY 0.025
-*/
-
 
 void get_updater(UPDATER *dest, ConnectionType conn_type) {
     switch (conn_type) {
@@ -250,16 +297,9 @@ GLOBAL void update_fully_connected(Instruction inst) {
         for (int row = 0 ; row < inst.from_size ; ++row) {
             int index = row * inst.to_size + col;
 
-            // Update modifying substance
-            float val = inst.extractor(inst, inst.outputs[row]);
-            float old_mod = mod[index];
-            float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
-            mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
-
             // Update weight
             float old_weight = inst.weights[index];
-            //float new_weight = old_weight + (pow(new_mod, 4) * sum * SUM_COEFFICIENT)
-            float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
+            float new_weight = old_weight + (mod[index] * sum * SUM_COEFFICIENT)
                                 - (WEIGHT_DECAY * (old_weight - baseline[index]));
             inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
         }
@@ -270,16 +310,9 @@ GLOBAL void update_fully_connected(Instruction inst) {
         for (int col = 0 ; col < inst.from_size ; ++col) {
             int index = row * inst.from_size + col;
 
-            // Update modifying substance
-            float val = inst.extractor(inst, inst.outputs[col]);
-            float old_mod = mod[index];
-            float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
-            mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
-
             // Update weight
             float old_weight = inst.weights[index];
-            //float new_weight = old_weight + (pow(new_mod, 4) * sum * SUM_COEFFICIENT)
-            float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
+            float new_weight = old_weight + (mod[index] * sum * SUM_COEFFICIENT)
                                 - (WEIGHT_DECAY * (old_weight - baseline[index]));
             inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
             //if (old_weight != new_weight) printf("(%10f ->  %10f    %c )\n", old_weight, new_weight, (new_weight > old_weight) ? '+' : '-');
@@ -299,15 +332,9 @@ GLOBAL void update_one_to_one(Instruction inst) {
 #else
     for (int index = 0 ; index < inst.to_size ; ++index) {
 #endif
-        // Update modifying substance
-        float val = inst.extractor(inst, inst.outputs[index]);
-        float old_mod = mod[index];
-        float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
-        mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
-
         // Update weight
         float old_weight = inst.weights[index];
-        float new_weight = old_weight + (new_mod * inst.inputs[index] * SUM_COEFFICIENT)
+        float new_weight = old_weight + (mod[index] * inst.inputs[index] * SUM_COEFFICIENT)
                             - (WEIGHT_DECAY * (old_weight - baseline[index]));
         inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
     }
@@ -375,18 +402,11 @@ GLOBAL void update_convergent(Instruction inst) {
                     // Column of matrix is the kernel index
                     int weight_col = (k_row * inst.overlap) + k_col;
 #endif
-
-                    // Update modifying substance
                     int weight_index = weight_offset + weight_col;
-                    float val = inst.extractor(inst, inst.outputs[s_index]);
-                    float old_mod = mod[weight_index];
-                    float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
-                    mod[weight_index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
 
                     // Update weight
                     float old_weight = inst.weights[weight_index];
-                    //float new_weight = old_weight + (pow(new_mod, 4) * sum * SUM_COEFFICIENT)
-                    float new_weight = old_weight + (new_mod * sum * SUM_COEFFICIENT)
+                    float new_weight = old_weight + (mod[weight_index] * sum * SUM_COEFFICIENT)
                                         - (WEIGHT_DECAY * (old_weight - baseline[weight_index]));
                     inst.weights[weight_index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
                     /*

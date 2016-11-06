@@ -125,7 +125,7 @@ void StreamCluster::block_state_on_output_calculations() {
 }
 
 void StreamCluster::block_state_on_non_output_calculations() {
-    block_stream_to(INPUT, this->state->state_stream);
-    block_stream_to(INTERNAL, this->state->state_stream);
+    block_stream_to(INPUT, state->state_stream);
+    block_stream_to(INTERNAL, state->state_stream);
 }
 #endif
