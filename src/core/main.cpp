@@ -417,8 +417,8 @@ void alignment_test() {
     std::cout << "Alignment...\n";
     model = build_alignment_model("izhikevich");
     print_model(model);
-    //run_simulation(model, 10000, true);
-    run_simulation(model, 100, true);
+    run_simulation(model, 10000, true);
+    //run_simulation(model, 100, true);
     //run_simulation(model, 10, true);
     std::cout << "\n";
 
