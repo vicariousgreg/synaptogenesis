@@ -1,5 +1,5 @@
 #Default Make
-all: directories serial
+all: serial
 
 COREPATH    := src/core
 UIPATH      := src/ui
@@ -50,7 +50,7 @@ LIBS         := `pkg-config --libs gtkmm-3.0`
 SOURCES       := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-serial: $(TARGET_S)
+serial: directories $(TARGET_S)
 
 #Make the Directories
 directories:
@@ -85,7 +85,7 @@ $(BUILDDIR_S)/%.$(OBJEXT): $(SRCDIR)/%.$(SRCEXT)
 SOURCES       := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(SRCDIR)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-parallel: $(TARGET_P)
+parallel: directories $(TARGET_P)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))

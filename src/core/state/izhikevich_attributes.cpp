@@ -24,8 +24,6 @@ DEF_PARAM(FAST             , 0.1 , 0.2 , -65.0, 2   ); // Fast Spiking
 DEF_PARAM(LOW_THRESHOLD    , 0.02, 0.25, -65.0, 2   ); // Low Threshold
 DEF_PARAM(THALAMO_CORTICAL , 0.02, 0.25, -65.0, 0.05); // Thalamo-cortical
 DEF_PARAM(RESONATOR        , 0.1 , 0.26, -65.0, 2   ); // Resonator
-DEF_PARAM(PHOTORECEPTOR    , 0   , 0   , -82.6, 0   ); // Photoreceptor
-DEF_PARAM(HORIZONTAL       , 0   , 0   , -82.6, 0   ); // Horizontal Cell
 
 static IzhikevichParameters create_parameters(std::string str) {
     if (str == "random positive") {
@@ -59,8 +57,6 @@ static IzhikevichParameters create_parameters(std::string str) {
     else if (str == "low_threshold")      return LOW_THRESHOLD;
     else if (str == "thalamo_cortical")   return THALAMO_CORTICAL;
     else if (str == "resonator")          return RESONATOR;
-    else if (str == "photoreceptor")      return PHOTORECEPTOR;
-    else if (str == "horizontal")         return HORIZONTAL;
     else
         ErrorManager::get_instance()->log_error(
             "Unrecognizer parameter string: " + str);
