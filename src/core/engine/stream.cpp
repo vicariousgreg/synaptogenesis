@@ -23,6 +23,25 @@ Stream::~Stream() {
 #endif
 }
 
+void Stream::add_instruction(Instruction *inst, IOType from_type) {
+    this->last_index[from_type] = instructions.size();
+    this->instructions.push_back(inst);
+#ifdef PARALLEL
+    inst->set_stream(&this->cuda_stream);
+#endif
+}
+
+void Stream::finalize() {
+#ifdef PARALLEL
+    // Add events for finishing each type of computation
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        instructions[last_index[i]]->add_event(events[i]);
+
+    // Add finished event
+    instructions[instructions.size()-1]->add_event(finished_event);
+#endif
+}
+
 void Stream::reset() {
     this->scheduled = 0;
 #ifdef PARALLEL
@@ -33,20 +52,8 @@ void Stream::reset() {
 }
 
 void Stream::schedule_execution(int to_schedule, Scheduler *scheduler) {
-    while (scheduled < to_schedule) {
-#ifdef PARALLEL
-        scheduler->schedule_execution(&this->cuda_stream, instructions[scheduled++]);
-
-        // If necessary, schedule events
-        for (int i = 0; i < IO_TYPE_SIZE; ++i)
-            if (scheduled == last_index[i] + 1)
-                scheduler->schedule_event(&this->cuda_stream, events[i]);
-        if (scheduled == this->instructions.size())
-            scheduler->schedule_event(&this->cuda_stream, finished_event);
-#else
+    while (scheduled < to_schedule)
         scheduler->schedule_execution(instructions[scheduled++]);
-#endif
-    }
 }
 
 void Stream::schedule_execution(Scheduler *scheduler) {
@@ -60,11 +67,7 @@ void Stream::schedule_execution(IOType type, Scheduler *scheduler) {
 void Stream::schedule_weight_update(Scheduler *scheduler) {
     for (int i = 0; i < instructions.size(); ++i)
         if (instructions[i]->is_plastic())
-#ifdef PARALLEL
-            scheduler->schedule_weight_update(&this->cuda_stream, instructions[i]);
-#else
             scheduler->schedule_weight_update(instructions[i]);
-#endif
 }
 
 bool Stream::is_done() {

@@ -1,6 +1,8 @@
 #ifndef instruction_h
 #define instruction_h
 
+#include <vector>
+
 #include "model/connection.h"
 #include "state/state.h"
 #include "engine/kernel.h"
@@ -37,15 +39,17 @@ class Instruction {
 
         bool is_plastic() { return this->connection_data.plastic; }
         void disable_learning();
-
-#ifdef PARALLEL
-        void execute(cudaStream_t *stream);
-        void update(cudaStream_t *stream);
-        dim3 blocks_per_grid;
-        dim3 threads_per_block;
-#else
         void execute();
         void update();
+
+#ifdef PARALLEL
+        void set_stream(cudaStream_t *stream) { this->stream = stream; }
+        void add_event(cudaEvent_t *event) { this->events.push_back(event); }
+
+        dim3 blocks_per_grid;
+        dim3 threads_per_block;
+        cudaStream_t *stream;
+        std::vector<cudaEvent_t* > events;
 #endif
 
         ConnectionType type;
@@ -54,6 +58,7 @@ class Instruction {
         ACTIVATOR activator;
         UPDATER updater;
 
+        Connection *connection;
         ConnectionData connection_data;
 };
 

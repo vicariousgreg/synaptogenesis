@@ -39,6 +39,7 @@ ConnectionData::ConnectionData(Connection *conn, State *state) :
 }
 
 Instruction::Instruction(Connection *conn, State *state) :
+        connection(conn),
         connection_data(conn, state),
         type(conn->type) {
     get_activator(&this->activator, type);
@@ -48,6 +49,8 @@ Instruction::Instruction(Connection *conn, State *state) :
         this->updater = NULL;
 
 #ifdef PARALLEL
+    this->stream = NULL;
+
     // Calculate grid and block sizes based on type
     int threads = calc_threads(conn->to_layer->size);
 
@@ -75,23 +78,39 @@ void Instruction::disable_learning() {
     this->connection_data.plastic = false;
 }
 
-#ifdef PARALLEL
-void Instruction::execute(cudaStream_t *stream) {
-    activator<<<blocks_per_grid, threads_per_block, 0, *stream>>>(this->connection_data);
-}
-
-void Instruction::update(cudaStream_t *stream) {
-    if (this->connection_data.plastic)
-        updater<<<blocks_per_grid, threads_per_block, 0, *stream>>>(this->connection_data);
-}
-#else
 void Instruction::execute() {
+#ifdef PARALLEL
+    // Launch computation on provided stream, or default if none
+    if (this->stream)
+        activator
+            <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
+            (this->connection_data);
+    else
+        activator
+            <<<blocks_per_grid, threads_per_block>>>
+            (this->connection_data);
+
+    // Record added events
+    for (int i = 0; i < this->events.size(); ++i)
+        cudaEventRecord(*this->events[i], *this->stream);
+#else
     activator(this->connection_data);
+#endif
 }
 
 void Instruction::update() {
     if (this->connection_data.plastic)
+#ifdef PARALLEL
+        if (this->stream)
+            updater
+                <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
+                (this->connection_data);
+        else
+            updater
+                <<<blocks_per_grid, threads_per_block>>>
+                (this->connection_data);
+#else
         updater(this->connection_data);
+#endif
 }
 
-#endif

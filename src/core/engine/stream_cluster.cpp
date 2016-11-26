@@ -28,6 +28,12 @@ StreamCluster::StreamCluster(Model *model, State *state)
         // Add to global list
         all_instructions.push_back(inst);
     }
+
+    // Finalize all streams
+    // This sets up cuda information
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
+            it->second->finalize();
 }
 
 StreamCluster::~StreamCluster() {

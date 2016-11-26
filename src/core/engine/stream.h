@@ -16,17 +16,14 @@ class Stream {
         Stream(Layer *layer);
         virtual ~Stream();
 
+        void add_instruction(Instruction *inst, IOType from_type);
+        void finalize();
         void reset();
 
         void schedule_execution(Scheduler *scheduler);
         void schedule_execution(int to_schedule, Scheduler *scheduler);
         void schedule_execution(IOType type, Scheduler *scheduler);
         void schedule_weight_update(Scheduler *scheduler);
-
-        void add_instruction(Instruction *inst, IOType from_type) {
-            this->last_index[from_type] = instructions.size();
-            this->instructions.push_back(inst);
-        }
 
         bool is_done();
         bool is_done(IOType type);
