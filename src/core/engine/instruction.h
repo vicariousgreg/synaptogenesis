@@ -6,29 +6,14 @@
 #include "engine/kernel.h"
 #include "util/parallel.h"
 
-class Instruction {
+class ConnectionData {
     public:
-        Instruction(Connection *conn, State *state);
+        ConnectionData(Connection *conn, State *state);
 
-        void disable_learning();
-
-#ifdef PARALLEL
-        void execute(cudaStream_t *stream);
-        void update(cudaStream_t *stream);
-        dim3 blocks_per_grid;
-        dim3 threads_per_block;
-#else
-        void execute();
-        void update();
-#endif
-
-        ConnectionType type;
         bool convolutional;
         Opcode opcode;
 
         EXTRACTOR extractor;
-        ACTIVATOR activator;
-        UPDATER updater;
 
         int overlap, stride;
         int fray;
@@ -44,6 +29,32 @@ class Instruction {
         Output *outputs;
         float *inputs;
         float *weights;
+};
+
+class Instruction {
+    public:
+        Instruction(Connection *conn, State *state);
+
+        bool is_plastic() { return this->connection_data.plastic; }
+        void disable_learning();
+
+#ifdef PARALLEL
+        void execute(cudaStream_t *stream);
+        void update(cudaStream_t *stream);
+        dim3 blocks_per_grid;
+        dim3 threads_per_block;
+#else
+        void execute();
+        void update();
+#endif
+
+        ConnectionType type;
+
+        EXTRACTOR extractor;
+        ACTIVATOR activator;
+        UPDATER updater;
+
+        ConnectionData connection_data;
 };
 
 #endif

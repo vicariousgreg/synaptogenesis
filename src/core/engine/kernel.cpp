@@ -29,10 +29,10 @@ DEVICE EXTRACTOR x_float = extract_float;
 DEVICE EXTRACTOR x_int = extract_int;
 DEVICE EXTRACTOR x_bit = extract_bit;
 
-DEVICE float extract_float(Instruction &inst, Output &out) { return out.f; }
-DEVICE float extract_int(Instruction &inst, Output &out) { return out.i; }
-DEVICE float extract_bit(Instruction &inst, Output &out) {
-    return (out.i >> (inst.delay % 32)) & 1;
+DEVICE float extract_float(ConnectionData &conn_data, Output &out) { return out.f; }
+DEVICE float extract_int(ConnectionData &conn_data, Output &out) { return out.i; }
+DEVICE float extract_bit(ConnectionData &conn_data, Output &out) {
+    return (out.i >> (conn_data.delay % 32)) & 1;
 }
 
 void get_extractor(EXTRACTOR *dest, OutputType output_type) {
@@ -110,68 +110,68 @@ void get_activator(ACTIVATOR *dest, ConnectionType conn_type) {
     }
 }
 
-GLOBAL void calc_fully_connected(Instruction inst) {
+GLOBAL void calc_fully_connected(ConnectionData conn_data) {
     // Pointer to modifying substance level
-    float *mod = inst.weights + (2*inst.num_weights);
+    float *mod = conn_data.weights + (2*conn_data.num_weights);
 
 #ifdef PARALLEL
     int col = blockIdx.x * blockDim.x + threadIdx.x;
-    if (col < inst.to_size) {
+    if (col < conn_data.to_size) {
         float sum = 0.0;
-        for (int row = 0 ; row < inst.from_size ; ++row) {
-            int index = row * inst.to_size + col;
-            float val = inst.extractor(inst, inst.outputs[row])
-                        * inst.weights[index];
+        for (int row = 0 ; row < conn_data.from_size ; ++row) {
+            int index = row * conn_data.to_size + col;
+            float val = conn_data.extractor(conn_data, conn_data.outputs[row])
+                        * conn_data.weights[index];
             sum += val;
 
             // If plastic, update modifying substance
-            if (inst.plastic) {
+            if (conn_data.plastic) {
                 float old_mod = mod[index];
                 float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
                 mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
             }
         }
-        inst.inputs[col] = calc(inst.opcode, inst.inputs[col], sum);
+        conn_data.inputs[col] = calc(conn_data.opcode, conn_data.inputs[col], sum);
     }
 #else
-    for (int row = 0 ; row < inst.to_size ; ++row) {
+    for (int row = 0 ; row < conn_data.to_size ; ++row) {
         float sum = 0.0;
-        for (int col = 0 ; col < inst.from_size ; ++col) {
-            int index = row * inst.from_size + col;
-            float val = inst.extractor(inst, inst.outputs[col])
-                        * inst.weights[index];
+        for (int col = 0 ; col < conn_data.from_size ; ++col) {
+            int index = row * conn_data.from_size + col;
+            float val = conn_data.extractor(conn_data, conn_data.outputs[col])
+                        * conn_data.weights[index];
             sum += val;
 
             // If plastic, update modifying substance
-            if (inst.plastic) {
+            if (conn_data.plastic) {
                 float old_mod = mod[index];
                 float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
                 mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
             }
 
         }
-        inst.inputs[row] = calc(inst.opcode, inst.inputs[row], sum);
+        conn_data.inputs[row] = calc(conn_data.opcode, conn_data.inputs[row], sum);
     }
 #endif
 }
 
-GLOBAL void calc_one_to_one(Instruction inst) {
+GLOBAL void calc_one_to_one(ConnectionData conn_data) {
     // Pointer to modifying substance level
-    float *mod = inst.weights + (2*inst.num_weights);
+    float *mod = conn_data.weights + (2*conn_data.num_weights);
 
 #ifdef PARALLEL
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < inst.to_size) {
+    if (index < conn_data.to_size) {
 #else
-    for (int index = 0 ; index < inst.to_size ; ++index) {
+    for (int index = 0 ; index < conn_data.to_size ; ++index) {
 #endif
-        float val = calc(inst.opcode, inst.inputs[index],
-            inst.extractor(inst, inst.outputs[index]) * inst.weights[index]);
-        inst.inputs[index] = val;
+        float val = calc(conn_data.opcode, conn_data.inputs[index],
+            conn_data.extractor(conn_data, conn_data.outputs[index]) * conn_data.weights[index]);
+        conn_data.inputs[index] = val;
 
         // Update modifying substance
         // If plastic, update modifying substance
-        if (inst.plastic) {
+        if (conn_data.plastic) {
             float old_mod = mod[index];
             float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
             mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
@@ -179,82 +179,82 @@ GLOBAL void calc_one_to_one(Instruction inst) {
     }
 }
 
-GLOBAL void calc_convergent(Instruction inst) {
+GLOBAL void calc_convergent(ConnectionData conn_data) {
     // Pointer to modifying substance level
-    float *mod = inst.weights + (2*inst.num_weights);
+    float *mod = conn_data.weights + (2*conn_data.num_weights);
 
-    int kernel_size = inst.overlap * inst.overlap;
+    int kernel_size = conn_data.overlap * conn_data.overlap;
 
 #ifdef PARALLEL
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
-    if (d_row < inst.to_rows and d_col < inst.to_columns) {
+    if (d_row < conn_data.to_rows and d_col < conn_data.to_columns) {
 #else
-    for (int d_row = 0 ; d_row < inst.to_rows ; ++d_row) {
-        for (int d_col = 0 ; d_col < inst.to_columns ; ++d_col) {
+    for (int d_row = 0 ; d_row < conn_data.to_rows ; ++d_row) {
+        for (int d_col = 0 ; d_col < conn_data.to_columns ; ++d_col) {
 #endif
-            int d_index = d_row * inst.to_columns + d_col;
+            int d_index = d_row * conn_data.to_columns + d_col;
             float sum = 0.0;
 
             // Determine starting row and column for source neurons
-            int s_row = d_row * inst.stride - inst.fray;
-            int s_col = d_col * inst.stride - inst.fray;
+            int s_row = d_row * conn_data.stride - conn_data.fray;
+            int s_col = d_col * conn_data.stride - conn_data.fray;
 
 #ifdef PARALLEL
             // Column of matrix is either the first column (convolutional)
             //   or the index of the destination neuron otherwise
-            int weight_col = (inst.convolutional) ? 0 : d_index;
+            int weight_col = (conn_data.convolutional) ? 0 : d_index;
             // Kernels are organized into columns
             // One kernel per destination neuron
             //   Unless convolutional (shared kernel)
-            int kernel_row_size = (inst.convolutional)
-                                  ? 1 : inst.to_size;
+            int kernel_row_size = (conn_data.convolutional)
+                                  ? 1 : conn_data.to_size;
 #else
             // Row of matrix is either the first column (convolutional)
             //   or the index of the destination neuron otherwise
-            int weight_offset = (inst.convolutional)
+            int weight_offset = (conn_data.convolutional)
                                 ? 0 : d_index * kernel_size;
 #endif
 
             // Run the kernel
-            for (int k_row = 0 ; k_row < inst.overlap ; ++k_row) {
-                for (int k_col = 0 ; k_col < inst.overlap ; ++k_col) {
+            for (int k_row = 0 ; k_row < conn_data.overlap ; ++k_row) {
+                for (int k_col = 0 ; k_col < conn_data.overlap ; ++k_col) {
                     int k_s_row = s_row + k_row;
                     int k_s_col = s_col + k_col;
 
                     // The connection is frayed if the layers are the same size
                     // Avoid making connections with non-existent neurons!
-                    if (inst.fray != 0 and (k_s_row < 0 or k_s_row >= inst.to_rows
-                        or k_s_col < 0 or k_s_col >= inst.to_columns))
+                    if (conn_data.fray != 0 and (k_s_row < 0 or k_s_row >= conn_data.to_rows
+                        or k_s_col < 0 or k_s_col >= conn_data.to_columns))
                         continue;
 
-                    int s_index = k_s_row * inst.from_columns + k_s_col;
+                    int s_index = k_s_row * conn_data.from_columns + k_s_col;
 
 #ifdef PARALLEL
                     // Row of matrix is the kernel index * row size (see above)
                     int weight_offset =
-                        ((k_row*inst.overlap) + k_col)
+                        ((k_row*conn_data.overlap) + k_col)
                         * kernel_row_size;
 #else
                     // Column of matrix is the kernel index
-                    int weight_col = (k_row * inst.overlap) + k_col;
+                    int weight_col = (k_row * conn_data.overlap) + k_col;
 #endif
                     int weight_index = weight_offset + weight_col;
 
-                    float val = inst.extractor(inst, inst.outputs[s_index])
-                                    * inst.weights[weight_index];
+                    float val = conn_data.extractor(conn_data, conn_data.outputs[s_index])
+                                    * conn_data.weights[weight_index];
                     sum += val;
 
                     // Update modifying substance
                     // If plastic, update modifying substance
-                    if (inst.plastic and not inst.convolutional) {
+                    if (conn_data.plastic and not conn_data.convolutional) {
                         float old_mod = mod[weight_index];
                         float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
                         mod[weight_index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
                     }
                 }
             }
-            inst.inputs[d_index] = calc(inst.opcode, inst.inputs[d_index], sum);
+            conn_data.inputs[d_index] = calc(conn_data.opcode, conn_data.inputs[d_index], sum);
 #ifndef PARALLEL
         }
 #endif
@@ -285,130 +285,130 @@ void get_updater(UPDATER *dest, ConnectionType conn_type) {
 
 #include <iostream>
 
-GLOBAL void update_fully_connected(Instruction inst) {
+GLOBAL void update_fully_connected(ConnectionData conn_data) {
     // Pointer to modifying substance level and weight baseline
-    float *baseline = inst.weights + inst.num_weights;
-    float *mod = inst.weights + (2*inst.num_weights);
+    float *baseline = conn_data.weights + conn_data.num_weights;
+    float *mod = conn_data.weights + (2*conn_data.num_weights);
 
 #ifdef PARALLEL
     int col = blockIdx.x * blockDim.x + threadIdx.x;
-    if (col < inst.to_size) {
-        float sum = inst.inputs[col];
-        for (int row = 0 ; row < inst.from_size ; ++row) {
-            int index = row * inst.to_size + col;
+    if (col < conn_data.to_size) {
+        float sum = conn_data.inputs[col];
+        for (int row = 0 ; row < conn_data.from_size ; ++row) {
+            int index = row * conn_data.to_size + col;
 
             // Update weight
-            float old_weight = inst.weights[index];
+            float old_weight = conn_data.weights[index];
             float new_weight = old_weight + (mod[index] * sum * SUM_COEFFICIENT)
                                 - (WEIGHT_DECAY * (old_weight - baseline[index]));
-            inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
+            conn_data.weights[index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
         }
     }
 #else
-    for (int row = 0 ; row < inst.to_size ; ++row) {
-        float sum = inst.inputs[row];
-        for (int col = 0 ; col < inst.from_size ; ++col) {
-            int index = row * inst.from_size + col;
+    for (int row = 0 ; row < conn_data.to_size ; ++row) {
+        float sum = conn_data.inputs[row];
+        for (int col = 0 ; col < conn_data.from_size ; ++col) {
+            int index = row * conn_data.from_size + col;
 
             // Update weight
-            float old_weight = inst.weights[index];
+            float old_weight = conn_data.weights[index];
             float new_weight = old_weight + (mod[index] * sum * SUM_COEFFICIENT)
                                 - (WEIGHT_DECAY * (old_weight - baseline[index]));
-            inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
+            conn_data.weights[index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
             //if (old_weight != new_weight) printf("(%10f ->  %10f    %c )\n", old_weight, new_weight, (new_weight > old_weight) ? '+' : '-');
         }
     }
 #endif
 }
 
-GLOBAL void update_one_to_one(Instruction inst) {
+GLOBAL void update_one_to_one(ConnectionData conn_data) {
     // Pointer to modifying substance level and weight baseline
-    float *baseline = inst.weights + inst.num_weights;
-    float *mod = inst.weights + (2*inst.num_weights);
+    float *baseline = conn_data.weights + conn_data.num_weights;
+    float *mod = conn_data.weights + (2*conn_data.num_weights);
 
 #ifdef PARALLEL
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < inst.to_size) {
+    if (index < conn_data.to_size) {
 #else
-    for (int index = 0 ; index < inst.to_size ; ++index) {
+    for (int index = 0 ; index < conn_data.to_size ; ++index) {
 #endif
         // Update weight
-        float old_weight = inst.weights[index];
-        float new_weight = old_weight + (mod[index] * inst.inputs[index] * SUM_COEFFICIENT)
+        float old_weight = conn_data.weights[index];
+        float new_weight = old_weight + (mod[index] * conn_data.inputs[index] * SUM_COEFFICIENT)
                             - (WEIGHT_DECAY * (old_weight - baseline[index]));
-        inst.weights[index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
+        conn_data.weights[index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
     }
 }
 
-GLOBAL void update_convergent(Instruction inst) {
-    int kernel_size = inst.overlap * inst.overlap;
+GLOBAL void update_convergent(ConnectionData conn_data) {
+    int kernel_size = conn_data.overlap * conn_data.overlap;
 
     // Pointer to modifying substance level and weight baseline
-    float *baseline = inst.weights + inst.num_weights;
-    float *mod = inst.weights + (2*inst.num_weights);
+    float *baseline = conn_data.weights + conn_data.num_weights;
+    float *mod = conn_data.weights + (2*conn_data.num_weights);
 
 #ifdef PARALLEL
     int d_row = blockIdx.x * blockDim.x + threadIdx.x;
     int d_col = blockIdx.y * blockDim.y + threadIdx.y;
-    int d_index = d_row*inst.to_columns + d_col;
-    if (d_row < inst.to_rows and d_col < inst.to_columns) {
+    int d_index = d_row*conn_data.to_columns + d_col;
+    if (d_row < conn_data.to_rows and d_col < conn_data.to_columns) {
 #else
-    for (int d_row = 0 ; d_row < inst.to_rows ; ++d_row) {
-        for (int d_col = 0 ; d_col < inst.to_columns ; ++d_col) {
-            int d_index = d_row * inst.to_columns + d_col;
+    for (int d_row = 0 ; d_row < conn_data.to_rows ; ++d_row) {
+        for (int d_col = 0 ; d_col < conn_data.to_columns ; ++d_col) {
+            int d_index = d_row * conn_data.to_columns + d_col;
 #endif
-            float sum = inst.inputs[d_index];
+            float sum = conn_data.inputs[d_index];
 
             // Determine starting row and column for source neurons
-            int s_row = d_row * inst.stride - inst.fray;
-            int s_col = d_col * inst.stride - inst.fray;
+            int s_row = d_row * conn_data.stride - conn_data.fray;
+            int s_col = d_col * conn_data.stride - conn_data.fray;
 
 #ifdef PARALLEL
             // Column of matrix is either the first column (convolutional)
             //   or the index of the destination neuron otherwise
-            int weight_col = (inst.convolutional) ? 0 : d_index;
+            int weight_col = (conn_data.convolutional) ? 0 : d_index;
             // Kernels are organized into columns
             // One kernel per destination neuron
             //   Unless convolutional (shared kernel)
-            int kernel_row_size = (inst.convolutional)
-                                  ? 1 : inst.to_rows * inst.to_columns;
+            int kernel_row_size = (conn_data.convolutional)
+                                  ? 1 : conn_data.to_rows * conn_data.to_columns;
 #else
             // Row of matrix is either the first column (convolutional)
             //   or the index of the destination neuron otherwise
-            int weight_offset = (inst.convolutional)
+            int weight_offset = (conn_data.convolutional)
                                 ? 0 : d_index * kernel_size;
 #endif
 
             // Run the kernel
-            for (int k_row = 0 ; k_row < inst.overlap ; ++k_row) {
-                for (int k_col = 0 ; k_col < inst.overlap ; ++k_col) {
+            for (int k_row = 0 ; k_row < conn_data.overlap ; ++k_row) {
+                for (int k_col = 0 ; k_col < conn_data.overlap ; ++k_col) {
                     int k_s_row = s_row + k_row;
                     int k_s_col = s_col + k_col;
 
                     // The connection is frayed if the layers are the same size
                     // Avoid making connections with non-existent neurons!
-                    if (inst.fray != 0 and (k_s_row < 0 or k_s_row >= inst.to_rows
-                        or k_s_col < 0 or k_s_col >= inst.to_columns))
+                    if (conn_data.fray != 0 and (k_s_row < 0 or k_s_row >= conn_data.to_rows
+                        or k_s_col < 0 or k_s_col >= conn_data.to_columns))
                         continue;
 
-                    int s_index = k_s_row * inst.from_columns + k_s_col;
+                    int s_index = k_s_row * conn_data.from_columns + k_s_col;
 
 #ifdef PARALLEL
                     // Row of matrix is the kernel index * row size (see above)
                     int weight_offset =
-                        ((k_row*inst.overlap) + k_col)
+                        ((k_row*conn_data.overlap) + k_col)
                         * kernel_row_size;
 #else
                     // Column of matrix is the kernel index
-                    int weight_col = (k_row * inst.overlap) + k_col;
+                    int weight_col = (k_row * conn_data.overlap) + k_col;
 #endif
                     int weight_index = weight_offset + weight_col;
 
                     // Update weight
-                    float old_weight = inst.weights[weight_index];
+                    float old_weight = conn_data.weights[weight_index];
                     float new_weight = old_weight + (mod[weight_index] * sum * SUM_COEFFICIENT)
                                         - (WEIGHT_DECAY * (old_weight - baseline[weight_index]));
-                    inst.weights[weight_index] = (new_weight > inst.max_weight) ? inst.max_weight : new_weight;
+                    conn_data.weights[weight_index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
                     /*
                     if (weight_index == 19) // and old_weight > new_weight)
                         printf("(%d    %10f ->  %10f    %c )\n", weight_index, old_weight, new_weight,

@@ -1,8 +1,7 @@
 #include "engine/instruction.h"
 #include "util/error_manager.h"
 
-Instruction::Instruction(Connection *conn, State *state) :
-        type(conn->type),
+ConnectionData::ConnectionData(Connection *conn, State *state) :
         convolutional(conn->convolutional),
         opcode(conn->opcode),
         plastic(conn->plastic),
@@ -18,8 +17,10 @@ Instruction::Instruction(Connection *conn, State *state) :
         to_columns(conn->to_layer->columns),
         num_weights(conn->num_weights),
         output_type(state->get_attributes()->get_output_type()),
-        inputs(inputs + conn->to_layer->index),
         weights(state->get_matrix(conn->id)) {
+    this->fray =
+        (to_rows == from_rows and to_columns == from_columns)
+            ? overlap / 2 : 0;
 
     // Set up word index
     int timesteps_per_output = get_timesteps_per_output(output_type);
@@ -29,36 +30,39 @@ Instruction::Instruction(Connection *conn, State *state) :
         ErrorManager::get_instance()->log_error(
             "Invalid delay in connection!");
 
-    outputs = state->get_attributes()->get_output(word_index) + conn->from_layer->index,
-    inputs = state->get_attributes()->get_input() + conn->to_layer->index;
-
-    this->fray = 
-        (to_rows == from_rows and to_columns == from_columns)
-            ? overlap / 2 : 0;
+    outputs = state->get_attributes()->get_output(word_index)
+                + conn->from_layer->index;
+    inputs = state->get_attributes()->get_input()
+                + conn->to_layer->index;
 
     get_extractor(&this->extractor, output_type);
+}
+
+Instruction::Instruction(Connection *conn, State *state) :
+        connection_data(conn, state),
+        type(conn->type) {
     get_activator(&this->activator, type);
-    if (plastic)
+    if (conn->plastic)
         get_updater(&this->updater, type);
     else
         this->updater = NULL;
 
 #ifdef PARALLEL
     // Calculate grid and block sizes based on type
-    int threads = calc_threads(to_size);
+    int threads = calc_threads(conn->to_layer->size);
 
     switch (type) {
         case (FULLY_CONNECTED):
         case (ONE_TO_ONE):
-            blocks_per_grid = dim3(calc_blocks(to_size));
-            threads_per_block = dim3(threads);
+            this->blocks_per_grid = dim3(calc_blocks(conn->to_layer->size));
+            this->threads_per_block = dim3(threads);
             break;
         case (CONVERGENT):
         case (CONVOLUTIONAL):
-            blocks_per_grid = dim3(
-                to_rows,
-                calc_blocks(to_columns));
-            threads_per_block = dim3(1, threads);
+            this->blocks_per_grid = dim3(
+                conn->to_layer->rows,
+                calc_blocks(conn->to_layer->columns));
+            this->threads_per_block = dim3(1, threads);
             break;
         default:
             ErrorManager::get_instance()->log_error(
@@ -68,24 +72,26 @@ Instruction::Instruction(Connection *conn, State *state) :
 }
 
 void Instruction::disable_learning() {
-    this->plastic = false;
+    this->connection_data.plastic = false;
 }
 
 #ifdef PARALLEL
 void Instruction::execute(cudaStream_t *stream) {
-    activator<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
+    activator<<<blocks_per_grid, threads_per_block, 0, *stream>>>(this->connection_data);
 }
 
 void Instruction::update(cudaStream_t *stream) {
-    if (this->plastic)
-        updater<<<blocks_per_grid, threads_per_block, 0, *stream>>>(*this);
+    if (this->connection_data.plastic)
+        updater<<<blocks_per_grid, threads_per_block, 0, *stream>>>(this->connection_data);
 }
 #else
 void Instruction::execute() {
-    activator(*this);
+    activator(this->connection_data);
 }
 
 void Instruction::update() {
-    if (this->plastic) updater(*this);
+    if (this->connection_data.plastic)
+        updater(this->connection_data);
 }
+
 #endif

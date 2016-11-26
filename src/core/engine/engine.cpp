@@ -52,7 +52,7 @@ void Engine::stage_input() {
 void Engine::stage_calc_output() {
 #ifdef PARALLEL
 #else
-    stream_cluster.schedule_output_calculations();
+    stream_cluster.schedule_input_output_calculations();
     stream_cluster.dispatch(this);
     this->state->update_output_states();
 #endif
