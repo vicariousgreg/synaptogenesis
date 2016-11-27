@@ -4,6 +4,12 @@
 #include "util/parallel.h"
 #include "util/error_manager.h"
 
+#define UPDATE_WEIGHT(index, input) \
+    float old_weight = conn_data.weights[index]; \
+    float new_weight = old_weight + (mod[index] * input * SUM_COEFFICIENT) \
+                        - (WEIGHT_DECAY * (old_weight - baseline[index])); \
+    conn_data.weights[index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
+
 /******************************************************************************/
 /********************** CONNECTION UPDATER KERNELS ****************************/
 /******************************************************************************/
@@ -41,10 +47,7 @@ GLOBAL void update_fully_connected(ConnectionData conn_data) {
             int index = row * conn_data.to_size + col;
 
             // Update weight
-            float old_weight = conn_data.weights[index];
-            float new_weight = old_weight + (mod[index] * sum * SUM_COEFFICIENT)
-                                - (WEIGHT_DECAY * (old_weight - baseline[index]));
-            conn_data.weights[index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
+            UPDATE_WEIGHT(index, sum);
         }
     }
 #else
@@ -54,10 +57,7 @@ GLOBAL void update_fully_connected(ConnectionData conn_data) {
             int index = row * conn_data.from_size + col;
 
             // Update weight
-            float old_weight = conn_data.weights[index];
-            float new_weight = old_weight + (mod[index] * sum * SUM_COEFFICIENT)
-                                - (WEIGHT_DECAY * (old_weight - baseline[index]));
-            conn_data.weights[index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
+            UPDATE_WEIGHT(index, sum);
             //if (old_weight != new_weight) printf("(%10f ->  %10f    %c )\n", old_weight, new_weight, (new_weight > old_weight) ? '+' : '-');
         }
     }
@@ -76,10 +76,7 @@ GLOBAL void update_one_to_one(ConnectionData conn_data) {
     for (int index = 0 ; index < conn_data.to_size ; ++index) {
 #endif
         // Update weight
-        float old_weight = conn_data.weights[index];
-        float new_weight = old_weight + (mod[index] * conn_data.inputs[index] * SUM_COEFFICIENT)
-                            - (WEIGHT_DECAY * (old_weight - baseline[index]));
-        conn_data.weights[index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
+        UPDATE_WEIGHT(index, conn_data.inputs[index]);
     }
 }
 
@@ -148,10 +145,7 @@ GLOBAL void update_convergent(ConnectionData conn_data) {
                     int weight_index = weight_offset + weight_col;
 
                     // Update weight
-                    float old_weight = conn_data.weights[weight_index];
-                    float new_weight = old_weight + (mod[weight_index] * sum * SUM_COEFFICIENT)
-                                        - (WEIGHT_DECAY * (old_weight - baseline[weight_index]));
-                    conn_data.weights[weight_index] = (new_weight > conn_data.max_weight) ? conn_data.max_weight : new_weight;
+                    UPDATE_WEIGHT(weight_index, sum);
                     /*
                     if (weight_index == 19) // and old_weight > new_weight)
                         printf("(%d    %10f ->  %10f    %c )\n", weight_index, old_weight, new_weight,

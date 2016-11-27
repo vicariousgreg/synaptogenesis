@@ -2,5 +2,6 @@
 *.d
 *.a
 *.pyc
+.*.swp
 test
 parallel_test
