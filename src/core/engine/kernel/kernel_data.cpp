@@ -37,3 +37,46 @@ KernelData::KernelData(Connection *conn, State *state) :
 
     get_extractor(&this->extractor, output_type);
 }
+
+/******************************************************************************/
+/************************** OUTPUT EXTRACTORS *********************************/
+/******************************************************************************/
+
+// Device pointers for memcpyFromSymbol
+DEVICE EXTRACTOR x_float = extract_float;
+DEVICE EXTRACTOR x_int = extract_int;
+DEVICE EXTRACTOR x_bit = extract_bit;
+
+DEVICE float extract_float(KernelData &kernel_data, Output &out) { return out.f; }
+DEVICE float extract_int(KernelData &kernel_data, Output &out) { return out.i; }
+DEVICE float extract_bit(KernelData &kernel_data, Output &out) {
+    return (out.i >> (kernel_data.delay % 32)) & 1;
+}
+
+void get_extractor(EXTRACTOR *dest, OutputType output_type) {
+#ifdef PARALLEL
+    switch (output_type) {
+        case FLOAT:
+            cudaMemcpyFromSymbol(dest, x_float, sizeof(void *));
+            break;
+        case INT:
+            cudaMemcpyFromSymbol(dest, x_int, sizeof(void *));
+            break;
+        case BIT:
+            cudaMemcpyFromSymbol(dest, x_bit, sizeof(void *));
+            break;
+    }
+#else
+    switch (output_type) {
+        case FLOAT:
+            *dest = extract_float;
+            break;
+        case INT:
+            *dest = extract_int;
+            break;
+        case BIT:
+            *dest = extract_bit;
+            break;
+    }
+#endif
+}

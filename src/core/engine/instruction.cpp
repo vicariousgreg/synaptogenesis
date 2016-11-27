@@ -18,13 +18,13 @@ Instruction::Instruction(Connection *conn, State *state) :
     int threads = calc_threads(conn->to_layer->size);
 
     switch (type) {
-        case (FULLY_CONNECTED):
-        case (ONE_TO_ONE):
+        case FULLY_CONNECTED:
+        case ONE_TO_ONE:
             this->blocks_per_grid = dim3(calc_blocks(conn->to_layer->size));
             this->threads_per_block = dim3(threads);
             break;
-        case (CONVERGENT):
-        case (CONVOLUTIONAL):
+        case CONVERGENT:
+        case CONVOLUTIONAL:
             this->blocks_per_grid = dim3(
                 conn->to_layer->rows,
                 calc_blocks(conn->to_layer->columns));

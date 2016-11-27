@@ -1,11 +1,20 @@
 #ifndef kernel_data_h
 #define kernel_data_h
 
-#include "engine/kernel/kernel.h"
 #include "model/connection.h"
 #include "state/state.h"
 #include "util/parallel.h"
 
+class KernelData;
+
+/* Extractors are responsible for extracting values from output */
+typedef float(*EXTRACTOR)(KernelData&, Output&);
+void get_extractor(EXTRACTOR *dest, OutputType output_type);
+DEVICE float extract_float(KernelData &kernel_data, Output &out);
+DEVICE float extract_int(KernelData &kernel_data, Output &out);
+DEVICE float extract_bit(KernelData &kernel_data, Output &out);
+
+/* Data package that is passed into kernel functions */
 class KernelData {
     public:
         KernelData(Connection *conn, State *state);

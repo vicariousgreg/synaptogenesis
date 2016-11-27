@@ -33,8 +33,8 @@ class Instruction {
         ConnectionType type;
 
         EXTRACTOR extractor;
-        ACTIVATOR activator;
-        UPDATER updater;
+        KERNEL activator;
+        KERNEL updater;
 
         Connection *connection;
         KernelData kernel_data;
