@@ -20,10 +20,10 @@ class Stream {
         void finalize();
         void reset();
 
-        void schedule_execution(Scheduler *scheduler);
-        void schedule_execution(int to_schedule, Scheduler *scheduler);
-        void schedule_execution(IOType type, Scheduler *scheduler);
-        void schedule_weight_update(Scheduler *scheduler);
+        void schedule(Scheduler *scheduler);
+        void schedule(int to_schedule, Scheduler *scheduler);
+        void schedule(IOType type, Scheduler *scheduler);
+        void schedule_plastic(Scheduler *scheduler);
 
         bool is_done();
         bool is_done(IOType type);

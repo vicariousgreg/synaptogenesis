@@ -32,18 +32,15 @@ StreamCluster::StreamCluster(Model *model, State *state)
     // Finalize all streams
     // This sets up cuda information
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            it->second->finalize();
+        for (auto& stream : streams[i]) stream.second->finalize();
 }
 
 StreamCluster::~StreamCluster() {
     delete scheduler;
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            delete it->second;
+        for (auto& stream : streams[i]) delete stream.second;
 
-    for (int i = 0; i < this->all_instructions.size(); ++i)
-        delete this->all_instructions[i];
+    for (auto& inst : this->all_instructions) delete inst;
 }
 
 void StreamCluster::disable_learning() {
@@ -59,7 +56,8 @@ void StreamCluster::schedule_clear_output_calculations() {
 #endif
 
     // Launch clear output relevant computations
-    schedule_execution_to(OUTPUT);
+    schedule_to(OUTPUT);
+    scheduler->dispatch_execute();
 }
 
 void StreamCluster::schedule_input_output_calculations() {
@@ -72,76 +70,74 @@ void StreamCluster::schedule_input_output_calculations() {
 #endif
 
     // Launch input output relevant computations
-    schedule_execution_from(INPUT_OUTPUT);
-    schedule_execution_from(OUTPUT);
-    schedule_execution_to(INPUT_OUTPUT);
+    schedule_from(INPUT_OUTPUT);
+    schedule_from(OUTPUT);
+    schedule_to(INPUT_OUTPUT);
+    scheduler->dispatch_execute();
 }
 
 void StreamCluster::schedule_non_output_calculations() {
     // Launch output relevant computations
-    schedule_execution_to(INPUT);
-    schedule_execution_to(INTERNAL);
+    schedule_to(INPUT);
+    schedule_to(INTERNAL);
+    scheduler->dispatch_execute();
 }
 
 void StreamCluster::reset() {
     // Reset streams
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            it->second->reset();
+        for (auto& stream : streams[i]) stream.second->reset();
 }
 
-void StreamCluster::schedule_execution_from(IOType from_type) {
+void StreamCluster::schedule_from(IOType from_type) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            it->second->schedule_execution(from_type, scheduler);
+        for (auto& stream : streams[i])
+            stream.second->schedule(from_type, scheduler);
 }
 
-void StreamCluster::schedule_execution_to(IOType to_type) {
-    for (auto it = streams[to_type].begin(); it != streams[to_type].end(); ++it)
-        it->second->schedule_execution(scheduler);
+void StreamCluster::schedule_to(IOType to_type) {
+    for (auto& stream : streams[to_type])
+        stream.second->schedule(scheduler);
 }
 
 void StreamCluster::schedule_weight_update() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            it->second->schedule_weight_update(scheduler);
-}
-
-void StreamCluster::dispatch(Engine *engine) {
-    scheduler->dispatch(engine);
+        for (auto& stream : streams[i])
+            stream.second->schedule_plastic(scheduler);
+    scheduler->dispatch_update();
 }
 
 bool StreamCluster::is_done() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            if (not it->second->is_done())
+        for (auto& stream : streams[i])
+            if (not stream.second->is_done())
                 return false;
     return true;
 }
 
 bool StreamCluster::is_done(IOType type) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            if (not it->second->is_done(type))
+        for (auto& stream : streams[i])
+            if (not stream.second->is_done(type))
                 return false;
     return true;
 }
 
 #ifdef PARALLEL
 void StreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
-    for (auto it = streams[to_type].begin(); it != streams[to_type].end(); ++it)
-        it->second->wait_event(event);
+    for (auto& stream : streams[to_type])
+        stream.second->wait_event(event);
 }
 
-void StreamCluster::block_stream_to(IOType to_type, cudaStream_t stream) {
-    for (auto it = streams[to_type].begin(); it != streams[to_type].end(); ++it)
-        cudaStreamWaitEvent(stream, *it->second->finished_event, 0);
+void StreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
+    for (auto& stream : streams[to_type])
+        cudaStreamWaitEvent(cuda_stream, *stream.second->finished_event, 0);
 }
 
-void StreamCluster::block_stream_from(IOType from_type, cudaStream_t stream) {
+void StreamCluster::block_stream_from(IOType from_type, cudaStream_t cuda_stream) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto it = streams[i].begin(); it != streams[i].end(); ++it)
-            cudaStreamWaitEvent(stream, *it->second->events[from_type], 0);
+        for (auto& stream : streams[i])
+            cudaStreamWaitEvent(cuda_stream, *stream.second->events[from_type], 0);
 }
 
 void StreamCluster::block_state_on_output_calculations() {

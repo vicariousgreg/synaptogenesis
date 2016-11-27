@@ -51,23 +51,23 @@ void Stream::reset() {
 #endif
 }
 
-void Stream::schedule_execution(int to_schedule, Scheduler *scheduler) {
+void Stream::schedule(int to_schedule, Scheduler *scheduler) {
     while (scheduled < to_schedule)
-        scheduler->schedule_execution(instructions[scheduled++]);
+        scheduler->schedule(instructions[scheduled++]);
 }
 
-void Stream::schedule_execution(Scheduler *scheduler) {
-    this->schedule_execution(instructions.size(), scheduler);
+void Stream::schedule(Scheduler *scheduler) {
+    this->schedule(instructions.size(), scheduler);
 }
 
-void Stream::schedule_execution(IOType type, Scheduler *scheduler) {
-    this->schedule_execution(last_index[type] + 1, scheduler);
+void Stream::schedule(IOType type, Scheduler *scheduler) {
+    this->schedule(last_index[type] + 1, scheduler);
 }
 
-void Stream::schedule_weight_update(Scheduler *scheduler) {
-    for (int i = 0; i < instructions.size(); ++i)
-        if (instructions[i]->is_plastic())
-            scheduler->schedule_weight_update(instructions[i]);
+void Stream::schedule_plastic(Scheduler *scheduler) {
+    for (auto inst : this->instructions)
+        if (inst->is_plastic())
+            scheduler->schedule(inst);
 }
 
 bool Stream::is_done() {

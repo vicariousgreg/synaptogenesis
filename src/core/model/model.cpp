@@ -27,20 +27,19 @@ void Model::build() {
 
     // Extract layers and connections from structures
     int conn_id = 0;
-    for (auto it = structures.begin(); it != structures.end(); ++it) {
-        Structure *structure = it->second;
+    for (auto& it : this->structures) {
+        Structure *structure = it.second;
         all_layers.insert(all_layers.end(),
             structure->layers.begin(), structure->layers.end());
 
-        for (auto it = structure->connections.begin(); it != structure->connections.end(); ++it) {
-            connections.push_back(*it);
-            (*it)->id = conn_id++;
+        for (auto& conn : structure->connections) {
+            connections.push_back(conn);
+            conn->id = conn_id++;
         }
     }
 
     // Sort layers
-    for (int i = 0 ; i < this->all_layers.size(); ++i) {
-        Layer *layer = this->all_layers[i];
+    for (auto& layer : this->all_layers) {
         layers[layer->type].push_back(layer);
         this->num_neurons += layer->size;
     }
@@ -54,26 +53,26 @@ void Model::build() {
 
     // Adjust indices and ids
     int start_index = 0;
-    for (int i = 0 ; i < all_layers.size(); ++i) {
-        all_layers[i]->index = start_index;
-        start_index += all_layers[i]->size;
+    for (auto& layer : this->all_layers) {
+        layer->index = start_index;
+        start_index += layer->size;
     }
 
     // Set input and output indices
     int input_index = 0;
-    for (int i = 0 ; i < layers[INPUT].size(); ++i) {
-        layers[INPUT][i]->input_index = input_index;
-        input_index += layers[INPUT][i]->size;
+    for (auto& layer : this->layers[INPUT]) {
+        layer->input_index = input_index;
+        input_index += layer->size;
     }
     int output_index = 0;
-    for (int i = 0 ; i < layers[INPUT_OUTPUT].size(); ++i) {
-        layers[INPUT_OUTPUT][i]->input_index = input_index;
-        layers[INPUT_OUTPUT][i]->output_index = output_index;
-        input_index += layers[INPUT_OUTPUT][i]->size;
-        output_index += layers[INPUT_OUTPUT][i]->size;
+    for (auto& layer : this->layers[INPUT_OUTPUT]) {
+        layer->input_index = input_index;
+        layer->output_index = output_index;
+        input_index += layer->size;
+        output_index += layer->size;
     }
-    for (int i = 0 ; i < layers[OUTPUT].size(); ++i) {
-        layers[OUTPUT][i]->output_index = output_index;
-        output_index += layers[OUTPUT][i]->size;
+    for (auto& layer : this->layers[OUTPUT]) {
+        layer->output_index = output_index;
+        output_index += layer->size;
     }
 }

@@ -6,17 +6,14 @@
 #include "engine/instruction.h"
 #include "util/parallel.h"
 
-class Engine;
-
 class Scheduler {
     public:
-        void schedule_execution(Instruction *inst);
-        void schedule_weight_update(Instruction *inst);
-        void dispatch(Engine *engine);
+        void schedule(Instruction *inst);
+        void dispatch_execute();
+        void dispatch_update();
 
     private:
-        std::map<Layer*, std::vector<Instruction*> > execute_schedule;
-        std::map<Layer*, std::vector<Instruction*> > weight_update_schedule;
+        std::map<Layer*, std::vector<Instruction*> > schedules;
 };
 
 #endif

@@ -21,12 +21,9 @@ class Model {
     public:
         Model (std::string engine_name);
         virtual ~Model() {
-            for (int i = 0; i < this->connections.size(); ++i)
-                delete this->connections[i];
-            for (int i = 0; i < this->all_layers.size(); ++i)
-                delete this->all_layers[i];
-            for (auto it = structures.begin(); it != structures.end(); ++it)
-                delete it->second;
+            for (auto& conn : this->connections) delete conn;
+            for (auto& layer : this->all_layers) delete layer;
+            for (auto& structure : this->structures) delete structure.second;
         }
 
         static Model* load(std::string path);

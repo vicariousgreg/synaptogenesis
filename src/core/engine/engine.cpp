@@ -9,7 +9,6 @@ void Engine::stage_clear() {
     this->state->reset();
     stream_cluster.reset();
     stream_cluster.schedule_clear_output_calculations();
-    stream_cluster.dispatch(this);
 }
 
 void Engine::stage_input() {
@@ -22,7 +21,6 @@ void Engine::stage_input() {
 
     // Launch output relevant computations
     stream_cluster.schedule_input_output_calculations();
-    stream_cluster.dispatch(this);
 
     // Wait for output computations to finish
     stream_cluster.block_state_on_output_calculations();
@@ -32,7 +30,6 @@ void Engine::stage_input() {
 
     // Launch remaining calculations
     stream_cluster.schedule_non_output_calculations();
-    stream_cluster.dispatch(this);
 
     // Block kernel stream until they are done
     stream_cluster.block_state_on_non_output_calculations();
@@ -42,7 +39,6 @@ void Engine::stage_input() {
 
     // Schedule and launch weight updates
     stream_cluster.schedule_weight_update();
-    stream_cluster.dispatch(this);
 
     // Wait for input to finish
     this->state->wait_for_input();
@@ -53,7 +49,6 @@ void Engine::stage_calc_output() {
 #ifdef PARALLEL
 #else
     stream_cluster.schedule_input_output_calculations();
-    stream_cluster.dispatch(this);
     this->state->update_output_states();
 #endif
 }
@@ -72,7 +67,6 @@ void Engine::stage_remaining() {
 #ifdef PARALLEL
 #else
     stream_cluster.schedule_non_output_calculations();
-    stream_cluster.dispatch(this);
     this->state->update_non_output_states();
 #endif
 }
@@ -84,6 +78,5 @@ void Engine::stage_weights() {
     cudaCheckError(NULL);
 #else
     stream_cluster.schedule_weight_update();
-    stream_cluster.dispatch(this);
 #endif
 }
