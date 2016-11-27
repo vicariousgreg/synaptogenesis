@@ -9,7 +9,6 @@ class WeightMatrices {
         WeightMatrices(Model *model, int weight_depth);
         virtual ~WeightMatrices();
 
-
         float* get_matrix(int connection_id) {
             return this->matrices[connection_id];
         }

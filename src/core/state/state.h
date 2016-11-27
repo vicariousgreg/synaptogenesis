@@ -16,57 +16,54 @@ class State {
          * If parallel, this will reset cuda events */
         void reset();
 
-        /* Gathers sensory input from the environment buffer */
+        /* Primary environment IO functions.
+         *   -> Gather sensory input from the environment buffer
+         *   -> Send motor output to the environment buffer
+         */
         void get_input();
-
-        /* Sends motor output to the environment buffer */
         void send_output();
 
-        /* If parallel, callers may want to wait for input events */
-        void wait_for_input();
-        void wait_for_output();
-
-        /* Updates |count| neuron states from |start_index| */
+        /* State update functions.
+         *  -> update |count| neuron states starting at |start_index|
+         *  -> update all states
+         *  -> update states of a given IOType
+         *  -> update states for output (motor) neurons
+         *  -> update states for non-output neurons
+         */
         void update_states(int start_index, int count);
-
-        /* Updates all states */
         void update_all_states();
-
-        /* Updates states of the given |layer_type| */
         void update_states(IOType layer_type);
-
-        /* Updates the states of all output (motor) neurons */
         void update_output_states();
-
-        /* Updates the states of all non-output (motor) neurons */
         void update_non_output_states();
 
-        Buffer* get_buffer() { return this->buffer; }
+        /* Getters for buffer, attributes, matrices */
         Attributes* get_attributes() { return this->attributes; }
-
+        Buffer* get_buffer() { return this->buffer; }
         float* get_matrix(int connection_id) {
             return this->weight_matrices->get_matrix(connection_id);
         }
 
-    protected:
-        //friend class Engine;
-        friend class StreamCluster;
-
-        // Weight matrices
-        WeightMatrices *weight_matrices;
-        Buffer *buffer;
-        Attributes *attributes;
-
 #ifdef PARALLEL
+        /* If parallel, callers may want to wait for IO events */
+        void wait_for_input();
+        void wait_for_output();
+
+        /* Cuda streams for IO and state computations */
         cudaStream_t io_stream;
         cudaStream_t state_stream;
 
+        /* Cuda events for IO and output events */
         cudaEvent_t
             *input_event,
             *clear_event,
             *output_calc_event,
             *output_event;
 #endif
+
+    protected:
+        Attributes *attributes;
+        Buffer *buffer;
+        WeightMatrices *weight_matrices;
 };
 
 #endif

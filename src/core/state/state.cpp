@@ -111,17 +111,14 @@ void State::send_output() {
 #endif
 }
 
+#ifdef PARALLEL
 void State::wait_for_input() {
-#ifdef PARALLEL
     cudaEventSynchronize(*this->input_event);
-#endif
 }
-
 void State::wait_for_output() {
-#ifdef PARALLEL
     cudaEventSynchronize(*this->output_event);
-#endif
 }
+#endif
 
 void State::update_output_states() {
     update_states(INPUT_OUTPUT);
