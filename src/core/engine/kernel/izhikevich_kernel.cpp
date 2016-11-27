@@ -12,7 +12,6 @@ GLOBAL void izhikevich(float* voltages, float* recoveries,
     float voltage, recovery, current, delta_v;
     IzhikevichParameters *params;
 
-    /* 3. Voltage Updates */
     // For each neuron...
     //   update voltage according to current
     //     Euler's method with #defined resolution
@@ -52,7 +51,6 @@ GLOBAL void calc_spikes(int* spikes, float* voltages,
     int spike, new_value; 
     IzhikevichParameters *params;
 
-    /* 4. Timestep */
     // Determine spikes.
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
