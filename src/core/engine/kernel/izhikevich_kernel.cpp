@@ -1,4 +1,4 @@
-#include "engine/izhikevich_kernel.h"
+#include "engine/kernel/izhikevich_kernel.h"
 
 /* Voltage threshold for neuron spiking. */
 #define SPIKE_THRESH 30

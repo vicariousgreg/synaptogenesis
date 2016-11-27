@@ -5,7 +5,7 @@
 
 #include "model/connection.h"
 #include "state/state.h"
-#include "engine/kernel.h"
+#include "engine/kernel/kernel.h"
 #include "util/parallel.h"
 
 class ConnectionData {

@@ -2,7 +2,7 @@
 #include <cstring>
 
 #include "state/state.h"
-#include "engine/kernel.h"
+#include "engine/kernel/kernel.h"
 #include "util/tools.h"
 #include "util/parallel.h"
 
