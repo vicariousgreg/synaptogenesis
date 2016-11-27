@@ -40,7 +40,7 @@ CALC_FULLY_CONNECTED(update_fully_connected, \
      * Pointer to weight baseline
      * Pointer to modifying substance level */
     EXTRACT_BASELINE;
-    EXTRACT_MOD;
+    EXTRACT_MOD;,
 
     /* NEURON_PRE
      * Retrieve input sum */
@@ -60,7 +60,7 @@ CALC_ONE_TO_ONE(update_one_to_one, \
      * Pointer to weight baseline
      * Pointer to modifying substance level */
     EXTRACT_BASELINE;
-    EXTRACT_MOD;
+    EXTRACT_MOD;,
 
     /* WEIGHT_OP
      * Update weight */
@@ -72,7 +72,7 @@ CALC_CONVERGENT(update_convergent, \
      * Pointer to weight baseline
      * Pointer to modifying substance level */
     EXTRACT_BASELINE;
-    EXTRACT_MOD;
+    EXTRACT_MOD;,
 
     /* NEURON_PRE
      * Retrieve input sum */
