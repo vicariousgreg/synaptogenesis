@@ -4,6 +4,12 @@
 #include "util/parallel.h"
 #include "util/constants.h"
 
+#define MOD_RATE 0.3
+#define MOD_DECAY 0.01
+#define MOD_MAX 10.0
+#define SUM_COEFFICIENT 0.5
+#define WEIGHT_DECAY 0.025
+
 /* Synaptic operations
  * |prior| is the current state of the neuron.
  * |input| is the synaptic input accomulated from one connection.
@@ -33,19 +39,5 @@ void get_extractor(EXTRACTOR *dest, OutputType output_type);
 DEVICE float extract_float(ConnectionData &conn_data, Output &out);
 DEVICE float extract_int(ConnectionData &conn_data, Output &out);
 DEVICE float extract_bit(ConnectionData &conn_data, Output &out);
-
-/* Activators are responsible for performing connection computation */
-typedef void(*ACTIVATOR)(ConnectionData);
-void get_activator(ACTIVATOR *dest, ConnectionType conn_type);
-GLOBAL void calc_fully_connected(ConnectionData conn_data);
-GLOBAL void calc_one_to_one(ConnectionData conn_data);
-GLOBAL void calc_convergent(ConnectionData conn_data);
-
-/* Updaters are responsible for updating connection weights */
-typedef void(*UPDATER)(ConnectionData);
-void get_updater(UPDATER *dest, ConnectionType conn_type);
-GLOBAL void update_fully_connected(ConnectionData conn_data);
-GLOBAL void update_one_to_one(ConnectionData conn_data);
-GLOBAL void update_convergent(ConnectionData conn_data);
 
 #endif
