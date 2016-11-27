@@ -4,14 +4,14 @@ void Scheduler::schedule(Instruction *inst) {
     schedules[inst->connection->to_layer].push_back(inst);
 }
 
-void Scheduler::dispatch_execute() {
+void Scheduler::dispatch_activate() {
     bool done = false;
     for (int i = 0; not done; ++i) {
         done = true;
         for (auto& schedule : this->schedules)
             if (i < schedule.second.size()) {
                 done = false;
-                schedule.second[i]->execute();
+                schedule.second[i]->activate();
             }
     }
     for (auto& schedule : this->schedules)

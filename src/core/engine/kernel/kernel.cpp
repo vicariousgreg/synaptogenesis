@@ -1,7 +1,5 @@
-#include <cmath>
 #include "engine/kernel/kernel.h"
-#include "engine/instruction.h"
-#include "util/parallel.h"
+#include "engine/kernel/kernel_data.h"
 #include "util/error_manager.h"
 
 /******************************************************************************/
@@ -13,10 +11,10 @@ DEVICE EXTRACTOR x_float = extract_float;
 DEVICE EXTRACTOR x_int = extract_int;
 DEVICE EXTRACTOR x_bit = extract_bit;
 
-DEVICE float extract_float(ConnectionData &conn_data, Output &out) { return out.f; }
-DEVICE float extract_int(ConnectionData &conn_data, Output &out) { return out.i; }
-DEVICE float extract_bit(ConnectionData &conn_data, Output &out) {
-    return (out.i >> (conn_data.delay % 32)) & 1;
+DEVICE float extract_float(KernelData &kernel_data, Output &out) { return out.f; }
+DEVICE float extract_int(KernelData &kernel_data, Output &out) { return out.i; }
+DEVICE float extract_bit(KernelData &kernel_data, Output &out) {
+    return (out.i >> (kernel_data.delay % 32)) & 1;
 }
 
 void get_extractor(EXTRACTOR *dest, OutputType output_type) {

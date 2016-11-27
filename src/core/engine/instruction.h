@@ -5,43 +5,19 @@
 
 #include "model/connection.h"
 #include "state/state.h"
+#include "engine/kernel/kernel_data.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/activator_kernel.h"
 #include "engine/kernel/updater_kernel.h"
 #include "util/parallel.h"
 
-class ConnectionData {
-    public:
-        ConnectionData(Connection *conn, State *state);
-
-        bool convolutional;
-        Opcode opcode;
-
-        EXTRACTOR extractor;
-
-        int overlap, stride;
-        int fray;
-        int delay;
-
-        int from_size, from_rows, from_columns;
-        int to_size, to_rows, to_columns;
-        int num_weights;
-        bool plastic;
-        float max_weight;
-
-        OutputType output_type;
-        Output *outputs;
-        float *inputs;
-        float *weights;
-};
-
 class Instruction {
     public:
         Instruction(Connection *conn, State *state);
 
-        bool is_plastic() { return this->connection_data.plastic; }
+        bool is_plastic() { return this->kernel_data.plastic; }
         void disable_learning();
-        void execute();
+        void activate();
         void update();
 
 #ifdef PARALLEL
@@ -61,7 +37,7 @@ class Instruction {
         UPDATER updater;
 
         Connection *connection;
-        ConnectionData connection_data;
+        KernelData kernel_data;
 };
 
 #endif

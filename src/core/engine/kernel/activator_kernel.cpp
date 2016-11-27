@@ -1,9 +1,5 @@
-#include <cmath>
 #include "engine/kernel/activator_kernel.h"
-#include "engine/instruction.h"
-#include "util/parallel.h"
 #include "util/error_manager.h"
-
 
 /******************************************************************************/
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
@@ -38,59 +34,57 @@ void get_activator(ACTIVATOR *dest, ConnectionType conn_type) {
     }
 }
 
-#include "connection_kernel.h"
-
-FULLY_CONNECTED(calc_fully_connected, \
+CALC_FULLY_CONNECTED(calc_fully_connected, \
     /* Pointer to modifying substance level */
-    float *mod = conn_data.weights + (2*conn_data.num_weights);,
+    float *mod = kernel_data.weights + (2*kernel_data.num_weights);,
 
     float sum = 0.0;,
 
-    float val = conn_data.extractor(conn_data, conn_data.outputs[from_index])
-                * conn_data.weights[weight_index];
+    float val = kernel_data.extractor(kernel_data, kernel_data.outputs[from_index])
+                * kernel_data.weights[weight_index];
     sum += val;
     /* If plastic, update modifying substance */
-    if (conn_data.plastic) {
+    if (kernel_data.plastic) {
         float old_mod = mod[weight_index];
         float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
         mod[weight_index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
     },
 
-    conn_data.inputs[to_index] = calc(conn_data.opcode, conn_data.inputs[to_index], sum);
+    kernel_data.inputs[to_index] = calc(kernel_data.opcode, kernel_data.inputs[to_index], sum);
 )
 
-ONE_TO_ONE(calc_one_to_one, \
+CALC_ONE_TO_ONE(calc_one_to_one, \
     /* Pointer to modifying substance level */
-    float *mod = conn_data.weights + (2*conn_data.num_weights);,
+    float *mod = kernel_data.weights + (2*kernel_data.num_weights);,
 
-    float val = calc(conn_data.opcode, conn_data.inputs[index],
-        conn_data.extractor(conn_data, conn_data.outputs[index]) * conn_data.weights[index]);
+    float val = calc(kernel_data.opcode, kernel_data.inputs[index],
+        kernel_data.extractor(kernel_data, kernel_data.outputs[index]) * kernel_data.weights[index]);
     // Update modifying substance
     // If plastic, update modifying substance
-    if (conn_data.plastic) {
+    if (kernel_data.plastic) {
         float old_mod = mod[index];
         float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
         mod[index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
     }
-    conn_data.inputs[index] = val;
+    kernel_data.inputs[index] = val;
 )
 
-CONVERGENT(calc_convergent, \
+CALC_CONVERGENT(calc_convergent, \
     /* Pointer to modifying substance level */
-    float *mod = conn_data.weights + (2*conn_data.num_weights);,
+    float *mod = kernel_data.weights + (2*kernel_data.num_weights);,
 
     float sum = 0.0;,
 
-    float val = conn_data.extractor(conn_data, conn_data.outputs[from_index])
-                    * conn_data.weights[weight_index];
+    float val = kernel_data.extractor(kernel_data, kernel_data.outputs[from_index])
+                    * kernel_data.weights[weight_index];
     sum += val;
     /* Update modifying substance
        If plastic, update modifying substance */
-    if (conn_data.plastic and not conn_data.convolutional) {
+    if (kernel_data.plastic and not kernel_data.convolutional) {
         float old_mod = mod[weight_index];
         float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod);
         mod[weight_index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod;
     },
 
-    conn_data.inputs[to_index] = calc(conn_data.opcode, conn_data.inputs[to_index], sum);
+    kernel_data.inputs[to_index] = calc(kernel_data.opcode, kernel_data.inputs[to_index], sum);
 )

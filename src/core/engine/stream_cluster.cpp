@@ -57,7 +57,7 @@ void StreamCluster::schedule_clear_output_calculations() {
 
     // Launch clear output relevant computations
     schedule_to(OUTPUT);
-    scheduler->dispatch_execute();
+    scheduler->dispatch_activate();
 }
 
 void StreamCluster::schedule_input_output_calculations() {
@@ -73,14 +73,14 @@ void StreamCluster::schedule_input_output_calculations() {
     schedule_from(INPUT_OUTPUT);
     schedule_from(OUTPUT);
     schedule_to(INPUT_OUTPUT);
-    scheduler->dispatch_execute();
+    scheduler->dispatch_activate();
 }
 
 void StreamCluster::schedule_non_output_calculations() {
     // Launch output relevant computations
     schedule_to(INPUT);
     schedule_to(INTERNAL);
-    scheduler->dispatch_execute();
+    scheduler->dispatch_activate();
 }
 
 void StreamCluster::reset() {

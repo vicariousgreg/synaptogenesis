@@ -28,16 +28,16 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
     return 0.0;
 }
 
-class ConnectionData;
+class KernelData;
 
 /* Clears input data */
 GLOBAL void clear_data(float* data, int count);
 
 /* Extractors are responsible for extracting values from output */
-typedef float(*EXTRACTOR)(ConnectionData&, Output&);
+typedef float(*EXTRACTOR)(KernelData&, Output&);
 void get_extractor(EXTRACTOR *dest, OutputType output_type);
-DEVICE float extract_float(ConnectionData &conn_data, Output &out);
-DEVICE float extract_int(ConnectionData &conn_data, Output &out);
-DEVICE float extract_bit(ConnectionData &conn_data, Output &out);
+DEVICE float extract_float(KernelData &kernel_data, Output &out);
+DEVICE float extract_int(KernelData &kernel_data, Output &out);
+DEVICE float extract_bit(KernelData &kernel_data, Output &out);
 
 #endif

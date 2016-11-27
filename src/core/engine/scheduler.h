@@ -9,7 +9,7 @@
 class Scheduler {
     public:
         void schedule(Instruction *inst);
-        void dispatch_execute();
+        void dispatch_activate();
         void dispatch_update();
 
     private:
