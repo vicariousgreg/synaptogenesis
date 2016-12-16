@@ -45,20 +45,19 @@ RateEncodingAttributes::~RateEncodingAttributes() {
 #endif
 }
 
+void RateEncodingAttributes::update(int start_index, int count) {
 #ifdef PARALLEL
-void RateEncodingAttributes::update(int start_index, int count, cudaStream_t &stream) {
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
-    shift_output<<<blocks, threads, 0, stream>>>(
+    shift_output<<<blocks, threads, 0, *this->state_stream>>>(
 #else
-void RateEncodingAttributes::update(int start_index, int count) {
     shift_output(
 #endif
         (float*)output, start_index, count, total_neurons);
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron output!");
 
-    activation_function<<<blocks, threads, 0, stream>>>(
+    activation_function<<<blocks, threads, 0, *this->state_stream>>>(
 #else
     activation_function(
 #endif

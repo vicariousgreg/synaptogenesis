@@ -109,13 +109,12 @@ IzhikevichAttributes::~IzhikevichAttributes() {
 #endif
 }
 
+void IzhikevichAttributes::update(int start_index, int count) {
 #ifdef PARALLEL
-void IzhikevichAttributes::update(int start_index, int count, cudaStream_t &stream) {
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
-    izhikevich<<<blocks, threads, 0, stream>>>(
+    izhikevich<<<blocks, threads, 0, *this->state_stream>>>(
 #else
-void IzhikevichAttributes::update(int start_index, int count) {
     izhikevich(
 #endif
         voltage,
@@ -126,7 +125,7 @@ void IzhikevichAttributes::update(int start_index, int count) {
 #ifdef PARALLEL
     cudaCheckError("Failed to update neuron voltages!");
 
-    calc_spikes<<<blocks, threads, 0, stream>>>(
+    calc_spikes<<<blocks, threads, 0, *this->state_stream>>>(
 #else
     calc_spikes(
 #endif

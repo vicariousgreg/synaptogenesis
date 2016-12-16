@@ -23,6 +23,9 @@ State::State(Model *model)
     cudaStreamCreate(&this->io_stream);
     cudaStreamCreate(&this->state_stream);
 
+    // Pass streams into attributes
+    this->attributes->set_streams(&this->io_stream, &this->state_stream);
+
     // Create events
     input_event = new cudaEvent_t;
     clear_event = new cudaEvent_t;
@@ -84,19 +87,13 @@ void State::reset() {
 }
 
 void State::update_states(int start_index, int count) {
-#ifdef PARALLEL
-    this->attributes->update(start_index, count, state_stream);
-#else
     this->attributes->update(start_index, count);
-#endif
 }
 
 void State::get_input() {
-#ifdef PARALLEL
-    this->attributes->get_input_from(buffer, io_stream);
-    cudaEventRecord(*this->input_event, this->io_stream);
-#else
     this->attributes->get_input_from(buffer);
+#ifdef PARALLEL
+    cudaEventRecord(*this->input_event, this->io_stream);
 #endif
 }
 
@@ -104,7 +101,7 @@ void State::send_output() {
 #ifdef PARALLEL
     // Make sure to wait for output calc event
     cudaStreamWaitEvent(this->io_stream, *this->output_calc_event, 0);
-    this->attributes->send_output_to(buffer, io_stream);
+    this->attributes->send_output_to(buffer);
     cudaEventRecord(*this->output_event, this->io_stream);
 #else
     this->attributes->send_output_to(buffer);

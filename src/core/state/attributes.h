@@ -4,6 +4,7 @@
 #include "model/model.h"
 #include "io/buffer.h"
 #include "util/constants.h"
+#include "util/parallel.h"
 
 class Attributes {
     public:
@@ -26,20 +27,21 @@ class Attributes {
     protected:
         friend class State;
 
-#ifdef PARALLEL
-        /* Primary attribute update function */
-        virtual void update(int start_index, int count, cudaStream_t &stream) = 0;
-
-        /* IO functions */
-        void get_input_from(Buffer *buffer, cudaStream_t &stream);
-        void send_output_to(Buffer *buffer, cudaStream_t &stream);
-#else
         /* Primary attribute update function */
         virtual void update(int start_index, int count) = 0;
 
         /* IO functions */
         void get_input_from(Buffer *buffer);
         void send_output_to(Buffer *buffer);
+
+#ifdef PARALLEL
+        void set_streams(cudaStream_t *io_stream, cudaStream_t *state_stream) {
+            this->io_stream = io_stream;
+            this->state_stream = state_stream;
+        }
+
+        cudaStream_t *io_stream;
+        cudaStream_t *state_stream;
 #endif
 
         // Number of neurons

@@ -16,11 +16,7 @@ class RateEncodingAttributes : public Attributes {
         RateEncodingAttributes(Model* model);
         ~RateEncodingAttributes();
 
-#ifdef PARALLEL
-        void update(int start_index, int count, cudaStream_t &stream);
-#else
         void update(int start_index, int count);
-#endif
 
     private:
         friend class RateEncodingEngine;
