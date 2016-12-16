@@ -64,7 +64,7 @@ class Timer {
                 total = get_diff(curr_time, this->start_time);
             } while (total < limit);
         }
-        
+
     private:
         // Timestamp from last start call()
         Time_point start_time = CClock::now();

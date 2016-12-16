@@ -6,7 +6,7 @@
 /* Euler resolution for voltage update. */
 #define EULER_RES 2
 
-GLOBAL void izhikevich(IzhikevichAttributes *att, int start_index, int count) {
+GLOBAL void iz_update_state(IzhikevichAttributes *att, int start_index, int count) {
     // For each neuron...
     //   update voltage according to current using
     //     Euler's method with #defined resolution
@@ -40,7 +40,7 @@ GLOBAL void izhikevich(IzhikevichAttributes *att, int start_index, int count) {
     }
 }
 
-GLOBAL void calc_spikes(IzhikevichAttributes *att,
+GLOBAL void iz_update_output(IzhikevichAttributes *att,
         int start_index, int count, int num_neurons) {
     // Determine spikes.
 #ifdef PARALLEL

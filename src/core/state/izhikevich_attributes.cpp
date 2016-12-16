@@ -121,17 +121,17 @@ void IzhikevichAttributes::update(int start_index, int count) {
 #ifdef PARALLEL
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
-    izhikevich<<<blocks, threads, 0, *this->state_stream>>>(
+    iz_update_state<<<blocks, threads, 0, *this->state_stream>>>(
         this->device_pointer, start_index, count);
     cudaCheckError("Failed to update neuron voltages!");
 
-    calc_spikes<<<blocks, threads, 0, *this->state_stream>>>(
+    iz_update_output<<<blocks, threads, 0, *this->state_stream>>>(
         this->device_pointer, start_index, count, total_neurons);
     cudaCheckError("Failed to timestep spikes!");
 #else
-    izhikevich(
+    iz_update_state(
         this, start_index, count);
-    calc_spikes(
+    iz_update_output(
         this, start_index, count, total_neurons);
 #endif
 }

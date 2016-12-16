@@ -36,7 +36,7 @@ WeightMatrices::WeightMatrices(Model *model, int weight_depth) {
 #endif
 
     // Allocate double pointer for indexing purposes
-    float** entry_points = 
+    float** entry_points =
         (float**)malloc(model->connections.size() * sizeof(float*));
     float* curr_point = matrix_datas;
     for (int i = 0 ; i < model->connections.size() ; ++i) {
