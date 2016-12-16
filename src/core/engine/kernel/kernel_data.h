@@ -19,25 +19,28 @@ class KernelData {
     public:
         KernelData(Connection *conn, State *state);
 
-        bool convolutional;
+        /* Connection attributes */
         Opcode opcode;
-
-        EXTRACTOR extractor;
-
+        bool convolutional;
         int overlap, stride;
         int fray;
         int delay;
 
-        int from_size, from_rows, from_columns;
-        int to_size, to_rows, to_columns;
+        /* Weight attributes */
+        float *weights;
         int num_weights;
         bool plastic;
         float max_weight;
 
+        /* Layer attributes */
+        int from_size, from_rows, from_columns;
+        int to_size, to_rows, to_columns;
+
+        /* IO attributes */
+        EXTRACTOR extractor;
         OutputType output_type;
         Output *outputs;
         float *inputs;
-        float *weights;
 };
 
 #endif

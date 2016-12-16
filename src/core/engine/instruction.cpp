@@ -76,4 +76,3 @@ void Instruction::update() {
         updater(this->kernel_data);
 #endif
 }
-

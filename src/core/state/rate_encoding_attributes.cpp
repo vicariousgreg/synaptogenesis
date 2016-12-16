@@ -27,11 +27,19 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
             local_params[layer->index+j] = params;
     }
 
+    this->input = this->get_input();
+    this->output = (float*)this->get_output();
+    this->recent_output = (float*)this->get_recent_output();
+
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
     this->neuron_parameters = (RateEncodingParameters*)
         allocate_device(total_neurons, sizeof(RateEncodingParameters), local_params);
     free(local_params);
+
+    // Copy this to device
+    this->device_pointer = (RateEncodingAttributes*)
+        allocate_device(1, sizeof(RateEncodingAttributes), this);
 #else
     this->neuron_parameters = local_params;
 #endif
@@ -40,6 +48,7 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
 RateEncodingAttributes::~RateEncodingAttributes() {
 #ifdef PARALLEL
     cudaFree(this->neuron_parameters);
+    cudaFree(this->device_pointer);
 #else
     free(this->neuron_parameters);
 #endif
@@ -50,22 +59,14 @@ void RateEncodingAttributes::update(int start_index, int count) {
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
     shift_output<<<blocks, threads, 0, *this->state_stream>>>(
-#else
-    shift_output(
-#endif
-        (float*)output, start_index, count, total_neurons);
-#ifdef PARALLEL
+        this->device_pointer, start_index, count, total_neurons);
     cudaCheckError("Failed to update neuron output!");
 
     activation_function<<<blocks, threads, 0, *this->state_stream>>>(
-#else
-    activation_function(
-#endif
-        (float*)recent_output,
-        input,
-        neuron_parameters,
-        start_index, count);
-#ifdef PARALLEL
+        this->device_pointer, start_index, count);
     cudaCheckError("Failed to update neuron output!");
+#else
+    shift_output(this, start_index, count, total_neurons);
+    activation_function(this, start_index, count);
 #endif
 }

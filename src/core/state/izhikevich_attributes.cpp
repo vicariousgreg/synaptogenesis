@@ -79,6 +79,9 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
         }
     }
 
+    this->current = this->input;
+    this->spikes = (int*)this->output;
+
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
     this->voltage = (float*)
@@ -90,6 +93,10 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
     free(local_voltage);
     free(local_recovery);
     free(local_params);
+
+    // Copy this to device
+    this->device_pointer = (IzhikevichAttributes*)
+        allocate_device(1, sizeof(IzhikevichAttributes), this);
 #else
     this->voltage = local_voltage;
     this->recovery = local_recovery;
@@ -102,6 +109,7 @@ IzhikevichAttributes::~IzhikevichAttributes() {
     cudaFree(this->voltage);
     cudaFree(this->recovery);
     cudaFree(this->neuron_parameters);
+    cudaFree(this->device_pointer);
 #else
     free(this->voltage);
     free(this->recovery);
@@ -114,27 +122,16 @@ void IzhikevichAttributes::update(int start_index, int count) {
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
     izhikevich<<<blocks, threads, 0, *this->state_stream>>>(
-#else
-    izhikevich(
-#endif
-        voltage,
-        recovery,
-        input,
-        neuron_parameters,
-        start_index, count);
-#ifdef PARALLEL
+        this->device_pointer, start_index, count);
     cudaCheckError("Failed to update neuron voltages!");
 
     calc_spikes<<<blocks, threads, 0, *this->state_stream>>>(
-#else
-    calc_spikes(
-#endif
-        (int*) output,
-        voltage,
-        recovery,
-        neuron_parameters,
-        start_index, count, total_neurons);
-#ifdef PARALLEL
+        this->device_pointer, start_index, count, total_neurons);
     cudaCheckError("Failed to timestep spikes!");
+#else
+    izhikevich(
+        this, start_index, count);
+    calc_spikes(
+        this, start_index, count, total_neurons);
 #endif
 }

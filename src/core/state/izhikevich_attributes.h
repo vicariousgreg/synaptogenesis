@@ -19,26 +19,30 @@ class IzhikevichAttributes : public Attributes {
 
         void update(int start_index, int count);
 
-        //////////////////////
-        /// MODEL SPECIFIC ///
-        //////////////////////
-        // GETTERS
-        /* If parallel, these will copy data from the device */
-        float* get_voltage();
-        float* get_recovery();
-
-    private:
-        friend class IzhikevichEngine;
+        float* get_voltage() { return this->voltage; }
+        float* get_recovery() { return this->recovery; }
+        int* get_spikes() { return this->spikes; }
+        IzhikevichParameters* get_parameters() {
+            return this->neuron_parameters;
+        }
 
         // Neuron Attributes
         float *voltage;
         float *recovery;
 
-        // Neuron Spikes
+        // Neuron Current (copy of input)
+        float* current;
+
+        // Neuron Spikes (copy of output)
         int* spikes;
 
         // Neuron parameters
         IzhikevichParameters* neuron_parameters;
+
+#ifdef PARALLEL
+        // Pointer to device copy of this object
+        IzhikevichAttributes *device_pointer;
+#endif
 };
 
 #endif

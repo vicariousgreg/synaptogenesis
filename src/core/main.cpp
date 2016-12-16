@@ -401,7 +401,7 @@ void image_test() {
 
     std::cout << "Image...\n";
     model = build_image_model("izhikevich");
-    //model = build_image_model("rate_encoding", true);
+    //model = build_image_model("rate_encoding");
     print_model(model);
     run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
