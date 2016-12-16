@@ -339,7 +339,7 @@ Model* build_alignment_model(std::string engine_name) {
     std::string output_name = "visualizer_output";
 
     structure->add_module("input_layer", "random_input", "10 100");
-    //structure->add_module("exc_thalamus", "noise_input", "0.1");
+    structure->add_module("exc_thalamus", "noise_input", "0.1");
     structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
     structure->add_module("inh_cortex", output_name, "8");
@@ -351,7 +351,7 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(10);
+    Clock clock(5);
     //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);

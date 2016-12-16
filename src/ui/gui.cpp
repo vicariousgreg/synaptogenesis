@@ -38,7 +38,7 @@ void GUI::add_layer(LayerInfo layer_info) {
         data[j*4 + 0] = 0;
         data[j*4 + 1] = 0;
         data[j*4 + 2] = 0;
-        data[j*4 + 3] = 255;
+        data[j*4 + 3] = 0;
     }
     auto image = new Gtk::Image(pix);
 
@@ -67,10 +67,7 @@ void GUI::update() {
             Output *output = buffer->get_output() + output_index;
             for (int j = 0; j < info.layer->size; ++j) {
                 guint8 val = (guint8)output[j].i;
-                data[j*4 + 0] = val;
-                data[j*4 + 1] = val;
-                data[j*4 + 2] = val;
-                data[j*4 + 3] = 255;
+                data[j*4 + 3] = 255 - val;
             }
         }
     }

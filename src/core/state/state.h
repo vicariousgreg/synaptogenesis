@@ -25,16 +25,15 @@ class State {
 
         /* State update functions.
          *  -> update |count| neuron states starting at |start_index|
-         *  -> update all states
          *  -> update states of a given IOType
          *  -> update states for output (motor) neurons
          *  -> update states for non-output neurons
          */
         void update_states(int start_index, int count);
-        void update_all_states();
         void update_states(IOType layer_type);
         void update_output_states();
         void update_non_output_states();
+        void update_all_states();
 
         /* Getters for buffer, attributes, matrices */
         Attributes* get_attributes() { return this->attributes; }

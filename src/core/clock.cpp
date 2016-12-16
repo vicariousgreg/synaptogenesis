@@ -6,7 +6,6 @@ void Clock::engine_loop() {
     for (int i = 0; i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
         this->iteration_timer.reset();
-
         this->engine->stage_clear();
 
         // Read sensory input
@@ -19,20 +18,28 @@ void Clock::engine_loop() {
 
         // Write motor output
         this->motor_lock.wait(DRIVER);
-        this->engine->stage_send_output();
+        // Use (i+1) because the locks belong to the Environment
+        //   during the first iteration (Environment uses blank data
+        //   on first iteration before the Engine sends any data)
+        if ((i+1) % this->environment_rate == 0) {
+            //if (verbose) printf("Sending output... %d\n", i);
+            this->engine->stage_send_output();
+        }
         this->motor_lock.pass(ENVIRONMENT);
 
         // Finish computations
         this->engine->stage_remaining();
         this->engine->stage_weights();
 
+        // Synchronize with the clock
         this->iteration_timer.wait(this->time_limit);
     }
 
     // Report time if verbose
     if (verbose) {
         float time = this->run_timer.query("Total time");
-        printf("Time averaged over %d iterations: %f\n", iterations, time/iterations);
+        printf("Time averaged over %d iterations: %f\n",
+            iterations, time/iterations);
     }
 
 #ifdef PARALLEL
@@ -50,9 +57,10 @@ void Clock::environment_loop() {
         // Compute
 
         this->motor_lock.wait(ENVIRONMENT);
-        this->environment->step_output();
         if (i % this->environment_rate == 0) {
-            // Read motor buffer
+            // Stream output and update UI
+            //if (verbose) printf("Updating UI... %d\n", i);
+            this->environment->step_output();
             this->environment->ui_update();
         }
         this->motor_lock.pass(DRIVER);

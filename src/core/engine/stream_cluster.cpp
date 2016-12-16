@@ -16,12 +16,11 @@ StreamCluster::StreamCluster(Model *model, State *state)
         // Add instruction to appropriate stream
         std::map<Layer*, Stream*>::iterator it =
             streams[to_layer->type].find(to_layer);
-        Stream *stream;
-        if (it != streams[to_layer->type].end()) {
-            stream = it->second;
-        } else {
-            stream = new Stream(to_layer);
-        }
+
+        Stream *stream =
+            (it != streams[to_layer->type].end())
+            ? it->second : new Stream(to_layer);
+
         stream->add_instruction(inst, from_layer->type);
         streams[to_layer->type][to_layer] = stream;
 
@@ -37,9 +36,12 @@ StreamCluster::StreamCluster(Model *model, State *state)
 
 StreamCluster::~StreamCluster() {
     delete scheduler;
+
+    // Delete streams
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto& stream : streams[i]) delete stream.second;
 
+    // Delete instructions
     for (auto& inst : this->all_instructions) delete inst;
 }
 
