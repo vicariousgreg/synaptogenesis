@@ -6,17 +6,19 @@
 /* Euler resolution for voltage update. */
 #define EULER_RES 2
 
-GLOBAL void iz_update_state(IzhikevichAttributes *att, int start_index, int count) {
-    // For each neuron...
-    //   update voltage according to current using
-    //     Euler's method with #defined resolution
+GLOBAL void iz_update_state(IzhikevichAttributes *att,
+        int start_index, int count, int num_neurons) {
+    // Determine spikes.
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
         nid += start_index;
 #else
-    for (int nid = start_index ; nid < count+start_index; ++nid) {
+    for (int nid = start_index; nid < start_index+count; ++nid) {
 #endif
+        /**********************
+         *** VOLTAGE UPDATE ***
+         **********************/
         float voltage = att->voltage[nid];
         float recovery = att->recovery[nid];
         float current = att->current[nid];
@@ -37,21 +39,12 @@ GLOBAL void iz_update_state(IzhikevichAttributes *att, int start_index, int coun
         //recovery += a * ((b * voltage) - recovery);
         att->voltage[nid] = voltage;
         att->recovery[nid] = recovery;
-    }
-}
 
-GLOBAL void iz_update_output(IzhikevichAttributes *att,
-        int start_index, int count, int num_neurons) {
-    // Determine spikes.
-#ifdef PARALLEL
-    int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < count) {
-        nid += start_index;
-#else
-    for (int nid = start_index; nid < start_index+count; ++nid) {
-#endif
+        /********************
+         *** SPIKE UPDATE ***
+         ********************/
         // Determine if spike occurred
-        int spike = att->voltage[nid] >= SPIKE_THRESH;
+        int spike = voltage >= SPIKE_THRESH;
 
         // Reduce reads, chain values.
         int curr_value, new_value;
@@ -77,7 +70,7 @@ GLOBAL void iz_update_output(IzhikevichAttributes *att,
         // Reset voltage if spiked.
         if (spike) {
             att->voltage[nid] = att->neuron_parameters[nid].c;
-            att->recovery[nid] += att->neuron_parameters[nid].d;
+            att->recovery[nid] = recovery + att->neuron_parameters[nid].d;
         }
     }
 }
