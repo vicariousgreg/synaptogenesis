@@ -17,8 +17,6 @@ class IzhikevichAttributes : public Attributes {
         IzhikevichAttributes(Model* model);
         ~IzhikevichAttributes();
 
-        void update(int start_index, int count);
-
         float* get_voltage() { return this->voltage; }
         float* get_recovery() { return this->recovery; }
         int* get_spikes() { return this->spikes; }
@@ -38,11 +36,6 @@ class IzhikevichAttributes : public Attributes {
 
         // Neuron parameters
         IzhikevichParameters* neuron_parameters;
-
-#ifdef PARALLEL
-        // Pointer to device copy of this object
-        IzhikevichAttributes *device_pointer;
-#endif
 };
 
 #endif

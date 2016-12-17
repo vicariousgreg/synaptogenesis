@@ -5,9 +5,9 @@ Instruction::Instruction(Connection *conn, State *state) :
         connection(conn),
         kernel_data(conn, state),
         type(conn->type) {
-    get_activator(&this->activator, type);
+    get_activator_kernel(&this->activator, type);
     if (conn->plastic)
-        get_updater(&this->updater, type);
+        get_updater_kernel(&this->updater, type);
     else
         this->updater = NULL;
 

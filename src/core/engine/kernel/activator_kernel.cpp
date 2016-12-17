@@ -22,7 +22,7 @@
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
 /******************************************************************************/
 
-void get_activator(KERNEL *dest, ConnectionType conn_type) {
+void get_activator_kernel(KERNEL *dest, ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             *dest = activate_fully_connected;

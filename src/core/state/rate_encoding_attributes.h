@@ -16,19 +16,12 @@ class RateEncodingAttributes : public Attributes {
         RateEncodingAttributes(Model* model);
         ~RateEncodingAttributes();
 
-        void update(int start_index, int count);
-
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;
 
         float *input;
         float *output;
         float *recent_output;
-
-#ifdef PARALLEL
-        // Pointer to device copy of this object
-        RateEncodingAttributes *device_pointer;
-#endif
 };
 
 #endif

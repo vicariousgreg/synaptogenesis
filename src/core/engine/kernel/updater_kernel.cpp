@@ -17,7 +17,7 @@
 /********************** CONNECTION UPDATER KERNELS ****************************/
 /******************************************************************************/
 
-void get_updater(KERNEL *dest, ConnectionType conn_type) {
+void get_updater_kernel(KERNEL *dest, ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             *dest = update_fully_connected;

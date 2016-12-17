@@ -44,6 +44,9 @@ Attributes::Attributes(Model *model, OutputType output_type) :
     Output* local_output = (Output*) allocate_host(
         this->total_neurons * HISTORY_SIZE, sizeof(Output));
 
+    // Retrieve attribute kernel
+    get_attribute_kernel(&this->attribute_kernel, model->engine_name);
+
 #ifdef PARALLEL
     // Copy data to device, then free from host
     this->input = (float*)
@@ -103,4 +106,18 @@ void Attributes::send_output_to(Buffer *buffer) {
             count * sizeof(Output));
 #endif
     }
+}
+
+void Attributes::update(int start_index, int count) {
+#ifdef PARALLEL
+    int threads = calc_threads(count);
+    int blocks = calc_blocks(count);
+
+    this->attribute_kernel<<<blocks, threads, 0, *this->state_stream>>>(
+        this->device_pointer, start_index, count, total_neurons);
+    cudaCheckError("Failed to update neuron state/output!");
+#else
+    this->attribute_kernel(
+        this, start_index, count, total_neurons);
+#endif
 }

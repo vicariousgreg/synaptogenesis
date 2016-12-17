@@ -3,7 +3,6 @@
 #include <string>
 
 #include "state/rate_encoding_attributes.h"
-#include "engine/kernel/rate_encoding_kernel.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
@@ -51,17 +50,5 @@ RateEncodingAttributes::~RateEncodingAttributes() {
     cudaFree(this->device_pointer);
 #else
     free(this->neuron_parameters);
-#endif
-}
-
-void RateEncodingAttributes::update(int start_index, int count) {
-#ifdef PARALLEL
-    int threads = calc_threads(count);
-    int blocks = calc_blocks(count);
-    re_update_attributes<<<blocks, threads, 0, *this->state_stream>>>(
-        this->device_pointer, start_index, count, total_neurons);
-    cudaCheckError("Failed to calculate neuron output!");
-#else
-    re_update_attributes(this, start_index, count, total_neurons);
 #endif
 }

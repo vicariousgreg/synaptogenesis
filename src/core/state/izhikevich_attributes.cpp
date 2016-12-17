@@ -3,7 +3,6 @@
 #include <string>
 
 #include "state/izhikevich_attributes.h"
-#include "engine/kernel/izhikevich_kernel.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
@@ -114,19 +113,5 @@ IzhikevichAttributes::~IzhikevichAttributes() {
     free(this->voltage);
     free(this->recovery);
     free(this->neuron_parameters);
-#endif
-}
-
-void IzhikevichAttributes::update(int start_index, int count) {
-#ifdef PARALLEL
-    int threads = calc_threads(count);
-    int blocks = calc_blocks(count);
-
-    iz_update_attributes<<<blocks, threads, 0, *this->state_stream>>>(
-        this->device_pointer, start_index, count, total_neurons);
-    cudaCheckError("Failed to update neuron voltages/spikes!");
-#else
-    iz_update_attributes(
-        this, start_index, count, total_neurons);
 #endif
 }
