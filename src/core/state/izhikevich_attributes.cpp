@@ -122,11 +122,11 @@ void IzhikevichAttributes::update(int start_index, int count) {
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
 
-    iz_update_state<<<blocks, threads, 0, *this->state_stream>>>(
+    iz_update_attributes<<<blocks, threads, 0, *this->state_stream>>>(
         this->device_pointer, start_index, count, total_neurons);
     cudaCheckError("Failed to update neuron voltages/spikes!");
 #else
-    iz_update_state(
+    iz_update_attributes(
         this, start_index, count, total_neurons);
 #endif
 }

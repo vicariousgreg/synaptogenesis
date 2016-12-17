@@ -58,10 +58,10 @@ void RateEncodingAttributes::update(int start_index, int count) {
 #ifdef PARALLEL
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
-    re_update_output<<<blocks, threads, 0, *this->state_stream>>>(
+    re_update_attributes<<<blocks, threads, 0, *this->state_stream>>>(
         this->device_pointer, start_index, count, total_neurons);
     cudaCheckError("Failed to calculate neuron output!");
 #else
-    re_update_output(this, start_index, count, total_neurons);
+    re_update_attributes(this, start_index, count, total_neurons);
 #endif
 }

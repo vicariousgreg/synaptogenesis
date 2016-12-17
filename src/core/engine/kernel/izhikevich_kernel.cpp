@@ -6,9 +6,8 @@
 /* Euler resolution for voltage update. */
 #define EULER_RES 2
 
-GLOBAL void iz_update_state(IzhikevichAttributes *att,
+GLOBAL void iz_update_attributes(IzhikevichAttributes *att,
         int start_index, int count, int num_neurons) {
-    // Determine spikes.
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
@@ -32,13 +31,8 @@ GLOBAL void iz_update_state(IzhikevichAttributes *att,
             float delta_v = (0.04 * voltage * voltage) +
                             (5*voltage) + 140 - recovery + current;
             voltage += delta_v / EULER_RES;
-            recovery += a * ((b * voltage) - recovery)
-                            / EULER_RES;
+            recovery += a * ((b * voltage) - recovery) / EULER_RES;
         }
-
-        //recovery += a * ((b * voltage) - recovery);
-        att->voltage[nid] = voltage;
-        att->recovery[nid] = recovery;
 
         /********************
          *** SPIKE UPDATE ***
@@ -58,19 +52,21 @@ GLOBAL void iz_update_state(IzhikevichAttributes *att,
             next_value = att->spikes[num_neurons * (index + 1) + nid];
 
             // Shift bits, carry over MSB from next value.
-            new_value = curr_value << 1 + (next_value < 0);
+            new_value = (curr_value << 1) + (next_value < 0);
             att->spikes[num_neurons*index + nid] = new_value;
         }
 
         // Least significant value already loaded into next_value.
         // Index moved appropriately from loop.
-        new_value = (next_value << 1) + spike;
-        att->spikes[num_neurons*index + nid] = new_value;
+        att->spikes[num_neurons*index + nid] = (next_value << 1) + spike;
 
         // Reset voltage if spiked.
         if (spike) {
             att->voltage[nid] = att->neuron_parameters[nid].c;
             att->recovery[nid] = recovery + att->neuron_parameters[nid].d;
+        } else {
+            att->voltage[nid] = voltage;
+            att->recovery[nid] = recovery;
         }
     }
 }

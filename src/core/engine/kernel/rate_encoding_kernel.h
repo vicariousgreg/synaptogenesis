@@ -6,7 +6,7 @@
 
 /* Shifts output and computes most recent output
  * using positive tanh Activation function */
-GLOBAL void re_update_output(RateEncodingAttributes *att,
+GLOBAL void re_update_attributes(RateEncodingAttributes *att,
     int start_index, int count, int num_neurons);
 
 #endif

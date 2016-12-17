@@ -2,7 +2,7 @@
 
 #include "engine/kernel/rate_encoding_kernel.h"
 
-GLOBAL void re_update_output(RateEncodingAttributes *att,
+GLOBAL void re_update_attributes(RateEncodingAttributes *att,
         int start_index, int count, int num_neurons) {
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
