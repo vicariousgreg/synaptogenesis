@@ -31,9 +31,9 @@ KernelData::KernelData(Connection *conn, State *state) :
             "Invalid delay in connection!");
 
     outputs = state->get_attributes()->get_output(word_index)
-                + conn->from_layer->index;
+                + conn->from_layer->start_index;
     inputs = state->get_attributes()->get_input()
-                + conn->to_layer->index;
+                + conn->to_layer->start_index;
 
     get_extractor(&this->extractor, output_type);
 }

@@ -24,8 +24,11 @@ class Layer {
         // Layer name
         std::string name;
 
+        // Layer id
+        int id;
+
         // Start index
-        int index;
+        int start_index;
 
         // Layer rows, columns, and total size
         int rows, columns, size;
@@ -51,11 +54,6 @@ class Layer {
         friend class Structure;
         friend class Connection;
 
-        /* Constructor.
-         * |start_index| identifies the first neuron in the layer.
-         * |size| indicates the size of the layer.
-         */
-        Layer(std::string name, int start_index, int rows, int columns, std::string params);
         Layer(std::string name, int rows, int columns, std::string params);
 
         void add_input_connection(Connection* connection) {

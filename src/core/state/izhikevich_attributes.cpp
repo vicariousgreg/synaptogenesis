@@ -72,9 +72,9 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
         Layer *layer = model->all_layers[i];
         IzhikevichParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
-            local_params[layer->index+j] = params;
-            local_voltage[layer->index+j] = params.c;
-            local_recovery[layer->index+j] = params.b * params.c;
+            local_params[layer->start_index+j] = params;
+            local_voltage[layer->start_index+j] = params.c;
+            local_recovery[layer->start_index+j] = params.b * params.c;
         }
     }
 

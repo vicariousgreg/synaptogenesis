@@ -81,8 +81,7 @@ void State::reset() {
     cudaEventRecord(*this->clear_event, this->state_stream);
     cudaStreamWaitEvent(this->state_stream, *this->input_event, 0);
 #else
-    if (count > 0)
-        clear_data(input + offset, count);
+    if (count > 0) clear_data(input + offset, count);
 #endif
 }
 

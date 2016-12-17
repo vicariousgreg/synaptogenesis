@@ -3,6 +3,7 @@
 #include "engine/kernel/attribute_kernel.h"
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
+#include "util/error_manager.h"
 
 void get_attribute_kernel(ATTRIBUTE_KERNEL *dest, std::string engine_name) {
     if (engine_name == "izhikevich")

@@ -53,9 +53,12 @@ void Model::build() {
 
     // Adjust indices and ids
     int start_index = 0;
+    int index = 0;
     for (auto& layer : this->all_layers) {
-        layer->index = start_index;
+        layer->id = index;
+        layer->start_index = start_index;
         start_index += layer->size;
+        ++index;
     }
 
     // Set input and output indices

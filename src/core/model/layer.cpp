@@ -2,9 +2,10 @@
 #include "io/module/module.h"
 #include "util/error_manager.h"
 
-Layer::Layer(std::string name, int start_index, int rows, int columns, std::string params) :
+Layer::Layer(std::string name, int rows, int columns, std::string params) :
         name(name),
-        index(start_index),
+        id(0),
+        start_index(0),
         rows(rows),
         columns(columns),
         size(rows * columns),
@@ -13,9 +14,6 @@ Layer::Layer(std::string name, int start_index, int rows, int columns, std::stri
         input_index(0),
         output_index(0),
         input_module(NULL) { }
-
-Layer::Layer(std::string name, int rows, int columns, std::string params) :
-    Layer(name, 0, rows, columns, params) { }
 
 void Layer::add_module(Module *module) {
     IOType new_type = module->get_type();

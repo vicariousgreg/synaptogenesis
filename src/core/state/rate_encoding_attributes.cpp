@@ -23,7 +23,7 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
         Layer *layer = model->all_layers[i];
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
-            local_params[layer->index+j] = params;
+            local_params[layer->start_index+j] = params;
     }
 
     this->input = this->get_input();

@@ -13,10 +13,10 @@ UILIBPATH   := $(BUILDDIR_UI)/visualizer.a
 $(UILIBPATH): $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o
 	ar rvs $(UILIBPATH) $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o
 
-$(BUILDDIR_UI)/visualizer.o: $(UIPATH)/visualizer.cpp $(UIPATH)/visualizer.h $(UIPATH)/gui.h $(UIPATH)/layer_info.h
+$(BUILDDIR_UI)/visualizer.o: $(UIPATH)/visualizer.cpp $(UIPATH)/visualizer.h $(UIPATH)/gui.h $(UIPATH)/layer_info.h $(COREPATH)/model/layer.h
 	g++ $(CCFLAGS) -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/visualizer.cpp -o $(BUILDDIR_UI)/visualizer.o $(LIBS)
 
-$(BUILDDIR_UI)/gui.o: $(UIPATH)/gui.cpp $(UIPATH)/gui.h $(UIPATH)/layer_info.h
+$(BUILDDIR_UI)/gui.o: $(UIPATH)/gui.cpp $(UIPATH)/gui.h $(UIPATH)/layer_info.h $(COREPATH)/model/layer.h $(COREPATH)/io/buffer.h
 	g++ $(CCFLAGS) -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $(UIPATH)/gui.cpp -o $(BUILDDIR_UI)/gui.o $(LIBS)
 
 #---------------------------------------------------------------------------------
