@@ -1,8 +1,6 @@
-#include <cstdlib>
-#include <cstdio>
 #include <string>
 
-#include "state/rate_encoding_state.h"
+#include "state/rate_encoding_attributes.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
@@ -14,7 +12,7 @@ static RateEncodingParameters create_parameters(std::string str) {
     //    "Unrecognized parameter string: " + str);
 }
 
-RateEncodingState::RateEncodingState(Model* model) : State(model, FLOAT, 3) {
+RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model, FLOAT) {
     RateEncodingParameters* local_params =
         (RateEncodingParameters*) allocate_host(total_neurons, sizeof(RateEncodingParameters));
 
@@ -26,10 +24,6 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, FLOAT, 3) {
             local_params[layer->start_index+j] = params;
     }
 
-    this->input = this->get_input();
-    this->output = (float*)this->get_output();
-    this->recent_output = (float*)this->get_recent_output();
-
 #ifdef PARALLEL
     // Allocate space on GPU and copy data
     this->neuron_parameters = (RateEncodingParameters*)
@@ -37,14 +31,14 @@ RateEncodingState::RateEncodingState(Model* model) : State(model, FLOAT, 3) {
     free(local_params);
 
     // Copy this to device
-    this->device_pointer = (RateEncodingState*)
-        allocate_device(1, sizeof(RateEncodingState), this);
+    this->device_pointer = (RateEncodingAttributes*)
+        allocate_device(1, sizeof(RateEncodingAttributes), this);
 #else
     this->neuron_parameters = local_params;
 #endif
 }
 
-RateEncodingState::~RateEncodingState() {
+RateEncodingAttributes::~RateEncodingAttributes() {
 #ifdef PARALLEL
     cudaFree(this->neuron_parameters);
     cudaFree(this->device_pointer);

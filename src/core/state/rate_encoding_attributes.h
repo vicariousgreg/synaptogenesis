@@ -1,5 +1,5 @@
-#ifndef rate_encoding_state_h
-#define rate_encoding_state_h
+#ifndef rate_encoding_attributes_h
+#define rate_encoding_attributes_h
 
 #include "state/state.h"
 
@@ -11,10 +11,12 @@ class RateEncodingParameters {
         float x;
 };
 
-class RateEncodingState : public State {
+class RateEncodingAttributes : public Attributes {
     public:
-        RateEncodingState(Model* model);
-        ~RateEncodingState();
+        RateEncodingAttributes(Model* model);
+        ~RateEncodingAttributes();
+
+        int get_matrix_depth() { return 3; }
 
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;

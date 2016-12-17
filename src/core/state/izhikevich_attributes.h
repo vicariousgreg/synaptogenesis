@@ -1,7 +1,7 @@
-#ifndef izhikevich_state_h
-#define izhikevich_state_h
+#ifndef izhikevich_attributes_h
+#define izhikevich_attributes_h
 
-#include "state/state.h"
+#include "state/attributes.h"
 
 /* Neuron parameters class.
  * Contains a,b,c,d parameters for Izhikevich model */
@@ -12,17 +12,12 @@ class IzhikevichParameters {
         float a, b, c, d;
 };
 
-class IzhikevichState : public State {
+class IzhikevichAttributes : public Attributes {
     public:
-        IzhikevichState(Model* model);
-        ~IzhikevichState();
+        IzhikevichAttributes(Model* model);
+        ~IzhikevichAttributes();
 
-        float* get_voltage() { return this->voltage; }
-        float* get_recovery() { return this->recovery; }
-        int* get_spikes() { return this->spikes; }
-        IzhikevichParameters* get_parameters() {
-            return this->neuron_parameters;
-        }
+        int get_matrix_depth() { return 3; }
 
         // Neuron Attributes
         float *voltage;

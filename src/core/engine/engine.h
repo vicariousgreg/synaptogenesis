@@ -9,11 +9,13 @@
 class Engine {
     public:
         Engine(Model *model)
-                : state(build_state(model)),
+                : model(model),
+                  state(new State(model)),
                   stream_cluster(model, state) { }
 
         virtual ~Engine() { delete this->state; }
 
+        Buffer *get_buffer() { return this->state->get_buffer(); }
         void disable_learning();
 
         // Main hooks
@@ -24,6 +26,8 @@ class Engine {
         void stage_remaining();
         void stage_weights();
 
+    private:
+        Model *model;
         State *state;
         StreamCluster stream_cluster;
 };

@@ -82,7 +82,7 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
     }
 
     // Build environment and buffer
-    this->environment = new Environment(model, this->engine->state->get_buffer());
+    this->environment = new Environment(model, this->engine->get_buffer());
 
     // Set iterations and verbose
     this->verbose = verbose;
