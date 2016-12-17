@@ -21,6 +21,7 @@ class GUI {
         std::vector<Glib::RefPtr<Gdk::Pixbuf> > pixbufs;
 
     private:
+        char** argv;
         Buffer *buffer;
         Glib::RefPtr<Gtk::Application> app;
         Gtk::Window *window;

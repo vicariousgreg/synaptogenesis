@@ -9,7 +9,7 @@
 class Engine {
     public:
         Engine(Model *model)
-                : state(new State(model)),
+                : state(build_state(model)),
                   stream_cluster(model, state) { }
 
         virtual ~Engine() { delete this->state; }

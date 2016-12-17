@@ -13,7 +13,7 @@ void Engine::stage_clear() {
 
 void Engine::stage_input() {
     // Start input streaming
-    this->state->get_input();
+    this->state->transfer_input();
 
 #ifdef PARALLEL
     // If parallel, schedule everything now
@@ -55,7 +55,7 @@ void Engine::stage_calc_output() {
 
 void Engine::stage_send_output() {
     // Stream output
-    this->state->send_output();
+    this->state->transfer_output();
 
 #ifdef PARALLEL
     // Wait for it to finish

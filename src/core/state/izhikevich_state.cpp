@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <string>
 
-#include "state/izhikevich_attributes.h"
+#include "state/izhikevich_state.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
@@ -61,7 +61,7 @@ static IzhikevichParameters create_parameters(std::string str) {
             "Unrecognizer parameter string: " + str);
 }
 
-IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT) {
+IzhikevichState::IzhikevichState(Model* model) : State(model, BIT, 3) {
     float* local_voltage = (float*) allocate_host(total_neurons, sizeof(float));
     float* local_recovery = (float*) allocate_host(total_neurons, sizeof(float));
     IzhikevichParameters* local_params =
@@ -94,8 +94,8 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
     free(local_params);
 
     // Copy this to device
-    this->device_pointer = (IzhikevichAttributes*)
-        allocate_device(1, sizeof(IzhikevichAttributes), this);
+    this->device_pointer = (IzhikevichState*)
+        allocate_device(1, sizeof(IzhikevichState), this);
 #else
     this->voltage = local_voltage;
     this->recovery = local_recovery;
@@ -103,7 +103,7 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
 #endif
 }
 
-IzhikevichAttributes::~IzhikevichAttributes() {
+IzhikevichState::~IzhikevichState() {
 #ifdef PARALLEL
     cudaFree(this->voltage);
     cudaFree(this->recovery);

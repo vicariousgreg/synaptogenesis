@@ -16,7 +16,7 @@ KernelData::KernelData(Connection *conn, State *state) :
         to_rows(conn->to_layer->rows),
         to_columns(conn->to_layer->columns),
         num_weights(conn->num_weights),
-        output_type(state->get_attributes()->get_output_type()),
+        output_type(state->get_output_type()),
         weights(state->get_matrix(conn->id)) {
     this->fray =
         (to_rows == from_rows and to_columns == from_columns)
@@ -30,9 +30,9 @@ KernelData::KernelData(Connection *conn, State *state) :
         ErrorManager::get_instance()->log_error(
             "Invalid delay in connection!");
 
-    outputs = state->get_attributes()->get_output(word_index)
+    outputs = state->get_output(word_index)
                 + conn->from_layer->start_index;
-    inputs = state->get_attributes()->get_input()
+    inputs = state->get_input()
                 + conn->to_layer->start_index;
 
     get_extractor(&this->extractor, output_type);

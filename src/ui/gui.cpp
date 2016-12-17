@@ -5,24 +5,23 @@
 GUI::GUI(Buffer *buffer) : buffer(buffer) {
     // Mock arguments
     int argc = 1;
-    char **argv = (char**)malloc(sizeof(char*));
-    argv[0] = " ";
+    this->argv = (char**)malloc(sizeof(char*));
+    this->argv[0] = " ";
     app =
-        Gtk::Application::create(argc, argv,
+        Gtk::Application::create(argc, this->argv,
                 "org.gtkmm.examples.base");
 
     window = new Gtk::Window();
     grid = new Gtk::Grid();
     window->add(*grid);
     dispatcher.connect(sigc::mem_fun(*this, &GUI::update));
-
-    free(argv);
 }
 
 
 GUI::~GUI() {
     delete this->window;
     delete this->grid;
+    free(this->argv);
 }
 
 void GUI::add_layer(LayerInfo layer_info) {
