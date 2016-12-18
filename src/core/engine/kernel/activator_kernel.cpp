@@ -2,6 +2,10 @@
 #include "state/attributes.h"
 #include "util/error_manager.h"
 
+#define MOD_RATE 0.3
+#define MOD_DECAY 0.01
+#define MOD_MAX 10.0
+
 #define EXTRACT_TRACE \
     float *trace = weights + (2*num_weights);
 

@@ -2,6 +2,9 @@
 #include "state/attributes.h"
 #include "util/error_manager.h"
 
+#define SUM_COEFFICIENT 0.5
+#define WEIGHT_DECAY 0.025
+
 #define EXTRACT_TRACE \
     float *trace = weights + (2*num_weights);
 

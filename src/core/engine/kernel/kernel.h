@@ -6,12 +6,6 @@
 #include "util/parallel.h"
 #include "util/constants.h"
 
-#define MOD_RATE 0.3
-#define MOD_DECAY 0.01
-#define MOD_MAX 10.0
-#define SUM_COEFFICIENT 0.5
-#define WEIGHT_DECAY 0.025
-
 /* Typedef for kernel functions, which just take KernelData */
 typedef void(*KERNEL)(KernelData);
 
