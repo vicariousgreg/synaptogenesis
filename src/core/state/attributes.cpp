@@ -44,6 +44,9 @@ Attributes::Attributes(Model *model, OutputType output_type)
     // Retrieve attribute kernel
     get_attribute_kernel(&this->attribute_kernel, model->engine_name);
 
+    // Retrieve extractor
+    get_extractor(&this->extractor, output_type);
+
 #ifdef PARALLEL
     // Copy data to device, then free from host
     this->input = (float*)

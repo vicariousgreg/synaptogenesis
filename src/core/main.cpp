@@ -351,7 +351,7 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(5);
+    Clock clock(20);
     //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
@@ -417,8 +417,8 @@ void alignment_test() {
     std::cout << "Alignment...\n";
     model = build_alignment_model("izhikevich");
     print_model(model);
-    run_simulation(model, 10000, true);
-    //run_simulation(model, 100, true);
+    //run_simulation(model, 10000, true);
+    run_simulation(model, 1000, true);
     //run_simulation(model, 10, true);
     std::cout << "\n";
 

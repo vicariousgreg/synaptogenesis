@@ -8,10 +8,6 @@
 #define DEF_PARAM(name, a,b,c,d) \
     static const IzhikevichParameters name = IzhikevichParameters(a,b,c,d);
 
-/******************************************************************************
- **************************** INITIALIZATION **********************************
- ******************************************************************************/
-
 /* Izhikevich Parameters Table */
 DEF_PARAM(DEFAULT          , 0.02, 0.2 , -70.0, 2   ); // Default
 DEF_PARAM(REGULAR          , 0.02, 0.2 , -65.0, 8   ); // Regular Spiking

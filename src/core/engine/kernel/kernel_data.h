@@ -8,13 +8,6 @@ class KernelData;
 class State;
 class Attributes;
 
-/* Extractors are responsible for extracting values from output */
-typedef float(*EXTRACTOR)(KernelData&, Output&);
-void get_extractor(EXTRACTOR *dest, OutputType output_type);
-DEVICE float extract_float(KernelData &kernel_data, Output &out);
-DEVICE float extract_int(KernelData &kernel_data, Output &out);
-DEVICE float extract_bit(KernelData &kernel_data, Output &out);
-
 /* Data package that is passed into kernel functions */
 class KernelData {
     public:
@@ -41,7 +34,6 @@ class KernelData {
         int to_size, to_rows, to_columns;
 
         /* IO attributes */
-        EXTRACTOR extractor;
         OutputType output_type;
         Output *outputs;
         float *inputs;

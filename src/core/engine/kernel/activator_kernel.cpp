@@ -1,22 +1,23 @@
 #include "engine/kernel/activator_kernel.h"
+#include "state/attributes.h"
 #include "util/error_manager.h"
 
-#define EXTRACT_MOD \
-    float *mod = kernel_data.weights + (2*kernel_data.num_weights);
+#define EXTRACT_TRACE \
+    float *trace = weights + (2*num_weights);
 
 #define CALC_VAL(from_index, weight_index) \
-    float val = kernel_data.extractor(kernel_data, kernel_data.outputs[from_index]) \
-                * kernel_data.weights[weight_index];
+    float val = extractor(delay, outputs[from_index]) \
+                * weights[weight_index];
 
-#define UPDATE_MOD(weight_index) \
-    if (kernel_data.plastic) { \
-        float old_mod = mod[weight_index]; \
-        float new_mod = old_mod + (MOD_RATE * val) - (MOD_DECAY * old_mod); \
-        mod[weight_index] = (new_mod < 0.0) ? 0.0 : (new_mod > MOD_MAX) ? MOD_MAX : new_mod; \
+#define UPDATE_TRACE(weight_index) \
+    if (plastic) { \
+        float old_trace = trace[weight_index]; \
+        float new_trace = old_trace + (MOD_RATE * val) - (MOD_DECAY * old_trace); \
+        trace[weight_index] = (new_trace < 0.0) ? 0.0 : (new_trace > MOD_MAX) ? MOD_MAX : new_trace; \
     }
 
 #define AGGREGATE(to_index, sum) \
-    kernel_data.inputs[to_index] = calc(kernel_data.opcode, kernel_data.inputs[to_index], sum);
+    inputs[to_index] = calc(opcode, inputs[to_index], sum);
 
 /******************************************************************************/
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
@@ -39,8 +40,8 @@ KERNEL get_activator_kernel(ConnectionType conn_type) {
 
 CALC_FULLY_CONNECTED(activate_fully_connected, \
     /* EXTRACTIONS
-     * Pointer to modifying substance level */
-    EXTRACT_MOD;,
+     * Pointer to activation trace */
+    EXTRACT_TRACE;,
 
     /* NEURON_PRE
      * Initialize sum to 0.0 */
@@ -50,7 +51,7 @@ CALC_FULLY_CONNECTED(activate_fully_connected, \
      * Calculate weight input, add to sum, update modifying substance */
     CALC_VAL(from_index, weight_index);
     sum += val;
-    UPDATE_MOD(weight_index);,
+    UPDATE_TRACE(weight_index);,
 
     /* NEURON_POST
      * Aggregate sum to input */
@@ -59,21 +60,21 @@ CALC_FULLY_CONNECTED(activate_fully_connected, \
 
 CALC_ONE_TO_ONE(activate_one_to_one, \
     /* EXTRACTIONS
-     * Pointer to modifying substance level */
-    EXTRACT_MOD;,
+     * Pointer to activation trace */
+    EXTRACT_TRACE;,
 
     /* WEIGHT_OP
      * Calculate weight input, add to sum, update modifying substance
      * Aggregate weight input to total input */
     CALC_VAL(index, index);
-    UPDATE_MOD(index);
+    UPDATE_TRACE(index);
     AGGREGATE(index, val);
 )
 
 CALC_CONVERGENT(activate_convergent, \
     /* EXTRACTIONS
-     * Pointer to modifying substance level */
-    EXTRACT_MOD;,
+     * Pointer to activation trace */
+    EXTRACT_TRACE;,
 
     /* NEURON_PRE
      * Initialize sum to 0.0 */
@@ -83,7 +84,7 @@ CALC_CONVERGENT(activate_convergent, \
      * Calculate weight input, add to sum, update modifying substance */
     CALC_VAL(from_index, weight_index);
     sum += val;
-    if (not kernel_data.convolutional) UPDATE_MOD(weight_index);,
+    if (not convolutional) UPDATE_TRACE(weight_index);,
 
     /* NEURON_POST
      * Aggregate sum to input */

@@ -27,6 +27,13 @@ void get_attribute_kernel(ATTRIBUTE_KERNEL *dest, std::string engine_name) {
 
 GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
+    float *voltages = iz_att->voltage;
+    float *recoveries = iz_att->recovery;
+    float *currents = iz_att->current;
+    int *spikes = iz_att->spikes;
+    int total_neurons = iz_att->total_neurons;
+    IzhikevichParameters *params = iz_att->neuron_parameters;
+
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
@@ -37,12 +44,12 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
         /**********************
          *** VOLTAGE UPDATE ***
          **********************/
-        float voltage = iz_att->voltage[nid];
-        float recovery = iz_att->recovery[nid];
-        float current = iz_att->current[nid];
+        float voltage = voltages[nid];
+        float recovery = recoveries[nid];
+        float current = currents[nid];
 
-        float a = iz_att->neuron_parameters[nid].a;
-        float b = iz_att->neuron_parameters[nid].b;
+        float a = params[nid].a;
+        float b = params[nid].b;
 
         // Euler's method for voltage/recovery update
         // If the voltage exceeds the spiking threshold, break
@@ -61,31 +68,31 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
 
         // Reduce reads, chain values.
         int curr_value, new_value;
-        int next_value = iz_att->spikes[nid];
+        int next_value = spikes[nid];
 
         // Shift all the bits.
         // Check if next word is negative (1 for MSB).
         int index;
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
             curr_value = next_value;
-            next_value = iz_att->spikes[iz_att->total_neurons * (index + 1) + nid];
+            next_value = spikes[total_neurons * (index + 1) + nid];
 
             // Shift bits, carry over MSB from next value.
             new_value = (curr_value << 1) + (next_value < 0);
-            iz_att->spikes[iz_att->total_neurons*index + nid] = new_value;
+            spikes[total_neurons*index + nid] = new_value;
         }
 
         // Least significant value already loaded into next_value.
         // Index moved appropriately from loop.
-        iz_att->spikes[iz_att->total_neurons*index + nid] = (next_value << 1) + spike;
+        spikes[total_neurons*index + nid] = (next_value << 1) + spike;
 
         // Reset voltage if spiked.
         if (spike) {
-            iz_att->voltage[nid] = iz_att->neuron_parameters[nid].c;
-            iz_att->recovery[nid] = recovery + iz_att->neuron_parameters[nid].d;
+            voltages[nid] = params[nid].c;
+            recoveries[nid] = recovery + params[nid].d;
         } else {
-            iz_att->voltage[nid] = voltage;
-            iz_att->recovery[nid] = recovery;
+            voltages[nid] = voltage;
+            recoveries[nid] = recovery;
         }
     }
 }
@@ -96,21 +103,25 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
 
 GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
     RateEncodingAttributes *re_att = (RateEncodingAttributes*)att;
+    float *outputs = re_att->output;
+    float *inputs = re_att->input;
+    int total_neurons = re_att->total_neurons;
+
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
 #else
     for (int nid = start_index ; nid < start_index+count; ++nid) {
 #endif
-        float curr_value, next_value = re_att->output[nid];
+        float curr_value, next_value = outputs[nid];
         int index;
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
             curr_value = next_value;
-            next_value = re_att->output[re_att->total_neurons * (index + 1) + nid];
-            re_att->output[re_att->total_neurons*index + nid] = next_value;
+            next_value = outputs[total_neurons * (index + 1) + nid];
+            outputs[total_neurons*index + nid] = next_value;
         }
-        float input = re_att->input[nid];
-        re_att->output[re_att->total_neurons*index + nid] =
+        float input = inputs[nid];
+        outputs[total_neurons*index + nid] =
             (input > 0.0) ? tanh(0.01*input) : 0.0;
     }
 }

@@ -2,6 +2,8 @@
 #define attributes_h
 
 #include "model/model.h"
+#include "engine/kernel/kernel.h"
+#include "engine/kernel/extractor.h"
 #include "engine/kernel/updater_kernel.h"
 #include "engine/kernel/attribute_kernel.h"
 #include "util/constants.h"
@@ -35,6 +37,7 @@ class Attributes {
         float* input;
 
         // Neuron output
+        EXTRACTOR extractor;
         OutputType output_type;
         Output* output;
         Output* recent_output;
