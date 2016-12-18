@@ -22,18 +22,15 @@
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
 /******************************************************************************/
 
-void get_activator_kernel(KERNEL *dest, ConnectionType conn_type) {
+KERNEL get_activator_kernel(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
-            *dest = activate_fully_connected;
-            break;
+            return activate_fully_connected;
         case ONE_TO_ONE:
-            *dest = activate_one_to_one;
-            break;
+            return activate_one_to_one;
         case CONVERGENT:
         case CONVOLUTIONAL:
-            *dest = activate_convergent;
-            break;
+            return activate_convergent;
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");

@@ -17,18 +17,15 @@
 /********************** CONNECTION UPDATER KERNELS ****************************/
 /******************************************************************************/
 
-void get_updater_kernel(KERNEL *dest, ConnectionType conn_type) {
+KERNEL get_updater_kernel(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
-            *dest = update_fully_connected;
-            break;
+            return update_fully_connected;
         case ONE_TO_ONE:
-            *dest = update_one_to_one;
-            break;
+            return update_one_to_one;
         case CONVERGENT:
         case CONVOLUTIONAL:
-            *dest = update_convergent;
-            break;
+            return update_convergent;
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");

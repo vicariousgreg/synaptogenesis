@@ -141,7 +141,7 @@ void State::update_states(int start_index, int count) {
     int blocks = calc_blocks(count);
 
     this->attributes->attribute_kernel<<<blocks, threads, 0, this->state_stream>>>(
-        attributes->device_pointer, start_index, count, attributes->total_neurons);
+        attributes->device_pointer, start_index, count);
     cudaCheckError("Failed to update neuron state/output!");
 #else
     this->attributes->attribute_kernel(

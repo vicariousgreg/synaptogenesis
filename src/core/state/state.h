@@ -3,6 +3,7 @@
 
 #include "model/model.h"
 #include "io/buffer.h"
+#include "engine/kernel/kernel.h"
 #include "engine/kernel/attribute_kernel.h"
 #include "state/attributes.h"
 #include "state/weight_matrices.h"
@@ -57,6 +58,17 @@ class State {
         int get_start_index(IOType type) { return attributes->start_indices[type]; }
 
         Buffer *get_buffer() { return this->buffer; }
+        Attributes *get_attributes_pointer() {
+#ifdef PARALLEL
+            return this->attributes->device_pointer;
+#else
+            return this->attributes;
+#endif
+        }
+
+        KERNEL get_updater(ConnectionType type) {
+            return attributes->get_updater(type);
+        }
 
 #ifdef PARALLEL
         /* If parallel, callers may want to wait for IO events */

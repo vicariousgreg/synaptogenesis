@@ -2,10 +2,11 @@
 #define kernel_data_h
 
 #include "model/connection.h"
-#include "state/state.h"
 #include "util/parallel.h"
 
 class KernelData;
+class State;
+class Attributes;
 
 /* Extractors are responsible for extracting values from output */
 typedef float(*EXTRACTOR)(KernelData&, Output&);
@@ -18,6 +19,9 @@ DEVICE float extract_bit(KernelData &kernel_data, Output &out);
 class KernelData {
     public:
         KernelData(Connection *conn, State *state);
+
+        /* Neuron attributes */
+        Attributes *attributes;
 
         /* Connection attributes */
         Opcode opcode;

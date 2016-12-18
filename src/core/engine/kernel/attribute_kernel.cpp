@@ -25,8 +25,7 @@ void get_attribute_kernel(ATTRIBUTE_KERNEL *dest, std::string engine_name) {
 /* Euler resolution for voltage update. */
 #define EULER_RES 2
 
-GLOBAL void iz_update_attributes(Attributes *att,
-        int start_index, int count, int total_neurons) {
+GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -69,16 +68,16 @@ GLOBAL void iz_update_attributes(Attributes *att,
         int index;
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
             curr_value = next_value;
-            next_value = iz_att->spikes[total_neurons * (index + 1) + nid];
+            next_value = iz_att->spikes[iz_att->total_neurons * (index + 1) + nid];
 
             // Shift bits, carry over MSB from next value.
             new_value = (curr_value << 1) + (next_value < 0);
-            iz_att->spikes[total_neurons*index + nid] = new_value;
+            iz_att->spikes[iz_att->total_neurons*index + nid] = new_value;
         }
 
         // Least significant value already loaded into next_value.
         // Index moved appropriately from loop.
-        iz_att->spikes[total_neurons*index + nid] = (next_value << 1) + spike;
+        iz_att->spikes[iz_att->total_neurons*index + nid] = (next_value << 1) + spike;
 
         // Reset voltage if spiked.
         if (spike) {
@@ -95,8 +94,7 @@ GLOBAL void iz_update_attributes(Attributes *att,
 /**************************** RATE ENCODING ***********************************/
 /******************************************************************************/
 
-GLOBAL void re_update_attributes(Attributes *att,
-        int start_index, int count, int total_neurons) {
+GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
     RateEncodingAttributes *re_att = (RateEncodingAttributes*)att;
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -108,11 +106,11 @@ GLOBAL void re_update_attributes(Attributes *att,
         int index;
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
             curr_value = next_value;
-            next_value = re_att->output[total_neurons * (index + 1) + nid];
-            re_att->output[total_neurons*index + nid] = next_value;
+            next_value = re_att->output[re_att->total_neurons * (index + 1) + nid];
+            re_att->output[re_att->total_neurons*index + nid] = next_value;
         }
         float input = re_att->input[nid];
-        re_att->output[total_neurons*index + nid] =
+        re_att->output[re_att->total_neurons*index + nid] =
             (input > 0.0) ? tanh(0.01*input) : 0.0;
     }
 }

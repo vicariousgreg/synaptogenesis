@@ -5,11 +5,8 @@ Instruction::Instruction(Connection *conn, State *state) :
         connection(conn),
         kernel_data(conn, state),
         type(conn->type) {
-    get_activator_kernel(&this->activator, type);
-    if (conn->plastic)
-        get_updater_kernel(&this->updater, type);
-    else
-        this->updater = NULL;
+    this->activator = get_activator_kernel(type);
+    this->updater = (conn->plastic) ? state->get_updater(type) : NULL;
 
 #ifdef PARALLEL
     this->stream = NULL;
