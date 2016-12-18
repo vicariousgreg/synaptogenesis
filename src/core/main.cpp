@@ -309,15 +309,15 @@ Model* build_alignment_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("alignment");
 
-    int resolution = 250;
-    structure->add_layer("input_layer", 1, 20, "default");
+    int resolution = 200;
+    structure->add_layer("input_layer", 1, 10, "default");
     structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
     structure->add_layer("inh_thalamus", resolution, resolution, "default");
     structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
     structure->add_layer("inh_cortex", resolution, resolution, "default");
 
     structure->connect_layers("input_layer", "exc_thalamus",
-        false, 0, 10, FULLY_CONNECTED, ADD, "");
+        false, 0, 5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_thalamus", "exc_cortex",
         true, 0, 10, CONVERGENT, ADD, "7 1 1");
     structure->connect_layers("exc_cortex", "inh_cortex",
@@ -340,7 +340,7 @@ Model* build_alignment_model(std::string engine_name) {
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    structure->add_module("input_layer", "random_input", "5 500");
+    structure->add_module("input_layer", "random_input", "10 500");
     structure->add_module("exc_thalamus", "noise_input", "0.25");
     structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
@@ -353,7 +353,7 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(15);
+    Clock clock(40);
     //Clock clock;  // No refresh rate synchronization
     //clock.run(model, iterations, 8, verbose);
     clock.run(model, iterations, 1, verbose);
@@ -420,7 +420,7 @@ void alignment_test() {
     model = build_alignment_model("izhikevich");
     print_model(model);
     run_simulation(model, 10000, true);
-    //run_simulation(model, 1000, true);
+    //run_simulation(model, 100, true);
     //run_simulation(model, 10, true);
     std::cout << "\n";
 
