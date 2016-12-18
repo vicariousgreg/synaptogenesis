@@ -72,21 +72,21 @@ inline GLOBAL void clear_data(float* data, int count) {
 // This makes a surprising difference in runtime
 // This macro only contains extractions relevant to all connection kernels
 #define PREAMBLE \
-    Opcode opcode = kernel_data.opcode; \
-    int delay = kernel_data.delay; \
-    float *weights = kernel_data.weights; \
-    int num_weights = kernel_data.num_weights; \
-    bool plastic = kernel_data.plastic; \
-    float max_weight = kernel_data.max_weight; \
-    int from_size = kernel_data.from_size; \
-    int from_rows = kernel_data.from_rows; \
-    int from_columns = kernel_data.from_columns; \
-    int to_size = kernel_data.to_size; \
-    int to_rows = kernel_data.to_rows; \
-    int to_columns = kernel_data.to_columns; \
-    Output *outputs = kernel_data.outputs; \
-    float *inputs = kernel_data.inputs; \
-    EXTRACTOR extractor = kernel_data.attributes->extractor;
+    const Opcode opcode = kernel_data.opcode; \
+    const int delay = kernel_data.delay; \
+    float * const weights = kernel_data.weights; \
+    const int num_weights = kernel_data.num_weights; \
+    const bool plastic = kernel_data.plastic; \
+    const float max_weight = kernel_data.max_weight; \
+    const int from_size = kernel_data.from_size; \
+    const int from_rows = kernel_data.from_rows; \
+    const int from_columns = kernel_data.from_columns; \
+    const int to_size = kernel_data.to_size; \
+    const int to_rows = kernel_data.to_rows; \
+    const int to_columns = kernel_data.to_columns; \
+    Output * const outputs = kernel_data.outputs; \
+    float * const inputs = kernel_data.inputs; \
+    const EXTRACTOR extractor = kernel_data.attributes->extractor;
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(KernelData kernel_data) { \
