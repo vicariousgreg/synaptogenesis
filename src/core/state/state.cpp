@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "state/state.h"
 #include "engine/kernel/kernel.h"
 #include "util/tools.h"
@@ -26,9 +28,9 @@ State::State(Model *model)
 }
 
 State::~State() {
-    delete this->attributes;
-    delete this->weight_matrices;
-    delete this->buffer;
+    delete attributes;
+    delete weight_matrices;
+    delete buffer;
 
 #ifdef PARALLEL
     cudaStreamDestroy(io_stream);
@@ -140,12 +142,11 @@ void State::update_states(int start_index, int count) {
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
 
-    this->attributes->attribute_kernel<<<blocks, threads, 0, this->state_stream>>>(
+    attributes->attribute_kernel<<<blocks, threads, 0, this->state_stream>>>(
         attributes->device_pointer, start_index, count);
     cudaCheckError("Failed to update neuron state/output!");
 #else
-    this->attributes->attribute_kernel(
-        attributes, start_index, count, attributes->total_neurons);
+    attributes->attribute_kernel(attributes, start_index, count);
 #endif
 }
 

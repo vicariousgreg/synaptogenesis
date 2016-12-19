@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "engine/kernel/activator_kernel.h"
 #include "state/attributes.h"
 #include "util/error_manager.h"
@@ -6,18 +8,25 @@
 #define MOD_DECAY 0.005
 #define MOD_MAX 10.0
 
+
+// Different minimum functions are used on the host and device
+#ifdef PARALLEL
+#define MIN min
+#else
+#define MIN std::fmin
+#endif
+
 #define EXTRACT_TRACE \
     float *trace = weights + (2*num_weights);
 
 #define CALC_VAL(from_index, weight_index) \
-    float val = extractor(delay, outputs[from_index]) \
-                * weights[weight_index];
+    float val = extractor(delay, outputs[from_index]) * weights[weight_index];
 
 #define UPDATE_TRACE(weight_index) \
     if (plastic) { \
         float old_trace = trace[weight_index]; \
         float new_trace = old_trace + (MOD_RATE * val) - (MOD_DECAY * old_trace); \
-        trace[weight_index] = (new_trace < 0.0) ? 0.0 : (new_trace > MOD_MAX) ? MOD_MAX : new_trace; \
+        trace[weight_index] = MIN(MOD_MAX, new_trace);  \
     }
 
 #define AGGREGATE(to_index, sum) \

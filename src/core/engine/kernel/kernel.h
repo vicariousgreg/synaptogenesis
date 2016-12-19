@@ -148,6 +148,10 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 #define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(KernelData kernel_data) { \
     PREAMBLE; \
+    const bool convolutional = kernel_data.convolutional; \
+    const int overlap = kernel_data.overlap; \
+    const int stride = kernel_data.stride; \
+    const int fray = kernel_data.fray; \
     EXTRACTIONS; \
  \
     int kernel_size = overlap * overlap; \
@@ -163,8 +167,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
  \
             /* Row of matrix is either the first column (convolutional) */ \
             /*   or the index of the destination neuron otherwise */ \
-            int weight_offset = (convolutional) \
-                                ? 0 : to_index * kernel_size; \
+            int weight_offset = (convolutional) ? 0 : to_index * kernel_size; \
  \
             /* Run the kernel */ \
             for (int k_row = 0 ; k_row < overlap ; ++k_row) { \
@@ -195,10 +198,10 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 #define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(KernelData kernel_data) { \
     PREAMBLE; \
-    bool convolutional = kernel_data.convolutional; \
-    int overlap = kernel_data.overlap; \
-    int stride = kernel_data.stride; \
-    int fray = kernel_data.fray; \
+    const bool convolutional = kernel_data.convolutional; \
+    const int overlap = kernel_data.overlap; \
+    const int stride = kernel_data.stride; \
+    const int fray = kernel_data.fray; \
     EXTRACTIONS; \
  \
     int kernel_size = overlap * overlap; \
@@ -219,8 +222,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
         /* Kernels are organized into columns */ \
         /* One kernel per destination neuron */ \
         /*   Unless convolutional (shared kernel) */ \
-        int kernel_row_size = (convolutional) \
-                              ? 1 : to_size; \
+        int kernel_row_size = (convolutional) ? 1 : to_size; \
 \
         /* Run the kernel */ \
         for (int k_row = 0 ; k_row < overlap ; ++k_row) { \
@@ -238,8 +240,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 \
                 /* Row of matrix is the kernel index * row size (see above) */ \
                 int weight_offset = \
-                    ((k_row*overlap) + k_col) \
-                    * kernel_row_size; \
+                    ((k_row*overlap) + k_col) * kernel_row_size; \
                 int weight_index = weight_offset + weight_col; \
 \
                 WEIGHT_OP; \
