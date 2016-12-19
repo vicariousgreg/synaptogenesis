@@ -184,8 +184,8 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
                     int from_index = k_s_row * from_columns + k_s_col; \
  \
                     /* Column of matrix is the kernel index */ \
-                    int weight_col = (k_row * overlap) + k_col; \
-                    int weight_index = weight_offset + weight_col; \
+                    int weight_index = weight_offset + \
+                        (k_row * overlap) + k_col; \
  \
                     WEIGHT_OP; \
                 } \
@@ -239,9 +239,8 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
                 int from_index = k_s_row * from_columns + k_s_col; \
 \
                 /* Row of matrix is the kernel index * row size (see above) */ \
-                int weight_offset = \
+                int weight_index = weight_col;  + \
                     ((k_row*overlap) + k_col) * kernel_row_size; \
-                int weight_index = weight_offset + weight_col; \
 \
                 WEIGHT_OP; \
             } \
