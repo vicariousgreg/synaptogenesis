@@ -25,7 +25,7 @@
 #include "util/error_manager.h"
 
 #define WARP_SIZE 32
-#define IDEAL_THREADS 256
+#define IDEAL_THREADS 128
 #define MAX_THREADS 1024
 #define MAX_BLOCKS 65535
 
