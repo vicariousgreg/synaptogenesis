@@ -42,11 +42,10 @@ class Lock {
 
 class Clock {
     public:
-        Clock(float refresh_rate = INT_MAX, int environment_rate = 1, bool verbose = false)
+        Clock(float refresh_rate = INT_MAX, int environment_rate = 1, bool verbose = true)
                 : time_limit(1.0 / refresh_rate),
                   environment_rate(environment_rate),
                   verbose(verbose) {}
-        Clock() : time_limit(0), environment_rate(1), verbose(false) {}
         void run(Model *model, int iterations);
 
     private:
