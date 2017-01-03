@@ -1,6 +1,6 @@
 #include "clock.h"
 
-void Clock::engine_loop(int iterations) {
+void Clock::engine_loop(int iterations, bool verbose) {
     this->run_timer.reset();
 
     for (int i = 0; i < iterations; ++i) {
@@ -47,7 +47,7 @@ void Clock::engine_loop(int iterations) {
 #endif
 }
 
-void Clock::environment_loop(int iterations) {
+void Clock::environment_loop(int iterations, bool verbose) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         this->sensory_lock.wait(ENVIRONMENT);
@@ -67,7 +67,7 @@ void Clock::environment_loop(int iterations) {
     }
 }
 
-void Clock::run(Model *model, int iterations) {
+void Clock::run(Model *model, int iterations, bool verbose) {
     // Initialization
     this->sensory_lock.set_owner(ENVIRONMENT);
     this->motor_lock.set_owner(ENVIRONMENT);
@@ -91,8 +91,10 @@ void Clock::run(Model *model, int iterations) {
 #endif
 
     // Launch threads
-    std::thread engine_thread(&Clock::engine_loop, this, iterations);
-    std::thread environment_thread(&Clock::environment_loop, this, iterations);
+    std::thread engine_thread(
+        &Clock::engine_loop, this, iterations, verbose);
+    std::thread environment_thread(
+        &Clock::environment_loop, this, iterations, verbose);
 
     // Launch UI
     this->environment->ui_launch();

@@ -42,18 +42,16 @@ class Lock {
 
 class Clock {
     public:
-        Clock(float refresh_rate = INT_MAX, int environment_rate = 1, bool verbose = true)
+        Clock(float refresh_rate = INT_MAX, int environment_rate = 1)
                 : time_limit(1.0 / refresh_rate),
-                  environment_rate(environment_rate),
-                  verbose(verbose) {}
-        void run(Model *model, int iterations);
+                  environment_rate(environment_rate) {}
+        void run(Model *model, int iterations, bool verbose);
 
     private:
-        void engine_loop(int iterations);
-        void environment_loop(int iterations);
+        void engine_loop(int iterations, bool verbose);
+        void environment_loop(int iterations, bool verbose);
 
         int environment_rate;
-        bool verbose;
         Engine *engine;
         Environment *environment;
 

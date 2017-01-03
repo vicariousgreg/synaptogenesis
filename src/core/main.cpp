@@ -353,10 +353,9 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(40);
+    Clock clock(40, 1);
     //Clock clock;  // No refresh rate synchronization
-    //clock.run(model, iterations, 8, verbose);
-    clock.run(model, iterations, 1, verbose);
+    clock.run(model, iterations, verbose);
 }
 
 void stress_test() {
