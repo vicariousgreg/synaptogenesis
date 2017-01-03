@@ -1,7 +1,5 @@
 #include "gui.h"
 
-#include <iostream>
-
 GUI::GUI(Buffer *buffer) : buffer(buffer) {
     // Mock arguments
     int argc = 1;
@@ -56,21 +54,6 @@ void GUI::launch() {
 }
 
 void GUI::update() {
-    // Copy data over
-    for (int i = 0; i < layers.size(); ++i) {
-        LayerInfo &info = layers[i];
-        if (info.output) {
-            guint8* data = pixbufs[i]->get_pixels();
-            //guint8* data = images[i]->get_pixbuf()->get_pixels();
-            int output_index = info.layer->output_index;
-            Output *output = buffer->get_output() + output_index;
-            for (int j = 0; j < info.layer->size; ++j) {
-                guint8 val = (guint8)output[j].i;
-                data[j*4 + 3] = 255 - val;
-            }
-        }
-    }
-
     for (int i = 0; i < images.size(); ++i) {
         images[i]->set(this->pixbufs[i]);
     }

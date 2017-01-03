@@ -1,8 +1,6 @@
 #include "visualizer.h"
 #include "gui.h"
 
-#include <iostream>
-
 static guint8 convert(Output out, OutputType type) {
     switch (type) {
         case FLOAT:
@@ -40,24 +38,20 @@ void Visualizer::launch() {
 }
 
 void Visualizer::update() {
+    OutputType output_type = buffer->get_output_type();
+
     // Copy data over
-    /*
     for (int i = 0; i < gui->layers.size(); ++i) {
         LayerInfo &info = gui->layers[i];
         if (info.output) {
             guint8* data = gui->pixbufs[i]->get_pixels();
             int output_index = info.layer->output_index;
             Output *output = buffer->get_output() + output_index;
-            for (int j = 0; j < info.layer->size; ++j) {
-                guint8 val = convert(output[j], buffer->output_type);
-                data[j*4 + 0] = val;
-                data[j*4 + 1] = val;
-                data[j*4 + 2] = val;
-                data[j*4 + 3] = 255;
-            }
+
+            for (int j = 0; j < info.layer->size; ++j)
+                data[j*4 + 3] = 255 - convert(output[j], output_type);
         }
     }
-    */
 
     // Signal GUI to update
     this->gui->dispatcher.emit();
