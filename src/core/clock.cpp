@@ -1,6 +1,6 @@
 #include "clock.h"
 
-void Clock::engine_loop() {
+void Clock::engine_loop(int iterations) {
     this->run_timer.reset();
 
     for (int i = 0; i < iterations; ++i) {
@@ -47,7 +47,7 @@ void Clock::engine_loop() {
 #endif
 }
 
-void Clock::environment_loop() {
+void Clock::environment_loop(int iterations) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         this->sensory_lock.wait(ENVIRONMENT);
@@ -67,7 +67,7 @@ void Clock::environment_loop() {
     }
 }
 
-void Clock::run(Model *model, int iterations, int environment_rate, bool verbose) {
+void Clock::run(Model *model, int iterations) {
     // Initialization
     this->sensory_lock.set_owner(ENVIRONMENT);
     this->motor_lock.set_owner(ENVIRONMENT);
@@ -81,13 +81,8 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
         run_timer.query("Initialization");
     }
 
-    // Build environment and buffer
+    // Build environment
     this->environment = new Environment(model, this->engine->get_buffer());
-
-    // Set iterations and verbose
-    this->verbose = verbose;
-    this->iterations = iterations;
-    this->environment_rate = environment_rate;
 
 #ifdef PARALLEL
     // Ensure device is synchronized without errors
@@ -96,8 +91,8 @@ void Clock::run(Model *model, int iterations, int environment_rate, bool verbose
 #endif
 
     // Launch threads
-    std::thread engine_thread(&Clock::engine_loop, this);
-    std::thread environment_thread(&Clock::environment_loop, this);
+    std::thread engine_thread(&Clock::engine_loop, this, iterations);
+    std::thread environment_thread(&Clock::environment_loop, this, iterations);
 
     // Launch UI
     this->environment->ui_launch();
