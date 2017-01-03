@@ -1,5 +1,7 @@
 #include "gui.h"
 
+#include <iostream>
+
 GUI::GUI(Buffer *buffer) : buffer(buffer) {
     // Mock arguments
     int argc = 1;
@@ -54,7 +56,6 @@ void GUI::launch() {
 }
 
 void GUI::update() {
-    for (int i = 0; i < images.size(); ++i) {
+    for (int i = 0; i < images.size(); ++i)
         images[i]->set(this->pixbufs[i]);
-    }
 }

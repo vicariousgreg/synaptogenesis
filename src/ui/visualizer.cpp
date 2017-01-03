@@ -1,3 +1,5 @@
+#include <climits>
+
 #include "visualizer.h"
 #include "gui.h"
 
@@ -5,10 +7,8 @@ static guint8 convert(Output out, OutputType type) {
     switch (type) {
         case FLOAT:
             return 255 * out.f;
-            break;
         case INT:
-            return 255 * ((out.i & 0xFF) / 0xFF);
-            break;
+            return 255 * float(out.i) / INT_MAX;
         case BIT:
             unsigned int val = out.i;
             val = ((val & 0x55555555) << 1) | ((val & 0xAAAAAAAA) >> 1);
@@ -17,7 +17,6 @@ static guint8 convert(Output out, OutputType type) {
             val = ((val & 0x00FF00FF) << 8) | ((val & 0xFF00FF00) >> 8);
             val = ((val & 0x0000FFFF) << 16) | ((val & 0xFFFF0000) >> 16);
             return val >> ((sizeof(int) - 1) * 8);
-            break;
     }
 }
 
