@@ -321,7 +321,7 @@ Model* build_alignment_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("alignment");
 
-    int resolution = 200;
+    int resolution = 125;
     structure->add_layer("input_layer", 1, 10, "default");
     structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
     structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -344,16 +344,16 @@ Model* build_alignment_model(std::string engine_name) {
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
     structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
-        false, 0, 0.1, CONVERGENT, ADD, "15 1 0.025");
+        true, 20, 0.1, CONVERGENT, ADD, "15 1 0.025");
     structure->connect_layers("output_layer", "exc_cortex",
-        false, 0, 1, CONVERGENT, ADD, "15 1 0.5");
+        false, 20, 1, CONVERGENT, ADD, "15 1 0.5");
 
     // Modules
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
     structure->add_module("input_layer", "random_input", "10 500");
-    structure->add_module("exc_thalamus", "noise_input", "0.25");
+    structure->add_module("exc_thalamus", "noise_input", "0.5");
     structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
     //structure->add_module("inh_cortex", output_name, "8");
@@ -365,14 +365,11 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(40, 1);
-    //Clock clock;  // No refresh rate synchronization
+    Clock clock(70, 1);
     clock.run(model, iterations, verbose);
 
-    /*
-    Clock clock;  // No refresh rate synchronization
-    clock.run(model, 10, verbose);
-    */
+    //Clock clock;  // No refresh rate synchronization
+    //clock.run(model, 10, verbose);
 }
 
 void stress_test() {
