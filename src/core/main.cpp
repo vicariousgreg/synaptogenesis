@@ -21,6 +21,18 @@ void print_model(Model *model) {
         if (model->connections[i]->parent == NULL)
             num_weights += model->connections[i]->num_weights;
     printf("  - weights     : %10d\n", num_weights);
+
+    for (auto layer : model->all_layers) {
+        std::cout << layer->name;
+        switch (layer->type) {
+            case INPUT: std::cout << "\tINPUT"; break;
+            case INPUT_OUTPUT: std::cout << "\tINPUT_OUTPUT"; break;
+            case OUTPUT: std::cout << "\tOUTPUT"; break;
+            case INTERNAL: std::cout << "\tINTERNAL"; break;
+        }
+        std::cout << std::endl;
+    }
+
 }
 
 Model* build_self_connected_model(std::string engine_name) {
@@ -319,22 +331,22 @@ Model* build_alignment_model(std::string engine_name) {
     structure->connect_layers("input_layer", "exc_thalamus",
         false, 0, 5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        true, 0, 10, CONVERGENT, ADD, "7 1 1");
+        true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
     structure->connect_layers("exc_cortex", "inh_cortex",
-        true, 0, 5, CONVERGENT, ADD, "9 1 1");
+        true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
     structure->connect_layers("exc_cortex", "exc_cortex",
-        true, 2, 5, CONVERGENT, ADD, "5 1 1");
+        true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
     structure->connect_layers("inh_cortex", "exc_cortex",
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
     structure->connect_layers("exc_cortex", "inh_thalamus",
-        true, 0, 5, CONVERGENT, ADD, "7 1 1");
+        true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
     structure->connect_layers("inh_thalamus", "exc_thalamus",
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
     structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
-        false, 0, 0.05, CONVERGENT, ADD, "15 1 0.025");
+        false, 0, 0.1, CONVERGENT, ADD, "15 1 0.025");
     structure->connect_layers("output_layer", "exc_cortex",
-        false, 0, 1, CONVERGENT, ADD, "15 1 1");
+        false, 0, 1, CONVERGENT, ADD, "15 1 0.5");
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -344,8 +356,8 @@ Model* build_alignment_model(std::string engine_name) {
     structure->add_module("exc_thalamus", "noise_input", "0.25");
     structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
-    structure->add_module("inh_cortex", output_name, "8");
-    structure->add_module("inh_thalamus", output_name, "8");
+    //structure->add_module("inh_cortex", output_name, "8");
+    //structure->add_module("inh_thalamus", output_name, "8");
     structure->add_module("output_layer", output_name, "8");
 
     model->add_structure(structure);
@@ -356,6 +368,11 @@ void run_simulation(Model *model, int iterations, bool verbose) {
     Clock clock(40, 1);
     //Clock clock;  // No refresh rate synchronization
     clock.run(model, iterations, verbose);
+
+    /*
+    Clock clock;  // No refresh rate synchronization
+    clock.run(model, 10, verbose);
+    */
 }
 
 void stress_test() {
