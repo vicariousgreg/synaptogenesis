@@ -16,7 +16,7 @@ static guint8 convert(Output out, OutputType type) {
             val = ((val & 0x0F0F0F0F) << 4) | ((val & 0xF0F0F0F0) >> 4);
             val = ((val & 0x00FF00FF) << 8) | ((val & 0xFF00FF00) >> 8);
             val = ((val & 0x0000FFFF) << 16) | ((val & 0xFFFF0000) >> 16);
-            return val >> ((sizeof(int) - 1) * 8);
+            return 255 * (float)val / INT_MAX;
     }
 }
 

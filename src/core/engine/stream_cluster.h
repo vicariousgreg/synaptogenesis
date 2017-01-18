@@ -1,6 +1,7 @@
 #ifndef stream_cluster_h
 #define stream_cluster_h
 
+#include <vector>
 #include <map>
 #include "model/model.h"
 #include "engine/stream.h"
@@ -8,9 +9,6 @@
 #include "engine/instruction.h"
 #include "util/parallel.h"
 #include "util/constants.h"
-
-class Engine;
-class StreamCluster;
 
 class StreamCluster {
     public:

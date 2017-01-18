@@ -1,6 +1,4 @@
-#include <vector>
 #include "engine/stream_cluster.h"
-#include "engine/engine.h"
 
 StreamCluster::StreamCluster(Model *model, State *state)
         : state(state), scheduler(new Scheduler) {

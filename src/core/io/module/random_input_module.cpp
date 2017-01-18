@@ -8,8 +8,18 @@
 #include <iostream>
 
 static void shuffle(float *vals, float max, int size) {
+    int random_index = rand() % size;
     for (int nid = 0 ; nid < size; ++nid) {
         vals[nid] = fRand(0, max);
+
+        /*  Randomly selects one input to activate
+        if (nid == random_index) {
+            vals[nid] = max;
+        } else {
+            vals[nid] = 0;
+        }
+        */
+
         std::cout << vals[nid] << " ";
     }
     std::cout << std::endl;

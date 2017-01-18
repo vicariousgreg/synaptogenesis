@@ -321,7 +321,7 @@ Model* build_alignment_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("alignment");
 
-    int resolution = 125;
+    int resolution = 175;
     structure->add_layer("input_layer", 1, 10, "default");
     structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
     structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -365,7 +365,8 @@ Model* build_alignment_model(std::string engine_name) {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    Clock clock(70, 1);
+    Clock clock(30, 1);
+    //Clock clock;
     clock.run(model, iterations, verbose);
 
     //Clock clock;  // No refresh rate synchronization
@@ -432,7 +433,7 @@ void alignment_test() {
     std::cout << "Alignment...\n";
     model = build_alignment_model("izhikevich");
     print_model(model);
-    run_simulation(model, 10000, true);
+    run_simulation(model, 1000000, true);
     //run_simulation(model, 100, true);
     //run_simulation(model, 10, true);
     std::cout << "\n";
