@@ -1,6 +1,42 @@
 #include "clock.h"
 
+void Clock::calc_time_limit(bool verbose) {
+    this->run_timer.reset();
+
+    // Wait for timer, then start clearing inputs
+    this->iteration_timer.reset();
+    this->engine->stage_clear();
+
+    // Read sensory input
+    this->sensory_lock.wait(DRIVER);
+    this->engine->stage_input();
+    this->sensory_lock.pass(ENVIRONMENT);
+
+    // Calculate output
+    this->engine->stage_calc_output();
+
+    // Write motor output
+    this->motor_lock.wait(DRIVER);
+    this->engine->stage_send_output();
+    this->motor_lock.pass(ENVIRONMENT);
+
+    // Finish computations
+    this->engine->stage_remaining();
+    this->engine->stage_weights();
+
+    // Synchronize with the clock
+    this->iteration_timer.wait(this->time_limit);
+    this->time_limit = this->iteration_timer.query(NULL) * 1.05;
+    this->refresh_rate = 1.0 / this->time_limit;
+    if (verbose)
+        printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
+}
+
 void Clock::engine_loop(int iterations, bool verbose) {
+    // If the refresh rate was unspecified,
+    //   time an iteration and set the time limit
+    if (this->refresh_rate == INT_MAX) this->calc_time_limit(verbose);
+
     this->run_timer.reset();
 
     for (int i = 0; i < iterations; ++i) {

@@ -43,11 +43,13 @@ class Lock {
 class Clock {
     public:
         Clock(float refresh_rate = INT_MAX, int environment_rate = 1)
-                : time_limit(1.0 / refresh_rate),
+                : refresh_rate(refresh_rate),
+                  time_limit(1.0 / refresh_rate),
                   environment_rate(environment_rate) {}
         void run(Model *model, int iterations, bool verbose);
 
     private:
+        void calc_time_limit(bool verbose);
         void engine_loop(int iterations, bool verbose);
         void environment_loop(int iterations, bool verbose);
 
@@ -57,7 +59,7 @@ class Clock {
 
         Timer run_timer;
         Timer iteration_timer;
-        float time_limit;
+        float refresh_rate, time_limit;
 
         Lock sensory_lock;
         Lock motor_lock;
