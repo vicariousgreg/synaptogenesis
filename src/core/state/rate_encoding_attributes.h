@@ -20,10 +20,6 @@ class RateEncodingAttributes : public Attributes {
 
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;
-
-        float *input;
-        float *output;
-        float *recent_output;
 };
 
 #endif

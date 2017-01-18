@@ -102,14 +102,14 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
 /******************************************************************************/
 
 GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
-    RateEncodingAttributes *re_att = (RateEncodingAttributes*)att;
-    float *outputs = re_att->output;
-    float *inputs = re_att->input;
-    int total_neurons = re_att->total_neurons;
+    float *outputs = (float*)att->output;
+    float *inputs = (float*)att->input;
+    int total_neurons = att->total_neurons;
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
+        nid += start_index;
 #else
     for (int nid = start_index ; nid < start_index+count; ++nid) {
 #endif
@@ -118,10 +118,10 @@ GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
             curr_value = next_value;
             next_value = outputs[total_neurons * (index + 1) + nid];
-            outputs[total_neurons*index + nid] = next_value;
+            outputs[total_neurons * index + nid] = next_value;
         }
         float input = inputs[nid];
-        outputs[total_neurons*index + nid] =
-            (input > 0.0) ? tanh(0.01*input) : 0.0;
+        outputs[total_neurons * index + nid] =
+            (input > 0.0) ? tanh(0.1*input) : 0.0;
     }
 }
