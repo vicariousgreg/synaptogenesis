@@ -24,7 +24,15 @@ State::State(Model *model)
     clear_event = new cudaEvent_t;
     output_calc_event = new cudaEvent_t;
     output_event = new cudaEvent_t;
+
+    unsigned int flags = cudaEventDisableTiming;
+    unsigned int io_flags = flags & cudaEventBlockingSync;
+    cudaEventCreateWithFlags(input_event, io_flags);
+    cudaEventCreateWithFlags(clear_event, flags);
+    cudaEventCreateWithFlags(output_calc_event, flags);
+    cudaEventCreateWithFlags(output_event, io_flags);
 #endif
+
 }
 
 State::~State() {
@@ -47,16 +55,6 @@ State::~State() {
 }
 
 void State::reset() {
-#ifdef PARALLEL
-    // Reset events
-    unsigned int flags = cudaEventDisableTiming;
-    unsigned int io_flags = flags & cudaEventBlockingSync;
-    cudaEventCreateWithFlags(input_event, io_flags);
-    cudaEventCreateWithFlags(clear_event, flags);
-    cudaEventCreateWithFlags(output_calc_event, flags);
-    cudaEventCreateWithFlags(output_event, io_flags);
-#endif
-
     // Clear inputs that aren't connected to sensory input
     int offset = attributes->start_indices[OUTPUT];
     int count = attributes->total_neurons - offset;

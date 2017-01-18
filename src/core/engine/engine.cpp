@@ -22,17 +22,11 @@ void Engine::stage_input() {
     // Launch output relevant computations
     stream_cluster.schedule_input_output_calculations();
 
-    // Wait for output computations to finish
-    stream_cluster.block_state_on_output_calculations();
-
     // Output state computation
     this->state->update_output_states();
 
     // Launch remaining calculations
     stream_cluster.schedule_non_output_calculations();
-
-    // Block kernel stream until they are done
-    stream_cluster.block_state_on_non_output_calculations();
 
     // Launch final state computations
     this->state->update_non_output_states();

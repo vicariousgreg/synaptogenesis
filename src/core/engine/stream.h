@@ -3,7 +3,6 @@
 
 #include <vector>
 #include "model/layer.h"
-#include "engine/scheduler.h"
 #include "engine/instruction.h"
 #include "util/parallel.h"
 #include "util/constants.h"
@@ -20,14 +19,10 @@ class Stream {
         void finalize();
         void reset();
 
-        void schedule(Scheduler *scheduler);
-        void schedule(int to_schedule, Scheduler *scheduler);
-        void schedule(IOType type, Scheduler *scheduler);
-        void schedule_plastic(Scheduler *scheduler);
-
-        bool is_done();
-        bool is_done(IOType type);
-        bool is_running();
+        void schedule(StreamCluster *stream_cluster);
+        void schedule(int to_schedule, StreamCluster *stream_cluster);
+        void schedule(IOType type, StreamCluster *stream_cluster);
+        void schedule_plastic(StreamCluster *stream_cluster);
 
 #ifdef PARALLEL
         void wait_event(cudaEvent_t *event);

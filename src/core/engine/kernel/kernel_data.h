@@ -4,7 +4,6 @@
 #include "model/connection.h"
 #include "util/parallel.h"
 
-class KernelData;
 class State;
 class Attributes;
 

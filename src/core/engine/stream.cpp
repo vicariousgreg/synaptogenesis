@@ -1,13 +1,19 @@
 #include "engine/stream.h"
+#include "engine/stream_cluster.h"
 
 Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         last_index[i] = 0;
 #ifdef PARALLEL
+    // Create cuda events
     cudaStreamCreate(&cuda_stream);
     finished_event = new cudaEvent_t;
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         events[i] = new cudaEvent_t;
+
+    cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
+    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+        cudaEventCreateWithFlags(events[i], cudaEventDisableTiming);
 #endif
     reset();
 }
@@ -44,50 +50,25 @@ void Stream::finalize() {
 
 void Stream::reset() {
     this->scheduled = 0;
-#ifdef PARALLEL
-    cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        cudaEventCreateWithFlags(events[i], cudaEventDisableTiming);
-#endif
 }
 
-void Stream::schedule(int to_schedule, Scheduler *scheduler) {
+void Stream::schedule(int to_schedule, StreamCluster *stream_cluster) {
     while (scheduled < to_schedule)
-        scheduler->schedule(instructions[scheduled++]);
+        stream_cluster->schedule(instructions[scheduled++]);
 }
 
-void Stream::schedule(Scheduler *scheduler) {
-    this->schedule(instructions.size(), scheduler);
+void Stream::schedule(StreamCluster *stream_cluster) {
+    this->schedule(instructions.size(), stream_cluster);
 }
 
-void Stream::schedule(IOType type, Scheduler *scheduler) {
-    this->schedule(last_index[type] + 1, scheduler);
+void Stream::schedule(IOType type, StreamCluster *stream_cluster) {
+    this->schedule(last_index[type] + 1, stream_cluster);
 }
 
-void Stream::schedule_plastic(Scheduler *scheduler) {
+void Stream::schedule_plastic(StreamCluster *stream_cluster) {
     for (auto inst : this->instructions)
         if (inst->is_plastic())
-            scheduler->schedule(inst);
-}
-
-bool Stream::is_done() {
-    return (scheduled == instructions.size()) and (not is_running());
-}
-
-bool Stream::is_done(IOType type) {
-#ifdef PARALLEL
-    return cudaEventQuery(*events[type]) == cudaSuccess;
-#else
-    return scheduled > last_index[type];
-#endif
-}
-
-bool Stream::is_running() {
-#ifdef PARALLEL
-    return cudaStreamQuery(this->cuda_stream) == cudaSuccess;
-#else
-    return false;
-#endif
+            stream_cluster->schedule(inst);
 }
 
 #ifdef PARALLEL
