@@ -35,11 +35,15 @@ void Clock::calc_time_limit(bool verbose) {
 void Clock::engine_loop(int iterations, bool verbose) {
     // If the refresh rate was unspecified,
     //   time an iteration and set the time limit
-    if (this->refresh_rate == INT_MAX) this->calc_time_limit(verbose);
+    int i = 0;
+    if (this->refresh_rate == INT_MAX) {
+        this->calc_time_limit(verbose);
+        i = 1;
+    }
 
     this->run_timer.reset();
 
-    for (int i = 0; i < iterations; ++i) {
+    for ( ; i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
         this->iteration_timer.reset();
         this->engine->stage_clear();
