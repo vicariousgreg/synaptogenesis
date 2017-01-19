@@ -40,4 +40,6 @@ class Instruction {
         KernelData kernel_data;
 };
 
+typedef std::vector<Instruction*> InstructionList;
+
 #endif

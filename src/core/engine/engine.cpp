@@ -7,8 +7,7 @@ void Engine::disable_learning() {
 void Engine::stage_clear() {
     // Reset stream cluster and state for timestep
     this->state->reset();
-    stream_cluster.reset();
-    stream_cluster.schedule_clear_output_calculations();
+    stream_cluster.launch_clear_output_calculations();
 }
 
 void Engine::stage_input() {
@@ -20,19 +19,19 @@ void Engine::stage_input() {
     // Events will ensure processing waits until ready
 
     // Launch output relevant computations
-    stream_cluster.schedule_input_output_calculations();
+    stream_cluster.launch_input_output_calculations();
 
     // Output state computation
     this->state->update_output_states();
 
     // Launch remaining calculations
-    stream_cluster.schedule_non_output_calculations();
+    stream_cluster.launch_non_output_calculations();
 
     // Launch final state computations
     this->state->update_non_output_states();
 
     // Schedule and launch weight updates
-    stream_cluster.schedule_weight_update();
+    stream_cluster.launch_weight_update();
 
     // Wait for input to finish
     this->state->wait_for_input();
@@ -42,7 +41,7 @@ void Engine::stage_input() {
 void Engine::stage_calc_output() {
 #ifdef PARALLEL
 #else
-    stream_cluster.schedule_input_output_calculations();
+    stream_cluster.launch_input_output_calculations();
     this->state->update_output_states();
 #endif
 }
@@ -60,7 +59,7 @@ void Engine::stage_send_output() {
 void Engine::stage_remaining() {
 #ifdef PARALLEL
 #else
-    stream_cluster.schedule_non_output_calculations();
+    stream_cluster.launch_non_output_calculations();
     this->state->update_non_output_states();
 #endif
 }
@@ -71,6 +70,6 @@ void Engine::stage_weights() {
     cudaSync();
     cudaCheckError(NULL);
 #else
-    stream_cluster.schedule_weight_update();
+    stream_cluster.launch_weight_update();
 #endif
 }

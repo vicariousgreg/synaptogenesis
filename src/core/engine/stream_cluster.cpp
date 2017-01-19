@@ -30,6 +30,25 @@ StreamCluster::StreamCluster(Model *model, State *state)
     // This sets up cuda information
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto& stream : streams[i]) stream.second->finalize();
+
+    // Schedule clear output instructions
+    schedule_to(OUTPUT);
+    this->sort_schedule(this->clear_output_instructions);
+
+    // Schedule input output instructions
+    schedule_to(INPUT_OUTPUT);
+    schedule_from(INPUT_OUTPUT);
+    schedule_from(OUTPUT);
+    this->sort_schedule(this->input_output_instructions);
+
+    // Schedule non output instructions
+    schedule_to(INPUT);
+    schedule_to(INTERNAL);
+    this->sort_schedule(this->non_output_instructions);
+
+    // Schedule plastic
+    schedule_plastic();
+    this->sort_schedule(this->plastic_instructions);
 }
 
 StreamCluster::~StreamCluster() {
@@ -46,7 +65,7 @@ void StreamCluster::disable_learning() {
         all_instructions[i]->disable_learning();
 }
 
-void StreamCluster::schedule_clear_output_calculations() {
+void StreamCluster::launch_clear_output_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for clear event
     wait_event(OUTPUT, this->state->clear_event);
@@ -54,11 +73,10 @@ void StreamCluster::schedule_clear_output_calculations() {
 #endif
 
     // Launch clear output relevant computations
-    schedule_to(OUTPUT);
-    this->dispatch_activate();
+    for (auto& inst : this->clear_output_instructions) inst->activate();
 }
 
-void StreamCluster::schedule_input_output_calculations() {
+void StreamCluster::launch_input_output_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for input event
     // This function should not be called until this event has been
@@ -68,10 +86,7 @@ void StreamCluster::schedule_input_output_calculations() {
 #endif
 
     // Launch input output relevant computations
-    schedule_from(INPUT_OUTPUT);
-    schedule_from(OUTPUT);
-    schedule_to(INPUT_OUTPUT);
-    this->dispatch_activate();
+    for (auto& inst : this->input_output_instructions) inst->activate();
 
 #ifdef PARALLEL
     block_stream_from(OUTPUT, state->state_stream);
@@ -81,11 +96,9 @@ void StreamCluster::schedule_input_output_calculations() {
 #endif
 }
 
-void StreamCluster::schedule_non_output_calculations() {
+void StreamCluster::launch_non_output_calculations() {
     // Launch output relevant computations
-    schedule_to(INPUT);
-    schedule_to(INTERNAL);
-    this->dispatch_activate();
+    for (auto& inst : this->non_output_instructions) inst->activate();
 
 #ifdef PARALLEL
     block_stream_to(INPUT, state->state_stream);
@@ -93,28 +106,28 @@ void StreamCluster::schedule_non_output_calculations() {
 #endif
 }
 
-void StreamCluster::reset() {
-    // Reset streams
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto& stream : streams[i]) stream.second->reset();
+void StreamCluster::launch_weight_update() {
+    for (auto& inst : this->plastic_instructions) inst->update();
 }
 
 void StreamCluster::schedule_from(IOType from_type) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto& stream : streams[i])
-            stream.second->schedule(from_type, this);
+            stream.second->schedule(from_type,
+                this->schedules[stream.second->to_layer]);
 }
 
 void StreamCluster::schedule_to(IOType to_type) {
     for (auto& stream : streams[to_type])
-        stream.second->schedule(this);
+        stream.second->schedule(
+            this->schedules[stream.second->to_layer]);
 }
 
-void StreamCluster::schedule_weight_update() {
+void StreamCluster::schedule_plastic() {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto& stream : streams[i])
-            stream.second->schedule_plastic(this);
-    this->dispatch_update();
+            stream.second->schedule_plastic(
+                this->schedules[stream.second->to_layer]);
 }
 
 #ifdef PARALLEL
@@ -135,33 +148,16 @@ void StreamCluster::block_stream_from(IOType from_type, cudaStream_t cuda_stream
 }
 #endif
 
-void StreamCluster::schedule(Instruction *inst) {
-    schedules[inst->connection->to_layer].push_back(inst);
-}
-
-void StreamCluster::dispatch_activate() {
+void StreamCluster::sort_schedule(InstructionList &destination) {
     bool done = false;
     for (int i = 0; not done; ++i) {
         done = true;
-        for (auto& schedule : this->schedules)
+        for (auto& schedule : this->schedules) {
             if (i < schedule.second.size()) {
                 done = false;
-                schedule.second[i]->activate();
+                destination.push_back(schedule.second[i]);
             }
-    }
-    for (auto& schedule : this->schedules)
-        schedule.second.clear();
-}
-
-void StreamCluster::dispatch_update() {
-    bool done = false;
-    for (int i = 0; not done; ++i) {
-        done = true;
-        for (auto& schedule : this->schedules)
-            if (i < schedule.second.size()) {
-                done = false;
-                schedule.second[i]->update();
-            }
+        }
     }
     for (auto& schedule : this->schedules)
         schedule.second.clear();

@@ -4,6 +4,7 @@
 Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         last_index[i] = 0;
+
 #ifdef PARALLEL
     // Create cuda events
     cudaStreamCreate(&cuda_stream);
@@ -15,7 +16,6 @@ Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         cudaEventCreateWithFlags(events[i], cudaEventDisableTiming);
 #endif
-    reset();
 }
 
 Stream::~Stream() {
@@ -48,27 +48,22 @@ void Stream::finalize() {
 #endif
 }
 
-void Stream::reset() {
-    this->scheduled = 0;
+void Stream::schedule(InstructionList &schedule) {
+    this->schedule(instructions.size(), schedule);
 }
 
-void Stream::schedule(int to_schedule, StreamCluster *stream_cluster) {
+void Stream::schedule(int to_schedule, InstructionList &schedule) {
     while (scheduled < to_schedule)
-        stream_cluster->schedule(instructions[scheduled++]);
+        schedule.push_back(instructions[scheduled++]);
 }
 
-void Stream::schedule(StreamCluster *stream_cluster) {
-    this->schedule(instructions.size(), stream_cluster);
+void Stream::schedule(IOType type, InstructionList &schedule) {
+    this->schedule(last_index[type] + 1, schedule);
 }
 
-void Stream::schedule(IOType type, StreamCluster *stream_cluster) {
-    this->schedule(last_index[type] + 1, stream_cluster);
-}
-
-void Stream::schedule_plastic(StreamCluster *stream_cluster) {
+void Stream::schedule_plastic(InstructionList &schedule) {
     for (auto inst : this->instructions)
-        if (inst->is_plastic())
-            stream_cluster->schedule(inst);
+        if (inst->is_plastic()) schedule.push_back(inst);
 }
 
 #ifdef PARALLEL

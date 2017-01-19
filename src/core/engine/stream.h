@@ -7,9 +7,6 @@
 #include "util/parallel.h"
 #include "util/constants.h"
 
-class Engine;
-class StreamCluster;
-
 class Stream {
     public:
         Stream(Layer *layer);
@@ -17,12 +14,11 @@ class Stream {
 
         void add_instruction(Instruction *inst, IOType from_type);
         void finalize();
-        void reset();
 
-        void schedule(StreamCluster *stream_cluster);
-        void schedule(int to_schedule, StreamCluster *stream_cluster);
-        void schedule(IOType type, StreamCluster *stream_cluster);
-        void schedule_plastic(StreamCluster *stream_cluster);
+        void schedule(InstructionList &schedule);
+        void schedule(int to_schedule, InstructionList &schedule);
+        void schedule(IOType type, InstructionList &schedule);
+        void schedule_plastic(InstructionList &schedule);
 
 #ifdef PARALLEL
         void wait_event(cudaEvent_t *event);
@@ -34,7 +30,7 @@ class Stream {
         int scheduled;
         int last_index[IO_TYPE_SIZE];
         Layer *to_layer;
-        std::vector<Instruction *> instructions;
+        InstructionList instructions;
 #ifdef PARALLEL
         cudaEvent_t *events[IO_TYPE_SIZE];
         cudaEvent_t *finished_event;
