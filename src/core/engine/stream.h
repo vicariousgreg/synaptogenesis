@@ -1,7 +1,6 @@
 #ifndef stream_h
 #define stream_h
 
-#include <vector>
 #include "model/layer.h"
 #include "engine/instruction.h"
 #include "util/parallel.h"
@@ -31,6 +30,7 @@ class Stream {
         int last_index[IO_TYPE_SIZE];
         Layer *to_layer;
         InstructionList instructions;
+
 #ifdef PARALLEL
         cudaEvent_t *events[IO_TYPE_SIZE];
         cudaEvent_t *finished_event;

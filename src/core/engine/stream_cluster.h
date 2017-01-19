@@ -1,7 +1,6 @@
 #ifndef stream_cluster_h
 #define stream_cluster_h
 
-#include <vector>
 #include <map>
 #include "model/model.h"
 #include "engine/stream.h"
@@ -25,7 +24,6 @@ class StreamCluster {
         void schedule_from(IOType from_type);
         void schedule_to(IOType to_type);
         void schedule_plastic();
-
         void sort_schedule(InstructionList &destination);
 
 #ifdef PARALLEL

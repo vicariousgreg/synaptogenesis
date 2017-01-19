@@ -1,5 +1,4 @@
 #include "engine/stream.h"
-#include "engine/stream_cluster.h"
 
 Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
@@ -48,13 +47,13 @@ void Stream::finalize() {
 #endif
 }
 
-void Stream::schedule(InstructionList &schedule) {
-    this->schedule(instructions.size(), schedule);
-}
-
 void Stream::schedule(int to_schedule, InstructionList &schedule) {
     while (scheduled < to_schedule)
         schedule.push_back(instructions[scheduled++]);
+}
+
+void Stream::schedule(InstructionList &schedule) {
+    this->schedule(instructions.size(), schedule);
 }
 
 void Stream::schedule(IOType type, InstructionList &schedule) {

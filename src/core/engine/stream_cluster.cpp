@@ -65,6 +65,10 @@ void StreamCluster::disable_learning() {
         all_instructions[i]->disable_learning();
 }
 
+/******************************************************************************/
+/****************************** LAUNCHERS *************************************/
+/******************************************************************************/
+
 void StreamCluster::launch_clear_output_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for clear event
@@ -110,6 +114,10 @@ void StreamCluster::launch_weight_update() {
     for (auto& inst : this->plastic_instructions) inst->update();
 }
 
+/******************************************************************************/
+/***************************** SCHEDULERS *************************************/
+/******************************************************************************/
+
 void StreamCluster::schedule_from(IOType from_type) {
     for (int i = 0; i < IO_TYPE_SIZE; ++i)
         for (auto& stream : streams[i])
@@ -130,6 +138,28 @@ void StreamCluster::schedule_plastic() {
                 this->schedules[stream.second->to_layer]);
 }
 
+void StreamCluster::sort_schedule(InstructionList &destination) {
+    // Perform round robin on streams
+    bool done = false;
+    for (int i = 0; not done; ++i) {
+        done = true;
+        for (auto& schedule : this->schedules) {
+            if (i < schedule.second.size()) {
+                done = false;
+                destination.push_back(schedule.second[i]);
+            }
+        }
+    }
+
+    // Clear schedule
+    for (auto& schedule : this->schedules)
+        schedule.second.clear();
+}
+
+/******************************************************************************/
+/**************************** EVENT HANDLING **********************************/
+/******************************************************************************/
+
 #ifdef PARALLEL
 void StreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
     for (auto& stream : streams[to_type])
@@ -147,18 +177,3 @@ void StreamCluster::block_stream_from(IOType from_type, cudaStream_t cuda_stream
             cudaStreamWaitEvent(cuda_stream, *stream.second->events[from_type], 0);
 }
 #endif
-
-void StreamCluster::sort_schedule(InstructionList &destination) {
-    bool done = false;
-    for (int i = 0; not done; ++i) {
-        done = true;
-        for (auto& schedule : this->schedules) {
-            if (i < schedule.second.size()) {
-                done = false;
-                destination.push_back(schedule.second[i]);
-            }
-        }
-    }
-    for (auto& schedule : this->schedules)
-        schedule.second.clear();
-}
