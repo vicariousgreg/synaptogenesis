@@ -30,6 +30,7 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             break;
         default:
             std::stringstream stream(params);
+
             // Extract overlap
             if (stream.eof())
                 ErrorManager::get_instance()->log_error(
@@ -63,7 +64,6 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                         get_expected_dimension(from_layer->columns, type, params)))
                 ErrorManager::get_instance()->log_error(
                     "Unexpected destination layer size for arborized connection!");
-            this->num_weights = overlap * overlap * stride;
 
             switch (type) {
                 case(CONVERGENT):
