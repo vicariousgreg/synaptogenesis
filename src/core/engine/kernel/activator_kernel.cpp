@@ -103,3 +103,19 @@ CALC_CONVERGENT(activate_convergent, \
      * Aggregate sum to input */
     AGGREGATE(to_index, sum);
 )
+
+/* Dendritic tree internal computation */
+#ifdef PARALLEL
+GLOBAL void calc_internal(int size, float *src, float *dst) {
+    for (int index = 0 ; index < size ; ++index) {
+        dst[index] += src[index];
+    }
+}
+#else
+GLOBAL void calc_internal(int size, float *src, float *dst) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index < size) {
+        dst[index] += src[index];
+    }
+}
+#endif

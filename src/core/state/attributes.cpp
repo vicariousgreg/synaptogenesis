@@ -35,12 +35,18 @@ Attributes::Attributes(Model *model, OutputType output_type)
         curr_index += size;
     }
 
-    // TODO: determine how many input cells are needed
+    // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
+    int max_input_registers = 1;
+    for (auto& layer : model->all_layers) {
+        int register_count = layer->dendritic_root->get_max_register_index() + 1;
+        if (register_count > max_input_registers)
+            max_input_registers = register_count;
+    }
 
     // Allocate space for input and output
     float* local_input = (float*) allocate_host(
-        this->total_neurons, sizeof(float));
+        this->total_neurons * max_input_registers, sizeof(float));
     Output* local_output = (Output*) allocate_host(
         this->total_neurons * HISTORY_SIZE, sizeof(Output));
 
@@ -53,9 +59,11 @@ Attributes::Attributes(Model *model, OutputType output_type)
 #ifdef PARALLEL
     // Copy data to device, then free from host
     this->input = (float*)
-        allocate_device(this->total_neurons, sizeof(float), local_input);
+        allocate_device(this->total_neurons * max_input_registers,
+                        sizeof(float), local_input);
     this->output = (Output*)
-        allocate_device(this->total_neurons * HISTORY_SIZE, sizeof(Output), local_output);
+        allocate_device(this->total_neurons * HISTORY_SIZE,
+                        sizeof(Output), local_output);
     free(local_input);
     free(local_output);
 #else

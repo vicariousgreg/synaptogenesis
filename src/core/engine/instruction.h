@@ -50,15 +50,17 @@ class SynapseInstruction : public Instruction {
 
 class DendriticInstruction : public Instruction {
     public:
-        DendriticInstruction(Layer *to_layer, State *state)
-                : to_layer(to_layer) { }
+        DendriticInstruction(DendriticNode *parent,
+            DendriticNode *child, State *state);
 
         bool is_plastic() { return false; }
         void disable_learning() { }
-        void activate() { }
+        void activate();
         void update() { }
 
         Layer *to_layer;
+        int size;
+        float *src, *dst;
 };
 
 typedef std::vector<Instruction*> InstructionList;

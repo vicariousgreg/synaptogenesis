@@ -26,7 +26,7 @@ class StreamCluster {
         void schedule_plastic();
         void sort_schedule(InstructionList &destination);
 
-        void dendrite_DFS(DendriticNode &curr, Stream *stream);
+        void dendrite_DFS(DendriticNode *curr, Stream *stream);
 
 #ifdef PARALLEL
         void wait_event(IOType to_type, cudaEvent_t *event);

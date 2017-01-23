@@ -19,11 +19,12 @@ class DendriticNode {
                   to_layer(to_layer),
                   conn(conn) { }
 
-        void add_child();
-        void add_child(Connection *conn);
+        DendriticNode *add_child();
+        DendriticNode *add_child(Connection *conn);
+        int get_max_register_index();
 
         int register_index;
-        std::vector<DendriticNode> children;
+        std::vector<DendriticNode*> children;
         Connection *conn;
         Layer *to_layer;
 };

@@ -47,7 +47,7 @@ class Layer {
         std::vector<Connection*> input_connections;
         std::vector<Connection*> output_connections;
 
-        DendriticNode dendritic_root;
+        DendriticNode *dendritic_root;
 
         Module *input_module;
         std::vector<Module*> output_modules;
@@ -61,11 +61,14 @@ class Layer {
 
         void add_input_connection(Connection* connection) {
             this->input_connections.push_back(connection);
-            this->dendritic_root.add_child(connection);
         }
 
         void add_output_connection(Connection* connection) {
             this->output_connections.push_back(connection);
+        }
+
+        void add_to_root(Connection* connection) {
+            this->dendritic_root->add_child(connection);
         }
 
         void add_module(Module *module);

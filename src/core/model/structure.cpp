@@ -34,6 +34,7 @@ Connection* Structure::connect_layers(
     Connection *conn = new Connection(
         conn_id, from_layer, to_layer,
         plastic, delay, max_weight, type, params, opcode);
+    to_layer->add_to_root(conn);
     this->connections.push_back(conn);
     return conn;
 }
@@ -44,6 +45,7 @@ Connection* Structure::connect_layers(
     int conn_id = this->connections.size();
     Connection *conn = new Connection(
         conn_id, from_layer, to_layer, parent);
+    to_layer->add_to_root(conn);
     this->connections.push_back(conn);
     return conn;
 }
@@ -137,6 +139,36 @@ Connection* Structure::connect_layers_matching(
     Connection *conn = connect_layers(
         from_layer, to_layer,
         plastic, delay, max_weight, type, opcode, params);
+    return conn;
+}
+
+DendriticNode *Structure::spawn_dendritic_node(std::string to_layer_name) {
+    Layer *to_layer = find_layer(to_layer_name);
+    if (to_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + to_layer_name + "\"!");
+    return to_layer->dendritic_root->add_child();
+}
+
+Connection* Structure::connect_layers_internal(DendriticNode *node,
+        std::string from_layer_name, std::string to_layer_name,
+        bool plastic, int delay, float max_weight, ConnectionType type,
+        Opcode opcode, std::string params) {
+    Layer *from_layer = find_layer(from_layer_name);
+    Layer *to_layer = find_layer(to_layer_name);
+    if (from_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + from_layer_name + "\"!");
+    if (to_layer == NULL)
+        ErrorManager::get_instance()->log_error(
+            "Could not find layer \"" + to_layer_name + "\"!");
+
+    int conn_id = this->connections.size();
+    Connection *conn = new Connection(
+        conn_id, from_layer, to_layer,
+        plastic, delay, max_weight, type, params, opcode);
+    node->add_child(conn);
+    this->connections.push_back(conn);
     return conn;
 }
 

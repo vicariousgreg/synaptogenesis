@@ -49,9 +49,9 @@ StreamCluster::~StreamCluster() {
     for (auto& inst : this->all_instructions) delete inst;
 }
 
-void StreamCluster::dendrite_DFS(DendriticNode &curr, Stream *stream) {
-    for (auto& child : curr.children) {
-        Connection* conn = child.conn;
+void StreamCluster::dendrite_DFS(DendriticNode *curr, Stream *stream) {
+    for (auto& child : curr->children) {
+        Connection* conn = child->conn;
         Instruction *inst;
 
         if (conn != NULL) { // Leaf node
@@ -59,7 +59,7 @@ void StreamCluster::dendrite_DFS(DendriticNode &curr, Stream *stream) {
             stream->add_instruction(inst, conn->from_layer->type);
         } else {            // Internal node
             this->dendrite_DFS(child, stream);
-            inst = new DendriticInstruction(child.to_layer, state);
+            inst = new DendriticInstruction(curr, child, state);
             stream->add_instruction(inst);
         }
 

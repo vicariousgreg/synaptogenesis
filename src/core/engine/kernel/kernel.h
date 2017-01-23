@@ -249,6 +249,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
     } \
 }
 
+
 #ifdef PARALLEL
 #define CALC_FULLY_CONNECTED FULLY_CONNECTED_PARALLEL
 #define CALC_ONE_TO_ONE ONE_TO_ONE_PARALLEL

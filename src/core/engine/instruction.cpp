@@ -73,3 +73,39 @@ void SynapseInstruction::update() {
         updater(this->kernel_data);
 #endif
 }
+
+
+DendriticInstruction::DendriticInstruction(DendriticNode *parent,
+    DendriticNode *child, State *state)
+        : to_layer(parent->to_layer),
+          size(to_layer->size) {
+    int num_neurons = state->get_num_neurons();
+    this->src =
+        state->get_input()
+        + (num_neurons * child->register_index)
+        + to_layer->start_index;
+    this->dst =
+        state->get_input()
+        + (num_neurons * parent->register_index)
+        + to_layer->start_index;
+}
+
+void DendriticInstruction::activate() {
+#ifdef PARALLEL
+    // Launch computation on provided stream, or default if none
+    if (this->stream)
+        calc_internal
+            <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
+            (size, src, dst);
+    else
+        calc_internal
+            <<<blocks_per_grid, threads_per_block>>>
+            (size, src, dst);
+
+    // Record added events
+    for (int i = 0; i < this->events.size(); ++i)
+        cudaEventRecord(*this->events[i], *this->stream);
+#else
+    calc_internal(size, src, dst);
+#endif
+}

@@ -14,7 +14,7 @@ Layer::Layer(std::string name, int rows, int columns, std::string params) :
         input_index(0),
         output_index(0),
         input_module(NULL),
-        dendritic_root(0, this) { }
+        dendritic_root(new DendriticNode(0, this)) { }
 
 void Layer::add_module(Module *module) {
     IOType new_type = module->get_type();
