@@ -35,6 +35,9 @@ Attributes::Attributes(Model *model, OutputType output_type)
         curr_index += size;
     }
 
+    // TODO: determine how many input cells are needed
+    //   based on the dendritic trees of the layers
+
     // Allocate space for input and output
     float* local_input = (float*) allocate_host(
         this->total_neurons, sizeof(float));

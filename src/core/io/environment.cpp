@@ -44,10 +44,8 @@ Environment::Environment(Model *model, Buffer *buffer)
 }
 
 Environment::~Environment() {
-    for (int i = 0; i < this->input_modules.size(); ++i)
-        delete this->input_modules[i];
-    for (int i = 0; i < this->output_modules.size(); ++i)
-        delete this->output_modules[i];
+    for (auto& module : this->input_modules) delete module;
+    for (auto& module : this->output_modules) delete module;
     if (visualizer != NULL)
         delete visualizer;
 }

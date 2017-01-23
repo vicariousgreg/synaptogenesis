@@ -1,7 +1,7 @@
 #include "engine/instruction.h"
 #include "util/error_manager.h"
 
-Instruction::Instruction(Connection *conn, State *state) :
+SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
         connection(conn),
         kernel_data(conn, state),
         type(conn->type) {
@@ -34,11 +34,11 @@ Instruction::Instruction(Connection *conn, State *state) :
 #endif
 }
 
-void Instruction::disable_learning() {
+void SynapseInstruction::disable_learning() {
     this->kernel_data.plastic = false;
 }
 
-void Instruction::activate() {
+void SynapseInstruction::activate() {
 #ifdef PARALLEL
     // Launch computation on provided stream, or default if none
     if (this->stream)
@@ -58,7 +58,7 @@ void Instruction::activate() {
 #endif
 }
 
-void Instruction::update() {
+void SynapseInstruction::update() {
     if (this->kernel_data.plastic)
 #ifdef PARALLEL
         if (this->stream)

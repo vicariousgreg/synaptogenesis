@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 
+#include "model/dendritic_node.h"
 #include "util/constants.h"
 
 class Connection;
@@ -46,6 +47,8 @@ class Layer {
         std::vector<Connection*> input_connections;
         std::vector<Connection*> output_connections;
 
+        DendriticNode dendritic_root;
+
         Module *input_module;
         std::vector<Module*> output_modules;
 
@@ -58,6 +61,7 @@ class Layer {
 
         void add_input_connection(Connection* connection) {
             this->input_connections.push_back(connection);
+            this->dendritic_root.add_child(connection);
         }
 
         void add_output_connection(Connection* connection) {

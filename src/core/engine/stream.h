@@ -12,6 +12,7 @@ class Stream {
         virtual ~Stream();
 
         void add_instruction(Instruction *inst, IOType from_type);
+        void add_instruction(Instruction *inst);
         void finalize();
 
         void schedule(InstructionList &schedule);

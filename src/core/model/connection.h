@@ -3,8 +3,9 @@
 
 #include <string>
 
-#include "layer.h"
 #include "util/constants.h"
+
+class Layer;
 
 /* Gets the expected row/col size of a destination layer given a |source_layer|,
  *   a connection |type| and connection |params|.

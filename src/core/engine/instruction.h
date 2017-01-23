@@ -13,12 +13,10 @@
 
 class Instruction {
     public:
-        Instruction(Connection *conn, State *state);
-
-        bool is_plastic() { return this->kernel_data.plastic; }
-        void disable_learning();
-        void activate();
-        void update();
+        virtual bool is_plastic() = 0;
+        virtual void disable_learning() = 0;
+        virtual void activate() = 0;
+        virtual void update() = 0;
 
 #ifdef PARALLEL
         void set_stream(cudaStream_t *stream) { this->stream = stream; }
@@ -29,6 +27,16 @@ class Instruction {
         cudaStream_t *stream;
         std::vector<cudaEvent_t* > events;
 #endif
+};
+
+class SynapseInstruction : public Instruction {
+    public:
+        SynapseInstruction(Connection *conn, State *state);
+
+        bool is_plastic() { return this->kernel_data.plastic; }
+        void disable_learning();
+        void activate();
+        void update();
 
         ConnectionType type;
 
@@ -38,6 +46,19 @@ class Instruction {
 
         Connection *connection;
         KernelData kernel_data;
+};
+
+class DendriticInstruction : public Instruction {
+    public:
+        DendriticInstruction(Layer *to_layer, State *state)
+                : to_layer(to_layer) { }
+
+        bool is_plastic() { return false; }
+        void disable_learning() { }
+        void activate() { }
+        void update() { }
+
+        Layer *to_layer;
 };
 
 typedef std::vector<Instruction*> InstructionList;

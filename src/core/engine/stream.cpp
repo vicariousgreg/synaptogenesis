@@ -36,6 +36,13 @@ void Stream::add_instruction(Instruction *inst, IOType from_type) {
 #endif
 }
 
+void Stream::add_instruction(Instruction *inst) {
+    this->instructions.push_back(inst);
+#ifdef PARALLEL
+    inst->set_stream(&this->cuda_stream);
+#endif
+}
+
 void Stream::finalize() {
 #ifdef PARALLEL
     // Add events for finishing each type of computation

@@ -3,33 +3,22 @@
 StreamCluster::StreamCluster(Model *model, State *state)
         : state(state) {
     // Build instructions
-    for (int i = 0; i < model->connections.size(); ++i) {
-        Connection *conn = model->connections[i];
-        Layer *from_layer = conn->from_layer;
-        Layer *to_layer = conn->to_layer;
+    // For each IO type...
+    for (int to_type = 0; to_type < IO_TYPE_SIZE; ++to_type) {
+        // For each layer...
+        for (auto& to_layer : model->layers[to_type]) {
+            // Skip layers with no input connections (typically sensory)
+            if (to_layer->input_connections.size() > 0) {
+                Stream *stream = new Stream(to_layer);
 
-        // Create instruction
-        Instruction *inst = new Instruction(conn, state);
+                // Beform DFS on dendritic tree
+                this->dendrite_DFS(to_layer->dendritic_root, stream);
 
-        // Add instruction to appropriate stream
-        std::map<Layer*, Stream*>::iterator it =
-            streams[to_layer->type].find(to_layer);
-
-        Stream *stream =
-            (it != streams[to_layer->type].end())
-            ? it->second : new Stream(to_layer);
-
-        stream->add_instruction(inst, from_layer->type);
-        streams[to_layer->type][to_layer] = stream;
-
-        // Add to global list
-        all_instructions.push_back(inst);
+                streams[to_type][to_layer] = stream;
+                stream->finalize();
+            }
+        }
     }
-
-    // Finalize all streams
-    // This sets up cuda information
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        for (auto& stream : streams[i]) stream.second->finalize();
 
     // Schedule clear output instructions
     schedule_to(OUTPUT);
@@ -58,6 +47,25 @@ StreamCluster::~StreamCluster() {
 
     // Delete instructions
     for (auto& inst : this->all_instructions) delete inst;
+}
+
+void StreamCluster::dendrite_DFS(DendriticNode &curr, Stream *stream) {
+    for (auto& child : curr.children) {
+        Connection* conn = child.conn;
+        Instruction *inst;
+
+        if (conn != NULL) { // Leaf node
+            inst = new SynapseInstruction(conn, this->state);
+            stream->add_instruction(inst, conn->from_layer->type);
+        } else {            // Internal node
+            this->dendrite_DFS(child, stream);
+            inst = new DendriticInstruction(child.to_layer, state);
+            stream->add_instruction(inst);
+        }
+
+        // Add to global list
+        this->all_instructions.push_back(inst);
+    }
 }
 
 void StreamCluster::disable_learning() {

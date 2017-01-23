@@ -1,6 +1,7 @@
 #include <sstream>
 
 #include "model/connection.h"
+#include "model/layer.h"
 #include "util/error_manager.h"
 
 Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
