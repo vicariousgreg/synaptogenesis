@@ -25,6 +25,9 @@ void get_attribute_kernel(ATTRIBUTE_KERNEL *dest, std::string engine_name) {
 /* Euler resolution for voltage update. */
 #define EULER_RES 2
 
+/* Milliseconds per timestep */
+#define TIMESTEP_MS 1
+
 GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
     float *voltages = iz_att->voltage;
@@ -53,7 +56,7 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
 
         // Euler's method for voltage/recovery update
         // If the voltage exceeds the spiking threshold, break
-        for (int i = 0 ; i < EULER_RES && voltage < SPIKE_THRESH ; ++i) {
+        for (int i = 0 ; i < TIMESTEP_MS * EULER_RES && voltage < SPIKE_THRESH ; ++i) {
             float delta_v = (0.04 * voltage * voltage) +
                             (5*voltage) + 140 - recovery + current;
             voltage += delta_v / EULER_RES;
