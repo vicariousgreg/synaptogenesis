@@ -81,10 +81,6 @@ void Clock::engine_loop(int iterations, bool verbose) {
         printf("Time averaged over %d iterations: %f\n",
             iterations, time/iterations);
     }
-
-#ifdef PARALLEL
-    check_memory();
-#endif
 }
 
 void Clock::environment_loop(int iterations, bool verbose) {
@@ -128,6 +124,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     // Ensure device is synchronized without errors
     cudaSync();
     cudaCheckError("Clock device synchronization failed!");
+    check_memory();
 #endif
 
     // Launch threads
