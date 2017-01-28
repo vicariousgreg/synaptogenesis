@@ -11,7 +11,7 @@
  *     affects learning for STDP rules that use more than just the most
  *     recent Output.
  */
-#define HISTORY_SIZE 1
+#define HISTORY_SIZE 2
 
 /* Output type enumeration.
  * Different engines may use different output formats.

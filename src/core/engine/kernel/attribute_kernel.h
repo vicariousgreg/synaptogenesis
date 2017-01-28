@@ -20,4 +20,7 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count);
  * using positive tanh Activation function */
 GLOBAL void re_update_attributes(Attributes *att, int start_index, int count);
 
+/* Hodgkin-Huxley voltage update and spike calculation */
+GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count);
+
 #endif

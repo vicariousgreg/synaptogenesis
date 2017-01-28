@@ -1,6 +1,7 @@
 #include "state/attributes.h"
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
+#include "state/hodgkin_huxley_attributes.h"
 #include "engine/kernel/kernel.h"
 #include "util/tools.h"
 #include "util/parallel.h"
@@ -11,6 +12,8 @@ Attributes *build_attributes(Model *model) {
         attributes = new IzhikevichAttributes(model);
     else if (model->engine_name == "rate_encoding")
         attributes = new RateEncodingAttributes(model);
+    else if (model->engine_name == "hodgkin_huxley")
+        attributes = new HodgkinHuxleyAttributes(model);
     else
         ErrorManager::get_instance()->log_error(
             "Unrecognized engine type!");

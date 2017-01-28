@@ -430,6 +430,55 @@ Model* build_dendritic_model(std::string engine_name) {
     return model;
 }
 
+Model* build_hh_model() {
+    /* Construct the model */
+    Model *model = new Model("hodgkin_huxley");
+    Structure *structure = new Structure("hh");
+
+    int resolution = 125;
+    structure->add_layer("input_layer", 1, 10, "0");
+    structure->add_layer("exc_thalamus", resolution, resolution, "0");
+    structure->add_layer("inh_thalamus", resolution, resolution, "0");
+    structure->add_layer("exc_cortex", resolution, resolution, "0");
+    structure->add_layer("inh_cortex", resolution, resolution, "0");
+
+    structure->connect_layers("input_layer", "exc_thalamus",
+        false, 0, 5, FULLY_CONNECTED, ADD, "");
+    structure->connect_layers("exc_thalamus", "exc_cortex",
+        true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
+    structure->connect_layers("exc_cortex", "inh_cortex",
+        true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
+    structure->connect_layers("exc_cortex", "exc_cortex",
+        true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
+    structure->connect_layers("inh_cortex", "exc_cortex",
+        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+    structure->connect_layers("exc_cortex", "inh_thalamus",
+        true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
+    structure->connect_layers("inh_thalamus", "exc_thalamus",
+        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+
+    structure->connect_layers_matching("exc_cortex", "output_layer", "0",
+        true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
+        //true, 40, 0.1, CONVERGENT, ADD, "15 1 0.0001");
+    structure->connect_layers("output_layer", "exc_cortex",
+        false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
+
+    // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
+    structure->add_module("input_layer", "random_input", "10 500");
+    structure->add_module("exc_thalamus", "noise_input", "0.5");
+    structure->add_module("exc_thalamus", output_name, "8");
+    structure->add_module("exc_cortex", output_name, "8");
+    //structure->add_module("inh_cortex", output_name, "8");
+    //structure->add_module("inh_thalamus", output_name, "8");
+    structure->add_module("output_layer", output_name, "8");
+
+    model->add_structure(structure);
+    return model;
+}
+
 void run_simulation(Model *model, int iterations, bool verbose) {
     //Clock clock(20, 1);
     Clock clock;
@@ -521,6 +570,20 @@ void dendritic_test() {
     delete model;
 }
 
+void hh_test() {
+    Model *model;
+
+    std::cout << "Hodgkin-Huxley...\n";
+    model = build_hh_model();
+    print_model(model);
+    run_simulation(model, 1000000, true);
+    //run_simulation(model, 100, true);
+    //run_simulation(model, 10, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 void varied_test() {
     Model *model;
 
@@ -555,8 +618,9 @@ int main(int argc, char *argv[]) {
         //layers_test();
         //image_test();
         //reentrant_image_test();
-        //alignment_test();
-        dendritic_test();
+        alignment_test();
+        //hh_test();
+        //dendritic_test();
         //varied_test();
 
         return 0;
