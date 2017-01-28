@@ -445,7 +445,7 @@ Model* build_hh_model() {
     structure->connect_layers("input_layer", "exc_thalamus",
         false, 0, 5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
+        true, 0, 10, CONVERGENT, ADD, "7 1 0.02");
     structure->connect_layers("exc_cortex", "inh_cortex",
         true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
     structure->connect_layers("exc_cortex", "exc_cortex",
@@ -458,7 +458,7 @@ Model* build_hh_model() {
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
     structure->connect_layers_matching("exc_cortex", "output_layer", "0",
-        true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
+        true, 40, 0.1, CONVERGENT, ADD, "15 1 0.01");
         //true, 40, 0.1, CONVERGENT, ADD, "15 1 0.0001");
     structure->connect_layers("output_layer", "exc_cortex",
         false, 40, 1, CONVERGENT, ADD, "15 1 0.5");

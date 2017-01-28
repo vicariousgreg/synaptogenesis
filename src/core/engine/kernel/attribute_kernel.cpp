@@ -173,8 +173,9 @@ GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
         /**********************
          *** VOLTAGE UPDATE ***
          **********************/
-        float current = currents[nid] / HH_RESOLUTION;
-        float current_trace = current_traces[nid] * 0.5 + current;
+        float current =
+            (currents[nid] / HH_RESOLUTION) +
+            (current_traces[nid] * 0.5);
 
         float voltage = voltages[nid];
         float h = hs[nid];
