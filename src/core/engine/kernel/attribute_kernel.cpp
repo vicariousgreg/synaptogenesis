@@ -174,37 +174,37 @@ GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
          *** VOLTAGE UPDATE ***
          **********************/
         float current = currents[nid] / HH_RESOLUTION;
-        double current_trace = current_traces[nid] * 0.5 + current;
+        float current_trace = current_traces[nid] * 0.5 + current;
 
-        double voltage = voltages[nid];
-        double h = hs[nid];
-        double m = ms[nid];
-        double n = ns[nid];
-        double iapp = params[nid].iapp;
+        float voltage = voltages[nid];
+        float h = hs[nid];
+        float m = ms[nid];
+        float n = ns[nid];
+        float iapp = params[nid].iapp;
 
         // Euler's method for voltage/recovery update
         // If the voltage exceeds the spiking threshold, break
         int spike = 0;
         for (int i = 0 ; i < HH_TIMESTEPS ; ++i) {
             m += current / HH_TIMESTEPS;
-            double am   = 0.1*(voltage+40.0)/( 1.0 - exp(-(voltage+40.0)/10.0) );
-            double bm   = 4.0*exp(-(voltage+65.0)/18.0);
-            double minf = am/(am+bm);
-            double taum = 1.0/(am+bm);
+            float am   = 0.1*(voltage+40.0)/( 1.0 - expf(-(voltage+40.0)/10.0) );
+            float bm   = 4.0*expf(-(voltage+65.0)/18.0);
+            float minf = am/(am+bm);
+            float taum = 1.0/(am+bm);
 
-            double ah   = 0.07*exp(-(voltage+65.0)/20.0);
-            double bh   = 1.0/( 1.0 + exp(-(voltage+35.0)/10.0) );
-            double hinf = ah/(ah+bh);
-            double tauh = 1.0/(ah+bh);
+            float ah   = 0.07*expf(-(voltage+65.0)/20.0);
+            float bh   = 1.0/( 1.0 + expf(-(voltage+35.0)/10.0) );
+            float hinf = ah/(ah+bh);
+            float tauh = 1.0/(ah+bh);
 
-            double an   = 0.01*(voltage + 55.0)/(1.0 - exp(-(voltage + 55.0)/10.0));
-            double bn   = 0.125*exp(-(voltage + 65.0)/80.0);
-            double ninf = an/(an+bn);
-            double taun = 1.0/(an+bn);
+            float an   = 0.01*(voltage + 55.0)/(1.0 - expf(-(voltage + 55.0)/10.0));
+            float bn   = 0.125*expf(-(voltage + 65.0)/80.0);
+            float ninf = an/(an+bn);
+            float taun = 1.0/(an+bn);
 
-            double ina = HH_GNABAR * (m*m*m) * h * (voltage-HH_VNA);
-            double ik  = HH_GKBAR * (n*n*n*n) * (voltage-HH_VK);
-            double il  = HH_GL * (voltage-HH_VL);
+            float ina = HH_GNABAR * (m*m*m) * h * (voltage-HH_VNA);
+            float ik  = HH_GKBAR * (n*n*n*n) * (voltage-HH_VK);
+            float il  = HH_GL * (voltage-HH_VL);
 
             voltage += (iapp - ina - ik - il ) / (HH_RESOLUTION * HH_CM);
             h +=  (hinf - h) / (HH_RESOLUTION * tauh);
