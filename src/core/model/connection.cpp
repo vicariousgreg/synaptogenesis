@@ -56,7 +56,7 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             // If the layers are the same size, arborized connections can be
             //     accommodated.  If not, the layers must meet size expectations
             if (not
-                    (to_layer->rows == from_layer->rows
+                    (this->stride == 1 and to_layer->rows == from_layer->rows
                     and to_layer->columns == from_layer->columns)
                 and
                     (to_layer->rows !=
