@@ -482,12 +482,12 @@ Model* build_cc_model(std::string engine_name) {
     /* Construct the model */
     Model *model = new Model(engine_name);
     std::vector<Structure*> structures;
-    int num_structures = 3;
+    int num_structures = 2;
 
     for (int i = 0 ; i < num_structures ; ++i) {
         Structure *structure = new Structure(std::to_string(i));
 
-        int resolution = 50;
+        int resolution = 125;
         structure->add_layer("input_layer", 1, 10, "default");
         structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
         structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -498,14 +498,17 @@ Model* build_cc_model(std::string engine_name) {
         structure->connect_layers("exc_thalamus", "exc_cortex", true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
         structure->connect_layers("exc_cortex", "inh_cortex", true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
         structure->connect_layers("exc_cortex", "exc_cortex", true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
-        structure->connect_layers("inh_cortex", "exc_cortex", false, 0, 5, CONVERGENT, DIV, "5 1 1");
+        structure->connect_layers("inh_cortex", "exc_cortex", false, 0, 5, CONVERGENT, DIV, "5 1 5");
         structure->connect_layers("exc_cortex", "inh_thalamus", true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
-        structure->connect_layers("inh_thalamus", "exc_thalamus", false, 0, 5, CONVERGENT, DIV, "5 1 1");
+        structure->connect_layers("inh_thalamus", "exc_thalamus", false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
+        /*
         structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
-            true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
+            true, 20, 0.1, CONVERGENT, ADD, "15 1 0.025");
         structure->connect_layers("output_layer", "exc_cortex",
-            false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
+            true, 20, 1, CONVERGENT, ADD, "15 1 0.5");
+            //false, 20, 1, ONE_TO_ONE, ADD, "1");
+        */
 
         // Modules
         //std::string output_name = "dummy_output";
@@ -518,7 +521,7 @@ Model* build_cc_model(std::string engine_name) {
         structure->add_module("exc_cortex", output_name, "8");
         //structure->add_module("inh_cortex", output_name, "8");
         //structure->add_module("inh_thalamus", output_name, "8");
-        structure->add_module("output_layer", output_name, "8");
+        //structure->add_module("output_layer", output_name, "8");
 
         structures.push_back(structure);
     }
@@ -526,12 +529,12 @@ Model* build_cc_model(std::string engine_name) {
     for (int i = 0 ; i < num_structures ; ++i) {
         Structure::connect(
             structures[i],
-            "output_layer",
-            structures[(i+1)%3],
-            "output_layer",
-            //true, 40, 1, ONE_TO_ONE, ADD, "0.1");
-            true, 40, 1, CONVERGENT, ADD, "5 1 0.1");
-            //true, 40, 1, FULLY_CONNECTED, ADD, "0.1");
+            "exc_cortex",
+            structures[(i+1)%num_structures],
+            "exc_cortex",
+            //true, 20, 1, ONE_TO_ONE, ADD, "0.1");
+            true, 10, 0.1, CONVERGENT, MULT, "9 1 0.01");
+            //true, 20, 1, FULLY_CONNECTED, ADD, "0.1");
     }
 
     for (auto structure : structures)
