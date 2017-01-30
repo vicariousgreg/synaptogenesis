@@ -480,11 +480,14 @@ Model* build_hh_model() {
 }
 
 void run_simulation(Model *model, int iterations, bool verbose) {
-    //Clock clock(20, 1);
-    Clock clock;
+    // Calculate ideal refresh rate, run for iterations
+    Clock clock(true);
     clock.run(model, iterations, verbose);
 
-    //Clock clock;  // No refresh rate synchronization
+    // Benchmark the network
+    // Use max refresh rate possible
+    // Run for 10 iterations
+    //Clock clock(false);  // No refresh rate synchronization
     //clock.run(model, 10, verbose);
 }
 

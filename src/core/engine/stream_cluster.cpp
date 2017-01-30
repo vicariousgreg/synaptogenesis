@@ -147,7 +147,10 @@ void StreamCluster::schedule_plastic() {
 }
 
 void StreamCluster::sort_schedule(InstructionList &destination) {
+#ifdef PARALLEL
     // Perform round robin on streams
+    // Connections should be initialized this way to take advantage of
+    //   stream overlap
     bool done = false;
     for (int i = 0; not done; ++i) {
         done = true;
@@ -158,6 +161,12 @@ void StreamCluster::sort_schedule(InstructionList &destination) {
             }
         }
     }
+#else
+    // Copy over to schedule
+    for (auto& schedule : this->schedules)
+        for (int i = 0; i < schedule.second.size(); ++i)
+            destination.push_back(schedule.second[i]);
+#endif
 
     // Clear schedule
     for (auto& schedule : this->schedules)

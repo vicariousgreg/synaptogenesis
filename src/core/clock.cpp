@@ -1,47 +1,53 @@
 #include "clock.h"
 
-void Clock::calc_time_limit(bool verbose) {
-    this->run_timer.reset();
+void Clock::calc_time_limit(int iterations, bool verbose) {
+    float total_time = 0;
 
-    // Wait for timer, then start clearing inputs
-    this->iteration_timer.reset();
-    this->engine->stage_clear();
+    Timer timer;
 
-    // Read sensory input
-    this->sensory_lock.wait(DRIVER);
-    this->engine->stage_input();
-    this->sensory_lock.pass(ENVIRONMENT);
+    for (int i = 0 ; i < iterations; ++i) {
+        timer.reset();
 
-    // Calculate output
-    this->engine->stage_calc_output();
+        // Start clearing inputs
+        this->engine->stage_clear();
 
-    // Write motor output
-    this->motor_lock.wait(DRIVER);
-    this->engine->stage_send_output();
-    this->motor_lock.pass(ENVIRONMENT);
+        // Read sensory input
+        this->sensory_lock.wait(DRIVER);
+        this->engine->stage_input();
+        this->sensory_lock.pass(ENVIRONMENT);
 
-    // Finish computations
-    this->engine->stage_remaining();
-    this->engine->stage_weights();
+        // Calculate output
+        this->engine->stage_calc_output();
 
-    // Synchronize with the clock
-    this->iteration_timer.wait(this->time_limit);
-    this->time_limit = this->iteration_timer.query(NULL) * 1.05;
+        // Write motor output
+        this->motor_lock.wait(DRIVER);
+        this->engine->stage_send_output();
+        this->motor_lock.pass(ENVIRONMENT);
+
+        // Finish computations
+        this->engine->stage_remaining();
+        this->engine->stage_weights();
+
+        // Synchronize with the clock
+        total_time += timer.query(NULL);
+    }
+
+    this->time_limit = (total_time*1.05) / iterations;
     this->refresh_rate = 1.0 / this->time_limit;
     if (verbose)
         printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
 }
 
 void Clock::engine_loop(int iterations, bool verbose) {
-    // If the refresh rate was unspecified,
-    //   time an iteration and set the time limit
-    int i = 0;
-    if (this->refresh_rate == INT_MAX) {
-        this->calc_time_limit(verbose);
-        i = 1;
-    }
-
     this->run_timer.reset();
+
+    // If calc_rate is true, time several iterations
+    //   and iteration and set the time limit
+    int i = 0;
+    if (this->calc_rate) {
+        this->calc_time_limit(10, verbose);
+        i = 10;
+    }
 
     for ( ; i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
