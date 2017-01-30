@@ -90,6 +90,8 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
         + to_layer->start_index;
 
 #ifdef PARALLEL
+    this->stream = NULL;
+
     // Calculate grid and block sizes
     int threads = calc_threads(to_layer->size);
     this->blocks_per_grid = dim3(calc_blocks(to_layer->size));
