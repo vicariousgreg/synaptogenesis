@@ -487,7 +487,7 @@ Model* build_cc_model(std::string engine_name) {
     for (int i = 0 ; i < num_structures ; ++i) {
         Structure *structure = new Structure(std::to_string(i));
 
-        int resolution = 64;
+        int resolution = 50;
         structure->add_layer("input_layer", 1, 10, "default");
         structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
         structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -520,14 +520,9 @@ Model* build_cc_model(std::string engine_name) {
         //structure->add_module("inh_thalamus", output_name, "8");
         structure->add_module("output_layer", output_name, "8");
 
-        model->add_structure(structure);
         structures.push_back(structure);
     }
 
-    //Structure *structure = new Structure("association");
-
-    /*
-    */
     for (int i = 0 ; i < num_structures ; ++i) {
         Structure::connect(
             structures[i],
@@ -536,7 +531,11 @@ Model* build_cc_model(std::string engine_name) {
             "output_layer",
             //true, 40, 1, ONE_TO_ONE, ADD, "0.1");
             true, 40, 1, CONVERGENT, ADD, "5 1 0.1");
+            //true, 40, 1, FULLY_CONNECTED, ADD, "0.1");
     }
+
+    for (auto structure : structures)
+        model->add_structure(structure);
 
     return model;
 }

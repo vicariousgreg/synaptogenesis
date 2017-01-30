@@ -177,8 +177,8 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
  \
                     /* The connection is frayed if the layers are the same size */ \
                     /* Avoid making connections with non-existent neurons! */ \
-                    if (fray != 0 and (k_s_row < 0 or k_s_row >= to_rows \
-                        or k_s_col < 0 or k_s_col >= to_columns)) \
+                    if (fray != 0 and (k_s_row < 0 or k_s_row >= from_rows \
+                        or k_s_col < 0 or k_s_col >= from_columns)) \
                         continue; \
  \
                     int from_index = k_s_row * from_columns + k_s_col; \
@@ -232,8 +232,8 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 \
                 /* The connection is frayed if the layers are the same size */ \
                 /* Avoid making connections with non-existent neurons! */ \
-                if (fray != 0 and (k_s_row < 0 or k_s_row >= to_rows \
-                    or k_s_col < 0 or k_s_col >= to_columns)) \
+                if (fray != 0 and (k_s_row < 0 or k_s_row >= from_rows \
+                    or k_s_col < 0 or k_s_col >= from_columns)) \
                     continue; \
 \
                 int from_index = k_s_row * from_columns + k_s_col; \
