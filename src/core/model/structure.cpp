@@ -4,15 +4,13 @@
 #define cimg_display 0
 #include "libs/CImg.h"
 
-Structure::Structure (std::string name) : name(name) { }
-
 Connection* Structure::connect(
         Structure *from_structure, std::string from_layer_name,
         Structure *to_structure, std::string to_layer_name,
         bool plastic, int delay, float max_weight, ConnectionType type,
         Opcode opcode, std::string params) {
     Layer *from_layer = from_structure->find_layer(from_layer_name);
-    Layer *to_layer = to_structure->find_layer(from_layer_name);
+    Layer *to_layer = to_structure->find_layer(to_layer_name);
     if (from_layer == NULL)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
@@ -177,7 +175,7 @@ void Structure::add_layer(std::string name, int rows, int columns, std::string p
         ErrorManager::get_instance()->log_error(
             "Repeated layer name!");
 
-    Layer* layer = new Layer(name, rows, columns, params);
+    Layer* layer = new Layer(this, name, rows, columns, params);
     this->layers.push_back(layer);
     this->layers_by_name[name] = layer;
 }

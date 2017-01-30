@@ -106,16 +106,22 @@ CALC_CONVERGENT(activate_convergent, \
 
 /* Dendritic tree internal computation */
 #ifdef PARALLEL
-GLOBAL void calc_internal(int size, float *src, float *dst) {
+GLOBAL void calc_internal(int size, float *src, float *dst, bool clear) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
         dst[index] += src[index];
+        if (clear) src[index] = 0.0;
     }
 }
 #else
-GLOBAL void calc_internal(int size, float *src, float *dst) {
-    for (int index = 0 ; index < size ; ++index) {
-        dst[index] += src[index];
-    }
+GLOBAL void calc_internal(int size, float *src, float *dst, bool clear) {
+    if (clear) {
+        for (int index = 0 ; index < size ; ++index) {
+            dst[index] += src[index];
+            src[index] = 0.0;
+        }
+    } else
+        for (int index = 0 ; index < size ; ++index)
+            dst[index] += src[index];
 }
 #endif

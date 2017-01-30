@@ -61,6 +61,7 @@ class DendriticInstruction : public Instruction {
         Layer *to_layer;
         int size;
         float *src, *dst;
+        bool clear;
 };
 
 typedef std::vector<Instruction*> InstructionList;

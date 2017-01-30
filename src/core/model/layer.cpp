@@ -2,8 +2,9 @@
 #include "io/module/module.h"
 #include "util/error_manager.h"
 
-Layer::Layer(std::string name, int rows, int columns, std::string params) :
+Layer::Layer(Structure* structure, std::string name, int rows, int columns, std::string params) :
         name(name),
+        structure(structure),
         id(0),
         start_index(0),
         rows(rows),

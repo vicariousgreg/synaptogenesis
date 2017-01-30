@@ -7,6 +7,7 @@
 #include "model/dendritic_node.h"
 #include "util/constants.h"
 
+class Structure;
 class Connection;
 class Module;
 
@@ -24,6 +25,9 @@ class Layer {
     public:
         // Layer name
         std::string name;
+
+        // Housing structure
+        Structure *structure;
 
         // Layer id
         int id;
@@ -57,7 +61,7 @@ class Layer {
         friend class Structure;
         friend class Connection;
 
-        Layer(std::string name, int rows, int columns, std::string params);
+        Layer(Structure *structure, std::string name, int rows, int columns, std::string params);
 
         void add_input_connection(Connection* connection) {
             this->input_connections.push_back(connection);

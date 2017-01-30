@@ -78,7 +78,8 @@ void SynapseInstruction::update() {
 DendriticInstruction::DendriticInstruction(DendriticNode *parent,
     DendriticNode *child, State *state)
         : to_layer(parent->to_layer),
-          size(to_layer->size) {
+          size(to_layer->size),
+          clear(child->register_index != 0) {
     int num_neurons = state->get_num_neurons();
     this->src =
         state->get_input()
@@ -104,16 +105,16 @@ void DendriticInstruction::activate() {
     if (this->stream)
         calc_internal
             <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
-            (size, src, dst);
+            (size, src, dst, this->clear);
     else
         calc_internal
             <<<blocks_per_grid, threads_per_block>>>
-            (size, src, dst);
+            (size, src, dst, this->clear);
 
     // Record added events
     for (int i = 0; i < this->events.size(); ++i)
         cudaEventRecord(*this->events[i], *this->stream);
 #else
-    calc_internal(size, src, dst);
+    calc_internal(size, src, dst, this->clear);
 #endif
 }

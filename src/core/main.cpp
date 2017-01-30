@@ -21,7 +21,7 @@ void print_model(Model *model) {
     printf("  - weights     : %10d\n", num_weights);
 
     for (auto layer : model->all_layers) {
-        std::cout << layer->name;
+        std::cout << layer->structure->name << "->" << layer->name;
         switch (layer->type) {
             case INPUT: std::cout << "\tINPUT"; break;
             case INPUT_OUTPUT: std::cout << "\tINPUT_OUTPUT"; break;
@@ -30,7 +30,6 @@ void print_model(Model *model) {
         }
         std::cout << std::endl;
     }
-
 }
 
 Model* build_self_connected_model(std::string engine_name) {
@@ -389,7 +388,7 @@ Model* build_dendritic_model(std::string engine_name) {
     auto node1 = structure->spawn_dendritic_node("exc_thalamus");
     structure->connect_layers_internal(node1, "input_layer1", "exc_thalamus",
         false, 0, 5, FULLY_CONNECTED, ADD, "");
-    structure->connect_layers("input_layer2", "inh_thalamus1",
+    structure->connect_layers("input_layer1", "inh_thalamus1",
         false, 0, 10, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_cortex", "inh_thalamus1",
         true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
@@ -476,6 +475,69 @@ Model* build_hh_model() {
     structure->add_module("output_layer", output_name, "8");
 
     model->add_structure(structure);
+    return model;
+}
+
+Model* build_cc_model(std::string engine_name) {
+    /* Construct the model */
+    Model *model = new Model(engine_name);
+    std::vector<Structure*> structures;
+    int num_structures = 3;
+
+    for (int i = 0 ; i < num_structures ; ++i) {
+        Structure *structure = new Structure(std::to_string(i));
+
+        int resolution = 64;
+        structure->add_layer("input_layer", 1, 10, "default");
+        structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
+        structure->add_layer("inh_thalamus", resolution, resolution, "default");
+        structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
+        structure->add_layer("inh_cortex", resolution, resolution, "default");
+
+        structure->connect_layers("input_layer", "exc_thalamus", false, 0, 5, FULLY_CONNECTED, ADD, "");
+        structure->connect_layers("exc_thalamus", "exc_cortex", true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
+        structure->connect_layers("exc_cortex", "inh_cortex", true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
+        structure->connect_layers("exc_cortex", "exc_cortex", true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
+        structure->connect_layers("inh_cortex", "exc_cortex", false, 0, 5, CONVERGENT, DIV, "5 1 1");
+        structure->connect_layers("exc_cortex", "inh_thalamus", true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
+        structure->connect_layers("inh_thalamus", "exc_thalamus", false, 0, 5, CONVERGENT, DIV, "5 1 1");
+
+        structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
+            true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
+        structure->connect_layers("output_layer", "exc_cortex",
+            false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
+
+        // Modules
+        //std::string output_name = "dummy_output";
+        std::string output_name = "visualizer_output";
+
+        structure->add_module("input_layer", "random_input", "10 500");
+        //structure->add_module("exc_thalamus", "noise_input", "0.5");
+
+        structure->add_module("exc_thalamus", output_name, "8");
+        structure->add_module("exc_cortex", output_name, "8");
+        //structure->add_module("inh_cortex", output_name, "8");
+        //structure->add_module("inh_thalamus", output_name, "8");
+        structure->add_module("output_layer", output_name, "8");
+
+        model->add_structure(structure);
+        structures.push_back(structure);
+    }
+
+    //Structure *structure = new Structure("association");
+
+    /*
+    */
+    for (int i = 0 ; i < num_structures ; ++i) {
+        Structure::connect(
+            structures[i],
+            "output_layer",
+            structures[(i+1)%3],
+            "output_layer",
+            //true, 40, 1, ONE_TO_ONE, ADD, "0.1");
+            true, 40, 1, CONVERGENT, ADD, "5 1 0.1");
+    }
+
     return model;
 }
 
@@ -587,6 +649,20 @@ void hh_test() {
     delete model;
 }
 
+void cc_test() {
+    Model *model;
+
+    std::cout << "Classification couple...\n";
+    model = build_cc_model("izhikevich");
+    print_model(model);
+    run_simulation(model, 1000000, true);
+    //run_simulation(model, 100, true);
+    //run_simulation(model, 10, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 void varied_test() {
     Model *model;
 
@@ -622,8 +698,9 @@ int main(int argc, char *argv[]) {
         //image_test();
         //reentrant_image_test();
         alignment_test();
-        //hh_test();
         //dendritic_test();
+        //hh_test();
+        //cc_test();
         //varied_test();
 
         return 0;

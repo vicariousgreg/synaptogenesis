@@ -27,7 +27,8 @@
  */
 class Structure {
     public:
-        Structure (std::string name);
+        Structure (std::string name) : name(name) { }
+
         virtual ~Structure() { }
 
         static Connection* connect(

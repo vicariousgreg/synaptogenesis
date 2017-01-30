@@ -9,6 +9,6 @@ KERNEL get_activator_kernel(ConnectionType conn_type);
 GLOBAL void activate_fully_connected(KernelData kernel_data);
 GLOBAL void activate_one_to_one(KernelData kernel_data);
 GLOBAL void activate_convergent(KernelData kernel_data);
-GLOBAL void calc_internal(int size, float *src, float *dst);
+GLOBAL void calc_internal(int size, float *src, float *dst, bool clear=false);
 
 #endif
