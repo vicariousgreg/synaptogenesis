@@ -32,7 +32,7 @@ void Clock::calc_time_limit(int iterations, bool verbose) {
         total_time += timer.query(NULL);
     }
 
-    this->time_limit = (total_time*1.05) / iterations;
+    this->time_limit = (total_time*1.1) / iterations;
     this->refresh_rate = 1.0 / this->time_limit;
     if (verbose)
         printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
