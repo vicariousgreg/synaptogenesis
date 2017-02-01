@@ -27,7 +27,7 @@ class IzhikevichAttributes : public Attributes {
         float* current;
 
         // Neuron Spikes (copy of output)
-        int* spikes;
+        unsigned int* spikes;
 
         // Neuron parameters
         IzhikevichParameters* neuron_parameters;

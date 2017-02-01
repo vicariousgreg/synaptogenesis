@@ -37,7 +37,7 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model) : Attributes(mode
     }
 
     this->current = this->input;
-    this->spikes = (int*)this->output;
+    this->spikes = (unsigned int*)this->output;
 
 #ifdef PARALLEL
     // Allocate space on GPU and copy data

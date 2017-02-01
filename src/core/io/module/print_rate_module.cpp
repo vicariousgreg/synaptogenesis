@@ -57,7 +57,7 @@ void PrintRateModule::report_output(Buffer *buffer) {
                     totals[index] += (float)out_value.i / INT_MAX;
                     break;
                 case BIT:
-                    totals[index] += (out_value.i & 1);
+                    totals[index] += (out_value.i >> 31);
                     break;
             }
             if (timesteps % this->rate == 0) {

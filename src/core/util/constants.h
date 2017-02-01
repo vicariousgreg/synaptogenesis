@@ -42,7 +42,7 @@ inline int get_timesteps_per_output(OutputType output_type) {
  */
 union Output {
     float f;
-    int i;
+    unsigned int i;
 };
 
 /* IO type enumeration.

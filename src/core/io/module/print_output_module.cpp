@@ -19,22 +19,8 @@ PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)
     } else {
         this->history_length= 1;
     }
-
-    // Set up maximum value
     this->maximum = (1 << this->history_length) - 1;
-
-    // Create table of reversed bit strings
-    this->reverses = (unsigned int*)malloc(this->maximum * sizeof(unsigned int));
-    for (unsigned int i = 0 ; i < this->maximum ; ++i) {
-        unsigned int copy = i;
-        unsigned int reverse = 0;
-        for (unsigned int j = 0 ; j < history_length ; ++j) {
-            reverse <<= 1;
-            reverse |= copy % 2;
-            copy >>= 1;
-        }
-        this->reverses[i] = reverse;
-    }
+    this->shift = (8 * sizeof(int)) - this->history_length;
 }
 
 void PrintOutputModule::report_output(Buffer *buffer) {
@@ -65,9 +51,7 @@ void PrintOutputModule::report_output(Buffer *buffer) {
                     fraction = (float)out_value.i / INT_MAX;
                     break;
                 case BIT:
-                    unsigned int spike_value = (unsigned int) (out_value.i & this->maximum);
-                    unsigned int value = this->reverses[spike_value];
-                    fraction = float(value) / this->maximum;
+                    fraction = float(out_value.i >> this->shift) / this->maximum;
                     break;
             }
             if (fraction > 0) {

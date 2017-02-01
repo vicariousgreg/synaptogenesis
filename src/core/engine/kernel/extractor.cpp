@@ -7,7 +7,7 @@ DEVICE float extract_bit(int delay, Output &out) {
     // The word offset is predetermined, so the remainder
     //   determines how far into the word to go to extract
     //   the relevant bit
-    return (out.i >> (delay & 0x1F)) & 1;
+    return (out.i << (delay & 0x1F)) >> 31;
 }
 
 // Device pointers for memcpyFromSymbol

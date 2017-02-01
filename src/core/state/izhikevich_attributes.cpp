@@ -73,7 +73,7 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
     }
 
     this->current = this->input;
-    this->spikes = (int*)this->output;
+    this->spikes = (unsigned int*)this->output;
 
 #ifdef PARALLEL
     // Allocate space on GPU and copy data

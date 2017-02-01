@@ -27,7 +27,7 @@ class HodgkinHuxleyAttributes : public Attributes {
         float* current;
 
         // Neuron Spikes (copy of output)
-        int* spikes;
+        unsigned int* spikes;
 
         // Neuron parameters
         HodgkinHuxleyParameters* neuron_parameters;

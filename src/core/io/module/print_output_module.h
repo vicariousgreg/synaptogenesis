@@ -7,9 +7,6 @@ class PrintOutputModule : public Module {
     public:
         PrintOutputModule(Layer *layer,
             std::string params);
-        virtual ~PrintOutputModule() {
-            free(this->reverses);
-        }
 
         void report_output(Buffer *buffer);
         virtual IOType get_type() { return OUTPUT; }
@@ -20,7 +17,7 @@ class PrintOutputModule : public Module {
         int counter;
         int refresh_rate;
         unsigned int maximum;
-        unsigned int* reverses;
+        unsigned int shift;
 };
 
 #endif

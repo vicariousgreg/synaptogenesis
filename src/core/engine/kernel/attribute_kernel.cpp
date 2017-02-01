@@ -36,7 +36,7 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
     float *voltages = iz_att->voltage;
     float *recoveries = iz_att->recovery;
     float *currents = iz_att->current;
-    int *spikes = iz_att->spikes;
+    unsigned int *spikes = iz_att->spikes;
     int total_neurons = iz_att->total_neurons;
     IzhikevichParameters *params = iz_att->neuron_parameters;
 
@@ -70,27 +70,25 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
          *** SPIKE UPDATE ***
          ********************/
         // Determine if spike occurred
-        int spike = voltage >= IZ_SPIKE_THRESH;
+        unsigned int spike = voltage >= IZ_SPIKE_THRESH;
 
         // Reduce reads, chain values.
-        int curr_value, new_value;
-        int next_value = spikes[nid];
+        unsigned int next_value = spikes[nid];
 
         // Shift all the bits.
-        // Check if next word is negative (1 for MSB).
+        // Check if next word is odd (1 for LSB).
         int index;
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
-            curr_value = next_value;
+            unsigned int curr_value = next_value;
             next_value = spikes[total_neurons * (index + 1) + nid];
 
-            // Shift bits, carry over MSB from next value.
-            new_value = (curr_value << 1) + (next_value < 0);
-            spikes[total_neurons*index + nid] = new_value;
+            // Shift bits, carry over LSB from next value.
+            spikes[total_neurons*index + nid] = (curr_value >> 1) | (next_value << 31);
         }
 
         // Least significant value already loaded into next_value.
         // Index moved appropriately from loop.
-        spikes[total_neurons*index + nid] = (next_value << 1) + spike;
+        spikes[total_neurons*index + nid] = (next_value >> 1) | (spike << 31);
 
         // Reset voltage if spiked.
         if (spike) {
@@ -119,10 +117,10 @@ GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
 #else
     for (int nid = start_index ; nid < start_index+count; ++nid) {
 #endif
-        float curr_value, next_value = outputs[nid];
+        float next_value = outputs[nid];
         int index;
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
-            curr_value = next_value;
+            float curr_value = next_value;
             next_value = outputs[total_neurons * (index + 1) + nid];
             outputs[total_neurons * index + nid] = next_value;
         }
@@ -140,8 +138,8 @@ GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
 #define HH_SPIKE_THRESH 30.0
 
 /* Euler resolution for voltage update. */
-#define HH_RESOLUTION 100
-#define HH_TIMESTEPS 10
+#define HH_RESOLUTION 30
+#define HH_TIMESTEPS 30
 
 #define HH_GNABAR 120.0
 #define HH_VNA 50.0
@@ -159,7 +157,7 @@ GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
     float *ns = hh_att->n;
     float *currents = hh_att->current;
     float *current_traces = hh_att->current_trace;
-    int *spikes = hh_att->spikes;
+    unsigned int *spikes = hh_att->spikes;
     int total_neurons = hh_att->total_neurons;
     HodgkinHuxleyParameters *params = hh_att->neuron_parameters;
 
@@ -174,8 +172,8 @@ GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
          *** VOLTAGE UPDATE ***
          **********************/
         float current =
-            (currents[nid] / HH_RESOLUTION) +
-            (current_traces[nid] * 0.5);
+             (currents[nid] / HH_RESOLUTION) +
+            (current_traces[nid] * 0.1);
 
         float voltage = voltages[nid];
         float h = hs[nid];
@@ -185,9 +183,10 @@ GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
 
         // Euler's method for voltage/recovery update
         // If the voltage exceeds the spiking threshold, break
-        int spike = 0;
+        bool already_spiked = voltage > HH_SPIKE_THRESH;
+        unsigned int spike = 0;
         for (int i = 0 ; i < HH_TIMESTEPS ; ++i) {
-            m += current / HH_TIMESTEPS;
+            if (not spike and not already_spiked) m += current / HH_RESOLUTION;
             float am   = 0.1*(voltage+40.0)/( 1.0 - expf(-(voltage+40.0)/10.0) );
             float bm   = 4.0*expf(-(voltage+65.0)/18.0);
             float minf = am/(am+bm);
@@ -208,15 +207,16 @@ GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
             float il  = HH_GL * (voltage-HH_VL);
 
             voltage += (iapp - ina - ik - il ) / (HH_RESOLUTION * HH_CM);
-            h +=  (hinf - h) / (HH_RESOLUTION * tauh);
-            n +=  (ninf - n) / (HH_RESOLUTION * taun);
-            m +=  (minf - m) / (HH_RESOLUTION * taum);
-
-            if (voltage >= HH_SPIKE_THRESH) {
-                spike = 1;
-                voltage = HH_SPIKE_THRESH;
+            if (voltage != voltage) voltage = HH_SPIKE_THRESH+1;
+            else {
+                h +=  (hinf - h) / (HH_RESOLUTION * tauh);
+                n +=  (ninf - n) / (HH_RESOLUTION * taun);
+                m +=  (minf - m) / (HH_RESOLUTION * taum);
             }
+
+            spike = spike or voltage > HH_SPIKE_THRESH;
         }
+        spike = spike and not already_spiked;
 
         hs[nid] = h;
         ms[nid] = m;
@@ -228,23 +228,21 @@ GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
          *** SPIKE UPDATE ***
          ********************/
         // Reduce reads, chain values.
-        int curr_value, new_value;
-        int next_value = spikes[nid];
+        unsigned int next_value = spikes[nid];
 
         // Shift all the bits.
-        // Check if next word is negative (1 for MSB).
+        // Check if next word is odd (1 for LSB).
         int index;
         for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
-            curr_value = next_value;
+            unsigned int curr_value = next_value;
             next_value = spikes[total_neurons * (index + 1) + nid];
 
-            // Shift bits, carry over MSB from next value.
-            new_value = (curr_value << 1) + (next_value < 0);
-            spikes[total_neurons*index + nid] = new_value;
+            // Shift bits, carry over LSB from next value.
+            spikes[total_neurons*index + nid] = (curr_value >> 1) | (next_value << 31);
         }
 
         // Least significant value already loaded into next_value.
         // Index moved appropriately from loop.
-        spikes[total_neurons*index + nid] = (next_value << 1) + spike;
+        spikes[total_neurons*index + nid] = (next_value >> 1) | (spike << 31);
     }
 }
