@@ -9,8 +9,8 @@ KernelData::KernelData(Connection *conn, State *state) :
         opcode(conn->opcode),
         plastic(conn->plastic),
         max_weight(conn->max_weight),
-        overlap(conn->overlap),
-        stride(conn->stride),
+        overlap(conn->get_overlap()),
+        stride(conn->get_stride()),
         delay(conn->delay),
         from_size(conn->from_layer->size),
         from_rows(conn->from_layer->rows),
@@ -18,9 +18,9 @@ KernelData::KernelData(Connection *conn, State *state) :
         to_size(conn->to_layer->size),
         to_rows(conn->to_layer->rows),
         to_columns(conn->to_layer->columns),
-        num_weights(conn->num_weights),
+        num_weights(conn->get_num_weights()),
         output_type(state->get_output_type()),
-        weights(state->get_matrix(conn->id)) {
+        weights(state->get_matrix(conn)) {
     this->fray =
         (to_rows == from_rows and to_columns == from_columns)
             ? overlap / 2 : 0;
@@ -34,7 +34,7 @@ KernelData::KernelData(Connection *conn, State *state) :
             "Invalid delay in connection!");
 
     outputs = state->get_output(word_index)
-                + conn->from_layer->start_index;
+                + conn->from_layer->get_start_index();
     inputs = state->get_input()
-                + conn->to_layer->start_index;
+                + conn->to_layer->get_start_index();
 }

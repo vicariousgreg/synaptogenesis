@@ -9,12 +9,13 @@ class WeightMatrices {
         WeightMatrices(Model *model, int weight_depth);
         virtual ~WeightMatrices();
 
-        float* get_matrix(int connection_id) {
-            return this->matrices[connection_id];
+        float* get_matrix(Connection* conn) {
+            return this->matrices[conn];
         }
 
     protected:
-        float** matrices;
+        float* matrix_datas;
+        std::map<Connection*, float*> matrices;
 };
 
 #endif

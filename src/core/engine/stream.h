@@ -28,12 +28,12 @@ class Stream {
         friend class StreamCluster;
 
         int scheduled;
-        int last_index[IO_TYPE_SIZE];
+        int last_index[sizeof(IOTypes)];
         Layer *to_layer;
         InstructionList instructions;
 
 #ifdef PARALLEL
-        cudaEvent_t *events[IO_TYPE_SIZE];
+        cudaEvent_t *events[sizeof(IOTypes)];
         cudaEvent_t *finished_event;
         cudaStream_t cuda_stream;
 #endif

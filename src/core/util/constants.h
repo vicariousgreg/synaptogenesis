@@ -17,11 +17,13 @@
  * Different engines may use different output formats.
  * This enumeration is used to keep track of this information.
  */
-enum OutputType {
+typedef enum OutputType {
     FLOAT,
     BIT,
     INT
-};
+} OutputType;
+
+static OutputType OutputTypes[] = { FLOAT, BIT, INT };
 
 /* Returns the number of timesteps represented by one Output value */
 inline int get_timesteps_per_output(OutputType output_type) {
@@ -52,13 +54,14 @@ union Output {
  * Input/Output layers do both.
  * Internal layers do neither.
  */
-enum IOType {
+typedef enum {
     INPUT,
     INPUT_OUTPUT,
     OUTPUT,
     INTERNAL,
-    IO_TYPE_SIZE
-};
+} IOType;
+
+static IOType IOTypes[] = { INPUT, INPUT_OUTPUT, OUTPUT, INTERNAL };
 
 /* Matrix Type enumeration.
  * Fully connected represents an n x m matrix.

@@ -1,27 +1,27 @@
 #include "engine/stream.h"
 
 Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        last_index[i] = 0;
+    for (auto type : IOTypes)
+        last_index[type] = 0;
 
 #ifdef PARALLEL
     // Create cuda events
     cudaStreamCreate(&cuda_stream);
     finished_event = new cudaEvent_t;
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        events[i] = new cudaEvent_t;
+    for (auto type : IOTypes)
+        events[type] = new cudaEvent_t;
 
     cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        cudaEventCreateWithFlags(events[i], cudaEventDisableTiming);
+    for (auto type : IOTypes)
+        cudaEventCreateWithFlags(events[type], cudaEventDisableTiming);
 #endif
 }
 
 Stream::~Stream() {
 #ifdef PARALLEL
-    for (int i = 0; i < IO_TYPE_SIZE; ++i) {
-        cudaEventDestroy(*events[i]);
-        delete events[i];
+    for (auto type : IOTypes) {
+        cudaEventDestroy(*events[type]);
+        delete events[type];
     }
     cudaEventDestroy(*finished_event);
     delete finished_event;
@@ -46,8 +46,8 @@ void Stream::add_instruction(Instruction *inst) {
 void Stream::finalize() {
 #ifdef PARALLEL
     // Add events for finishing each type of computation
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        instructions[last_index[i]]->add_event(events[i]);
+    for (auto type : IOTypes)
+        instructions[last_index[type]]->add_event(events[type]);
 
     // Add finished event
     instructions[instructions.size()-1]->add_event(finished_event);

@@ -1,7 +1,6 @@
 #ifndef model_h
 #define model_h
 
-#include <vector>
 #include <map>
 #include <string>
 
@@ -9,10 +8,8 @@
 #include "model/layer.h"
 #include "model/connection.h"
 #include "model/structure.h"
-#include "io/module/module.h"
 
 /* Represents a full neural network model.
- * Contains network graph data and parameters for layers/connections.
  *
  * Models are built up using Structures, which are subgraphs of the full
  *     network.  They can be built individually and added to the model.
@@ -20,15 +17,21 @@
 class Model {
     public:
         Model (std::string engine_name);
-        virtual ~Model() {
-            for (auto& conn : this->connections) delete conn;
-            for (auto& layer : this->all_layers) delete layer;
-            for (auto& structure : this->structures) delete structure.second;
-        }
+        virtual ~Model();
 
+        /* TODO: Loads a model from a file using the model builder */
         static Model* load(std::string path);
 
+        /* Adds a structure to the model */
         void add_structure(Structure *structure);
+
+        /* Gets the total neuron count */
+        int get_num_neurons() const { return num_neurons; }
+
+        /* Getters for constant vector references */
+        const ConnectionList& get_connections() const { return connections; }
+        const LayerList& get_layers() const { return all_layers; }
+        const LayerList& get_layers(IOType type) const { return layers[type]; }
 
         /* Extracts layers and connections from structures.
          * Reorganizes the model to place input and ouput layers in
@@ -36,27 +39,21 @@ class Model {
         void build();
 
         // Engine string indicating type of engine
-        std::string engine_name;
+        const std::string engine_name;
 
-        // Total number of neurons
-        int num_neurons;
-
+    private:
         // Map of names to structures
         std::map<std::string, Structure*> structures;
 
         // Layers
-        std::vector<Layer*> layers[IO_TYPE_SIZE];
-        std::vector<Layer*> all_layers;
+        LayerList layers[sizeof(IOTypes)];
+        LayerList all_layers;
 
         // Connections
-        std::vector<Connection*> connections;
+        ConnectionList connections;
 
-    private:
-        /* Adds a given number of neurons.
-         * This is called from add_layer() */
-        void add_neurons(int count) {
-            this->num_neurons += count;
-        }
+        // Total number of neurons
+        int num_neurons;
 };
 
 #endif

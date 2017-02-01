@@ -9,14 +9,13 @@ Environment::Environment(Model *model, Buffer *buffer)
         : buffer(buffer),
           visualizer(NULL) {
     // Extract modules
-    for (int i = 0; i < model->all_layers.size(); ++i) {
-        Layer *layer = model->all_layers[i];
+    for (auto& layer : model->get_layers()) {
         bool visualizer_input = false;
         bool visualizer_output = false;
 
         // Add input module
         // If visualizer input module, set flag
-        Module *input_module = layer->input_module;
+        Module *input_module = layer->get_input_module();
         if (input_module != NULL) {
             this->input_modules.push_back(input_module);
             visualizer_input =
@@ -25,7 +24,7 @@ Environment::Environment(Model *model, Buffer *buffer)
 
         // Add output modules
         // If visualizer output module is found, set flag
-        std::vector<Module*> output_modules = layer->output_modules;
+        auto output_modules = layer->get_output_modules();
         for (int j = 0; j < output_modules.size(); ++j) {
             Module *output_module = output_modules[j];
             this->output_modules.push_back(output_module);

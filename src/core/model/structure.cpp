@@ -28,9 +28,8 @@ Connection* Structure::connect_layers(
         Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,
         ConnectionType type, Opcode opcode, std::string params) {
-    int conn_id = this->connections.size();
     Connection *conn = new Connection(
-        conn_id, from_layer, to_layer,
+        from_layer, to_layer,
         plastic, delay, max_weight, type, params, opcode);
     to_layer->add_to_root(conn);
     this->connections.push_back(conn);
@@ -40,9 +39,8 @@ Connection* Structure::connect_layers(
 Connection* Structure::connect_layers(
         Layer *from_layer, Layer *to_layer,
         Connection *parent) {
-    int conn_id = this->connections.size();
     Connection *conn = new Connection(
-        conn_id, from_layer, to_layer, parent);
+        from_layer, to_layer, parent);
     to_layer->add_to_root(conn);
     this->connections.push_back(conn);
     return conn;
@@ -161,9 +159,8 @@ Connection* Structure::connect_layers_internal(DendriticNode *node,
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + to_layer_name + "\"!");
 
-    int conn_id = this->connections.size();
     Connection *conn = new Connection(
-        conn_id, from_layer, to_layer,
+        from_layer, to_layer,
         plastic, delay, max_weight, type, params, opcode);
     node->add_child(conn);
     this->connections.push_back(conn);

@@ -37,8 +37,8 @@ class State {
         void update_all_states();
 
         /* Getters for weight matrices */
-        float* get_matrix(int connection_id) {
-            return this->weight_matrices->get_matrix(connection_id);
+        float* get_matrix(Connection* conn) {
+            return this->weight_matrices->get_matrix(conn);
         }
 
         /* Getters for IO data */

@@ -17,11 +17,10 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
         (RateEncodingParameters*) allocate_host(total_neurons, sizeof(RateEncodingParameters));
 
     // Fill in table
-    for (int i = 0; i < model->all_layers.size(); ++i) {
-        Layer *layer = model->all_layers[i];
+    for (auto& layer : model->get_layers()) {
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
-            local_params[layer->start_index+j] = params;
+            local_params[layer->get_start_index()+j] = params;
     }
 
 #ifdef PARALLEL

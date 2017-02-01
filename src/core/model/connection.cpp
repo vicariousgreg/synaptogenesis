@@ -4,10 +4,9 @@
 #include "model/layer.h"
 #include "util/error_manager.h"
 
-Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
+Connection::Connection (Layer *from_layer, Layer *to_layer,
         bool plastic, int delay, float max_weight,
         ConnectionType type, std::string params,  Opcode opcode) :
-            id(conn_id),
             from_layer(from_layer),
             to_layer(to_layer),
             plastic(plastic),
@@ -15,6 +14,7 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
             max_weight(max_weight),
             opcode(opcode),
             type(type),
+            convolutional(type == CONVOLUTIONAL),
             parent(NULL) {
     switch (type) {
         case(FULLY_CONNECTED):
@@ -73,7 +73,6 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
                     this->num_weights = overlap * overlap * to_layer->size;
                     break;
                 case(CONVOLUTIONAL):
-                    this->convolutional = true;
                     // Convolutional connections use a shared weight kernel
                     this->num_weights = overlap * overlap;
                     break;
@@ -88,9 +87,9 @@ Connection::Connection (int conn_id, Layer *from_layer, Layer *to_layer,
     to_layer->add_input_connection(this);
 }
 
-Connection::Connection(int conn_id, Layer *from_layer, Layer *to_layer,
+Connection::Connection(Layer *from_layer, Layer *to_layer,
         Connection *parent) :
-            Connection(conn_id, from_layer, to_layer,
+            Connection(from_layer, to_layer,
                         parent->plastic, parent->delay,
                         parent->max_weight, parent->type,
                         parent->init_params, parent->opcode) {

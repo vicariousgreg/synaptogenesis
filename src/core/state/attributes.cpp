@@ -23,12 +23,12 @@ Attributes *build_attributes(Model *model) {
 Attributes::Attributes(Model *model, OutputType output_type)
         : output_type(output_type) {
     // Get neuron counts
-    this->total_neurons = model->num_neurons;
+    this->total_neurons = model->get_num_neurons();
 
     // Determine start indices and number of neurons for each type
     int curr_index = 0;
-    for (int layer_type = 0; layer_type < IO_TYPE_SIZE; ++layer_type) {
-        std::vector<Layer*> layers = model->layers[layer_type];
+    for (auto layer_type : IOTypes) {
+        auto layers = model->get_layers(layer_type);
         int size = 0;
         for (int i = 0; i < layers.size(); ++i)
             size += layers[i]->size;
@@ -41,7 +41,7 @@ Attributes::Attributes(Model *model, OutputType output_type)
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
     int max_input_registers = 1;
-    for (auto& layer : model->all_layers) {
+    for (auto& layer : model->get_layers()) {
         int register_count = layer->dendritic_root->get_max_register_index() + 1;
         if (register_count > max_input_registers)
             max_input_registers = register_count;

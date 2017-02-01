@@ -19,8 +19,8 @@ class Environment {
     private:
         Buffer *buffer;
         Visualizer *visualizer;
-        std::vector<Module*> input_modules;
-        std::vector<Module*> output_modules;
+        ModuleList input_modules;
+        ModuleList output_modules;
 };
 
 #endif

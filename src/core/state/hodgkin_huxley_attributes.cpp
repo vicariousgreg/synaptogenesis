@@ -23,16 +23,16 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model) : Attributes(mode
         (HodgkinHuxleyParameters*) allocate_host(total_neurons, sizeof(HodgkinHuxleyParameters));
 
     // Fill in table
-    for (int i = 0; i < model->all_layers.size(); ++i) {
-        Layer *layer = model->all_layers[i];
+    for (auto& layer : model->get_layers()) {
         HodgkinHuxleyParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
-            local_params[layer->start_index+j] = params;
-            local_voltage[layer->start_index+j] = -64.9997224337;
-            local_h[layer->start_index+j] = 0.596111046355;
-            local_m[layer->start_index+j] = 0.0529342176209;
-            local_n[layer->start_index+j] = 0.31768116758;
-            local_current_trace[layer->start_index+j] = 0.0;
+            int start_index = layer->get_start_index();
+            local_params[start_index+j] = params;
+            local_voltage[start_index+j] = -64.9997224337;
+            local_h[start_index+j] = 0.596111046355;
+            local_m[start_index+j] = 0.0529342176209;
+            local_n[start_index+j] = 0.31768116758;
+            local_current_trace[start_index+j] = 0.0;
         }
     }
 

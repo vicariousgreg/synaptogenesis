@@ -2,9 +2,15 @@
 #include "model/model_builder.h"
 #include "util/error_manager.h"
 
-Model::Model (std::string engine_name) :
+Model::Model(std::string engine_name) :
         num_neurons(0),
         engine_name(engine_name) {}
+
+Model::~Model() {
+    for (auto& conn : this->connections) delete conn;
+    for (auto& layer : this->all_layers) delete layer;
+    for (auto& structure : this->structures) delete structure.second;
+}
 
 Model* Model::load(std::string path) {
     return load_model(path);
@@ -15,27 +21,22 @@ void Model::add_structure(Structure *structure) {
         ErrorManager::get_instance()->log_error(
             "Repeated structure name!");
     this->structures[structure->name] = structure;
-    build();
 }
 
 void Model::build() {
     all_layers.clear();
     connections.clear();
     this->num_neurons = 0;
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
-        layers[i].clear();
+    for (auto type : IOTypes)
+        layers[type].clear();
 
     // Extract layers and connections from structures
-    int conn_id = 0;
     for (auto& it : this->structures) {
         Structure *structure = it.second;
         all_layers.insert(all_layers.end(),
             structure->layers.begin(), structure->layers.end());
-
-        for (auto& conn : structure->connections) {
-            connections.push_back(conn);
-            conn->id = conn_id++;
-        }
+        connections.insert(connections.end(),
+            structure->connections.begin(), structure->connections.end());
     }
 
     // Sort layers
@@ -47,18 +48,15 @@ void Model::build() {
     // Clear old list
     // Add in order: input, IO, output, internal
     all_layers.clear();
-    for (int i = 0; i < IO_TYPE_SIZE; ++i)
+    for (auto type : IOTypes)
         all_layers.insert(this->all_layers.end(),
-            layers[i].begin(), layers[i].end());
+            layers[type].begin(), layers[type].end());
 
     // Adjust indices and ids
     int start_index = 0;
-    int index = 0;
     for (auto& layer : this->all_layers) {
-        layer->id = index;
         layer->start_index = start_index;
         start_index += layer->size;
-        ++index;
     }
 
     // Set input and output indices

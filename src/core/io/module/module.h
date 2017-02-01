@@ -2,6 +2,7 @@
 #define module_h
 
 #include <string>
+#include <vector>
 
 #include "model/layer.h"
 #include "io/buffer.h"
@@ -23,6 +24,8 @@ class Module {
 
         Layer *layer;
 };
+
+typedef std::vector<Module*> ModuleList;
 
 Module* build_module(Layer *layer, std::string type, std::string params);
 

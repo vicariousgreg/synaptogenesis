@@ -20,7 +20,7 @@ DendriticNode* DendriticNode::add_child(Connection *conn) {
     return child;
 }
 
-int DendriticNode::get_max_register_index() {
+int DendriticNode::get_max_register_index() const {
     int max_register = this->register_index;
     for (auto& child : children) {
         int child_register = child->get_max_register_index();

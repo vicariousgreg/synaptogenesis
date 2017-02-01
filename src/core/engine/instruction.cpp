@@ -84,11 +84,11 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
     this->src =
         state->get_input()
         + (num_neurons * child->register_index)
-        + to_layer->start_index;
+        + to_layer->get_start_index();
     this->dst =
         state->get_input()
         + (num_neurons * parent->register_index)
-        + to_layer->start_index;
+        + to_layer->get_start_index();
 
 #ifdef PARALLEL
     this->stream = NULL;

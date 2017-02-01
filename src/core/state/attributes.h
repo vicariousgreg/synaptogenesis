@@ -28,10 +28,10 @@ class Attributes {
 
         // Number of neurons
         int total_neurons;
-        int num_neurons[IO_TYPE_SIZE];
+        int num_neurons[sizeof(IOTypes)];
 
         // Start indices by type
-        int start_indices[IO_TYPE_SIZE];
+        int start_indices[sizeof(IOTypes)];
 
         // Neuron input
         float* input;

@@ -110,6 +110,9 @@ void Clock::environment_loop(int iterations, bool verbose) {
 }
 
 void Clock::run(Model *model, int iterations, bool verbose) {
+    // Build the model
+    model->build();
+
     // Initialization
     this->sensory_lock.set_owner(ENVIRONMENT);
     this->motor_lock.set_owner(ENVIRONMENT);

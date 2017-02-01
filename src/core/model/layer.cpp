@@ -5,7 +5,6 @@
 Layer::Layer(Structure* structure, std::string name, int rows, int columns, std::string params) :
         name(name),
         structure(structure),
-        id(0),
         start_index(0),
         rows(rows),
         columns(columns),
@@ -16,6 +15,18 @@ Layer::Layer(Structure* structure, std::string name, int rows, int columns, std:
         output_index(0),
         input_module(NULL),
         dendritic_root(new DendriticNode(0, this)) { }
+
+void Layer::add_input_connection(Connection* connection) {
+    this->input_connections.push_back(connection);
+}
+
+void Layer::add_output_connection(Connection* connection) {
+    this->output_connections.push_back(connection);
+}
+
+void Layer::add_to_root(Connection* connection) {
+    this->dendritic_root->add_child(connection);
+}
 
 void Layer::add_module(Module *module) {
     IOType new_type = module->get_type();

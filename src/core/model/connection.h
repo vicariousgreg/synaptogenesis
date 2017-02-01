@@ -2,6 +2,7 @@
 #define connection_h
 
 #include <string>
+#include <vector>
 
 #include "util/constants.h"
 
@@ -17,40 +18,53 @@ int get_expected_dimension(int source_val, ConnectionType type,
 /* Represents a connection between two neural layers.
  * Connections bridge Layers and are constructed in the Model class.
  * Connections have several types, enumerated and documented in "util/constants.h".
- *
- * Connections contain:
- *   - connection type enum
- *   - unique identifier
- *   - parent id if sharing weights with another connection
- *   - convolutional flag if sharing weights internally
- *   - arborization parameters (if applicable)
- *   - parameters for matrix initialization
- *   - total number of actual weights in the connection
- *   - extracted layer properties
- *   - connection delay
- *   - connection opcode (see util/constants.h)
- *   - plasticity boolean
- *   - maximum weight value
- *
  */
 class Connection {
     public:
-        // Matrix type
-        ConnectionType type;
+        /* Constant getters */
+        int get_num_weights() const { return num_weights; }
+        const std::string get_init_params() const { return init_params; }
+        int get_overlap() const { return overlap; }
+        int get_stride() const { return stride; }
+        Connection* const get_parent() const { return parent; }
 
-        // Connection ID
-        int id;
+        // Matrix type
+        const ConnectionType type;
+
+        // Convolutional boolean (extracted from type)
+        const bool convolutional;
+
+        // Connected layers
+        const Layer *from_layer, *to_layer;
+
+        // Connection delay
+        const int delay;
+
+        // Connection operation code
+        const Opcode opcode;
+
+        // Flag for whether matrix can change via learning
+        const bool plastic;
+
+        // Maximum for weights
+        const float max_weight;
+
+    private:
+        friend class Model;
+        friend class Structure;
+
+        Connection (Layer *from_layer, Layer *to_layer,
+                bool plastic, int delay, float max_weight,
+                ConnectionType type, std::string params, Opcode opcode);
+
+        Connection(Layer *from_layer, Layer *to_layer,
+                Connection *parent);
 
         // Parent connection if this is a shared connection
         Connection *parent;
 
-        // Convolutional boolean (extracted from type)
-        bool convolutional;
-
-        // Arborization parameters (extracted from params)
-        // The amount of overlap and stride for arborized
-        //   (convergent) connections
-        int overlap, stride;
+        // Number of weights in connection
+        int num_weights;
 
         // Parameters for matrix construction
         // Some types will parse values for connection construction
@@ -59,34 +73,12 @@ class Connection {
         //   the remaining values here
         std::string init_params;
 
-        // Connected layers
-        Layer *from_layer, *to_layer;
-
-        // Number of weights in connection
-        int num_weights;
-        // Connection delay
-        int delay;
-
-        // Connection operation code
-        Opcode opcode;
-
-        // Flag for whether matrix can change via learning
-        bool plastic;
-
-        // Maximum for weights
-        float max_weight;
-
-    private:
-        friend class Model;
-        friend class Structure;
-
-        Connection (int conn_id, Layer *from_layer, Layer *to_layer,
-                bool plastic, int delay, float max_weight,
-                ConnectionType type, std::string params, Opcode opcode);
-
-        Connection(int conn_id, Layer *from_layer, Layer *to_layer,
-                Connection *parent);
-
+        // Arborization parameters (extracted from params)
+        // The amount of overlap and stride for arborized
+        //   (convergent) connections
+        int overlap, stride;
 };
+
+typedef std::vector<Connection*> ConnectionList;
 
 #endif
