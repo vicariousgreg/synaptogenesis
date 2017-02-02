@@ -31,7 +31,7 @@ void Visualizer::launch() {
 }
 
 void Visualizer::update() {
-    OutputType output_type = buffer->get_output_type();
+    OutputType output_type = buffer->output_type;
 
     // Copy data over
     for (int i = 0; i < gui->layers.size(); ++i) {
