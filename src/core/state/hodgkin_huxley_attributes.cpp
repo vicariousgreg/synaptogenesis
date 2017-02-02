@@ -59,10 +59,6 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model) : Attributes(mode
     free(local_n);
     free(local_current_trace);
     free(local_params);
-
-    // Copy this to device
-    this->device_pointer = (Attributes*)
-        allocate_device(1, sizeof(HodgkinHuxleyAttributes), this);
 #else
     this->voltage = local_voltage;
     this->h = local_h;

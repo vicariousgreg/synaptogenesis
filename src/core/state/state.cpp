@@ -9,9 +9,9 @@ State::State(Model *model)
         : attributes(build_attributes(model)),
           weight_matrices(new WeightMatrices(model, attributes->get_matrix_depth())) {
     // Create the buffer
-    int input_output_size = attributes->num_neurons[INPUT_OUTPUT];
-    int input_size = input_output_size + attributes->num_neurons[INPUT];
-    int output_size = input_output_size + attributes->num_neurons[OUTPUT];
+    int input_output_size = attributes->get_num_neurons(INPUT_OUTPUT);
+    int input_size = input_output_size + attributes->get_num_neurons(INPUT);
+    int output_size = input_output_size + attributes->get_num_neurons(OUTPUT);
     this->buffer = new Buffer(input_size, output_size, attributes->output_type); 
 
 #ifdef PARALLEL
@@ -56,7 +56,7 @@ State::~State() {
 
 void State::reset() {
     // Clear inputs that aren't connected to sensory input
-    int offset = attributes->start_indices[OUTPUT];
+    int offset = attributes->get_start_index(OUTPUT);
     int count = attributes->total_neurons - offset;
 
 #ifdef PARALLEL
@@ -77,8 +77,8 @@ void State::reset() {
 }
 
 void State::transfer_input() {
-    int index = attributes->start_indices[INPUT];
-    int count = attributes->num_neurons[INPUT] + attributes->num_neurons[INPUT_OUTPUT];
+    int index = attributes->get_start_index(INPUT);
+    int count = attributes->get_num_neurons(INPUT) + attributes->get_num_neurons(INPUT_OUTPUT);
     if (count != 0) {
 #ifdef PARALLEL
         // Copy to GPU from local location
@@ -94,8 +94,8 @@ void State::transfer_input() {
 }
 
 void State::transfer_output() {
-    int index = attributes->start_indices[INPUT_OUTPUT];
-    int count = attributes->num_neurons[INPUT_OUTPUT] + attributes->num_neurons[OUTPUT];
+    int index = attributes->get_start_index(INPUT_OUTPUT);
+    int count = attributes->get_num_neurons(INPUT_OUTPUT) + attributes->get_num_neurons(OUTPUT);
     if (count != 0) {
 #ifdef PARALLEL
         // Make sure to wait for output calc event
@@ -142,7 +142,7 @@ void State::update_states(int start_index, int count) {
     int blocks = calc_blocks(count);
 
     attributes->attribute_kernel<<<blocks, threads, 0, this->state_stream>>>(
-        attributes->device_pointer, start_index, count);
+        attributes->pointer, start_index, count);
     cudaCheckError("Failed to update neuron state/output!");
 #else
     attributes->attribute_kernel(attributes, start_index, count);
@@ -154,8 +154,8 @@ void State::update_all_states() {
 }
 
 void State::update_states(IOType layer_type) {
-    int start_index = attributes->start_indices[layer_type];
-    int count = attributes->num_neurons[layer_type];
+    int start_index = attributes->get_start_index(layer_type);
+    int count = attributes->get_num_neurons(layer_type);
     if (count > 0)
         this->update_states(start_index, count);
 }

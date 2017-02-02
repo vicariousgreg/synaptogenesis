@@ -32,7 +32,7 @@ inline int get_timesteps_per_output(OutputType output_type) {
         case INT:
             return 1;
         case BIT:
-            return sizeof(int) * 8;
+            return sizeof(unsigned int) * 8;
     }
 }
 

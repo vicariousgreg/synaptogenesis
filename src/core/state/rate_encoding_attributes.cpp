@@ -28,10 +28,6 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
     this->neuron_parameters = (RateEncodingParameters*)
         allocate_device(total_neurons, sizeof(RateEncodingParameters), local_params);
     free(local_params);
-
-    // Copy this to device
-    this->device_pointer = (Attributes*)
-        allocate_device(1, sizeof(RateEncodingAttributes), this);
 #else
     this->neuron_parameters = local_params;
 #endif

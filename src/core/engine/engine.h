@@ -15,7 +15,7 @@ class Engine {
 
         virtual ~Engine() { delete this->state; }
 
-        Buffer *get_buffer() const { return this->state->get_buffer(); }
+        Buffer *get_buffer() const { return state->get_buffer(); }
         void disable_learning();
 
         // Main hooks

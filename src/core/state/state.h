@@ -18,19 +18,11 @@ class State {
          * If parallel, this will reset cuda events */
         void reset();
 
-        /* Primary environment IO functions.
-         *   -> Gather sensory input from the environment buffer
-         *   -> Send motor output to the environment buffer
-         */
+        /* Primary environment IO functions */
         void transfer_input();
         void transfer_output();
 
-        /* State update functions.
-         *  -> update states of a given IOType
-         *  -> update states for output (motor) neurons
-         *  -> update states for non-output neurons
-         *  -> update all states
-         */
+        /* State update functions */
         void update_states(IOType layer_type);
         void update_output_states();
         void update_non_output_states();
@@ -38,7 +30,7 @@ class State {
 
         /* Getters for weight matrices */
         float* get_matrix(Connection* conn) const {
-            return this->weight_matrices->get_matrix(conn);
+            return weight_matrices->get_matrix(conn);
         }
 
         /* Getters for IO data */
@@ -54,21 +46,15 @@ class State {
 
         /* Getters for neuron count related information */
         int get_num_neurons() const { return attributes->total_neurons; }
-        int get_num_neurons(IOType type) const { return attributes->num_neurons[type]; }
-        int get_start_index(IOType type) const { return attributes->start_indices[type]; }
+        int get_num_neurons(IOType type) const { return attributes->get_num_neurons(type); }
+        int get_start_index(IOType type) const { return attributes->get_start_index(type); }
 
-        Buffer *get_buffer() const { return this->buffer; }
-        Attributes *get_attributes_pointer() const {
-#ifdef PARALLEL
-            return this->attributes->device_pointer;
-#else
-            return this->attributes;
-#endif
-        }
-
-        KERNEL get_updater(ConnectionType type) const {
-            return attributes->get_updater(type);
-        }
+        /* Constant getter so that nobody else changes the Attributes
+         * This way, kernels can access attribute data without using a getter
+         *     function, but the data is protected from everybody but this State */
+        const Attributes *get_attributes_pointer() const { return attributes->pointer; }
+        Buffer *get_buffer() const { return buffer; }
+        KERNEL get_updater(ConnectionType type) const { return attributes->get_updater(type); }
 
 #ifdef PARALLEL
         /* If parallel, callers may want to wait for IO events */

@@ -13,7 +13,7 @@ class KernelData {
         KernelData(Connection *conn, State *state);
 
         /* Neuron attributes */
-        Attributes *attributes;
+        const Attributes *attributes;
 
         /* Connection attributes */
         Opcode opcode;

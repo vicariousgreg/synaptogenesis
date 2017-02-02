@@ -33,7 +33,7 @@ class SynapseInstruction : public Instruction {
     public:
         SynapseInstruction(Connection *conn, State *state);
 
-        bool is_plastic() { return this->kernel_data.plastic; }
+        bool is_plastic() { return kernel_data.plastic; }
         void disable_learning();
         void activate();
         void update();

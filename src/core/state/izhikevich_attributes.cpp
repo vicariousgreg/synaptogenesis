@@ -86,10 +86,6 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
     free(local_voltage);
     free(local_recovery);
     free(local_params);
-
-    // Copy this to device
-    this->device_pointer = (Attributes*)
-        allocate_device(1, sizeof(IzhikevichAttributes), this);
 #else
     this->voltage = local_voltage;
     this->recovery = local_recovery;

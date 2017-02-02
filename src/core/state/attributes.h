@@ -24,26 +24,21 @@ class Attributes {
         // Number of neurons
         const int total_neurons;
 
-        // Neuron input
-        float* input;
-
-        // Neuron output
+        // Neuron IO data
         EXTRACTOR extractor;
         const OutputType output_type;
-        Output* output;
         Output* recent_output;
+        Output* output;
+        float* input;
 
         /* Primary attribute update function */
         ATTRIBUTE_KERNEL attribute_kernel;
 
-#ifdef PARALLEL
-        // Pointer to device copy of this object
-        Attributes *device_pointer;
-#endif
+        // Pointer to this object
+        // If parallel, this will point to the device copy
+        Attributes *pointer;
 
     private:
-        friend class State;
-
         int num_neurons[sizeof(IOTypes)];
         int start_indices[sizeof(IOTypes)];
 };

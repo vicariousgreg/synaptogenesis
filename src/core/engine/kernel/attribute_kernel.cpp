@@ -31,7 +31,7 @@ void get_attribute_kernel(ATTRIBUTE_KERNEL *dest, std::string engine_name) {
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
 
-GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
+GLOBAL void iz_update_attributes(const Attributes *att, int start_index, int count) {
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
     float *voltages = iz_att->voltage;
     float *recoveries = iz_att->recovery;
@@ -105,7 +105,7 @@ GLOBAL void iz_update_attributes(Attributes *att, int start_index, int count) {
 /**************************** RATE ENCODING ***********************************/
 /******************************************************************************/
 
-GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
+GLOBAL void re_update_attributes(const Attributes *att, int start_index, int count) {
     float *outputs = (float*)att->output;
     float *inputs = (float*)att->input;
     int total_neurons = att->total_neurons;
@@ -149,7 +149,7 @@ GLOBAL void re_update_attributes(Attributes *att, int start_index, int count) {
 #define HH_VL -54.4
 #define HH_CM 1.0
 
-GLOBAL void hh_update_attributes(Attributes *att, int start_index, int count) {
+GLOBAL void hh_update_attributes(const Attributes *att, int start_index, int count) {
     HodgkinHuxleyAttributes *hh_att = (HodgkinHuxleyAttributes*)att;
     float *voltages = hh_att->voltage;
     float *hs = hh_att->h;

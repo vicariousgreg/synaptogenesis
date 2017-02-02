@@ -53,6 +53,7 @@ class Clock {
                   time_limit(1.0 / refresh_rate),
                   environment_rate(environment_rate),
                   calc_rate(false) { }
+
         void run(Model *model, int iterations, bool verbose);
 
     private:

@@ -14,8 +14,8 @@ class Buffer {
         void set_output(int offset, int size, Output* source);
 
         /* IO getters */
-        float* get_input() { return this->input; }
-        Output* get_output() { return this->output; }
+        float* get_input() const { return input; }
+        Output* get_output() const { return output; }
 
         const OutputType output_type;
         const int input_size;

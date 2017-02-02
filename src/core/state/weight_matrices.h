@@ -9,9 +9,7 @@ class WeightMatrices {
         WeightMatrices(Model *model, int weight_depth);
         virtual ~WeightMatrices();
 
-        float* get_matrix(Connection* conn) const {
-            return this->matrices.at(conn);
-        }
+        float* get_matrix(Connection* conn) const { return matrices.at(conn); }
 
     protected:
         float* matrix_datas;

@@ -8,21 +8,35 @@
 
 Attributes *build_attributes(Model *model) {
     Attributes *attributes;
-    if (model->engine_name == "izhikevich")
+    int object_size;
+
+    if (model->engine_name == "izhikevich") {
         attributes = new IzhikevichAttributes(model);
-    else if (model->engine_name == "rate_encoding")
+        object_size = sizeof(IzhikevichAttributes);
+    } else if (model->engine_name == "rate_encoding") {
         attributes = new RateEncodingAttributes(model);
-    else if (model->engine_name == "hodgkin_huxley")
+        object_size = sizeof(RateEncodingAttributes);
+    } else if (model->engine_name == "hodgkin_huxley") {
         attributes = new HodgkinHuxleyAttributes(model);
-    else
+        object_size = sizeof(HodgkinHuxleyAttributes);
+    } else {
         ErrorManager::get_instance()->log_error(
             "Unrecognized engine type!");
+    }
+
+#ifdef PARALLEL
+    // Copy attributes to device and set the pointer
+    // Superclass will set its own pointer otherwise
+    attributes->pointer = (Attributes*)
+        allocate_device(1, object_size, attributes);
+#endif
     return attributes;
 }
 
 Attributes::Attributes(Model *model, OutputType output_type)
         : output_type(output_type),
-          total_neurons(model->get_num_neurons()) {
+          total_neurons(model->get_num_neurons()),
+          pointer(this) {
     // Determine start indices and number of neurons for each type
     int curr_index = 0;
     for (auto layer_type : IOTypes) {
@@ -80,7 +94,7 @@ Attributes::~Attributes() {
 #ifdef PARALLEL
     cudaFree(this->input);
     cudaFree(this->output);
-    cudaFree(this->device_pointer);
+    cudaFree(this->pointer);
 #else
     free(this->input);
     free(this->output);
