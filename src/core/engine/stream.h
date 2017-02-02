@@ -22,14 +22,15 @@ class Stream {
 
 #ifdef PARALLEL
         void wait_event(cudaEvent_t *event);
+        cudaEvent_t* get_event(IOType type) const { return events[type]; }
+        cudaEvent_t* get_finished_event() const { return finished_event; }
 #endif
 
-    private:
-        friend class StreamCluster;
+        Layer* const to_layer;
 
+    private:
         int scheduled;
         int last_index[sizeof(IOTypes)];
-        Layer *to_layer;
         InstructionList instructions;
 
 #ifdef PARALLEL

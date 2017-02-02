@@ -10,6 +10,9 @@
 #include "clock.h"
 
 void print_model(Model *model) {
+    // Ensure model is built
+    model->build();
+
     auto layers = model->get_layers();
     auto connections = model->get_connections();
 

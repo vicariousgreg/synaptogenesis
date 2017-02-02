@@ -28,7 +28,7 @@ PrintRateModule::PrintRateModule(Layer *layer, std::string params)
 
 void PrintRateModule::report_output(Buffer *buffer) {
     Output* output = buffer->get_output();
-    OutputType output_type = buffer->get_output_type();
+    OutputType output_type = buffer->output_type;
 
     timesteps++;
 

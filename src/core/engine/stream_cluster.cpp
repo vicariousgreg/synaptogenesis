@@ -43,7 +43,8 @@ StreamCluster::StreamCluster(Model *model, State *state)
 StreamCluster::~StreamCluster() {
     // Delete streams
     for (auto type : IOTypes)
-        for (auto& stream : streams[type]) delete stream.second;
+        for (auto& stream : streams[type])
+            delete stream.second;
 
     // Delete instructions
     for (auto& inst : this->all_instructions) delete inst;
@@ -51,10 +52,10 @@ StreamCluster::~StreamCluster() {
 
 void StreamCluster::dendrite_DFS(DendriticNode *curr, Stream *stream) {
     for (auto& child : curr->get_children()) {
-        Connection* conn = child->conn;
         Instruction *inst;
 
-        if (conn != NULL) { // Leaf node
+        if (child->is_leaf()) { // Leaf node
+            Connection* conn = child->conn;
             inst = new SynapseInstruction(conn, this->state);
             stream->add_instruction(inst, conn->from_layer->get_type());
         } else {            // Internal node
@@ -185,12 +186,12 @@ void StreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
 
 void StreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
     for (auto& stream : streams[to_type])
-        cudaStreamWaitEvent(cuda_stream, *stream.second->finished_event, 0);
+        cudaStreamWaitEvent(cuda_stream, *stream.second->get_finished_event(), 0);
 }
 
 void StreamCluster::block_stream_from(IOType from_type, cudaStream_t cuda_stream) {
     for (auto type : IOTypes)
         for (auto& stream : streams[type])
-            cudaStreamWaitEvent(cuda_stream, *stream.second->events[from_type], 0);
+            cudaStreamWaitEvent(cuda_stream, *stream.second->get_event(from_type), 0);
 }
 #endif

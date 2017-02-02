@@ -25,7 +25,7 @@ PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)
 
 void PrintOutputModule::report_output(Buffer *buffer) {
     Output* output = buffer->get_output();
-    OutputType output_type = buffer->get_output_type();
+    OutputType output_type = buffer->output_type;
 
     // Print bar
     for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";

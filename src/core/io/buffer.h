@@ -16,11 +16,10 @@ class Buffer {
         /* IO getters */
         float* get_input() { return this->input; }
         Output* get_output() { return this->output; }
-        OutputType get_output_type() { return this->output_type; }
 
-        OutputType output_type;
-        int input_size;
-        int output_size;
+        const OutputType output_type;
+        const int input_size;
+        const int output_size;
 
     private:
         float *input;

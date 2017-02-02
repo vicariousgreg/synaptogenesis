@@ -110,7 +110,7 @@ void Clock::environment_loop(int iterations, bool verbose) {
 }
 
 void Clock::run(Model *model, int iterations, bool verbose) {
-    // Build the model
+    // Ensure model is built
     model->build();
 
     // Initialization

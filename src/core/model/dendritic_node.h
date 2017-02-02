@@ -40,6 +40,9 @@ class DendriticNode {
         /* Add a child leaf node */
         DendriticNode *add_child(Connection *conn);
 
+        /* Returns whether this node is a leaf node */
+        bool is_leaf() const { return conn != NULL; }
+
         /* Constant getters */
         int get_max_register_index() const;
         const DendriticNodeList get_children() const { return children; }

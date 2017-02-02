@@ -21,6 +21,7 @@ void Model::add_structure(Structure *structure) {
         ErrorManager::get_instance()->log_error(
             "Repeated structure name!");
     this->structures[structure->name] = structure;
+    this->build();
 }
 
 void Model::build() {

@@ -63,7 +63,8 @@ void State::reset() {
     if (count > 0) {
         int threads = calc_threads(count);
         int blocks = calc_blocks(count);
-        // Use the kernel stream
+
+        // Use the state stream
         clear_data<<<blocks, threads, 0, this->state_stream>>>(
             attributes->input + offset, count);
         cudaCheckError("Failed to clear inputs!");
