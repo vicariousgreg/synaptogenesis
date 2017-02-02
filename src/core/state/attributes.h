@@ -16,31 +16,36 @@ class Attributes {
         // Depth of weight matrices
         virtual int get_matrix_depth() = 0;
 
-        KERNEL get_updater(ConnectionType type) { return get_updater_kernel(type); }
-
-#ifdef PARALLEL
-        // Pointer to device copy of this object
-        Attributes *device_pointer;
-#endif
-
-        /* Primary attribute update function */
-        ATTRIBUTE_KERNEL attribute_kernel;
+        /* Constant getters */
+        KERNEL get_updater(ConnectionType type) const { return get_updater_kernel(type); }
+        int get_num_neurons(IOType type) const { return num_neurons[type]; }
+        int get_start_index(IOType type) const { return start_indices[type]; }
 
         // Number of neurons
-        int total_neurons;
-        int num_neurons[sizeof(IOTypes)];
-
-        // Start indices by type
-        int start_indices[sizeof(IOTypes)];
+        const int total_neurons;
 
         // Neuron input
         float* input;
 
         // Neuron output
         EXTRACTOR extractor;
-        OutputType output_type;
+        const OutputType output_type;
         Output* output;
         Output* recent_output;
+
+        /* Primary attribute update function */
+        ATTRIBUTE_KERNEL attribute_kernel;
+
+#ifdef PARALLEL
+        // Pointer to device copy of this object
+        Attributes *device_pointer;
+#endif
+
+    private:
+        friend class State;
+
+        int num_neurons[sizeof(IOTypes)];
+        int start_indices[sizeof(IOTypes)];
 };
 
 Attributes *build_attributes(Model *model);

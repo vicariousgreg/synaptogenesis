@@ -5,8 +5,7 @@
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
-static void initialize_matrix(Connection* conn,
-        float* mData, int weight_depth);
+static void initialize_matrix(Connection* conn, float* mData, int weight_depth);
 
 WeightMatrices::WeightMatrices(Model *model, int weight_depth) {
     auto connections = model->get_connections();

@@ -37,15 +37,15 @@ class State {
         void update_all_states();
 
         /* Getters for weight matrices */
-        float* get_matrix(Connection* conn) {
+        float* get_matrix(Connection* conn) const {
             return this->weight_matrices->get_matrix(conn);
         }
 
         /* Getters for IO data */
-        float* get_input() { return attributes->input; }
-        OutputType get_output_type() { return attributes->output_type; }
-        Output* get_recent_output() { return attributes->recent_output; }
-        Output* get_output(int word_index = 0) {
+        float* get_input() const { return attributes->input; }
+        OutputType get_output_type() const { return attributes->output_type; }
+        Output* get_recent_output() const { return attributes->recent_output; }
+        Output* get_output(int word_index = 0) const {
             return attributes->output + (attributes->total_neurons * word_index);
         }
 
@@ -53,12 +53,12 @@ class State {
         void update_states(int start_index, int count);
 
         /* Getters for neuron count related information */
-        int get_num_neurons() { return attributes->total_neurons; }
-        int get_num_neurons(IOType type) { return attributes->num_neurons[type]; }
-        int get_start_index(IOType type) { return attributes->start_indices[type]; }
+        int get_num_neurons() const { return attributes->total_neurons; }
+        int get_num_neurons(IOType type) const { return attributes->num_neurons[type]; }
+        int get_start_index(IOType type) const { return attributes->start_indices[type]; }
 
-        Buffer *get_buffer() { return this->buffer; }
-        Attributes *get_attributes_pointer() {
+        Buffer *get_buffer() const { return this->buffer; }
+        Attributes *get_attributes_pointer() const {
 #ifdef PARALLEL
             return this->attributes->device_pointer;
 #else
@@ -66,7 +66,7 @@ class State {
 #endif
         }
 
-        KERNEL get_updater(ConnectionType type) {
+        KERNEL get_updater(ConnectionType type) const {
             return attributes->get_updater(type);
         }
 
@@ -87,7 +87,7 @@ class State {
             *output_event;
 #endif
 
-    protected:
+    private:
         Attributes *attributes;
         Buffer *buffer;
         WeightMatrices *weight_matrices;

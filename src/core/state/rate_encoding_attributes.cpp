@@ -30,7 +30,7 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
     free(local_params);
 
     // Copy this to device
-    this->device_pointer = (RateEncodingAttributes*)
+    this->device_pointer = (Attributes*)
         allocate_device(1, sizeof(RateEncodingAttributes), this);
 #else
     this->neuron_parameters = local_params;
@@ -40,7 +40,6 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
 RateEncodingAttributes::~RateEncodingAttributes() {
 #ifdef PARALLEL
     cudaFree(this->neuron_parameters);
-    cudaFree(this->device_pointer);
 #else
     free(this->neuron_parameters);
 #endif

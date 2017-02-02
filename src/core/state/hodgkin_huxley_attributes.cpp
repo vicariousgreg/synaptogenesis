@@ -61,7 +61,7 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model) : Attributes(mode
     free(local_params);
 
     // Copy this to device
-    this->device_pointer = (HodgkinHuxleyAttributes*)
+    this->device_pointer = (Attributes*)
         allocate_device(1, sizeof(HodgkinHuxleyAttributes), this);
 #else
     this->voltage = local_voltage;
@@ -81,7 +81,6 @@ HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
     cudaFree(this->n);
     cudaFree(this->current_trace);
     cudaFree(this->neuron_parameters);
-    cudaFree(this->device_pointer);
 #else
     free(this->voltage);
     free(this->h);

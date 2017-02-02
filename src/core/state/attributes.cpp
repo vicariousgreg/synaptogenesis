@@ -21,10 +21,8 @@ Attributes *build_attributes(Model *model) {
 }
 
 Attributes::Attributes(Model *model, OutputType output_type)
-        : output_type(output_type) {
-    // Get neuron counts
-    this->total_neurons = model->get_num_neurons();
-
+        : output_type(output_type),
+          total_neurons(model->get_num_neurons()) {
     // Determine start indices and number of neurons for each type
     int curr_index = 0;
     for (auto layer_type : IOTypes) {
@@ -82,6 +80,7 @@ Attributes::~Attributes() {
 #ifdef PARALLEL
     cudaFree(this->input);
     cudaFree(this->output);
+    cudaFree(this->device_pointer);
 #else
     free(this->input);
     free(this->output);

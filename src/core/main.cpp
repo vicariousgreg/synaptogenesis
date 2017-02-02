@@ -10,23 +10,26 @@
 #include "clock.h"
 
 void print_model(Model *model) {
+    auto layers = model->get_layers();
+    auto connections = model->get_connections();
+
     printf("Built model.\n");
-    printf("  - neurons     : %10d\n", model->num_neurons);
-    printf("  - layers      : %10d\n", model->all_layers.size());
-    printf("  - connections : %10d\n", model->connections.size());
+    printf("  - neurons     : %10d\n", model->get_num_neurons());
+    printf("  - layers      : %10d\n", layers.size());
+    printf("  - connections : %10d\n", connections.size());
     int num_weights = 0;
-    for (int i = 0; i < model->connections.size() ; ++i)
-        if (model->connections[i]->parent == NULL)
-            num_weights += model->connections[i]->num_weights;
+    for (auto& conn : connections)
+        if (conn->get_parent() == NULL)
+            num_weights += conn->get_num_weights();
     printf("  - weights     : %10d\n", num_weights);
 
-    for (auto layer : model->all_layers) {
+    for (auto layer : layers) {
         std::cout << layer->structure->name << "->" << layer->name;
-        switch (layer->type) {
-            case INPUT: std::cout << "\tINPUT"; break;
-            case INPUT_OUTPUT: std::cout << "\tINPUT_OUTPUT"; break;
-            case OUTPUT: std::cout << "\tOUTPUT"; break;
-            case INTERNAL: std::cout << "\tINTERNAL"; break;
+        switch (layer->get_type()) {
+            case INPUT: std::cout << "\t\tINPUT"; break;
+            case INPUT_OUTPUT: std::cout << "\t\tINPUT_OUTPUT"; break;
+            case OUTPUT: std::cout << "\t\tOUTPUT"; break;
+            case INTERNAL: std::cout << "\t\tINTERNAL"; break;
         }
         std::cout << std::endl;
     }
@@ -318,7 +321,7 @@ Model* build_alignment_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("alignment");
 
-    int resolution = 125;
+    int resolution = 225;
     structure->add_layer("input_layer", 1, 10, "default");
     structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
     structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -487,7 +490,7 @@ Model* build_cc_model(std::string engine_name) {
     for (int i = 0 ; i < num_structures ; ++i) {
         Structure *structure = new Structure(std::to_string(i));
 
-        int resolution = 125;
+        int resolution = 50;
         structure->add_layer("input_layer", 1, 10, "default");
         structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
         structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -498,15 +501,15 @@ Model* build_cc_model(std::string engine_name) {
         structure->connect_layers("exc_thalamus", "exc_cortex", true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
         structure->connect_layers("exc_cortex", "inh_cortex", true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
         structure->connect_layers("exc_cortex", "exc_cortex", true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
-        structure->connect_layers("inh_cortex", "exc_cortex", false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        structure->connect_layers("inh_cortex", "exc_cortex", false, 0, 5, CONVERGENT, DIV, "5 1 10");
         structure->connect_layers("exc_cortex", "inh_thalamus", true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
-        structure->connect_layers("inh_thalamus", "exc_thalamus", false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        structure->connect_layers("inh_thalamus", "exc_thalamus", false, 0, 5, CONVERGENT, DIV, "5 1 10");
 
         /*
         structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
             true, 20, 0.1, CONVERGENT, ADD, "15 1 0.025");
         structure->connect_layers("output_layer", "exc_cortex",
-            true, 20, 1, CONVERGENT, ADD, "15 1 0.5");
+            true, 20, 0.5, CONVERGENT, ADD, "15 1 0.1");
             //false, 20, 1, ONE_TO_ONE, ADD, "1");
         */
 
@@ -533,8 +536,8 @@ Model* build_cc_model(std::string engine_name) {
             structures[(i+1)%num_structures],
             "exc_cortex",
             //true, 20, 1, ONE_TO_ONE, ADD, "0.1");
-            true, 10, 0.1, CONVERGENT, MULT, "9 1 0.01");
-            //true, 20, 1, FULLY_CONNECTED, ADD, "0.1");
+            //true, 10, 0.1, CONVERGENT, MULT, "9 1 0.01");
+            true, 20, 0.01, FULLY_CONNECTED, ADD, "0.001");
     }
 
     for (auto structure : structures)
@@ -550,9 +553,9 @@ void run_simulation(Model *model, int iterations, bool verbose) {
 
     // Benchmark the network
     // Use max refresh rate possible
-    // Run for 10 iterations
+    // Run for 100 iterations
     //Clock clock(false);  // No refresh rate synchronization
-    //clock.run(model, 10, verbose);
+    //clock.run(model, 100, verbose);
 }
 
 void stress_test() {

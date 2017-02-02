@@ -88,7 +88,7 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT
     free(local_params);
 
     // Copy this to device
-    this->device_pointer = (IzhikevichAttributes*)
+    this->device_pointer = (Attributes*)
         allocate_device(1, sizeof(IzhikevichAttributes), this);
 #else
     this->voltage = local_voltage;
@@ -102,7 +102,6 @@ IzhikevichAttributes::~IzhikevichAttributes() {
     cudaFree(this->voltage);
     cudaFree(this->recovery);
     cudaFree(this->neuron_parameters);
-    cudaFree(this->device_pointer);
 #else
     free(this->voltage);
     free(this->recovery);
