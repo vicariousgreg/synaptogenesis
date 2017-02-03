@@ -46,18 +46,23 @@ void SynapseInstruction::disable_learning() {
 void SynapseInstruction::activate() {
 #ifdef PARALLEL
     // Launch computation on provided stream, or default if none
-    if (this->stream)
+    if (this->stream) {
         activator
             <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
             (this->kernel_data);
-    else
+
+        // Record added events
+        for (int i = 0; i < this->events.size(); ++i)
+            cudaEventRecord(*this->events[i], *this->stream);
+    } else {
         activator
             <<<blocks_per_grid, threads_per_block>>>
             (this->kernel_data);
 
-    // Record added events
-    for (int i = 0; i < this->events.size(); ++i)
-        cudaEventRecord(*this->events[i], *this->stream);
+        // Record added events
+        for (int i = 0; i < this->events.size(); ++i)
+            cudaEventRecord(*this->events[i]);
+    }
 #else
     activator(this->kernel_data);
 #endif

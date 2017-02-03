@@ -12,7 +12,6 @@ class ErrorManager {
     private:
         static ErrorManager *instance;
         ErrorManager() { }
-        virtual ~ErrorManager() { }
 };
 
 #endif
