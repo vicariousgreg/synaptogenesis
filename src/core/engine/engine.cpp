@@ -6,6 +6,16 @@ void Engine::stage_clear() {
     stream_cluster.launch_non_input_calculations();
 }
 
+void Engine::stage_output() {
+    // Start IO streaming
+    state->transfer_output();
+
+#ifdef PARALLEL
+    // Wait for IO to finish
+    state->wait_for_output();
+#endif
+}
+
 void Engine::stage_input() {
     // Start IO streaming
     state->transfer_input();
@@ -13,21 +23,10 @@ void Engine::stage_input() {
 #ifdef PARALLEL
     stream_cluster.launch_input_calculations();
     if (learning_flag) stream_cluster.launch_weight_update();
-
-    // Wait for IO to finish
-    state->wait_for_input();
-#endif
-}
-
-void Engine::stage_output() {
-    // Start IO streaming
-    state->transfer_output();
-
-#ifdef PARALLEL
     state->update_all_states();
 
     // Wait for IO to finish
-    state->wait_for_output();
+    state->wait_for_input();
 #endif
 }
 

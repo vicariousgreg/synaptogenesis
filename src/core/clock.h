@@ -57,7 +57,6 @@ class Clock {
         void run(Model *model, int iterations, bool verbose);
 
     private:
-        void calc_time_limit(int iterations, bool verbose);
         void engine_loop(int iterations, bool verbose);
         void environment_loop(int iterations, bool verbose);
 

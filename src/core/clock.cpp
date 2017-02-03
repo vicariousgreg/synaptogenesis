@@ -1,59 +1,12 @@
 #include "clock.h"
 
-void Clock::calc_time_limit(int iterations, bool verbose) {
-    float total_time = 0;
-
-    Timer timer;
-
-    for (int i = 0 ; i < iterations; ++i) {
-        timer.reset();
-
-        // Start clearing inputs
-        this->engine->stage_clear();
-
-        // Read sensory input
-        this->sensory_lock.wait(DRIVER);
-        this->engine->stage_input();
-        this->sensory_lock.pass(ENVIRONMENT);
-
-        // Write motor output
-        this->motor_lock.wait(DRIVER);
-        this->engine->stage_output();
-        this->motor_lock.pass(ENVIRONMENT);
-
-        // Finish computations
-        this->engine->stage_calc();
-
-        // Synchronize with the clock
-        total_time += timer.query(NULL);
-    }
-
-    this->time_limit = (total_time*1.1) / iterations;
-    this->refresh_rate = 1.0 / this->time_limit;
-    if (verbose)
-        printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
-}
-
 void Clock::engine_loop(int iterations, bool verbose) {
     this->run_timer.reset();
 
-    // If calc_rate is true, time several iterations
-    //   and iteration and set the time limit
-    int i = 0;
-    if (this->calc_rate) {
-        this->calc_time_limit(10, verbose);
-        i = 10;
-    }
-
-    for ( ; i < iterations; ++i) {
+    for (int i = 0 ; i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
         this->iteration_timer.reset();
         this->engine->stage_clear();
-
-        // Read sensory input
-        this->sensory_lock.wait(DRIVER);
-        this->engine->stage_input();
-        this->sensory_lock.pass(ENVIRONMENT);
 
         // Write motor output
         this->motor_lock.wait(DRIVER);
@@ -66,11 +19,24 @@ void Clock::engine_loop(int iterations, bool verbose) {
         }
         this->motor_lock.pass(ENVIRONMENT);
 
+        // Read sensory input
+        this->sensory_lock.wait(DRIVER);
+        this->engine->stage_input();
+        this->sensory_lock.pass(ENVIRONMENT);
+
         // Finish computations
         this->engine->stage_calc();
 
         // Synchronize with the clock
         this->iteration_timer.wait(this->time_limit);
+
+        // Set the refresh rate if calc_rate is true
+        if (this->calc_rate and i == 9) {
+            this->time_limit = (run_timer.query(NULL)*1.1) / (i+1);
+            this->refresh_rate = 1.0 / this->time_limit;
+            if (verbose)
+                printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
+        }
     }
 
     // Report time if verbose
