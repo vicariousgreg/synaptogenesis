@@ -4,8 +4,7 @@
 SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
         connection(conn),
         kernel_data(conn, state),
-        type(conn->type),
-        plastic(conn->plastic) {
+        type(conn->type) {
     this->activator = get_activator_kernel(type);
     this->updater = (conn->plastic) ? state->get_updater(type) : NULL;
 
@@ -16,14 +15,6 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
     this->threads_per_block = dim3(calc_threads(conn->to_layer->size));
     this->blocks_per_grid = dim3(calc_blocks(conn->to_layer->size));
 #endif
-}
-
-void SynapseInstruction::enable_learning() {
-    this->plastic = this->kernel_data.plastic;
-}
-
-void SynapseInstruction::disable_learning() {
-    this->plastic = false;
 }
 
 void SynapseInstruction::activate() {
@@ -52,7 +43,7 @@ void SynapseInstruction::activate() {
 }
 
 void SynapseInstruction::update() {
-    if (this->plastic)
+    if (this->kernel_data.plastic)
 #ifdef PARALLEL
         if (this->stream)
             updater

@@ -13,11 +13,8 @@ class StreamCluster {
         StreamCluster(Model *model, State *state);
         virtual ~StreamCluster();
 
-        void disable_learning();
-
-        void launch_clear_output_calculations();
-        void launch_input_output_calculations();
-        void launch_non_output_calculations();
+        void launch_non_input_calculations();
+        void launch_input_calculations();
         void launch_weight_update();
 
     private:
@@ -31,16 +28,14 @@ class StreamCluster {
 #ifdef PARALLEL
         void wait_event(IOType to_type, cudaEvent_t *event);
         void block_stream_to(IOType to_type, cudaStream_t cuda_stream);
-        void block_stream_from(IOType from_type, cudaStream_t cuda_stream);
 #endif
 
         State *state;
         std::map<Layer*, Stream*> streams[sizeof(IOTypes)];
 
         InstructionList all_instructions;
-        InstructionList clear_output_instructions;
-        InstructionList input_output_instructions;
-        InstructionList non_output_instructions;
+        InstructionList input_instructions;
+        InstructionList non_input_instructions;
         InstructionList plastic_instructions;
 
         std::map<Layer*, InstructionList > schedules;

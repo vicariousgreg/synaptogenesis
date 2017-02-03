@@ -14,7 +14,6 @@
 class Instruction {
     public:
         virtual bool is_plastic() const = 0;
-        virtual void disable_learning() = 0;
         virtual void activate() = 0;
         virtual void update() = 0;
 
@@ -41,9 +40,8 @@ class SynapseInstruction : public Instruction {
          * The connection's learning flag takes precedence for plasticity.
          * An instruction with a non-plastic connection cannot be made plastic
          *     for data allocation related reasons. */
-        bool is_plastic() const { return plastic; }
+        bool is_plastic() const { return kernel_data.plastic; }
         void enable_learning();
-        void disable_learning();
 
         const ConnectionType type;
         Connection* const connection;
@@ -53,8 +51,6 @@ class SynapseInstruction : public Instruction {
         KERNEL activator;
         KERNEL updater;
         const KernelData kernel_data;
-
-        bool plastic;
 };
 
 class DendriticInstruction : public Instruction {
@@ -63,7 +59,6 @@ class DendriticInstruction : public Instruction {
             DendriticNode *child, State *state);
 
         bool is_plastic() const { return false; }
-        void disable_learning() { }
         void activate();
         void update() { }
 

@@ -11,25 +11,25 @@ class Engine {
         Engine(Model *model)
                 : model(model),
                   state(new State(model)),
-                  stream_cluster(model, state) { }
+                  stream_cluster(model, state),
+                  learning_flag(true) { }
 
         virtual ~Engine() { delete this->state; }
 
         Buffer *get_buffer() const { return state->get_buffer(); }
-        void disable_learning();
+        void set_learning_flag(bool status) { learning_flag = status; }
 
         // Main hooks
         void stage_clear();
         void stage_input();
-        void stage_calc_output();
-        void stage_send_output();
-        void stage_remaining();
-        void stage_weights();
+        void stage_output();
+        void stage_calc();
 
     private:
         Model *model;
         State *state;
         StreamCluster stream_cluster;
+        bool learning_flag;
 };
 
 #endif

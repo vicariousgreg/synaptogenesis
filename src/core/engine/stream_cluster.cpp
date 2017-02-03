@@ -20,20 +20,15 @@ StreamCluster::StreamCluster(Model *model, State *state)
         }
     }
 
-    // Schedule clear output instructions
-    schedule_to(OUTPUT);
-    this->sort_schedule(this->clear_output_instructions);
-
-    // Schedule input output instructions
-    schedule_to(INPUT_OUTPUT);
-    schedule_from(INPUT_OUTPUT);
-    schedule_from(OUTPUT);
-    this->sort_schedule(this->input_output_instructions);
-
-    // Schedule non output instructions
+    // Schedule input instructions
     schedule_to(INPUT);
+    schedule_to(INPUT_OUTPUT);
+    this->sort_schedule(this->input_instructions);
+
+    // Schedule non input instructions
+    schedule_to(OUTPUT);
     schedule_to(INTERNAL);
-    this->sort_schedule(this->non_output_instructions);
+    this->sort_schedule(this->non_input_instructions);
 
     // Schedule plastic
     schedule_plastic();
@@ -69,16 +64,11 @@ void StreamCluster::dendrite_DFS(DendriticNode *curr, Stream *stream) {
     }
 }
 
-void StreamCluster::disable_learning() {
-    for (int i = 0; i < all_instructions.size(); ++i)
-        all_instructions[i]->disable_learning();
-}
-
 /******************************************************************************/
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
-void StreamCluster::launch_clear_output_calculations() {
+void StreamCluster::launch_non_input_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for clear event
     wait_event(OUTPUT, this->state->clear_event);
@@ -86,10 +76,10 @@ void StreamCluster::launch_clear_output_calculations() {
 #endif
 
     // Launch clear output relevant computations
-    for (auto& inst : this->clear_output_instructions) inst->activate();
+    for (auto& inst : this->non_input_instructions) inst->activate();
 }
 
-void StreamCluster::launch_input_output_calculations() {
+void StreamCluster::launch_input_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for input event
     // This function should not be called until this event has been
@@ -99,22 +89,12 @@ void StreamCluster::launch_input_output_calculations() {
 #endif
 
     // Launch input output relevant computations
-    for (auto& inst : this->input_output_instructions) inst->activate();
-
-#ifdef PARALLEL
-    block_stream_from(OUTPUT, state->state_stream);
-    block_stream_from(INPUT_OUTPUT, state->state_stream);
-    block_stream_to(INPUT_OUTPUT, state->state_stream);
-    block_stream_to(OUTPUT, state->state_stream);
-#endif
-}
-
-void StreamCluster::launch_non_output_calculations() {
-    // Launch output relevant computations
-    for (auto& inst : this->non_output_instructions) inst->activate();
+    for (auto& inst : this->input_instructions) inst->activate();
 
 #ifdef PARALLEL
     block_stream_to(INPUT, state->state_stream);
+    block_stream_to(INPUT_OUTPUT, state->state_stream);
+    block_stream_to(OUTPUT, state->state_stream);
     block_stream_to(INTERNAL, state->state_stream);
 #endif
 }
@@ -187,11 +167,5 @@ void StreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
 void StreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
     for (auto& stream : streams[to_type])
         cudaStreamWaitEvent(cuda_stream, *stream.second->get_finished_event(), 0);
-}
-
-void StreamCluster::block_stream_from(IOType from_type, cudaStream_t cuda_stream) {
-    for (auto type : IOTypes)
-        for (auto& stream : streams[type])
-            cudaStreamWaitEvent(cuda_stream, *stream.second->get_event(from_type), 0);
 }
 #endif

@@ -1,75 +1,44 @@
 #include "engine/engine.h"
 
-void Engine::disable_learning() {
-    stream_cluster.disable_learning();
-}
-
 void Engine::stage_clear() {
     // Reset stream cluster and state for timestep
     state->reset();
-    stream_cluster.launch_clear_output_calculations();
+    stream_cluster.launch_non_input_calculations();
 }
 
 void Engine::stage_input() {
-    // Start input streaming
+    // Start IO streaming
     state->transfer_input();
 
 #ifdef PARALLEL
-    // If parallel, schedule everything now
-    // Events will ensure processing waits until ready
+    stream_cluster.launch_input_calculations();
+    if (learning_flag) stream_cluster.launch_weight_update();
 
-    // Launch output relevant computations
-    stream_cluster.launch_input_output_calculations();
-
-    // Output state computation
-    state->update_output_states();
-
-    // Launch remaining calculations
-    stream_cluster.launch_non_output_calculations();
-
-    // Launch final state computations
-    state->update_non_output_states();
-
-    // Schedule and launch weight updates
-    stream_cluster.launch_weight_update();
-
-    // Wait for input to finish
+    // Wait for IO to finish
     state->wait_for_input();
 #endif
 }
 
-void Engine::stage_calc_output() {
-#ifdef PARALLEL
-#else
-    stream_cluster.launch_input_output_calculations();
-    state->update_output_states();
-#endif
-}
-
-void Engine::stage_send_output() {
-    // Stream output
+void Engine::stage_output() {
+    // Start IO streaming
     state->transfer_output();
 
 #ifdef PARALLEL
-    // Wait for it to finish
+    state->update_all_states();
+
+    // Wait for IO to finish
     state->wait_for_output();
 #endif
 }
 
-void Engine::stage_remaining() {
-#ifdef PARALLEL
-#else
-    stream_cluster.launch_non_output_calculations();
-    state->update_non_output_states();
-#endif
-}
-
-void Engine::stage_weights() {
+void Engine::stage_calc() {
 #ifdef PARALLEL
     // Synchronize and check for errors
     cudaSync();
     cudaCheckError(NULL);
 #else
-    stream_cluster.launch_weight_update();
+    stream_cluster.launch_input_calculations();
+    if (learning_flag) stream_cluster.launch_weight_update();
+    state->update_all_states();
 #endif
 }

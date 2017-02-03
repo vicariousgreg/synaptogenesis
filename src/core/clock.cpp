@@ -16,17 +16,13 @@ void Clock::calc_time_limit(int iterations, bool verbose) {
         this->engine->stage_input();
         this->sensory_lock.pass(ENVIRONMENT);
 
-        // Calculate output
-        this->engine->stage_calc_output();
-
         // Write motor output
         this->motor_lock.wait(DRIVER);
-        this->engine->stage_send_output();
+        this->engine->stage_output();
         this->motor_lock.pass(ENVIRONMENT);
 
         // Finish computations
-        this->engine->stage_remaining();
-        this->engine->stage_weights();
+        this->engine->stage_calc();
 
         // Synchronize with the clock
         total_time += timer.query(NULL);
@@ -59,9 +55,6 @@ void Clock::engine_loop(int iterations, bool verbose) {
         this->engine->stage_input();
         this->sensory_lock.pass(ENVIRONMENT);
 
-        // Calculate output
-        this->engine->stage_calc_output();
-
         // Write motor output
         this->motor_lock.wait(DRIVER);
         // Use (i+1) because the locks belong to the Environment
@@ -69,13 +62,12 @@ void Clock::engine_loop(int iterations, bool verbose) {
         //   on first iteration before the Engine sends any data)
         if ((i+1) % this->environment_rate == 0) {
             //if (verbose) printf("Sending output... %d\n", i);
-            this->engine->stage_send_output();
+            this->engine->stage_output();
         }
         this->motor_lock.pass(ENVIRONMENT);
 
         // Finish computations
-        this->engine->stage_remaining();
-        this->engine->stage_weights();
+        this->engine->stage_calc();
 
         // Synchronize with the clock
         this->iteration_timer.wait(this->time_limit);
@@ -120,7 +112,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     // Build engine
     run_timer.reset();
     this->engine = new Engine(model);
-    //this->engine->disable_learning();
+    //this->engine->set_learning_flag(false);  // disable learning
     if (verbose) {
         printf("Built state.\n");
         run_timer.query("Initialization");
