@@ -13,25 +13,8 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
     this->stream = NULL;
 
     // Calculate grid and block sizes based on type
-    int threads = calc_threads(conn->to_layer->size);
-
-    switch (type) {
-        case FULLY_CONNECTED:
-        case ONE_TO_ONE:
-            this->blocks_per_grid = dim3(calc_blocks(conn->to_layer->size));
-            this->threads_per_block = dim3(threads);
-            break;
-        case CONVERGENT:
-        case CONVOLUTIONAL:
-            this->blocks_per_grid = dim3(
-                conn->to_layer->rows,
-                calc_blocks(conn->to_layer->columns));
-            this->threads_per_block = dim3(1, threads);
-            break;
-        default:
-            ErrorManager::get_instance()->log_error(
-                "Unimplemented connection type!");
-    }
+    this->threads_per_block = dim3(calc_threads(conn->to_layer->size));
+    this->blocks_per_grid = dim3(calc_blocks(conn->to_layer->size));
 #endif
 }
 

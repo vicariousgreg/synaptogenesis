@@ -206,10 +206,10 @@ GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
  \
     int kernel_size = field_size * field_size; \
  \
-    int d_row = blockIdx.x * blockDim.x + threadIdx.x; \
-    int d_col = blockIdx.y * blockDim.y + threadIdx.y; \
-    if (d_row < to_rows and d_col < to_columns) { \
-        int to_index = d_row * to_columns + d_col; \
+    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (to_index < to_size) { \
+        int d_row = to_index / to_columns; \
+        int d_col = to_index % to_columns; \
         NEURON_PRE; \
 \
         /* Determine starting row and column for source neurons */ \
