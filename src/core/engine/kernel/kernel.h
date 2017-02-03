@@ -7,7 +7,7 @@
 #include "util/constants.h"
 
 /* Typedef for kernel functions, which just take KernelData */
-typedef void(*KERNEL)(KernelData);
+typedef void(*KERNEL)(const KernelData);
 
 /* Synaptic operations
  * |prior| is the current state of the neuron.
@@ -89,7 +89,7 @@ inline GLOBAL void clear_data(float* data, int count) {
     const EXTRACTOR extractor = kernel_data.attributes->extractor;
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -105,7 +105,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 
 
 #define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -123,7 +123,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 
 
 #define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-GLOBAL void FUNC_NAME(KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -133,7 +133,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 }
 
 #define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-GLOBAL void FUNC_NAME(KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -146,15 +146,15 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 
 
 #define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
     PREAMBLE; \
     const bool convolutional = kernel_data.convolutional; \
-    const int overlap = kernel_data.overlap; \
+    const int field_size = kernel_data.field_size; \
     const int stride = kernel_data.stride; \
     const int fray = kernel_data.fray; \
     EXTRACTIONS; \
  \
-    int kernel_size = overlap * overlap; \
+    int kernel_size = field_size * field_size; \
  \
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
         for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
@@ -170,8 +170,8 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
             int weight_offset = (convolutional) ? 0 : to_index * kernel_size; \
  \
             /* Run the kernel */ \
-            for (int k_row = 0 ; k_row < overlap ; ++k_row) { \
-                for (int k_col = 0 ; k_col < overlap ; ++k_col) { \
+            for (int k_row = 0 ; k_row < field_size ; ++k_row) { \
+                for (int k_col = 0 ; k_col < field_size ; ++k_col) { \
                     int k_s_row = s_row + k_row; \
                     int k_s_col = s_col + k_col; \
  \
@@ -185,7 +185,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
  \
                     /* Column of matrix is the kernel index */ \
                     int weight_index = weight_offset + \
-                        (k_row * overlap) + k_col; \
+                        (k_row * field_size) + k_col; \
  \
                     WEIGHT_OP; \
                 } \
@@ -196,15 +196,15 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 }
 
 #define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
     PREAMBLE; \
     const bool convolutional = kernel_data.convolutional; \
-    const int overlap = kernel_data.overlap; \
+    const int field_size = kernel_data.field_size; \
     const int stride = kernel_data.stride; \
     const int fray = kernel_data.fray; \
     EXTRACTIONS; \
  \
-    int kernel_size = overlap * overlap; \
+    int kernel_size = field_size * field_size; \
  \
     int d_row = blockIdx.x * blockDim.x + threadIdx.x; \
     int d_col = blockIdx.y * blockDim.y + threadIdx.y; \
@@ -225,8 +225,8 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
         int kernel_row_size = (convolutional) ? 1 : to_size; \
 \
         /* Run the kernel */ \
-        for (int k_row = 0 ; k_row < overlap ; ++k_row) { \
-            for (int k_col = 0 ; k_col < overlap ; ++k_col) { \
+        for (int k_row = 0 ; k_row < field_size ; ++k_row) { \
+            for (int k_col = 0 ; k_col < field_size ; ++k_col) { \
                 int k_s_row = s_row + k_row; \
                 int k_s_col = s_col + k_col; \
 \
@@ -240,7 +240,7 @@ GLOBAL void FUNC_NAME(KernelData kernel_data) { \
 \
                 /* Row of matrix is the kernel index * row size (see above) */ \
                 int weight_index = weight_col + \
-                    ((k_row*overlap) + k_col) * kernel_row_size; \
+                    ((k_row*field_size) + k_col) * kernel_row_size; \
 \
                 WEIGHT_OP; \
             } \

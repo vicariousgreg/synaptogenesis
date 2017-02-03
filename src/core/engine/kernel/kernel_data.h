@@ -18,7 +18,7 @@ class KernelData {
         /* Connection attributes */
         Opcode opcode;
         bool convolutional;
-        int overlap, stride;
+        int field_size, stride;
         int fray;
         int delay;
 

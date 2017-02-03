@@ -106,17 +106,17 @@ static void initialize_matrix(Connection* conn,
             //   kernel is in a column
 #ifdef PARALLEL
             int rows, cols;
-            int overlap = conn->get_overlap();
+            int field_size = conn->get_field_size();
             switch (conn->type) {
                 case FULLY_CONNECTED:
                     ErrorManager::get_instance()->log_error(
                         "Cannot specify all weights for fully connected matrix!");
                 case CONVOLUTIONAL:
-                    rows = overlap * overlap;
+                    rows = field_size * field_size;
                     cols = 1;
                     break;
                 case CONVERGENT:
-                    rows = overlap * overlap;
+                    rows = field_size * field_size;
                     cols = conn->to_layer->size;
                     break;
                 case ONE_TO_ONE:

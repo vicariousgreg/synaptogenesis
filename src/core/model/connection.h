@@ -24,7 +24,7 @@ class Connection {
         /* Constant getters */
         int get_num_weights() const { return num_weights; }
         const std::string get_init_params() const { return init_params; }
-        int get_overlap() const { return overlap; }
+        int get_field_size() const { return field_size; }
         int get_stride() const { return stride; }
         Connection* const get_parent() const { return parent; }
 
@@ -50,7 +50,6 @@ class Connection {
         const float max_weight;
 
     private:
-        friend class Model;
         friend class Structure;
 
         Connection (Layer *from_layer, Layer *to_layer,
@@ -74,9 +73,9 @@ class Connection {
         std::string init_params;
 
         // Arborization parameters (extracted from params)
-        // The amount of overlap and stride for arborized
+        // The receptive field size and stride for arborized
         //   (convergent) connections
-        int overlap, stride;
+        int field_size, stride;
 };
 
 typedef std::vector<Connection*> ConnectionList;

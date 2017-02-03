@@ -13,7 +13,7 @@
 
 class Instruction {
     public:
-        virtual bool is_plastic() = 0;
+        virtual bool is_plastic() const = 0;
         virtual void disable_learning() = 0;
         virtual void activate() = 0;
         virtual void update() = 0;
@@ -22,6 +22,7 @@ class Instruction {
         void set_stream(cudaStream_t *stream) { this->stream = stream; }
         void add_event(cudaEvent_t *event) { this->events.push_back(event); }
 
+    protected:
         dim3 blocks_per_grid;
         dim3 threads_per_block;
         cudaStream_t *stream;
@@ -33,19 +34,27 @@ class SynapseInstruction : public Instruction {
     public:
         SynapseInstruction(Connection *conn, State *state);
 
-        bool is_plastic() { return kernel_data.plastic; }
-        void disable_learning();
         void activate();
         void update();
 
-        ConnectionType type;
+        /* Learning related functions.
+         * The connection's learning flag takes precedence for plasticity.
+         * An instruction with a non-plastic connection cannot be made plastic
+         *     for data allocation related reasons. */
+        bool is_plastic() const { return plastic; }
+        void enable_learning();
+        void disable_learning();
 
+        const ConnectionType type;
+        Connection* const connection;
+
+    private:
         EXTRACTOR extractor;
         KERNEL activator;
         KERNEL updater;
+        const KernelData kernel_data;
 
-        Connection *connection;
-        KernelData kernel_data;
+        bool plastic;
 };
 
 class DendriticInstruction : public Instruction {
@@ -53,15 +62,17 @@ class DendriticInstruction : public Instruction {
         DendriticInstruction(DendriticNode *parent,
             DendriticNode *child, State *state);
 
-        bool is_plastic() { return false; }
+        bool is_plastic() const { return false; }
         void disable_learning() { }
         void activate();
         void update() { }
 
-        Layer *to_layer;
-        int size;
+        Layer* const to_layer;
+        const int size;
+        const bool clear;
+
+    private:
         float *src, *dst;
-        bool clear;
 };
 
 typedef std::vector<Instruction*> InstructionList;

@@ -36,8 +36,8 @@ class StreamCluster {
 
         State *state;
         std::map<Layer*, Stream*> streams[sizeof(IOTypes)];
-        InstructionList all_instructions;
 
+        InstructionList all_instructions;
         InstructionList clear_output_instructions;
         InstructionList input_output_instructions;
         InstructionList non_output_instructions;

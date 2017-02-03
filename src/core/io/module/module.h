@@ -22,7 +22,7 @@ class Module {
          */
         virtual IOType get_type() = 0;
 
-        Layer *layer;
+        Layer* const layer;
 };
 
 typedef std::vector<Module*> ModuleList;

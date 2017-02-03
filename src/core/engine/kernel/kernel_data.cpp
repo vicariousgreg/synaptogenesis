@@ -9,7 +9,7 @@ KernelData::KernelData(Connection *conn, State *state) :
         opcode(conn->opcode),
         plastic(conn->plastic),
         max_weight(conn->max_weight),
-        overlap(conn->get_overlap()),
+        field_size(conn->get_field_size()),
         stride(conn->get_stride()),
         delay(conn->delay),
         from_size(conn->from_layer->size),
@@ -23,7 +23,7 @@ KernelData::KernelData(Connection *conn, State *state) :
         weights(state->get_matrix(conn)) {
     this->fray =
         (to_rows == from_rows and to_columns == from_columns)
-            ? overlap / 2 : 0;
+            ? field_size / 2 : 0;
 
     // Set up word index
     int timesteps_per_output = get_timesteps_per_output(output_type);

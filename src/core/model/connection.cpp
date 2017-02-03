@@ -32,17 +32,17 @@ Connection::Connection (Layer *from_layer, Layer *to_layer,
         default:
             std::stringstream stream(params);
 
-            // Extract overlap
+            // Extract field size
             if (stream.eof())
                 ErrorManager::get_instance()->log_error(
                     "Overlap for arborized connection not specified!");
-            stream >> this->overlap;
-            if (this->overlap == 1)
+            stream >> this->field_size;
+            if (this->field_size == 1)
                 ErrorManager::get_instance()->log_error(
-                    "Arborized connections cannot have overlap of 1!");
-            else if (this->overlap % 2 == 0)
+                    "Arborized connections cannot have field size of 1!");
+            else if (this->field_size % 2 == 0)
                 ErrorManager::get_instance()->log_error(
-                    "Arborized connections cannot have an even overlap!");
+                    "Arborized connections cannot have an even field size!");
 
             // Extract stride
             if (stream.eof())
@@ -69,12 +69,12 @@ Connection::Connection (Layer *from_layer, Layer *to_layer,
             switch (type) {
                 case(CONVERGENT):
                     // Convergent connections use unshared mini weight matrices
-                    // Each destination neuron connects to overlap squared neurons
-                    this->num_weights = overlap * overlap * to_layer->size;
+                    // Each destination neuron connects to field_size squared neurons
+                    this->num_weights = field_size * field_size * to_layer->size;
                     break;
                 case(CONVOLUTIONAL):
                     // Convolutional connections use a shared weight kernel
-                    this->num_weights = overlap * overlap;
+                    this->num_weights = field_size * field_size;
                     break;
                 default:
                     ErrorManager::get_instance()->log_error(
@@ -97,7 +97,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
 }
 
 int get_expected_dimension(int source_val, ConnectionType type, std::string params) {
-    int overlap, stride;
+    int field_size, stride;
     std::stringstream stream(params);
 
     switch (type) {
@@ -105,9 +105,9 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
             return source_val;
         case(CONVERGENT):
         case(CONVOLUTIONAL):
-            stream >> overlap;
+            stream >> field_size;
             stream >> stride;
-            return 1 + ((source_val - overlap) / stride);
+            return 1 + ((source_val - field_size) / stride);
         case(FULLY_CONNECTED):
             return source_val;
         default:

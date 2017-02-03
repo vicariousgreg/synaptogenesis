@@ -34,10 +34,11 @@ void Model::build() {
     // Extract layers and connections from structures
     for (auto& it : this->structures) {
         Structure *structure = it.second;
-        all_layers.insert(all_layers.end(),
-            structure->layers.begin(), structure->layers.end());
-        connections.insert(connections.end(),
-            structure->connections.begin(), structure->connections.end());
+        auto layers = structure->get_layers();
+        auto conns = structure->get_connections();
+
+        all_layers.insert(all_layers.end(), layers.begin(), layers.end());
+        connections.insert(this->connections.end(), conns.begin(), conns.end());
     }
 
     // Sort layers

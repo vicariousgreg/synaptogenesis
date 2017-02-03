@@ -35,6 +35,8 @@ class Structure {
         /*******************************/
         void add_layer(std::string name, int rows, int columns, std::string params);
         void add_layer_from_image(std::string name, std::string path, std::string params);
+        const LayerList& get_layers() const { return layers; }
+        const ConnectionList& get_connections() const { return connections; }
 
         /*******************************/
         /********* CONNECTIONS *********/
@@ -73,8 +75,6 @@ class Structure {
         const std::string name;
 
     private:
-        friend class Model;
-
         /* Internal layer connection functions */
         Connection* connect_layers(
                 Layer *from_layer, Layer *to_layer,
