@@ -35,6 +35,10 @@ class DendriticNode {
                   to_layer(to_layer),
                   conn(conn) { }
 
+        virtual ~DendriticNode() {
+            for (auto& child : children) delete child;
+        }
+
         /* Add a child internal node */
         DendriticNode *add_child();
         /* Add a child leaf node */

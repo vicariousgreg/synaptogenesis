@@ -1,8 +1,8 @@
 #include "engine/kernel/extractor.h"
 
-DEVICE float extract_float(int delay, Output &out) { return out.f; }
-DEVICE float extract_int(int delay, Output &out) { return out.i; }
-DEVICE float extract_bit(int delay, Output &out) {
+DEVICE float extract_float(Output &out, int delay) { return out.f; }
+DEVICE float extract_int(Output &out, int delay) { return out.i; }
+DEVICE float extract_bit(Output &out, int delay) {
     // delay & 0x1F    is equivalent to    delay % 32
     // The word offset is predetermined, so the remainder
     //   determines how far into the word to go to extract

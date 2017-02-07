@@ -5,7 +5,7 @@
 #include "util/parallel.h"
 
 /* Extractors are responsible for extracting values from output */
-typedef float(*EXTRACTOR)(int delay, Output&);
+typedef float(*EXTRACTOR)(Output&, int delay);
 
 void get_extractor(EXTRACTOR *dest, OutputType output_type);
 

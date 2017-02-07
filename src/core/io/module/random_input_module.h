@@ -6,6 +6,8 @@
 class RandomInputModule : public Module {
     public:
         RandomInputModule(Layer *layer, std::string params);
+        virtual ~RandomInputModule();
+
         void feed_input(Buffer *buffer);
         virtual IOType get_type() { return INPUT; }
 

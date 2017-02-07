@@ -52,6 +52,10 @@ RandomInputModule::RandomInputModule(Layer *layer, std::string params)
     shuffle(this->random_values, this->max_value, layer->size);
 }
 
+RandomInputModule::~RandomInputModule() {
+    free(this->random_values);
+}
+
 void RandomInputModule::feed_input(Buffer *buffer) {
     timesteps++;
 

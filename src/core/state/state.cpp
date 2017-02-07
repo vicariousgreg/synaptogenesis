@@ -22,15 +22,15 @@ State::State(Model *model)
     // Create events
     input_event = new cudaEvent_t;
     clear_event = new cudaEvent_t;
-    output_calc_event = new cudaEvent_t;
     output_event = new cudaEvent_t;
+    state_event = new cudaEvent_t;
 
     unsigned int flags = cudaEventDisableTiming;
     unsigned int io_flags = flags & cudaEventBlockingSync;
     cudaEventCreateWithFlags(input_event, io_flags);
     cudaEventCreateWithFlags(clear_event, flags);
-    cudaEventCreateWithFlags(output_calc_event, flags);
     cudaEventCreateWithFlags(output_event, io_flags);
+    cudaEventCreateWithFlags(state_event, io_flags);
 #endif
 
 }
@@ -45,12 +45,12 @@ State::~State() {
     cudaStreamDestroy(state_stream);
     cudaEventDestroy(*input_event);
     cudaEventDestroy(*clear_event);
-    cudaEventDestroy(*output_calc_event);
     cudaEventDestroy(*output_event);
+    cudaEventDestroy(*state_event);
     delete input_event;
     delete clear_event;
-    delete output_calc_event;
     delete output_event;
+    delete state_event;
 #endif
 }
 
@@ -70,7 +70,6 @@ void State::reset() {
         cudaCheckError("Failed to clear inputs!");
     }
     cudaEventRecord(*this->clear_event, this->state_stream);
-    cudaStreamWaitEvent(this->state_stream, *this->input_event, 0);
 #else
     if (count > 0) clear_data(attributes->input + offset, count);
 #endif
@@ -95,12 +94,10 @@ void State::transfer_input() {
 
 void State::transfer_output() {
     int index = attributes->get_start_index(INPUT_OUTPUT);
-    int count = attributes->get_num_neurons(INPUT_OUTPUT) + attributes->get_num_neurons(OUTPUT);
+    int count = attributes->get_num_neurons(INPUT_OUTPUT)
+              + attributes->get_num_neurons(OUTPUT);
     if (count != 0) {
 #ifdef PARALLEL
-        // Make sure to wait for output calc event
-        cudaStreamWaitEvent(this->io_stream, *this->output_calc_event, 0);
-
         // Copy from GPU to local location
         cudaMemcpyAsync(buffer->get_output(), attributes->recent_output + index,
             count * sizeof(Output), cudaMemcpyDeviceToHost, this->io_stream);
@@ -111,7 +108,6 @@ void State::transfer_output() {
             count * sizeof(Output));
     }
 #endif
-
 }
 
 #ifdef PARALLEL
@@ -122,19 +118,6 @@ void State::wait_for_output() {
     cudaEventSynchronize(*this->output_event);
 }
 #endif
-
-void State::update_output_states() {
-    update_states(INPUT_OUTPUT);
-    update_states(OUTPUT);
-#ifdef PARALLEL
-    cudaEventRecord(*this->output_calc_event, this->state_stream);
-#endif
-}
-
-void State::update_non_output_states() {
-    update_states(INPUT);
-    update_states(INTERNAL);
-}
 
 void State::update_states(int start_index, int count) {
 #ifdef PARALLEL
@@ -149,13 +132,15 @@ void State::update_states(int start_index, int count) {
 #endif
 }
 
-void State::update_all_states() {
+void State::update_states() {
     this->update_states(0, attributes->total_neurons);
+#ifdef PARALLEL
+    cudaEventRecord(*this->state_event, this->state_stream);
+#endif
 }
 
 void State::update_states(IOType layer_type) {
     int start_index = attributes->get_start_index(layer_type);
     int count = attributes->get_num_neurons(layer_type);
-    if (count > 0)
-        this->update_states(start_index, count);
+    if (count > 0) this->update_states(start_index, count);
 }

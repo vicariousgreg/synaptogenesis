@@ -23,10 +23,7 @@ class State {
         void transfer_output();
 
         /* State update functions */
-        void update_states(IOType layer_type);
-        void update_output_states();
-        void update_non_output_states();
-        void update_all_states();
+        void update_states();
 
         /* Getters for weight matrices */
         float* get_matrix(Connection* conn) const {
@@ -40,9 +37,6 @@ class State {
         Output* get_output(int word_index = 0) const {
             return attributes->output + (attributes->total_neurons * word_index);
         }
-
-        /* Updates neuron attributes using engine-specific kernel */
-        void update_states(int start_index, int count);
 
         /* Getters for neuron count related information */
         int get_num_neurons() const { return attributes->total_neurons; }
@@ -69,11 +63,14 @@ class State {
         cudaEvent_t
             *input_event,
             *clear_event,
-            *output_calc_event,
-            *output_event;
+            *output_event,
+            *state_event;
 #endif
 
     private:
+        void update_states(int start_index, int count);
+        void update_states(IOType layer_type);
+
         Attributes *attributes;
         Buffer *buffer;
         WeightMatrices *weight_matrices;

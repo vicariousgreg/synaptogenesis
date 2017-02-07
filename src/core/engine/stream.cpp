@@ -1,39 +1,38 @@
 #include "engine/stream.h"
 
-Stream::Stream(Layer *layer) : to_layer(layer), scheduled(0) {
-    for (auto type : IOTypes)
-        last_index[type] = 0;
+Stream::Stream(Layer *layer, State *state) : to_layer(layer), state(state) {
+    // Beform DFS on dendritic tree
+    dendrite_DFS(to_layer->dendritic_root);
 
 #ifdef PARALLEL
-    // Create cuda events
+    // Create cuda stream and event
     cudaStreamCreate(&cuda_stream);
     finished_event = new cudaEvent_t;
-    for (auto type : IOTypes)
-        events[type] = new cudaEvent_t;
-
     cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
-    for (auto type : IOTypes)
-        cudaEventCreateWithFlags(events[type], cudaEventDisableTiming);
+    instructions[instructions.size()-1]->add_event(finished_event);
 #endif
 }
 
 Stream::~Stream() {
+    for (auto inst : this->instructions) delete inst;
 #ifdef PARALLEL
-    for (auto type : IOTypes) {
-        cudaEventDestroy(*events[type]);
-        delete events[type];
-    }
+    cudaStreamDestroy(cuda_stream);
     cudaEventDestroy(*finished_event);
     delete finished_event;
 #endif
 }
 
-void Stream::add_instruction(Instruction *inst, IOType from_type) {
-    this->last_index[from_type] = instructions.size();
-    this->instructions.push_back(inst);
-#ifdef PARALLEL
-    inst->set_stream(&this->cuda_stream);
-#endif
+void Stream::dendrite_DFS(DendriticNode *curr) {
+    for (auto& child : curr->get_children()) {
+        // Create an instruction
+        // If internal, recurse first (post-fix DFS)
+        if (child->is_leaf()) {
+            add_instruction(new SynapseInstruction(child->conn, state));
+        } else {
+            this->dendrite_DFS(child);
+            add_instruction(new DendriticInstruction(curr, child, state));
+        }
+    }
 }
 
 void Stream::add_instruction(Instruction *inst) {
@@ -42,38 +41,3 @@ void Stream::add_instruction(Instruction *inst) {
     inst->set_stream(&this->cuda_stream);
 #endif
 }
-
-void Stream::finalize() {
-#ifdef PARALLEL
-    // Add events for finishing each type of computation
-    for (auto type : IOTypes)
-        instructions[last_index[type]]->add_event(events[type]);
-
-    // Add finished event
-    instructions[instructions.size()-1]->add_event(finished_event);
-#endif
-}
-
-void Stream::schedule(int to_schedule, InstructionList &schedule) {
-    while (scheduled < to_schedule)
-        schedule.push_back(instructions[scheduled++]);
-}
-
-void Stream::schedule(InstructionList &schedule) {
-    this->schedule(instructions.size(), schedule);
-}
-
-void Stream::schedule(IOType type, InstructionList &schedule) {
-    this->schedule(last_index[type] + 1, schedule);
-}
-
-void Stream::schedule_plastic(InstructionList &schedule) {
-    for (auto inst : this->instructions)
-        if (inst->is_plastic()) schedule.push_back(inst);
-}
-
-#ifdef PARALLEL
-void Stream::wait_event(cudaEvent_t *event) {
-    cudaStreamWaitEvent(this->cuda_stream, *event, 0);
-}
-#endif

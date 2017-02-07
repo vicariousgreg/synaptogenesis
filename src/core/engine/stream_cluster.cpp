@@ -3,31 +3,19 @@
 StreamCluster::StreamCluster(Model *model, State *state)
         : state(state) {
     // Build instructions
-    // For each IO type...
-    for (auto to_type : IOTypes) {
-        // For each layer...
-        for (auto& to_layer : model->get_layers(to_type)) {
-            // Skip layers with no input connections (typically sensory)
-            if (to_layer->get_input_connections().size() > 0) {
-                Stream *stream = new Stream(to_layer);
-
-                // Beform DFS on dendritic tree
-                this->dendrite_DFS(to_layer->dendritic_root, stream);
-
-                streams[to_type][to_layer] = stream;
-                stream->finalize();
-            }
-        }
-    }
+    for (auto& layer : model->get_layers())
+        // Skip layers with no input connections (typically sensory)
+        if (layer->get_input_connections().size() > 0) 
+            streams[layer->get_type()].push_back(new Stream(layer, state));
 
     // Schedule input instructions
-    schedule_to(INPUT);
-    schedule_to(INPUT_OUTPUT);
+    schedule(INPUT);
+    schedule(INPUT_OUTPUT);
     this->sort_schedule(this->input_instructions);
 
     // Schedule non input instructions
-    schedule_to(OUTPUT);
-    schedule_to(INTERNAL);
+    schedule(OUTPUT);
+    schedule(INTERNAL);
     this->sort_schedule(this->non_input_instructions);
 
     // Schedule plastic
@@ -38,30 +26,8 @@ StreamCluster::StreamCluster(Model *model, State *state)
 StreamCluster::~StreamCluster() {
     // Delete streams
     for (auto type : IOTypes)
-        for (auto& stream : streams[type])
-            delete stream.second;
-
-    // Delete instructions
-    for (auto& inst : this->all_instructions) delete inst;
-}
-
-void StreamCluster::dendrite_DFS(DendriticNode *curr, Stream *stream) {
-    for (auto& child : curr->get_children()) {
-        Instruction *inst;
-
-        if (child->is_leaf()) { // Leaf node
-            Connection* conn = child->conn;
-            inst = new SynapseInstruction(conn, this->state);
-            stream->add_instruction(inst, conn->from_layer->get_type());
-        } else {            // Internal node
-            this->dendrite_DFS(child, stream);
-            inst = new DendriticInstruction(curr, child, state);
-            stream->add_instruction(inst);
-        }
-
-        // Add to global list
-        this->all_instructions.push_back(inst);
-    }
+        for (auto stream : streams[type])
+            delete stream;
 }
 
 /******************************************************************************/
@@ -100,6 +66,12 @@ void StreamCluster::launch_input_calculations() {
 }
 
 void StreamCluster::launch_weight_update() {
+#ifdef PARALLEL
+    wait_event(INPUT, this->state->state_event);
+    wait_event(INPUT_OUTPUT, this->state->state_event);
+    wait_event(OUTPUT, this->state->state_event);
+    wait_event(INTERNAL, this->state->state_event);
+#endif
     for (auto& inst : this->plastic_instructions) inst->update();
 }
 
@@ -107,24 +79,18 @@ void StreamCluster::launch_weight_update() {
 /***************************** SCHEDULERS *************************************/
 /******************************************************************************/
 
-void StreamCluster::schedule_from(IOType from_type) {
-    for (auto type : IOTypes)
-        for (auto& stream : streams[type])
-            stream.second->schedule(from_type,
-                this->schedules[stream.second->to_layer]);
-}
-
-void StreamCluster::schedule_to(IOType to_type) {
+void StreamCluster::schedule(IOType to_type) {
     for (auto& stream : streams[to_type])
-        stream.second->schedule(
-            this->schedules[stream.second->to_layer]);
+        for (auto& inst : stream->get_instructions())
+            schedules[stream->to_layer].push_back(inst);
 }
 
 void StreamCluster::schedule_plastic() {
     for (auto type : IOTypes)
         for (auto& stream : streams[type])
-            stream.second->schedule_plastic(
-                this->schedules[stream.second->to_layer]);
+            for (auto& inst : stream->get_instructions())
+                if (inst->is_plastic())
+                    schedules[stream->to_layer].push_back(inst);
 }
 
 void StreamCluster::sort_schedule(InstructionList &destination) {
@@ -161,11 +127,11 @@ void StreamCluster::sort_schedule(InstructionList &destination) {
 #ifdef PARALLEL
 void StreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
     for (auto& stream : streams[to_type])
-        stream.second->wait_event(event);
+        cudaStreamWaitEvent(stream->get_cuda_stream(), *event, 0);
 }
 
 void StreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
     for (auto& stream : streams[to_type])
-        cudaStreamWaitEvent(cuda_stream, *stream.second->get_finished_event(), 0);
+        cudaStreamWaitEvent(cuda_stream, *stream->get_finished_event(), 0);
 }
 #endif

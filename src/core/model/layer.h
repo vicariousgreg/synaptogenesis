@@ -24,6 +24,10 @@ typedef std::vector<Module*> ModuleList;
  */
 class Layer {
     public:
+        virtual ~Layer() {
+            delete this->dendritic_root;
+        }
+
         /* Constant getters */
         int get_start_index() const { return start_index; }
         int get_input_index() const { return input_index; }

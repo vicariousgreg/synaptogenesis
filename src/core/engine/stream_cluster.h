@@ -18,12 +18,9 @@ class StreamCluster {
         void launch_weight_update();
 
     private:
-        void schedule_from(IOType from_type);
-        void schedule_to(IOType to_type);
+        void schedule(IOType to_type);
         void schedule_plastic();
         void sort_schedule(InstructionList &destination);
-
-        void dendrite_DFS(DendriticNode *curr, Stream *stream);
 
 #ifdef PARALLEL
         void wait_event(IOType to_type, cudaEvent_t *event);
@@ -31,9 +28,8 @@ class StreamCluster {
 #endif
 
         State *state;
-        std::map<Layer*, Stream*> streams[sizeof(IOTypes)];
+        std::vector<Stream*> streams[sizeof(IOTypes)];
 
-        InstructionList all_instructions;
         InstructionList input_instructions;
         InstructionList non_input_instructions;
         InstructionList plastic_instructions;

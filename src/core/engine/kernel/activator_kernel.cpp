@@ -20,7 +20,7 @@
     float *trace = weights + (2*num_weights);
 
 #define CALC_VAL(from_index, weight_index) \
-    float val = extractor(delay, outputs[from_index]) * weights[weight_index];
+    float val = extractor(outputs[from_index], delay) * weights[weight_index];
 
 #define UPDATE_TRACE(weight_index) \
     if (plastic) { \
