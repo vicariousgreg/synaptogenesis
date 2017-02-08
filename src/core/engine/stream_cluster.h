@@ -8,6 +8,8 @@
 #include "util/parallel.h"
 #include "util/constants.h"
 
+typedef std::vector<IOType> IOTypeVector;
+
 class StreamCluster {
     public:
         StreamCluster(Model *model, State *state);
@@ -20,7 +22,7 @@ class StreamCluster {
     private:
         void schedule(IOType to_type);
         void schedule_plastic();
-        void sort_schedule(InstructionList &destination);
+        InstructionList sort_instructions(IOTypeVector types, bool plastic);
 
 #ifdef PARALLEL
         void wait_event(IOType to_type, cudaEvent_t *event);
@@ -33,8 +35,6 @@ class StreamCluster {
         InstructionList input_instructions;
         InstructionList non_input_instructions;
         InstructionList plastic_instructions;
-
-        std::map<Layer*, InstructionList > schedules;
 };
 
 #endif

@@ -58,7 +58,6 @@ void SynapseInstruction::update() {
 #endif
 }
 
-
 DendriticInstruction::DendriticInstruction(DendriticNode *parent,
     DendriticNode *child, State *state)
         : to_layer(parent->to_layer),

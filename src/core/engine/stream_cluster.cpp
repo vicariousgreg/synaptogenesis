@@ -1,33 +1,62 @@
+#include <queue>
+
 #include "engine/stream_cluster.h"
 
-StreamCluster::StreamCluster(Model *model, State *state)
-        : state(state) {
+StreamCluster::StreamCluster(Model *model, State *state) : state(state) {
     // Build instructions
     for (auto& layer : model->get_layers())
         // Skip layers with no input connections (typically sensory)
         if (layer->get_input_connections().size() > 0) 
             streams[layer->get_type()].push_back(new Stream(layer, state));
 
-    // Schedule input instructions
-    schedule(INPUT);
-    schedule(INPUT_OUTPUT);
-    this->sort_schedule(this->input_instructions);
-
-    // Schedule non input instructions
-    schedule(OUTPUT);
-    schedule(INTERNAL);
-    this->sort_schedule(this->non_input_instructions);
-
-    // Schedule plastic
-    schedule_plastic();
-    this->sort_schedule(this->plastic_instructions);
+    // Schedule instructions
+    input_instructions = sort_instructions(
+        IOTypeVector { INPUT, INPUT_OUTPUT },
+        false);
+    non_input_instructions = sort_instructions(
+        IOTypeVector { OUTPUT, INTERNAL },
+        false);
+    plastic_instructions = sort_instructions(
+        IOTypeVector { INPUT, INPUT_OUTPUT, OUTPUT, INTERNAL },
+        true);
 }
 
 StreamCluster::~StreamCluster() {
     // Delete streams
     for (auto type : IOTypes)
-        for (auto stream : streams[type])
-            delete stream;
+        for (auto stream : streams[type]) delete stream;
+}
+
+InstructionList StreamCluster::sort_instructions(
+        IOTypeVector types, bool plastic) {
+#ifdef PARALLEL
+    std::map<Layer*, std::queue<Instruction* > > schedules;
+#endif
+    InstructionList destination;
+
+    // Extract instructions
+    for (auto type : types)
+        for (auto& stream : streams[type])
+            for (auto& inst : stream->get_instructions())
+                if (not plastic or inst->is_plastic())
+#ifndef PARALLEL    // Add directly to destination list
+                    destination.push_back(inst);
+#else               // Add to schedule map for round robin
+                    schedules[stream->to_layer].push(inst);
+
+    // Perform round robin on streams
+    // Connections should be initialized this way to take advantage of
+    //   stream overlap
+    while (schedules.size() > 0) {
+        for (auto& schedule : schedules) {
+            destination.push_back(schedule.second.front());
+            schedule.second.pop();
+            if (schedule.second.size() == 0)
+                schedules.erase(schedule.first);
+        }
+    }
+#endif
+    return destination;
 }
 
 /******************************************************************************/
@@ -40,8 +69,6 @@ void StreamCluster::launch_non_input_calculations() {
     wait_event(OUTPUT, this->state->clear_event);
     wait_event(INTERNAL, this->state->clear_event);
 #endif
-
-    // Launch clear output relevant computations
     for (auto& inst : this->non_input_instructions) inst->activate();
 }
 
@@ -53,10 +80,7 @@ void StreamCluster::launch_input_calculations() {
     wait_event(INPUT, this->state->input_event);
     wait_event(INPUT_OUTPUT, this->state->input_event);
 #endif
-
-    // Launch input output relevant computations
     for (auto& inst : this->input_instructions) inst->activate();
-
 #ifdef PARALLEL
     block_stream_to(INPUT, state->state_stream);
     block_stream_to(INPUT_OUTPUT, state->state_stream);
@@ -73,51 +97,6 @@ void StreamCluster::launch_weight_update() {
     wait_event(INTERNAL, this->state->state_event);
 #endif
     for (auto& inst : this->plastic_instructions) inst->update();
-}
-
-/******************************************************************************/
-/***************************** SCHEDULERS *************************************/
-/******************************************************************************/
-
-void StreamCluster::schedule(IOType to_type) {
-    for (auto& stream : streams[to_type])
-        for (auto& inst : stream->get_instructions())
-            schedules[stream->to_layer].push_back(inst);
-}
-
-void StreamCluster::schedule_plastic() {
-    for (auto type : IOTypes)
-        for (auto& stream : streams[type])
-            for (auto& inst : stream->get_instructions())
-                if (inst->is_plastic())
-                    schedules[stream->to_layer].push_back(inst);
-}
-
-void StreamCluster::sort_schedule(InstructionList &destination) {
-#ifdef PARALLEL
-    // Perform round robin on streams
-    // Connections should be initialized this way to take advantage of
-    //   stream overlap
-    bool done = false;
-    for (int i = 0; not done; ++i) {
-        done = true;
-        for (auto& schedule : this->schedules) {
-            if (i < schedule.second.size()) {
-                done = false;
-                destination.push_back(schedule.second[i]);
-            }
-        }
-    }
-#else
-    // Copy over to schedule
-    for (auto& schedule : this->schedules)
-        for (int i = 0; i < schedule.second.size(); ++i)
-            destination.push_back(schedule.second[i]);
-#endif
-
-    // Clear schedule
-    for (auto& schedule : this->schedules)
-        schedule.second.clear();
 }
 
 /******************************************************************************/
