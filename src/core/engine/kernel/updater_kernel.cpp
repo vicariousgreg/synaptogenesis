@@ -17,6 +17,17 @@
                         - (WEIGHT_DECAY * (old_weight - baseline[weight_index])); \
     weights[weight_index] = (new_weight > max_weight) ? max_weight : new_weight;
 
+#define UPDATE_WEIGHT_CONVOLUTIONAL(weight_index, input) \
+    float old_weight = weights[weight_index]; \
+    float t = 0.0; \
+    for (int i = 0; i < to_size; ++i) { \
+        t += trace[i*num_weights + weight_index]; \
+    } \
+    t /= to_size; \
+    float new_weight = old_weight + (t * input * SUM_COEFFICIENT) \
+                        - (WEIGHT_DECAY * (old_weight - baseline[weight_index])); \
+    weights[weight_index] = (new_weight > max_weight) ? max_weight : new_weight;
+
 /******************************************************************************/
 /********************** CONNECTION UPDATER KERNELS ****************************/
 /******************************************************************************/
@@ -28,8 +39,9 @@ KERNEL get_updater_kernel(ConnectionType conn_type) {
         case ONE_TO_ONE:
             return update_one_to_one;
         case CONVERGENT:
-        case CONVOLUTIONAL:
             return update_convergent;
+        case CONVOLUTIONAL:
+            return update_convolutional;
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");
@@ -86,4 +98,16 @@ CALC_CONVERGENT(update_convergent, \
     /* NEURON_POST
      * no_op */
     ;
+)
+
+CALC_ONE_TO_ONE(update_convolutional, \
+    /* EXTRACTIONS
+     * Pointer to activation trace
+     * Pointer to weight baseline */
+    EXTRACT_TRACE;
+    EXTRACT_BASELINE;,
+
+    /* WEIGHT_OP
+     * Update weight */
+    UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]);
 )

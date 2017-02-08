@@ -56,17 +56,16 @@ static void initialize(float* target_matrix, Connection* conn) {
                 break;
         }
 
-#ifdef PARALLEL
-        // If parallel, transpose the input (rows <-> cols)
-        // Parallel convergent matrices are laid out such that each
-        //   kernel is in a column
-        for (int col = 0 ; col < rows ; ++col) {
-            for (int row = 0 ; row < cols ; ++row) {
-#else
         for (int row = 0 ; row < rows ; ++row) {
             for (int col = 0 ; col < cols ; ++col) {
-#endif
+#ifdef PARALLEL
+                // If parallel, transpose the input (rows <-> cols)
+                // Parallel convergent matrices are laid out such that each
+                //   kernel is in a column
+                target_matrix[col * rows + row] = value;
+#else
                 target_matrix[row * cols + col] = value;
+#endif
                 if (row != rows-1 and col != cols-1 and stream.eof())
                     ErrorManager::get_instance()->log_error(
                         "Insufficient number of weights specified!");
@@ -80,7 +79,15 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) {
     int num_weights = conn->get_num_weights();
     int matrix_size = num_weights;
     // Multiply by depth if plastic
-    if (conn->plastic) matrix_size *= matrix_depth;
+    if (conn->plastic) {
+        // Parallel convergent matrices need extra layers for each
+        //     destination neuron to avoid race conditions
+        if (conn->convolutional) {
+            matrix_size += num_weights * (1 + conn->to_layer->size);
+        } else {
+            matrix_size *= matrix_depth;
+        }
+    }
 
     // Allocate matrix on host
     // If parallel, it will be copied below

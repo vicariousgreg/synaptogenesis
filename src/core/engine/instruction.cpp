@@ -43,19 +43,34 @@ void SynapseInstruction::activate() {
 }
 
 void SynapseInstruction::update() {
-    if (this->kernel_data.plastic)
+    if (this->kernel_data.plastic) {
 #ifdef PARALLEL
+        // Weird hack
+        // Convolutional connections update differently than they are activated
+        // This is to avoid race conditions
+        // Not pretty, but this will do for now
+        // TODO: fix this
+        dim3 threads, blocks;
+        if (connection->convolutional) {
+            int num_weights = connection->get_num_weights();
+            threads = dim3(num_weights);
+            blocks = dim3(calc_blocks(num_weights));
+        } else {
+            threads = threads_per_block;
+            blocks = blocks_per_grid;
+        }
         if (this->stream)
             updater
-                <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
+                <<<blocks, threads, 0, *this->stream>>>
                 (this->kernel_data);
         else
             updater
-                <<<blocks_per_grid, threads_per_block>>>
+                <<<blocks, threads>>>
                 (this->kernel_data);
 #else
         updater(this->kernel_data);
 #endif
+    }
 }
 
 DendriticInstruction::DendriticInstruction(DendriticNode *parent,

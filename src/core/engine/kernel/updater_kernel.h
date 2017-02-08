@@ -9,5 +9,6 @@ KERNEL get_updater_kernel(ConnectionType conn_type);
 GLOBAL void update_fully_connected(const KernelData kernel_data);
 GLOBAL void update_one_to_one(const KernelData kernel_data);
 GLOBAL void update_convergent(const KernelData kernel_data);
+GLOBAL void update_convolutional(const KernelData kernel_data);
 
 #endif
