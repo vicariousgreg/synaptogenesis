@@ -6,7 +6,7 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/attribute_kernel.h"
 #include "state/attributes.h"
-#include "state/weight_matrices.h"
+#include "state/weight_matrix.h"
 #include "util/constants.h"
 
 class State {
@@ -27,7 +27,7 @@ class State {
 
         /* Getters for weight matrices */
         float* get_matrix(Connection* conn) const {
-            return weight_matrices->get_matrix(conn);
+            return weight_matrices.at(conn)->get_data();
         }
 
         /* Getters for IO data */
@@ -73,7 +73,7 @@ class State {
 
         Attributes *attributes;
         Buffer *buffer;
-        WeightMatrices *weight_matrices;
+        std::map<Connection*, WeightMatrix*> weight_matrices;
 };
 
 #endif

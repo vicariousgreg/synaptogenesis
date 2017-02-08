@@ -6,8 +6,19 @@
 #include "util/parallel.h"
 
 State::State(Model *model)
-        : attributes(build_attributes(model)),
-          weight_matrices(new WeightMatrices(model, attributes->get_matrix_depth())) {
+        : attributes(build_attributes(model)) {
+    /* Set up weight matrices */
+    int matrix_depth = attributes->get_matrix_depth();
+
+    // Set up non-shared weight matrices first
+    for (auto & conn : model->get_connections())
+        if (conn->get_parent() == NULL)
+            this->weight_matrices[conn] = new WeightMatrix(conn, matrix_depth);
+    // Set up shared weights (just duplicate)
+    for (auto & conn : model->get_connections())
+        if (conn->get_parent() != NULL)
+            this->weight_matrices[conn] = this->weight_matrices[conn->get_parent()];
+
     // Create the buffer
     int input_output_size = attributes->get_num_neurons(INPUT_OUTPUT);
     int input_size = input_output_size + attributes->get_num_neurons(INPUT);
@@ -37,8 +48,8 @@ State::State(Model *model)
 
 State::~State() {
     delete attributes;
-    delete weight_matrices;
     delete buffer;
+    for (auto matrix : this->weight_matrices) delete matrix.second;
 
 #ifdef PARALLEL
     cudaStreamDestroy(io_stream);
