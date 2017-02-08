@@ -22,8 +22,8 @@ class Instruction {
         void add_event(cudaEvent_t *event) { this->events.push_back(event); }
 
     protected:
-        dim3 blocks_per_grid;
-        dim3 threads_per_block;
+        dim3 activator_blocks, activator_threads;
+        dim3 updater_blocks, updater_threads;
         cudaStream_t *stream;
         std::vector<cudaEvent_t* > events;
 #endif

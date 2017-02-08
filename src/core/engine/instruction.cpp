@@ -11,9 +11,18 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
 #ifdef PARALLEL
     this->stream = NULL;
 
-    // Calculate grid and block sizes based on type
-    this->threads_per_block = dim3(calc_threads(conn->to_layer->size));
-    this->blocks_per_grid = dim3(calc_blocks(conn->to_layer->size));
+    // Calculate grid and block sizes
+    this->activator_threads = dim3(calc_threads(conn->to_layer->size));
+    this->activator_blocks = dim3(calc_blocks(conn->to_layer->size));
+
+    if (conn->convolutional) {
+        int num_weights = connection->get_num_weights();
+        this->updater_threads = dim3(calc_threads(num_weights));
+        this->updater_blocks = dim3(calc_blocks(num_weights));
+    } else {
+        this->updater_threads = dim3(calc_threads(conn->to_layer->size));
+        this->updater_blocks = dim3(calc_blocks(conn->to_layer->size));
+    }
 #endif
 }
 
@@ -22,7 +31,7 @@ void SynapseInstruction::activate() {
     // Launch computation on provided stream, or default if none
     if (this->stream) {
         activator
-            <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
+            <<<activator_blocks, activator_threads, 0, *this->stream>>>
             (this->kernel_data);
 
         // Record added events
@@ -30,7 +39,7 @@ void SynapseInstruction::activate() {
             cudaEventRecord(*this->events[i], *this->stream);
     } else {
         activator
-            <<<blocks_per_grid, threads_per_block>>>
+            <<<activator_blocks, activator_threads>>>
             (this->kernel_data);
 
         // Record added events
@@ -45,27 +54,13 @@ void SynapseInstruction::activate() {
 void SynapseInstruction::update() {
     if (this->kernel_data.plastic) {
 #ifdef PARALLEL
-        // Weird hack
-        // Convolutional connections update differently than they are activated
-        // This is to avoid race conditions
-        // Not pretty, but this will do for now
-        // TODO: fix this
-        dim3 threads, blocks;
-        if (connection->convolutional) {
-            int num_weights = connection->get_num_weights();
-            threads = dim3(num_weights);
-            blocks = dim3(calc_blocks(num_weights));
-        } else {
-            threads = threads_per_block;
-            blocks = blocks_per_grid;
-        }
         if (this->stream)
             updater
-                <<<blocks, threads, 0, *this->stream>>>
+                <<<updater_blocks, updater_threads, 0, *this->stream>>>
                 (this->kernel_data);
         else
             updater
-                <<<blocks, threads>>>
+                <<<updater_blocks, updater_threads>>>
                 (this->kernel_data);
 #else
         updater(this->kernel_data);
@@ -92,8 +87,8 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
     this->stream = NULL;
 
     // Calculate grid and block sizes
-    int threads = calc_threads(to_layer->size);
-    this->blocks_per_grid = dim3(calc_blocks(to_layer->size));
+    this->activator_threads = dim3(calc_threads(to_layer->size));
+    this->activator_blocks = dim3(calc_blocks(to_layer->size));
 #endif
 }
 
@@ -102,11 +97,11 @@ void DendriticInstruction::activate() {
     // Launch computation on provided stream, or default if none
     if (this->stream)
         calc_internal
-            <<<blocks_per_grid, threads_per_block, 0, *this->stream>>>
+            <<<activator_blocks, activator_threads, 0, *this->stream>>>
             (size, src, dst, this->clear);
     else
         calc_internal
-            <<<blocks_per_grid, threads_per_block>>>
+            <<<activator_blocks, activator_threads>>>
             (size, src, dst, this->clear);
 
     // Record added events
