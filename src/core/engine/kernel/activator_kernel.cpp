@@ -29,13 +29,6 @@
         trace[weight_index] = MIN(MOD_MAX, new_trace);  \
     }
 
-#define UPDATE_TRACE_CONVOLUTIONAL(to_index, weight_index) \
-    if (plastic) { \
-        float old_trace = trace[to_index * num_weights + weight_index]; \
-        float new_trace = old_trace + (MOD_RATE * val) - (MOD_DECAY * old_trace); \
-        trace[to_index * num_weights + weight_index] = MIN(MOD_MAX, new_trace);  \
-    }
-
 #define AGGREGATE(to_index, sum) \
     inputs[to_index] = calc(opcode, inputs[to_index], sum);
 
@@ -105,10 +98,10 @@ CALC_CONVERGENT(activate_convergent, \
     CALC_VAL(from_index, weight_index);
     sum += val;
     if (convolutional) {
-        UPDATE_TRACE_CONVOLUTIONAL(to_index, weight_index);
+        UPDATE_TRACE((to_index*num_weights + weight_index));
     } else {
-        UPDATE_TRACE(weight_index);,
-    }
+        UPDATE_TRACE(weight_index);
+    },
 
     /* NEURON_POST
      * Aggregate sum to input */

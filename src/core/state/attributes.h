@@ -4,6 +4,7 @@
 #include "model/model.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/extractor.h"
+#include "engine/kernel/activator_kernel.h"
 #include "engine/kernel/updater_kernel.h"
 #include "engine/kernel/attribute_kernel.h"
 #include "util/constants.h"
@@ -17,6 +18,7 @@ class Attributes {
         virtual int get_matrix_depth() = 0;
 
         /* Constant getters */
+        KERNEL get_activator(ConnectionType type) const { return get_activator_kernel(type); }
         KERNEL get_updater(ConnectionType type) const { return get_updater_kernel(type); }
         int get_num_neurons(IOType type) const { return num_neurons[type]; }
         int get_start_index(IOType type) const { return start_indices[type]; }

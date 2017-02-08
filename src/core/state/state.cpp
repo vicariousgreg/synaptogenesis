@@ -27,7 +27,8 @@ State::State(Model *model)
 
 #ifdef PARALLEL
     // Create streams
-    cudaStreamCreate(&this->io_stream);
+    cudaStreamCreate(&this->input_stream);
+    cudaStreamCreate(&this->output_stream);
     cudaStreamCreate(&this->state_stream);
 
     // Create events
@@ -52,7 +53,8 @@ State::~State() {
     for (auto matrix : this->weight_matrices) delete matrix.second;
 
 #ifdef PARALLEL
-    cudaStreamDestroy(io_stream);
+    cudaStreamDestroy(input_stream);
+    cudaStreamDestroy(output_stream);
     cudaStreamDestroy(state_stream);
     cudaEventDestroy(*input_event);
     cudaEventDestroy(*clear_event);
@@ -93,9 +95,9 @@ void State::transfer_input() {
 #ifdef PARALLEL
         // Copy to GPU from local location
         cudaMemcpyAsync(attributes->input + index, this->buffer->get_input(),
-            count * sizeof(float), cudaMemcpyHostToDevice, this->io_stream);
+            count * sizeof(float), cudaMemcpyHostToDevice, this->input_stream);
     }
-    cudaEventRecord(*this->input_event, this->io_stream);
+    cudaEventRecord(*this->input_event, this->input_stream);
 #else
         memcpy(attributes->input + index, this->buffer->get_input(),
             count * sizeof(float));
@@ -111,9 +113,9 @@ void State::transfer_output() {
 #ifdef PARALLEL
         // Copy from GPU to local location
         cudaMemcpyAsync(buffer->get_output(), attributes->recent_output + index,
-            count * sizeof(Output), cudaMemcpyDeviceToHost, this->io_stream);
+            count * sizeof(Output), cudaMemcpyDeviceToHost, this->output_stream);
     }
-    cudaEventRecord(*this->output_event, this->io_stream);
+    cudaEventRecord(*this->output_event, this->output_stream);
 #else
         memcpy(buffer->get_output(), attributes->recent_output + index,
             count * sizeof(Output));

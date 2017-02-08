@@ -5,7 +5,7 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
         connection(conn),
         kernel_data(conn, state),
         type(conn->type) {
-    this->activator = get_activator_kernel(type);
+    this->activator = state->get_activator(type);
     this->updater = (conn->plastic) ? state->get_updater(type) : NULL;
 
 #ifdef PARALLEL

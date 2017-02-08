@@ -48,6 +48,7 @@ class State {
          *     function, but the data is protected from everybody but this State */
         const Attributes *get_attributes_pointer() const { return attributes->pointer; }
         Buffer *get_buffer() const { return buffer; }
+        KERNEL get_activator(ConnectionType type) const { return attributes->get_activator(type); }
         KERNEL get_updater(ConnectionType type) const { return attributes->get_updater(type); }
 
 #ifdef PARALLEL
@@ -56,7 +57,7 @@ class State {
         void wait_for_output();
 
         /* Cuda streams for IO and state computations */
-        cudaStream_t io_stream;
+        cudaStream_t input_stream, output_stream;
         cudaStream_t state_stream;
 
         /* Cuda events for IO and output events */
