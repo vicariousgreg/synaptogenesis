@@ -6,7 +6,6 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/extractor.h"
 #include "engine/kernel/activator_kernel.h"
-#include "engine/kernel/updater_kernel.h"
 #include "engine/kernel/attribute_kernel.h"
 #include "util/constants.h"
 

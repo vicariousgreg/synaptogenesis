@@ -132,19 +132,23 @@ KERNEL SpikingAttributes::get_activator(ConnectionType type) const {
                         - (WEIGHT_DECAY * (old_weight - baseline[weight_index])); \
     weights[weight_index] = (new_weight > max_weight) ? max_weight : new_weight;
 
-UPDATE_FULLY_CONNECTED(update_fully_connected_trace,
+CALC_FULLY_CONNECTED(update_fully_connected_trace,
     EXTRACT_TRACE;
     EXTRACT_BASELINE;,
-    UPDATE_WEIGHT(weight_index, sum));
-UPDATE_ONE_TO_ONE(update_one_to_one_trace,
+    float sum = inputs[to_index];,
+    UPDATE_WEIGHT(weight_index, sum),
+    ; );
+CALC_ONE_TO_ONE(update_one_to_one_trace,
     EXTRACT_TRACE;
     EXTRACT_BASELINE;,
     UPDATE_WEIGHT(index, inputs[index]));
-UPDATE_CONVERGENT(update_convergent_trace,
+CALC_CONVERGENT(update_convergent_trace,
     EXTRACT_TRACE;
     EXTRACT_BASELINE;,
-    UPDATE_WEIGHT(weight_index, sum));
-UPDATE_ONE_TO_ONE(update_convolutional_trace,
+    float sum = inputs[to_index];,
+    UPDATE_WEIGHT(weight_index, sum),
+    ; );
+CALC_ONE_TO_ONE(update_convolutional_trace,
     EXTRACT_TRACE;
     EXTRACT_BASELINE;,
     UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]));

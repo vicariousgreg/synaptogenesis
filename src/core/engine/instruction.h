@@ -8,7 +8,6 @@
 #include "engine/kernel/kernel_data.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/activator_kernel.h"
-#include "engine/kernel/updater_kernel.h"
 #include "util/parallel.h"
 
 class Instruction {
