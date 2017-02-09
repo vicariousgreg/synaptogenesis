@@ -64,25 +64,28 @@ void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
 #define MOD_DECAY 0.005
 #define MOD_MAX 10.0
 
-#define EXTRACT_TRACE \
-    float *trace = weights + (2*num_weights);
+#define EXTRACT_BASELINES \
+    float *baselines = weights + num_weights;
+
+#define EXTRACT_TRACES \
+    float *traces = weights + (2*num_weights);
 
 #define UPDATE_TRACE(weight_index) \
     if (plastic) { \
-        float old_trace = trace[weight_index]; \
+        float old_trace = traces[weight_index]; \
         float new_trace = old_trace + (MOD_RATE * val) - (MOD_DECAY * old_trace); \
-        trace[weight_index] = MIN(MOD_MAX, new_trace);  \
+        traces[weight_index] = MIN(MOD_MAX, new_trace);  \
     }
 
 /* Trace versions of activator functions */
 ACTIVATE_FULLY_CONNECTED(activate_fully_connected_trace,
-    EXTRACT_TRACE,
+    EXTRACT_TRACES,
     UPDATE_TRACE(weight_index));
 ACTIVATE_ONE_TO_ONE(activate_one_to_one_trace,
-    EXTRACT_TRACE,
+    EXTRACT_TRACES,
     UPDATE_TRACE(index));
 ACTIVATE_CONVERGENT(activate_convergent_trace,
-    EXTRACT_TRACE,
+    EXTRACT_TRACES,
     if (convolutional) {
         UPDATE_TRACE((to_index*num_weights + weight_index));
     } else {
@@ -112,45 +115,42 @@ KERNEL SpikingAttributes::get_activator(ConnectionType type) const {
 #define SUM_COEFFICIENT 0.01
 #define WEIGHT_DECAY 0.0001
 
-#define EXTRACT_BASELINE \
-    float *baseline = weights + num_weights;
-
 #define UPDATE_WEIGHT(weight_index, input) \
     float old_weight = weights[weight_index]; \
-    float new_weight = old_weight + (trace[weight_index] * input * SUM_COEFFICIENT) \
-                        - (WEIGHT_DECAY * (old_weight - baseline[weight_index])); \
+    float new_weight = old_weight + (traces[weight_index] * input * SUM_COEFFICIENT) \
+                        - (WEIGHT_DECAY * (old_weight - baselines[weight_index])); \
     weights[weight_index] = (new_weight > max_weight) ? max_weight : new_weight;
 
 #define UPDATE_WEIGHT_CONVOLUTIONAL(weight_index, input) \
     float old_weight = weights[weight_index]; \
     float t = 0.0; \
     for (int i = 0; i < to_size; ++i) { \
-        t += trace[i*num_weights + weight_index]; \
+        t += traces[i*num_weights + weight_index]; \
     } \
     t /= to_size; \
     float new_weight = old_weight + (t * input * SUM_COEFFICIENT) \
-                        - (WEIGHT_DECAY * (old_weight - baseline[weight_index])); \
+                        - (WEIGHT_DECAY * (old_weight - baselines[weight_index])); \
     weights[weight_index] = (new_weight > max_weight) ? max_weight : new_weight;
 
 CALC_FULLY_CONNECTED(update_fully_connected_trace,
-    EXTRACT_TRACE;
-    EXTRACT_BASELINE;,
+    EXTRACT_TRACES;
+    EXTRACT_BASELINES;,
     float sum = inputs[to_index];,
     UPDATE_WEIGHT(weight_index, sum),
     ; );
 CALC_ONE_TO_ONE(update_one_to_one_trace,
-    EXTRACT_TRACE;
-    EXTRACT_BASELINE;,
+    EXTRACT_TRACES;
+    EXTRACT_BASELINES;,
     UPDATE_WEIGHT(index, inputs[index]));
 CALC_CONVERGENT(update_convergent_trace,
-    EXTRACT_TRACE;
-    EXTRACT_BASELINE;,
+    EXTRACT_TRACES;
+    EXTRACT_BASELINES;,
     float sum = inputs[to_index];,
     UPDATE_WEIGHT(weight_index, sum),
     ; );
 CALC_ONE_TO_ONE(update_convolutional_trace,
-    EXTRACT_TRACE;
-    EXTRACT_BASELINE;,
+    EXTRACT_TRACES;
+    EXTRACT_BASELINES;,
     UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]));
 
 KERNEL SpikingAttributes::get_updater(ConnectionType conn_type) const {
