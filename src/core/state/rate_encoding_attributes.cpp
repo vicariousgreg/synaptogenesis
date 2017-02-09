@@ -13,24 +13,15 @@ static RateEncodingParameters create_parameters(std::string str) {
 }
 
 RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model, FLOAT) {
-    RateEncodingParameters* local_params =
-        (RateEncodingParameters*) allocate_host(total_neurons, sizeof(RateEncodingParameters));
+    this->neuron_parameters = (RateEncodingParameters*)
+        allocate_host(total_neurons, sizeof(RateEncodingParameters));
 
     // Fill in table
     for (auto& layer : model->get_layers()) {
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
-            local_params[layer->get_start_index()+j] = params;
+            neuron_parameters[layer->get_start_index()+j] = params;
     }
-
-#ifdef PARALLEL
-    // Allocate space on GPU and copy data
-    this->neuron_parameters = (RateEncodingParameters*)
-        allocate_device(total_neurons, sizeof(RateEncodingParameters), local_params);
-    free(local_params);
-#else
-    this->neuron_parameters = local_params;
-#endif
 }
 
 RateEncodingAttributes::~RateEncodingAttributes() {
@@ -54,3 +45,17 @@ void RateEncodingAttributes::process_weight_matrix(WeightMatrix* matrix) {
         clear_weights(mData + 2*num_weights, num_weights);
     }
 }
+
+
+#ifdef PARALLEL
+void RateEncodingAttributes::send_to_device() {
+    Attributes::send_to_device();
+
+    // Allocate space on GPU and copy data
+    RateEncodingParameters* device_params = (RateEncodingParameters*)
+        allocate_device(total_neurons, sizeof(RateEncodingParameters),
+        this->neuron_parameters);
+    free(this->neuron_parameters);
+    this->neuron_parameters = device_params;
+}
+#endif

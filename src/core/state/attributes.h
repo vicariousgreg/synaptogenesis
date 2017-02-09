@@ -15,6 +15,10 @@ class Attributes {
         Attributes(Model *model, OutputType output_type);
         virtual ~Attributes();
 
+#ifdef PARALLEL
+        virtual void send_to_device();
+#endif
+
         // Depth of weight matrices
         virtual int get_matrix_depth() = 0;
 
@@ -51,6 +55,7 @@ class Attributes {
     private:
         int num_neurons[sizeof(IOTypes)];
         int start_indices[sizeof(IOTypes)];
+        int max_input_registers;
 };
 
 Attributes *build_attributes(Model *model);

@@ -13,72 +13,38 @@ static HodgkinHuxleyParameters create_parameters(std::string str) {
     return HodgkinHuxleyParameters(iapp);
 }
 
-HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model) : Attributes(model, BIT) {
-    float* local_voltage = (float*) allocate_host(total_neurons, sizeof(float));
-    float* local_h = (float*) allocate_host(total_neurons, sizeof(float));
-    float* local_m = (float*) allocate_host(total_neurons, sizeof(float));
-    float* local_n = (float*) allocate_host(total_neurons, sizeof(float));
-    float* local_current_trace = (float*) allocate_host(total_neurons, sizeof(float));
-    HodgkinHuxleyParameters* local_params =
-        (HodgkinHuxleyParameters*) allocate_host(total_neurons, sizeof(HodgkinHuxleyParameters));
+HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model)
+        : SpikingAttributes(model) {
+    this->h = (float*) allocate_host(total_neurons, sizeof(float));
+    this->m = (float*) allocate_host(total_neurons, sizeof(float));
+    this->n = (float*) allocate_host(total_neurons, sizeof(float));
+    this->current_trace = (float*) allocate_host(total_neurons, sizeof(float));
+    this->neuron_parameters = (HodgkinHuxleyParameters*)
+        allocate_host(total_neurons, sizeof(HodgkinHuxleyParameters));
 
     // Fill in table
     for (auto& layer : model->get_layers()) {
         HodgkinHuxleyParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
             int start_index = layer->get_start_index();
-            local_params[start_index+j] = params;
-            local_voltage[start_index+j] = -64.9997224337;
-            local_h[start_index+j] = 0.596111046355;
-            local_m[start_index+j] = 0.0529342176209;
-            local_n[start_index+j] = 0.31768116758;
-            local_current_trace[start_index+j] = 0.0;
+            neuron_parameters[start_index+j] = params;
+            voltage[start_index+j] = -64.9997224337;
+            h[start_index+j] = 0.596111046355;
+            m[start_index+j] = 0.0529342176209;
+            n[start_index+j] = 0.31768116758;
+            current_trace[start_index+j] = 0.0;
         }
     }
-
-    this->current = this->input;
-    this->spikes = (unsigned int*)this->output;
-
-#ifdef PARALLEL
-    // Allocate space on GPU and copy data
-    this->voltage = (float*)
-        allocate_device(total_neurons, sizeof(float), local_voltage);
-    this->h = (float*)
-        allocate_device(total_neurons, sizeof(float), local_h);
-    this->m = (float*)
-        allocate_device(total_neurons, sizeof(float), local_m);
-    this->n = (float*)
-        allocate_device(total_neurons, sizeof(float), local_n);
-    this->current_trace = (float*)
-        allocate_device(total_neurons, sizeof(float), local_current_trace);
-    this->neuron_parameters = (HodgkinHuxleyParameters*)
-        allocate_device(total_neurons, sizeof(HodgkinHuxleyParameters), local_params);
-    free(local_voltage);
-    free(local_h);
-    free(local_m);
-    free(local_n);
-    free(local_current_trace);
-    free(local_params);
-#else
-    this->voltage = local_voltage;
-    this->h = local_h;
-    this->m = local_m;
-    this->n = local_n;
-    this->current_trace = local_current_trace;
-    this->neuron_parameters = local_params;
-#endif
 }
 
 HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
 #ifdef PARALLEL
-    cudaFree(this->voltage);
     cudaFree(this->h);
     cudaFree(this->m);
     cudaFree(this->n);
     cudaFree(this->current_trace);
     cudaFree(this->neuron_parameters);
 #else
-    free(this->voltage);
     free(this->h);
     free(this->m);
     free(this->n);
@@ -87,16 +53,33 @@ HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
 #endif
 }
 
-void HodgkinHuxleyAttributes::process_weight_matrix(WeightMatrix* matrix) {
-    Connection *conn = matrix->connection;
-    float *mData = matrix->get_data();
-    if (conn->plastic) {
-        int num_weights = conn->get_num_weights();
+#ifdef PARALLEL
+void HodgkinHuxleyAttributes::send_to_device() {
+    SpikingAttributes::send_to_device();
 
-        // Baseline
-        transfer_weights(mData, mData + num_weights, num_weights);
+    // Allocate space on GPU and copy data
+    float* device_h = (float*)
+        allocate_device(total_neurons, sizeof(float), this->h);
+    float* device_m = (float*)
+        allocate_device(total_neurons, sizeof(float), this->m);
+    float* device_n = (float*)
+        allocate_device(total_neurons, sizeof(float), this->n);
+    float* device_current_trace = (float*)
+        allocate_device(total_neurons, sizeof(float), this->current_trace);
+    HodgkinHuxleyParameters* device_params = (HodgkinHuxleyParameters*)
+        allocate_device(total_neurons, sizeof(HodgkinHuxleyParameters),
+        this->neuron_parameters);
 
-        // Trace
-        clear_weights(mData + 2*num_weights, num_weights);
-    }
+    free(this->h);
+    free(this->m);
+    free(this->n);
+    free(this->current_trace);
+    free(this->neuron_parameters);
+
+    this->h = device_h;
+    this->m = device_m;
+    this->n = device_n;
+    this->current_trace = device_current_trace;
+    this->neuron_parameters = device_params;
 }
+#endif

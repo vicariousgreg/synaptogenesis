@@ -55,66 +55,49 @@ static IzhikevichParameters create_parameters(std::string str) {
             "Unrecognizer parameter string: " + str);
 }
 
-IzhikevichAttributes::IzhikevichAttributes(Model* model) : Attributes(model, BIT) {
-    float* local_voltage = (float*) allocate_host(total_neurons, sizeof(float));
-    float* local_recovery = (float*) allocate_host(total_neurons, sizeof(float));
-    IzhikevichParameters* local_params =
-        (IzhikevichParameters*) allocate_host(total_neurons, sizeof(IzhikevichParameters));
+IzhikevichAttributes::IzhikevichAttributes(Model* model)
+        : SpikingAttributes(model) {
+    this->recovery = (float*) allocate_host(total_neurons, sizeof(float));
+    this->neuron_parameters = (IzhikevichParameters*)
+        allocate_host(total_neurons, sizeof(IzhikevichParameters));
 
     // Fill in table
     for (auto& layer : model->get_layers()) {
         IzhikevichParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
             int start_index = layer->get_start_index();
-            local_params[start_index+j] = params;
-            local_voltage[start_index+j] = params.c;
-            local_recovery[start_index+j] = params.b * params.c;
+            neuron_parameters[start_index+j] = params;
+            voltage[start_index+j] = params.c;
+            recovery[start_index+j] = params.b * params.c;
         }
     }
-
-    this->current = this->input;
-    this->spikes = (unsigned int*)this->output;
-
-#ifdef PARALLEL
-    // Allocate space on GPU and copy data
-    this->voltage = (float*)
-        allocate_device(total_neurons, sizeof(float), local_voltage);
-    this->recovery = (float*)
-        allocate_device(total_neurons, sizeof(float), local_recovery);
-    this->neuron_parameters = (IzhikevichParameters*)
-        allocate_device(total_neurons, sizeof(IzhikevichParameters), local_params);
-    free(local_voltage);
-    free(local_recovery);
-    free(local_params);
-#else
-    this->voltage = local_voltage;
-    this->recovery = local_recovery;
-    this->neuron_parameters = local_params;
-#endif
 }
 
 IzhikevichAttributes::~IzhikevichAttributes() {
 #ifdef PARALLEL
-    cudaFree(this->voltage);
     cudaFree(this->recovery);
     cudaFree(this->neuron_parameters);
 #else
-    free(this->voltage);
     free(this->recovery);
     free(this->neuron_parameters);
 #endif
 }
 
-void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
-    Connection *conn = matrix->connection;
-    float *mData = matrix->get_data();
-    if (conn->plastic) {
-        int num_weights = conn->get_num_weights();
+#ifdef PARALLEL
+void IzhikevichAttributes::send_to_device() {
+    SpikingAttributes::send_to_device();
 
-        // Baseline
-        transfer_weights(mData, mData + num_weights, num_weights);
+    // Allocate space on GPU and copy data
+    float* device_recovery= (float*)
+        allocate_device(total_neurons, sizeof(float), this->recovery);
+    IzhikevichParameters* device_params = (IzhikevichParameters*)
+        allocate_device(total_neurons, sizeof(IzhikevichParameters),
+        this->neuron_parameters);
 
-        // Trace
-        clear_weights(mData + 2*num_weights, num_weights);
-    }
+    free(this->recovery);
+    free(this->neuron_parameters);
+
+    this->recovery = device_recovery;
+    this->neuron_parameters = device_params;
 }
+#endif

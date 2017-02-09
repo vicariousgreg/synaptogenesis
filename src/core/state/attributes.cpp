@@ -27,6 +27,7 @@ Attributes *build_attributes(Model *model) {
 #ifdef PARALLEL
     // Copy attributes to device and set the pointer
     // Superclass will set its own pointer otherwise
+    attributes->send_to_device();
     attributes->pointer = (Attributes*)
         allocate_device(1, object_size, attributes);
 #endif
@@ -52,7 +53,7 @@ Attributes::Attributes(Model *model, OutputType output_type)
 
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
-    int max_input_registers = 1;
+    max_input_registers = 1;
     for (auto& layer : model->get_layers()) {
         int register_count = layer->dendritic_root->get_max_register_index() + 1;
         if (register_count > max_input_registers)
@@ -60,9 +61,9 @@ Attributes::Attributes(Model *model, OutputType output_type)
     }
 
     // Allocate space for input and output
-    float* local_input = (float*) allocate_host(
+    this->input = (float*) allocate_host(
         this->total_neurons * max_input_registers, sizeof(float));
-    Output* local_output = (Output*) allocate_host(
+    this->output = (Output*) allocate_host(
         this->total_neurons * HISTORY_SIZE, sizeof(Output));
 
     // Retrieve attribute kernel
@@ -71,21 +72,6 @@ Attributes::Attributes(Model *model, OutputType output_type)
     // Retrieve extractor
     get_extractor(&this->extractor, output_type);
 
-#ifdef PARALLEL
-    // Copy data to device, then free from host
-    this->input = (float*)
-        allocate_device(this->total_neurons * max_input_registers,
-                        sizeof(float), local_input);
-    this->output = (Output*)
-        allocate_device(this->total_neurons * HISTORY_SIZE,
-                        sizeof(Output), local_output);
-    free(local_input);
-    free(local_output);
-#else
-    // Simply set pointers
-    this->input = local_input;
-    this->output = local_output;
-#endif
     // Create pointer to most recent word of output
     this->recent_output = this->output + ((HISTORY_SIZE-1) * this->total_neurons);
 }
@@ -100,3 +86,22 @@ Attributes::~Attributes() {
     free(this->output);
 #endif
 }
+
+#ifdef PARALLEL
+void Attributes::send_to_device() {
+    // Copy data to device, then free from host
+    float* device_input = (float*)
+        allocate_device(this->total_neurons * max_input_registers,
+                        sizeof(float), this->input);
+    Output* device_output = (Output*)
+        allocate_device(this->total_neurons * HISTORY_SIZE,
+                        sizeof(Output), this->output);
+    free(this->input);
+    free(this->output);
+    this->input = device_input;
+    this->output = device_output;
+
+    // Create pointer to most recent word of output
+    this->recent_output = this->output + ((HISTORY_SIZE-1) * this->total_neurons);
+}
+#endif

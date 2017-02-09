@@ -16,6 +16,10 @@ class RateEncodingAttributes : public Attributes {
         RateEncodingAttributes(Model* model);
         ~RateEncodingAttributes();
 
+#ifdef PARALLEL
+        virtual void send_to_device();
+#endif
+
         virtual int get_matrix_depth() { return 3; }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
