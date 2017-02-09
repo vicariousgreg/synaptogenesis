@@ -35,7 +35,7 @@ void SpikingAttributes::send_to_device() {
 }
 #endif
 
-void SpikingAttributes::TraceLearning::process_weight_matrix(WeightMatrix* matrix) {
+void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Connection *conn = matrix->connection;
     float *mData = matrix->get_data();
     if (conn->plastic) {
@@ -94,7 +94,7 @@ ACTIVATE_CONVERGENT(activate_convergent_trace,
     }
 );
 
-KERNEL SpikingAttributes::TraceLearning::get_activator(ConnectionType type) {
+KERNEL SpikingAttributes::get_activator(ConnectionType type) {
     switch (type) {
         case FULLY_CONNECTED:
             return activate_fully_connected_trace;
@@ -154,7 +154,7 @@ CALC_ONE_TO_ONE(update_convolutional_trace,
     EXTRACT_BASELINES;,
     UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]));
 
-KERNEL SpikingAttributes::TraceLearning::get_updater(ConnectionType conn_type) {
+KERNEL SpikingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return update_fully_connected_trace;

@@ -33,6 +33,9 @@ KernelData::KernelData(Connection *conn, State *state) :
         ErrorManager::get_instance()->log_error(
             "Invalid delay in connection!");
 
+    destination_outputs =
+        state->get_output(word_index)
+        + conn->to_layer->get_start_index();
     outputs = state->get_output(word_index)
                 + conn->from_layer->get_start_index();
     inputs = state->get_input()

@@ -548,6 +548,33 @@ Model* build_cc_model(std::string engine_name) {
     return model;
 }
 
+Model* build_re_model() {
+    /* Construct the model */
+    Model *model = new Model("rate_encoding");
+    Structure *structure = new Structure("rate_encoding");
+
+    int resolution = 128;
+    structure->add_layer("in", 1, 8, "");
+    structure->add_layer("hid", resolution, resolution, "");
+    structure->add_layer("out", resolution, resolution, "");
+
+    structure->connect_layers("in", "hid",
+        true, 0, 5, FULLY_CONNECTED, ADD, "");
+    structure->connect_layers("hid", "out",
+        true, 0, 5, CONVERGENT, ADD, "9 1");
+
+    // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
+    structure->add_module("in", "random_input", "1 10");
+    structure->add_module("hid", output_name, "8");
+    structure->add_module("out", output_name, "8");
+
+    model->add_structure(structure);
+    return model;
+}
+
 void run_simulation(Model *model, int iterations, bool verbose) {
     // Calculate ideal refresh rate, run for iterations
     Clock clock(true);
@@ -671,6 +698,20 @@ void cc_test() {
     delete model;
 }
 
+void re_test() {
+    Model *model;
+
+    std::cout << "Rate encoding......\n";
+    model = build_re_model();
+    print_model(model);
+    run_simulation(model, 1000000, true);
+    //run_simulation(model, 100, true);
+    //run_simulation(model, 10, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 void varied_test() {
     Model *model;
 
@@ -709,6 +750,7 @@ int main(int argc, char *argv[]) {
         //dendritic_test();
         //hh_test();
         //cc_test();
+        //re_test();
         //varied_test();
 
         return 0;

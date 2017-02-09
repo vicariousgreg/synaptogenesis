@@ -35,6 +35,7 @@ class KernelData {
         /* IO attributes */
         OutputType output_type;
         Output *outputs;
+        Output *destination_outputs;
         float *inputs;
 };
 

@@ -16,7 +16,10 @@ GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int coun
 class RateEncodingAttributes : public Attributes {
     public:
         RateEncodingAttributes(Model* model);
-        ~RateEncodingAttributes();
+        virtual ~RateEncodingAttributes();
+
+        /* Trace learning rules */
+        virtual KERNEL get_updater(ConnectionType type);
 
         ATTRIBUTE_KERNEL get_attribute_kernel() {
             return re_attribute_kernel;

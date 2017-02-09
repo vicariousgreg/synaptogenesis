@@ -73,5 +73,70 @@ GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int coun
         float input = inputs[nid];
         outputs[total_neurons * index + nid] =
             (input > 0.0) ? tanh(0.1*input) : 0.0;
+            //(input > 0.0) ? input : 0.0;
+            //tanh(input);
+    }
+}
+
+/******************************************************************************/
+/**************************** HEBBIAN LEARNING ********************************/
+/******************************************************************************/
+
+#define LEARNING_RATE 0.1
+
+#define EXTRACT_OUT(to_index) \
+    float dest_out = extractor(destination_outputs[to_index], 0);
+
+#define UPDATE_WEIGHT(from_index, weight_index, dest_out) \
+    float source_out = extractor(outputs[from_index], delay); \
+    float old_weight = weights[weight_index]; \
+    weights[weight_index] = old_weight + \
+        (LEARNING_RATE * source_out * \
+            (dest_out - (source_out*old_weight))); \
+
+#define UPDATE_WEIGHT_CONVOLUTIONAL(index) \
+    EXTRACT_OUT(index); \
+    float weight_delta = 0.0; \
+    float old_weight = weights[index]; \
+    for (int i = 0 ; i < to_size ; ++i) { \
+        float source_out = extractor(outputs[index], delay); \
+        weight_delta += source_out * \
+            (dest_out - (source_out*old_weight)); \
+    } \
+    weights[index] = old_weight + (LEARNING_RATE * weight_delta);
+
+CALC_FULLY_CONNECTED(update_fully_connected_hebbian,
+    ; ,
+    EXTRACT_OUT(to_index);,
+    UPDATE_WEIGHT(from_index, weight_index, dest_out);,
+    ; );
+CALC_ONE_TO_ONE(update_one_to_one_hebbian,
+    ; ,
+    EXTRACT_OUT(index);
+    UPDATE_WEIGHT(index, index, dest_out);
+    );
+CALC_CONVERGENT(update_convergent_hebbian,
+    ; ,
+    EXTRACT_OUT(to_index);,
+    UPDATE_WEIGHT(from_index, weight_index, dest_out);,
+    ; );
+CALC_ONE_TO_ONE(update_convolutional_hebbian,
+    ; ,
+    UPDATE_WEIGHT_CONVOLUTIONAL(index);
+    );
+
+KERNEL RateEncodingAttributes::get_updater(ConnectionType conn_type) {
+    switch (conn_type) {
+        case FULLY_CONNECTED:
+            return update_fully_connected_hebbian;
+        case ONE_TO_ONE:
+            return update_one_to_one_hebbian;
+        case CONVERGENT:
+            return update_convergent_hebbian;
+        case CONVOLUTIONAL:
+            return update_convolutional_hebbian;
+        default:
+            ErrorManager::get_instance()->log_error(
+                "Unimplemented connection type!");
     }
 }

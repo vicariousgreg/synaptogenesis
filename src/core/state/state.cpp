@@ -8,12 +8,11 @@
 State::State(Model *model)
         : attributes(build_attributes(model)) {
     /* Set up weight matrices */
-    Attributes::LearningRule* learning_rule = this->attributes->get_learning_rule();
-    int matrix_depth = learning_rule->get_matrix_depth();
+    int matrix_depth = this->attributes->get_matrix_depth();
     for (auto & conn : model->get_connections()) {
         WeightMatrix* matrix = new WeightMatrix(conn, matrix_depth);
         this->weight_matrices[conn] = matrix;
-        learning_rule->process_weight_matrix(matrix);
+        this->attributes->process_weight_matrix(matrix);
 #ifdef PARALLEL
         matrix->send_to_device();
 #endif

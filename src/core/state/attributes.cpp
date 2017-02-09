@@ -37,8 +37,7 @@ Attributes *build_attributes(Model *model) {
 Attributes::Attributes(Model *model, OutputType output_type)
         : output_type(output_type),
           total_neurons(model->get_num_neurons()),
-          pointer(this),
-          learning_rule(NULL) {
+          pointer(this) {
     // Determine start indices and number of neurons for each type
     int curr_index = 0;
     for (auto layer_type : IOTypes) {
@@ -75,8 +74,6 @@ Attributes::Attributes(Model *model, OutputType output_type)
 }
 
 Attributes::~Attributes() {
-    delete this->learning_rule;
-
 #ifdef PARALLEL
     cudaFree(this->input);
     cudaFree(this->output);

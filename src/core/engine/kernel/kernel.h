@@ -85,6 +85,7 @@ inline GLOBAL void clear_data(float* data, int count) {
     const int to_rows = kernel_data.to_rows; \
     const int to_columns = kernel_data.to_columns; \
     Output * const outputs = kernel_data.outputs; \
+    Output * const destination_outputs = kernel_data.destination_outputs; \
     float * const inputs = kernel_data.inputs; \
     const EXTRACTOR extractor = kernel_data.attributes->extractor;
 

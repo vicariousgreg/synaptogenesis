@@ -48,10 +48,10 @@ class State {
         const Attributes *get_attributes_pointer() const { return attributes->pointer; }
         Buffer *get_buffer() const { return buffer; }
         KERNEL get_activator(ConnectionType type) const {
-            return attributes->get_learning_rule()->get_activator(type);
+            return attributes->get_activator(type);
         }
         KERNEL get_updater(ConnectionType type) const {
-            return attributes->get_learning_rule()->get_updater(type);
+            return attributes->get_updater(type);
         }
 
 #ifdef PARALLEL
