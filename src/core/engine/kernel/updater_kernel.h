@@ -4,11 +4,48 @@
 #include "engine/kernel/kernel.h"
 
 /* Updaters are responsible for updating connection weights */
-KERNEL get_updater_kernel(ConnectionType conn_type);
 
-GLOBAL void update_fully_connected(const KernelData kernel_data);
-GLOBAL void update_one_to_one(const KernelData kernel_data);
-GLOBAL void update_convergent(const KernelData kernel_data);
-GLOBAL void update_convolutional(const KernelData kernel_data);
+#define UPDATE_FULLY_CONNECTED(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_FULLY_CONNECTED(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE
+     * Retrieve input sum */ \
+    float sum = inputs[to_index];, \
+ \
+    /* WEIGHT_OP */ \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST
+     * no_op */ \
+    ; \
+)
+
+#define UPDATE_ONE_TO_ONE(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_ONE_TO_ONE(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    UPDATE_EXT;, \
+ \
+    /* WEIGHT_OP */ \
+    UPDATE_CALC; \
+)
+
+#define UPDATE_CONVERGENT(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_CONVERGENT(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE
+     * Retrieve input sum */ \
+    float sum = inputs[to_index];, \
+ \
+    /* WEIGHT_OP */ \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST
+     * no_op */ \
+    ; \
+)
 
 #endif

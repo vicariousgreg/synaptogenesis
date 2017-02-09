@@ -11,9 +11,8 @@ class SpikingAttributes : public Attributes {
         virtual int get_matrix_depth() { return 3; }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
-        virtual KERNEL get_activator(ConnectionType type) const {
-            return get_activator_kernel_trace(type);
-        }
+        virtual KERNEL get_activator(ConnectionType type) const;
+        virtual KERNEL get_updater(ConnectionType type) const;
 
 #ifdef PARALLEL
         virtual void send_to_device();

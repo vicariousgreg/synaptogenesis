@@ -29,9 +29,8 @@ class Attributes {
         virtual KERNEL get_activator(ConnectionType type) const {
             return get_activator_kernel(type);
         }
-        virtual KERNEL get_updater(ConnectionType type) const {
-            return get_updater_kernel(type);
-        }
+        virtual KERNEL get_updater(ConnectionType type) const = 0;
+
         int get_num_neurons(IOType type) const { return num_neurons[type]; }
         int get_start_index(IOType type) const { return start_indices[type]; }
 

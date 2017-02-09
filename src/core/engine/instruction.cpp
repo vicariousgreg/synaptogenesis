@@ -52,7 +52,7 @@ void SynapseInstruction::activate() {
 }
 
 void SynapseInstruction::update() {
-    if (this->kernel_data.plastic) {
+    if (this->updater != NULL) {
 #ifdef PARALLEL
         if (this->stream)
             updater
