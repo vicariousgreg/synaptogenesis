@@ -20,6 +20,10 @@ class IzhikevichAttributes : public Attributes {
         virtual int get_matrix_depth() { return 3; }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
+        virtual KERNEL get_activator(ConnectionType type) const {
+            return get_activator_kernel_trace(type);
+        }
+
         // Neuron Attributes
         float *voltage;
         float *recovery;
