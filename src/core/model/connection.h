@@ -26,7 +26,6 @@ class Connection {
         const std::string get_init_params() const { return init_params; }
         int get_field_size() const { return field_size; }
         int get_stride() const { return stride; }
-        Connection* const get_parent() const { return parent; }
 
         // Matrix type
         const ConnectionType type;
@@ -55,12 +54,6 @@ class Connection {
         Connection (Layer *from_layer, Layer *to_layer,
                 bool plastic, int delay, float max_weight,
                 ConnectionType type, std::string params, Opcode opcode);
-
-        Connection(Layer *from_layer, Layer *to_layer,
-                Connection *parent);
-
-        // Parent connection if this is a shared connection
-        Connection *parent;
 
         // Number of weights in connection
         int num_weights;

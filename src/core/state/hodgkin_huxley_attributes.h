@@ -16,7 +16,8 @@ class HodgkinHuxleyAttributes : public Attributes {
         HodgkinHuxleyAttributes(Model* model);
         ~HodgkinHuxleyAttributes();
 
-        int get_matrix_depth() { return 3; }
+        virtual int get_matrix_depth() { return 3; }
+        virtual void process_weight_matrix(WeightMatrix* matrix);
 
         // Neuron Attributes
         float *voltage;

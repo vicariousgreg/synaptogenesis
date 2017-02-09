@@ -2,6 +2,7 @@
 #define attributes_h
 
 #include "model/model.h"
+#include "state/weight_matrix.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/extractor.h"
 #include "engine/kernel/activator_kernel.h"
@@ -16,6 +17,9 @@ class Attributes {
 
         // Depth of weight matrices
         virtual int get_matrix_depth() = 0;
+
+        // Weight matrix processor
+        virtual void process_weight_matrix(WeightMatrix* matrix) { }
 
         /* Constant getters */
         KERNEL get_activator(ConnectionType type) const { return get_activator_kernel(type); }

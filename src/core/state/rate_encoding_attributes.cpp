@@ -40,3 +40,17 @@ RateEncodingAttributes::~RateEncodingAttributes() {
     free(this->neuron_parameters);
 #endif
 }
+
+void RateEncodingAttributes::process_weight_matrix(WeightMatrix* matrix) {
+    Connection *conn = matrix->connection;
+    float *mData = matrix->get_data();
+    if (conn->plastic) {
+        int num_weights = conn->get_num_weights();
+
+        // Baseline
+        transfer_weights(mData, mData + num_weights, num_weights);
+
+        // Trace
+        clear_weights(mData + 2*num_weights, num_weights);
+    }
+}

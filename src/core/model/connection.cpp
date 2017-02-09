@@ -14,8 +14,7 @@ Connection::Connection (Layer *from_layer, Layer *to_layer,
             max_weight(max_weight),
             opcode(opcode),
             type(type),
-            convolutional(type == CONVOLUTIONAL),
-            parent(NULL) {
+            convolutional(type == CONVOLUTIONAL) {
     switch (type) {
         case(FULLY_CONNECTED):
             this->init_params = params;
@@ -85,15 +84,6 @@ Connection::Connection (Layer *from_layer, Layer *to_layer,
     // Assuming all went well, connect the layers
     from_layer->add_output_connection(this);
     to_layer->add_input_connection(this);
-}
-
-Connection::Connection(Layer *from_layer, Layer *to_layer,
-        Connection *parent) :
-            Connection(from_layer, to_layer,
-                        parent->plastic, parent->delay,
-                        parent->max_weight, parent->type,
-                        parent->init_params, parent->opcode) {
-    this->parent = parent;
 }
 
 int get_expected_dimension(int source_val, ConnectionType type, std::string params) {

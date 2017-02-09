@@ -16,7 +16,8 @@ class RateEncodingAttributes : public Attributes {
         RateEncodingAttributes(Model* model);
         ~RateEncodingAttributes();
 
-        int get_matrix_depth() { return 3; }
+        virtual int get_matrix_depth() { return 3; }
+        virtual void process_weight_matrix(WeightMatrix* matrix);
 
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;

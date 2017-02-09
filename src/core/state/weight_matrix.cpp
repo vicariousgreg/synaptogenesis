@@ -6,22 +6,22 @@
 #include "util/parallel.h"
 
 /* Sets all values in an array to the given val */
-static void set(float* arr, int size, float val) {
+void set_weights(float* arr, int size, float val) {
     for (int i = 0 ; i < size ; ++i) arr[i] = val;
 }
 
 /* Clears an array */
-static void clear(float* arr, int size) {
-    set(arr, size, 0.0);
+void clear_weights(float* arr, int size) {
+    set_weights(arr, size, 0.0);
 }
 
 /* Randomizes an array */
-static void randomize(float* arr, int size, float max) {
+void randomize_weights(float* arr, int size, float max) {
     for (int i = 0 ; i < size ; ++i) arr[i] = fRand(0, max);
 }
 
 /* Transfers the values from one array to another */
-static void transfer(float* from, float* to, int size) {
+void transfer_weights(float* from, float* to, int size) {
     for (int i = 0 ; i < size ; ++i) to[i] = from[i];
 }
 
@@ -37,7 +37,7 @@ static void initialize(float* target_matrix, Connection* conn) {
     // If there are no more values, set all weights to first value
     // Otherwise, read values and initialize
     if (stream.eof()) {
-        set(target_matrix, num_weights, value);
+        set_weights(target_matrix, num_weights, value);
     } else {
         int rows = conn->to_layer->size;
         int cols = conn->from_layer->size;
@@ -75,9 +75,9 @@ static void initialize(float* target_matrix, Connection* conn) {
     }
 }
 
-WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) {
+WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn) {
     int num_weights = conn->get_num_weights();
-    int matrix_size = num_weights;
+    matrix_size = num_weights;
     // Multiply by depth if plastic
     if (conn->plastic) {
         // Parallel convergent matrices need extra layers for each
@@ -91,36 +91,27 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) {
 
     // Allocate matrix on host
     // If parallel, it will be copied below
-    float *target_matrix = (float*)malloc(matrix_size * sizeof(float));
-    if (target_matrix == NULL)
+    mData = (float*)malloc(matrix_size * sizeof(float));
+    if (mData == NULL)
         ErrorManager::get_instance()->log_error(
             "Failed to allocate space for weight matrices on host!");
 
     // If parameter is specified, interpret it for initialization
     // Otherwise, perform randomization
     if (conn->get_init_params().size() == 0)
-        randomize(target_matrix, num_weights, conn->max_weight);
+        randomize_weights(mData, num_weights, conn->max_weight);
     else
-        initialize(target_matrix, conn);
+        initialize(mData, conn);
 
     if (conn->plastic) {
         // Baseline
         if (matrix_depth >= 2)
-            transfer(target_matrix, target_matrix + num_weights, num_weights);
+            transfer_weights(mData, mData + num_weights, num_weights);
 
         // Trace
         if (matrix_depth >= 3)
-            clear(target_matrix + 2*num_weights, num_weights);
+            clear_weights(mData + 2*num_weights, num_weights);
     }
-
-#ifdef PARALLEL
-    // Parallel requires a temporary matrix be created and copied
-    mData = (float*) allocate_device(matrix_size, sizeof(float), target_matrix);
-    cudaCheckError("Failed to initialize weight matrix!");
-    free(target_matrix);
-#else
-    mData = target_matrix;
-#endif
 }
 
 WeightMatrix::~WeightMatrix() {
@@ -130,3 +121,14 @@ WeightMatrix::~WeightMatrix() {
     free(this->mData);
 #endif
 }
+
+#ifdef PARALLEL
+void WeightMatrix::send_to_device() {
+    // Parallel requires a temporary matrix be created and copied
+    float* device_mData = (float*) allocate_device(
+        matrix_size, sizeof(float), mData);
+    cudaCheckError("Failed to initialize weight matrix!");
+    free(mData);
+    mData = device_mData;
+}
+#endif

@@ -22,8 +22,7 @@ void print_model(Model *model) {
     printf("  - connections : %10d\n", connections.size());
     int num_weights = 0;
     for (auto& conn : connections)
-        if (conn->get_parent() == NULL)
-            num_weights += conn->get_num_weights();
+        num_weights += conn->get_num_weights();
     printf("  - weights     : %10d\n", num_weights);
 
     for (auto layer : layers) {
@@ -324,7 +323,7 @@ Model* build_alignment_model(std::string engine_name) {
     Model *model = new Model(engine_name);
     Structure *structure = new Structure("alignment");
 
-    int resolution = 125;
+    int resolution = 128;
     structure->add_layer("input_layer", 1, 10, "default");
     structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
     structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -488,12 +487,12 @@ Model* build_cc_model(std::string engine_name) {
     /* Construct the model */
     Model *model = new Model(engine_name);
     std::vector<Structure*> structures;
-    int num_structures = 2;
+    int num_structures = 4;
 
     for (int i = 0 ; i < num_structures ; ++i) {
         Structure *structure = new Structure(std::to_string(i));
 
-        int resolution = 50;
+        int resolution = 128;
         structure->add_layer("input_layer", 1, 10, "default");
         structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
         structure->add_layer("inh_thalamus", resolution, resolution, "default");
@@ -521,7 +520,7 @@ Model* build_cc_model(std::string engine_name) {
         std::string output_name = "visualizer_output";
 
         structure->add_module("input_layer", "random_input", "10 500");
-        //structure->add_module("exc_thalamus", "noise_input", "0.5");
+        structure->add_module("exc_thalamus", "noise_input", "0.5");
 
         structure->add_module("exc_thalamus", output_name, "8");
         structure->add_module("exc_cortex", output_name, "8");
@@ -539,8 +538,8 @@ Model* build_cc_model(std::string engine_name) {
             structures[(i+1)%num_structures],
             "exc_cortex",
             //true, 20, 1, ONE_TO_ONE, ADD, "0.1");
-            //true, 10, 0.1, CONVERGENT, MULT, "9 1 0.01");
-            true, 20, 0.01, FULLY_CONNECTED, ADD, "0.001");
+            true, 10, 0.1, CONVERGENT, MULT, "9 1 0.01");
+            //true, 20, 0.01, FULLY_CONNECTED, ADD, "0.001");
     }
 
     for (auto structure : structures)

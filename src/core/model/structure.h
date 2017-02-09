@@ -45,9 +45,6 @@ class Structure {
             bool plastic, int delay, float max_weight, ConnectionType type,
             Opcode opcode, std::string params);
 
-        Connection* connect_layers_shared(
-            std::string from_layer_name, std::string to_layer_name, Connection* parent);
-
         Connection* connect_layers_expected(
             std::string from_layer_name, std::string to_layer_name, std::string new_layer_params,
             bool plastic, int delay, float max_weight,
@@ -80,10 +77,6 @@ class Structure {
                 Layer *from_layer, Layer *to_layer,
                 bool plastic, int delay, float max_weight,
                 ConnectionType type, Opcode opcode, std::string params);
-
-        Connection* connect_layers(
-                Layer *from_layer, Layer *to_layer,
-                Connection *parent);
 
         Layer* find_layer(std::string name) {
             if (layers_by_name.find(name) != layers_by_name.end())

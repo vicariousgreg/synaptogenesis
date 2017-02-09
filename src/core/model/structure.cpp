@@ -37,16 +37,6 @@ Connection* Structure::connect_layers(
 }
 
 Connection* Structure::connect_layers(
-        Layer *from_layer, Layer *to_layer,
-        Connection *parent) {
-    Connection *conn = new Connection(
-        from_layer, to_layer, parent);
-    to_layer->add_to_root(conn);
-    this->connections.push_back(conn);
-    return conn;
-}
-
-Connection* Structure::connect_layers(
         std::string from_layer_name, std::string to_layer_name,
         bool plastic, int delay, float max_weight,
         ConnectionType type, Opcode opcode, std::string params) {
@@ -61,35 +51,6 @@ Connection* Structure::connect_layers(
     return connect_layers(from_layer, to_layer,
         plastic, delay, max_weight,
         type, opcode, params);
-}
-
-Connection* Structure::connect_layers_shared(
-        std::string from_layer_name, std::string to_layer_name,
-        Connection* parent) {
-    // If parent has a parent, follow up and find the original connection
-    while (parent->parent != NULL)
-        parent = parent->parent;
-
-    Layer *from_layer = find_layer(from_layer_name);
-    Layer *to_layer = find_layer(to_layer_name);
-    if (from_layer == NULL)
-        ErrorManager::get_instance()->log_error(
-            "Could not find layer \"" + from_layer_name + "\"!");
-    if (to_layer == NULL)
-        ErrorManager::get_instance()->log_error(
-            "Could not find layer \"" + to_layer_name + "\"!");
-
-    // Ensure that the weights can be shared by checking sizes
-    if (from_layer->rows == parent->from_layer->rows
-            and from_layer->columns == parent->from_layer->columns
-            and to_layer->rows == parent->to_layer->rows
-            and to_layer->columns == parent->to_layer->columns) {
-        return connect_layers(
-            from_layer, to_layer, parent);
-    } else {
-        ErrorManager::get_instance()->log_error(
-            "Cannot share weights between connections of different sizes!");
-    }
 }
 
 Connection* Structure::connect_layers_expected(

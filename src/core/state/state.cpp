@@ -9,15 +9,14 @@ State::State(Model *model)
         : attributes(build_attributes(model)) {
     /* Set up weight matrices */
     int matrix_depth = attributes->get_matrix_depth();
-
-    // Set up non-shared weight matrices first
-    for (auto & conn : model->get_connections())
-        if (conn->get_parent() == NULL)
-            this->weight_matrices[conn] = new WeightMatrix(conn, matrix_depth);
-    // Set up shared weights (just duplicate)
-    for (auto & conn : model->get_connections())
-        if (conn->get_parent() != NULL)
-            this->weight_matrices[conn] = this->weight_matrices[conn->get_parent()];
+    for (auto & conn : model->get_connections()) {
+        WeightMatrix* matrix = new WeightMatrix(conn, matrix_depth);
+        this->weight_matrices[conn] = matrix;
+        this->attributes->process_weight_matrix(matrix);
+#ifdef PARALLEL
+        matrix->send_to_device();
+#endif
+    }
 
     // Create the buffer
     int input_output_size = attributes->get_num_neurons(INPUT_OUTPUT);
