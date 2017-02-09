@@ -4,7 +4,6 @@
 #include "model/model.h"
 #include "io/buffer.h"
 #include "engine/kernel/kernel.h"
-#include "engine/kernel/attribute_kernel.h"
 #include "state/attributes.h"
 #include "state/weight_matrix.h"
 #include "util/constants.h"
@@ -48,8 +47,12 @@ class State {
          *     function, but the data is protected from everybody but this State */
         const Attributes *get_attributes_pointer() const { return attributes->pointer; }
         Buffer *get_buffer() const { return buffer; }
-        KERNEL get_activator(ConnectionType type) const { return attributes->get_activator(type); }
-        KERNEL get_updater(ConnectionType type) const { return attributes->get_updater(type); }
+        KERNEL get_activator(ConnectionType type) const {
+            return attributes->get_learning_rule()->get_activator(type);
+        }
+        KERNEL get_updater(ConnectionType type) const {
+            return attributes->get_learning_rule()->get_updater(type);
+        }
 
 #ifdef PARALLEL
         /* If parallel, callers may want to wait for IO events */

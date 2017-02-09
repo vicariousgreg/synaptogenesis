@@ -4,7 +4,7 @@
 #include "engine/kernel/kernel.h"
 
 /* Activators are responsible for performing connection computation */
-KERNEL get_activator_kernel(ConnectionType conn_type);
+KERNEL get_base_activator_kernel(ConnectionType conn_type);
 GLOBAL void activate_fully_connected(KernelData kernel_data);
 GLOBAL void activate_one_to_one(KernelData kernel_data);
 GLOBAL void activate_convergent(KernelData kernel_data);

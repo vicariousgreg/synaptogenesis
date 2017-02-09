@@ -8,11 +8,12 @@
 State::State(Model *model)
         : attributes(build_attributes(model)) {
     /* Set up weight matrices */
-    int matrix_depth = attributes->get_matrix_depth();
+    Attributes::LearningRule* learning_rule = this->attributes->get_learning_rule();
+    int matrix_depth = learning_rule->get_matrix_depth();
     for (auto & conn : model->get_connections()) {
         WeightMatrix* matrix = new WeightMatrix(conn, matrix_depth);
         this->weight_matrices[conn] = matrix;
-        this->attributes->process_weight_matrix(matrix);
+        learning_rule->process_weight_matrix(matrix);
 #ifdef PARALLEL
         matrix->send_to_device();
 #endif
@@ -136,11 +137,11 @@ void State::update_states(int start_index, int count) {
     int threads = calc_threads(count);
     int blocks = calc_blocks(count);
 
-    attributes->attribute_kernel<<<blocks, threads, 0, this->state_stream>>>(
+    attributes->get_attribute_kernel()<<<blocks, threads, 0, this->state_stream>>>(
         attributes->pointer, start_index, count);
     cudaCheckError("Failed to update neuron state/output!");
 #else
-    attributes->attribute_kernel(attributes, start_index, count);
+    attributes->get_attribute_kernel()(attributes, start_index, count);
 #endif
 }
 

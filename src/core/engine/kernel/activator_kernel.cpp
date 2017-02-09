@@ -6,7 +6,7 @@
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
 /******************************************************************************/
 
-KERNEL get_activator_kernel(ConnectionType conn_type) {
+KERNEL get_base_activator_kernel(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return activate_fully_connected;

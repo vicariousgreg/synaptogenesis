@@ -5,14 +5,22 @@
 
 class SpikingAttributes : public Attributes {
     public:
+        class TraceLearning : public LearningRule {
+            public:
+                virtual KERNEL get_activator(ConnectionType type);
+                virtual KERNEL get_updater(ConnectionType type);
+                virtual int get_matrix_depth() { return 3; }
+                virtual void process_weight_matrix(WeightMatrix* matrix);
+        };
+
         SpikingAttributes(Model* model);
         ~SpikingAttributes();
 
-        virtual int get_matrix_depth() { return 3; }
-        virtual void process_weight_matrix(WeightMatrix* matrix);
-
-        virtual KERNEL get_activator(ConnectionType type) const;
-        virtual KERNEL get_updater(ConnectionType type) const;
+        virtual LearningRule *get_learning_rule() {
+            if (learning_rule == NULL)
+                learning_rule = new TraceLearning();
+            return learning_rule;
+        }
 
 #ifdef PARALLEL
         virtual void send_to_device();

@@ -11,25 +11,20 @@ class RateEncodingParameters {
         float x;
 };
 
+GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int count);
+
 class RateEncodingAttributes : public Attributes {
     public:
         RateEncodingAttributes(Model* model);
         ~RateEncodingAttributes();
 
+        ATTRIBUTE_KERNEL get_attribute_kernel() {
+            return re_attribute_kernel;
+        }
+
 #ifdef PARALLEL
         virtual void send_to_device();
 #endif
-
-        virtual int get_matrix_depth() { return 1; }
-        virtual void process_weight_matrix(WeightMatrix* matrix);
-
-        virtual KERNEL get_activator(ConnectionType type) const {
-            return get_activator_kernel(type);
-        }
-
-        virtual KERNEL get_updater(ConnectionType type) const {
-            return NULL;
-        }
 
         // Neuron parameters
         RateEncodingParameters* neuron_parameters;
