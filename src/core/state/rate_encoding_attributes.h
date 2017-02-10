@@ -18,6 +18,8 @@ class RateEncodingAttributes : public Attributes {
         RateEncodingAttributes(Model* model);
         virtual ~RateEncodingAttributes();
 
+        virtual Engine *build_engine(Model *model, State *state);
+
         /* Trace learning rules */
         virtual KERNEL get_updater(ConnectionType type);
 

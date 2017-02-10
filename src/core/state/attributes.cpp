@@ -2,6 +2,7 @@
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
 #include "state/hodgkin_huxley_attributes.h"
+#include "engine/engine.h"
 #include "engine/kernel/kernel.h"
 #include "util/tools.h"
 #include "util/parallel.h"
@@ -82,6 +83,10 @@ Attributes::~Attributes() {
     free(this->input);
     free(this->output);
 #endif
+}
+
+Engine *Attributes::build_engine(Model *model, State *state) {
+    return new ParallelEngine(model, state);
 }
 
 #ifdef PARALLEL

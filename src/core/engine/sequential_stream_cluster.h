@@ -12,10 +12,10 @@ class SequentialStreamCluster {
         SequentialStreamCluster(Model *model, State *state);
         virtual ~SequentialStreamCluster();
 
-        void launch_calculations();
-        void launch_weight_update();
+        virtual void launch_calculations();
+        virtual void launch_weight_update();
 
-    private:
+    protected:
 #ifdef PARALLEL
         void wait_event(cudaEvent_t *event);
         void block_stream_to(IOType to_type, cudaStream_t cuda_stream);

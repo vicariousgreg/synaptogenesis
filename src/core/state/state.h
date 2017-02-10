@@ -8,10 +8,17 @@
 #include "state/weight_matrix.h"
 #include "util/constants.h"
 
+class Engine;
+
 class State {
     public:
         State(Model *model);
         virtual ~State();
+
+        /* Builds an engine based on attribute requirements */
+        Engine *build_engine() {
+            return attributes->build_engine(model, this);
+        }
 
         /* Resets the state, clearing any non-sensory input
          * If parallel, this will reset cuda events */
@@ -76,6 +83,7 @@ class State {
         void update_states(int start_index, int count);
         void update_states(IOType layer_type);
 
+        Model *model;
         Attributes *attributes;
         Buffer *buffer;
         std::map<Connection*, WeightMatrix*> weight_matrices;

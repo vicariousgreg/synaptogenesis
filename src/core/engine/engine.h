@@ -5,16 +5,17 @@
 #include "model/model.h"
 #include "engine/stream_cluster.h"
 #include "engine/sequential_stream_cluster.h"
+#include "engine/feedforward_stream_cluster.h"
 #include "engine/instruction.h"
 
 class Engine {
     public:
-        Engine(Model *model)
+        Engine(Model *model, State *state)
                 : model(model),
-                  state(new State(model)),
+                  state(state),
                   learning_flag(true) { }
 
-        virtual ~Engine() { delete this->state; }
+        virtual ~Engine() { }
 
         Buffer *get_buffer() const { return state->get_buffer(); }
         void set_learning_flag(bool status) { learning_flag = status; }
@@ -33,9 +34,10 @@ class Engine {
 
 class ParallelEngine : public Engine {
     public:
-        ParallelEngine(Model *model)
-                : Engine(model),
-                  stream_cluster(model, state) { }
+        ParallelEngine(Model *model, State *state)
+                : Engine(model, state),
+                  stream_cluster(new StreamCluster(model, state)) { }
+        virtual ~ParallelEngine() { delete this->stream_cluster; }
 
         // Main hooks
         void stage_clear();
@@ -43,15 +45,16 @@ class ParallelEngine : public Engine {
         void stage_output();
         void stage_calc();
 
-    private:
-        StreamCluster stream_cluster;
+    protected:
+        StreamCluster *stream_cluster;
 };
 
 class SequentialEngine : public Engine {
     public:
-        SequentialEngine(Model *model)
-                : Engine(model),
-                  stream_cluster(model, state) { }
+        SequentialEngine(Model *model, State *state)
+                : Engine(model, state),
+                  stream_cluster(new SequentialStreamCluster(model, state)) { }
+        virtual ~SequentialEngine() { delete this->stream_cluster; }
 
         // Main hooks
         void stage_clear();
@@ -59,8 +62,20 @@ class SequentialEngine : public Engine {
         void stage_output();
         void stage_calc();
 
-    private:
-        SequentialStreamCluster stream_cluster;
+    protected:
+        SequentialEngine(Model *model, State *state,
+            SequentialStreamCluster *stream_cluster)
+                : Engine(model, state),
+                  stream_cluster(stream_cluster) { }
+
+        SequentialStreamCluster *stream_cluster;
+};
+
+class FeedforwardEngine : public SequentialEngine {
+    public:
+        FeedforwardEngine(Model *model, State *state)
+                : SequentialEngine(model, state,
+                    new FeedforwardStreamCluster(model, state)) { }
 };
 
 #endif

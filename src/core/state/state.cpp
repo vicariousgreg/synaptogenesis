@@ -6,7 +6,8 @@
 #include "util/parallel.h"
 
 State::State(Model *model)
-        : attributes(build_attributes(model)) {
+        : model(model),
+          attributes(build_attributes(model)) {
     /* Set up weight matrices */
     for (auto & conn : model->get_connections()) {
         WeightMatrix* matrix = new WeightMatrix(conn, attributes->get_matrix_depth(conn));

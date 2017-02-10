@@ -1,6 +1,7 @@
 #include <string>
 
 #include "state/rate_encoding_attributes.h"
+#include "engine/engine.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
@@ -30,6 +31,10 @@ RateEncodingAttributes::~RateEncodingAttributes() {
 #else
     free(this->neuron_parameters);
 #endif
+}
+
+Engine *RateEncodingAttributes::build_engine(Model *model, State *state) {
+    return new FeedforwardEngine(model, state);
 }
 
 #ifdef PARALLEL

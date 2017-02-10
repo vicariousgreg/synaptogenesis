@@ -67,7 +67,7 @@ void Clock::environment_loop(int iterations, bool verbose) {
     }
 }
 
-void Clock::run(Model *model, int iterations, bool verbose, bool parallel_engine) {
+void Clock::run(Model *model, int iterations, bool verbose) {
     // Ensure model is built
     model->build();
 
@@ -75,12 +75,11 @@ void Clock::run(Model *model, int iterations, bool verbose, bool parallel_engine
     this->sensory_lock.set_owner(ENVIRONMENT);
     this->motor_lock.set_owner(ENVIRONMENT);
 
-    // Build engine
     run_timer.reset();
-    if (parallel_engine)
-        this->engine = new ParallelEngine(model);
-    else
-        this->engine = new SequentialEngine(model);
+
+    // Build state
+    State *state = new State(model);
+    this->engine = state->build_engine();
     //this->engine->set_learning_flag(false);  // disable learning
     if (verbose) {
         printf("Built state.\n");
@@ -111,6 +110,7 @@ void Clock::run(Model *model, int iterations, bool verbose, bool parallel_engine
     environment_thread.join();
 
     // Free memory for engine and environment
+    delete state;
     delete this->engine;
     delete this->environment;
     this->engine = NULL;

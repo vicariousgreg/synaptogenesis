@@ -11,11 +11,17 @@
 /* Typedef for attribute kernel functions */
 typedef void(*ATTRIBUTE_KERNEL)(const Attributes*, int, int);
 
+class Engine;
+
 class Attributes {
     public:
 
         Attributes(Model *model, OutputType output_type);
         virtual ~Attributes();
+
+        /* Builds an engine based on attribute subclass requirements
+         * If none specified, uses a default parallel engine */
+        virtual Engine *build_engine(Model *model, State *state);
 
 #ifdef PARALLEL
         virtual void send_to_device();
