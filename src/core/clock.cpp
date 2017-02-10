@@ -67,7 +67,7 @@ void Clock::environment_loop(int iterations, bool verbose) {
     }
 }
 
-void Clock::run(Model *model, int iterations, bool verbose) {
+void Clock::run(Model *model, int iterations, bool verbose, bool parallel_engine) {
     // Ensure model is built
     model->build();
 
@@ -77,7 +77,10 @@ void Clock::run(Model *model, int iterations, bool verbose) {
 
     // Build engine
     run_timer.reset();
-    this->engine = new Engine(model);
+    if (parallel_engine)
+        this->engine = new ParallelEngine(model);
+    else
+        this->engine = new SequentialEngine(model);
     //this->engine->set_learning_flag(false);  // disable learning
     if (verbose) {
         printf("Built state.\n");

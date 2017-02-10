@@ -9,14 +9,33 @@ Stream::Stream(Layer *layer, State *state) : to_layer(layer), state(state) {
     cudaStreamCreate(&cuda_stream);
     finished_event = new cudaEvent_t;
     cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
-    instructions[instructions.size()-1]->add_event(finished_event);
+    if (instructions.size() > 0)
+        instructions[instructions.size()-1]->add_event(finished_event);
+    this->external_stream = false;
 #endif
 }
+
+#ifdef PARALLEL
+Stream::Stream(Layer *layer, State *state, cudaStream_t cuda_stream) :
+        to_layer(layer),
+        state(state),
+        cuda_stream(cuda_stream) {
+    // Beform DFS on dendritic tree
+    dendrite_DFS(to_layer->dendritic_root);
+
+    // Create cuda event
+    finished_event = new cudaEvent_t;
+    cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
+    if (instructions.size() > 0)
+        instructions[instructions.size()-1]->add_event(finished_event);
+    this->external_stream = true;
+}
+#endif
 
 Stream::~Stream() {
     for (auto inst : this->instructions) delete inst;
 #ifdef PARALLEL
-    cudaStreamDestroy(cuda_stream);
+    if (not this->external_stream) cudaStreamDestroy(cuda_stream);
     cudaEventDestroy(*finished_event);
     delete finished_event;
 #endif

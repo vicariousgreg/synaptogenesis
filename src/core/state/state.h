@@ -23,6 +23,7 @@ class State {
 
         /* State update functions */
         void update_states();
+        void update_states(Layer *layer);
 
         /* Getters for weight matrices */
         float* get_matrix(Connection* conn) const {

@@ -20,8 +20,6 @@ class StreamCluster {
         void launch_weight_update();
 
     private:
-        void schedule(IOType to_type);
-        void schedule_plastic();
         InstructionList sort_instructions(IOTypeVector types, bool plastic);
 
 #ifdef PARALLEL

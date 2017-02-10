@@ -54,7 +54,7 @@ class Clock {
                   environment_rate(environment_rate),
                   calc_rate(false) { }
 
-        void run(Model *model, int iterations, bool verbose);
+        void run(Model *model, int iterations, bool verbose, bool parallel_engine=true);
 
     private:
         void engine_loop(int iterations, bool verbose);

@@ -8,6 +8,9 @@
 class Stream {
     public:
         Stream(Layer *layer, State *state);
+#ifdef PARALLEL
+        Stream(Layer *layer, State *state, cudaStream_t cuda_stream);
+#endif
         virtual ~Stream();
 
         const InstructionList& get_instructions() const { return instructions; }
@@ -28,6 +31,7 @@ class Stream {
 #ifdef PARALLEL
         cudaEvent_t *finished_event;
         cudaStream_t cuda_stream;
+        bool external_stream;
 #endif
 };
 

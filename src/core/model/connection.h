@@ -34,7 +34,8 @@ class Connection {
         const bool convolutional;
 
         // Connected layers
-        const Layer *from_layer, *to_layer;
+        Layer* const from_layer;
+        Layer* const to_layer;
 
         // Connection delay
         const int delay;

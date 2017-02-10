@@ -150,6 +150,10 @@ void State::update_states() {
 #endif
 }
 
+void State::update_states(Layer *layer) {
+    this->update_states( layer->get_start_index(), layer->size);
+}
+
 void State::update_states(IOType layer_type) {
     int start_index = attributes->get_start_index(layer_type);
     int count = attributes->get_num_neurons(layer_type);
