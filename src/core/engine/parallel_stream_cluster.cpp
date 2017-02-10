@@ -2,7 +2,8 @@
 
 #include "engine/stream_cluster.h"
 
-StreamCluster::StreamCluster(Model *model, State *state) : state(state) {
+ParallelStreamCluster::ParallelStreamCluster(Model *model, State *state)
+        : StreamCluster(model, state) {
     // Build instructions
     for (auto& layer : model->get_layers())
         // Skip layers with no input connections (typically sensory)
@@ -10,10 +11,10 @@ StreamCluster::StreamCluster(Model *model, State *state) : state(state) {
             streams[layer->get_type()].push_back(new Stream(layer, state));
 
     // Schedule instructions
-    input_instructions = sort_instructions(
+    post_input_instructions = sort_instructions(
         IOTypeVector { INPUT, INPUT_OUTPUT },
         false);
-    non_input_instructions = sort_instructions(
+    pre_input_instructions = sort_instructions(
         IOTypeVector { OUTPUT, INTERNAL },
         false);
     plastic_instructions = sort_instructions(
@@ -21,13 +22,13 @@ StreamCluster::StreamCluster(Model *model, State *state) : state(state) {
         true);
 }
 
-StreamCluster::~StreamCluster() {
+ParallelStreamCluster::~ParallelStreamCluster() {
     // Delete streams
     for (auto type : IOTypes)
         for (auto stream : streams[type]) delete stream;
 }
 
-InstructionList StreamCluster::sort_instructions(
+InstructionList ParallelStreamCluster::sort_instructions(
         IOTypeVector types, bool plastic) {
 #ifdef PARALLEL
     std::map<Layer*, std::queue<Instruction* > > schedules;
@@ -63,16 +64,16 @@ InstructionList StreamCluster::sort_instructions(
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
-void StreamCluster::launch_non_input_calculations() {
+void ParallelStreamCluster::launch_pre_input_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for clear event
     wait_event(OUTPUT, this->state->clear_event);
     wait_event(INTERNAL, this->state->clear_event);
 #endif
-    for (auto& inst : this->non_input_instructions) inst->activate();
+    for (auto& inst : this->pre_input_instructions) inst->activate();
 }
 
-void StreamCluster::launch_input_calculations() {
+void ParallelStreamCluster::launch_post_input_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for input event
     // This function should not be called until this event has been
@@ -80,7 +81,7 @@ void StreamCluster::launch_input_calculations() {
     wait_event(INPUT, this->state->input_event);
     wait_event(INPUT_OUTPUT, this->state->input_event);
 #endif
-    for (auto& inst : this->input_instructions) inst->activate();
+    for (auto& inst : this->post_input_instructions) inst->activate();
 #ifdef PARALLEL
     block_stream_to(INPUT, state->state_stream);
     block_stream_to(INPUT_OUTPUT, state->state_stream);
@@ -89,7 +90,7 @@ void StreamCluster::launch_input_calculations() {
 #endif
 }
 
-void StreamCluster::launch_weight_update() {
+void ParallelStreamCluster::launch_weight_update() {
 #ifdef PARALLEL
     wait_event(INPUT, this->state->state_event);
     wait_event(INPUT_OUTPUT, this->state->state_event);
@@ -104,12 +105,12 @@ void StreamCluster::launch_weight_update() {
 /******************************************************************************/
 
 #ifdef PARALLEL
-void StreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
+void ParallelStreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
     for (auto& stream : streams[to_type])
         cudaStreamWaitEvent(stream->get_cuda_stream(), *event, 0);
 }
 
-void StreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
+void ParallelStreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
     for (auto& stream : streams[to_type])
         cudaStreamWaitEvent(cuda_stream, *stream->get_finished_event(), 0);
 }

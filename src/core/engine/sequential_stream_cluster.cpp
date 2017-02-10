@@ -1,10 +1,10 @@
 #include <queue>
 #include <set>
 
-#include "engine/sequential_stream_cluster.h"
+#include "engine/stream_cluster.h"
 
 SequentialStreamCluster::SequentialStreamCluster(Model *model, State *state)
-        : state(state) {
+        : StreamCluster(model, state) {
     // Create queue and push output layers
     std::queue<Layer*> queue;
     for (auto layer : model->get_layers(OUTPUT))
@@ -26,9 +26,16 @@ SequentialStreamCluster::SequentialStreamCluster(Model *model, State *state)
         streams.push_back(new Stream(curr_layer, state));
 #endif
 
-        for (auto conn : curr_layer->get_input_connections())
-            if (visited.find(conn->from_layer) == visited.end())
+        // Add any layers that feed into this one to if all of its
+        //     output layers have been visited
+        for (auto conn : curr_layer->get_input_connections()) {
+            if (visited.find(conn->from_layer) == visited.end()) {
+                for (auto to_conn : conn->to_layer->get_output_connections())
+                    if (visited.find(to_conn->to_layer) == visited.end())
+                        continue;
                 queue.push(conn->from_layer);
+            }
+        }
     }
 }
 
@@ -41,7 +48,7 @@ SequentialStreamCluster::~SequentialStreamCluster() {
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
-void SequentialStreamCluster::launch_calculations() {
+void SequentialStreamCluster::launch_post_input_calculations() {
 #ifdef PARALLEL
     // Ensure all layer streams wait for clear event
     // Ensure all layer streams wait for input event
