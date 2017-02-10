@@ -22,7 +22,7 @@ void Engine::stage_input() {
 
 #ifdef PARALLEL
     stream_cluster->launch_post_input_calculations();
-    state->update_states();
+    if (batch_state) state->update_states();
     if (learning_flag) stream_cluster->launch_weight_update();
 
     // Wait for input
@@ -37,7 +37,7 @@ void Engine::stage_calc() {
     cudaCheckError(NULL);
 #else
     stream_cluster->launch_post_input_calculations();
-    state->update_states();
+    if (batch_state) state->update_states();
     if (learning_flag) stream_cluster->launch_weight_update();
 #endif
 }

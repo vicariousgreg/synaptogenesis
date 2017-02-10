@@ -8,10 +8,12 @@
 
 class Engine {
     public:
-        Engine(Model *model, State *state, StreamCluster *stream_cluster)
+        Engine(Model *model, State *state,
+            StreamCluster *stream_cluster, bool batch_state)
                 : model(model),
                   state(state),
                   stream_cluster(stream_cluster),
+                  batch_state(batch_state),
                   learning_flag(true) { }
 
         virtual ~Engine() { delete this->stream_cluster; }
@@ -30,24 +32,28 @@ class Engine {
         State *state;
         StreamCluster *stream_cluster;
         bool learning_flag;
+        bool batch_state;
 };
 
 class ParallelEngine : public Engine {
     public:
         ParallelEngine(Model *model, State *state)
-            : Engine(model, state, new ParallelStreamCluster(model, state)) { }
+            : Engine(model, state,
+                new ParallelStreamCluster(model, state), true) { }
 };
 
 class SequentialEngine : public Engine {
     public:
         SequentialEngine(Model *model, State *state)
-            : Engine(model, state, new SequentialStreamCluster(model, state)) { }
+            : Engine(model, state,
+                new SequentialStreamCluster(model, state), false) { }
 };
 
 class FeedforwardEngine : public Engine {
     public:
         FeedforwardEngine(Model *model, State *state)
-            : Engine(model, state, new FeedforwardStreamCluster(model, state)) { }
+            : Engine(model, state,
+                new FeedforwardStreamCluster(model, state), false) { }
 };
 
 #endif
