@@ -8,9 +8,8 @@
 State::State(Model *model)
         : attributes(build_attributes(model)) {
     /* Set up weight matrices */
-    int matrix_depth = this->attributes->get_matrix_depth();
     for (auto & conn : model->get_connections()) {
-        WeightMatrix* matrix = new WeightMatrix(conn, matrix_depth);
+        WeightMatrix* matrix = new WeightMatrix(conn, attributes->get_matrix_depth(conn));
         this->weight_matrices[conn] = matrix;
         this->attributes->process_weight_matrix(matrix);
 #ifdef PARALLEL

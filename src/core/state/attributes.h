@@ -33,7 +33,7 @@ class Attributes {
         virtual KERNEL get_updater(ConnectionType type) { return NULL; }
 
         // Depth of weight matrices
-        virtual int get_matrix_depth() { return 1; }
+        virtual int get_matrix_depth(Connection *conn) { return 1; }
 
         // Weight matrix processor
         virtual void process_weight_matrix(WeightMatrix* matrix) { }

@@ -12,7 +12,10 @@ class SpikingAttributes : public Attributes {
         /* Trace learning rules */
         virtual KERNEL get_activator(ConnectionType type);
         virtual KERNEL get_updater(ConnectionType type);
-        virtual int get_matrix_depth() { return 3; }
+        virtual int get_matrix_depth(Connection* conn) {
+            return (conn->convolutional) ?
+                (conn->to_layer->size + 2) : 3;
+        }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
 #ifdef PARALLEL

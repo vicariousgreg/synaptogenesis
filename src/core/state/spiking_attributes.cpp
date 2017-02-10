@@ -152,7 +152,8 @@ CALC_CONVERGENT(update_convergent_trace,
 CALC_ONE_TO_ONE(update_convolutional_trace,
     EXTRACT_TRACES;
     EXTRACT_BASELINES;,
-    UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]));
+    UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]);
+    );
 
 KERNEL SpikingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {

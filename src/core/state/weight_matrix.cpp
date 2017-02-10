@@ -79,15 +79,7 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn
     int num_weights = conn->get_num_weights();
     matrix_size = num_weights;
     // Multiply by depth if plastic
-    if (conn->plastic) {
-        // Parallel convergent matrices need extra layers for each
-        //     destination neuron to avoid race conditions
-        if (conn->convolutional) {
-            matrix_size += num_weights * (1 + conn->to_layer->size);
-        } else {
-            matrix_size *= matrix_depth;
-        }
-    }
+    if (conn->plastic) matrix_size *= matrix_depth;
 
     // Allocate matrix on host
     // If parallel, it will be copied below
