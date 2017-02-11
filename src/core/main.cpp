@@ -391,24 +391,24 @@ Model* build_dendritic_model(std::string engine_name) {
 
     // Input branch 1
     auto node1 = structure->spawn_dendritic_node("exc_thalamus");
-    structure->connect_layers_internal(node1, "input_layer1", "exc_thalamus",
+    structure->connect_layers_internal(node1, "input_layer1",
         false, 0, 5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("input_layer1", "inh_thalamus1",
         false, 0, 10, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_cortex", "inh_thalamus1",
         true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
-    structure->connect_layers_internal(node1, "inh_thalamus1", "exc_thalamus",
+    structure->connect_layers_internal(node1, "inh_thalamus1",
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
     // Input branch 2
     auto node2 = structure->spawn_dendritic_node("exc_thalamus");
-    structure->connect_layers_internal(node2, "input_layer2", "exc_thalamus",
+    structure->connect_layers_internal(node2, "input_layer2",
         false, 0, 5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("input_layer2", "inh_thalamus2",
         false, 0, 10, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("exc_cortex", "inh_thalamus2",
         true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
-    structure->connect_layers_internal(node2, "inh_thalamus2", "exc_thalamus",
+    structure->connect_layers_internal(node2, "inh_thalamus2",
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
     structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",

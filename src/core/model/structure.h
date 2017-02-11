@@ -59,8 +59,8 @@ class Structure {
         /* Dendritic internal connection functions */
         DendriticNode *spawn_dendritic_node(std::string to_layer_name);
 
-        Connection* connect_layers_internal(DendriticNode *node,
-            std::string from_layer_name, std::string to_layer_name,
+        Connection* connect_layers_internal(
+            DendriticNode *node, std::string from_layer_name,
             bool plastic, int delay, float max_weight, ConnectionType type,
             Opcode opcode, std::string params);
 

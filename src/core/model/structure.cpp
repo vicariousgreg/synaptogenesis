@@ -107,18 +107,15 @@ DendriticNode *Structure::spawn_dendritic_node(std::string to_layer_name) {
     return to_layer->dendritic_root->add_child();
 }
 
-Connection* Structure::connect_layers_internal(DendriticNode *node,
-        std::string from_layer_name, std::string to_layer_name,
+Connection* Structure::connect_layers_internal(
+        DendriticNode *node, std::string from_layer_name,
         bool plastic, int delay, float max_weight, ConnectionType type,
         Opcode opcode, std::string params) {
     Layer *from_layer = find_layer(from_layer_name);
-    Layer *to_layer = find_layer(to_layer_name);
+    Layer *to_layer = node->to_layer;
     if (from_layer == NULL)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
-    if (to_layer == NULL)
-        ErrorManager::get_instance()->log_error(
-            "Could not find layer \"" + to_layer_name + "\"!");
 
     Connection *conn = new Connection(
         from_layer, to_layer,
