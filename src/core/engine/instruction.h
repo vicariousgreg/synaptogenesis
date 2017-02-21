@@ -124,12 +124,14 @@ class StateUpdateInstruction : public Instruction {
     public:
         StateUpdateInstruction(Layer *to_layer, State *state)
             : Instruction(to_layer),
+              start_index(state->get_start_index(to_layer)),
               attributes(state->get_attributes_pointer()),
               attribute_kernel(state->get_attribute_kernel()) { }
 
         void activate();
 
     protected:
+        const int start_index;
         const Attributes *attributes;
         ATTRIBUTE_KERNEL attribute_kernel;
 };

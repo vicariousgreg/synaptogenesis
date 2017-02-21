@@ -1,12 +1,16 @@
 #include <cstdlib>
 #include <cstring>
+
 #include "io/buffer.h"
+#include "model/model.h"
 #include "util/parallel.h"
 
-Buffer::Buffer(int input_size, int output_size, OutputType output_type) :
-        input_size(input_size),
-        output_size(output_size),
+Buffer::Buffer(Model* model, OutputType output_type) :
         output_type(output_type) {
+    int input_output_size = model->get_num_neurons(INPUT_OUTPUT);
+    int input_size = input_output_size + model->get_num_neurons(INPUT);
+    int output_size = input_output_size + model->get_num_neurons(OUTPUT);
+
 #ifdef PARALLEL
     // Allocate pinned memory
     if (input_size > 0)
@@ -27,6 +31,24 @@ Buffer::Buffer(int input_size, int output_size, OutputType output_type) :
         this->output = (Output*)calloc(output_size, sizeof(Output));
     else this->output = NULL;
 #endif
+
+    // Set up maps
+    int input_index = 0;
+    int output_index = 0;
+    for (auto& layer : model->get_layers(INPUT)) {
+        input_map[layer] = input + input_index;
+        input_index += layer->size;
+    }
+    for (auto& layer : model->get_layers(INPUT_OUTPUT)) {
+        input_map[layer] = input + input_index;
+        input_index += layer->size;
+        output_map[layer] = output + output_index;
+        output_index += layer->size;
+    }
+    for (auto& layer : model->get_layers(OUTPUT)) {
+        output_map[layer] = output + output_index;
+        output_index += layer->size;
+    }
 }
 
 Buffer::~Buffer() {
@@ -41,15 +63,10 @@ Buffer::~Buffer() {
 #endif
 }
 
-void Buffer::clear_input() {
-    for (int nid = 0 ; nid < this->input_size; ++nid)
-        this->input[nid] = 0.0;
+void Buffer::set_input(Layer* layer, float* source) {
+    memcpy(this->get_input(layer), source, layer->size * sizeof(float));
 }
 
-void Buffer::set_input(int offset, int size, float* source) {
-    memcpy(&this->input[offset], source, size * sizeof(float));
-}
-
-void Buffer::set_output(int offset, int size, Output* source) {
-    memcpy(&this->output[offset], source, size * sizeof(Output));
+void Buffer::set_output(Layer* layer, Output* source) {
+    memcpy(this->get_output(layer), source, layer->size * sizeof(Output));
 }

@@ -24,7 +24,7 @@ void Instruction::record_events() {
 InitializeInstruction::InitializeInstruction(Layer *layer, State *state)
         : Instruction(layer) {
     int num_neurons = state->get_num_neurons();
-    this->dst = state->get_input() + to_layer->get_start_index();
+    this->dst = state->get_input(to_layer);
 }
 
 void ClearInstruction::activate() {
@@ -100,7 +100,7 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
         : Instruction(parent->to_layer),
           init(child->register_index != 0) {
     int num_neurons = state->get_num_neurons();
-    float *input = state->get_input() + to_layer->get_start_index();
+    float *input = state->get_input(to_layer);
     this->src = input + (num_neurons * child->register_index);
     this->dst = input + (num_neurons * parent->register_index);
 }
@@ -119,8 +119,8 @@ void DendriticInstruction::activate() {
 
 InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state)
         : Instruction(layer) {
-    this->src = state->get_buffer()->get_input() + to_layer->get_input_index();
-    this->dst = state->get_input() + to_layer->get_start_index();
+    this->src = state->get_buffer()->get_input(to_layer);
+    this->dst = state->get_input(to_layer);
 }
 
 void InputTransferInstruction::activate() {
@@ -137,8 +137,8 @@ void InputTransferInstruction::activate() {
 
 OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state)
         : Instruction(layer) {
-    this->src = state->get_output() + to_layer->get_start_index();
-    this->dst = state->get_buffer()->get_output() + to_layer->get_output_index();
+    this->src = state->get_output(to_layer);
+    this->dst = state->get_buffer()->get_output(to_layer);
 }
 
 void OutputTransferInstruction::activate() {
@@ -156,10 +156,10 @@ void OutputTransferInstruction::activate() {
 void StateUpdateInstruction::activate() {
 #ifdef PARALLEL
     attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(
-        attributes, to_layer->get_start_index(), to_layer->size);
+        attributes, start_index, to_layer->size);
     cudaCheckError("Failed to update neuron state/output!");
     Instruction::record_events();
 #else
-    attribute_kernel(attributes, to_layer->get_start_index(), to_layer->size);
+    attribute_kernel(attributes, start_index, to_layer->size);
 #endif
 }

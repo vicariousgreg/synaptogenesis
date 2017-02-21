@@ -24,7 +24,7 @@ PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)
 }
 
 void PrintOutputModule::report_output(Buffer *buffer) {
-    Output* output = buffer->get_output();
+    Output* output = buffer->get_output(this->layer);
     OutputType output_type = buffer->output_type;
 
     // Print bar
@@ -42,7 +42,7 @@ void PrintOutputModule::report_output(Buffer *buffer) {
             //  -> Bins intensity into a constant number of bins
 
             float fraction;
-            Output out_value = output[index+layer->get_output_index()];
+            Output out_value = output[index];
             switch (output_type) {
                 case FLOAT:
                     fraction = out_value.f;

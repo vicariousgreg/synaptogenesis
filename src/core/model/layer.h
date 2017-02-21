@@ -29,9 +29,6 @@ class Layer {
         }
 
         /* Constant getters */
-        int get_start_index() const { return start_index; }
-        int get_input_index() const { return input_index; }
-        int get_output_index() const { return output_index; }
         IOType get_type() const { return type; }
         Module* get_input_module() const { return input_module; }
         const ModuleList get_output_modules() const { return output_modules; }
@@ -40,6 +37,9 @@ class Layer {
 
         // Layer name
         const std::string name;
+
+        // Layer ID
+        const int id;
 
         // Housing structure
         Structure* const structure;
@@ -61,6 +61,8 @@ class Layer {
         friend class Structure;
         friend class Connection;
 
+        static int count;
+
         Layer(Structure *structure, std::string name,
             int rows, int columns, std::string params, float noise=0.0);
 
@@ -68,9 +70,6 @@ class Layer {
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
         void add_module(Module *module);
-
-        // Start indices
-        int start_index, input_index, output_index;
 
         // Layer type (input, output, input/output, internal)
         IOType type;
@@ -82,7 +81,6 @@ class Layer {
         // Input and output connections
         ConnectionList input_connections;
         ConnectionList output_connections;
-
 };
 
 typedef std::vector<Layer*> LayerList;

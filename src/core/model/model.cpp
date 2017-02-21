@@ -3,7 +3,7 @@
 #include "util/error_manager.h"
 
 Model::Model(std::string engine_name) :
-        num_neurons(0),
+        total_neurons(0),
         engine_name(engine_name) {}
 
 Model::~Model() {
@@ -27,9 +27,9 @@ void Model::add_structure(Structure *structure) {
 void Model::build() {
     all_layers.clear();
     connections.clear();
-    this->num_neurons = 0;
-    for (auto type : IOTypes)
-        layers[type].clear();
+    this->total_neurons = 0;
+    for (auto type : IOTypes) this->num_neurons[type] = 0;
+    for (auto type : IOTypes) layers[type].clear();
 
     // Extract layers and connections from structures
     for (auto& it : this->structures) {
@@ -44,7 +44,8 @@ void Model::build() {
     // Sort layers
     for (auto& layer : this->all_layers) {
         layers[layer->type].push_back(layer);
-        this->num_neurons += layer->size;
+        this->total_neurons += layer->size;
+        this->num_neurons[layer->type] += layer->size;
     }
 
     // Clear old list
@@ -53,29 +54,4 @@ void Model::build() {
     for (auto type : IOTypes)
         all_layers.insert(this->all_layers.end(),
             layers[type].begin(), layers[type].end());
-
-    // Adjust indices and ids
-    int start_index = 0;
-    for (auto& layer : this->all_layers) {
-        layer->start_index = start_index;
-        start_index += layer->size;
-    }
-
-    // Set input and output indices
-    int input_index = 0;
-    for (auto& layer : this->layers[INPUT]) {
-        layer->input_index = input_index;
-        input_index += layer->size;
-    }
-    int output_index = 0;
-    for (auto& layer : this->layers[INPUT_OUTPUT]) {
-        layer->input_index = input_index;
-        layer->output_index = output_index;
-        input_index += layer->size;
-        output_index += layer->size;
-    }
-    for (auto& layer : this->layers[OUTPUT]) {
-        layer->output_index = output_index;
-        output_index += layer->size;
-    }
 }

@@ -27,7 +27,7 @@ PrintRateModule::PrintRateModule(Layer *layer, std::string params)
 }
 
 void PrintRateModule::report_output(Buffer *buffer) {
-    Output* output = buffer->get_output();
+    Output* output = buffer->get_output(this->layer);
     OutputType output_type = buffer->output_type;
 
     timesteps++;
@@ -48,7 +48,7 @@ void PrintRateModule::report_output(Buffer *buffer) {
             // Divide by mask
             //  -> Bins intensity into a constant number of bins
 
-            Output out_value = output[index+layer->get_output_index()];
+            Output out_value = output[index];
             switch (output_type) {
                 case FLOAT:
                     totals[index] += out_value.f;

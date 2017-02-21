@@ -18,10 +18,12 @@ RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model,
         allocate_host(total_neurons, sizeof(RateEncodingParameters));
 
     // Fill in table
+    int start_index = 0;
     for (auto& layer : model->get_layers()) {
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
-            neuron_parameters[layer->get_start_index()+j] = params;
+            neuron_parameters[start_index+j] = params;
+        start_index += layer->size;
     }
 }
 

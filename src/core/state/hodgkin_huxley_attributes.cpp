@@ -23,10 +23,10 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model)
         allocate_host(total_neurons, sizeof(HodgkinHuxleyParameters));
 
     // Fill in table
+    int start_index = 0;
     for (auto& layer : model->get_layers()) {
         HodgkinHuxleyParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
-            int start_index = layer->get_start_index();
             neuron_parameters[start_index+j] = params;
             voltage[start_index+j] = -64.9997224337;
             h[start_index+j] = 0.596111046355;
@@ -34,6 +34,7 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model)
             n[start_index+j] = 0.31768116758;
             current_trace[start_index+j] = 0.0;
         }
+        start_index += layer->size;
     }
 }
 

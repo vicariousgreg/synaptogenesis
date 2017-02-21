@@ -19,10 +19,7 @@ State::State(Model *model)
     }
 
     // Create the buffer
-    int input_output_size = attributes->get_num_neurons(INPUT_OUTPUT);
-    int input_size = input_output_size + attributes->get_num_neurons(INPUT);
-    int output_size = input_output_size + attributes->get_num_neurons(OUTPUT);
-    this->buffer = new Buffer(input_size, output_size, attributes->output_type); 
+    this->buffer = new Buffer(model, attributes->output_type);
 
 #ifdef PARALLEL
     cudaStreamCreate(&this->io_stream);

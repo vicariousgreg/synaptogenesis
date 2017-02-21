@@ -38,7 +38,7 @@ void Visualizer::update() {
         LayerInfo &info = gui->layers[i];
         if (info.output) {
             guint8* data = gui->pixbufs[i]->get_pixels();
-            Output *output = buffer->get_output() + info.layer->get_output_index();
+            Output *output = buffer->get_output(info.layer);
 
             for (int j = 0; j < info.layer->size; ++j)
                 data[j*4 + 3] = 255 - convert(output[j], output_type);

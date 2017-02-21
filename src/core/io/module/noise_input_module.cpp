@@ -15,9 +15,8 @@ NoiseInputModule::NoiseInputModule(Layer *layer, std::string params)
 }
 
 void NoiseInputModule::feed_input(Buffer *buffer) {
-    int offset = this->layer->get_input_index();
-    float *input = buffer->get_input();
+    float *input = buffer->get_input(this->layer);
     for (int nid = 0 ; nid < this->layer->size; ++nid) {
-        input[offset + nid] = fRand(0, this->max_value);
+        input[nid] = fRand(0, this->max_value);
     }
 }

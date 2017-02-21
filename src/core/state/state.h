@@ -20,27 +20,23 @@ class State {
             return attributes->build_engine(model, this);
         }
 
-        /* State update functions */
-        void update_states();
-        void update_states(Layer *layer);
-
         /* Getters for weight matrices */
         float* get_matrix(Connection* conn) const {
             return weight_matrices.at(conn)->get_data();
         }
 
         /* Getters for IO data */
-        float* get_input() const { return attributes->input; }
+        float* get_input(Layer *layer) const { return attributes->get_input(layer->id); }
         OutputType get_output_type() const { return attributes->output_type; }
-        Output* get_recent_output() const { return attributes->recent_output; }
-        Output* get_output(int word_index = 0) const {
-            return attributes->output + (attributes->total_neurons * word_index);
+        Output* get_output(Layer *layer, int word_index = 0) const {
+            return attributes->get_output(layer->id, word_index);
         }
 
         /* Getters for neuron count related information */
         int get_num_neurons() const { return attributes->total_neurons; }
-        int get_num_neurons(IOType type) const { return attributes->get_num_neurons(type); }
-        int get_start_index(IOType type) const { return attributes->get_start_index(type); }
+        int get_start_index(Layer *layer) const {
+            return attributes->get_start_index(layer->id);
+        }
 
         /* Constant getter so that nobody else changes the Attributes
          * This way, kernels can access attribute data without using a getter
@@ -62,9 +58,6 @@ class State {
 #endif
 
     private:
-        void update_states(int start_index, int count);
-        void update_states(IOType layer_type);
-
         Model *model;
         Attributes *attributes;
         Buffer *buffer;

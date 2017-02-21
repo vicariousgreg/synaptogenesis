@@ -7,6 +7,7 @@
 #include "engine/kernel/extractor.h"
 #include "engine/kernel/activator_kernel.h"
 #include "util/constants.h"
+#include "util/error_manager.h"
 
 /* Typedef for attribute kernel functions */
 typedef void(*ATTRIBUTE_KERNEL)(const Attributes*, int, int);
@@ -44,9 +45,14 @@ class Attributes {
         // Weight matrix processor
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
 
-        /* Constant getters */
-        int get_num_neurons(IOType type) const { return num_neurons[type]; }
-        int get_start_index(IOType type) const { return start_indices[type]; }
+        int get_start_index(int id) const { return start_indices.at(id); }
+        float* get_input(int id) const { return input + start_indices.at(id); }
+        Output* get_output(int id, int word_index = 0) const {
+            if (word_index >= HISTORY_SIZE)
+                ErrorManager::get_instance()->log_error(
+                    "Cannot retrieve output word index past history length!");
+            return output + (total_neurons * word_index) + start_indices.at(id);
+        }
 
         // Number of neurons
         const int total_neurons;
@@ -54,7 +60,6 @@ class Attributes {
         // Neuron IO data
         EXTRACTOR extractor;
         const OutputType output_type;
-        Output* recent_output;
         Output* output;
         float* input;
 
@@ -63,9 +68,8 @@ class Attributes {
         Attributes *pointer;
 
     protected:
-        int num_neurons[sizeof(IOTypes)];
-        int start_indices[sizeof(IOTypes)];
         int max_input_registers;
+        std::map<int, int> start_indices;
 };
 
 Attributes *build_attributes(Model *model);

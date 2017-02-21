@@ -553,7 +553,7 @@ Model* build_re_model() {
     std::string output_name = "visualizer_output";
 
     structure->add_module("in", "random_input", "1 10");
-    structure->add_module("hid", output_name, "8");
+    //structure->add_module("hid", output_name, "8");
     structure->add_module("out", output_name, "8");
 
     model->add_structure(structure);

@@ -2,19 +2,19 @@
 #include "io/module/module.h"
 #include "util/error_manager.h"
 
+int Layer::count = 0;
+
 Layer::Layer(Structure* structure, std::string name,
     int rows, int columns, std::string params, float noise) :
         name(name),
+        id(Layer::count++),
         structure(structure),
-        start_index(0),
         rows(rows),
         columns(columns),
         size(rows * columns),
         params(params),
         noise(noise),
         type(INTERNAL),
-        input_index(0),
-        output_index(0),
         input_module(NULL),
         dendritic_root(new DendriticNode(0, this)) { }
 

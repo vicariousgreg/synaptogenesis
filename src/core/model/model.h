@@ -26,7 +26,8 @@ class Model {
         void add_structure(Structure *structure);
 
         /* Gets the total neuron count */
-        int get_num_neurons() const { return num_neurons; }
+        int get_num_neurons() const { return total_neurons; }
+        int get_num_neurons(IOType type) const { return num_neurons[type]; }
 
         /* Getters for constant vector references */
         const ConnectionList& get_connections() const { return connections; }
@@ -53,7 +54,8 @@ class Model {
         ConnectionList connections;
 
         // Total number of neurons
-        int num_neurons;
+        int total_neurons;
+        int num_neurons[sizeof(IOTypes)];
 };
 
 #endif

@@ -39,17 +39,11 @@ Attributes::Attributes(Model *model, OutputType output_type)
         : output_type(output_type),
           total_neurons(model->get_num_neurons()),
           pointer(this) {
-    // Determine start indices and number of neurons for each type
+    // Determine start indices for each layer
     int curr_index = 0;
-    for (auto layer_type : IOTypes) {
-        auto layers = model->get_layers(layer_type);
-        int size = 0;
-        for (int i = 0; i < layers.size(); ++i)
-            size += layers[i]->size;
-
-        this->start_indices[layer_type] = curr_index;
-        this->num_neurons[layer_type] = size;
-        curr_index += size;
+    for (auto& layer : model->get_layers()) {
+        start_indices[layer->id] = curr_index;
+        curr_index += layer->size;
     }
 
     // Determine how many input cells are needed
@@ -69,9 +63,6 @@ Attributes::Attributes(Model *model, OutputType output_type)
 
     // Retrieve extractor
     get_extractor(&this->extractor, output_type);
-
-    // Create pointer to most recent word of output
-    this->recent_output = this->output + ((HISTORY_SIZE-1) * this->total_neurons);
 }
 
 Attributes::~Attributes() {
@@ -102,8 +93,5 @@ void Attributes::send_to_device() {
     free(this->output);
     this->input = device_input;
     this->output = device_output;
-
-    // Create pointer to most recent word of output
-    this->recent_output = this->output + ((HISTORY_SIZE-1) * this->total_neurons);
 }
 #endif

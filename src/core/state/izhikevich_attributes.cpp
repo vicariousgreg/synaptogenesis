@@ -62,14 +62,15 @@ IzhikevichAttributes::IzhikevichAttributes(Model* model)
         allocate_host(total_neurons, sizeof(IzhikevichParameters));
 
     // Fill in table
+    int start_index = 0;
     for (auto& layer : model->get_layers()) {
         IzhikevichParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
-            int start_index = layer->get_start_index();
             neuron_parameters[start_index+j] = params;
             voltage[start_index+j] = params.c;
             recovery[start_index+j] = params.b * params.c;
         }
+        start_index += layer->size;
     }
 }
 

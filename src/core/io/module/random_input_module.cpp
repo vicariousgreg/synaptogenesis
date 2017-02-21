@@ -64,9 +64,8 @@ void RandomInputModule::feed_input(Buffer *buffer) {
         shuffle(this->random_values, this->max_value, layer->size);
     }
 
-    int offset = this->layer->get_input_index();
-    float *input = buffer->get_input();
+    float *input = buffer->get_input(this->layer);
     for (int nid = 0 ; nid < this->layer->size; ++nid) {
-        input[offset + nid] = this->random_values[nid];
+        input[nid] = this->random_values[nid];
     }
 }

@@ -33,11 +33,7 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         ErrorManager::get_instance()->log_error(
             "Invalid delay in connection!");
 
-    destination_outputs =
-        state->get_output(word_index)
-        + conn->to_layer->get_start_index();
-    outputs = state->get_output(word_index)
-                + conn->from_layer->get_start_index();
-    inputs = state->get_input()
-                + conn->to_layer->get_start_index();
+    destination_outputs = state->get_output(conn->to_layer, word_index);
+    outputs = state->get_output(conn->from_layer, word_index);
+    inputs = state->get_input(conn->to_layer);
 }

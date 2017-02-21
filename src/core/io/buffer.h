@@ -1,29 +1,37 @@
 #ifndef buffer_h
 #define buffer_h
 
+#include <map>
+
+#include "model/layer.h"
 #include "util/constants.h"
+
+class Model;
 
 class Buffer {
     public:
-        Buffer(int input_size, int output_size, OutputType output_type);
+        Buffer(Model *model, OutputType output_type);
         virtual ~Buffer();
 
         /* IO setters */
-        void clear_input();
-        void set_input(int offset, int size, float* source);
-        void set_output(int offset, int size, Output* source);
+        void set_input(Layer *layer, float* source);
+        void set_output(Layer *layer, Output* source);
 
         /* IO getters */
-        float* get_input() const { return input; }
-        Output* get_output() const { return output; }
+        float* get_input(Layer *layer) { return input_map[layer]; }
+        Output* get_output(Layer *layer) { return output_map[layer]; }
 
         const OutputType output_type;
-        const int input_size;
-        const int output_size;
 
     private:
         float *input;
         Output *output;
+
+        int input_size;
+        int output_size;
+
+        std::map<Layer*, float*> input_map;
+        std::map<Layer*, Output*> output_map;
 };
 
 #endif
