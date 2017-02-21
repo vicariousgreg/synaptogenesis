@@ -19,6 +19,8 @@
 #include <math.h>
 
 #include "cuda_runtime.h"
+#include "curand.h"
+#include "curand_kernel.h"
 #include "device_launch_parameters.h"
 #include "assert.h"
 
@@ -29,51 +31,23 @@
 #define MAX_THREADS 1024
 #define MAX_BLOCKS 65535
 
-inline int calc_threads(int computations) {
-    return IDEAL_THREADS;
-}
+int calc_threads(int computations);
+int calc_blocks(int computations, int threads=IDEAL_THREADS);
 
-inline int calc_blocks(int computations, int threads=IDEAL_THREADS) {
-    return ceil((float) computations / calc_threads(computations));
-}
-
-inline void cudaSync() {
-    cudaDeviceSynchronize();
-}
+void cudaSync();
 
 #define cudaCheckError(msg) { gpuAssert(__FILE__, __LINE__, msg); }
-
-inline void gpuAssert(const char* file, int line, const char* msg) {
-    cudaError_t e = cudaGetLastError();
-    if (e != cudaSuccess) {
-        printf("Cuda failure (%s: %d): '%s'\n", file, line, cudaGetErrorString(e));
-        ErrorManager::get_instance()->log_error(msg);
-    }
-}
+void gpuAssert(const char* file, int line, const char* msg);
 
 /** Checks cuda memory usage and availability */
-inline void check_memory() {
-    // show memory usage of GPU
-    size_t free_byte ;
-    size_t total_byte ;
-    cudaMemGetInfo( &free_byte, &total_byte ) ;
+void check_memory();
+void* allocate_device(int count, int size, void* source_data);
 
-    double free_db = (double)free_byte ;
-    double total_db = (double)total_byte ;
-    double used_db = total_db - free_db ;
-    printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
-        used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
-}
-
-inline void* allocate_device(int count, int size, void* source_data) {
-    void* ptr;
-    cudaMalloc(&ptr, count * size);
-    cudaCheckError("Failed to allocate memory on device for neuron state!");
-    if (source_data != NULL)
-        cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
-    cudaCheckError("Failed to initialize memory on device for neuron state!");
-    return ptr;
-}
+// Random state data
+extern DEVICE curandState_t* cuda_rand_states;
+GLOBAL void init_curand(int count);
+void init_cuda_rand(int count);
+void free_cuda_rand();
 
 #endif
 

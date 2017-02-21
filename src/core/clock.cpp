@@ -1,4 +1,5 @@
 #include "clock.h"
+#include "util/parallel.h"
 
 void Clock::engine_loop(int iterations, bool verbose) {
     this->run_timer.reset();
@@ -71,6 +72,14 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     // Ensure model is built
     model->build();
 
+#ifdef PARALLEL
+    // Initialize cuda random states
+    int max_size = 0;
+    for (auto& layer : model->get_layers())
+        if (layer->size > max_size) max_size = layer->size;
+    init_cuda_rand(max_size);
+#endif
+
     // Initialization
     this->sensory_lock.set_owner(ENVIRONMENT);
     this->motor_lock.set_owner(ENVIRONMENT);
@@ -115,4 +124,8 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     delete this->environment;
     this->engine = NULL;
     this->environment = NULL;
+
+#ifdef PARALLEL
+    free_cuda_rand();
+#endif
 }

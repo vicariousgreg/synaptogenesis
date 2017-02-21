@@ -33,8 +33,8 @@ class Structure {
         /*******************************/
         /************ LAYERS ***********/
         /*******************************/
-        void add_layer(std::string name, int rows, int columns, std::string params);
-        void add_layer_from_image(std::string name, std::string path, std::string params);
+        void add_layer(std::string name, int rows, int columns, std::string params, float noise=0.0);
+        void add_layer_from_image(std::string name, std::string path, std::string params, float noise=0.0);
         const LayerList& get_layers() const { return layers; }
         const ConnectionList& get_connections() const { return connections; }
 
@@ -46,14 +46,18 @@ class Structure {
             Opcode opcode, std::string params);
 
         Connection* connect_layers_expected(
-            std::string from_layer_name, std::string to_layer_name, std::string new_layer_params,
+            std::string from_layer_name, std::string to_layer_name,
+            std::string new_layer_params,
             bool plastic, int delay, float max_weight,
-            ConnectionType type, Opcode opcode, std::string params);
+            ConnectionType type, Opcode opcode, std::string params,
+            float noise=0.0);
 
         Connection* connect_layers_matching(
-            std::string from_layer_name, std::string to_layer_name, std::string new_layer_params,
+            std::string from_layer_name, std::string to_layer_name,
+            std::string new_layer_params,
             bool plastic, int delay, float max_weight,
-            ConnectionType type, Opcode opcode, std::string params);
+            ConnectionType type, Opcode opcode, std::string params,
+            float noise=0.0);
 
 
         /* Dendritic internal connection functions */

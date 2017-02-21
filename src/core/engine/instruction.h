@@ -12,9 +12,13 @@
 
 class Instruction {
     public:
-        virtual bool is_plastic() const = 0;
-        virtual void activate() = 0;
-        virtual void update() = 0;
+        Instruction(Layer *layer);
+
+        virtual void activate();
+        virtual void update() { }
+        virtual bool is_plastic() const { return false; }
+
+        Layer* const to_layer;
 
 #ifdef PARALLEL
         void set_stream(cudaStream_t *stream) { this->stream = stream; }
@@ -28,24 +32,46 @@ class Instruction {
 #endif
 };
 
+class InitializeInstruction : public Instruction {
+    public:
+        InitializeInstruction(Layer *layer, State *state);
+
+    protected:
+        float *dst;
+};
+
+class ClearInstruction : public InitializeInstruction {
+    public:
+        ClearInstruction(Layer *layer, State *state)
+                : InitializeInstruction(layer, state) { }
+
+        void activate();
+};
+
+class RandomizeInstruction : public InitializeInstruction {
+    public:
+        RandomizeInstruction(Layer *layer, State *state)
+                : InitializeInstruction(layer, state),
+                  clear(layer->get_input_module() == NULL) { }
+
+        void activate();
+
+    protected:
+        bool clear;
+};
+
 class SynapseInstruction : public Instruction {
     public:
         SynapseInstruction(Connection *conn, State *state);
 
         void activate();
         void update();
-
-        /* Learning related functions.
-         * The connection's learning flag takes precedence for plasticity.
-         * An instruction with a non-plastic connection cannot be made plastic
-         *     for data allocation related reasons. */
         bool is_plastic() const { return kernel_data.plastic; }
-        void enable_learning();
 
         const ConnectionType type;
         Connection* const connection;
 
-    private:
+    protected:
         EXTRACTOR extractor;
         KERNEL activator;
         KERNEL updater;
@@ -57,16 +83,11 @@ class DendriticInstruction : public Instruction {
         DendriticInstruction(DendriticNode *parent,
             DendriticNode *child, State *state);
 
-        bool is_plastic() const { return false; }
         void activate();
-        void update() { }
 
-        Layer* const to_layer;
-        const int size;
-        const bool clear;
-
-    private:
+    protected:
         float *src, *dst;
+        bool clear;
 };
 
 typedef std::vector<Instruction*> InstructionList;

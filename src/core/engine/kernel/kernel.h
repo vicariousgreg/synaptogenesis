@@ -5,6 +5,7 @@
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
 #include "util/constants.h"
+#include "util/tools.h"
 
 /* Typedef for kernel functions, which just take KernelData */
 typedef void(*KERNEL)(const KernelData);
@@ -36,6 +37,27 @@ inline GLOBAL void clear_data(float* data, int count) {
     for (int nid = 0; nid < count; ++nid)
 #endif
         data[nid] = 0.0;
+}
+
+/* Randomizes input data */
+inline GLOBAL void randomize_data(float* data, int count, float max, bool clear) {
+#ifdef PARALLEL
+    int nid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (nid < count) {
+        float val = curand_uniform(&cuda_rand_states[nid]) * max;
+        if (clear)
+            data[nid] = val;
+        else
+            data[nid] += val;
+    }
+#else
+    if (clear)
+        for (int nid = 0; nid < count; ++nid)
+            data[nid] = fRand(0.0, max);
+    else
+        for (int nid = 0; nid < count; ++nid)
+            data[nid] += fRand(0.0, max);
+#endif
 }
 
 /******************************************************************************/

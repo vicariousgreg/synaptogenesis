@@ -6,9 +6,7 @@ ParallelStreamCluster::ParallelStreamCluster(Model *model, State *state)
         : StreamCluster(model, state) {
     // Build instructions
     for (auto& layer : model->get_layers())
-        // Skip layers with no input connections (typically sensory)
-        if (layer->get_input_connections().size() > 0) 
-            streams[layer->get_type()].push_back(new Stream(layer, state));
+        streams[layer->get_type()].push_back(new Stream(layer, state));
 
     // Schedule instructions
     post_input_instructions = sort_instructions(
@@ -65,11 +63,6 @@ InstructionList ParallelStreamCluster::sort_instructions(
 /******************************************************************************/
 
 void ParallelStreamCluster::launch_pre_input_calculations() {
-#ifdef PARALLEL
-    // Ensure all layer streams wait for clear event
-    wait_event(OUTPUT, this->state->clear_event);
-    wait_event(INTERNAL, this->state->clear_event);
-#endif
     for (auto& inst : this->pre_input_instructions) inst->activate();
 }
 

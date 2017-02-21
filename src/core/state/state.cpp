@@ -32,14 +32,12 @@ State::State(Model *model)
 
     // Create events
     input_event = new cudaEvent_t;
-    clear_event = new cudaEvent_t;
     output_event = new cudaEvent_t;
     state_event = new cudaEvent_t;
 
     unsigned int flags = cudaEventDisableTiming;
     unsigned int io_flags = flags & cudaEventBlockingSync;
     cudaEventCreateWithFlags(input_event, io_flags);
-    cudaEventCreateWithFlags(clear_event, flags);
     cudaEventCreateWithFlags(output_event, io_flags);
     cudaEventCreateWithFlags(state_event, io_flags);
 #endif
@@ -56,69 +54,65 @@ State::~State() {
     cudaStreamDestroy(output_stream);
     cudaStreamDestroy(state_stream);
     cudaEventDestroy(*input_event);
-    cudaEventDestroy(*clear_event);
     cudaEventDestroy(*output_event);
     cudaEventDestroy(*state_event);
     delete input_event;
-    delete clear_event;
     delete output_event;
     delete state_event;
 #endif
 }
 
-void State::reset() {
-    // Clear inputs that aren't connected to sensory input
-    int offset = attributes->get_start_index(OUTPUT);
-    int count = attributes->total_neurons - offset;
-
-#ifdef PARALLEL
-    if (count > 0) {
-        int threads = calc_threads(count);
-        int blocks = calc_blocks(count);
-
-        // Use the state stream
-        clear_data<<<blocks, threads, 0, this->state_stream>>>(
-            attributes->input + offset, count);
-        cudaCheckError("Failed to clear inputs!");
-    }
-    cudaEventRecord(*this->clear_event, this->state_stream);
-#else
-    if (count > 0) clear_data(attributes->input + offset, count);
-#endif
-}
-
 void State::transfer_input() {
-    int index = attributes->get_start_index(INPUT);
-    int count = attributes->get_num_neurons(INPUT) + attributes->get_num_neurons(INPUT_OUTPUT);
-    if (count != 0) {
+    int index = 0;
+    LayerList layers;
+    auto& input_layers = model->get_layers(INPUT);
+    layers.insert(layers.end(), input_layers.begin(), input_layers.end());
+    auto& input_output_layers = model->get_layers(INPUT_OUTPUT);
+    layers.insert(layers.end(), input_output_layers.begin(), input_output_layers.end());
+
+    for (auto& layer : layers) {
+        int count = layer->size;
 #ifdef PARALLEL
         // Copy to GPU from local location
-        cudaMemcpyAsync(attributes->input + index, this->buffer->get_input(),
+        cudaMemcpyAsync(attributes->input + index, this->buffer->get_input() + index,
             count * sizeof(float), cudaMemcpyHostToDevice, this->input_stream);
-    }
-    cudaEventRecord(*this->input_event, this->input_stream);
 #else
-        memcpy(attributes->input + index, this->buffer->get_input(),
+        memcpy(attributes->input + index, this->buffer->get_input() + index,
             count * sizeof(float));
+#endif
+        index += count;
     }
+
+#ifdef PARALLEL
+    cudaEventRecord(*this->input_event, this->input_stream);
+    cudaCheckError("Failed to transfer input!");
 #endif
 }
 
 void State::transfer_output() {
-    int index = attributes->get_start_index(INPUT_OUTPUT);
-    int count = attributes->get_num_neurons(INPUT_OUTPUT)
-              + attributes->get_num_neurons(OUTPUT);
-    if (count != 0) {
+    LayerList layers;
+    auto& input_output_layers = model->get_layers(INPUT_OUTPUT);
+    layers.insert(layers.end(), input_output_layers.begin(), input_output_layers.end());
+    auto& output_layers = model->get_layers(OUTPUT);
+    layers.insert(layers.end(), output_layers.begin(), output_layers.end());
+
+    int index = 0;
+    int offset = attributes->get_start_index(INPUT_OUTPUT);
+    for (auto& layer : layers) {
+        int count = layer->size;
 #ifdef PARALLEL
         // Copy from GPU to local location
-        cudaMemcpyAsync(buffer->get_output(), attributes->recent_output + index,
+        cudaMemcpyAsync(buffer->get_output() + index, attributes->recent_output + offset + index,
             count * sizeof(Output), cudaMemcpyDeviceToHost, this->output_stream);
-    }
-    cudaEventRecord(*this->output_event, this->output_stream);
 #else
-        memcpy(buffer->get_output(), attributes->recent_output + index,
+        memcpy(buffer->get_output() + index, attributes->recent_output + offset + index,
             count * sizeof(Output));
+#endif
+        index += count;
     }
+#ifdef PARALLEL
+    cudaEventRecord(*this->output_event, this->output_stream);
+    cudaCheckError("Failed to transfer output!");
 #endif
 }
 

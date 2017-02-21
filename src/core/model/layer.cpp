@@ -2,7 +2,8 @@
 #include "io/module/module.h"
 #include "util/error_manager.h"
 
-Layer::Layer(Structure* structure, std::string name, int rows, int columns, std::string params) :
+Layer::Layer(Structure* structure, std::string name,
+    int rows, int columns, std::string params, float noise) :
         name(name),
         structure(structure),
         start_index(0),
@@ -10,6 +11,7 @@ Layer::Layer(Structure* structure, std::string name, int rows, int columns, std:
         columns(columns),
         size(rows * columns),
         params(params),
+        noise(noise),
         type(INTERNAL),
         input_index(0),
         output_index(0),

@@ -20,10 +20,6 @@ class State {
             return attributes->build_engine(model, this);
         }
 
-        /* Resets the state, clearing any non-sensory input
-         * If parallel, this will reset cuda events */
-        void reset();
-
         /* Primary environment IO functions */
         void transfer_input();
         void transfer_output();
@@ -74,7 +70,6 @@ class State {
         /* Cuda events for IO and output events */
         cudaEvent_t
             *input_event,
-            *clear_event,
             *output_event,
             *state_event;
 #endif

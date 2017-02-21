@@ -43,16 +43,14 @@ Model* build_self_connected_model(std::string engine_name) {
 
     int rows = 1000;
     int cols = 1000;
-    structure->add_layer("a", rows, cols, "random positive");
+    structure->add_layer("a", rows, cols, "random positive", 5);
     structure->connect_layers("a", "a", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
 
-    structure->add_layer("b", rows, cols, "random positive");
+    structure->add_layer("b", rows, cols, "random positive", 5);
     structure->connect_layers("b", "b", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
 
     // Modules
-    structure->add_module("a", "noise_input", "5");
     //structure->add_module("a", "dummy_output", "5");
-    structure->add_module("b", "noise_input", "5");
     //structure->add_module("b", "dummy_output", "5");
 
     model->add_structure(structure);
@@ -65,11 +63,10 @@ Model* build_arborized_model(std::string engine_name, ConnectionType type) {
 
     int rows = 1000;
     int cols = 1000;
-    structure->add_layer("a", rows, cols, "random positive");
+    structure->add_layer("a", rows, cols, "random positive", 5);
     structure->connect_layers_expected("a", "b", "random positive" , false, 0, .5, type, ADD, "7 1");
 
     // Modules
-    structure->add_module("a", "noise_input", "5");
     //structure->add_module("b", "dummy_output", "5");
 
     model->add_structure(structure);
@@ -81,16 +78,12 @@ Model* build_stress_model(std::string engine_name) {
     Structure *structure = new Structure("Self-connected");
 
     int size = 800 * 19;
-    structure->add_layer("pos", 1, size, "random positive");
-    structure->add_layer("neg", 1, size / 4, "random negative");
+    structure->add_layer("pos", 1, size, "random positive", 5);
+    structure->add_layer("neg", 1, size / 4, "random negative", 2);
     structure->connect_layers("pos", "pos", false, 0, .5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("pos", "neg", false, 0, .5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("neg", "pos", false, 0, 1, FULLY_CONNECTED, SUB, "");
     structure->connect_layers("neg", "neg", false, 0, 1, FULLY_CONNECTED, SUB, "");
-
-    // Modules
-    structure->add_module("pos", "noise_input", "5");
-    structure->add_module("neg", "noise_input", "2");
 
     model->add_structure(structure);
     return model;
@@ -101,7 +94,7 @@ Model* build_layers_model(std::string engine_name) {
     Structure *structure = new Structure("Self-connected");
 
     int size = 100;
-    structure->add_layer("a", size, size, "random positive");
+    structure->add_layer("a", size, size, "random positive", 10);
 
     structure->add_layer("c", size, size, "random positive");
     structure->connect_layers("a", "c", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
@@ -117,13 +110,11 @@ Model* build_layers_model(std::string engine_name) {
     structure->connect_layers("d", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
     structure->connect_layers("f", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
-    structure->add_layer("b", size, size, "random positive");
+    structure->add_layer("b", size, size, "random positive", 10);
     structure->connect_layers("f", "b", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
     // Modules
-    structure->add_module("a", "noise_input", "10");
     structure->add_module("f", "dummy_output", "");
-    structure->add_module("b", "noise_input", "10");
     //structure->add_module("b", "dummy_output", "");
 
     std::string output_name = "visualizer_output";
@@ -295,7 +286,7 @@ Model* build_reentrant_image_model(std::string engine_name) {
 
     // Create reentrant pair
     structure->connect_layers_matching("layer1", "layer2", "default",
-        false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
+        false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1", 5);
     structure->connect_layers("layer2", "layer1",
         false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
 
@@ -311,8 +302,6 @@ Model* build_reentrant_image_model(std::string engine_name) {
     structure->add_module("photoreceptor", output_name, "8");
     structure->add_module("layer1", output_name, "8");
     structure->add_module("layer2", output_name, "8");
-    // Add random driver to second layer
-    structure->add_module("layer2", "noise_input", "5");
 
     model->add_structure(structure);
     return model;
@@ -325,7 +314,7 @@ Model* build_alignment_model(std::string engine_name) {
 
     int resolution = 128;
     structure->add_layer("input_layer", 1, 10, "default");
-    structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
+    structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold", 0.5);
     structure->add_layer("inh_thalamus", resolution, resolution, "default");
     structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
     structure->add_layer("inh_cortex", resolution, resolution, "default");
@@ -355,7 +344,6 @@ Model* build_alignment_model(std::string engine_name) {
     std::string output_name = "visualizer_output";
 
     structure->add_module("input_layer", "random_input", "10 500");
-    structure->add_module("exc_thalamus", "noise_input", "0.5");
     structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
     //structure->add_module("inh_cortex", output_name, "8");
@@ -374,7 +362,7 @@ Model* build_dendritic_model(std::string engine_name) {
     int resolution = 125;
     structure->add_layer("input_layer1", 1, 10, "default");
     structure->add_layer("input_layer2", 1, 10, "default");
-    structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
+    structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold", 0.5);
     structure->add_layer("inh_thalamus1", resolution, resolution, "default");
     structure->add_layer("inh_thalamus2", resolution, resolution, "default");
     structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
@@ -422,7 +410,6 @@ Model* build_dendritic_model(std::string engine_name) {
 
     structure->add_module("input_layer1", "random_input", "10 500");
     structure->add_module("input_layer2", "random_input", "10 500");
-    structure->add_module("exc_thalamus", "noise_input", "0.5");
     structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
     //structure->add_module("inh_cortex", output_name, "8");
@@ -441,7 +428,7 @@ Model* build_hh_model() {
 
     int resolution = 125;
     structure->add_layer("input_layer", 1, 10, "0");
-    structure->add_layer("exc_thalamus", resolution, resolution, "0");
+    structure->add_layer("exc_thalamus", resolution, resolution, "0", 0.5);
     structure->add_layer("inh_thalamus", resolution, resolution, "0");
     structure->add_layer("exc_cortex", resolution, resolution, "0");
     structure->add_layer("inh_cortex", resolution, resolution, "0");
@@ -472,7 +459,6 @@ Model* build_hh_model() {
     std::string output_name = "visualizer_output";
 
     structure->add_module("input_layer", "random_input", "10 500");
-    structure->add_module("exc_thalamus", "noise_input", "0.5");
     structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
     //structure->add_module("inh_cortex", output_name, "8");
@@ -494,7 +480,7 @@ Model* build_cc_model(std::string engine_name) {
 
         int resolution = 128;
         structure->add_layer("input_layer", 1, 10, "default");
-        structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold");
+        structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold", 0.5);
         structure->add_layer("inh_thalamus", resolution, resolution, "default");
         structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
         structure->add_layer("inh_cortex", resolution, resolution, "default");
@@ -520,7 +506,6 @@ Model* build_cc_model(std::string engine_name) {
         std::string output_name = "visualizer_output";
 
         structure->add_module("input_layer", "random_input", "10 500");
-        structure->add_module("exc_thalamus", "noise_input", "0.5");
 
         structure->add_module("exc_thalamus", output_name, "8");
         structure->add_module("exc_cortex", output_name, "8");

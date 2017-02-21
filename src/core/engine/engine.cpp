@@ -1,8 +1,7 @@
 #include "engine/engine.h"
 
 void Engine::stage_clear() {
-    // Reset stream cluster and state for timestep
-    state->reset();
+    // Launch pre-input calculations
     stream_cluster->launch_pre_input_calculations();
 }
 

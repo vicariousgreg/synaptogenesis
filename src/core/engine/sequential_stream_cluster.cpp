@@ -50,11 +50,9 @@ SequentialStreamCluster::~SequentialStreamCluster() {
 
 void SequentialStreamCluster::launch_post_input_calculations() {
 #ifdef PARALLEL
-    // Ensure all layer streams wait for clear event
     // Ensure all layer streams wait for input event
     // This function should not be called until this event has been
     //   scheduled to be recorded
-    wait_event(this->state->clear_event);
     wait_event(this->state->input_event);
 #endif
     // Activate streams backwards

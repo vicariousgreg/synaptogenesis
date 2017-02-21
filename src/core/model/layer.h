@@ -50,6 +50,9 @@ class Layer {
         // Parameters for initializing neural properties
         const std::string params;
 
+        // Noise parameter
+        const float noise;
+
         // Root node of dendritic tree
         DendriticNode* const dendritic_root;
 
@@ -59,7 +62,7 @@ class Layer {
         friend class Connection;
 
         Layer(Structure *structure, std::string name,
-            int rows, int columns, std::string params);
+            int rows, int columns, std::string params, float noise=0.0);
 
         void add_input_connection(Connection* connection);
         void add_output_connection(Connection* connection);

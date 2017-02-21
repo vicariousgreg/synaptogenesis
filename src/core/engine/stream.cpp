@@ -1,6 +1,12 @@
 #include "engine/stream.h"
 
 Stream::Stream(Layer *layer, State *state) : to_layer(layer), state(state) {
+    // Add initialization instruction if necessary
+    if (layer->noise != 0.0)
+        add_instruction(new RandomizeInstruction(layer, state));
+    else if (layer->get_input_module() == NULL)
+        add_instruction(new ClearInstruction(layer, state));
+
     // Beform DFS on dendritic tree
     dendrite_DFS(to_layer->dendritic_root);
 
