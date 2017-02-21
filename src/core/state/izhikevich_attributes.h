@@ -19,7 +19,7 @@ class IzhikevichAttributes : public SpikingAttributes {
         IzhikevichAttributes(Model* model);
         virtual ~IzhikevichAttributes();
 
-        ATTRIBUTE_KERNEL get_attribute_kernel() {
+        ATTRIBUTE_KERNEL get_attribute_kernel() const {
             return iz_attribute_kernel;
         }
 

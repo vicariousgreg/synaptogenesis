@@ -25,23 +25,8 @@ State::State(Model *model)
     this->buffer = new Buffer(input_size, output_size, attributes->output_type); 
 
 #ifdef PARALLEL
-    // Create streams
-    cudaStreamCreate(&this->input_stream);
-    cudaStreamCreate(&this->output_stream);
-    cudaStreamCreate(&this->state_stream);
-
-    // Create events
-    input_event = new cudaEvent_t;
-    output_event = new cudaEvent_t;
-    state_event = new cudaEvent_t;
-
-    unsigned int flags = cudaEventDisableTiming;
-    unsigned int io_flags = flags & cudaEventBlockingSync;
-    cudaEventCreateWithFlags(input_event, io_flags);
-    cudaEventCreateWithFlags(output_event, io_flags);
-    cudaEventCreateWithFlags(state_event, io_flags);
+    cudaStreamCreate(&this->io_stream);
 #endif
-
 }
 
 State::~State() {
@@ -50,107 +35,6 @@ State::~State() {
     for (auto matrix : this->weight_matrices) delete matrix.second;
 
 #ifdef PARALLEL
-    cudaStreamDestroy(input_stream);
-    cudaStreamDestroy(output_stream);
-    cudaStreamDestroy(state_stream);
-    cudaEventDestroy(*input_event);
-    cudaEventDestroy(*output_event);
-    cudaEventDestroy(*state_event);
-    delete input_event;
-    delete output_event;
-    delete state_event;
+    cudaStreamDestroy(this->io_stream);
 #endif
-}
-
-void State::transfer_input() {
-    int index = 0;
-    LayerList layers;
-    auto& input_layers = model->get_layers(INPUT);
-    layers.insert(layers.end(), input_layers.begin(), input_layers.end());
-    auto& input_output_layers = model->get_layers(INPUT_OUTPUT);
-    layers.insert(layers.end(), input_output_layers.begin(), input_output_layers.end());
-
-    for (auto& layer : layers) {
-        int count = layer->size;
-#ifdef PARALLEL
-        // Copy to GPU from local location
-        cudaMemcpyAsync(attributes->input + index, this->buffer->get_input() + index,
-            count * sizeof(float), cudaMemcpyHostToDevice, this->input_stream);
-#else
-        memcpy(attributes->input + index, this->buffer->get_input() + index,
-            count * sizeof(float));
-#endif
-        index += count;
-    }
-
-#ifdef PARALLEL
-    cudaEventRecord(*this->input_event, this->input_stream);
-    cudaCheckError("Failed to transfer input!");
-#endif
-}
-
-void State::transfer_output() {
-    LayerList layers;
-    auto& input_output_layers = model->get_layers(INPUT_OUTPUT);
-    layers.insert(layers.end(), input_output_layers.begin(), input_output_layers.end());
-    auto& output_layers = model->get_layers(OUTPUT);
-    layers.insert(layers.end(), output_layers.begin(), output_layers.end());
-
-    int index = 0;
-    int offset = attributes->get_start_index(INPUT_OUTPUT);
-    for (auto& layer : layers) {
-        int count = layer->size;
-#ifdef PARALLEL
-        // Copy from GPU to local location
-        cudaMemcpyAsync(buffer->get_output() + index, attributes->recent_output + offset + index,
-            count * sizeof(Output), cudaMemcpyDeviceToHost, this->output_stream);
-#else
-        memcpy(buffer->get_output() + index, attributes->recent_output + offset + index,
-            count * sizeof(Output));
-#endif
-        index += count;
-    }
-#ifdef PARALLEL
-    cudaEventRecord(*this->output_event, this->output_stream);
-    cudaCheckError("Failed to transfer output!");
-#endif
-}
-
-#ifdef PARALLEL
-void State::wait_for_input() {
-    cudaEventSynchronize(*this->input_event);
-}
-void State::wait_for_output() {
-    cudaEventSynchronize(*this->output_event);
-}
-#endif
-
-void State::update_states(int start_index, int count) {
-#ifdef PARALLEL
-    int threads = calc_threads(count);
-    int blocks = calc_blocks(count);
-
-    attributes->get_attribute_kernel()<<<blocks, threads, 0, this->state_stream>>>(
-        attributes->pointer, start_index, count);
-    cudaCheckError("Failed to update neuron state/output!");
-#else
-    attributes->get_attribute_kernel()(attributes, start_index, count);
-#endif
-}
-
-void State::update_states() {
-    this->update_states(0, attributes->total_neurons);
-#ifdef PARALLEL
-    cudaEventRecord(*this->state_event, this->state_stream);
-#endif
-}
-
-void State::update_states(Layer *layer) {
-    this->update_states( layer->get_start_index(), layer->size);
-}
-
-void State::update_states(IOType layer_type) {
-    int start_index = attributes->get_start_index(layer_type);
-    int count = attributes->get_num_neurons(layer_type);
-    if (count > 0) this->update_states(start_index, count);
 }

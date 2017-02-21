@@ -5,6 +5,9 @@
 
 SequentialStreamCluster::SequentialStreamCluster(Model *model, State *state)
         : StreamCluster(model, state) {
+#ifdef PARALLEL
+    cudaStreamCreate(&this->compute_cuda_stream);
+#endif
     // Keep track of visited layers;
     std::set<Layer*> visited;
     std::set<Layer*> enqueued;
@@ -28,9 +31,11 @@ SequentialStreamCluster::SequentialStreamCluster(Model *model, State *state)
 
         // Add elements to beginning of list
 #ifdef PARALLEL
-        streams.insert(streams.begin(), new Stream(curr_layer, state, state->state_stream));
+        streams.insert(streams.begin(),
+            new Stream(curr_layer, state, compute_cuda_stream));
 #else
-        streams.insert(streams.begin(), new Stream(curr_layer, state));
+        streams.insert(streams.begin(),
+            new Stream(curr_layer, state));
 #endif
 
         // Add any layers that feed into this one to if all of its
@@ -50,31 +55,35 @@ SequentialStreamCluster::SequentialStreamCluster(Model *model, State *state)
 SequentialStreamCluster::~SequentialStreamCluster() {
     // Delete streams
     for (auto stream : streams) delete stream;
+#ifdef PARALLEL
+    cudaStreamDestroy(compute_cuda_stream);
+#endif
 }
 
 /******************************************************************************/
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
+void SequentialStreamCluster::launch_input() {
+    for (auto& stream : streams)
+        stream->activate_input_instruction();
+}
+
+void SequentialStreamCluster::launch_output() {
+    for (auto& stream : streams)
+        stream->activate_output_instruction();
+}
+
 void SequentialStreamCluster::launch_post_input_calculations() {
-#ifdef PARALLEL
-    // Ensure all layer streams wait for input event
-    // This function should not be called until this event has been
-    //   scheduled to be recorded
-    wait_event(this->state->input_event);
-#endif
     // Activate streams
     for (auto it = streams.begin() ; it != streams.end(); ++it) {
         for (auto& inst : (*it)->get_instructions())
             inst->activate();
-        state->update_states((*it)->to_layer);
+        (*it)->activate_state_instruction();
     }
 }
 
 void SequentialStreamCluster::launch_weight_update() {
-#ifdef PARALLEL
-    wait_event(this->state->state_event);
-#endif
     // Update streams backwards
     for (auto it = streams.rbegin() ; it != streams.rend(); ++it)
         for (auto& inst : (*it)->get_instructions())
@@ -86,7 +95,12 @@ void SequentialStreamCluster::launch_weight_update() {
 /******************************************************************************/
 
 #ifdef PARALLEL
-void SequentialStreamCluster::wait_event(cudaEvent_t *event) {
-    cudaStreamWaitEvent(state->state_stream, *event, 0);
+void SequentialStreamCluster::wait_for_input() {
+    for (auto stream : streams)
+        cudaEventSynchronize(stream->get_input_event());
+}
+void SequentialStreamCluster::wait_for_output() {
+    for (auto stream : streams)
+        cudaEventSynchronize(stream->get_output_event());
 }
 #endif

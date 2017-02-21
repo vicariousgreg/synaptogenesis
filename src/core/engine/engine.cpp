@@ -7,25 +7,24 @@ void Engine::stage_clear() {
 
 void Engine::stage_output() {
     // Start output streaming
-    state->transfer_output();
+    stream_cluster->launch_output();
 
 #ifdef PARALLEL
     // Wait for output
-    state->wait_for_output();
+    stream_cluster->wait_for_output();
 #endif
 }
 
 void Engine::stage_input() {
-    // Start input streaming
-    state->transfer_input();
+    stream_cluster->launch_input();
 
 #ifdef PARALLEL
     stream_cluster->launch_post_input_calculations();
-    if (batch_state) state->update_states();
+    stream_cluster->launch_state_update();
     if (learning_flag) stream_cluster->launch_weight_update();
 
     // Wait for input
-    state->wait_for_input();
+    stream_cluster->wait_for_input();
 #endif
 }
 
@@ -36,7 +35,7 @@ void Engine::stage_calc() {
     cudaCheckError(NULL);
 #else
     stream_cluster->launch_post_input_calculations();
-    if (batch_state) state->update_states();
+    stream_cluster->launch_state_update();
     if (learning_flag) stream_cluster->launch_weight_update();
 #endif
 }

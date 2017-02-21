@@ -1,3 +1,4 @@
+#include <cstring>
 #include "engine/instruction.h"
 #include "util/error_manager.h"
 
@@ -12,13 +13,13 @@ Instruction::Instruction(Layer *layer) : to_layer(layer) {
 #endif
 }
 
-void Instruction::activate() {
 #ifdef PARALLEL
+void Instruction::record_events() {
     // Record added events
     for (int i = 0; i < this->events.size(); ++i)
         cudaEventRecord(this->events[i], this->stream);
-#endif
 }
+#endif
 
 InitializeInstruction::InitializeInstruction(Layer *layer, State *state)
         : Instruction(layer) {
@@ -32,10 +33,10 @@ void ClearInstruction::activate() {
     clear_data
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (dst, to_layer->size);
+    Instruction::record_events();
 #else
     clear_data(dst, to_layer->size);
 #endif
-    Instruction::activate();
 }
 
 void NoiseInstruction::activate() {
@@ -44,6 +45,7 @@ void NoiseInstruction::activate() {
     randomize_data
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (dst, to_layer->size, to_layer->noise, init);
+    Instruction::record_events();
 #else
     randomize_data(dst, to_layer->size, to_layer->noise, init);
 #endif
@@ -75,6 +77,7 @@ void SynapseInstruction::activate() {
     activator
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (this->synapse_data);
+    Instruction::record_events();
 #else
     activator(this->synapse_data);
 #endif
@@ -108,7 +111,55 @@ void DendriticInstruction::activate() {
     calc_internal
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (to_layer->size, src, dst, this->init);
+    Instruction::record_events();
 #else
     calc_internal(to_layer->size, src, dst, this->init);
+#endif
+}
+
+InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state)
+        : Instruction(layer) {
+    this->src = state->get_buffer()->get_input() + to_layer->get_input_index();
+    this->dst = state->get_input() + to_layer->get_start_index();
+}
+
+void InputTransferInstruction::activate() {
+#ifdef PARALLEL
+    // Copy to GPU from local location
+    cudaMemcpyAsync(dst, src, to_layer->size * sizeof(float),
+        cudaMemcpyHostToDevice, this->stream);
+    cudaCheckError("Failed to transfer input!");
+    Instruction::record_events();
+#else
+    memcpy(dst, src, to_layer->size * sizeof(float));
+#endif
+}
+
+OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state)
+        : Instruction(layer) {
+    this->src = state->get_output() + to_layer->get_start_index();
+    this->dst = state->get_buffer()->get_output() + to_layer->get_output_index();
+}
+
+void OutputTransferInstruction::activate() {
+#ifdef PARALLEL
+    // Copy to GPU from local location
+    cudaMemcpyAsync(dst, src, to_layer->size * sizeof(Output),
+        cudaMemcpyDeviceToHost, this->stream);
+    cudaCheckError("Failed to transfer output!");
+    Instruction::record_events();
+#else
+    memcpy(dst, src, to_layer->size * sizeof(Output));
+#endif
+}
+
+void StateUpdateInstruction::activate() {
+#ifdef PARALLEL
+    attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(
+        attributes, to_layer->get_start_index(), to_layer->size);
+    cudaCheckError("Failed to update neuron state/output!");
+    Instruction::record_events();
+#else
+    attribute_kernel(attributes, to_layer->get_start_index(), to_layer->size);
 #endif
 }

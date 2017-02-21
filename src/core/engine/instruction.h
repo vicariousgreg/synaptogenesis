@@ -5,6 +5,7 @@
 
 #include "model/connection.h"
 #include "state/state.h"
+#include "state/attributes.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/activator_kernel.h"
@@ -14,7 +15,7 @@ class Instruction {
     public:
         Instruction(Layer *layer);
 
-        virtual void activate();
+        virtual void activate() = 0;
         virtual void update() { }
         virtual bool is_plastic() const { return false; }
 
@@ -23,6 +24,7 @@ class Instruction {
 #ifdef PARALLEL
         void set_stream(cudaStream_t stream) { this->stream = stream; }
         void add_event(cudaEvent_t event) { this->events.push_back(event); }
+        void record_events();
 
     protected:
         dim3 activator_blocks, activator_threads;
@@ -93,6 +95,43 @@ class DendriticInstruction : public Instruction {
     protected:
         float *src, *dst;
         bool init;
+};
+
+/* Transfers input data */
+class InputTransferInstruction : public Instruction {
+    public:
+        InputTransferInstruction(Layer *to_layer, State *state);
+
+        void activate();
+
+    protected:
+        float *src, *dst;
+};
+
+/* Transfers output data */
+class OutputTransferInstruction : public Instruction {
+    public:
+        OutputTransferInstruction(Layer *to_layer, State *state);
+
+        void activate();
+
+    protected:
+        Output *src, *dst;
+};
+
+/* Updates layer state */
+class StateUpdateInstruction : public Instruction {
+    public:
+        StateUpdateInstruction(Layer *to_layer, State *state)
+            : Instruction(to_layer),
+              attributes(state->get_attributes_pointer()),
+              attribute_kernel(state->get_attribute_kernel()) { }
+
+        void activate();
+
+    protected:
+        const Attributes *attributes;
+        ATTRIBUTE_KERNEL attribute_kernel;
 };
 
 typedef std::vector<Instruction*> InstructionList;

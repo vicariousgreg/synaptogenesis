@@ -23,7 +23,7 @@ class RateEncodingAttributes : public Attributes {
         /* Trace learning rules */
         virtual KERNEL get_updater(ConnectionType type);
 
-        ATTRIBUTE_KERNEL get_attribute_kernel() {
+        ATTRIBUTE_KERNEL get_attribute_kernel() const {
             return re_attribute_kernel;
         }
 

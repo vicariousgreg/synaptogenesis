@@ -37,9 +37,6 @@ FeedforwardStreamCluster::FeedforwardStreamCluster(Model *model, State *state)
 /******************************************************************************/
 
 void FeedforwardStreamCluster::launch_weight_update() {
-#ifdef PARALLEL
-    wait_event(this->state->state_event);
-#endif
     // Perform learning in reverse
     for (auto it = streams.rbegin() ; it != streams.rend() ; ++it)
         for (auto& inst : (*it)->get_instructions())

@@ -27,7 +27,7 @@ class Attributes {
         virtual void send_to_device();
 #endif
         /* Attribute kernel getter */
-        virtual ATTRIBUTE_KERNEL get_attribute_kernel() = 0;
+        virtual ATTRIBUTE_KERNEL get_attribute_kernel() const = 0;
 
         /* Learning Rule functions */
         // Activator Kernel

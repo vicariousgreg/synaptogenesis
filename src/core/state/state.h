@@ -20,10 +20,6 @@ class State {
             return attributes->build_engine(model, this);
         }
 
-        /* Primary environment IO functions */
-        void transfer_input();
-        void transfer_output();
-
         /* State update functions */
         void update_states();
         void update_states(Layer *layer);
@@ -57,21 +53,12 @@ class State {
         KERNEL get_updater(ConnectionType type) const {
             return attributes->get_updater(type);
         }
+        const ATTRIBUTE_KERNEL get_attribute_kernel() const {
+            return attributes->get_attribute_kernel();
+        }
 
 #ifdef PARALLEL
-        /* If parallel, callers may want to wait for IO events */
-        void wait_for_input();
-        void wait_for_output();
-
-        /* Cuda streams for IO and state computations */
-        cudaStream_t input_stream, output_stream;
-        cudaStream_t state_stream;
-
-        /* Cuda events for IO and output events */
-        cudaEvent_t
-            *input_event,
-            *output_event,
-            *state_event;
+        cudaStream_t io_stream;
 #endif
 
     private:

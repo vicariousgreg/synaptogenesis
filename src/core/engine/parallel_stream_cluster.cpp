@@ -66,30 +66,31 @@ void ParallelStreamCluster::launch_pre_input_calculations() {
     for (auto& inst : this->pre_input_instructions) inst->activate();
 }
 
+void ParallelStreamCluster::launch_input() {
+    for (auto& stream : streams[INPUT])
+        stream->activate_input_instruction();
+    for (auto& stream : streams[INPUT_OUTPUT])
+        stream->activate_input_instruction();
+}
+
 void ParallelStreamCluster::launch_post_input_calculations() {
-#ifdef PARALLEL
-    // Ensure all layer streams wait for input event
-    // This function should not be called until this event has been
-    //   scheduled to be recorded
-    wait_event(INPUT, this->state->input_event);
-    wait_event(INPUT_OUTPUT, this->state->input_event);
-#endif
     for (auto& inst : this->post_input_instructions) inst->activate();
-#ifdef PARALLEL
-    block_stream_to(INPUT, state->state_stream);
-    block_stream_to(INPUT_OUTPUT, state->state_stream);
-    block_stream_to(OUTPUT, state->state_stream);
-    block_stream_to(INTERNAL, state->state_stream);
-#endif
+}
+
+void ParallelStreamCluster::launch_output() {
+    for (auto& stream : streams[INPUT_OUTPUT])
+        stream->activate_output_instruction();
+    for (auto& stream : streams[OUTPUT])
+        stream->activate_output_instruction();
+}
+
+void ParallelStreamCluster::launch_state_update() {
+    for (auto type : IOTypes)
+        for (auto& stream : streams[type])
+            stream->activate_state_instruction();
 }
 
 void ParallelStreamCluster::launch_weight_update() {
-#ifdef PARALLEL
-    wait_event(INPUT, this->state->state_event);
-    wait_event(INPUT_OUTPUT, this->state->state_event);
-    wait_event(OUTPUT, this->state->state_event);
-    wait_event(INTERNAL, this->state->state_event);
-#endif
     for (auto& inst : this->plastic_instructions) inst->update();
 }
 
@@ -98,13 +99,17 @@ void ParallelStreamCluster::launch_weight_update() {
 /******************************************************************************/
 
 #ifdef PARALLEL
-void ParallelStreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
-    for (auto& stream : streams[to_type])
-        cudaStreamWaitEvent(stream->get_cuda_stream(), *event, 0);
+void ParallelStreamCluster::wait_for_input() {
+    for (auto& stream : streams[INPUT])
+        cudaEventSynchronize(stream->get_input_event());
+    for (auto& stream : streams[INPUT_OUTPUT])
+        cudaEventSynchronize(stream->get_input_event());
 }
 
-void ParallelStreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
-    for (auto& stream : streams[to_type])
-        cudaStreamWaitEvent(cuda_stream, stream->get_finished_event(), 0);
+void ParallelStreamCluster::wait_for_output() {
+    for (auto& stream : streams[INPUT_OUTPUT])
+        cudaEventSynchronize(stream->get_output_event());
+    for (auto& stream : streams[OUTPUT])
+        cudaEventSynchronize(stream->get_output_event());
 }
 #endif

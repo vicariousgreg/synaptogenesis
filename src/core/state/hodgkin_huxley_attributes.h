@@ -18,7 +18,7 @@ class HodgkinHuxleyAttributes : public SpikingAttributes {
         HodgkinHuxleyAttributes(Model* model);
         virtual ~HodgkinHuxleyAttributes();
 
-        ATTRIBUTE_KERNEL get_attribute_kernel() {
+        ATTRIBUTE_KERNEL get_attribute_kernel() const {
             return hh_attribute_kernel;
         }
 
