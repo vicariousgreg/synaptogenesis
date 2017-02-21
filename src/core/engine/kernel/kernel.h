@@ -1,14 +1,14 @@
 #ifndef kernel_h
 #define kernel_h
 
-#include "engine/kernel/kernel_data.h"
+#include "engine/kernel/synapse_data.h"
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
 #include "util/constants.h"
 #include "util/tools.h"
 
-/* Typedef for kernel functions, which just take KernelData */
-typedef void(*KERNEL)(const KernelData);
+/* Typedef for kernel functions, which just take SynapseData */
+typedef void(*KERNEL)(const SynapseData);
 
 /* Synaptic operations
  * |prior| is the current state of the neuron.
@@ -40,18 +40,18 @@ inline GLOBAL void clear_data(float* data, int count) {
 }
 
 /* Randomizes input data */
-inline GLOBAL void randomize_data(float* data, int count, float max, bool clear) {
+inline GLOBAL void randomize_data(float* data, int count, float max, bool init) {
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
         float val = curand_uniform(&cuda_rand_states[nid]) * max;
-        if (clear)
+        if (init)
             data[nid] = val;
         else
             data[nid] += val;
     }
 #else
-    if (clear)
+    if (init)
         for (int nid = 0; nid < count; ++nid)
             data[nid] = fRand(0.0, max);
     else
@@ -90,29 +90,29 @@ inline GLOBAL void randomize_data(float* data, int count, float max, bool clear)
  *     - weight updates (learning rules)
  */
 
-// Extract fields from kernel_data
+// Extract fields from synapse_data
 // This makes a surprising difference in runtime
 // This macro only contains extractions relevant to all connection kernels
 #define PREAMBLE \
-    const Opcode opcode = kernel_data.opcode; \
-    const int delay = kernel_data.delay; \
-    float * const weights = kernel_data.weights; \
-    const int num_weights = kernel_data.num_weights; \
-    const bool plastic = kernel_data.plastic; \
-    const float max_weight = kernel_data.max_weight; \
-    const int from_size = kernel_data.from_size; \
-    const int from_rows = kernel_data.from_rows; \
-    const int from_columns = kernel_data.from_columns; \
-    const int to_size = kernel_data.to_size; \
-    const int to_rows = kernel_data.to_rows; \
-    const int to_columns = kernel_data.to_columns; \
-    Output * const outputs = kernel_data.outputs; \
-    Output * const destination_outputs = kernel_data.destination_outputs; \
-    float * const inputs = kernel_data.inputs; \
-    const EXTRACTOR extractor = kernel_data.attributes->extractor;
+    const Opcode opcode = synapse_data.opcode; \
+    const int delay = synapse_data.delay; \
+    float * const weights = synapse_data.weights; \
+    const int num_weights = synapse_data.num_weights; \
+    const bool plastic = synapse_data.plastic; \
+    const float max_weight = synapse_data.max_weight; \
+    const int from_size = synapse_data.from_size; \
+    const int from_rows = synapse_data.from_rows; \
+    const int from_columns = synapse_data.from_columns; \
+    const int to_size = synapse_data.to_size; \
+    const int to_rows = synapse_data.to_rows; \
+    const int to_columns = synapse_data.to_columns; \
+    Output * const outputs = synapse_data.outputs; \
+    Output * const destination_outputs = synapse_data.destination_outputs; \
+    float * const inputs = synapse_data.inputs; \
+    const EXTRACTOR extractor = synapse_data.attributes->extractor;
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -128,7 +128,7 @@ GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
 
 
 #define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -146,7 +146,7 @@ GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
 
 
 #define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -156,7 +156,7 @@ GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
 }
 
 #define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
     PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -169,12 +169,12 @@ GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
 
 
 #define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
     PREAMBLE; \
-    const bool convolutional = kernel_data.convolutional; \
-    const int field_size = kernel_data.field_size; \
-    const int stride = kernel_data.stride; \
-    const int fray = kernel_data.fray; \
+    const bool convolutional = synapse_data.convolutional; \
+    const int field_size = synapse_data.field_size; \
+    const int stride = synapse_data.stride; \
+    const int fray = synapse_data.fray; \
     EXTRACTIONS; \
  \
     int kernel_size = field_size * field_size; \
@@ -219,12 +219,12 @@ GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
 }
 
 #define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const KernelData kernel_data) { \
+GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
     PREAMBLE; \
-    const bool convolutional = kernel_data.convolutional; \
-    const int field_size = kernel_data.field_size; \
-    const int stride = kernel_data.stride; \
-    const int fray = kernel_data.fray; \
+    const bool convolutional = synapse_data.convolutional; \
+    const int field_size = synapse_data.field_size; \
+    const int stride = synapse_data.stride; \
+    const int fray = synapse_data.fray; \
     EXTRACTIONS; \
  \
     int kernel_size = field_size * field_size; \

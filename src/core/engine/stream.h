@@ -17,7 +17,7 @@ class Stream {
 
 #ifdef PARALLEL
         cudaStream_t get_cuda_stream() const { return cuda_stream; }
-        cudaEvent_t* get_finished_event() const { return finished_event; }
+        cudaEvent_t get_finished_event() const { return finished_event; }
 #endif
         Layer* const to_layer;
 
@@ -29,7 +29,7 @@ class Stream {
         InstructionList instructions;
 
 #ifdef PARALLEL
-        cudaEvent_t *finished_event;
+        cudaEvent_t finished_event;
         cudaStream_t cuda_stream;
         bool external_stream;
 #endif

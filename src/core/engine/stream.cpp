@@ -1,9 +1,14 @@
 #include "engine/stream.h"
 
 Stream::Stream(Layer *layer, State *state) : to_layer(layer), state(state) {
+#ifdef PARALLEL
+    // Create cuda stream
+    cudaStreamCreate(&cuda_stream);
+#endif
+
     // Add initialization instruction if necessary
     if (layer->noise != 0.0)
-        add_instruction(new RandomizeInstruction(layer, state));
+        add_instruction(new NoiseInstruction(layer, state));
     else if (layer->get_input_module() == NULL)
         add_instruction(new ClearInstruction(layer, state));
 
@@ -11,10 +16,7 @@ Stream::Stream(Layer *layer, State *state) : to_layer(layer), state(state) {
     dendrite_DFS(to_layer->dendritic_root);
 
 #ifdef PARALLEL
-    // Create cuda stream and event
-    cudaStreamCreate(&cuda_stream);
-    finished_event = new cudaEvent_t;
-    cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
+    cudaEventCreateWithFlags(&finished_event, cudaEventDisableTiming);
     if (instructions.size() > 0)
         instructions[instructions.size()-1]->add_event(finished_event);
     this->external_stream = false;
@@ -30,8 +32,7 @@ Stream::Stream(Layer *layer, State *state, cudaStream_t cuda_stream) :
     dendrite_DFS(to_layer->dendritic_root);
 
     // Create cuda event
-    finished_event = new cudaEvent_t;
-    cudaEventCreateWithFlags(finished_event, cudaEventDisableTiming);
+    cudaEventCreateWithFlags(&finished_event, cudaEventDisableTiming);
     if (instructions.size() > 0)
         instructions[instructions.size()-1]->add_event(finished_event);
     this->external_stream = true;
@@ -42,8 +43,7 @@ Stream::~Stream() {
     for (auto inst : this->instructions) delete inst;
 #ifdef PARALLEL
     if (not this->external_stream) cudaStreamDestroy(cuda_stream);
-    cudaEventDestroy(*finished_event);
-    delete finished_event;
+    cudaEventDestroy(finished_event);
 #endif
 }
 
@@ -63,6 +63,6 @@ void Stream::dendrite_DFS(DendriticNode *curr) {
 void Stream::add_instruction(Instruction *inst) {
     this->instructions.push_back(inst);
 #ifdef PARALLEL
-    inst->set_stream(&this->cuda_stream);
+    inst->set_stream(this->cuda_stream);
 #endif
 }

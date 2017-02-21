@@ -5,7 +5,7 @@
 
 #include "model/connection.h"
 #include "state/state.h"
-#include "engine/kernel/kernel_data.h"
+#include "engine/kernel/synapse_data.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/activator_kernel.h"
 #include "util/parallel.h"
@@ -21,17 +21,18 @@ class Instruction {
         Layer* const to_layer;
 
 #ifdef PARALLEL
-        void set_stream(cudaStream_t *stream) { this->stream = stream; }
-        void add_event(cudaEvent_t *event) { this->events.push_back(event); }
+        void set_stream(cudaStream_t stream) { this->stream = stream; }
+        void add_event(cudaEvent_t event) { this->events.push_back(event); }
 
     protected:
         dim3 activator_blocks, activator_threads;
         dim3 updater_blocks, updater_threads;
-        cudaStream_t *stream;
-        std::vector<cudaEvent_t* > events;
+        cudaStream_t stream;
+        std::vector<cudaEvent_t> events;
 #endif
 };
 
+/* Instructions that initialize the input without connections */
 class InitializeInstruction : public Instruction {
     public:
         InitializeInstruction(Layer *layer, State *state);
@@ -40,6 +41,7 @@ class InitializeInstruction : public Instruction {
         float *dst;
 };
 
+/* Clears inputs */
 class ClearInstruction : public InitializeInstruction {
     public:
         ClearInstruction(Layer *layer, State *state)
@@ -48,25 +50,27 @@ class ClearInstruction : public InitializeInstruction {
         void activate();
 };
 
-class RandomizeInstruction : public InitializeInstruction {
+/* Adds noise to the input */
+class NoiseInstruction : public InitializeInstruction {
     public:
-        RandomizeInstruction(Layer *layer, State *state)
+        NoiseInstruction(Layer *layer, State *state)
                 : InitializeInstruction(layer, state),
-                  clear(layer->get_input_module() == NULL) { }
+                  init(layer->get_input_module() == NULL) { }
 
         void activate();
 
     protected:
-        bool clear;
+        bool init;
 };
 
+/* Computes synaptic connection */
 class SynapseInstruction : public Instruction {
     public:
         SynapseInstruction(Connection *conn, State *state);
 
         void activate();
         void update();
-        bool is_plastic() const { return kernel_data.plastic; }
+        bool is_plastic() const { return synapse_data.plastic; }
 
         const ConnectionType type;
         Connection* const connection;
@@ -75,9 +79,10 @@ class SynapseInstruction : public Instruction {
         EXTRACTOR extractor;
         KERNEL activator;
         KERNEL updater;
-        const KernelData kernel_data;
+        const SynapseData synapse_data;
 };
 
+/* Computes dendritic node connection */
 class DendriticInstruction : public Instruction {
     public:
         DendriticInstruction(DendriticNode *parent,
@@ -87,7 +92,7 @@ class DendriticInstruction : public Instruction {
 
     protected:
         float *src, *dst;
-        bool clear;
+        bool init;
 };
 
 typedef std::vector<Instruction*> InstructionList;

@@ -105,6 +105,6 @@ void ParallelStreamCluster::wait_event(IOType to_type, cudaEvent_t *event) {
 
 void ParallelStreamCluster::block_stream_to(IOType to_type, cudaStream_t cuda_stream) {
     for (auto& stream : streams[to_type])
-        cudaStreamWaitEvent(cuda_stream, *stream->get_finished_event(), 0);
+        cudaStreamWaitEvent(cuda_stream, stream->get_finished_event(), 0);
 }
 #endif

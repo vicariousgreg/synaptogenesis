@@ -1,9 +1,9 @@
-#include "engine/kernel/kernel_data.h"
+#include "engine/kernel/synapse_data.h"
 #include "state/state.h"
 #include "state/attributes.h"
 #include "util/error_manager.h"
 
-KernelData::KernelData(Connection *conn, State *state) :
+SynapseData::SynapseData(Connection *conn, State *state) :
         attributes(state->get_attributes_pointer()),
         convolutional(conn->convolutional),
         opcode(conn->opcode),

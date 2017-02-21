@@ -1,5 +1,5 @@
-#ifndef kernel_data_h
-#define kernel_data_h
+#ifndef synapse_data_h
+#define synapse_data_h
 
 #include "model/connection.h"
 #include "util/parallel.h"
@@ -7,10 +7,10 @@
 class State;
 class Attributes;
 
-/* Data package that is passed into kernel functions */
-class KernelData {
+/* Data package that is passed into synaptic kernel functions */
+class SynapseData {
     public:
-        KernelData(Connection *conn, State *state);
+        SynapseData(Connection *conn, State *state);
 
         /* Neuron attributes */
         const Attributes *attributes;
