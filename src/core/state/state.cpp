@@ -76,10 +76,6 @@ SYNAPSE_KERNEL State::get_updater(Connection *conn) const {
     return attributes.at(conn->to_layer->structure)->get_updater(conn->type);
 }
 
-int State::get_num_neurons(Structure* structure) const {
-    return attributes.at(structure)->total_neurons;
-}
-
 OutputType State::get_output_type(Structure *structure) const {
     return attributes.at(structure)->output_type;
 }

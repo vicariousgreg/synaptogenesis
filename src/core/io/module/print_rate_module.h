@@ -8,7 +8,7 @@ class PrintRateModule : public Module {
         PrintRateModule(Layer *layer,
             std::string params);
 
-        void report_output(Buffer *buffer);
+        void report_output(Buffer *buffer, OutputType output_type);
         virtual IOType get_type() { return OUTPUT; }
 
     private:

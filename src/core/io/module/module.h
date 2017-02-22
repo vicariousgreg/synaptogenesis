@@ -15,7 +15,7 @@ class Module {
         /* Override to implement input and output functionality.
          * If unused, do not override */
         virtual void feed_input(Buffer *buffer) { }
-        virtual void report_output(Buffer *buffer) { }
+        virtual void report_output(Buffer *buffer, OutputType output_type) { }
 
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call

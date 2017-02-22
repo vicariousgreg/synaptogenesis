@@ -26,10 +26,8 @@ PrintRateModule::PrintRateModule(Layer *layer, std::string params)
         totals[index] = 0.0;
 }
 
-void PrintRateModule::report_output(Buffer *buffer) {
+void PrintRateModule::report_output(Buffer *buffer, OutputType output_type) {
     Output* output = buffer->get_output(this->layer);
-    OutputType output_type = buffer->output_type;
-
     timesteps++;
 
     // Print bar

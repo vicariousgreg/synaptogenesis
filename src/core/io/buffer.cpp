@@ -5,11 +5,46 @@
 #include "model/structure.h"
 #include "util/parallel.h"
 
-Buffer::Buffer(Structure* structure, OutputType output_type) :
-        output_type(output_type) {
-    int input_output_size = structure->get_num_neurons(INPUT_OUTPUT);
-    int input_size = input_output_size + structure->get_num_neurons(INPUT);
-    int output_size = input_output_size + structure->get_num_neurons(OUTPUT);
+Buffer::Buffer(Structure* structure) {
+    LayerList input_layers, output_layers;
+
+    // Extract layers from structure
+    for (auto layer : structure->get_layers()) {
+        if (layer->is_input()) input_layers.push_back(layer);
+        if (layer->is_output()) output_layers.push_back(layer);
+    }
+
+    this->init(input_layers, output_layers);
+}
+
+Buffer::Buffer(LayerList layers) {
+    this->init(layers, layers);
+}
+
+Buffer::Buffer(LayerList input_layers, LayerList output_layers) {
+    this->init(input_layers, output_layers);
+}
+
+Buffer::~Buffer() {
+#ifdef PARALLEL
+    // Free pinned memory
+    if (input_size > 0) cudaFreeHost(this->input);
+    if (output_size > 0) cudaFreeHost(this->output);
+#else
+    // Free non-pinned memory
+    if (input_size > 0) free(this->input);
+    if (output_size > 0) free(this->output);
+#endif
+}
+
+void Buffer::init(LayerList input_layers, LayerList output_layers) {
+    int input_size = 0;
+    for (auto layer : input_layers)
+        input_size += layer->size;
+
+    int output_size = 0;
+    for (auto layer : output_layers)
+        output_size += layer->size;
 
 #ifdef PARALLEL
     // Allocate pinned memory
@@ -35,32 +70,14 @@ Buffer::Buffer(Structure* structure, OutputType output_type) :
     // Set up maps
     int input_index = 0;
     int output_index = 0;
-    for (auto& layer : structure->get_layers(INPUT)) {
+    for (auto& layer : input_layers) {
         input_map[layer] = input + input_index;
         input_index += layer->size;
     }
-    for (auto& layer : structure->get_layers(INPUT_OUTPUT)) {
-        input_map[layer] = input + input_index;
-        input_index += layer->size;
+    for (auto& layer : output_layers) {
         output_map[layer] = output + output_index;
         output_index += layer->size;
     }
-    for (auto& layer : structure->get_layers(OUTPUT)) {
-        output_map[layer] = output + output_index;
-        output_index += layer->size;
-    }
-}
-
-Buffer::~Buffer() {
-#ifdef PARALLEL
-    // Free pinned memory
-    if (input_size > 0) cudaFreeHost(this->input);
-    if (output_size > 0) cudaFreeHost(this->output);
-#else
-    // Free non-pinned memory
-    if (input_size > 0) free(this->input);
-    if (output_size > 0) free(this->output);
-#endif
 }
 
 void Buffer::set_input(Layer* layer, float* source) {

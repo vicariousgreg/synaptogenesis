@@ -10,7 +10,9 @@ class Structure;
 
 class Buffer {
     public:
-        Buffer(Structure *structure, OutputType output_type);
+        Buffer(Structure *structure);
+        Buffer(LayerList layers);
+        Buffer(LayerList input_layers, LayerList output_layers);
         virtual ~Buffer();
 
         /* IO setters */
@@ -21,9 +23,9 @@ class Buffer {
         float* get_input(Layer *layer) { return input_map[layer]; }
         Output* get_output(Layer *layer) { return output_map[layer]; }
 
-        const OutputType output_type;
-
     private:
+        void init(LayerList input_layers, LayerList output_layers);
+
         float *input;
         Output *output;
 

@@ -5,10 +5,9 @@
 
 class PrintOutputModule : public Module {
     public:
-        PrintOutputModule(Layer *layer,
-            std::string params);
+        PrintOutputModule(Layer *layer, std::string params);
 
-        void report_output(Buffer *buffer);
+        void report_output(Buffer *buffer, OutputType output_type);
         virtual IOType get_type() { return OUTPUT; }
 
     private:
@@ -18,6 +17,7 @@ class PrintOutputModule : public Module {
         int refresh_rate;
         unsigned int maximum;
         unsigned int shift;
+        OutputType output_type;
 };
 
 #endif

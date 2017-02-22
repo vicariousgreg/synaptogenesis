@@ -31,7 +31,6 @@ class State {
         SYNAPSE_KERNEL get_updater(Connection *conn) const;
 
         /* Getters for structure related data */
-        int get_num_neurons(Structure *structure) const;
         OutputType get_output_type(Structure *structure) const;
 
 #ifdef PARALLEL

@@ -39,7 +39,7 @@ void Visualizer::update() {
             guint8* data = gui->pixbufs[i]->get_pixels();
             Buffer *buffer = environment->get_buffer(info.structure);
             Output *output = buffer->get_output(info.layer);
-            OutputType output_type = buffer->output_type;
+            OutputType output_type = environment->get_output_type(info.structure);
 
             for (int j = 0; j < info.layer->size; ++j)
                 data[j*4 + 3] = 255 - convert(output[j], output_type);

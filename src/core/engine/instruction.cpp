@@ -98,7 +98,7 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
     DendriticNode *child, State *state)
         : Instruction(parent->to_layer),
           init(child->register_index != 0) {
-    int num_neurons = state->get_num_neurons(parent->to_layer->structure);
+    int num_neurons = parent->to_layer->structure->get_num_neurons();
     float *input = state->get_input(to_layer);
     this->src = input + (num_neurons * child->register_index);
     this->dst = input + (num_neurons * parent->register_index);

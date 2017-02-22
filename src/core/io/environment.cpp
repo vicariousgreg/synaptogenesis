@@ -6,11 +6,10 @@
 #include "visualizer.h"
 
 Environment::Environment(State *state)
-        : visualizer(NULL) {
+        : state(state), visualizer(NULL) {
     // Create buffers
     for (auto& structure : state->model->get_structures())
-        this->buffers[structure] = new Buffer(
-            structure, state->get_output_type(structure));
+        this->buffers[structure] = new Buffer(structure);
 
     // Extract modules
     for (auto& structure : state->model->get_structures()) {
@@ -53,6 +52,14 @@ Environment::~Environment() {
         delete visualizer;
 }
 
+Buffer* Environment::get_buffer(Structure *structure) {
+    return buffers.at(structure);
+}
+
+OutputType Environment::get_output_type(Structure *structure) {
+    return state->get_output_type(structure);
+}
+
 void Environment::step_input() {
     for (auto& module : this->input_modules)
         module->feed_input(buffers.at(module->layer->structure));
@@ -60,7 +67,9 @@ void Environment::step_input() {
 
 void Environment::step_output() {
     for (auto& module : this->output_modules)
-        module->report_output(buffers.at(module->layer->structure));
+        module->report_output(
+            buffers.at(module->layer->structure),
+            state->get_output_type(module->layer->structure));
 }
 
 void Environment::ui_launch() {

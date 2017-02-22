@@ -44,8 +44,7 @@ class Structure {
         /*******************************/
         void add_layer(std::string name, int rows, int columns, std::string params, float noise=0.0);
         void add_layer_from_image(std::string name, std::string path, std::string params, float noise=0.0);
-        const LayerList& get_layers() const { return all_layers; }
-        const LayerList& get_layers(IOType type) const { return layers[type]; }
+        const LayerList& get_layers() const { return layers; }
         const ConnectionList& get_connections() const { return connections; }
 
         /*******************************/
@@ -103,8 +102,7 @@ class Structure {
         }
 
         // Layers
-        LayerList all_layers;
-        LayerList layers[sizeof(IOTypes)];
+        LayerList layers;
         std::map<std::string, Layer*> layers_by_name;
 
         // Connections

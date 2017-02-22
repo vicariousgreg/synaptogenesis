@@ -30,8 +30,12 @@ class Layer {
 
         /* Constant getters */
         IOType get_type() const { return type; }
+        bool is_input() const { return type == INPUT or type == INPUT_OUTPUT; }
+        bool is_output() const { return type == OUTPUT or type == INPUT_OUTPUT; }
+
         Module* get_input_module() const { return input_module; }
         const ModuleList get_output_modules() const { return output_modules; }
+
         const ConnectionList& get_input_connections() const { return input_connections; }
         const ConnectionList& get_output_connections() const { return output_connections; }
 

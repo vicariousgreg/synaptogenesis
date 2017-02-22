@@ -11,23 +11,19 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
 #endif
     // Keep track of visited layers;
     std::set<Layer*> visited;
-    std::set<Layer*> enqueued;
 
     // Create queue and push output layers
     std::queue<Layer*> queue;
-    for (auto layer : structure->get_layers(OUTPUT)) {
-        queue.push(layer);
-        enqueued.insert(layer);
-    }
-    for (auto layer : structure->get_layers(INPUT_OUTPUT)) {
-        queue.push(layer);
-        enqueued.insert(layer);
-    }
+    for (auto layer : structure->get_layers())
+        if (layer->is_output()) queue.push(layer);
 
     /* Do breadth first search backwards on the model and create streams */
     while (not queue.empty()) {
         auto curr_layer = queue.front();
         queue.pop();
+
+        // If already visited, skip
+        if (visited.find(curr_layer) != visited.end()) continue;
         visited.insert(curr_layer);
 
         // Add elements to beginning of list
@@ -48,8 +44,7 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
                     if (visited.find(to_conn->to_layer) == visited.end()
                         or to_conn->to_layer->structure != structure)
                         continue;
-                if (enqueued.find(conn->from_layer) == enqueued.end()
-                    and conn->from_layer->structure == structure)
+                if (conn->from_layer->structure == structure)
                     queue.push(conn->from_layer);
             }
         }

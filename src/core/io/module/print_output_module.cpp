@@ -23,9 +23,8 @@ PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)
     this->shift = (8 * sizeof(int)) - this->history_length;
 }
 
-void PrintOutputModule::report_output(Buffer *buffer) {
+void PrintOutputModule::report_output(Buffer *buffer, OutputType output_type) {
     Output* output = buffer->get_output(this->layer);
-    OutputType output_type = buffer->output_type;
 
     // Print bar
     for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
