@@ -131,8 +131,11 @@ void Structure::add_layer(std::string name, int rows, int columns, std::string p
             "Repeated layer name!");
 
     Layer* layer = new Layer(this, name, rows, columns, params, noise);
-    this->layers.push_back(layer);
+    this->all_layers.push_back(layer);
+    this->layers[layer->get_type()].push_back(layer);
     this->layers_by_name[name] = layer;
+    this->total_neurons += layer->size;
+    this->num_neurons[layer->get_type()] += layer->size;
 }
 
 void Structure::add_layer_from_image(std::string name, std::string path, std::string params, float noise) {
@@ -147,5 +150,16 @@ void Structure::add_module(std::string layer_name, std::string type, std::string
             "Could not find layer \"" + layer_name + "\"!");
 
     Module *module = build_module(layer, type, params);
+
+    // Remove data for old IOType
+    this->num_neurons[layer->get_type()] -= layer->size;
+    auto& vec = this->layers[layer->get_type()];
+    vec.erase(std::find(vec.begin(), vec.end(), layer));
+
+    // Add the module
     layer->add_module(module);
+
+    // Add data for new IOType
+    this->num_neurons[layer->get_type()] += layer->size;
+    this->layers[layer->get_type()].push_back(layer);
 }

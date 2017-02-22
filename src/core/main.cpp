@@ -10,36 +10,29 @@
 #include "clock.h"
 
 void print_model(Model *model) {
-    // Ensure model is built
-    model->build();
-
-    auto layers = model->get_layers();
-    auto connections = model->get_connections();
-
     printf("Built model.\n");
     printf("  - neurons     : %10d\n", model->get_num_neurons());
-    printf("  - layers      : %10d\n", layers.size());
-    printf("  - connections : %10d\n", connections.size());
-    int num_weights = 0;
-    for (auto& conn : connections)
-        num_weights += conn->get_num_weights();
-    printf("  - weights     : %10d\n", num_weights);
+    printf("  - layers      : %10d\n", model->get_num_layers());
+    printf("  - connections : %10d\n", model->get_num_connections());
+    printf("  - weights     : %10d\n", model->get_num_weights());
 
-    for (auto layer : layers) {
-        std::cout << layer->structure->name << "->" << layer->name;
-        switch (layer->get_type()) {
-            case INPUT: std::cout << "\t\tINPUT"; break;
-            case INPUT_OUTPUT: std::cout << "\t\tINPUT_OUTPUT"; break;
-            case OUTPUT: std::cout << "\t\tOUTPUT"; break;
-            case INTERNAL: std::cout << "\t\tINTERNAL"; break;
+    for (auto structure : model->get_structures()) {
+        for (auto layer : structure->get_layers()) {
+            std::cout << layer->structure->name << "->" << layer->name;
+            switch (layer->get_type()) {
+                case INPUT: std::cout << "\t\tINPUT"; break;
+                case INPUT_OUTPUT: std::cout << "\t\tINPUT_OUTPUT"; break;
+                case OUTPUT: std::cout << "\t\tOUTPUT"; break;
+                case INTERNAL: std::cout << "\t\tINTERNAL"; break;
+            }
+            std::cout << std::endl;
         }
-        std::cout << std::endl;
     }
 }
 
 Model* build_self_connected_model(std::string engine_name) {
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("Self-connected");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("Self-connected", engine_name);
 
     int rows = 1000;
     int cols = 1000;
@@ -53,13 +46,12 @@ Model* build_self_connected_model(std::string engine_name) {
     //structure->add_module("a", "dummy_output", "5");
     //structure->add_module("b", "dummy_output", "5");
 
-    model->add_structure(structure);
     return model;
 }
 
 Model* build_arborized_model(std::string engine_name, ConnectionType type) {
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("Arborized");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("Arborized", engine_name);
 
     int rows = 1000;
     int cols = 1000;
@@ -69,13 +61,12 @@ Model* build_arborized_model(std::string engine_name, ConnectionType type) {
     // Modules
     //structure->add_module("b", "dummy_output", "5");
 
-    model->add_structure(structure);
     return model;
 }
 
 Model* build_stress_model(std::string engine_name) {
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("Self-connected");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("Self-connected", engine_name);
 
     int size = 800 * 19;
     structure->add_layer("pos", 1, size, "random positive", 5);
@@ -85,13 +76,12 @@ Model* build_stress_model(std::string engine_name) {
     structure->connect_layers("neg", "pos", false, 0, 1, FULLY_CONNECTED, SUB, "");
     structure->connect_layers("neg", "neg", false, 0, 1, FULLY_CONNECTED, SUB, "");
 
-    model->add_structure(structure);
     return model;
 }
 
 Model* build_layers_model(std::string engine_name) {
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("Self-connected");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("Self-connected", engine_name);
 
     int size = 100;
     structure->add_layer("a", size, size, "random positive", 10);
@@ -126,7 +116,6 @@ Model* build_layers_model(std::string engine_name) {
     structure->add_module("f", output_name, "");
     structure->add_module("g", output_name, "");
 
-    model->add_structure(structure);
     return model;
 }
 
@@ -136,8 +125,8 @@ Model* build_image_model(std::string engine_name) {
     std::string output_name = "visualizer_output";
 
     /* Construct the model */
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("Self-connected");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("Self-connected", engine_name);
 
     //const char* image_path = "resources/bird.jpg";
     const char* image_path = "resources/bird-head.jpg";
@@ -260,7 +249,6 @@ Model* build_image_model(std::string engine_name) {
     structure->add_module("back_slash", output_name, "8");
     //structure->add_module("cross", output_name, "8");
 
-    model->add_structure(structure);
     return model;
 }
 
@@ -270,8 +258,8 @@ Model* build_reentrant_image_model(std::string engine_name) {
     std::string output_name = "visualizer_output";
 
     /* Construct the model */
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("Self-connected");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("Self-connected", engine_name);
 
     //const char* image_path = "resources/bird.jpg";
     const char* image_path = "resources/bird-head.jpg";
@@ -303,14 +291,13 @@ Model* build_reentrant_image_model(std::string engine_name) {
     structure->add_module("layer1", output_name, "8");
     structure->add_module("layer2", output_name, "8");
 
-    model->add_structure(structure);
     return model;
 }
 
 Model* build_alignment_model(std::string engine_name) {
     /* Construct the model */
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("alignment");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("alignment", engine_name);
 
     int resolution = 128;
     structure->add_layer("input_layer", 1, 10, "default");
@@ -350,14 +337,13 @@ Model* build_alignment_model(std::string engine_name) {
     //structure->add_module("inh_thalamus", output_name, "8");
     structure->add_module("output_layer", output_name, "8");
 
-    model->add_structure(structure);
     return model;
 }
 
 Model* build_dendritic_model(std::string engine_name) {
     /* Construct the model */
-    Model *model = new Model(engine_name);
-    Structure *structure = new Structure("dendritic");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("dendritic", engine_name);
 
     int resolution = 125;
     structure->add_layer("input_layer1", 1, 10, "default");
@@ -417,14 +403,13 @@ Model* build_dendritic_model(std::string engine_name) {
     structure->add_module("inh_thalamus2", output_name, "8");
     structure->add_module("output_layer", output_name, "8");
 
-    model->add_structure(structure);
     return model;
 }
 
 Model* build_hh_model() {
     /* Construct the model */
-    Model *model = new Model("hodgkin_huxley");
-    Structure *structure = new Structure("hh");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("hh", "hodgkin_huxley");
 
     int resolution = 125;
     structure->add_layer("input_layer", 1, 10, "0");
@@ -465,18 +450,17 @@ Model* build_hh_model() {
     //structure->add_module("inh_thalamus", output_name, "8");
     structure->add_module("output_layer", output_name, "8");
 
-    model->add_structure(structure);
     return model;
 }
 
 Model* build_cc_model(std::string engine_name) {
     /* Construct the model */
-    Model *model = new Model(engine_name);
+    Model *model = new Model();
     std::vector<Structure*> structures;
     int num_structures = 4;
 
     for (int i = 0 ; i < num_structures ; ++i) {
-        Structure *structure = new Structure(std::to_string(i));
+        Structure *structure = model->add_structure(std::to_string(i), engine_name);
 
         int resolution = 128;
         structure->add_layer("input_layer", 1, 10, "default");
@@ -527,16 +511,13 @@ Model* build_cc_model(std::string engine_name) {
             //true, 20, 0.01, FULLY_CONNECTED, ADD, "0.001");
     }
 
-    for (auto structure : structures)
-        model->add_structure(structure);
-
     return model;
 }
 
 Model* build_re_model() {
     /* Construct the model */
-    Model *model = new Model("rate_encoding");
-    Structure *structure = new Structure("rate_encoding");
+    Model *model = new Model();
+    Structure *structure = model->add_structure("rate_encoding", "rate_encoding");
 
     int resolution = 128;
     structure->add_layer("in", 1, 8, "");
@@ -556,7 +537,6 @@ Model* build_re_model() {
     //structure->add_module("hid", output_name, "8");
     structure->add_module("out", output_name, "8");
 
-    model->add_structure(structure);
     return model;
 }
 

@@ -1,5 +1,6 @@
 #include <sstream>
 
+#include "model/layer.h"
 #include "state/weight_matrix.h"
 #include "util/tools.h"
 #include "util/error_manager.h"

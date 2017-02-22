@@ -109,7 +109,7 @@ inline GLOBAL void randomize_data(float* data, int count, float max, bool init) 
     Output * const outputs = synapse_data.outputs; \
     Output * const destination_outputs = synapse_data.destination_outputs; \
     float * const inputs = synapse_data.inputs; \
-    const EXTRACTOR extractor = synapse_data.attributes->extractor;
+    const EXTRACTOR extractor = synapse_data.extractor;
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \

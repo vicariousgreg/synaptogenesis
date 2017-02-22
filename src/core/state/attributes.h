@@ -1,7 +1,7 @@
 #ifndef attributes_h
 #define attributes_h
 
-#include "model/model.h"
+#include "model/structure.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/extractor.h"
@@ -12,17 +12,17 @@
 /* Typedef for attribute kernel functions */
 typedef void(*ATTRIBUTE_KERNEL)(const Attributes*, int, int);
 
-class Engine;
+class StreamCluster;
 
 class Attributes {
     public:
 
-        Attributes(Model *model, OutputType output_type);
+        Attributes(Structure *structure, OutputType output_type);
         virtual ~Attributes();
 
-        /* Builds an engine based on attribute subclass requirements
-         * If none specified, uses a default parallel engine */
-        virtual Engine *build_engine(Model *model, State *state);
+        /* Builds an engine stream cluster based on attribute subclass
+         * requirements. If none specified, uses a default parallel */
+        virtual StreamCluster *build_stream_cluster(Structure *structure, State *state);
 
 #ifdef PARALLEL
         virtual void send_to_device();
@@ -45,14 +45,10 @@ class Attributes {
         // Weight matrix processor
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
 
-        int get_start_index(int id) const { return start_indices.at(id); }
-        float* get_input(int id) const { return input + start_indices.at(id); }
-        Output* get_output(int id, int word_index = 0) const {
-            if (word_index >= HISTORY_SIZE)
-                ErrorManager::get_instance()->log_error(
-                    "Cannot retrieve output word index past history length!");
-            return output + (total_neurons * word_index) + start_indices.at(id);
-        }
+        // Layer data retrieval
+        int get_start_index(int id) const;
+        float* get_input(int id) const;
+        Output* get_output(int id, int word_index = 0) const;
 
         // Number of neurons
         const int total_neurons;
@@ -72,6 +68,6 @@ class Attributes {
         std::map<int, int> start_indices;
 };
 
-Attributes *build_attributes(Model *model);
+Attributes *build_attributes(Structure *structure);
 
 #endif

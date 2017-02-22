@@ -1,7 +1,7 @@
 #ifndef weight_matrix_h
 #define weight_matrix_h
 
-#include "model/model.h"
+#include "model/connection.h"
 #include "util/constants.h"
 
 class WeightMatrix {

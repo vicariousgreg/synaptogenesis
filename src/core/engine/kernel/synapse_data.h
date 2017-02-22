@@ -2,6 +2,7 @@
 #define synapse_data_h
 
 #include "model/connection.h"
+#include "engine/kernel/extractor.h"
 #include "util/parallel.h"
 
 class State;
@@ -12,8 +13,8 @@ class SynapseData {
     public:
         SynapseData(Connection *conn, State *state);
 
-        /* Neuron attributes */
-        const Attributes *attributes;
+        /* Output extractor */
+        const EXTRACTOR extractor;
 
         /* Connection attributes */
         Opcode opcode;

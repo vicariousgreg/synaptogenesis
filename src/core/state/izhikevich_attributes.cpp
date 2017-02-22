@@ -55,15 +55,15 @@ static IzhikevichParameters create_parameters(std::string str) {
             "Unrecognizer parameter string: " + str);
 }
 
-IzhikevichAttributes::IzhikevichAttributes(Model* model)
-        : SpikingAttributes(model) {
+IzhikevichAttributes::IzhikevichAttributes(Structure* structure)
+        : SpikingAttributes(structure) {
     this->recovery = (float*) allocate_host(total_neurons, sizeof(float));
     this->neuron_parameters = (IzhikevichParameters*)
         allocate_host(total_neurons, sizeof(IzhikevichParameters));
 
     // Fill in table
     int start_index = 0;
-    for (auto& layer : model->get_layers()) {
+    for (auto& layer : structure->get_layers()) {
         IzhikevichParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;

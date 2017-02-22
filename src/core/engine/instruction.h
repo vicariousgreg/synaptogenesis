@@ -125,8 +125,8 @@ class StateUpdateInstruction : public Instruction {
         StateUpdateInstruction(Layer *to_layer, State *state)
             : Instruction(to_layer),
               start_index(state->get_start_index(to_layer)),
-              attributes(state->get_attributes_pointer()),
-              attribute_kernel(state->get_attribute_kernel()) { }
+              attributes(state->get_attributes_pointer(to_layer)),
+              attribute_kernel(state->get_attribute_kernel(to_layer)) { }
 
         void activate();
 

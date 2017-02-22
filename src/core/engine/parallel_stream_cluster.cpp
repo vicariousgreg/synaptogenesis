@@ -2,10 +2,10 @@
 
 #include "engine/stream_cluster.h"
 
-ParallelStreamCluster::ParallelStreamCluster(Model *model, State *state)
-        : StreamCluster(model, state) {
+ParallelStreamCluster::ParallelStreamCluster(Structure *structure, State *state)
+        : StreamCluster(structure, state) {
     // Build instructions
-    for (auto& layer : model->get_layers())
+    for (auto& layer : structure->get_layers())
         streams[layer->get_type()].push_back(new Stream(layer, state));
 
     // Schedule instructions

@@ -2,13 +2,14 @@
 #define state_h
 
 #include "model/model.h"
+#include "model/structure.h"
 #include "io/buffer.h"
 #include "engine/kernel/kernel.h"
 #include "state/attributes.h"
 #include "state/weight_matrix.h"
 #include "util/constants.h"
 
-class Engine;
+class StreamCluster;
 
 class State {
     public:
@@ -16,42 +17,25 @@ class State {
         virtual ~State();
 
         /* Builds an engine based on attribute requirements */
-        Engine *build_engine() {
-            return attributes->build_engine(model, this);
-        }
+        StreamCluster *build_stream_cluster(Structure *structure);
 
-        /* Getters for weight matrices */
-        float* get_matrix(Connection* conn) const {
-            return weight_matrices.at(conn)->get_data();
-        }
+        /* Getters for layer related data */
+        int get_start_index(Layer *layer) const;
+        float* get_input(Layer *layer) const;
+        OutputType get_output_type(Layer *layer) const;
+        Output* get_output(Layer *layer, int word_index = 0) const;
+        const Attributes *get_attributes_pointer(Layer *layer) const;
+        const ATTRIBUTE_KERNEL get_attribute_kernel(Layer *layer) const;
 
-        /* Getters for IO data */
-        float* get_input(Layer *layer) const { return attributes->get_input(layer->id); }
-        OutputType get_output_type() const { return attributes->output_type; }
-        Output* get_output(Layer *layer, int word_index = 0) const {
-            return attributes->get_output(layer->id, word_index);
-        }
+        /* Getters for connection related data */
+        float* get_matrix(Connection* conn) const;
+        EXTRACTOR get_extractor(Connection *conn) const;
+        KERNEL get_activator(Connection *conn) const;
+        KERNEL get_updater(Connection *conn) const;
 
-        /* Getters for neuron count related information */
-        int get_num_neurons() const { return attributes->total_neurons; }
-        int get_start_index(Layer *layer) const {
-            return attributes->get_start_index(layer->id);
-        }
-
-        /* Constant getter so that nobody else changes the Attributes
-         * This way, kernels can access attribute data without using a getter
-         *     function, but the data is protected from everybody but this State */
-        const Attributes *get_attributes_pointer() const { return attributes->pointer; }
-        Buffer *get_buffer() const { return buffer; }
-        KERNEL get_activator(ConnectionType type) const {
-            return attributes->get_activator(type);
-        }
-        KERNEL get_updater(ConnectionType type) const {
-            return attributes->get_updater(type);
-        }
-        const ATTRIBUTE_KERNEL get_attribute_kernel() const {
-            return attributes->get_attribute_kernel();
-        }
+        /* Getters for structure related data */
+        Buffer *get_buffer(Structure *structure) const;
+        int get_num_neurons(Structure* structure) const;
 
 #ifdef PARALLEL
         cudaStream_t io_stream;
@@ -59,8 +43,8 @@ class State {
 
     private:
         Model *model;
-        Attributes *attributes;
-        Buffer *buffer;
+        std::map<Structure*, Attributes*> attributes;
+        std::map<Structure*, Buffer*> buffers;
         std::map<Connection*, WeightMatrix*> weight_matrices;
 };
 

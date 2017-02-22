@@ -2,7 +2,7 @@
 #define stream_cluster_h
 
 #include <map>
-#include "model/model.h"
+#include "model/structure.h"
 #include "engine/stream.h"
 #include "engine/instruction.h"
 #include "util/parallel.h"
@@ -10,8 +10,8 @@
 
 class StreamCluster {
     public:
-        StreamCluster(Model *model, State *state)
-                : model(model),
+        StreamCluster(Structure *structure, State *state)
+                : structure(structure),
                   state(state) { }
         virtual ~StreamCluster() { }
 
@@ -28,7 +28,7 @@ class StreamCluster {
 #endif
 
     protected:
-        Model *model;
+        Structure *structure;
         State *state;
 };
 
@@ -36,7 +36,7 @@ typedef std::vector<IOType> IOTypeVector;
 
 class ParallelStreamCluster : public StreamCluster {
     public:
-        ParallelStreamCluster(Model *model, State *state);
+        ParallelStreamCluster(Structure *structure, State *state);
         virtual ~ParallelStreamCluster();
 
         virtual void launch_pre_input_calculations();
@@ -63,7 +63,7 @@ class ParallelStreamCluster : public StreamCluster {
 
 class SequentialStreamCluster : public StreamCluster {
     public:
-        SequentialStreamCluster(Model *model, State *state);
+        SequentialStreamCluster(Structure *structure, State *state);
         virtual ~SequentialStreamCluster();
 
         virtual void launch_input();
@@ -84,7 +84,7 @@ class SequentialStreamCluster : public StreamCluster {
 
 class FeedforwardStreamCluster : public SequentialStreamCluster {
     public:
-        FeedforwardStreamCluster(Model *model, State *state);
+        FeedforwardStreamCluster(Structure *structure, State *state);
 
         virtual void launch_weight_update();
 };

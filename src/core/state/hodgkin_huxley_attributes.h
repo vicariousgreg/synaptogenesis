@@ -15,7 +15,7 @@ GLOBAL void hh_attribute_kernel(const Attributes *att, int start_index, int coun
 
 class HodgkinHuxleyAttributes : public SpikingAttributes {
     public:
-        HodgkinHuxleyAttributes(Model* model);
+        HodgkinHuxleyAttributes(Structure* structure);
         virtual ~HodgkinHuxleyAttributes();
 
         ATTRIBUTE_KERNEL get_attribute_kernel() const {

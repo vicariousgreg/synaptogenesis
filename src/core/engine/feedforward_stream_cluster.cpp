@@ -17,19 +17,19 @@ static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
     }
 }
 
-FeedforwardStreamCluster::FeedforwardStreamCluster(Model *model, State *state)
-        : SequentialStreamCluster(model, state) {
+FeedforwardStreamCluster::FeedforwardStreamCluster(Structure *structure, State *state)
+        : SequentialStreamCluster(structure, state) {
     // Determine if there are any cycles
     // Perform DFS on all input layers
     std::set<Layer*> visited;
-    for (auto layer : model->get_layers(INPUT))
+    for (auto layer : structure->get_layers(INPUT))
         if (not DFS(layer, visited))
             ErrorManager::get_instance()->log_error(
-                "Feedforward engine requires a model with no cycles!");
-    for (auto layer : model->get_layers(INPUT_OUTPUT))
+                "Feedforward engine requires a structure with no cycles!");
+    for (auto layer : structure->get_layers(INPUT_OUTPUT))
         if (not DFS(layer, visited))
             ErrorManager::get_instance()->log_error(
-                "Feedforward engine requires a model with no cycles!");
+                "Feedforward engine requires a structure with no cycles!");
 }
 
 /******************************************************************************/

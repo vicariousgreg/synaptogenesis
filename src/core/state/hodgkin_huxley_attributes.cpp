@@ -13,8 +13,8 @@ static HodgkinHuxleyParameters create_parameters(std::string str) {
     return HodgkinHuxleyParameters(iapp);
 }
 
-HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model)
-        : SpikingAttributes(model) {
+HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Structure* structure)
+        : SpikingAttributes(structure) {
     this->h = (float*) allocate_host(total_neurons, sizeof(float));
     this->m = (float*) allocate_host(total_neurons, sizeof(float));
     this->n = (float*) allocate_host(total_neurons, sizeof(float));
@@ -24,7 +24,7 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Model* model)
 
     // Fill in table
     int start_index = 0;
-    for (auto& layer : model->get_layers()) {
+    for (auto& layer : structure->get_layers()) {
         HodgkinHuxleyParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;

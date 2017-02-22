@@ -8,16 +8,23 @@
 
 class Engine {
     public:
-        Engine(Model *model, State *state,
-            StreamCluster *stream_cluster)
+        Engine(Model *model, State *state)
                 : model(model),
                   state(state),
-                  stream_cluster(stream_cluster),
-                  learning_flag(true) { }
+                  learning_flag(true) {
+            for (auto& structure : model->get_structures())
+                stream_clusters.push_back(state->build_stream_cluster(structure));
+        }
 
-        virtual ~Engine() { delete this->stream_cluster; }
+        virtual ~Engine() {
+            for (auto& cluster : stream_clusters)
+                delete cluster;
+        }
 
-        Buffer *get_buffer() const { return state->get_buffer(); }
+        Buffer *get_buffer(Structure *structure) const {
+            return state->get_buffer(structure);
+        }
+
         void set_learning_flag(bool status) { learning_flag = status; }
 
         // Main hooks
@@ -29,29 +36,8 @@ class Engine {
     protected:
         Model *model;
         State *state;
-        StreamCluster *stream_cluster;
+        std::vector<StreamCluster*> stream_clusters;
         bool learning_flag;
-};
-
-class ParallelEngine : public Engine {
-    public:
-        ParallelEngine(Model *model, State *state)
-            : Engine(model, state,
-                new ParallelStreamCluster(model, state)) { }
-};
-
-class SequentialEngine : public Engine {
-    public:
-        SequentialEngine(Model *model, State *state)
-            : Engine(model, state,
-                new SequentialStreamCluster(model, state)) { }
-};
-
-class FeedforwardEngine : public Engine {
-    public:
-        FeedforwardEngine(Model *model, State *state)
-            : Engine(model, state,
-                new FeedforwardStreamCluster(model, state)) { }
 };
 
 #endif

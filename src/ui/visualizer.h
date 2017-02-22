@@ -2,14 +2,14 @@
 #define visualizer_h
 
 #include "model/layer.h"
-#include "io/buffer.h"
 #include "layer_info.h"
 
 class GUI;
+class Environment;
 
 class Visualizer {
     public:
-        Visualizer(Buffer *buffer);
+        Visualizer(Environment *environment);
         virtual ~Visualizer();
 
         void add_layer(Layer *layer, bool input, bool output);
@@ -17,7 +17,7 @@ class Visualizer {
         void update();
 
     private:
-        Buffer *buffer;
+        Environment *environment;
         GUI *gui;
 };
 

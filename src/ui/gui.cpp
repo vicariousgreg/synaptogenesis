@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-GUI::GUI(Buffer *buffer) : buffer(buffer) {
+GUI::GUI() {
     // Mock arguments
     int argc = 1;
     this->argv = (char**)malloc(sizeof(char*));

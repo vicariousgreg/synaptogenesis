@@ -6,7 +6,7 @@
 class SpikingAttributes : public Attributes {
     public:
 
-        SpikingAttributes(Model* model);
+        SpikingAttributes(Structure* structure);
         virtual ~SpikingAttributes();
 
         /* Trace learning rules */

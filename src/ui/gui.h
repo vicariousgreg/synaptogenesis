@@ -3,12 +3,11 @@
 
 #include <gtkmm.h>
 
-#include "io/buffer.h"
 #include "layer_info.h"
 
 class GUI {
     public:
-        GUI(Buffer *buffer);
+        GUI();
         virtual ~GUI();
 
         void add_layer(LayerInfo layer_info);
@@ -22,7 +21,6 @@ class GUI {
 
     private:
         char** argv;
-        Buffer *buffer;
         Glib::RefPtr<Gtk::Application> app;
         Gtk::Window *window;
         Gtk::Grid *grid;

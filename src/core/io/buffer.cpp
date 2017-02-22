@@ -2,14 +2,14 @@
 #include <cstring>
 
 #include "io/buffer.h"
-#include "model/model.h"
+#include "model/structure.h"
 #include "util/parallel.h"
 
-Buffer::Buffer(Model* model, OutputType output_type) :
+Buffer::Buffer(Structure* structure, OutputType output_type) :
         output_type(output_type) {
-    int input_output_size = model->get_num_neurons(INPUT_OUTPUT);
-    int input_size = input_output_size + model->get_num_neurons(INPUT);
-    int output_size = input_output_size + model->get_num_neurons(OUTPUT);
+    int input_output_size = structure->get_num_neurons(INPUT_OUTPUT);
+    int input_size = input_output_size + structure->get_num_neurons(INPUT);
+    int output_size = input_output_size + structure->get_num_neurons(OUTPUT);
 
 #ifdef PARALLEL
     // Allocate pinned memory
@@ -35,17 +35,17 @@ Buffer::Buffer(Model* model, OutputType output_type) :
     // Set up maps
     int input_index = 0;
     int output_index = 0;
-    for (auto& layer : model->get_layers(INPUT)) {
+    for (auto& layer : structure->get_layers(INPUT)) {
         input_map[layer] = input + input_index;
         input_index += layer->size;
     }
-    for (auto& layer : model->get_layers(INPUT_OUTPUT)) {
+    for (auto& layer : structure->get_layers(INPUT_OUTPUT)) {
         input_map[layer] = input + input_index;
         input_index += layer->size;
         output_map[layer] = output + output_index;
         output_index += layer->size;
     }
-    for (auto& layer : model->get_layers(OUTPUT)) {
+    for (auto& layer : structure->get_layers(OUTPUT)) {
         output_map[layer] = output + output_index;
         output_index += layer->size;
     }

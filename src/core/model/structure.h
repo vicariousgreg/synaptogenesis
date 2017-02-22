@@ -2,6 +2,7 @@
 #define structure_h
 
 #include <map>
+#include <vector>
 #include <string>
 
 #include "util/constants.h"
@@ -19,8 +20,16 @@
  */
 class Structure {
     public:
-        Structure (std::string name) : name(name) { }
+        Structure (std::string name, std::string engine_name)
+                : name(name),
+                  engine_name(engine_name) {
+            for (auto type : IOTypes) this->num_neurons[type] = 0;
+        }
         virtual ~Structure() { }
+
+        /* Gets the total neuron count */
+        int get_num_neurons() const { return total_neurons; }
+        int get_num_neurons(IOType type) const { return num_neurons[type]; }
 
         /* Connects layers in two different structures */
         static Connection* connect(
@@ -35,7 +44,8 @@ class Structure {
         /*******************************/
         void add_layer(std::string name, int rows, int columns, std::string params, float noise=0.0);
         void add_layer_from_image(std::string name, std::string path, std::string params, float noise=0.0);
-        const LayerList& get_layers() const { return layers; }
+        const LayerList& get_layers() const { return all_layers; }
+        const LayerList& get_layers(IOType type) const { return layers[type]; }
         const ConnectionList& get_connections() const { return connections; }
 
         /*******************************/
@@ -75,6 +85,9 @@ class Structure {
         // Structure name
         const std::string name;
 
+        // Engine name
+        const std::string engine_name;
+
     private:
         /* Internal layer connection functions */
         Connection* connect_layers(
@@ -90,11 +103,18 @@ class Structure {
         }
 
         // Layers
-        LayerList layers;
+        LayerList all_layers;
+        LayerList layers[sizeof(IOTypes)];
         std::map<std::string, Layer*> layers_by_name;
 
         // Connections
         ConnectionList connections;
+
+        // Number of neurons
+        int total_neurons;
+        int num_neurons[sizeof(IOTypes)];
 };
+
+typedef std::vector<Structure*> StructureList;
 
 #endif

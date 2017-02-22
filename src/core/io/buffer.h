@@ -6,11 +6,11 @@
 #include "model/layer.h"
 #include "util/constants.h"
 
-class Model;
+class Structure;
 
 class Buffer {
     public:
-        Buffer(Model *model, OutputType output_type);
+        Buffer(Structure *structure, OutputType output_type);
         virtual ~Buffer();
 
         /* IO setters */

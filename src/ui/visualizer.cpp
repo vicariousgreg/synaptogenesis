@@ -1,5 +1,6 @@
 #include <climits>
 
+#include "io/environment.h"
 #include "visualizer.h"
 #include "gui.h"
 
@@ -14,8 +15,8 @@ static guint8 convert(Output out, OutputType type) {
     }
 }
 
-Visualizer::Visualizer(Buffer *buffer) : buffer(buffer) {
-    this->gui = new GUI(buffer);
+Visualizer::Visualizer(Environment *environment) : environment(environment) {
+    this->gui = new GUI();
 }
 
 Visualizer::~Visualizer() {
@@ -31,14 +32,14 @@ void Visualizer::launch() {
 }
 
 void Visualizer::update() {
-    OutputType output_type = buffer->output_type;
-
     // Copy data over
     for (int i = 0; i < gui->layers.size(); ++i) {
         LayerInfo &info = gui->layers[i];
         if (info.output) {
             guint8* data = gui->pixbufs[i]->get_pixels();
+            Buffer *buffer = environment->get_buffer(info.structure);
             Output *output = buffer->get_output(info.layer);
+            OutputType output_type = buffer->output_type;
 
             for (int j = 0; j < info.layer->size; ++j)
                 data[j*4 + 3] = 255 - convert(output[j], output_type);

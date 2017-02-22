@@ -16,7 +16,7 @@ GLOBAL void iz_attribute_kernel(const Attributes *att, int start_index, int coun
 
 class IzhikevichAttributes : public SpikingAttributes {
     public:
-        IzhikevichAttributes(Model* model);
+        IzhikevichAttributes(Structure* structure);
         virtual ~IzhikevichAttributes();
 
         ATTRIBUTE_KERNEL get_attribute_kernel() const {

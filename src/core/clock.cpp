@@ -69,14 +69,12 @@ void Clock::environment_loop(int iterations, bool verbose) {
 }
 
 void Clock::run(Model *model, int iterations, bool verbose) {
-    // Ensure model is built
-    model->build();
-
 #ifdef PARALLEL
     // Initialize cuda random states
     int max_size = 0;
-    for (auto& layer : model->get_layers())
-        if (layer->size > max_size) max_size = layer->size;
+    for (auto& structure : model->get_structures())
+        for (auto& layer : structure->get_layers())
+            if (layer->size > max_size) max_size = layer->size;
     init_cuda_rand(max_size);
 #endif
 
@@ -88,7 +86,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
 
     // Build state
     State *state = new State(model);
-    this->engine = state->build_engine();
+    this->engine = new Engine(model, state);
     //this->engine->set_learning_flag(false);  // disable learning
     if (verbose) {
         printf("Built state.\n");
@@ -96,7 +94,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     }
 
     // Build environment
-    this->environment = new Environment(model, this->engine->get_buffer());
+    this->environment = new Environment(model, this->engine);
 
 #ifdef PARALLEL
     // Ensure device is synchronized without errors

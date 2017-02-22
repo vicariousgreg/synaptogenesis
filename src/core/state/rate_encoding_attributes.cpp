@@ -1,7 +1,7 @@
 #include <string>
 
 #include "state/rate_encoding_attributes.h"
-#include "engine/engine.h"
+#include "engine/stream_cluster.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
@@ -13,13 +13,13 @@ static RateEncodingParameters create_parameters(std::string str) {
     //    "Unrecognized parameter string: " + str);
 }
 
-RateEncodingAttributes::RateEncodingAttributes(Model* model) : Attributes(model, FLOAT) {
+RateEncodingAttributes::RateEncodingAttributes(Structure* structure) : Attributes(structure, FLOAT) {
     this->neuron_parameters = (RateEncodingParameters*)
         allocate_host(total_neurons, sizeof(RateEncodingParameters));
 
     // Fill in table
     int start_index = 0;
-    for (auto& layer : model->get_layers()) {
+    for (auto& layer : structure->get_layers()) {
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
             neuron_parameters[start_index+j] = params;
@@ -35,8 +35,8 @@ RateEncodingAttributes::~RateEncodingAttributes() {
 #endif
 }
 
-Engine *RateEncodingAttributes::build_engine(Model *model, State *state) {
-    return new FeedforwardEngine(model, state);
+StreamCluster *RateEncodingAttributes::build_stream_cluster(Structure *structure, State *state) {
+    return new FeedforwardStreamCluster(structure, state);
 }
 
 #ifdef PARALLEL

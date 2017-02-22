@@ -3,12 +3,16 @@
 
 #include "model/layer.h"
 
+class Structure;
+
 class LayerInfo {
     public:
         LayerInfo(Layer* layer, bool input, bool output)
-            : layer(layer), input(input), output(output) {}
+            : layer(layer), structure(layer->structure),
+              input(input), output(output) {}
 
         Layer *layer;
+        Structure *structure;
         bool input, output;
 };
 

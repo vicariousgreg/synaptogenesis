@@ -3,8 +3,8 @@
 
 #include "engine/stream_cluster.h"
 
-SequentialStreamCluster::SequentialStreamCluster(Model *model, State *state)
-        : StreamCluster(model, state) {
+SequentialStreamCluster::SequentialStreamCluster(Structure *structure, State *state)
+        : StreamCluster(structure, state) {
 #ifdef PARALLEL
     cudaStreamCreate(&this->compute_cuda_stream);
 #endif
@@ -14,11 +14,11 @@ SequentialStreamCluster::SequentialStreamCluster(Model *model, State *state)
 
     // Create queue and push output layers
     std::queue<Layer*> queue;
-    for (auto layer : model->get_layers(OUTPUT)) {
+    for (auto layer : structure->get_layers(OUTPUT)) {
         queue.push(layer);
         enqueued.insert(layer);
     }
-    for (auto layer : model->get_layers(INPUT_OUTPUT)) {
+    for (auto layer : structure->get_layers(INPUT_OUTPUT)) {
         queue.push(layer);
         enqueued.insert(layer);
     }

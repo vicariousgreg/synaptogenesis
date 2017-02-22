@@ -8,8 +8,8 @@ Instruction::Instruction(Layer *layer) : to_layer(layer) {
     this->stream = 0;
 
     // Calculate grid and block sizes
-    this->activator_threads = dim3(calc_threads(to_layer->size));
-    this->activator_blocks = dim3(calc_blocks(to_layer->size));
+    this->activator_threads = dim3(calc_threads(layer->size));
+    this->activator_blocks = dim3(calc_blocks(layer->size));
 #endif
 }
 
@@ -23,8 +23,7 @@ void Instruction::record_events() {
 
 InitializeInstruction::InitializeInstruction(Layer *layer, State *state)
         : Instruction(layer) {
-    int num_neurons = state->get_num_neurons();
-    this->dst = state->get_input(to_layer);
+    this->dst = state->get_input(layer);
 }
 
 void ClearInstruction::activate() {
@@ -56,8 +55,8 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
         connection(conn),
         synapse_data(conn, state),
         type(conn->type) {
-    this->activator = state->get_activator(type);
-    this->updater = (conn->plastic) ? state->get_updater(type) : NULL;
+    this->activator = state->get_activator(conn);
+    this->updater = (conn->plastic) ? state->get_updater(conn) : NULL;
 
 #ifdef PARALLEL
     if (conn->convolutional) {
@@ -99,7 +98,7 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
     DendriticNode *child, State *state)
         : Instruction(parent->to_layer),
           init(child->register_index != 0) {
-    int num_neurons = state->get_num_neurons();
+    int num_neurons = state->get_num_neurons(parent->to_layer->structure);
     float *input = state->get_input(to_layer);
     this->src = input + (num_neurons * child->register_index);
     this->dst = input + (num_neurons * parent->register_index);
@@ -119,8 +118,8 @@ void DendriticInstruction::activate() {
 
 InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state)
         : Instruction(layer) {
-    this->src = state->get_buffer()->get_input(to_layer);
-    this->dst = state->get_input(to_layer);
+    this->src = state->get_buffer(layer->structure)->get_input(layer);
+    this->dst = state->get_input(layer);
 }
 
 void InputTransferInstruction::activate() {
@@ -137,8 +136,8 @@ void InputTransferInstruction::activate() {
 
 OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state)
         : Instruction(layer) {
-    this->src = state->get_output(to_layer);
-    this->dst = state->get_buffer()->get_output(to_layer);
+    this->src = state->get_output(layer);
+    this->dst = state->get_buffer(layer->structure)->get_output(layer);
 }
 
 void OutputTransferInstruction::activate() {

@@ -2,56 +2,49 @@
 #include "model/model_builder.h"
 #include "util/error_manager.h"
 
-Model::Model(std::string engine_name) :
-        total_neurons(0),
-        engine_name(engine_name) {}
-
 Model::~Model() {
-    for (auto& conn : this->connections) delete conn;
-    for (auto& layer : this->all_layers) delete layer;
-    for (auto& structure : this->structures) delete structure.second;
+    for (auto& structure : this->structures) delete structure;
 }
 
 Model* Model::load(std::string path) {
     return load_model(path);
 }
 
-void Model::add_structure(Structure *structure) {
-    if (this->structures.find(structure->name) != this->structures.end())
-        ErrorManager::get_instance()->log_error(
-            "Repeated structure name!");
-    this->structures[structure->name] = structure;
-    this->build();
+Structure* Model::add_structure(std::string name, std::string engine_name) {
+    for (auto& st : this->structures)
+        if (st->name == name)
+            ErrorManager::get_instance()->log_error(
+                "Repeated structure name!");
+    Structure *structure = new Structure(name, engine_name);
+    this->structures.push_back(structure);
+    return structure;
 }
 
-void Model::build() {
-    all_layers.clear();
-    connections.clear();
-    this->total_neurons = 0;
-    for (auto type : IOTypes) this->num_neurons[type] = 0;
-    for (auto type : IOTypes) layers[type].clear();
+int Model::get_num_neurons() const {
+    int num_neurons = 0;
+    for (auto structure : structures)
+        num_neurons += structure->get_num_neurons();
+    return num_neurons;
+}
 
-    // Extract layers and connections from structures
-    for (auto& it : this->structures) {
-        Structure *structure = it.second;
-        auto layers = structure->get_layers();
-        auto conns = structure->get_connections();
+int Model::get_num_layers() const {
+    int num_layers = 0;
+    for (auto structure : structures)
+        num_layers += structure->get_layers().size();
+    return num_layers;
+}
 
-        all_layers.insert(all_layers.end(), layers.begin(), layers.end());
-        connections.insert(this->connections.end(), conns.begin(), conns.end());
-    }
+int Model::get_num_connections() const {
+    int num_connections = 0;
+    for (auto structure : structures)
+        num_connections += structure->get_connections().size();
+    return num_connections;
+}
 
-    // Sort layers
-    for (auto& layer : this->all_layers) {
-        layers[layer->type].push_back(layer);
-        this->total_neurons += layer->size;
-        this->num_neurons[layer->type] += layer->size;
-    }
-
-    // Clear old list
-    // Add in order: input, IO, output, internal
-    all_layers.clear();
-    for (auto type : IOTypes)
-        all_layers.insert(this->all_layers.end(),
-            layers[type].begin(), layers[type].end());
+int Model::get_num_weights() const {
+    int num_weights = 0;
+    for (auto structure : structures)
+        for (auto conn : structure->get_connections())
+            num_weights += conn->get_num_weights();
+    return num_weights;
 }

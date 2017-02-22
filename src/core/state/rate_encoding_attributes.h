@@ -15,10 +15,10 @@ GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int coun
 
 class RateEncodingAttributes : public Attributes {
     public:
-        RateEncodingAttributes(Model* model);
+        RateEncodingAttributes(Structure* structure);
         virtual ~RateEncodingAttributes();
 
-        virtual Engine *build_engine(Model *model, State *state);
+        virtual StreamCluster *build_stream_cluster(Structure *structure, State *state);
 
         /* Trace learning rules */
         virtual KERNEL get_updater(ConnectionType type);
