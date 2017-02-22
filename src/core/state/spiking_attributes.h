@@ -10,8 +10,8 @@ class SpikingAttributes : public Attributes {
         virtual ~SpikingAttributes();
 
         /* Trace learning rules */
-        virtual KERNEL get_activator(ConnectionType type);
-        virtual KERNEL get_updater(ConnectionType type);
+        virtual SYNAPSE_KERNEL get_activator(ConnectionType type);
+        virtual SYNAPSE_KERNEL get_updater(ConnectionType type);
         virtual int get_matrix_depth(Connection* conn) {
             return (conn->convolutional) ?
                 (conn->to_layer->size + 2) : 3;

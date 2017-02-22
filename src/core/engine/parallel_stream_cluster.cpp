@@ -2,11 +2,13 @@
 
 #include "engine/stream_cluster.h"
 
-ParallelStreamCluster::ParallelStreamCluster(Structure *structure, State *state)
-        : StreamCluster(structure, state) {
+ParallelStreamCluster::ParallelStreamCluster(Structure *structure,
+        State *state, Environment *environment)
+        : StreamCluster(structure, state, environment) {
     // Build instructions
     for (auto& layer : structure->get_layers())
-        streams[layer->get_type()].push_back(new Stream(layer, state));
+        streams[layer->get_type()].push_back(
+            new Stream(layer, state, environment));
 
     // Schedule instructions
     post_input_instructions = sort_instructions(
@@ -28,9 +30,7 @@ ParallelStreamCluster::~ParallelStreamCluster() {
 
 InstructionList ParallelStreamCluster::sort_instructions(
         IOTypeVector types, bool plastic) {
-#ifdef PARALLEL
     std::map<Layer*, std::queue<Instruction* > > schedules;
-#endif
     InstructionList destination;
 
     // Extract instructions
@@ -38,9 +38,7 @@ InstructionList ParallelStreamCluster::sort_instructions(
         for (auto& stream : streams[type])
             for (auto& inst : stream->get_instructions())
                 if (not plastic or inst->is_plastic())
-#ifndef PARALLEL    // Add directly to destination list
-                    destination.push_back(inst);
-#else               // Add to schedule map for round robin
+                    // Add to schedule map for round robin
                     schedules[stream->to_layer].push(inst);
 
     // Perform round robin on streams
@@ -54,7 +52,6 @@ InstructionList ParallelStreamCluster::sort_instructions(
                 schedules.erase(schedule.first);
         }
     }
-#endif
     return destination;
 }
 

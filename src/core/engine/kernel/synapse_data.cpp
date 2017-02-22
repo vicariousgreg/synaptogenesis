@@ -19,7 +19,7 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         to_rows(conn->to_layer->rows),
         to_columns(conn->to_layer->columns),
         num_weights(conn->get_num_weights()),
-        output_type(state->get_output_type(conn->to_layer)),
+        output_type(state->get_output_type(conn->to_layer->structure)),
         weights(state->get_matrix(conn)) {
     this->fray =
         (to_rows == from_rows and to_columns == from_columns)

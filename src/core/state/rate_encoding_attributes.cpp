@@ -1,7 +1,6 @@
 #include <string>
 
 #include "state/rate_encoding_attributes.h"
-#include "engine/stream_cluster.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
@@ -33,10 +32,6 @@ RateEncodingAttributes::~RateEncodingAttributes() {
 #else
     free(this->neuron_parameters);
 #endif
-}
-
-StreamCluster *RateEncodingAttributes::build_stream_cluster(Structure *structure, State *state) {
-    return new FeedforwardStreamCluster(structure, state);
 }
 
 #ifdef PARALLEL
@@ -132,7 +127,7 @@ CALC_ONE_TO_ONE(update_convolutional_hebbian,
     UPDATE_WEIGHT_CONVOLUTIONAL(index);
     );
 
-KERNEL RateEncodingAttributes::get_updater(ConnectionType conn_type) {
+SYNAPSE_KERNEL RateEncodingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return update_fully_connected_hebbian;

@@ -1,18 +1,19 @@
 #ifndef attributes_h
 #define attributes_h
 
+#include <string>
+
 #include "model/structure.h"
 #include "state/weight_matrix.h"
-#include "engine/kernel/kernel.h"
 #include "engine/kernel/extractor.h"
+#include "engine/kernel/synapse_kernel.h"
 #include "engine/kernel/activator_kernel.h"
+#include "io/environment.h"
 #include "util/constants.h"
 #include "util/error_manager.h"
 
 /* Typedef for attribute kernel functions */
 typedef void(*ATTRIBUTE_KERNEL)(const Attributes*, int, int);
-
-class StreamCluster;
 
 class Attributes {
     public:
@@ -20,9 +21,8 @@ class Attributes {
         Attributes(Structure *structure, OutputType output_type);
         virtual ~Attributes();
 
-        /* Builds an engine stream cluster based on attribute subclass
-         * requirements. If none specified, uses a default parallel */
-        virtual StreamCluster *build_stream_cluster(Structure *structure, State *state);
+        /* Gets the name of the stream cluster to use with these attributes */
+        virtual std::string get_stream_cluster_name() { return "parallel"; }
 
 #ifdef PARALLEL
         virtual void send_to_device();
@@ -32,12 +32,12 @@ class Attributes {
 
         /* Learning Rule functions */
         // Activator Kernel
-        virtual KERNEL get_activator(ConnectionType type) {
+        virtual SYNAPSE_KERNEL get_activator(ConnectionType type) {
             return get_base_activator_kernel(type);
         }
 
         // Updater Kernel
-        virtual KERNEL get_updater(ConnectionType type) { return NULL; }
+        virtual SYNAPSE_KERNEL get_updater(ConnectionType type) { return NULL; }
 
         // Depth of weight matrices
         virtual int get_matrix_depth(Connection *conn) { return 1; }

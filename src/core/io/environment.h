@@ -1,17 +1,16 @@
 #ifndef environment_h
 #define environment_h
 
-#include "model/model.h"
 #include "model/structure.h"
 #include "io/buffer.h"
 #include "io/module/module.h"
-#include "engine/engine.h"
 
 class Visualizer;
+class State;
 
 class Environment {
     public:
-        Environment(Model *model, Engine *engine);
+        Environment(State *state);
         virtual ~Environment();
 
         void step_input();

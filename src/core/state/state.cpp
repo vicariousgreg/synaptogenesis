@@ -1,7 +1,6 @@
 #include <cstring>
 
 #include "state/state.h"
-#include "engine/kernel/kernel.h"
 #include "util/tools.h"
 #include "util/parallel.h"
 
@@ -21,8 +20,6 @@ State::State(Model *model)
             matrix->send_to_device();
 #endif
         }
-        // Create the buffer
-        this->buffers[structure] = new Buffer(structure, att->output_type);
     }
 
 #ifdef PARALLEL
@@ -32,7 +29,6 @@ State::State(Model *model)
 
 State::~State() {
     for (auto att : attributes) delete att.second;
-    for (auto buffer : buffers) delete buffer.second;
     for (auto matrix : this->weight_matrices) delete matrix.second;
 
 #ifdef PARALLEL
@@ -40,16 +36,12 @@ State::~State() {
 #endif
 }
 
-StreamCluster* State::build_stream_cluster(Structure *structure) {
-    return attributes.at(structure)->build_stream_cluster(structure, this);
+std::string State::get_stream_cluster_name(Structure *structure) {
+    return attributes.at(structure)->get_stream_cluster_name();
 }
 
 float* State::get_input(Layer *layer) const {
     return attributes.at(layer->structure)->get_input(layer->id);
-}
-
-OutputType State::get_output_type(Layer *layer) const {
-    return attributes.at(layer->structure)->output_type;
 }
 
 Output* State::get_output(Layer *layer, int word_index) const {
@@ -68,7 +60,7 @@ const ATTRIBUTE_KERNEL State::get_attribute_kernel(Layer *layer) const {
     return attributes.at(layer->structure)->get_attribute_kernel();
 }
 
-float*  State::get_matrix(Connection* conn) const {
+float* State::get_matrix(Connection* conn) const {
     return weight_matrices.at(conn)->get_data();
 }
 
@@ -76,11 +68,11 @@ EXTRACTOR State::get_extractor(Connection *conn) const {
     return attributes.at(conn->to_layer->structure)->extractor;
 }
 
-KERNEL State::get_activator(Connection *conn) const {
+SYNAPSE_KERNEL State::get_activator(Connection *conn) const {
     return attributes.at(conn->to_layer->structure)->get_activator(conn->type);
 }
 
-KERNEL State::get_updater(Connection *conn) const {
+SYNAPSE_KERNEL State::get_updater(Connection *conn) const {
     return attributes.at(conn->to_layer->structure)->get_updater(conn->type);
 }
 
@@ -88,6 +80,6 @@ int State::get_num_neurons(Structure* structure) const {
     return attributes.at(structure)->total_neurons;
 }
 
-Buffer* State::get_buffer(Structure *structure) const {
-    return buffers.at(structure);
+OutputType State::get_output_type(Structure *structure) const {
+    return attributes.at(structure)->output_type;
 }

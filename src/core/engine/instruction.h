@@ -7,7 +7,7 @@
 #include "state/state.h"
 #include "state/attributes.h"
 #include "engine/kernel/synapse_data.h"
-#include "engine/kernel/kernel.h"
+#include "engine/kernel/synapse_kernel.h"
 #include "engine/kernel/activator_kernel.h"
 #include "util/parallel.h"
 
@@ -79,8 +79,8 @@ class SynapseInstruction : public Instruction {
 
     protected:
         EXTRACTOR extractor;
-        KERNEL activator;
-        KERNEL updater;
+        SYNAPSE_KERNEL activator;
+        SYNAPSE_KERNEL updater;
         const SynapseData synapse_data;
 };
 
@@ -100,7 +100,8 @@ class DendriticInstruction : public Instruction {
 /* Transfers input data */
 class InputTransferInstruction : public Instruction {
     public:
-        InputTransferInstruction(Layer *to_layer, State *state);
+        InputTransferInstruction(Layer *to_layer, State *state,
+            Environment *environment);
 
         void activate();
 
@@ -111,7 +112,8 @@ class InputTransferInstruction : public Instruction {
 /* Transfers output data */
 class OutputTransferInstruction : public Instruction {
     public:
-        OutputTransferInstruction(Layer *to_layer, State *state);
+        OutputTransferInstruction(Layer *to_layer, State *state,
+            Environment *environment);
 
         void activate();
 

@@ -1,9 +1,10 @@
 #include "engine/stream.h"
 #include "util/error_manager.h"
 
-Stream::Stream(Layer *layer, State *state)
+Stream::Stream(Layer *layer, State *state, Environment *environment)
         : to_layer(layer),
-          state(state) {
+          state(state),
+          environment(environment) {
 #ifdef PARALLEL
     // Create cuda stream
     cudaStreamCreate(&cuda_stream);
@@ -13,10 +14,11 @@ Stream::Stream(Layer *layer, State *state)
 }
 
 #ifdef PARALLEL
-Stream::Stream(Layer *layer, State *state, cudaStream_t cuda_stream) :
-        to_layer(layer),
-        state(state),
-        cuda_stream(cuda_stream) {
+Stream::Stream(Layer *layer, State *state, Environment *environment, cudaStream_t cuda_stream)
+        : to_layer(layer),
+          state(state),
+          environment(environment),
+          cuda_stream(cuda_stream) {
     this->external_stream = true;
     this->init();
 }
@@ -39,10 +41,10 @@ void Stream::init() {
 
     // Add input transfer instruction
     if (to_layer->get_input_module() != NULL)
-        this->set_input_instruction(new InputTransferInstruction(to_layer, state));
+        this->set_input_instruction(new InputTransferInstruction(to_layer, state, environment));
     // Add output transfer instruction
     if (to_layer->get_output_modules().size() > 0)
-        this->set_output_instruction(new OutputTransferInstruction(to_layer, state));
+        this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
     // Add state instruction
     this->set_state_instruction(new StateUpdateInstruction(to_layer, state));
     // Add noise / clear instruction

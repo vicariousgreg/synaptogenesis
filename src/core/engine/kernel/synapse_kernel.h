@@ -1,5 +1,5 @@
-#ifndef kernel_h
-#define kernel_h
+#ifndef synapse_kernel_h
+#define synapse_kernel_h
 
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/extractor.h"
@@ -8,7 +8,7 @@
 #include "util/tools.h"
 
 /* Typedef for kernel functions, which just take SynapseData */
-typedef void(*KERNEL)(const SynapseData);
+typedef void(*SYNAPSE_KERNEL)(const SynapseData);
 
 /* Synaptic operations
  * |prior| is the current state of the neuron.

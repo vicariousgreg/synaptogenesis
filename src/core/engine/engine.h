@@ -3,26 +3,26 @@
 
 #include "state/state.h"
 #include "model/model.h"
+#include "io/environment.h"
 #include "engine/stream_cluster.h"
 #include "engine/instruction.h"
 
 class Engine {
     public:
-        Engine(Model *model, State *state)
-                : model(model),
+        Engine(State *state, Environment *environment)
+                : model(state->model),
                   state(state),
+                  environment(environment),
                   learning_flag(true) {
             for (auto& structure : model->get_structures())
-                stream_clusters.push_back(state->build_stream_cluster(structure));
+                stream_clusters.push_back(build_stream_cluster(
+                    state->get_stream_cluster_name(structure),
+                    structure, state, environment));
         }
 
         virtual ~Engine() {
             for (auto& cluster : stream_clusters)
                 delete cluster;
-        }
-
-        Buffer *get_buffer(Structure *structure) const {
-            return state->get_buffer(structure);
         }
 
         void set_learning_flag(bool status) { learning_flag = status; }
@@ -36,6 +36,7 @@ class Engine {
     protected:
         Model *model;
         State *state;
+        Environment *environment;
         std::vector<StreamCluster*> stream_clusters;
         bool learning_flag;
 };

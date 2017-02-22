@@ -18,10 +18,10 @@ class RateEncodingAttributes : public Attributes {
         RateEncodingAttributes(Structure* structure);
         virtual ~RateEncodingAttributes();
 
-        virtual StreamCluster *build_stream_cluster(Structure *structure, State *state);
+        virtual std::string get_stream_cluster_name() { return "feedforward"; }
 
         /* Trace learning rules */
-        virtual KERNEL get_updater(ConnectionType type);
+        virtual SYNAPSE_KERNEL get_updater(ConnectionType type);
 
         ATTRIBUTE_KERNEL get_attribute_kernel() const {
             return re_attribute_kernel;

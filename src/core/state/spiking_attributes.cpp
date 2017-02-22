@@ -94,7 +94,7 @@ ACTIVATE_CONVERGENT(activate_convergent_trace,
     }
 );
 
-KERNEL SpikingAttributes::get_activator(ConnectionType type) {
+SYNAPSE_KERNEL SpikingAttributes::get_activator(ConnectionType type) {
     switch (type) {
         case FULLY_CONNECTED:
             return activate_fully_connected_trace;
@@ -155,7 +155,7 @@ CALC_ONE_TO_ONE(update_convolutional_trace,
     UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]);
     );
 
-KERNEL SpikingAttributes::get_updater(ConnectionType conn_type) {
+SYNAPSE_KERNEL SpikingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return update_fully_connected_trace;

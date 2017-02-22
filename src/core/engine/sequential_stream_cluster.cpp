@@ -3,8 +3,9 @@
 
 #include "engine/stream_cluster.h"
 
-SequentialStreamCluster::SequentialStreamCluster(Structure *structure, State *state)
-        : StreamCluster(structure, state) {
+SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
+        State *state, Environment *environment)
+        : StreamCluster(structure, state, environment) {
 #ifdef PARALLEL
     cudaStreamCreate(&this->compute_cuda_stream);
 #endif
@@ -32,10 +33,10 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure, State *st
         // Add elements to beginning of list
 #ifdef PARALLEL
         streams.insert(streams.begin(),
-            new Stream(curr_layer, state, compute_cuda_stream));
+            new Stream(curr_layer, state, environment, compute_cuda_stream));
 #else
         streams.insert(streams.begin(),
-            new Stream(curr_layer, state));
+            new Stream(curr_layer, state, environment));
 #endif
 
         // Add any layers that feed into this one to if all of its

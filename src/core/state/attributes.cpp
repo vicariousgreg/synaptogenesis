@@ -2,8 +2,6 @@
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
 #include "state/hodgkin_huxley_attributes.h"
-#include "engine/stream_cluster.h"
-#include "engine/kernel/kernel.h"
 #include "util/tools.h"
 #include "util/parallel.h"
 
@@ -74,10 +72,6 @@ Attributes::~Attributes() {
     free(this->input);
     free(this->output);
 #endif
-}
-
-StreamCluster *Attributes::build_stream_cluster(Structure *structure, State *state) {
-    return new ParallelStreamCluster(structure, state);
 }
 
 #ifdef PARALLEL

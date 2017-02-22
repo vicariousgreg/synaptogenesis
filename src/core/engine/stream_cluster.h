@@ -2,17 +2,21 @@
 #define stream_cluster_h
 
 #include <map>
+#include <string>
+
 #include "model/structure.h"
 #include "engine/stream.h"
 #include "engine/instruction.h"
+#include "io/environment.h"
 #include "util/parallel.h"
 #include "util/constants.h"
 
 class StreamCluster {
     public:
-        StreamCluster(Structure *structure, State *state)
+        StreamCluster(Structure *structure, State *state, Environment *environment)
                 : structure(structure),
-                  state(state) { }
+                  state(state),
+                  environment(environment) { }
         virtual ~StreamCluster() { }
 
         virtual void launch_pre_input_calculations() { };
@@ -30,13 +34,15 @@ class StreamCluster {
     protected:
         Structure *structure;
         State *state;
+        Environment *environment;
 };
 
 typedef std::vector<IOType> IOTypeVector;
 
 class ParallelStreamCluster : public StreamCluster {
     public:
-        ParallelStreamCluster(Structure *structure, State *state);
+        ParallelStreamCluster(Structure *structure, State *state,
+            Environment *environment);
         virtual ~ParallelStreamCluster();
 
         virtual void launch_pre_input_calculations();
@@ -63,7 +69,8 @@ class ParallelStreamCluster : public StreamCluster {
 
 class SequentialStreamCluster : public StreamCluster {
     public:
-        SequentialStreamCluster(Structure *structure, State *state);
+        SequentialStreamCluster(Structure *structure, State *state,
+            Environment *environment);
         virtual ~SequentialStreamCluster();
 
         virtual void launch_input();
@@ -84,9 +91,30 @@ class SequentialStreamCluster : public StreamCluster {
 
 class FeedforwardStreamCluster : public SequentialStreamCluster {
     public:
-        FeedforwardStreamCluster(Structure *structure, State *state);
+        FeedforwardStreamCluster(Structure *structure, State *state,
+            Environment *environment);
 
         virtual void launch_weight_update();
 };
+
+inline StreamCluster *build_stream_cluster(std::string cluster_name,
+        Structure *structure, State *state, Environment *environment) {
+    StreamCluster *stream_cluster;
+
+    if (cluster_name == "parallel")
+        stream_cluster =
+            new ParallelStreamCluster(structure, state, environment);
+    else if (cluster_name == "sequential")
+        stream_cluster =
+            new SequentialStreamCluster(structure, state, environment);
+    else if (cluster_name == "feedforward")
+        stream_cluster =
+            new FeedforwardStreamCluster(structure, state, environment);
+    else
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized stream cluster type!");
+
+    return stream_cluster;
+}
 
 #endif

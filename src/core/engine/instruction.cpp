@@ -116,9 +116,9 @@ void DendriticInstruction::activate() {
 #endif
 }
 
-InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state)
-        : Instruction(layer) {
-    this->src = state->get_buffer(layer->structure)->get_input(layer);
+InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state,
+        Environment *environment) : Instruction(layer) {
+    this->src = environment->get_buffer(layer->structure)->get_input(layer);
     this->dst = state->get_input(layer);
 }
 
@@ -134,10 +134,10 @@ void InputTransferInstruction::activate() {
 #endif
 }
 
-OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state)
-        : Instruction(layer) {
+OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state,
+        Environment *environment) : Instruction(layer) {
     this->src = state->get_output(layer);
-    this->dst = state->get_buffer(layer->structure)->get_output(layer);
+    this->dst = environment->get_buffer(layer->structure)->get_output(layer);
 }
 
 void OutputTransferInstruction::activate() {

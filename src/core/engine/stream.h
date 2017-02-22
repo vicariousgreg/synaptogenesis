@@ -2,14 +2,15 @@
 #define stream_h
 
 #include "model/layer.h"
+#include "io/environment.h"
 #include "engine/instruction.h"
 #include "util/parallel.h"
 
 class Stream {
     public:
-        Stream(Layer *layer, State *state);
+        Stream(Layer *layer, State *state, Environment *environment);
 #ifdef PARALLEL
-        Stream(Layer *layer, State *state, cudaStream_t cuda_stream);
+        Stream(Layer *layer, State *state, Environment *environment, cudaStream_t cuda_stream);
 #endif
         virtual ~Stream();
 
@@ -38,6 +39,7 @@ class Stream {
         void add_instruction(Instruction *inst);
 
         State* const state;
+        Environment* const environment;
         InstructionList instructions;
         Instruction *input_instruction;
         Instruction *output_instruction;

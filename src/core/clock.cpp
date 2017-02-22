@@ -86,15 +86,16 @@ void Clock::run(Model *model, int iterations, bool verbose) {
 
     // Build state
     State *state = new State(model);
-    this->engine = new Engine(model, state);
-    //this->engine->set_learning_flag(false);  // disable learning
-    if (verbose) {
-        printf("Built state.\n");
-        run_timer.query("Initialization");
-    }
 
     // Build environment
-    this->environment = new Environment(model, this->engine);
+    this->environment = new Environment(state);
+
+    // Build engine
+    this->engine = new Engine(state, environment);
+    //this->engine->set_learning_flag(false);  // disable learning
+    if (verbose) {
+        run_timer.query("Initialization");
+    }
 
 #ifdef PARALLEL
     // Ensure device is synchronized without errors

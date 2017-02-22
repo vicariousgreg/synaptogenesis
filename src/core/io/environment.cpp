@@ -2,16 +2,18 @@
 #include "io/module/module.h"
 #include "io/module/visualizer_input_module.h"
 #include "io/module/visualizer_output_module.h"
+#include "state/state.h"
 #include "visualizer.h"
 
-Environment::Environment(Model *model, Engine *engine)
+Environment::Environment(State *state)
         : visualizer(NULL) {
-    for (auto& structure : model->get_structures()) {
-        this->buffers[structure] = engine->get_buffer(structure);
-    }
+    // Create buffers
+    for (auto& structure : state->model->get_structures())
+        this->buffers[structure] = new Buffer(
+            structure, state->get_output_type(structure));
 
     // Extract modules
-    for (auto& structure : model->get_structures()) {
+    for (auto& structure : state->model->get_structures()) {
         for (auto& layer : structure->get_layers()) {
             bool visualizer_input = false;
             bool visualizer_output = false;
@@ -44,6 +46,7 @@ Environment::Environment(Model *model, Engine *engine)
 }
 
 Environment::~Environment() {
+    for (auto buffer : buffers) delete buffer.second;
     for (auto& module : this->input_modules) delete module;
     for (auto& module : this->output_modules) delete module;
     if (visualizer != NULL)

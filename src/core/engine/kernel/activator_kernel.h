@@ -1,10 +1,10 @@
 #ifndef activator_kernel_h
 #define activator_kernel_h
 
-#include "engine/kernel/kernel.h"
+#include "engine/kernel/synapse_kernel.h"
 
 /* Activators are responsible for performing connection computation */
-KERNEL get_base_activator_kernel(ConnectionType conn_type);
+SYNAPSE_KERNEL get_base_activator_kernel(ConnectionType conn_type);
 GLOBAL void activate_fully_connected(SynapseData synapse_data);
 GLOBAL void activate_one_to_one(SynapseData synapse_data);
 GLOBAL void activate_convergent(SynapseData synapse_data);

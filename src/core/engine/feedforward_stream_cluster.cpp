@@ -19,8 +19,9 @@ static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
     }
 }
 
-FeedforwardStreamCluster::FeedforwardStreamCluster(Structure *structure, State *state)
-        : SequentialStreamCluster(structure, state) {
+FeedforwardStreamCluster::FeedforwardStreamCluster(Structure *structure,
+        State *state, Environment *environment)
+        : SequentialStreamCluster(structure, state, environment) {
     // Determine if there are any cycles
     // Perform DFS on all input layers
     std::set<Layer*> visited;
