@@ -40,12 +40,15 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure, State *st
 
         // Add any layers that feed into this one to if all of its
         //     output layers have been visited and its not in the queue
+        // Also ensure that the traversal does not leave the structure
         for (auto conn : curr_layer->get_input_connections()) {
             if (visited.find(conn->from_layer) == visited.end()) {
                 for (auto to_conn : conn->to_layer->get_output_connections())
-                    if (visited.find(to_conn->to_layer) == visited.end())
+                    if (visited.find(to_conn->to_layer) == visited.end()
+                        or to_conn->to_layer->structure != structure)
                         continue;
-                if (enqueued.find(conn->from_layer) == enqueued.end())
+                if (enqueued.find(conn->from_layer) == enqueued.end()
+                    and conn->from_layer->structure == structure)
                     queue.push(conn->from_layer);
             }
         }

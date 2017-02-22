@@ -10,8 +10,10 @@ static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
     } else {
         // Otherwise, push current layer and recurse
         visited.insert(curr_layer);
+        // Be careful not to leave the structure
         for (auto conn : curr_layer->get_output_connections())
-            if (not DFS(conn->to_layer, visited)) return false;
+            if (conn->to_layer->structure == curr_layer->structure
+                and not DFS(conn->to_layer, visited)) return false;
         visited.erase(curr_layer);
         return true;
     }
