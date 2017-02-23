@@ -84,33 +84,33 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn
 
     // Allocate matrix on host
     // If parallel, it will be copied below
-    mData = Pointer<float>(matrix_size);
-    if (mData.get() == NULL)
+    mData = new Pointer<float>(matrix_size);
+    if (mData->get() == NULL)
         ErrorManager::get_instance()->log_error(
             "Failed to allocate space for weight matrices on host!");
 
     // If parameter is specified, interpret it for initialization
     // Otherwise, perform randomization
     if (conn->get_init_params().size() == 0)
-        randomize_weights(mData, num_weights, conn->max_weight);
+        randomize_weights(mData->get(), num_weights, conn->max_weight);
     else
-        initialize(mData, conn);
+        initialize(mData->get(), conn);
 
     if (conn->plastic) {
         // Baseline
         if (matrix_depth >= 2)
-            transfer_weights(mData, mData + num_weights, num_weights);
+            transfer_weights(mData->get(), mData->get() + num_weights, num_weights);
 
         // Trace
         if (matrix_depth >= 3)
-            clear_weights(mData + 2*num_weights, num_weights);
+            clear_weights(mData->get() + 2*num_weights, num_weights);
     }
 }
 
 WeightMatrix::~WeightMatrix() {
-    this->mData.free();
+    delete this->mData;
 }
 
 void WeightMatrix::transfer_to_device() {
-    this->mData.transfer_to_device();
+    this->mData->transfer_to_device();
 }

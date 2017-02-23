@@ -48,8 +48,7 @@ Environment::~Environment() {
     for (auto buffer : buffers) delete buffer.second;
     for (auto& module : this->input_modules) delete module;
     for (auto& module : this->output_modules) delete module;
-    if (visualizer != NULL)
-        delete visualizer;
+    if (visualizer != NULL) delete visualizer;
 }
 
 Buffer* Environment::get_buffer(Structure *structure) {

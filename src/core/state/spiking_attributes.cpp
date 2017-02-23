@@ -5,26 +5,28 @@
 
 SpikingAttributes::SpikingAttributes(Structure* structure)
         : Attributes(structure, BIT) {
-    this->voltage = Pointer<float>(total_neurons);
+    this->voltage = new Pointer<float>(total_neurons);
     this->current = this->input;
-    this->spikes = this->output.cast<unsigned int>();
+    this->spikes = this->output->cast<unsigned int>();
 }
 
 SpikingAttributes::~SpikingAttributes() {
-    this->voltage.free();
+    delete this->voltage;
+    delete this->spikes;
 }
 
 void SpikingAttributes::transfer_to_device() {
     Attributes::transfer_to_device();
 
     this->current = this->input;
-    this->spikes = this->output.cast<unsigned int>();
-    this->voltage.transfer_to_device();
+    delete this->spikes;
+    this->spikes = this->output->cast<unsigned int>();
+    this->voltage->transfer_to_device();
 }
 
 void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Connection *conn = matrix->connection;
-    float *mData = matrix->get_data();
+    float *mData = matrix->get_data()->get();
     if (conn->plastic) {
         int num_weights = conn->get_num_weights();
 

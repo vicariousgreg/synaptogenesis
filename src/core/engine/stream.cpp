@@ -42,11 +42,16 @@ void Stream::init() {
     // Add input transfer instruction
     if (to_layer->get_input_module() != NULL)
         this->set_input_instruction(new InputTransferInstruction(to_layer, state, environment));
+    else this->input_instruction = NULL;
+
     // Add output transfer instruction
     if (to_layer->get_output_modules().size() > 0)
         this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
+    else this->output_instruction = NULL;
+
     // Add state instruction
     this->set_state_instruction(new StateUpdateInstruction(to_layer, state));
+
     // Add noise / clear instruction
     if (to_layer->noise != 0.0)
         add_instruction(new NoiseInstruction(to_layer, state));
@@ -65,6 +70,9 @@ void Stream::init() {
 
 Stream::~Stream() {
     for (auto inst : this->instructions) delete inst;
+    if (input_instruction != NULL) delete input_instruction;
+    if (output_instruction != NULL) delete output_instruction;
+    delete state_instruction;
 #ifdef PARALLEL
     if (not this->external_stream) cudaStreamDestroy(cuda_stream);
     cudaEventDestroy(finished_event);

@@ -25,7 +25,7 @@ class SynapseData {
         int delay;
 
         /* Weight attributes */
-        Pointer<float> weights;
+        Pointer<float> *weights;
         int num_weights;
         bool plastic;
         float max_weight;
@@ -36,9 +36,9 @@ class SynapseData {
 
         /* IO attributes */
         OutputType output_type;
-        Pointer<Output> outputs;
-        Pointer<Output> destination_outputs;
-        Pointer<float> inputs;
+        Pointer<Output> *outputs;
+        Pointer<Output> *destination_outputs;
+        Pointer<float> *inputs;
 };
 
 #endif

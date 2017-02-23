@@ -21,13 +21,13 @@ class SpikingAttributes : public Attributes {
         virtual void transfer_to_device();
 
         // Neuron Attributes
-        Pointer<float> voltage;
+        Pointer<float> *voltage;
 
         // Neuron Current (copy of input)
-        Pointer<float> current;
+        Pointer<float> *current;
 
         // Neuron Spikes (copy of output)
-        Pointer<unsigned int> spikes;
+        Pointer<unsigned int> *spikes;
 };
 
 #endif

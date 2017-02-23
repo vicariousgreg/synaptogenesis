@@ -28,9 +28,9 @@ ACTIVATE_CONVERGENT(activate_convergent , , );
 
 /* Dendritic tree internal computation */
 #ifdef PARALLEL
-GLOBAL void calc_internal(int size, Pointer<float> src_ptr, Pointer<float> dst_ptr, bool clear) {
-    float* src = src_ptr.get();
-    float* dst = dst_ptr.get();
+GLOBAL void calc_internal(int size, Pointer<float> *src_ptr, Pointer<float> *dst_ptr, bool clear) {
+    float* src = src_ptr->get();
+    float* dst = dst_ptr->get();
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
         dst[index] += src[index];
@@ -38,9 +38,9 @@ GLOBAL void calc_internal(int size, Pointer<float> src_ptr, Pointer<float> dst_p
     }
 }
 #else
-GLOBAL void calc_internal(int size, Pointer<float> src_ptr, Pointer<float> dst_ptr, bool clear) {
-    float* src = src_ptr.get();
-    float* dst = dst_ptr.get();
+GLOBAL void calc_internal(int size, Pointer<float> *src_ptr, Pointer<float> *dst_ptr, bool clear) {
+    float* src = src_ptr->get();
+    float* dst = dst_ptr->get();
     if (clear) {
         for (int index = 0 ; index < size ; ++index) {
             dst[index] += src[index];

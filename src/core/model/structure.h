@@ -20,12 +20,8 @@
  */
 class Structure {
     public:
-        Structure (std::string name, std::string engine_name)
-                : name(name),
-                  engine_name(engine_name) {
-            for (auto type : IOTypes) this->num_neurons[type] = 0;
-        }
-        virtual ~Structure() { }
+        Structure (std::string name, std::string engine_name);
+        virtual ~Structure();
 
         /* Gets the total neuron count */
         int get_num_neurons() const { return total_neurons; }

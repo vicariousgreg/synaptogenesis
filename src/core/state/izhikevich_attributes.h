@@ -26,10 +26,10 @@ class IzhikevichAttributes : public SpikingAttributes {
         virtual void transfer_to_device();
 
         // Neuron Attributes
-        Pointer<float> recovery;
+        Pointer<float> *recovery;
 
         // Neuron parameters
-        Pointer<IzhikevichParameters> neuron_parameters;
+        Pointer<IzhikevichParameters> *neuron_parameters;
 };
 
 #endif

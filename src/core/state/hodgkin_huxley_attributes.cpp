@@ -15,44 +15,44 @@ static HodgkinHuxleyParameters create_parameters(std::string str) {
 
 HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Structure* structure)
         : SpikingAttributes(structure) {
-    this->h = Pointer<float>(total_neurons);
-    this->m = Pointer<float>(total_neurons);
-    this->n = Pointer<float>(total_neurons);
-    this->current_trace = Pointer<float>(total_neurons);
-    this->neuron_parameters = Pointer<HodgkinHuxleyParameters>(total_neurons);
+    this->h = new Pointer<float>(total_neurons);
+    this->m = new Pointer<float>(total_neurons);
+    this->n = new Pointer<float>(total_neurons);
+    this->current_trace = new Pointer<float>(total_neurons);
+    this->neuron_parameters = new Pointer<HodgkinHuxleyParameters>(total_neurons);
 
     // Fill in table
     int start_index = 0;
     for (auto& layer : structure->get_layers()) {
         HodgkinHuxleyParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
-            neuron_parameters[start_index+j] = params;
-            voltage[start_index+j] = -64.9997224337;
-            h[start_index+j] = 0.596111046355;
-            m[start_index+j] = 0.0529342176209;
-            n[start_index+j] = 0.31768116758;
-            current_trace[start_index+j] = 0.0;
+            neuron_parameters->get()[start_index+j] = params;
+            voltage->get()[start_index+j] = -64.9997224337;
+            h->get()[start_index+j] = 0.596111046355;
+            m->get()[start_index+j] = 0.0529342176209;
+            n->get()[start_index+j] = 0.31768116758;
+            current_trace->get()[start_index+j] = 0.0;
         }
         start_index += layer->size;
     }
 }
 
 HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
-    this->h.free();
-    this->m.free();
-    this->n.free();
-    this->current_trace.free();
-    this->neuron_parameters.free();
+    delete this->h;
+    delete this->m;
+    delete this->n;
+    delete this->current_trace;
+    delete this->neuron_parameters;
 }
 
 void HodgkinHuxleyAttributes::transfer_to_device() {
     SpikingAttributes::transfer_to_device();
 
-    this->h.transfer_to_device();
-    this->m.transfer_to_device();
-    this->n.transfer_to_device();
-    this->current_trace.transfer_to_device();
-    this->neuron_parameters.transfer_to_device();
+    this->h->transfer_to_device();
+    this->m->transfer_to_device();
+    this->n->transfer_to_device();
+    this->current_trace->transfer_to_device();
+    this->neuron_parameters->transfer_to_device();
 }
 
 /******************************************************************************/
@@ -78,15 +78,15 @@ void HodgkinHuxleyAttributes::transfer_to_device() {
 
 GLOBAL void hh_attribute_kernel(const Attributes *att, int start_index, int count) {
     HodgkinHuxleyAttributes *hh_att = (HodgkinHuxleyAttributes*)att;
-    float *voltages = hh_att->voltage.get();
-    float *hs = hh_att->h.get();
-    float *ms = hh_att->m.get();
-    float *ns = hh_att->n.get();
-    float *currents = hh_att->current.get();
-    float *current_traces = hh_att->current_trace.get();
-    unsigned int *spikes = hh_att->spikes.get();
+    float *voltages = hh_att->voltage->get();
+    float *hs = hh_att->h->get();
+    float *ms = hh_att->m->get();
+    float *ns = hh_att->n->get();
+    float *currents = hh_att->current->get();
+    float *current_traces = hh_att->current_trace->get();
+    unsigned int *spikes = hh_att->spikes->get();
     int total_neurons = hh_att->total_neurons;
-    HodgkinHuxleyParameters *params = hh_att->neuron_parameters.get();
+    HodgkinHuxleyParameters *params = hh_att->neuron_parameters->get();
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;

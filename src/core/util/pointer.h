@@ -29,6 +29,10 @@ class Pointer {
               local(local),
               original(false) { }
 
+        virtual ~Pointer() {
+            this->free();
+        }
+
         void free() {
             if (original) {
                 if (local) std::free(ptr);
@@ -70,12 +74,12 @@ class Pointer {
         }
 
         template<typename S>
-        Pointer<S> cast() {
-            return Pointer<S>((S*)ptr, this->size, this->local);
+        Pointer<S> *cast() {
+            return new Pointer<S>((S*)ptr, this->size, this->local);
         }
 
-        Pointer<T> splice(int offset, int new_size) const {
-            return Pointer<T>(ptr + offset, new_size, this->local);
+        Pointer<T> *splice(int offset, int new_size) const {
+            return new Pointer<T>(ptr + offset, new_size, this->local);
         }
 
         void copy_to(T* dst) {

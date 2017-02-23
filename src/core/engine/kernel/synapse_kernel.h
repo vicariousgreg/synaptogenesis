@@ -30,8 +30,8 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
 }
 
 /* Clears input data */
-inline GLOBAL void clear_data(Pointer<float> ptr, int count) {
-    float* data = ptr.get();
+inline GLOBAL void clear_data(Pointer<float> *ptr, int count) {
+    float* data = ptr->get();
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -43,8 +43,8 @@ inline GLOBAL void clear_data(Pointer<float> ptr, int count) {
 }
 
 /* Randomizes input data */
-inline GLOBAL void randomize_data(Pointer<float> ptr, int count, float max, bool init) {
-    float* data = ptr.get();
+inline GLOBAL void randomize_data(Pointer<float> *ptr, int count, float max, bool init) {
+    float* data = ptr->get();
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -102,7 +102,7 @@ inline GLOBAL void randomize_data(Pointer<float> ptr, int count, float max, bool
 #define PREAMBLE \
     const Opcode opcode = synapse_data.opcode; \
     const int delay = synapse_data.delay; \
-    float * const weights = synapse_data.weights.get(); \
+    float * const weights = synapse_data.weights->get(); \
     const int num_weights = synapse_data.num_weights; \
     const bool plastic = synapse_data.plastic; \
     const float max_weight = synapse_data.max_weight; \
@@ -112,9 +112,9 @@ inline GLOBAL void randomize_data(Pointer<float> ptr, int count, float max, bool
     const int to_size = synapse_data.to_size; \
     const int to_rows = synapse_data.to_rows; \
     const int to_columns = synapse_data.to_columns; \
-    Output * const outputs = synapse_data.outputs.get(); \
-    Output * const destination_outputs = synapse_data.destination_outputs.get(); \
-    float * const inputs = synapse_data.inputs.get(); \
+    Output * const outputs = synapse_data.outputs->get(); \
+    Output * const destination_outputs = synapse_data.destination_outputs->get(); \
+    float * const inputs = synapse_data.inputs->get(); \
     const EXTRACTOR extractor = synapse_data.extractor;
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \

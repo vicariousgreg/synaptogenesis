@@ -30,7 +30,7 @@ class RateEncodingAttributes : public Attributes {
         virtual void transfer_to_device();
 
         // Neuron parameters
-        Pointer<RateEncodingParameters> neuron_parameters;
+        Pointer<RateEncodingParameters> *neuron_parameters;
 };
 
 #endif
