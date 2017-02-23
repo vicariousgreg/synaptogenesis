@@ -46,8 +46,8 @@ class Attributes {
 
         // Layer data retrieval
         int get_start_index(int id) const;
-        Pointer<float> *get_input(int id) const;
-        Pointer<Output> *get_output(int id, int word_index = 0) const;
+        Pointer<float> get_input(int id) const;
+        Pointer<Output> get_output(int id, int word_index = 0) const;
 
         // Number of neurons
         const int total_neurons;
@@ -55,8 +55,8 @@ class Attributes {
         // Neuron IO data
         EXTRACTOR extractor;
         const OutputType output_type;
-        Pointer<Output> *output;
-        Pointer<float> *input;
+        Pointer<Output> output;
+        Pointer<float> input;
 
         // Pointer to this object
         // If parallel, this will point to the device copy

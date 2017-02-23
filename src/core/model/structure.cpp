@@ -4,16 +4,6 @@
 #define cimg_display 0
 #include "libs/CImg.h"
 
-Structure::Structure(std::string name, std::string engine_name)
-        : name(name), engine_name(engine_name) {
-    for (auto type : IOTypes) this->num_neurons[type] = 0;
-}
-
-Structure::~Structure() {
-    for (auto layer : layers) delete layer;
-    for (auto connection : connections) delete connection;
-}
-
 Connection* Structure::connect(
         Structure *from_structure, std::string from_layer_name,
         Structure *to_structure, std::string to_layer_name,

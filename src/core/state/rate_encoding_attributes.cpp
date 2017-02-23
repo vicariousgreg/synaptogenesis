@@ -13,26 +13,26 @@ static RateEncodingParameters create_parameters(std::string str) {
 }
 
 RateEncodingAttributes::RateEncodingAttributes(Structure* structure) : Attributes(structure, FLOAT) {
-    this->neuron_parameters = new Pointer<RateEncodingParameters>(total_neurons);
+    this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
 
     // Fill in table
     int start_index = 0;
     for (auto& layer : structure->get_layers()) {
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
-            neuron_parameters->get()[start_index+j] = params;
+            neuron_parameters[start_index+j] = params;
         start_index += layer->size;
     }
 }
 
 RateEncodingAttributes::~RateEncodingAttributes() {
-    delete this->neuron_parameters;
+    this->neuron_parameters.free();
 }
 
 void RateEncodingAttributes::transfer_to_device() {
     Attributes::transfer_to_device();
 
-    this->neuron_parameters->transfer_to_device();
+    this->neuron_parameters.transfer_to_device();
 }
 
 /******************************************************************************/
@@ -42,8 +42,8 @@ void RateEncodingAttributes::transfer_to_device() {
 #include <math.h>
 
 GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int count) {
-    float *outputs = (float*)att->output->get();
-    float *inputs = att->input->get();
+    float *outputs = (float*)att->output.get();
+    float *inputs = att->input.get();
     int total_neurons = att->total_neurons;
 
 #ifdef PARALLEL

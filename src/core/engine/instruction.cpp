@@ -99,10 +99,9 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
         : Instruction(parent->to_layer),
           init(child->register_index != 0) {
     int num_neurons = parent->to_layer->structure->get_num_neurons();
-    Pointer<float> *input = state->get_input(to_layer);
-    this->src = input->splice(num_neurons * child->register_index, to_layer->size);
-    this->dst = input->splice(num_neurons * parent->register_index, to_layer->size);
-    delete input;
+    Pointer<float> input = state->get_input(to_layer);
+    this->src = input.splice(num_neurons * child->register_index, to_layer->size);
+    this->dst = input.splice(num_neurons * parent->register_index, to_layer->size);
 }
 
 void DendriticInstruction::activate() {
@@ -124,7 +123,7 @@ InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state,
 }
 
 void InputTransferInstruction::activate() {
-    dst->copy_from(src);
+    dst.copy_from(src);
     Instruction::record_events();
 }
 
@@ -135,7 +134,7 @@ OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state,
 }
 
 void OutputTransferInstruction::activate() {
-    src->copy_to(dst);
+    src.copy_to(dst);
     Instruction::record_events();
 }
 

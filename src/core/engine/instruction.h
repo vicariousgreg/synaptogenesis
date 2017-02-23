@@ -14,7 +14,6 @@
 class Instruction {
     public:
         Instruction(Layer *layer);
-        virtual ~Instruction() { }
 
         virtual void activate() = 0;
         virtual void update() { }
@@ -40,10 +39,9 @@ class Instruction {
 class InitializeInstruction : public Instruction {
     public:
         InitializeInstruction(Layer *layer, State *state);
-        virtual ~InitializeInstruction() { delete dst; }
 
     protected:
-        Pointer<float> *dst;
+        Pointer<float> dst;
 };
 
 /* Clears inputs */
@@ -72,14 +70,6 @@ class NoiseInstruction : public InitializeInstruction {
 class SynapseInstruction : public Instruction {
     public:
         SynapseInstruction(Connection *conn, State *state);
-        virtual ~SynapseInstruction() {
-            // Delete these here because SynapseData has to be copied
-            //   when it is sent to the GPU, and these shouldn't be freed
-            //   until the SynapseInstruction is destroyed
-            delete synapse_data.outputs;
-            delete synapse_data.destination_outputs;
-            delete synapse_data.inputs;
-        }
 
         void activate();
         void update();
@@ -100,16 +90,11 @@ class DendriticInstruction : public Instruction {
     public:
         DendriticInstruction(DendriticNode *parent,
             DendriticNode *child, State *state);
-        virtual ~DendriticInstruction() {
-            delete src;
-            delete dst;
-        }
 
         void activate();
 
     protected:
-        Pointer<float> *src;
-        Pointer<float> *dst;
+        Pointer<float> src, dst;
         bool init;
 };
 
@@ -118,13 +103,12 @@ class InputTransferInstruction : public Instruction {
     public:
         InputTransferInstruction(Layer *to_layer, State *state,
             Environment *environment);
-        virtual ~InputTransferInstruction() { delete dst; }
 
         void activate();
 
     protected:
         float *src;
-        Pointer<float> *dst;
+        Pointer<float> dst;
 };
 
 /* Transfers output data */
@@ -132,12 +116,11 @@ class OutputTransferInstruction : public Instruction {
     public:
         OutputTransferInstruction(Layer *to_layer, State *state,
             Environment *environment);
-        virtual ~OutputTransferInstruction() { delete src; }
 
         void activate();
 
     protected:
-        Pointer<Output> *src;
+        Pointer<Output> src;
         Output *dst;
 };
 

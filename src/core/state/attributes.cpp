@@ -55,16 +55,16 @@ Attributes::Attributes(Structure *structure, OutputType output_type)
     }
 
     // Allocate space for input and output
-    this->input = new Pointer<float>(this->total_neurons * max_input_registers);
-    this->output = new Pointer<Output>(this->total_neurons * HISTORY_SIZE);
+    this->input = Pointer<float>(this->total_neurons * max_input_registers);
+    this->output = Pointer<Output>(this->total_neurons * HISTORY_SIZE);
 
     // Retrieve extractor
     get_extractor(&this->extractor, output_type);
 }
 
 Attributes::~Attributes() {
-    delete this->input;
-    delete this->output;
+    this->input.free();
+    this->output.free();
 #ifdef PARALLEL
     cudaFree(this->pointer);
 #endif
@@ -72,22 +72,22 @@ Attributes::~Attributes() {
 
 void Attributes::transfer_to_device() {
     // Transfer data
-    this->input->transfer_to_device();
-    this->output->transfer_to_device();
+    this->input.transfer_to_device();
+    this->output.transfer_to_device();
 }
 
 int Attributes::get_start_index(int id) const {
     return start_indices.at(id);
 }
 
-Pointer<float> *Attributes::get_input(int id) const {
-    return input->splice(start_indices.at(id), sizes.at(id));
+Pointer<float> Attributes::get_input(int id) const {
+    return input.splice(start_indices.at(id), sizes.at(id));
 }
 
-Pointer<Output> *Attributes::get_output(int id, int word_index) const {
+Pointer<Output> Attributes::get_output(int id, int word_index) const {
     if (word_index >= HISTORY_SIZE)
         ErrorManager::get_instance()->log_error(
             "Cannot retrieve output word index past history length!");
-    return output->splice(
+    return output.splice(
         (total_neurons * word_index) + start_indices.at(id), sizes.at(id));
 }
