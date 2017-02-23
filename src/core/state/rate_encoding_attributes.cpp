@@ -13,8 +13,7 @@ static RateEncodingParameters create_parameters(std::string str) {
 }
 
 RateEncodingAttributes::RateEncodingAttributes(Structure* structure) : Attributes(structure, FLOAT) {
-    this->neuron_parameters = (RateEncodingParameters*)
-        allocate_host(total_neurons, sizeof(RateEncodingParameters));
+    this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
 
     // Fill in table
     int start_index = 0;
@@ -27,25 +26,14 @@ RateEncodingAttributes::RateEncodingAttributes(Structure* structure) : Attribute
 }
 
 RateEncodingAttributes::~RateEncodingAttributes() {
-#ifdef PARALLEL
-    cudaFree(this->neuron_parameters);
-#else
-    free(this->neuron_parameters);
-#endif
+    this->neuron_parameters.free();
 }
 
-#ifdef PARALLEL
-void RateEncodingAttributes::send_to_device() {
-    Attributes::send_to_device();
+void RateEncodingAttributes::transfer_to_device() {
+    Attributes::transfer_to_device();
 
-    // Allocate space on GPU and copy data
-    RateEncodingParameters* device_params = (RateEncodingParameters*)
-        allocate_device(total_neurons, sizeof(RateEncodingParameters),
-        this->neuron_parameters);
-    free(this->neuron_parameters);
-    this->neuron_parameters = device_params;
+    this->neuron_parameters.transfer_to_device();
 }
-#endif
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/
@@ -54,8 +42,8 @@ void RateEncodingAttributes::send_to_device() {
 #include <math.h>
 
 GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int count) {
-    float *outputs = (float*)att->output;
-    float *inputs = (float*)att->input;
+    float *outputs = (float*)att->output.get();
+    float *inputs = att->input.get();
     int total_neurons = att->total_neurons;
 
 #ifdef PARALLEL

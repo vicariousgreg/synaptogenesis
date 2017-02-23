@@ -7,9 +7,11 @@
 #ifdef PARALLEL
 #define GLOBAL __global__
 #define DEVICE __device__
+#define HOST __host__
 #else
 #define GLOBAL
 #define DEVICE
+#define HOST
 #endif
 
 

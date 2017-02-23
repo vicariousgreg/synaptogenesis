@@ -57,9 +57,8 @@ static IzhikevichParameters create_parameters(std::string str) {
 
 IzhikevichAttributes::IzhikevichAttributes(Structure* structure)
         : SpikingAttributes(structure) {
-    this->recovery = (float*) allocate_host(total_neurons, sizeof(float));
-    this->neuron_parameters = (IzhikevichParameters*)
-        allocate_host(total_neurons, sizeof(IzhikevichParameters));
+    this->recovery = Pointer<float>(total_neurons);
+    this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
 
     // Fill in table
     int start_index = 0;
@@ -75,33 +74,16 @@ IzhikevichAttributes::IzhikevichAttributes(Structure* structure)
 }
 
 IzhikevichAttributes::~IzhikevichAttributes() {
-#ifdef PARALLEL
-    cudaFree(this->recovery);
-    cudaFree(this->neuron_parameters);
-#else
-    free(this->recovery);
-    free(this->neuron_parameters);
-#endif
+    this->recovery.free();
+    this->neuron_parameters.free();
 }
 
-#ifdef PARALLEL
-void IzhikevichAttributes::send_to_device() {
-    SpikingAttributes::send_to_device();
+void IzhikevichAttributes::transfer_to_device() {
+    SpikingAttributes::transfer_to_device();
 
-    // Allocate space on GPU and copy data
-    float* device_recovery= (float*)
-        allocate_device(total_neurons, sizeof(float), this->recovery);
-    IzhikevichParameters* device_params = (IzhikevichParameters*)
-        allocate_device(total_neurons, sizeof(IzhikevichParameters),
-        this->neuron_parameters);
-
-    free(this->recovery);
-    free(this->neuron_parameters);
-
-    this->recovery = device_recovery;
-    this->neuron_parameters = device_params;
+    this->recovery.transfer_to_device();
+    this->neuron_parameters.transfer_to_device();
 }
-#endif
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/
@@ -118,12 +100,12 @@ void IzhikevichAttributes::send_to_device() {
 
 GLOBAL void iz_attribute_kernel(const Attributes *att, int start_index, int count) {
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
-    float *voltages = iz_att->voltage;
-    float *recoveries = iz_att->recovery;
-    float *currents = iz_att->current;
-    unsigned int *spikes = iz_att->spikes;
+    float *voltages = iz_att->voltage.get();
+    float *recoveries = iz_att->recovery.get();
+    float *currents = iz_att->current.get();
+    unsigned int *spikes = iz_att->spikes.get();
     int total_neurons = iz_att->total_neurons;
-    IzhikevichParameters *params = iz_att->neuron_parameters;
+    IzhikevichParameters *params = iz_att->neuron_parameters.get();
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;

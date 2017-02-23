@@ -22,7 +22,7 @@ UILIBPATH   := $(BUILDDIR_UI)/visualizer.a
 #Flags, Libraries and Includes
 CCFLAGS      := -w -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH)
 NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -DPARALLEL -I$(COREPATH) -I$(UIPATH)
-NVCCLINK     := -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart
+NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
 #Default Make

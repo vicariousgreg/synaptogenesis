@@ -5,35 +5,22 @@
 
 SpikingAttributes::SpikingAttributes(Structure* structure)
         : Attributes(structure, BIT) {
-    this->voltage = (float*) allocate_host(total_neurons, sizeof(float));
+    this->voltage = Pointer<float>(total_neurons);
     this->current = this->input;
-    this->spikes = (unsigned int*)this->output;
+    this->spikes = this->output.cast<unsigned int>();
 }
 
 SpikingAttributes::~SpikingAttributes() {
-#ifdef PARALLEL
-    cudaFree(this->voltage);
-#else
-    free(this->voltage);
-#endif
+    this->voltage.free();
 }
 
-#ifdef PARALLEL
-void SpikingAttributes::send_to_device() {
-    Attributes::send_to_device();
+void SpikingAttributes::transfer_to_device() {
+    Attributes::transfer_to_device();
 
-    // Update these
     this->current = this->input;
-    this->spikes = (unsigned int*)this->output;
-
-    // Allocate space on GPU and copy data
-    float *device_voltage = (float*)
-        allocate_device(total_neurons, sizeof(float), this->voltage);
-
-    free(this->voltage);
-    this->voltage = device_voltage;
+    this->spikes = this->output.cast<unsigned int>();
+    this->voltage.transfer_to_device();
 }
-#endif
 
 void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Connection *conn = matrix->connection;

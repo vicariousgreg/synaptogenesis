@@ -19,12 +19,13 @@ class Instruction {
         virtual void update() { }
         virtual bool is_plastic() const { return false; }
 
+        void record_events();
+
         Layer* const to_layer;
 
 #ifdef PARALLEL
         void set_stream(cudaStream_t stream) { this->stream = stream; }
         void add_event(cudaEvent_t event) { this->events.push_back(event); }
-        void record_events();
 
     protected:
         dim3 activator_blocks, activator_threads;
@@ -40,7 +41,7 @@ class InitializeInstruction : public Instruction {
         InitializeInstruction(Layer *layer, State *state);
 
     protected:
-        float *dst;
+        Pointer<float> dst;
 };
 
 /* Clears inputs */
@@ -93,7 +94,7 @@ class DendriticInstruction : public Instruction {
         void activate();
 
     protected:
-        float *src, *dst;
+        Pointer<float> src, dst;
         bool init;
 };
 
@@ -106,7 +107,8 @@ class InputTransferInstruction : public Instruction {
         void activate();
 
     protected:
-        float *src, *dst;
+        float *src;
+        Pointer<float> dst;
 };
 
 /* Transfers output data */
@@ -118,7 +120,8 @@ class OutputTransferInstruction : public Instruction {
         void activate();
 
     protected:
-        Output *src, *dst;
+        Pointer<Output> src;
+        Output *dst;
 };
 
 /* Updates layer state */

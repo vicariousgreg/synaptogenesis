@@ -22,16 +22,13 @@ class HodgkinHuxleyAttributes : public SpikingAttributes {
             return hh_attribute_kernel;
         }
 
-#ifdef PARALLEL
-        virtual void send_to_device();
-#endif
+        virtual void transfer_to_device();
 
         // Neuron Attributes
-        float *h, *m, *n;
-        float* current_trace;
+        Pointer<float> h, m, n, current_trace;
 
         // Neuron parameters
-        HodgkinHuxleyParameters* neuron_parameters;
+        Pointer<HodgkinHuxleyParameters> neuron_parameters;
 };
 
 #endif

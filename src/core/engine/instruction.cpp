@@ -13,13 +13,13 @@ Instruction::Instruction(Layer *layer) : to_layer(layer) {
 #endif
 }
 
-#ifdef PARALLEL
 void Instruction::record_events() {
+#ifdef PARALLEL
     // Record added events
     for (int i = 0; i < this->events.size(); ++i)
         cudaEventRecord(this->events[i], this->stream);
-}
 #endif
+}
 
 InitializeInstruction::InitializeInstruction(Layer *layer, State *state)
         : Instruction(layer) {
@@ -32,10 +32,10 @@ void ClearInstruction::activate() {
     clear_data
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (dst, to_layer->size);
-    Instruction::record_events();
 #else
     clear_data(dst, to_layer->size);
 #endif
+    Instruction::record_events();
 }
 
 void NoiseInstruction::activate() {
@@ -44,10 +44,10 @@ void NoiseInstruction::activate() {
     randomize_data
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (dst, to_layer->size, to_layer->noise, init);
-    Instruction::record_events();
 #else
     randomize_data(dst, to_layer->size, to_layer->noise, init);
 #endif
+    Instruction::record_events();
 }
 
 SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
@@ -76,10 +76,10 @@ void SynapseInstruction::activate() {
     activator
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (this->synapse_data);
-    Instruction::record_events();
 #else
     activator(this->synapse_data);
 #endif
+    Instruction::record_events();
 }
 
 void SynapseInstruction::update() {
@@ -99,9 +99,9 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
         : Instruction(parent->to_layer),
           init(child->register_index != 0) {
     int num_neurons = parent->to_layer->structure->get_num_neurons();
-    float *input = state->get_input(to_layer);
-    this->src = input + (num_neurons * child->register_index);
-    this->dst = input + (num_neurons * parent->register_index);
+    Pointer<float> input = state->get_input(to_layer);
+    this->src = input.splice(num_neurons * child->register_index, to_layer->size);
+    this->dst = input.splice(num_neurons * parent->register_index, to_layer->size);
 }
 
 void DendriticInstruction::activate() {
@@ -110,10 +110,10 @@ void DendriticInstruction::activate() {
     calc_internal
         <<<activator_blocks, activator_threads, 0, this->stream>>>
         (to_layer->size, src, dst, this->init);
-    Instruction::record_events();
 #else
     calc_internal(to_layer->size, src, dst, this->init);
 #endif
+    Instruction::record_events();
 }
 
 InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state,
@@ -123,15 +123,8 @@ InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state,
 }
 
 void InputTransferInstruction::activate() {
-#ifdef PARALLEL
-    // Copy to GPU from local location
-    cudaMemcpyAsync(dst, src, to_layer->size * sizeof(float),
-        cudaMemcpyHostToDevice, this->stream);
-    cudaCheckError("Failed to transfer input!");
+    dst.copy_from(src, to_layer->size);
     Instruction::record_events();
-#else
-    memcpy(dst, src, to_layer->size * sizeof(float));
-#endif
 }
 
 OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state,
@@ -141,15 +134,8 @@ OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state,
 }
 
 void OutputTransferInstruction::activate() {
-#ifdef PARALLEL
-    // Copy to GPU from local location
-    cudaMemcpyAsync(dst, src, to_layer->size * sizeof(Output),
-        cudaMemcpyDeviceToHost, this->stream);
-    cudaCheckError("Failed to transfer output!");
+    src.copy_to(dst, to_layer->size);
     Instruction::record_events();
-#else
-    memcpy(dst, src, to_layer->size * sizeof(Output));
-#endif
 }
 
 void StateUpdateInstruction::activate() {
@@ -157,8 +143,8 @@ void StateUpdateInstruction::activate() {
     attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(
         attributes, start_index, to_layer->size);
     cudaCheckError("Failed to update neuron state/output!");
-    Instruction::record_events();
 #else
     attribute_kernel(attributes, start_index, to_layer->size);
 #endif
+    Instruction::record_events();
 }

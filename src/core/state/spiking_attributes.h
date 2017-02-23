@@ -18,18 +18,16 @@ class SpikingAttributes : public Attributes {
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
-#ifdef PARALLEL
-        virtual void send_to_device();
-#endif
+        virtual void transfer_to_device();
 
         // Neuron Attributes
-        float *voltage;
+        Pointer<float> voltage;
 
         // Neuron Current (copy of input)
-        float* current;
+        Pointer<float> current;
 
         // Neuron Spikes (copy of output)
-        unsigned int* spikes;
+        Pointer<unsigned int> spikes;
 };
 
 #endif

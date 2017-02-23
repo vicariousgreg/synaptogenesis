@@ -15,12 +15,11 @@ static HodgkinHuxleyParameters create_parameters(std::string str) {
 
 HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Structure* structure)
         : SpikingAttributes(structure) {
-    this->h = (float*) allocate_host(total_neurons, sizeof(float));
-    this->m = (float*) allocate_host(total_neurons, sizeof(float));
-    this->n = (float*) allocate_host(total_neurons, sizeof(float));
-    this->current_trace = (float*) allocate_host(total_neurons, sizeof(float));
-    this->neuron_parameters = (HodgkinHuxleyParameters*)
-        allocate_host(total_neurons, sizeof(HodgkinHuxleyParameters));
+    this->h = Pointer<float>(total_neurons);
+    this->m = Pointer<float>(total_neurons);
+    this->n = Pointer<float>(total_neurons);
+    this->current_trace = Pointer<float>(total_neurons);
+    this->neuron_parameters = Pointer<HodgkinHuxleyParameters>(total_neurons);
 
     // Fill in table
     int start_index = 0;
@@ -39,51 +38,22 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Structure* structure)
 }
 
 HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
-#ifdef PARALLEL
-    cudaFree(this->h);
-    cudaFree(this->m);
-    cudaFree(this->n);
-    cudaFree(this->current_trace);
-    cudaFree(this->neuron_parameters);
-#else
-    free(this->h);
-    free(this->m);
-    free(this->n);
-    free(this->current_trace);
-    free(this->neuron_parameters);
-#endif
+    this->h.free();
+    this->m.free();
+    this->n.free();
+    this->current_trace.free();
+    this->neuron_parameters.free();
 }
 
-#ifdef PARALLEL
-void HodgkinHuxleyAttributes::send_to_device() {
-    SpikingAttributes::send_to_device();
+void HodgkinHuxleyAttributes::transfer_to_device() {
+    SpikingAttributes::transfer_to_device();
 
-    // Allocate space on GPU and copy data
-    float* device_h = (float*)
-        allocate_device(total_neurons, sizeof(float), this->h);
-    float* device_m = (float*)
-        allocate_device(total_neurons, sizeof(float), this->m);
-    float* device_n = (float*)
-        allocate_device(total_neurons, sizeof(float), this->n);
-    float* device_current_trace = (float*)
-        allocate_device(total_neurons, sizeof(float), this->current_trace);
-    HodgkinHuxleyParameters* device_params = (HodgkinHuxleyParameters*)
-        allocate_device(total_neurons, sizeof(HodgkinHuxleyParameters),
-        this->neuron_parameters);
-
-    free(this->h);
-    free(this->m);
-    free(this->n);
-    free(this->current_trace);
-    free(this->neuron_parameters);
-
-    this->h = device_h;
-    this->m = device_m;
-    this->n = device_n;
-    this->current_trace = device_current_trace;
-    this->neuron_parameters = device_params;
+    this->h.transfer_to_device();
+    this->m.transfer_to_device();
+    this->n.transfer_to_device();
+    this->current_trace.transfer_to_device();
+    this->neuron_parameters.transfer_to_device();
 }
-#endif
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/
@@ -108,15 +78,15 @@ void HodgkinHuxleyAttributes::send_to_device() {
 
 GLOBAL void hh_attribute_kernel(const Attributes *att, int start_index, int count) {
     HodgkinHuxleyAttributes *hh_att = (HodgkinHuxleyAttributes*)att;
-    float *voltages = hh_att->voltage;
-    float *hs = hh_att->h;
-    float *ms = hh_att->m;
-    float *ns = hh_att->n;
-    float *currents = hh_att->current;
-    float *current_traces = hh_att->current_trace;
-    unsigned int *spikes = hh_att->spikes;
+    float *voltages = hh_att->voltage.get();
+    float *hs = hh_att->h.get();
+    float *ms = hh_att->m.get();
+    float *ns = hh_att->n.get();
+    float *currents = hh_att->current.get();
+    float *current_traces = hh_att->current_trace.get();
+    unsigned int *spikes = hh_att->spikes.get();
     int total_neurons = hh_att->total_neurons;
-    HodgkinHuxleyParameters *params = hh_att->neuron_parameters;
+    HodgkinHuxleyParameters *params = hh_att->neuron_parameters.get();
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;

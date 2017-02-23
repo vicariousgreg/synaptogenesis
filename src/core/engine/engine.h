@@ -10,11 +10,10 @@
 class Engine {
     public:
         Engine(State *state, Environment *environment)
-                : model(state->model),
-                  state(state),
+                : state(state),
                   environment(environment),
                   learning_flag(true) {
-            for (auto& structure : model->get_structures())
+            for (auto& structure : state->model->get_structures())
                 stream_clusters.push_back(build_stream_cluster(
                     state->get_stream_cluster_name(structure),
                     structure, state, environment));
@@ -34,7 +33,6 @@ class Engine {
         void stage_calc();
 
     protected:
-        Model *model;
         State *state;
         Environment *environment;
         std::vector<StreamCluster*> stream_clusters;

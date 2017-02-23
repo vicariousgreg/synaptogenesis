@@ -84,8 +84,8 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn
 
     // Allocate matrix on host
     // If parallel, it will be copied below
-    mData = (float*)malloc(matrix_size * sizeof(float));
-    if (mData == NULL)
+    mData = Pointer<float>(matrix_size);
+    if (mData.get() == NULL)
         ErrorManager::get_instance()->log_error(
             "Failed to allocate space for weight matrices on host!");
 
@@ -108,20 +108,9 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn
 }
 
 WeightMatrix::~WeightMatrix() {
-#ifdef PARALLEL
-    cudaFree(this->mData);
-#else
-    free(this->mData);
-#endif
+    this->mData.free();
 }
 
-#ifdef PARALLEL
-void WeightMatrix::send_to_device() {
-    // Parallel requires a temporary matrix be created and copied
-    float* device_mData = (float*) allocate_device(
-        matrix_size, sizeof(float), mData);
-    cudaCheckError("Failed to initialize weight matrix!");
-    free(mData);
-    mData = device_mData;
+void WeightMatrix::transfer_to_device() {
+    this->mData.transfer_to_device();
 }
-#endif

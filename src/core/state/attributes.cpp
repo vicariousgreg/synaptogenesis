@@ -26,7 +26,7 @@ Attributes *build_attributes(Structure *structure) {
 #ifdef PARALLEL
     // Copy attributes to device and set the pointer
     // Superclass will set its own pointer otherwise
-    attributes->send_to_device();
+    attributes->transfer_to_device();
     attributes->pointer = (Attributes*)
         allocate_device(1, object_size, attributes);
 #endif
@@ -41,6 +41,7 @@ Attributes::Attributes(Structure *structure, OutputType output_type)
     int curr_index = 0;
     for (auto& layer : structure->get_layers()) {
         start_indices[layer->id] = curr_index;
+        sizes[layer->id] = layer->size;
         curr_index += layer->size;
     }
 
@@ -54,53 +55,39 @@ Attributes::Attributes(Structure *structure, OutputType output_type)
     }
 
     // Allocate space for input and output
-    this->input = (float*) allocate_host(
-        this->total_neurons * max_input_registers, sizeof(float));
-    this->output = (Output*) allocate_host(
-        this->total_neurons * HISTORY_SIZE, sizeof(Output));
+    this->input = Pointer<float>(this->total_neurons * max_input_registers);
+    this->output = Pointer<Output>(this->total_neurons * HISTORY_SIZE);
 
     // Retrieve extractor
     get_extractor(&this->extractor, output_type);
 }
 
 Attributes::~Attributes() {
+    this->input.free();
+    this->output.free();
 #ifdef PARALLEL
-    cudaFree(this->input);
-    cudaFree(this->output);
     cudaFree(this->pointer);
-#else
-    free(this->input);
-    free(this->output);
 #endif
 }
 
-#ifdef PARALLEL
-void Attributes::send_to_device() {
-    // Copy data to device, then free from host
-    float* device_input = (float*)
-        allocate_device(this->total_neurons * max_input_registers,
-                        sizeof(float), this->input);
-    Output* device_output = (Output*)
-        allocate_device(this->total_neurons * HISTORY_SIZE,
-                        sizeof(Output), this->output);
-    free(this->input);
-    free(this->output);
-    this->input = device_input;
-    this->output = device_output;
+void Attributes::transfer_to_device() {
+    // Transfer data
+    this->input.transfer_to_device();
+    this->output.transfer_to_device();
 }
-#endif
 
 int Attributes::get_start_index(int id) const {
     return start_indices.at(id);
 }
 
-float* Attributes::get_input(int id) const {
-    return input + start_indices.at(id);
+Pointer<float> Attributes::get_input(int id) const {
+    return input.splice(start_indices.at(id), sizes.at(id));
 }
 
-Output* Attributes::get_output(int id, int word_index) const {
+Pointer<Output> Attributes::get_output(int id, int word_index) const {
     if (word_index >= HISTORY_SIZE)
         ErrorManager::get_instance()->log_error(
             "Cannot retrieve output word index past history length!");
-    return output + (total_neurons * word_index) + start_indices.at(id);
+    return output.splice(
+        (total_neurons * word_index) + start_indices.at(id), sizes.at(id));
 }

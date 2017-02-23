@@ -3,21 +3,21 @@
 
 #include "model/connection.h"
 #include "util/constants.h"
+#include "util/pointer.h"
 
 class WeightMatrix {
     public:
         WeightMatrix(Connection *conn, int matrix_depth);
         virtual ~WeightMatrix();
 
-        float* get_data() const { return mData; }
+        Pointer<float> get_data() const { return mData; }
 
-#ifdef PARALLEL
-        void send_to_device();
-#endif
+        void transfer_to_device();
+
         Connection* const connection;
 
     private:
-        float *mData;
+        Pointer<float> mData;
         int matrix_size;
 };
 

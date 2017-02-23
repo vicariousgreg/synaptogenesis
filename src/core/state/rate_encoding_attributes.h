@@ -27,12 +27,10 @@ class RateEncodingAttributes : public Attributes {
             return re_attribute_kernel;
         }
 
-#ifdef PARALLEL
-        virtual void send_to_device();
-#endif
+        virtual void transfer_to_device();
 
         // Neuron parameters
-        RateEncodingParameters* neuron_parameters;
+        Pointer<RateEncodingParameters> neuron_parameters;
 };
 
 #endif

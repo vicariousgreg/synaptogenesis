@@ -4,6 +4,7 @@
 #include "model/connection.h"
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
+#include "util/pointer.h"
 
 class State;
 class Attributes;
@@ -24,7 +25,7 @@ class SynapseData {
         int delay;
 
         /* Weight attributes */
-        float *weights;
+        Pointer<float> weights;
         int num_weights;
         bool plastic;
         float max_weight;
@@ -35,9 +36,9 @@ class SynapseData {
 
         /* IO attributes */
         OutputType output_type;
-        Output *outputs;
-        Output *destination_outputs;
-        float *inputs;
+        Pointer<Output> outputs;
+        Pointer<Output> destination_outputs;
+        Pointer<float> inputs;
 };
 
 #endif

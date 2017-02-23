@@ -16,9 +16,7 @@ State::State(Model *model)
                 att->get_matrix_depth(conn));
             this->weight_matrices[conn] = matrix;
             att->process_weight_matrix(matrix);
-#ifdef PARALLEL
-            matrix->send_to_device();
-#endif
+            matrix->transfer_to_device();
         }
     }
 
@@ -40,11 +38,11 @@ std::string State::get_stream_cluster_name(Structure *structure) {
     return attributes.at(structure)->get_stream_cluster_name();
 }
 
-float* State::get_input(Layer *layer) const {
+Pointer<float> State::get_input(Layer *layer) const {
     return attributes.at(layer->structure)->get_input(layer->id);
 }
 
-Output* State::get_output(Layer *layer, int word_index) const {
+Pointer<Output> State::get_output(Layer *layer, int word_index) const {
     return attributes.at(layer->structure)->get_output(layer->id, word_index);
 }
 
@@ -60,7 +58,7 @@ const ATTRIBUTE_KERNEL State::get_attribute_kernel(Layer *layer) const {
     return attributes.at(layer->structure)->get_attribute_kernel();
 }
 
-float* State::get_matrix(Connection* conn) const {
+Pointer<float> State::get_matrix(Connection* conn) const {
     return weight_matrices.at(conn)->get_data();
 }
 

@@ -10,7 +10,7 @@ GLOBAL void activate_one_to_one(SynapseData synapse_data);
 GLOBAL void activate_convergent(SynapseData synapse_data);
 
 // Internal activator
-GLOBAL void calc_internal(int size, float *src, float *dst, bool clear=false);
+GLOBAL void calc_internal(int size, Pointer<float> src, Pointer<float> dst, bool clear=false);
 
 #define CALC_VAL(from_index, weight_index) \
     float val = extractor(outputs[from_index], delay) * weights[weight_index];

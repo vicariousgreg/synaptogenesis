@@ -23,15 +23,13 @@ class IzhikevichAttributes : public SpikingAttributes {
             return iz_attribute_kernel;
         }
 
-#ifdef PARALLEL
-        virtual void send_to_device();
-#endif
+        virtual void transfer_to_device();
 
         // Neuron Attributes
-        float *recovery;
+        Pointer<float> recovery;
 
         // Neuron parameters
-        IzhikevichParameters* neuron_parameters;
+        Pointer<IzhikevichParameters> neuron_parameters;
 };
 
 #endif

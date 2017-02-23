@@ -24,9 +24,8 @@ class Attributes {
         /* Gets the name of the stream cluster to use with these attributes */
         virtual std::string get_stream_cluster_name() { return "parallel"; }
 
-#ifdef PARALLEL
-        virtual void send_to_device();
-#endif
+        virtual void transfer_to_device();
+
         /* Attribute kernel getter */
         virtual ATTRIBUTE_KERNEL get_attribute_kernel() const = 0;
 
@@ -47,8 +46,8 @@ class Attributes {
 
         // Layer data retrieval
         int get_start_index(int id) const;
-        float* get_input(int id) const;
-        Output* get_output(int id, int word_index = 0) const;
+        Pointer<float> get_input(int id) const;
+        Pointer<Output> get_output(int id, int word_index = 0) const;
 
         // Number of neurons
         const int total_neurons;
@@ -56,8 +55,8 @@ class Attributes {
         // Neuron IO data
         EXTRACTOR extractor;
         const OutputType output_type;
-        Output* output;
-        float* input;
+        Pointer<Output> output;
+        Pointer<float> input;
 
         // Pointer to this object
         // If parallel, this will point to the device copy
@@ -66,6 +65,7 @@ class Attributes {
     protected:
         int max_input_registers;
         std::map<int, int> start_indices;
+        std::map<int, int> sizes;
 };
 
 Attributes *build_attributes(Structure *structure);
