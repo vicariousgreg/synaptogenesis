@@ -37,7 +37,6 @@ void Stream::init() {
 #endif
     input_instruction = NULL;
     output_instruction = NULL;
-    state_instruction = NULL;
 
     // Add input transfer instruction
     if (to_layer->get_input_module() != NULL)
@@ -65,6 +64,9 @@ void Stream::init() {
 
 Stream::~Stream() {
     for (auto inst : this->instructions) delete inst;
+    if (this->input_instruction) delete input_instruction;
+    if (this->output_instruction) delete output_instruction;
+    delete state_instruction;
 #ifdef PARALLEL
     if (not this->external_stream) cudaStreamDestroy(cuda_stream);
     cudaEventDestroy(finished_event);

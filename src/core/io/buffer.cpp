@@ -38,11 +38,11 @@ Buffer::~Buffer() {
 }
 
 void Buffer::init(LayerList input_layers, LayerList output_layers) {
-    int input_size = 0;
+    input_size = 0;
     for (auto layer : input_layers)
         input_size += layer->size;
 
-    int output_size = 0;
+    output_size = 0;
     for (auto layer : output_layers)
         output_size += layer->size;
 

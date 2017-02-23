@@ -25,7 +25,10 @@ class Structure {
                   engine_name(engine_name) {
             for (auto type : IOTypes) this->num_neurons[type] = 0;
         }
-        virtual ~Structure() { }
+        virtual ~Structure() {
+            for (auto layer : layers) delete layer;
+            for (auto conn : connections) delete conn;
+        }
 
         /* Gets the total neuron count */
         int get_num_neurons() const { return total_neurons; }
