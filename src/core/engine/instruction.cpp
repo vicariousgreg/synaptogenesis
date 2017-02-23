@@ -123,7 +123,7 @@ InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state,
 }
 
 void InputTransferInstruction::activate() {
-    dst.copy_from(src, to_layer->size);
+    dst.copy_from(src);
     Instruction::record_events();
 }
 
@@ -134,7 +134,7 @@ OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state,
 }
 
 void OutputTransferInstruction::activate() {
-    src.copy_to(dst, to_layer->size);
+    src.copy_to(dst);
     Instruction::record_events();
 }
 

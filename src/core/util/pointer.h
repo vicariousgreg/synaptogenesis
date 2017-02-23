@@ -65,12 +65,12 @@ class Pointer {
 #endif
         }
 
-        HOST DEVICE operator T*() const {
+        operator T*() const {
             return this->get();
         }
 
         template<typename S>
-        HOST DEVICE Pointer<S> cast() {
+        Pointer<S> cast() {
             return Pointer<S>((S*)ptr, this->size, this->local);
         }
 
@@ -78,22 +78,22 @@ class Pointer {
             return Pointer<T>(ptr + offset, new_size, this->local);
         }
 
-        void copy_to(T* dst, int count) {
+        void copy_to(T* dst) {
             if (local)
-                memcpy(dst, this->ptr, count * sizeof(T));
+                memcpy(dst, this->ptr, this->size * sizeof(T));
 #ifdef PARALLEL
             else
-                cudaMemcpyAsync(dst, this->ptr, count * sizeof(T),
+                cudaMemcpyAsync(dst, this->ptr, this->size * sizeof(T),
                     cudaMemcpyDeviceToHost);
 #endif
         }
 
-        void copy_from(T* src, int count) {
+        void copy_from(T* src) {
             if (local)
-                memcpy(this->ptr, src, count * sizeof(T));
+                memcpy(this->ptr, src, this->size * sizeof(T));
 #ifdef PARALLEL
             else
-                cudaMemcpyAsync(this->ptr, src, count * sizeof(T),
+                cudaMemcpyAsync(this->ptr, src, this->size * sizeof(T),
                     cudaMemcpyHostToDevice);
 #endif
         }
