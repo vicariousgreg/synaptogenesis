@@ -37,6 +37,7 @@ void Stream::init() {
 #endif
     input_instruction = NULL;
     output_instruction = NULL;
+    state_instruction = NULL;
 
     // Add input transfer instruction
     if (to_layer->get_input_module() != NULL)
