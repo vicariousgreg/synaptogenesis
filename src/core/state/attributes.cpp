@@ -81,13 +81,13 @@ int Attributes::get_start_index(int id) const {
 }
 
 Pointer<float> Attributes::get_input(int id) const {
-    return input.splice(start_indices.at(id), sizes.at(id));
+    return input.slice(start_indices.at(id), sizes.at(id));
 }
 
 Pointer<Output> Attributes::get_output(int id, int word_index) const {
     if (word_index >= HISTORY_SIZE)
         ErrorManager::get_instance()->log_error(
             "Cannot retrieve output word index past history length!");
-    return output.splice(
+    return output.slice(
         (total_neurons * word_index) + start_indices.at(id), sizes.at(id));
 }

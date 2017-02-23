@@ -100,8 +100,8 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
           init(child->register_index != 0) {
     int num_neurons = parent->to_layer->structure->get_num_neurons();
     Pointer<float> input = state->get_input(to_layer);
-    this->src = input.splice(num_neurons * child->register_index, to_layer->size);
-    this->dst = input.splice(num_neurons * parent->register_index, to_layer->size);
+    this->src = input.slice(num_neurons * child->register_index, to_layer->size);
+    this->dst = input.slice(num_neurons * parent->register_index, to_layer->size);
 }
 
 void DendriticInstruction::activate() {
