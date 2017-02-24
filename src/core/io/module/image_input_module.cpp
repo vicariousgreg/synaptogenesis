@@ -20,10 +20,10 @@ ImageInputModule::ImageInputModule(Layer *layer, std::string params)
                 "Image size does not match layer size!");
         }
 
-        this->gray = (float*)malloc(width * height * sizeof(float));
-        this->red = (float*)malloc(width * height * sizeof(float));
-        this->green = (float*)malloc(width * height * sizeof(float));
-        this->blue = (float*)malloc(width * height * sizeof(float));
+        this->gray = Pointer<float>(width * height);
+        this->red = Pointer<float>(width * height);
+        this->green = Pointer<float>(width * height);
+        this->blue = Pointer<float>(width * height);
 
         float factor = 10;
 

@@ -2,6 +2,7 @@
 #define image_input_module_h
 
 #include "io/module/module.h"
+#include "util/pointer.h"
 
 class ImageInputModule : public Module {
     public:
@@ -19,10 +20,7 @@ class ImageInputModule : public Module {
     private:
         int width;
         int height;
-        float* gray;
-        float* red;
-        float* green;
-        float* blue;
+        Pointer<float> gray, red, green, blue;
 };
 
 #endif

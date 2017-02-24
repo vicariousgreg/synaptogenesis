@@ -16,8 +16,7 @@ Instruction::Instruction(Layer *layer) : to_layer(layer) {
 void Instruction::record_events() {
 #ifdef PARALLEL
     // Record added events
-    for (int i = 0; i < this->events.size(); ++i)
-        cudaEventRecord(this->events[i], this->stream);
+    for (auto& event : events) cudaEventRecord(event, this->stream);
 #endif
 }
 
@@ -123,7 +122,7 @@ InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state,
 }
 
 void InputTransferInstruction::activate() {
-    dst.copy_from(src);
+    src.copy_to(dst);
     Instruction::record_events();
 }
 
@@ -142,7 +141,6 @@ void StateUpdateInstruction::activate() {
 #ifdef PARALLEL
     attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(
         attributes, start_index, to_layer->size);
-    cudaCheckError("Failed to update neuron state/output!");
 #else
     attribute_kernel(attributes, start_index, to_layer->size);
 #endif

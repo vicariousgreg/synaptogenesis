@@ -55,7 +55,7 @@ Attributes::Attributes(Structure *structure, OutputType output_type)
     }
 
     // Allocate space for input and output
-    this->input = Pointer<float>(this->total_neurons * max_input_registers);
+    this->input = Pointer<float>(this->total_neurons * max_input_registers, 0.0);
     this->output = Pointer<Output>(this->total_neurons * HISTORY_SIZE);
 
     // Retrieve extractor

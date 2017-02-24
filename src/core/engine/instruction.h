@@ -107,8 +107,7 @@ class InputTransferInstruction : public Instruction {
         void activate();
 
     protected:
-        float *src;
-        Pointer<float> dst;
+        Pointer<float> src, dst;
 };
 
 /* Transfers output data */
@@ -120,8 +119,7 @@ class OutputTransferInstruction : public Instruction {
         void activate();
 
     protected:
-        Pointer<Output> src;
-        Output *dst;
+        Pointer<Output> src, dst;
 };
 
 /* Updates layer state */

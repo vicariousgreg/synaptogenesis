@@ -24,7 +24,7 @@ void SpikingAttributes::transfer_to_device() {
 
 void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Connection *conn = matrix->connection;
-    float *mData = matrix->get_data();
+    Pointer<float> mData = matrix->get_data();
     if (conn->plastic) {
         int num_weights = conn->get_num_weights();
 
