@@ -88,16 +88,16 @@ HOST DEVICE T* Pointer<T>::get(int offset) const {
 
 template<typename T>
 void Pointer<T>::free() {
-    if (owner) {
+    if (owner and size > 0) {
 #ifdef __CUDACC__
         if (local) {
-            if (pinned) std::free(ptr); // unpinned host memory
-            else cudaFreeHost(ptr);     // cuda pinned memory
+            if (pinned) cudaFreeHost(ptr); // cuda pinned memory
+            else std::free(ptr);           // unpinned host memory
         } else {
-            cudaFree(this->ptr);        // cuda device memory
+            cudaFree(this->ptr);           // cuda device memory
         }
 #else
-        if (local) std::free(ptr);      // unpinned host memory (default)
+        if (local) std::free(ptr);         // unpinned host memory (default)
 #endif
     }
 }
