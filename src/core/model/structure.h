@@ -20,14 +20,20 @@
  */
 class Structure {
     public:
-        Structure (std::string name, std::string engine_name)
-                : name(name),
-                  engine_name(engine_name) {
+        Structure (std::string name, StreamType stream_type)
+                : name(name), stream_type(stream_type) {
             for (auto type : IOTypes) this->num_neurons[type] = 0;
+            for (auto neural_model : NeuralModels)
+                this->neural_model_flags.push_back(false);
         }
         virtual ~Structure() {
             for (auto layer : layers) delete layer;
             for (auto conn : connections) delete conn;
+        }
+
+        // Returns the flags for which models are represented by this structure
+        const std::vector<bool> get_neural_model_flags() {
+            return neural_model_flags;
         }
 
         /* Gets the total neuron count */
@@ -45,28 +51,31 @@ class Structure {
         /*******************************/
         /************ LAYERS ***********/
         /*******************************/
-        void add_layer(std::string name, int rows, int columns, std::string params, float noise=0.0);
-        void add_layer_from_image(std::string name, std::string path, std::string params, float noise=0.0);
+        void add_layer(std::string name, NeuralModel neural_model,
+            int rows, int columns, std::string params, float noise=0.0);
+        void add_layer_from_image(std::string name, NeuralModel neural_model,
+            std::string path, std::string params, float noise=0.0);
         const LayerList& get_layers() const { return layers; }
         const ConnectionList& get_connections() const { return connections; }
 
         /*******************************/
         /********* CONNECTIONS *********/
         /*******************************/
-        Connection* connect_layers(std::string from_layer_name, std::string to_layer_name,
+        Connection* connect_layers(std::string from_layer_name,
+            std::string to_layer_name,
             bool plastic, int delay, float max_weight, ConnectionType type,
             Opcode opcode, std::string params);
 
         Connection* connect_layers_expected(
             std::string from_layer_name, std::string to_layer_name,
-            std::string new_layer_params,
+            NeuralModel neural_model, std::string new_layer_params,
             bool plastic, int delay, float max_weight,
             ConnectionType type, Opcode opcode, std::string params,
             float noise=0.0);
 
         Connection* connect_layers_matching(
             std::string from_layer_name, std::string to_layer_name,
-            std::string new_layer_params,
+            NeuralModel neural_model, std::string new_layer_params,
             bool plastic, int delay, float max_weight,
             ConnectionType type, Opcode opcode, std::string params,
             float noise=0.0);
@@ -87,8 +96,8 @@ class Structure {
         // Structure name
         const std::string name;
 
-        // Engine name
-        const std::string engine_name;
+        // Stream type for iteration computation order
+        const StreamType stream_type;
 
     private:
         /* Internal layer connection functions */
@@ -114,6 +123,9 @@ class Structure {
         // Number of neurons
         int total_neurons;
         int num_neurons[sizeof(IOTypes)];
+
+        // Flags for whether this contains layers of a given neural model
+        std::vector<bool> neural_model_flags;
 };
 
 typedef std::vector<Structure*> StructureList;

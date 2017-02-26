@@ -6,58 +6,71 @@
 
 State::State(Model *model)
         : model(model) {
-    for (auto& structure : model->get_structures()) {
-        auto att = build_attributes(structure);
-        attributes[structure] = att;
+    for (auto neural_model : NeuralModels) {
+        auto layers = model->get_layers(neural_model);
+        if (layers.size() == 0) {
+            attributes[neural_model] = nullptr;
+        } else {
+            auto att = build_attributes(layers, neural_model);
+            attributes[neural_model] = att;
 
-        /* Set up weight matrices */
-        for (auto & conn : structure->get_connections()) {
-            WeightMatrix* matrix = new WeightMatrix(conn,
-                att->get_matrix_depth(conn));
-            this->weight_matrices[conn] = matrix;
-            att->process_weight_matrix(matrix);
-            matrix->transfer_to_device();
+            /* Set up weight matrices */
+            for (auto& layer : layers) {
+                for (auto& conn : layer->get_input_connections()) {
+                    WeightMatrix* matrix = new WeightMatrix(conn,
+                        att->get_matrix_depth(conn));
+                    this->weight_matrices[conn] = matrix;
+                    att->process_weight_matrix(matrix);
+                    matrix->transfer_to_device();
+                }
+            }
         }
     }
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaStreamCreate(&this->io_stream);
 #endif
 }
 
 State::~State() {
-    for (auto att : attributes) delete att.second;
+    for (auto att : attributes) if (att != nullptr) delete att;
     for (auto matrix : this->weight_matrices) delete matrix.second;
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaStreamDestroy(this->io_stream);
 #endif
 }
 
-std::string State::get_stream_cluster_name(Structure *structure) {
-    return attributes.at(structure)->get_stream_cluster_name();
+bool State::check_compatibility(Structure *structure) {
+    // Retrieve represented neural models in the structure
+    auto flags = structure->get_neural_model_flags();
+
+    // Check relevant attributes for compatibility
+    for (auto n : NeuralModels)
+        if (flags[n] and
+                not attributes[n]->check_compatibility(structure->stream_type))
+            return false;
+    return true;
 }
 
 Pointer<float> State::get_input(Layer *layer, int register_index) const {
-    return attributes.at(layer->structure)
-        ->get_input(layer->id, register_index);
+    return attributes[layer->neural_model]->get_input(layer->id, register_index);
 }
 
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
-    return attributes.at(layer->structure)
-        ->get_output(layer->id, word_index);
+    return attributes[layer->neural_model]->get_output(layer->id, word_index);
 }
 
 int State::get_other_start_index(Layer *layer) const {
-    return attributes.at(layer->structure)->get_other_start_index(layer->id);
+    return attributes[layer->neural_model]->get_other_start_index(layer->id);
 }
 
 const Attributes* State::get_attributes_pointer(Layer *layer) const {
-    return attributes.at(layer->structure)->pointer;
+    return attributes[layer->neural_model]->pointer;
 }
 
 const ATTRIBUTE_KERNEL State::get_attribute_kernel(Layer *layer) const {
-    return attributes.at(layer->structure)->kernel;
+    return attributes[layer->neural_model]->kernel;
 }
 
 Pointer<float> State::get_matrix(Connection* conn) const {
@@ -65,17 +78,17 @@ Pointer<float> State::get_matrix(Connection* conn) const {
 }
 
 EXTRACTOR State::get_extractor(Connection *conn) const {
-    return attributes.at(conn->to_layer->structure)->extractor;
+    return attributes[conn->from_layer->neural_model]->extractor;
 }
 
 SYNAPSE_KERNEL State::get_activator(Connection *conn) const {
-    return attributes.at(conn->to_layer->structure)->get_activator(conn->type);
+    return attributes[conn->to_layer->neural_model]->get_activator(conn->type);
 }
 
 SYNAPSE_KERNEL State::get_updater(Connection *conn) const {
-    return attributes.at(conn->to_layer->structure)->get_updater(conn->type);
+    return attributes[conn->to_layer->neural_model]->get_updater(conn->type);
 }
 
-OutputType State::get_output_type(Structure *structure) const {
-    return attributes.at(structure)->output_type;
+OutputType State::get_output_type(Layer *layer) const {
+    return attributes[layer->neural_model]->output_type;
 }

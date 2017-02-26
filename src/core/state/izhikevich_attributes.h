@@ -16,7 +16,7 @@ GLOBAL void iz_attribute_kernel(const AttributeData attribute_data);
 
 class IzhikevichAttributes : public SpikingAttributes {
     public:
-        IzhikevichAttributes(Structure* structure);
+        IzhikevichAttributes(LayerList &layers);
         virtual ~IzhikevichAttributes();
 
         virtual void transfer_to_device();

@@ -18,12 +18,12 @@ class Environment {
         void ui_launch();
         void ui_update();
 
-        Buffer* get_buffer(Structure *structure);
-        OutputType get_output_type(Structure *structure);
+        OutputType get_output_type(Layer *layer);
+
+        Buffer* const buffer;
+        State* const state;
 
     private:
-        State* const state;
-        std::map<Structure*, Buffer*> buffers;
         Visualizer *visualizer;
         ModuleList input_modules;
         ModuleList output_modules;

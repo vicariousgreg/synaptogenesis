@@ -54,7 +54,7 @@ Pointer<T> Pointer<T>::slice(int offset, int new_size) const {
 
 template<typename T>
 Pointer<T> Pointer<T>::pinned_pointer(int size) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     T* ptr;
     cudaMallocHost((void**) &ptr, size * sizeof(T));
     auto pointer = Pointer<T>(ptr, size);
@@ -89,7 +89,7 @@ HOST DEVICE T* Pointer<T>::get(int offset) const {
 template<typename T>
 void Pointer<T>::free() {
     if (owner) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
         if (local) {
             if (pinned) std::free(ptr); // unpinned host memory
             else cudaFreeHost(ptr);     // cuda pinned memory
@@ -104,7 +104,7 @@ void Pointer<T>::free() {
 
 template<typename T>
 void Pointer<T>::transfer_to_device() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     if (local) {
         T* new_ptr = (T*) allocate_device(size, sizeof(T), this->ptr);
         std::free(this->ptr);
@@ -122,7 +122,7 @@ void Pointer<T>::copy_to(Pointer<T> dst, bool async) const {
     if (dst.size != this->size)
         ErrorManager::get_instance()->log_error(
             "Attempted to copy memory between pointers of different sizes!");
-#ifdef PARALLEL
+#ifdef __CUDACC__
     if (local and dst.local) memcpy(dst.ptr, ptr, size * sizeof(T));
     else {
         auto kind = cudaMemcpyDeviceToDevice;
@@ -142,7 +142,7 @@ template<typename T>
 void Pointer<T>::set(T val, bool async) {
     if (local) {
         for (int i = 0 ; i < size ; ++i) ptr[i] = val;
-#ifdef PARALLEL
+#ifdef __CUDACC__
     } else if (sizeof(T) == 1) {
         if (async) cudaMemsetAsync(ptr,val,size);
         else cudaMemset(ptr,val,size);

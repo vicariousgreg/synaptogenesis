@@ -15,7 +15,6 @@ class Engine {
                   learning_flag(true) {
             for (auto& structure : state->model->get_structures())
                 stream_clusters.push_back(build_stream_cluster(
-                    state->get_stream_cluster_name(structure),
                     structure, state, environment));
         }
 

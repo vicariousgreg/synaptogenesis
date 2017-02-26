@@ -4,7 +4,7 @@
 #include "constants.h"
 
 // Define prefixes such that it doesn't affect anything for serial version
-#ifdef PARALLEL
+#ifdef __CUDACC__
 #define GLOBAL __global__
 #define DEVICE __device__
 #define HOST __host__
@@ -15,7 +15,7 @@
 #endif
 
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
 
 #include <cstdio>
 #include <math.h>

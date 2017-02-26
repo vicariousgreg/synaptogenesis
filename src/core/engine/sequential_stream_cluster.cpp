@@ -6,7 +6,7 @@
 SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
         State *state, Environment *environment)
         : StreamCluster(state, environment) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaStreamCreate(&this->compute_cuda_stream);
 #endif
     // Keep track of visited layers;
@@ -27,7 +27,7 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
         visited.insert(curr_layer);
 
         // Add elements to beginning of list
-#ifdef PARALLEL
+#ifdef __CUDACC__
         streams.insert(streams.begin(),
             new Stream(curr_layer, state, environment, compute_cuda_stream));
 #else
@@ -54,7 +54,7 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
 SequentialStreamCluster::~SequentialStreamCluster() {
     // Delete streams
     for (auto stream : streams) delete stream;
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaStreamDestroy(compute_cuda_stream);
 #endif
 }
@@ -93,7 +93,7 @@ void SequentialStreamCluster::launch_weight_update() {
 /**************************** EVENT HANDLING **********************************/
 /******************************************************************************/
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
 void SequentialStreamCluster::wait_for_input() {
     for (auto stream : streams)
         cudaEventSynchronize(stream->get_input_event());

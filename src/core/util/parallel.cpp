@@ -1,4 +1,4 @@
-#ifdef PARALLEL
+#ifdef __CUDACC__
 
 #include "util/parallel.h"
 

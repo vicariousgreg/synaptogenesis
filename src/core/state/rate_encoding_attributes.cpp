@@ -12,13 +12,13 @@ static RateEncodingParameters create_parameters(std::string str) {
     //    "Unrecognized parameter string: " + str);
 }
 
-RateEncodingAttributes::RateEncodingAttributes(Structure* structure)
-        : Attributes(structure, FLOAT, re_attribute_kernel) {
+RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
+        : Attributes(layers, FLOAT, re_attribute_kernel) {
     this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
 
     // Fill in table
     int start_index = 0;
-    for (auto& layer : structure->get_layers()) {
+    for (auto& layer : layers) {
         RateEncodingParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j)
             neuron_parameters[start_index+j] = params;
@@ -46,7 +46,7 @@ GLOBAL void re_attribute_kernel(const AttributeData attribute_data) {
     PREAMBLE_ATTRIBUTES;
     float *f_outputs = (float*)outputs;
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < size) {
 #else

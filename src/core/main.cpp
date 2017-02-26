@@ -30,16 +30,16 @@ void print_model(Model *model) {
     }
 }
 
-Model* build_self_connected_model(std::string engine_name) {
+Model* build_self_connected_model(NeuralModel neural_model) {
     Model *model = new Model();
-    Structure *structure = model->add_structure("Self-connected", engine_name);
+    Structure *structure = model->add_structure("Self-connected");
 
     int rows = 1000;
     int cols = 1000;
-    structure->add_layer("a", rows, cols, "random positive", 5);
+    structure->add_layer("a", neural_model, rows, cols, "random positive", 5);
     structure->connect_layers("a", "a", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
 
-    structure->add_layer("b", rows, cols, "random positive", 5);
+    structure->add_layer("b", neural_model, rows, cols, "random positive", 5);
     structure->connect_layers("b", "b", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
 
     // Modules
@@ -49,14 +49,14 @@ Model* build_self_connected_model(std::string engine_name) {
     return model;
 }
 
-Model* build_arborized_model(std::string engine_name, ConnectionType type) {
+Model* build_arborized_model(NeuralModel neural_model, ConnectionType type) {
     Model *model = new Model();
-    Structure *structure = model->add_structure("Arborized", engine_name);
+    Structure *structure = model->add_structure("Arborized");
 
     int rows = 1000;
     int cols = 1000;
-    structure->add_layer("a", rows, cols, "random positive", 5);
-    structure->connect_layers_expected("a", "b", "random positive" , false, 0, .5, type, ADD, "7 1");
+    structure->add_layer("a", neural_model, rows, cols, "random positive", 5);
+    structure->connect_layers_expected("a", "b", neural_model, "random positive" , false, 0, .5, type, ADD, "7 1");
 
     // Modules
     //structure->add_module("b", "dummy_output", "5");
@@ -64,13 +64,13 @@ Model* build_arborized_model(std::string engine_name, ConnectionType type) {
     return model;
 }
 
-Model* build_stress_model(std::string engine_name) {
+Model* build_stress_model(NeuralModel neural_model) {
     Model *model = new Model();
-    Structure *structure = model->add_structure("Self-connected", engine_name);
+    Structure *structure = model->add_structure("Self-connected");
 
     int size = 800 * 19;
-    structure->add_layer("pos", 1, size, "random positive", 5);
-    structure->add_layer("neg", 1, size / 4, "random negative", 2);
+    structure->add_layer("pos", neural_model, 1, size, "random positive", 5);
+    structure->add_layer("neg", neural_model, 1, size / 4, "random negative", 2);
     structure->connect_layers("pos", "pos", false, 0, .5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("pos", "neg", false, 0, .5, FULLY_CONNECTED, ADD, "");
     structure->connect_layers("neg", "pos", false, 0, 1, FULLY_CONNECTED, SUB, "");
@@ -79,28 +79,28 @@ Model* build_stress_model(std::string engine_name) {
     return model;
 }
 
-Model* build_layers_model(std::string engine_name) {
+Model* build_layers_model(NeuralModel neural_model) {
     Model *model = new Model();
-    Structure *structure = model->add_structure("Self-connected", engine_name);
+    Structure *structure = model->add_structure("Self-connected");
 
     int size = 100;
-    structure->add_layer("a", size, size, "random positive", 10);
+    structure->add_layer("a", neural_model, size, size, "random positive", 10);
 
-    structure->add_layer("c", size, size, "random positive");
+    structure->add_layer("c", neural_model, size, size, "random positive");
     structure->connect_layers("a", "c", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-    structure->add_layer("d", size, size, "random positive");
+    structure->add_layer("d", neural_model, size, size, "random positive");
     structure->connect_layers("a", "d", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-    structure->add_layer("e", size, size, "random positive");
+    structure->add_layer("e", neural_model, size, size, "random positive");
     structure->connect_layers("a", "e", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
-    structure->add_layer("f", size, size, "random positive");
+    structure->add_layer("f", neural_model, size, size, "random positive");
     structure->connect_layers("c", "f", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
-    structure->add_layer("g", size, size, "random positive");
+    structure->add_layer("g", neural_model, size, size, "random positive");
     structure->connect_layers("d", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
     structure->connect_layers("f", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
-    structure->add_layer("b", size, size, "random positive", 10);
+    structure->add_layer("b", neural_model, size, size, "random positive", 10);
     structure->connect_layers("f", "b", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
 
     // Modules
@@ -119,24 +119,24 @@ Model* build_layers_model(std::string engine_name) {
     return model;
 }
 
-Model* build_image_model(std::string engine_name) {
+Model* build_image_model(NeuralModel neural_model) {
     /* Determine output type */
     //std::string output_name = "print_output";
     std::string output_name = "visualizer_output";
 
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("Self-connected", engine_name);
+    Structure *structure = model->add_structure("Self-connected");
 
     //const char* image_path = "resources/bird.jpg";
     const char* image_path = "resources/bird-head.jpg";
     //const char* image_path = "resources/pattern.jpg";
     //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
-    structure->add_layer_from_image("photoreceptor", image_path, "default");
+    structure->add_layer_from_image("photoreceptor", neural_model, image_path, "default");
 
     // Vertical line detection
-    structure->connect_layers_expected("photoreceptor", "vertical", "default",
+    structure->connect_layers_expected("photoreceptor", "vertical", neural_model, "default",
         false, 0, 5, CONVOLUTIONAL, ADD,
         "11 1 "
         "-5 -5  0  0  5 10  5  0  0 -5 -5 "
@@ -159,7 +159,7 @@ Model* build_image_model(std::string engine_name) {
         "-5  0  5  0 -5 ");
 
     // Horizontal line detection
-    structure->connect_layers_expected("photoreceptor", "horizontal", "default",
+    structure->connect_layers_expected("photoreceptor", "horizontal", neural_model, "default",
         false, 0, 5, CONVOLUTIONAL, ADD,
         "11 1 "
         "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
@@ -182,7 +182,7 @@ Model* build_image_model(std::string engine_name) {
         "-5 -5 -5 -5 -5 ");
 
     // Cross detection
-    structure->connect_layers_expected("vertical", "cross", "default",
+    structure->connect_layers_expected("vertical", "cross", neural_model, "default",
         false, 0, 5, CONVOLUTIONAL, ADD,
         "5 1 "
         "-5  0 10  0 -5 "
@@ -199,7 +199,7 @@ Model* build_image_model(std::string engine_name) {
         "-5 -5 -5 -5 -5 ");
 
     // Forward slash
-    structure->connect_layers_expected("photoreceptor", "forward_slash", "default",
+    structure->connect_layers_expected("photoreceptor", "forward_slash", neural_model, "default",
         false, 0, 5, CONVOLUTIONAL, ADD,
         "9 1 "
         " 0  0  0  0 -5 -5  0  5 10 "
@@ -220,7 +220,7 @@ Model* build_image_model(std::string engine_name) {
         " 5  0 -5  0  0 ");
 
     // Back slash
-    structure->connect_layers_expected("photoreceptor", "back_slash", "default",
+    structure->connect_layers_expected("photoreceptor", "back_slash", neural_model, "default",
         false, 0, 5, CONVOLUTIONAL, ADD,
         "9 1 "
         "10  5  0 -5 -5  0  0  0  0 "
@@ -252,28 +252,28 @@ Model* build_image_model(std::string engine_name) {
     return model;
 }
 
-Model* build_reentrant_image_model(std::string engine_name) {
+Model* build_reentrant_image_model(NeuralModel neural_model) {
     /* Determine output type */
     //std::string output_name = "print_output";
     std::string output_name = "visualizer_output";
 
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("Self-connected", engine_name);
+    Structure *structure = model->add_structure("Self-connected");
 
     //const char* image_path = "resources/bird.jpg";
     const char* image_path = "resources/bird-head.jpg";
     //const char* image_path = "resources/pattern.jpg";
     //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
-    structure->add_layer_from_image("photoreceptor", image_path, "default");
+    structure->add_layer_from_image("photoreceptor", neural_model, image_path, "default");
 
     // Connect first layer to receptor
-    structure->connect_layers_matching("photoreceptor", "layer1", "default",
+    structure->connect_layers_matching("photoreceptor", "layer1", neural_model, "default",
         false, 0, 1, CONVOLUTIONAL, ADD, "21 1 1");
 
     // Create reentrant pair
-    structure->connect_layers_matching("layer1", "layer2", "default",
+    structure->connect_layers_matching("layer1", "layer2", neural_model, "default",
         false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1", 5);
     structure->connect_layers("layer2", "layer1",
         false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
@@ -294,17 +294,17 @@ Model* build_reentrant_image_model(std::string engine_name) {
     return model;
 }
 
-Model* build_alignment_model(std::string engine_name) {
+Model* build_alignment_model(NeuralModel neural_model) {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("alignment", engine_name);
+    Structure *structure = model->add_structure("alignment");
 
     int resolution = 128;
-    structure->add_layer("input_layer", 1, 10, "default");
-    structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold", 0.5);
-    structure->add_layer("inh_thalamus", resolution, resolution, "default");
-    structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
-    structure->add_layer("inh_cortex", resolution, resolution, "default");
+    structure->add_layer("input_layer", neural_model, 1, 10, "default");
+    structure->add_layer("exc_thalamus", neural_model, resolution, resolution, "low_threshold", 0.5);
+    structure->add_layer("inh_thalamus", neural_model, resolution, resolution, "default");
+    structure->add_layer("exc_cortex", neural_model, resolution, resolution, "thalamo_cortical");
+    structure->add_layer("inh_cortex", neural_model, resolution, resolution, "default");
 
     structure->connect_layers("input_layer", "exc_thalamus",
         false, 0, 5, FULLY_CONNECTED, ADD, "");
@@ -321,7 +321,7 @@ Model* build_alignment_model(std::string engine_name) {
     structure->connect_layers("inh_thalamus", "exc_thalamus",
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
-    structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
+    structure->connect_layers_matching("exc_cortex", "output_layer", neural_model, "low_threshold",
         true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
     structure->connect_layers("output_layer", "exc_cortex",
         false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
@@ -340,19 +340,19 @@ Model* build_alignment_model(std::string engine_name) {
     return model;
 }
 
-Model* build_dendritic_model(std::string engine_name) {
+Model* build_dendritic_model(NeuralModel neural_model) {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("dendritic", engine_name);
+    Structure *structure = model->add_structure("dendritic");
 
-    int resolution = 125;
-    structure->add_layer("input_layer1", 1, 10, "default");
-    structure->add_layer("input_layer2", 1, 10, "default");
-    structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold", 0.5);
-    structure->add_layer("inh_thalamus1", resolution, resolution, "default");
-    structure->add_layer("inh_thalamus2", resolution, resolution, "default");
-    structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
-    structure->add_layer("inh_cortex", resolution, resolution, "default");
+    int resolution = 128;
+    structure->add_layer("input_layer1", neural_model, 1, 10, "default");
+    structure->add_layer("input_layer2", neural_model, 1, 10, "default");
+    structure->add_layer("exc_thalamus", neural_model, resolution, resolution, "low_threshold", 0.5);
+    structure->add_layer("inh_thalamus1", neural_model, resolution, resolution, "default");
+    structure->add_layer("inh_thalamus2", neural_model, resolution, resolution, "default");
+    structure->add_layer("exc_cortex", neural_model, resolution, resolution, "thalamo_cortical");
+    structure->add_layer("inh_cortex", neural_model, resolution, resolution, "default");
 
     structure->connect_layers("exc_thalamus", "exc_cortex",
         true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
@@ -385,7 +385,7 @@ Model* build_dendritic_model(std::string engine_name) {
     structure->connect_layers_internal(node2, "inh_thalamus2",
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
-    structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
+    structure->connect_layers_matching("exc_cortex", "output_layer", neural_model, "low_threshold",
         true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
     structure->connect_layers("output_layer", "exc_cortex",
         false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
@@ -409,14 +409,14 @@ Model* build_dendritic_model(std::string engine_name) {
 Model* build_hh_model() {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("hh", "hodgkin_huxley");
+    Structure *structure = model->add_structure("hh");
 
-    int resolution = 125;
-    structure->add_layer("input_layer", 1, 10, "0");
-    structure->add_layer("exc_thalamus", resolution, resolution, "0", 0.5);
-    structure->add_layer("inh_thalamus", resolution, resolution, "0");
-    structure->add_layer("exc_cortex", resolution, resolution, "0");
-    structure->add_layer("inh_cortex", resolution, resolution, "0");
+    int resolution = 128;
+    structure->add_layer("input_layer", HODGKIN_HUXLEY, 1, 10, "0");
+    structure->add_layer("exc_thalamus", HODGKIN_HUXLEY, resolution, resolution, "0", 0.5);
+    structure->add_layer("inh_thalamus", HODGKIN_HUXLEY, resolution, resolution, "0");
+    structure->add_layer("exc_cortex", HODGKIN_HUXLEY, resolution, resolution, "0");
+    structure->add_layer("inh_cortex", HODGKIN_HUXLEY, resolution, resolution, "0");
 
     structure->connect_layers("input_layer", "exc_thalamus",
         false, 0, 5, FULLY_CONNECTED, ADD, "");
@@ -433,7 +433,7 @@ Model* build_hh_model() {
     structure->connect_layers("inh_thalamus", "exc_thalamus",
         false, 0, 5, CONVERGENT, DIV, "5 1 5");
 
-    structure->connect_layers_matching("exc_cortex", "output_layer", "0",
+    structure->connect_layers_matching("exc_cortex", "output_layer", HODGKIN_HUXLEY, "0",
         true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
         //true, 40, 0.1, CONVERGENT, ADD, "15 1 0.0001");
     structure->connect_layers("output_layer", "exc_cortex",
@@ -453,21 +453,21 @@ Model* build_hh_model() {
     return model;
 }
 
-Model* build_cc_model(std::string engine_name) {
+Model* build_cc_model(NeuralModel neural_model) {
     /* Construct the model */
     Model *model = new Model();
     std::vector<Structure*> structures;
     int num_structures = 4;
 
     for (int i = 0 ; i < num_structures ; ++i) {
-        Structure *structure = model->add_structure(std::to_string(i), engine_name);
+        Structure *structure = model->add_structure(std::to_string(i));
 
         int resolution = 128;
-        structure->add_layer("input_layer", 1, 10, "default");
-        structure->add_layer("exc_thalamus", resolution, resolution, "low_threshold", 0.5);
-        structure->add_layer("inh_thalamus", resolution, resolution, "default");
-        structure->add_layer("exc_cortex", resolution, resolution, "thalamo_cortical");
-        structure->add_layer("inh_cortex", resolution, resolution, "default");
+        structure->add_layer("input_layer", neural_model, 1, 10, "default");
+        structure->add_layer("exc_thalamus", neural_model, resolution, resolution, "low_threshold", 0.5);
+        structure->add_layer("inh_thalamus", neural_model, resolution, resolution, "default");
+        structure->add_layer("exc_cortex", neural_model, resolution, resolution, "thalamo_cortical");
+        structure->add_layer("inh_cortex", neural_model, resolution, resolution, "default");
 
         structure->connect_layers("input_layer", "exc_thalamus", false, 0, 5, FULLY_CONNECTED, ADD, "");
         structure->connect_layers("exc_thalamus", "exc_cortex", true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
@@ -478,7 +478,7 @@ Model* build_cc_model(std::string engine_name) {
         structure->connect_layers("inh_thalamus", "exc_thalamus", false, 0, 5, CONVERGENT, DIV, "5 1 10");
 
         /*
-        structure->connect_layers_matching("exc_cortex", "output_layer", "low_threshold",
+        structure->connect_layers_matching("exc_cortex", "output_layer", neural_model, "low_threshold",
             true, 20, 0.1, CONVERGENT, ADD, "15 1 0.025");
         structure->connect_layers("output_layer", "exc_cortex",
             true, 20, 0.5, CONVERGENT, ADD, "15 1 0.1");
@@ -517,12 +517,12 @@ Model* build_cc_model(std::string engine_name) {
 Model* build_re_model() {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("rate_encoding", "rate_encoding");
+    Structure *structure = model->add_structure("re", FEEDFORWARD);
 
     int resolution = 128;
-    structure->add_layer("in", 1, 8, "");
-    structure->add_layer("hid", resolution, resolution, "");
-    structure->add_layer("out", resolution, resolution, "");
+    structure->add_layer("in", RATE_ENCODING, 1, 8, "");
+    structure->add_layer("hid", RATE_ENCODING, resolution, resolution, "");
+    structure->add_layer("out", RATE_ENCODING, resolution, resolution, "");
 
     structure->connect_layers("in", "hid",
         true, 0, 5, FULLY_CONNECTED, ADD, "");
@@ -556,7 +556,7 @@ void stress_test() {
     Model *model;
 
     std::cout << "Stress...\n";
-    model = build_stress_model("izhikevich");
+    model = build_stress_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 10, true);
     std::cout << "\n";
@@ -568,8 +568,8 @@ void layers_test() {
     Model *model;
 
     std::cout << "Layers...\n";
-    model = build_layers_model("izhikevich");
-    //model = build_layers_model("rate_encoding");
+    model = build_layers_model(IZHIKEVICH);
+    //model = build_layers_model(RATE_ENCODING);
     print_model(model);
     run_simulation(model, 100000, true);
     std::cout << "\n";
@@ -581,7 +581,7 @@ void reentrant_image_test() {
     Model *model;
 
     std::cout << "Reentrant Image...\n";
-    model = build_reentrant_image_model("izhikevich");
+    model = build_reentrant_image_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
@@ -595,8 +595,8 @@ void image_test() {
     Model *model;
 
     std::cout << "Image...\n";
-    model = build_image_model("izhikevich");
-    //model = build_image_model("rate_encoding");
+    model = build_image_model(IZHIKEVICH);
+    //model = build_image_model(RATE_ENCODING);
     print_model(model);
     run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
@@ -610,7 +610,7 @@ void alignment_test() {
     Model *model;
 
     std::cout << "Alignment...\n";
-    model = build_alignment_model("izhikevich");
+    model = build_alignment_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 1000000, true);
     //run_simulation(model, 100, true);
@@ -624,7 +624,7 @@ void dendritic_test() {
     Model *model;
 
     std::cout << "Dendritic...\n";
-    model = build_dendritic_model("izhikevich");
+    model = build_dendritic_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 1000000, true);
     //run_simulation(model, 100, true);
@@ -639,7 +639,7 @@ void hh_test() {
 
     std::cout << "Hodgkin-Huxley...\n";
     model = build_hh_model();
-    //model = build_alignment_model("hodgkin_huxley");
+    //model = build_alignment_model(HODGKIN_HUXLEY);
     print_model(model);
     run_simulation(model, 1000000, true);
     //run_simulation(model, 100, true);
@@ -653,7 +653,7 @@ void cc_test() {
     Model *model;
 
     std::cout << "Classification couple...\n";
-    model = build_cc_model("izhikevich");
+    model = build_cc_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 1000000, true);
     //run_simulation(model, 100, true);
@@ -681,21 +681,21 @@ void varied_test() {
     Model *model;
 
     std::cout << "Self connected...\n";
-    model = build_self_connected_model("izhikevich");
+    model = build_self_connected_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";
     delete model;
 
     std::cout << "Convergent...\n";
-    model = build_arborized_model("izhikevich", CONVERGENT);
+    model = build_arborized_model(IZHIKEVICH, CONVERGENT);
     print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";
     delete model;
 
     std::cout << "Convergent convolutional...\n";
-    model = build_arborized_model("izhikevich", CONVOLUTIONAL);
+    model = build_arborized_model(IZHIKEVICH, CONVOLUTIONAL);
     print_model(model);
     run_simulation(model, 50, true);
     std::cout << "\n";

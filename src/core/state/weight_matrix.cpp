@@ -59,7 +59,7 @@ static void initialize(float* target_matrix, Connection* conn) {
 
         for (int row = 0 ; row < rows ; ++row) {
             for (int col = 0 ; col < cols ; ++col) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
                 // If parallel, transpose the input (rows <-> cols)
                 // Parallel convergent matrices are laid out such that each
                 //   kernel is in a column

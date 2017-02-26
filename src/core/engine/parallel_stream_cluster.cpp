@@ -95,7 +95,7 @@ void ParallelStreamCluster::launch_weight_update() {
 /**************************** EVENT HANDLING **********************************/
 /******************************************************************************/
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
 void ParallelStreamCluster::wait_for_input() {
     for (auto& stream : streams[INPUT])
         cudaEventSynchronize(stream->get_input_event());

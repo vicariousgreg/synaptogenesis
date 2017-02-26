@@ -21,8 +21,10 @@ class Model {
         /* TODO: Loads a model from a file using the model builder */
         static Model* load(std::string path);
 
-        Structure* add_structure(std::string name, std::string engine_name);
+        Structure* add_structure(std::string name, StreamType stream_type = PARALLEL);
         const StructureList& get_structures() const { return structures; }
+        LayerList get_layers() const;
+        LayerList get_layers(NeuralModel neural_model) const;
 
         // Sum caluclators
         int get_num_neurons() const;

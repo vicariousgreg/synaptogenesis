@@ -11,12 +11,12 @@ AttributeData::AttributeData(Layer *layer, State *state) :
         size(layer->size) {
     // Calculate history size
     int timesteps_per_output =
-        get_timesteps_per_output(state->get_output_type(layer->structure)); 
+        get_timesteps_per_output(state->get_output_type(layer));
     int max_delay_registers = 0;
     for (auto& conn : layer->get_output_connections()) {
         int delay_registers = conn->delay / timesteps_per_output;
         if (delay_registers > max_delay_registers)
             max_delay_registers = delay_registers;
-    } 
+    }
     history_size = max_delay_registers + 1;
 }

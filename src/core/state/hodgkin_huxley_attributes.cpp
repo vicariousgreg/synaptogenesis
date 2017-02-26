@@ -13,8 +13,8 @@ static HodgkinHuxleyParameters create_parameters(std::string str) {
     return HodgkinHuxleyParameters(iapp);
 }
 
-HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Structure* structure)
-        : SpikingAttributes(structure, hh_attribute_kernel) {
+HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(LayerList &layers)
+        : SpikingAttributes(layers, hh_attribute_kernel) {
     this->h = Pointer<float>(total_neurons);
     this->m = Pointer<float>(total_neurons);
     this->n = Pointer<float>(total_neurons);
@@ -23,7 +23,7 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Structure* structure)
 
     // Fill in table
     int start_index = 0;
-    for (auto& layer : structure->get_layers()) {
+    for (auto& layer : layers) {
         HodgkinHuxleyParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;
@@ -88,7 +88,7 @@ GLOBAL void hh_attribute_kernel(const AttributeData attribute_data) {
     unsigned int *spikes = (unsigned int*)outputs;
     HodgkinHuxleyParameters *params = hh_att->neuron_parameters.get(other_start_index);
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < size) {
 #else

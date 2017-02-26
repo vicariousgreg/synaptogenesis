@@ -9,7 +9,7 @@
 class Stream {
     public:
         Stream(Layer *layer, State *state, Environment *environment);
-#ifdef PARALLEL
+#ifdef __CUDACC__
         Stream(Layer *layer, State *state, Environment *environment, cudaStream_t cuda_stream);
 #endif
         virtual ~Stream();
@@ -21,7 +21,7 @@ class Stream {
             return instructions;
         }
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
         cudaStream_t get_cuda_stream() const { return cuda_stream; }
         cudaEvent_t get_finished_event() const { return finished_event; }
         cudaEvent_t get_input_event() const { return input_event; }
@@ -45,7 +45,7 @@ class Stream {
         Instruction *output_instruction;
         Instruction *state_instruction;
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
         cudaEvent_t finished_event;
         cudaEvent_t input_event;
         cudaEvent_t output_event;

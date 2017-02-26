@@ -5,7 +5,7 @@ Stream::Stream(Layer *layer, State *state, Environment *environment)
         : to_layer(layer),
           state(state),
           environment(environment) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Create cuda stream
     cudaStreamCreate(&cuda_stream);
     this->external_stream = false;
@@ -13,7 +13,7 @@ Stream::Stream(Layer *layer, State *state, Environment *environment)
     this->init();
 }
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
 Stream::Stream(Layer *layer, State *state, Environment *environment, cudaStream_t cuda_stream)
         : to_layer(layer),
           state(state),
@@ -25,7 +25,7 @@ Stream::Stream(Layer *layer, State *state, Environment *environment, cudaStream_
 #endif
 
 void Stream::init() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaEventCreateWithFlags(&finished_event,
         cudaEventDisableTiming);
     cudaEventCreateWithFlags(&input_event,
@@ -56,7 +56,7 @@ void Stream::init() {
     // Beform DFS on dendritic tree
     dendrite_DFS(to_layer->dendritic_root);
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Add finished event to last synaptic/dendritic connection
     if (instructions.size() > 0)
         instructions[instructions.size()-1]->add_event(finished_event);
@@ -68,7 +68,7 @@ Stream::~Stream() {
     if (this->input_instruction) delete input_instruction;
     if (this->output_instruction) delete output_instruction;
     delete state_instruction;
-#ifdef PARALLEL
+#ifdef __CUDACC__
     if (not this->external_stream) cudaStreamDestroy(cuda_stream);
     cudaEventDestroy(finished_event);
 #endif
@@ -92,7 +92,7 @@ void Stream::set_input_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple input instructions to stream!");
     this->input_instruction = inst;
-#ifdef PARALLEL
+#ifdef __CUDACC__
     inst->add_event(input_event);
     inst->set_stream(cuda_stream);
 #endif
@@ -103,7 +103,7 @@ void Stream::set_output_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple output instructions to stream!");
     this->output_instruction = inst;
-#ifdef PARALLEL
+#ifdef __CUDACC__
     inst->add_event(output_event);
     inst->set_stream(state->io_stream);
 #endif
@@ -114,7 +114,7 @@ void Stream::set_state_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple state instructions to stream!");
     this->state_instruction = inst;
-#ifdef PARALLEL
+#ifdef __CUDACC__
     inst->add_event(state_event);
     inst->set_stream(cuda_stream);
 #endif
@@ -122,7 +122,7 @@ void Stream::set_state_instruction(Instruction *inst) {
 
 void Stream::add_instruction(Instruction *inst) {
     this->instructions.push_back(inst);
-#ifdef PARALLEL
+#ifdef __CUDACC__
     inst->set_stream(this->cuda_stream);
 #endif
 }
@@ -130,7 +130,7 @@ void Stream::add_instruction(Instruction *inst) {
 void Stream::activate_input_instruction() {
     if (input_instruction != NULL)
         input_instruction->activate();
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaStreamWaitEvent(cuda_stream, input_event, 0);
 #endif
 }
@@ -141,11 +141,11 @@ void Stream::activate_output_instruction() {
 }
 
 void Stream::activate_state_instruction() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaStreamWaitEvent(cuda_stream, output_event, 0);
 #endif
     state_instruction->activate();
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaStreamWaitEvent(cuda_stream, state_event, 0);
 #endif
 }

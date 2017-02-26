@@ -7,10 +7,12 @@
 #include "util/constants.h"
 #include "util/pointer.h"
 
+class Model;
 class Structure;
 
 class Buffer {
     public:
+        Buffer(Model *model);
         Buffer(Structure *structure);
         Buffer(LayerList layers);
         Buffer(LayerList input_layers, LayerList output_layers);

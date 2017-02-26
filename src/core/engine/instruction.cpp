@@ -3,7 +3,7 @@
 #include "util/error_manager.h"
 
 Instruction::Instruction(Layer *layer) : to_layer(layer) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Default stream
     this->stream = 0;
 
@@ -14,7 +14,7 @@ Instruction::Instruction(Layer *layer) : to_layer(layer) {
 }
 
 void Instruction::record_events() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Record added events
     for (auto& event : events) cudaEventRecord(event, this->stream);
 #endif
@@ -26,7 +26,7 @@ InitializeInstruction::InitializeInstruction(Layer *layer, State *state)
 }
 
 void ClearInstruction::activate() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Launch computation on provided stream, or default if none
     clear_data
         <<<activator_blocks, activator_threads, 0, this->stream>>>
@@ -38,7 +38,7 @@ void ClearInstruction::activate() {
 }
 
 void NoiseInstruction::activate() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Launch computation on provided stream, or default if none
     randomize_data
         <<<activator_blocks, activator_threads, 0, this->stream>>>
@@ -57,7 +57,7 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
     this->activator = state->get_activator(conn);
     this->updater = (conn->plastic) ? state->get_updater(conn) : NULL;
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     if (conn->convolutional) {
         int num_weights = connection->get_num_weights();
         this->updater_threads = dim3(calc_threads(num_weights));
@@ -70,7 +70,7 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
 }
 
 void SynapseInstruction::activate() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Launch computation on provided stream, or default if none
     activator
         <<<activator_blocks, activator_threads, 0, this->stream>>>
@@ -83,7 +83,7 @@ void SynapseInstruction::activate() {
 
 void SynapseInstruction::update() {
     if (this->updater != NULL) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
         updater
             <<<updater_blocks, updater_threads, 0, this->stream>>>
             (this->synapse_data);
@@ -102,7 +102,7 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
 }
 
 void DendriticInstruction::activate() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Launch computation on provided stream, or default if none
     calc_internal
         <<<activator_blocks, activator_threads, 0, this->stream>>>
@@ -115,7 +115,7 @@ void DendriticInstruction::activate() {
 
 InputTransferInstruction::InputTransferInstruction(Layer *layer, State *state,
         Environment *environment) : Instruction(layer) {
-    this->src = environment->get_buffer(layer->structure)->get_input(layer);
+    this->src = environment->buffer->get_input(layer);
     this->dst = state->get_input(layer);
 }
 
@@ -127,7 +127,7 @@ void InputTransferInstruction::activate() {
 OutputTransferInstruction::OutputTransferInstruction(Layer *layer, State *state,
         Environment *environment) : Instruction(layer) {
     this->src = state->get_output(layer);
-    this->dst = environment->get_buffer(layer->structure)->get_output(layer);
+    this->dst = environment->buffer->get_output(layer);
 }
 
 void OutputTransferInstruction::activate() {
@@ -136,7 +136,7 @@ void OutputTransferInstruction::activate() {
 }
 
 void StateUpdateInstruction::activate() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(attribute_data);
 #else
     attribute_kernel(attribute_data);

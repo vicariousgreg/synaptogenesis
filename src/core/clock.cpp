@@ -69,7 +69,7 @@ void Clock::environment_loop(int iterations, bool verbose) {
 }
 
 void Clock::run(Model *model, int iterations, bool verbose) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Initialize cuda random states
     int max_size = 0;
     for (auto& structure : model->get_structures())
@@ -97,7 +97,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
         run_timer.query("Initialization");
     }
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Ensure device is synchronized without errors
     cudaSync();
     cudaCheckError("Clock device synchronization failed!");
@@ -124,7 +124,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     this->engine = NULL;
     this->environment = NULL;
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     free_cuda_rand();
 #endif
 }

@@ -16,7 +16,7 @@ DEVICE EXTRACTOR x_int = extract_int;
 DEVICE EXTRACTOR x_bit = extract_bit;
 
 void get_extractor(EXTRACTOR *dest, OutputType output_type) {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     switch (output_type) {
         case FLOAT:
             cudaMemcpyFromSymbol(dest, x_float, sizeof(void *));

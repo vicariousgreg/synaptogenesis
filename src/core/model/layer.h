@@ -45,6 +45,9 @@ class Layer {
         // Layer ID
         const int id;
 
+        // Neural model
+        const NeuralModel neural_model;
+
         // Housing structure
         Structure* const structure;
 
@@ -67,7 +70,7 @@ class Layer {
 
         static int count;
 
-        Layer(Structure *structure, std::string name,
+        Layer(std::string name, NeuralModel neural_model, Structure *structure,
             int rows, int columns, std::string params, float noise=0.0);
 
         void add_input_connection(Connection* connection);

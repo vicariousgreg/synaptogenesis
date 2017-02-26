@@ -33,7 +33,7 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
 inline GLOBAL void clear_data(Pointer<float> ptr, int count) {
     float* data = ptr.get();
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count)
 #else
@@ -46,7 +46,7 @@ inline GLOBAL void clear_data(Pointer<float> ptr, int count) {
 inline GLOBAL void randomize_data(Pointer<float> ptr, int count, float max, bool init) {
     float* data = ptr.get();
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
         float val = curand_uniform(&cuda_rand_states[nid]) * max;
@@ -279,7 +279,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 }
 
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
 #define CALC_FULLY_CONNECTED FULLY_CONNECTED_PARALLEL
 #define CALC_ONE_TO_ONE ONE_TO_ONE_PARALLEL
 #define CALC_CONVERGENT CONVERGENT_PARALLEL

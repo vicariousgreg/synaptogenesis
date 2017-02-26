@@ -3,27 +3,32 @@
 #include "state/rate_encoding_attributes.h"
 #include "state/hodgkin_huxley_attributes.h"
 #include "util/tools.h"
+#include "util/constants.h"
 #include "util/parallel.h"
 
-Attributes *build_attributes(Structure *structure) {
+Attributes *build_attributes(LayerList &layers, NeuralModel neural_model) {
     Attributes *attributes;
     int object_size;
 
-    if (structure->engine_name == "izhikevich") {
-        attributes = new IzhikevichAttributes(structure);
-        object_size = sizeof(IzhikevichAttributes);
-    } else if (structure->engine_name == "rate_encoding") {
-        attributes = new RateEncodingAttributes(structure);
-        object_size = sizeof(RateEncodingAttributes);
-    } else if (structure->engine_name == "hodgkin_huxley") {
-        attributes = new HodgkinHuxleyAttributes(structure);
-        object_size = sizeof(HodgkinHuxleyAttributes);
-    } else {
-        ErrorManager::get_instance()->log_error(
-            "Unrecognized engine type!");
+    switch(neural_model) {
+        case(IZHIKEVICH):
+            attributes = new IzhikevichAttributes(layers);
+            object_size = sizeof(IzhikevichAttributes);
+            break;
+        case(HODGKIN_HUXLEY):
+            attributes = new HodgkinHuxleyAttributes(layers);
+            object_size = sizeof(HodgkinHuxleyAttributes);
+            break;
+        case(RATE_ENCODING):
+            attributes = new RateEncodingAttributes(layers);
+            object_size = sizeof(RateEncodingAttributes);
+            break;
+        default:
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized engine type!");
     }
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Copy attributes to device and set the pointer
     // Superclass will set its own pointer otherwise
     attributes->transfer_to_device();
@@ -33,10 +38,9 @@ Attributes *build_attributes(Structure *structure) {
     return attributes;
 }
 
-Attributes::Attributes(Structure *structure, OutputType output_type,
+Attributes::Attributes(LayerList &layers, OutputType output_type,
         ATTRIBUTE_KERNEL kernel)
         : output_type(output_type),
-          total_neurons(structure->get_num_neurons()),
           kernel(kernel),
           pointer(this) {
     // Keep track of register sizes
@@ -48,7 +52,7 @@ Attributes::Attributes(Structure *structure, OutputType output_type,
 
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
-    for (auto& layer : structure->get_layers()) {
+    for (auto& layer : layers) {
         sizes[layer->id] = layer->size;
         int register_count = layer->dendritic_root->get_max_register_index() + 1;
 
@@ -76,6 +80,7 @@ Attributes::Attributes(Structure *structure, OutputType output_type,
     // Allocate space for input and output
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
+    this->total_neurons = other_size;
 
     // Retrieve extractor
     get_extractor(&this->extractor, output_type);
@@ -84,7 +89,7 @@ Attributes::Attributes(Structure *structure, OutputType output_type,
 Attributes::~Attributes() {
     this->input.free();
     this->output.free();
-#ifdef PARALLEL
+#ifdef __CUDACC__
     cudaFree(this->pointer);
 #endif
 }

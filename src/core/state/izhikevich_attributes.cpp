@@ -55,14 +55,14 @@ static IzhikevichParameters create_parameters(std::string str) {
             "Unrecognizer parameter string: " + str);
 }
 
-IzhikevichAttributes::IzhikevichAttributes(Structure* structure)
-        : SpikingAttributes(structure, iz_attribute_kernel) {
+IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
+        : SpikingAttributes(layers, iz_attribute_kernel) {
     this->recovery = Pointer<float>(total_neurons);
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
 
     // Fill in table
     int start_index = 0;
-    for (auto& layer : structure->get_layers()) {
+    for (auto& layer : layers) {
         IzhikevichParameters params = create_parameters(layer->params);
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;
@@ -107,7 +107,7 @@ GLOBAL void iz_attribute_kernel(const AttributeData attribute_data) {
     unsigned int *spikes = (unsigned int*)outputs;
     IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < size) {
 #else

@@ -15,10 +15,14 @@ GLOBAL void re_attribute_kernel(const AttributeData attribute_data);
 
 class RateEncodingAttributes : public Attributes {
     public:
-        RateEncodingAttributes(Structure* structure);
+        RateEncodingAttributes(LayerList &layers);
         virtual ~RateEncodingAttributes();
 
-        virtual std::string get_stream_cluster_name() { return "feedforward"; }
+        /* Checks whether these attributes are compatible
+         *   with the given stream_type */
+        virtual bool check_compatibility(StreamType stream_type) {
+            return stream_type == FEEDFORWARD;
+        }
 
         /* Trace learning rules */
         virtual SYNAPSE_KERNEL get_updater(ConnectionType type);

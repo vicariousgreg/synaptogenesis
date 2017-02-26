@@ -27,7 +27,7 @@ ACTIVATE_ONE_TO_ONE(activate_one_to_one , , );
 ACTIVATE_CONVERGENT(activate_convergent , , );
 
 /* Dendritic tree internal computation */
-#ifdef PARALLEL
+#ifdef __CUDACC__
 GLOBAL void calc_internal(int size, Pointer<float> src_ptr, Pointer<float> dst_ptr, bool clear) {
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();

@@ -76,11 +76,20 @@ typedef enum {
     DIV
 } Opcode;
 
-/* Enumeration of possible neural models. */
+/* Enumeration of neural models. */
 typedef enum {
     IZHIKEVICH,
     HODGKIN_HUXLEY,
     RATE_ENCODING
 } NeuralModel;
+
+static NeuralModel NeuralModels[] = { IZHIKEVICH, HODGKIN_HUXLEY, RATE_ENCODING };
+
+/* Enumeration of stream cluster types. */
+typedef enum {
+    PARALLEL,
+    SEQUENTIAL,
+    FEEDFORWARD
+} StreamType;
 
 #endif

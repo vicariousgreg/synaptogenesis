@@ -4,10 +4,11 @@
 
 int Layer::count = 0;
 
-Layer::Layer(Structure* structure, std::string name,
+Layer::Layer(std::string name, NeuralModel neural_model, Structure *structure,
     int rows, int columns, std::string params, float noise) :
         name(name),
         id(Layer::count++),
+        neural_model(neural_model),
         structure(structure),
         rows(rows),
         columns(columns),

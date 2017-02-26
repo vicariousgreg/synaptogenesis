@@ -10,14 +10,31 @@ Model* Model::load(std::string path) {
     return load_model(path);
 }
 
-Structure* Model::add_structure(std::string name, std::string engine_name) {
+Structure* Model::add_structure(std::string name, StreamType stream_type) {
     for (auto& st : this->structures)
         if (st->name == name)
             ErrorManager::get_instance()->log_error(
                 "Repeated structure name!");
-    Structure *structure = new Structure(name, engine_name);
+    Structure *structure = new Structure(name, stream_type);
     this->structures.push_back(structure);
     return structure;
+}
+
+LayerList Model::get_layers() const {
+    LayerList layers;
+    for (auto& structure : structures)
+        for (auto& layer : structure->get_layers())
+            layers.push_back(layer);
+    return layers;
+}
+
+LayerList Model::get_layers(NeuralModel neural_model) const {
+    LayerList layers;
+    for (auto& structure : structures)
+        for (auto& layer : structure->get_layers())
+            if (layer->neural_model == neural_model)
+                layers.push_back(layer);
+    return layers;
 }
 
 int Model::get_num_neurons() const {

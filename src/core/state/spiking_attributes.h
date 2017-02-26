@@ -6,7 +6,7 @@
 class SpikingAttributes : public Attributes {
     public:
 
-        SpikingAttributes(Structure* structure, ATTRIBUTE_KERNEL kernel);
+        SpikingAttributes(LayerList &layers, ATTRIBUTE_KERNEL kernel);
         virtual ~SpikingAttributes();
 
         /* Trace learning rules */

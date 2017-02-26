@@ -25,7 +25,7 @@ class StreamCluster {
         virtual void launch_state_update() { }
         virtual void launch_weight_update() = 0;
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
         virtual void wait_for_input() = 0;
         virtual void wait_for_output() = 0;
 #endif
@@ -50,7 +50,7 @@ class ParallelStreamCluster : public StreamCluster {
         virtual void launch_state_update();
         virtual void launch_weight_update();
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
         virtual void wait_for_input();
         virtual void wait_for_output();
 #endif
@@ -76,7 +76,7 @@ class SequentialStreamCluster : public StreamCluster {
         virtual void launch_output();
         virtual void launch_weight_update();
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
         virtual void wait_for_input();
         virtual void wait_for_output();
 
@@ -95,24 +95,24 @@ class FeedforwardStreamCluster : public SequentialStreamCluster {
         virtual void launch_weight_update();
 };
 
-inline StreamCluster *build_stream_cluster(std::string cluster_name,
-        Structure *structure, State *state, Environment *environment) {
-    StreamCluster *stream_cluster;
-
-    if (cluster_name == "parallel")
-        stream_cluster =
-            new ParallelStreamCluster(structure, state, environment);
-    else if (cluster_name == "sequential")
-        stream_cluster =
-            new SequentialStreamCluster(structure, state, environment);
-    else if (cluster_name == "feedforward")
-        stream_cluster =
-            new FeedforwardStreamCluster(structure, state, environment);
-    else
+inline StreamCluster *build_stream_cluster(Structure *structure,
+        State *state, Environment *environment) {
+    if (not state->check_compatibility(structure))
         ErrorManager::get_instance()->log_error(
-            "Unrecognized stream cluster type!");
+            "Stream cluster compatibility conflict detected!");
 
-    return stream_cluster;
+    switch (structure->stream_type) {
+        case(PARALLEL):
+            return new ParallelStreamCluster(structure, state, environment);
+        case(SEQUENTIAL):
+            return new SequentialStreamCluster(structure, state, environment);
+        case(FEEDFORWARD):
+            return new FeedforwardStreamCluster(structure, state, environment);
+        default:
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized stream cluster type!");
+    }
+    return NULL;
 }
 
 #endif

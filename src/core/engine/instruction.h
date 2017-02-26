@@ -23,7 +23,7 @@ class Instruction {
 
         Layer* const to_layer;
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
         void set_stream(cudaStream_t stream) { this->stream = stream; }
         void add_event(cudaEvent_t event) { this->events.push_back(event); }
 

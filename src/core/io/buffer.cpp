@@ -2,9 +2,22 @@
 #include <cstring>
 
 #include "io/buffer.h"
+#include "model/model.h"
 #include "model/structure.h"
 
-Buffer::Buffer(Structure* structure) {
+Buffer::Buffer(Model *model) {
+    LayerList input_layers, output_layers;
+
+    // Extract layers from model
+    for (auto layer : model->get_layers()) {
+        if (layer->is_input()) input_layers.push_back(layer);
+        if (layer->is_output()) output_layers.push_back(layer);
+    }
+
+    this->init(input_layers, output_layers);
+}
+
+Buffer::Buffer(Structure *structure) {
     LayerList input_layers, output_layers;
 
     // Extract layers from structure

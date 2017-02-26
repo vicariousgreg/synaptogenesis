@@ -11,7 +11,7 @@ void Engine::stage_output() {
     for (auto& cluster : stream_clusters)
         cluster->launch_output();
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Wait for output
     for (auto& cluster : stream_clusters)
         cluster->wait_for_output();
@@ -22,7 +22,7 @@ void Engine::stage_input() {
     for (auto& cluster : stream_clusters)
         cluster->launch_input();
 
-#ifdef PARALLEL
+#ifdef __CUDACC__
     for (auto& cluster : stream_clusters) {
         cluster->launch_post_input_calculations();
         cluster->launch_state_update();
@@ -35,7 +35,7 @@ void Engine::stage_input() {
 }
 
 void Engine::stage_calc() {
-#ifdef PARALLEL
+#ifdef __CUDACC__
     // Synchronize and check for errors
     cudaSync();
     cudaCheckError(NULL);

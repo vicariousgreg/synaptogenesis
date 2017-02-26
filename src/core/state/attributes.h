@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "model/structure.h"
+#include "model/layer.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/extractor.h"
 #include "engine/kernel/synapse_kernel.h"
@@ -25,12 +25,13 @@ typedef void(*ATTRIBUTE_KERNEL)(const AttributeData attribute_data);
 
 class Attributes {
     public:
-
-        Attributes(Structure *structure, OutputType output_type, ATTRIBUTE_KERNEL kernel);
+        Attributes(LayerList &layers, OutputType output_type,
+                   ATTRIBUTE_KERNEL kernel);
         virtual ~Attributes();
 
-        /* Gets the name of the stream cluster to use with these attributes */
-        virtual std::string get_stream_cluster_name() { return "parallel"; }
+        /* Checks whether these attributes are compatible
+         *   with the given stream_type */
+        virtual bool check_compatibility(StreamType stream_type) { return true; }
 
         virtual void transfer_to_device();
 
@@ -54,9 +55,6 @@ class Attributes {
         Pointer<float> get_input(int id, int register_index = 0) const;
         Pointer<Output> get_output(int id, int word_index = 0) const;
 
-        // Number of neurons
-        const int total_neurons;
-
         // Neuron IO data
         EXTRACTOR extractor;
         const OutputType output_type;
@@ -71,12 +69,15 @@ class Attributes {
         ATTRIBUTE_KERNEL kernel;
 
     protected:
+        // Number of neurons
+        int total_neurons;
+
         std::map<int, int> other_start_indices;
         std::map<int, int> input_start_indices;
         std::map<int, int> output_start_indices;
         std::map<int, int> sizes;
 };
 
-Attributes *build_attributes(Structure *structure);
+Attributes *build_attributes(LayerList &layers, NeuralModel neural_model);
 
 #endif

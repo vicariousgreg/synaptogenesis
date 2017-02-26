@@ -15,7 +15,7 @@ GLOBAL void hh_attribute_kernel(const AttributeData attribute_data);
 
 class HodgkinHuxleyAttributes : public SpikingAttributes {
     public:
-        HodgkinHuxleyAttributes(Structure* structure);
+        HodgkinHuxleyAttributes(LayerList &layers);
         virtual ~HodgkinHuxleyAttributes();
 
         virtual void transfer_to_device();

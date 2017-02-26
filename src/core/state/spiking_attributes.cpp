@@ -3,8 +3,8 @@
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
-SpikingAttributes::SpikingAttributes(Structure* structure, ATTRIBUTE_KERNEL kernel)
-        : Attributes(structure, BIT, kernel) {
+SpikingAttributes::SpikingAttributes(LayerList &layers, ATTRIBUTE_KERNEL kernel)
+        : Attributes(layers, BIT, kernel) {
     this->voltage = Pointer<float>(total_neurons);
 }
 
@@ -36,7 +36,7 @@ void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
 /******************************************************************************/
 
 // Different minimum functions are used on the host and device
-#ifdef PARALLEL
+#ifdef __CUDACC__
 #define MIN min
 #else
 #include <algorithm>
