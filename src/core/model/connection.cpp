@@ -4,24 +4,23 @@
 #include "model/layer.h"
 #include "util/error_manager.h"
 
-Connection::Connection (Layer *from_layer, Layer *to_layer,
-        bool plastic, int delay, float max_weight,
-        ConnectionType type, std::string params,  Opcode opcode) :
+Connection::Connection(Layer *from_layer, Layer *to_layer,
+        ConnectionConfig config) :
             from_layer(from_layer),
             to_layer(to_layer),
-            plastic(plastic),
-            delay(delay),
-            max_weight(max_weight),
-            opcode(opcode),
-            type(type),
+            plastic(config.plastic),
+            delay(config.delay),
+            max_weight(config.max_weight),
+            opcode(config.opcode),
+            type(config.type),
             convolutional(type == CONVOLUTIONAL) {
     switch (type) {
         case(FULLY_CONNECTED):
-            this->init_params = params;
+            this->init_params = config.params;
             this->num_weights = from_layer->size * to_layer->size;
             break;
         case(ONE_TO_ONE):
-            this->init_params = params;
+            this->init_params = config.params;
             if (from_layer->rows == to_layer->rows and from_layer->columns == to_layer->columns)
                 this->num_weights = from_layer->size;
             else
@@ -29,7 +28,7 @@ Connection::Connection (Layer *from_layer, Layer *to_layer,
                     "Cannot connect differently sized layers one-to-one!");
             break;
         default:
-            std::stringstream stream(params);
+            std::stringstream stream(config.params);
 
             // Extract field size
             if (stream.eof())
@@ -59,9 +58,9 @@ Connection::Connection (Layer *from_layer, Layer *to_layer,
                     and to_layer->columns == from_layer->columns)
                 and
                     (to_layer->rows !=
-                        get_expected_dimension(from_layer->rows, type, params)
+                        get_expected_dimension(from_layer->rows, type, config.params)
                     or to_layer->columns !=
-                        get_expected_dimension(from_layer->columns, type, params)))
+                        get_expected_dimension(from_layer->columns, type, config.params)))
                 ErrorManager::get_instance()->log_error(
                     "Unexpected destination layer size for arborized connection!");
 

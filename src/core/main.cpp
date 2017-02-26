@@ -30,91 +30,23 @@ void print_model(Model *model) {
     }
 }
 
-Model* build_self_connected_model(NeuralModel neural_model) {
-    Model *model = new Model();
-    Structure *structure = model->add_structure("Self-connected");
-
-    int rows = 1000;
-    int cols = 1000;
-    structure->add_layer("a", neural_model, rows, cols, "random positive", 5);
-    structure->connect_layers("a", "a", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
-
-    structure->add_layer("b", neural_model, rows, cols, "random positive", 5);
-    structure->connect_layers("b", "b", false, 0, .5, CONVOLUTIONAL, ADD, "7 1");
-
-    // Modules
-    //structure->add_module("a", "dummy_output", "5");
-    //structure->add_module("b", "dummy_output", "5");
-
-    return model;
-}
-
-Model* build_arborized_model(NeuralModel neural_model, ConnectionType type) {
-    Model *model = new Model();
-    Structure *structure = model->add_structure("Arborized");
-
-    int rows = 1000;
-    int cols = 1000;
-    structure->add_layer("a", neural_model, rows, cols, "random positive", 5);
-    structure->connect_layers_expected("a", "b", neural_model, "random positive" , false, 0, .5, type, ADD, "7 1");
-
-    // Modules
-    //structure->add_module("b", "dummy_output", "5");
-
-    return model;
-}
-
 Model* build_stress_model(NeuralModel neural_model) {
     Model *model = new Model();
     Structure *structure = model->add_structure("Self-connected");
 
     int size = 800 * 19;
-    structure->add_layer("pos", neural_model, 1, size, "random positive", 5);
-    structure->add_layer("neg", neural_model, 1, size / 4, "random negative", 2);
-    structure->connect_layers("pos", "pos", false, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->connect_layers("pos", "neg", false, 0, .5, FULLY_CONNECTED, ADD, "");
-    structure->connect_layers("neg", "pos", false, 0, 1, FULLY_CONNECTED, SUB, "");
-    structure->connect_layers("neg", "neg", false, 0, 1, FULLY_CONNECTED, SUB, "");
-
-    return model;
-}
-
-Model* build_layers_model(NeuralModel neural_model) {
-    Model *model = new Model();
-    Structure *structure = model->add_structure("Self-connected");
-
-    int size = 100;
-    structure->add_layer("a", neural_model, size, size, "random positive", 10);
-
-    structure->add_layer("c", neural_model, size, size, "random positive");
-    structure->connect_layers("a", "c", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-    structure->add_layer("d", neural_model, size, size, "random positive");
-    structure->connect_layers("a", "d", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-    structure->add_layer("e", neural_model, size, size, "random positive");
-    structure->connect_layers("a", "e", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-
-    structure->add_layer("f", neural_model, size, size, "random positive");
-    structure->connect_layers("c", "f", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-
-    structure->add_layer("g", neural_model, size, size, "random positive");
-    structure->connect_layers("d", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-    structure->connect_layers("f", "g", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-
-    structure->add_layer("b", neural_model, size, size, "random positive", 10);
-    structure->connect_layers("f", "b", false, 0, 5, CONVOLUTIONAL, ADD, "5 1");
-
-    // Modules
-    structure->add_module("f", "dummy_output", "");
-    //structure->add_module("b", "dummy_output", "");
-
-    std::string output_name = "visualizer_output";
-    structure->add_module("a", output_name, "");
-    structure->add_module("b", output_name, "");
-    structure->add_module("c", output_name, "");
-    structure->add_module("d", output_name, "");
-    structure->add_module("e", output_name, "");
-    structure->add_module("f", output_name, "");
-    structure->add_module("g", output_name, "");
+    structure->add_layer(LayerConfig("pos",
+        neural_model, 1, size, "random positive", 5));
+    structure->add_layer(LayerConfig("neg",
+        neural_model, 1, size / 4, "random negative", 2));
+    structure->connect_layers("pos", "pos",
+        ConnectionConfig(false, 0, .5, FULLY_CONNECTED, ADD, ""));
+    structure->connect_layers("pos", "neg",
+        ConnectionConfig(false, 0, .5, FULLY_CONNECTED, ADD, ""));
+    structure->connect_layers("neg", "pos",
+        ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB, ""));
+    structure->connect_layers("neg", "neg",
+        ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB, ""));
 
     return model;
 }
@@ -133,112 +65,133 @@ Model* build_image_model(NeuralModel neural_model) {
     //const char* image_path = "resources/pattern.jpg";
     //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
-    structure->add_layer_from_image("photoreceptor", neural_model, image_path, "default");
+    structure->add_layer_from_image(image_path,
+        LayerConfig("photoreceptor", neural_model, "default"));
 
     // Vertical line detection
-    structure->connect_layers_expected("photoreceptor", "vertical", neural_model, "default",
-        false, 0, 5, CONVOLUTIONAL, ADD,
-        "11 1 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 "
-        "-5 -5  0  0  5 10  5  0  0 -5 -5 ");
-    structure->connect_layers("vertical", "vertical", false, 0, 5, CONVOLUTIONAL, ADD,
-        "5 1 "
-        "-5  0  5  0 -5 "
-        "-5  0  5  0 -5 "
-        "-5  0  5  0 -5 "
-        "-5  0  5  0 -5 "
-        "-5  0  5  0 -5 ");
+    structure->connect_layers_expected("photoreceptor",
+        LayerConfig("vertical", neural_model, "default"),
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "11 1 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "
+            "-5 -5  0  0  5 10  5  0  0 -5 -5 "));
+    structure->connect_layers("vertical", "vertical",
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "5 1 "
+            "-5  0  5  0 -5 "
+            "-5  0  5  0 -5 "
+            "-5  0  5  0 -5 "
+            "-5  0  5  0 -5 "
+            "-5  0  5  0 -5 "));
 
     // Horizontal line detection
-    structure->connect_layers_expected("photoreceptor", "horizontal", neural_model, "default",
-        false, 0, 5, CONVOLUTIONAL, ADD,
-        "11 1 "
-        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
-        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
-        " 0  0  0  0  0  0  0  0  0  0  0 "
-        " 0  0  0  0  0  0  0  0  0  0  0 "
-        " 5  5  5  5  5  5  5  5  5  5  5 "
-        "10 10 10 10 10 10 10 10 10 10 10 "
-        " 5  5  5  5  5  5  5  5  5  5  5 "
-        " 0  0  0  0  0  0  0  0  0  0  0 "
-        " 0  0  0  0  0  0  0  0  0  0  0 "
-        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
-        "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 ");
-    structure->connect_layers("horizontal", "horizontal", false, 0, 5, CONVOLUTIONAL, ADD,
-        "5 1 "
-        "-5 -5 -5 -5 -5 "
-        " 0  0  0  0  0 "
-        " 5  5  5  5  5 "
-        " 0  0  0  0  0 "
-        "-5 -5 -5 -5 -5 ");
+    structure->connect_layers_expected("photoreceptor",
+        LayerConfig("horizontal", neural_model, "default"),
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "11 1 "
+            "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
+            "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
+            " 0  0  0  0  0  0  0  0  0  0  0 "
+            " 0  0  0  0  0  0  0  0  0  0  0 "
+            " 5  5  5  5  5  5  5  5  5  5  5 "
+            "10 10 10 10 10 10 10 10 10 10 10 "
+            " 5  5  5  5  5  5  5  5  5  5  5 "
+            " 0  0  0  0  0  0  0  0  0  0  0 "
+            " 0  0  0  0  0  0  0  0  0  0  0 "
+            "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
+            "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "));
+    structure->connect_layers("horizontal", "horizontal",
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "5 1 "
+            "-5 -5 -5 -5 -5 "
+            " 0  0  0  0  0 "
+            " 5  5  5  5  5 "
+            " 0  0  0  0  0 "
+            "-5 -5 -5 -5 -5 "));
 
     // Cross detection
-    structure->connect_layers_expected("vertical", "cross", neural_model, "default",
-        false, 0, 5, CONVOLUTIONAL, ADD,
-        "5 1 "
-        "-5  0 10  0 -5 "
-        "-5  0 10  0 -5 "
-        "-5  0 10  0 -5 "
-        "-5  0 10  0 -5 "
-        "-5  0 10  0 -5 ");
-    structure->connect_layers("horizontal", "cross", false, 0, 5, CONVOLUTIONAL, ADD,
-        "5 1 "
-        "-5 -5 -5 -5 -5 "
-        " 0  0  0  0  0 "
-        "10 10 10 10 10 "
-        " 0  0  0  0  0 "
-        "-5 -5 -5 -5 -5 ");
+    structure->connect_layers_expected("vertical",
+        LayerConfig("cross", neural_model, "default"),
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "5 1 "
+            "-5  0 10  0 -5 "
+            "-5  0 10  0 -5 "
+            "-5  0 10  0 -5 "
+            "-5  0 10  0 -5 "
+            "-5  0 10  0 -5 "));
+    structure->connect_layers("horizontal", "cross",
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "5 1 "
+            "-5 -5 -5 -5 -5 "
+            " 0  0  0  0  0 "
+            "10 10 10 10 10 "
+            " 0  0  0  0  0 "
+            "-5 -5 -5 -5 -5 "));
 
     // Forward slash
-    structure->connect_layers_expected("photoreceptor", "forward_slash", neural_model, "default",
-        false, 0, 5, CONVOLUTIONAL, ADD,
-        "9 1 "
-        " 0  0  0  0 -5 -5  0  5 10 "
-        " 0  0  0 -5 -5  0  5 10  5 "
-        " 0  0 -5 -5  0  5 10  5  0 "
-        " 0 -5 -5  0  5 10  5  0 -5 "
-        "-5 -5  0  5 10  5  0 -5 -5 "
-        "-5  0  5 10  5  0 -5 -5  0 "
-        " 0  5 10  5  0 -5 -5  0  0 "
-        " 5 10  5  0 -5 -5  0  0  0 "
-        "10  5  0 -5 -5  0  0  0  0 ");
-    structure->connect_layers("forward_slash", "forward_slash", false, 0, 5, CONVOLUTIONAL, ADD,
-        "5 1 "
-        " 0  0 -5  0  5 "
-        " 0 -5  0  5  0 "
-        "-5  0  5  0 -5 "
-        " 0  5  0 -5  0 "
-        " 5  0 -5  0  0 ");
+    structure->connect_layers_expected("photoreceptor",
+        LayerConfig("forward_slash", neural_model, "default"),
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "9 1 "
+            " 0  0  0  0 -5 -5  0  5 10 "
+            " 0  0  0 -5 -5  0  5 10  5 "
+            " 0  0 -5 -5  0  5 10  5  0 "
+            " 0 -5 -5  0  5 10  5  0 -5 "
+            "-5 -5  0  5 10  5  0 -5 -5 "
+            "-5  0  5 10  5  0 -5 -5  0 "
+            " 0  5 10  5  0 -5 -5  0  0 "
+            " 5 10  5  0 -5 -5  0  0  0 "
+            "10  5  0 -5 -5  0  0  0  0 "));
+    structure->connect_layers("forward_slash", "forward_slash",
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "5 1 "
+            " 0  0 -5  0  5 "
+            " 0 -5  0  5  0 "
+            "-5  0  5  0 -5 "
+            " 0  5  0 -5  0 "
+            " 5  0 -5  0  0 "));
 
     // Back slash
-    structure->connect_layers_expected("photoreceptor", "back_slash", neural_model, "default",
-        false, 0, 5, CONVOLUTIONAL, ADD,
-        "9 1 "
-        "10  5  0 -5 -5  0  0  0  0 "
-        " 5 10  5  0 -5 -5  0  0  0 "
-        " 0  5 10  5  0 -5 -5  0  0 "
-        "-5  0  5 10  5  0 -5 -5  0 "
-        "-5 -5  0  5 10  5  0 -5 -5 "
-        " 0 -5 -5  0  5 10  5  0 -5 "
-        " 0  0 -5 -5  0  5 10  5  0 "
-        " 0  0  0 -5 -5  0  5 10  5 "
-        " 0  0  0  0 -5 -5  0  5 10 ");
-    structure->connect_layers("back_slash", "back_slash", false, 0, 5, CONVOLUTIONAL, ADD,
-        "5 1 "
-        " 5  0 -5  0  0 "
-        " 0  5  0 -5  0 "
-        "-5  0  5  0 -5 "
-        " 0 -5  0  5  0 "
-        " 0  0 -5  0  5 ");
+    structure->connect_layers_expected("photoreceptor",
+        LayerConfig("back_slash", neural_model, "default"),
+            ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "9 1 "
+            "10  5  0 -5 -5  0  0  0  0 "
+            " 5 10  5  0 -5 -5  0  0  0 "
+            " 0  5 10  5  0 -5 -5  0  0 "
+            "-5  0  5 10  5  0 -5 -5  0 "
+            "-5 -5  0  5 10  5  0 -5 -5 "
+            " 0 -5 -5  0  5 10  5  0 -5 "
+            " 0  0 -5 -5  0  5 10  5  0 "
+            " 0  0  0 -5 -5  0  5 10  5 "
+            " 0  0  0  0 -5 -5  0  5 10 "));
+    structure->connect_layers("back_slash", "back_slash",
+        ConnectionConfig(
+            false, 0, 5, CONVOLUTIONAL, ADD,
+            "5 1 "
+            " 5  0 -5  0  0 "
+            " 0  5  0 -5  0 "
+            "-5  0  5  0 -5 "
+            " 0 -5  0  5  0 "
+            " 0  0 -5  0  5 "));
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
@@ -266,24 +219,27 @@ Model* build_reentrant_image_model(NeuralModel neural_model) {
     //const char* image_path = "resources/pattern.jpg";
     //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
-    structure->add_layer_from_image("photoreceptor", neural_model, image_path, "default");
+    structure->add_layer_from_image(image_path,
+        LayerConfig("photoreceptor", neural_model, "default"));
 
     // Connect first layer to receptor
-    structure->connect_layers_matching("photoreceptor", "layer1", neural_model, "default",
-        false, 0, 1, CONVOLUTIONAL, ADD, "21 1 1");
+    structure->connect_layers_matching("photoreceptor",
+        LayerConfig("layer1", neural_model, "default"),
+        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD, "21 1 1"));
 
     // Create reentrant pair
-    structure->connect_layers_matching("layer1", "layer2", neural_model, "default",
-        false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1", 5);
-    structure->connect_layers("layer2", "layer1",
-        false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1");
+    structure->connect_layers_matching("layer1",
+        LayerConfig("layer2", neural_model, "default", 5),
+        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1"));
+    structure->connect_layers("layer2","layer1",
+        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD, "9 1 1"));
 
     // Inhibitory self connections
     structure->connect_layers("layer1", "layer1",
-        false, 0, 1, CONVOLUTIONAL, SUB, "5 1 10");
+        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, SUB, "5 1 10"));
 
     structure->connect_layers("layer2", "layer2",
-        false, 0, 1, CONVOLUTIONAL, SUB, "5 1 10");
+        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, SUB, "5 1 10"));
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
@@ -300,31 +256,37 @@ Model* build_alignment_model(NeuralModel neural_model) {
     Structure *structure = model->add_structure("alignment");
 
     int resolution = 128;
-    structure->add_layer("input_layer", neural_model, 1, 10, "default");
-    structure->add_layer("exc_thalamus", neural_model, resolution, resolution, "low_threshold", 0.5);
-    structure->add_layer("inh_thalamus", neural_model, resolution, resolution, "default");
-    structure->add_layer("exc_cortex", neural_model, resolution, resolution, "thalamo_cortical");
-    structure->add_layer("inh_cortex", neural_model, resolution, resolution, "default");
+    structure->add_layer(LayerConfig("input_layer",
+        neural_model, 1, 10, "default"));
+    structure->add_layer(LayerConfig("exc_thalamus",
+        neural_model, resolution, resolution, "low_threshold", 0.5));
+    structure->add_layer(LayerConfig("inh_thalamus",
+        neural_model, resolution, resolution, "default"));
+    structure->add_layer(LayerConfig("exc_cortex",
+        neural_model, resolution, resolution, "thalamo_cortical"));
+    structure->add_layer(LayerConfig("inh_cortex",
+        neural_model, resolution, resolution, "default"));
 
     structure->connect_layers("input_layer", "exc_thalamus",
-        false, 0, 5, FULLY_CONNECTED, ADD, "");
+        ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD, ""));
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
+        ConnectionConfig(true, 0, 10, CONVERGENT, ADD, "7 1 0.25"));
     structure->connect_layers("exc_cortex", "inh_cortex",
-        true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "9 1 0.25"));
     structure->connect_layers("exc_cortex", "exc_cortex",
-        true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
+        ConnectionConfig(true, 2, 5, CONVERGENT, ADD, "5 1 0.25"));
     structure->connect_layers("inh_cortex", "exc_cortex",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 5"));
     structure->connect_layers("exc_cortex", "inh_thalamus",
-        true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "7 1 0.25"));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 5"));
 
-    structure->connect_layers_matching("exc_cortex", "output_layer", neural_model, "low_threshold",
-        true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
+    structure->connect_layers_matching("exc_cortex",
+        LayerConfig("output_layer", neural_model, "low_threshold"),
+        ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025"));
     structure->connect_layers("output_layer", "exc_cortex",
-        false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
+        ConnectionConfig(false, 40, 1, CONVERGENT, ADD, "15 1 0.5"));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -346,49 +308,57 @@ Model* build_dendritic_model(NeuralModel neural_model) {
     Structure *structure = model->add_structure("dendritic");
 
     int resolution = 128;
-    structure->add_layer("input_layer1", neural_model, 1, 10, "default");
-    structure->add_layer("input_layer2", neural_model, 1, 10, "default");
-    structure->add_layer("exc_thalamus", neural_model, resolution, resolution, "low_threshold", 0.5);
-    structure->add_layer("inh_thalamus1", neural_model, resolution, resolution, "default");
-    structure->add_layer("inh_thalamus2", neural_model, resolution, resolution, "default");
-    structure->add_layer("exc_cortex", neural_model, resolution, resolution, "thalamo_cortical");
-    structure->add_layer("inh_cortex", neural_model, resolution, resolution, "default");
+    structure->add_layer(LayerConfig("input_layer1",
+        neural_model, 1, 10, "default"));
+    structure->add_layer(LayerConfig("input_layer2",
+        neural_model, 1, 10, "default"));
+    structure->add_layer(LayerConfig("exc_thalamus",
+        neural_model, resolution, resolution, "low_threshold", 0.5));
+    structure->add_layer(LayerConfig("inh_thalamus1",
+        neural_model, resolution, resolution, "default"));
+    structure->add_layer(LayerConfig("inh_thalamus2",
+        neural_model, resolution, resolution, "default"));
+    structure->add_layer(LayerConfig("exc_cortex",
+        neural_model, resolution, resolution, "thalamo_cortical"));
+    structure->add_layer(LayerConfig("inh_cortex",
+        neural_model, resolution, resolution, "default"));
 
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
+        ConnectionConfig(true, 0, 10, CONVERGENT, ADD, "7 1 0.25"));
     structure->connect_layers("exc_cortex", "inh_cortex",
-        true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "9 1 0.25"));
     structure->connect_layers("exc_cortex", "exc_cortex",
-        true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
+        ConnectionConfig(true, 2, 5, CONVERGENT, ADD, "5 1 0.25"));
     structure->connect_layers("inh_cortex", "exc_cortex",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 5"));
 
     // Input branch 1
     auto node1 = structure->spawn_dendritic_node("exc_thalamus");
     structure->connect_layers_internal(node1, "input_layer1",
-        false, 0, 5, FULLY_CONNECTED, ADD, "");
+        ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD, ""));
     structure->connect_layers("input_layer1", "inh_thalamus1",
-        false, 0, 10, FULLY_CONNECTED, ADD, "");
+        ConnectionConfig(false, 0, 10, FULLY_CONNECTED, ADD, ""));
     structure->connect_layers("exc_cortex", "inh_thalamus1",
-        true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "7 1 0.25"));
     structure->connect_layers_internal(node1, "inh_thalamus1",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 5"));
 
     // Input branch 2
     auto node2 = structure->spawn_dendritic_node("exc_thalamus");
     structure->connect_layers_internal(node2, "input_layer2",
-        false, 0, 5, FULLY_CONNECTED, ADD, "");
+        ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD, ""));
     structure->connect_layers("input_layer2", "inh_thalamus2",
-        false, 0, 10, FULLY_CONNECTED, ADD, "");
+        ConnectionConfig(false, 0, 10, FULLY_CONNECTED, ADD, ""));
     structure->connect_layers("exc_cortex", "inh_thalamus2",
-        true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "7 1 0.25"));
     structure->connect_layers_internal(node2, "inh_thalamus2",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 5"));
 
-    structure->connect_layers_matching("exc_cortex", "output_layer", neural_model, "low_threshold",
-        true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
+    structure->connect_layers_matching("exc_cortex",
+        LayerConfig("output_layer", neural_model, "low_threshold"),
+        ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025"));
     structure->connect_layers("output_layer", "exc_cortex",
-        false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
+        ConnectionConfig(false, 40, 1, CONVERGENT, ADD, "15 1 0.5"));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -412,32 +382,38 @@ Model* build_hh_model() {
     Structure *structure = model->add_structure("hh");
 
     int resolution = 128;
-    structure->add_layer("input_layer", HODGKIN_HUXLEY, 1, 10, "0");
-    structure->add_layer("exc_thalamus", HODGKIN_HUXLEY, resolution, resolution, "0", 0.5);
-    structure->add_layer("inh_thalamus", HODGKIN_HUXLEY, resolution, resolution, "0");
-    structure->add_layer("exc_cortex", HODGKIN_HUXLEY, resolution, resolution, "0");
-    structure->add_layer("inh_cortex", HODGKIN_HUXLEY, resolution, resolution, "0");
+    structure->add_layer(LayerConfig("input_layer",
+        HODGKIN_HUXLEY, 1, 10, "0"));
+    structure->add_layer(LayerConfig("exc_thalamus",
+        HODGKIN_HUXLEY, resolution, resolution, "0", 0.5));
+    structure->add_layer(LayerConfig("inh_thalamus",
+        HODGKIN_HUXLEY, resolution, resolution, "0"));
+    structure->add_layer(LayerConfig("exc_cortex",
+        HODGKIN_HUXLEY, resolution, resolution, "0"));
+    structure->add_layer(LayerConfig("inh_cortex",
+        HODGKIN_HUXLEY, resolution, resolution, "0"));
 
     structure->connect_layers("input_layer", "exc_thalamus",
-        false, 0, 5, FULLY_CONNECTED, ADD, "");
+        ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD, ""));
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
+        ConnectionConfig(true, 0, 10, CONVERGENT, ADD, "7 1 0.25"));
     structure->connect_layers("exc_cortex", "inh_cortex",
-        true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "9 1 0.25"));
     structure->connect_layers("exc_cortex", "exc_cortex",
-        true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
+        ConnectionConfig(true, 2, 5, CONVERGENT, ADD, "5 1 0.25"));
     structure->connect_layers("inh_cortex", "exc_cortex",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 5"));
     structure->connect_layers("exc_cortex", "inh_thalamus",
-        true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "7 1 0.25"));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
-        false, 0, 5, CONVERGENT, DIV, "5 1 5");
+        ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 5"));
 
-    structure->connect_layers_matching("exc_cortex", "output_layer", HODGKIN_HUXLEY, "0",
-        true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025");
-        //true, 40, 0.1, CONVERGENT, ADD, "15 1 0.0001");
+    structure->connect_layers_matching("exc_cortex",
+        LayerConfig("output_layer", HODGKIN_HUXLEY, "0"),
+        ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD, "15 1 0.025"));
+        //ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD, "15 1 0.0001"));
     structure->connect_layers("output_layer", "exc_cortex",
-        false, 40, 1, CONVERGENT, ADD, "15 1 0.5");
+        ConnectionConfig(false, 40, 1, CONVERGENT, ADD, "15 1 0.5"));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -463,19 +439,31 @@ Model* build_cc_model(NeuralModel neural_model) {
         Structure *structure = model->add_structure(std::to_string(i));
 
         int resolution = 128;
-        structure->add_layer("input_layer", neural_model, 1, 10, "default");
-        structure->add_layer("exc_thalamus", neural_model, resolution, resolution, "low_threshold", 0.5);
-        structure->add_layer("inh_thalamus", neural_model, resolution, resolution, "default");
-        structure->add_layer("exc_cortex", neural_model, resolution, resolution, "thalamo_cortical");
-        structure->add_layer("inh_cortex", neural_model, resolution, resolution, "default");
+        structure->add_layer(LayerConfig("input_layer",
+            neural_model, 1, 10, "default"));
+        structure->add_layer(LayerConfig("exc_thalamus",
+            neural_model, resolution, resolution, "low_threshold", 0.5));
+        structure->add_layer(LayerConfig("inh_thalamus",
+            neural_model, resolution, resolution, "default"));
+        structure->add_layer(LayerConfig("exc_cortex",
+            neural_model, resolution, resolution, "thalamo_cortical"));
+        structure->add_layer(LayerConfig("inh_cortex",
+            neural_model, resolution, resolution, "default"));
 
-        structure->connect_layers("input_layer", "exc_thalamus", false, 0, 5, FULLY_CONNECTED, ADD, "");
-        structure->connect_layers("exc_thalamus", "exc_cortex", true, 0, 10, CONVERGENT, ADD, "7 1 0.25");
-        structure->connect_layers("exc_cortex", "inh_cortex", true, 0, 5, CONVERGENT, ADD, "9 1 0.25");
-        structure->connect_layers("exc_cortex", "exc_cortex", true, 2, 5, CONVERGENT, ADD, "5 1 0.25");
-        structure->connect_layers("inh_cortex", "exc_cortex", false, 0, 5, CONVERGENT, DIV, "5 1 10");
-        structure->connect_layers("exc_cortex", "inh_thalamus", true, 0, 5, CONVERGENT, ADD, "7 1 0.25");
-        structure->connect_layers("inh_thalamus", "exc_thalamus", false, 0, 5, CONVERGENT, DIV, "5 1 10");
+        structure->connect_layers("input_layer", "exc_thalamus",
+            ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD, ""));
+        structure->connect_layers("exc_thalamus", "exc_cortex",
+            ConnectionConfig(true, 0, 10, CONVERGENT, ADD, "7 1 0.25"));
+        structure->connect_layers("exc_cortex", "inh_cortex",
+            ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "9 1 0.25"));
+        structure->connect_layers("exc_cortex", "exc_cortex",
+            ConnectionConfig(true, 2, 5, CONVERGENT, ADD, "5 1 0.25"));
+        structure->connect_layers("inh_cortex", "exc_cortex",
+            ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 10"));
+        structure->connect_layers("exc_cortex", "inh_thalamus",
+            ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "7 1 0.25"));
+        structure->connect_layers("inh_thalamus", "exc_thalamus",
+            ConnectionConfig(false, 0, 5, CONVERGENT, DIV, "5 1 10"));
 
         /*
         structure->connect_layers_matching("exc_cortex", "output_layer", neural_model, "low_threshold",
@@ -506,9 +494,9 @@ Model* build_cc_model(NeuralModel neural_model) {
             "exc_cortex",
             structures[(i+1)%num_structures],
             "exc_cortex",
-            //true, 20, 1, ONE_TO_ONE, ADD, "0.1");
-            true, 10, 0.1, CONVERGENT, MULT, "9 1 0.01");
-            //true, 20, 0.01, FULLY_CONNECTED, ADD, "0.001");
+            //ConnectionConfig(true, 20, 1, ONE_TO_ONE, ADD, "0.1"));
+            ConnectionConfig(true, 10, 0.1, CONVERGENT, MULT, "9 1 0.01"));
+            //ConnectionConfig(true, 20, 0.01, FULLY_CONNECTED, ADD, "0.001"));
     }
 
     return model;
@@ -520,14 +508,14 @@ Model* build_re_model() {
     Structure *structure = model->add_structure("re", FEEDFORWARD);
 
     int resolution = 128;
-    structure->add_layer("in", RATE_ENCODING, 1, 8, "");
-    structure->add_layer("hid", RATE_ENCODING, resolution, resolution, "");
-    structure->add_layer("out", RATE_ENCODING, resolution, resolution, "");
+    structure->add_layer(LayerConfig("in", RATE_ENCODING, 1, 8));
+    structure->add_layer(LayerConfig("hid", RATE_ENCODING, resolution, resolution));
+    structure->add_layer(LayerConfig("out", RATE_ENCODING, resolution, resolution));
 
     structure->connect_layers("in", "hid",
-        true, 0, 5, FULLY_CONNECTED, ADD, "");
+        ConnectionConfig(true, 0, 5, FULLY_CONNECTED, ADD, ""));
     structure->connect_layers("hid", "out",
-        true, 0, 5, CONVERGENT, ADD, "9 1");
+        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "9 1"));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -559,19 +547,6 @@ void stress_test() {
     model = build_stress_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 10, true);
-    std::cout << "\n";
-
-    delete model;
-}
-
-void layers_test() {
-    Model *model;
-
-    std::cout << "Layers...\n";
-    model = build_layers_model(IZHIKEVICH);
-    //model = build_layers_model(RATE_ENCODING);
-    print_model(model);
-    run_simulation(model, 100000, true);
     std::cout << "\n";
 
     delete model;
@@ -677,38 +652,12 @@ void re_test() {
     delete model;
 }
 
-void varied_test() {
-    Model *model;
-
-    std::cout << "Self connected...\n";
-    model = build_self_connected_model(IZHIKEVICH);
-    print_model(model);
-    run_simulation(model, 50, true);
-    std::cout << "\n";
-    delete model;
-
-    std::cout << "Convergent...\n";
-    model = build_arborized_model(IZHIKEVICH, CONVERGENT);
-    print_model(model);
-    run_simulation(model, 50, true);
-    std::cout << "\n";
-    delete model;
-
-    std::cout << "Convergent convolutional...\n";
-    model = build_arborized_model(IZHIKEVICH, CONVOLUTIONAL);
-    print_model(model);
-    run_simulation(model, 50, true);
-    std::cout << "\n";
-    delete model;
-}
-
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(NULL));
 
     try {
         //stress_test();
-        //layers_test();
         //image_test();
         //reentrant_image_test();
         alignment_test();
@@ -716,7 +665,6 @@ int main(int argc, char *argv[]) {
         //hh_test();
         //cc_test();
         //re_test();
-        //varied_test();
 
         return 0;
     } catch (const char* msg) {

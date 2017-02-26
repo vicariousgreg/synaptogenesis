@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "model/connection_config.h"
 #include "util/constants.h"
 
 class Layer;
@@ -52,9 +53,7 @@ class Connection {
     private:
         friend class Structure;
 
-        Connection (Layer *from_layer, Layer *to_layer,
-                bool plastic, int delay, float max_weight,
-                ConnectionType type, std::string params, Opcode opcode);
+        Connection(Layer *from_layer, Layer *to_layer, ConnectionConfig config);
 
         // Number of weights in connection
         int num_weights;

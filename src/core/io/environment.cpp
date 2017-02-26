@@ -31,8 +31,7 @@ Environment::Environment(State *state)
         }
 
         if (visualizer_input or visualizer_output) {
-            if (visualizer == NULL)
-                visualizer = new Visualizer(this);
+            if (visualizer == NULL) visualizer = new Visualizer(this);
             visualizer->add_layer(layer, visualizer_input, visualizer_output);
         }
     }
@@ -42,8 +41,7 @@ Environment::~Environment() {
     delete buffer;
     for (auto& module : this->input_modules) delete module;
     for (auto& module : this->output_modules) delete module;
-    if (visualizer != NULL)
-        delete visualizer;
+    if (visualizer != NULL) delete visualizer;
 }
 
 OutputType Environment::get_output_type(Layer *layer) {
@@ -61,11 +59,9 @@ void Environment::step_output() {
 }
 
 void Environment::ui_launch() {
-    if (visualizer != NULL)
-        visualizer->launch();
+    if (visualizer != NULL) visualizer->launch();
 }
 
 void Environment::ui_update() {
-    if (visualizer != NULL)
-        visualizer->update();
+    if (visualizer != NULL) visualizer->update();
 }

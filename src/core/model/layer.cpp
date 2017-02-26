@@ -4,20 +4,19 @@
 
 int Layer::count = 0;
 
-Layer::Layer(std::string name, NeuralModel neural_model, Structure *structure,
-    int rows, int columns, std::string params, float noise) :
-        name(name),
-        id(Layer::count++),
-        neural_model(neural_model),
-        structure(structure),
-        rows(rows),
-        columns(columns),
-        size(rows * columns),
-        params(params),
-        noise(noise),
-        type(INTERNAL),
-        input_module(NULL),
-        dendritic_root(new DendriticNode(0, this)) { }
+Layer::Layer(Structure *structure, LayerConfig config)
+        : name(config.name),
+          id(Layer::count++),
+          neural_model(config.neural_model),
+          structure(structure),
+          rows(config.rows),
+          columns(config.columns),
+          size(rows * columns),
+          params(config.params),
+          noise(config.noise),
+          type(INTERNAL),
+          input_module(NULL),
+          dendritic_root(new DendriticNode(0, this)) { }
 
 void Layer::add_input_connection(Connection* connection) {
     this->input_connections.push_back(connection);

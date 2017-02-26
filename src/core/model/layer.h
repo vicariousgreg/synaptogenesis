@@ -5,6 +5,7 @@
 #include <string>
 
 #include "model/dendritic_node.h"
+#include "model/layer_config.h"
 #include "util/constants.h"
 
 class Structure;
@@ -70,8 +71,7 @@ class Layer {
 
         static int count;
 
-        Layer(std::string name, NeuralModel neural_model, Structure *structure,
-            int rows, int columns, std::string params, float noise=0.0);
+        Layer(Structure *structure, LayerConfig config);
 
         void add_input_connection(Connection* connection);
         void add_output_connection(Connection* connection);

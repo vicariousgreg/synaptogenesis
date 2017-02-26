@@ -44,17 +44,14 @@ class Structure {
         static Connection* connect(
             Structure *from_structure, std::string from_layer_name,
             Structure *to_structure, std::string to_layer_name,
-            bool plastic, int delay, float max_weight, ConnectionType type,
-            Opcode opcode, std::string params);
+            ConnectionConfig config);
 
 
         /*******************************/
         /************ LAYERS ***********/
         /*******************************/
-        void add_layer(std::string name, NeuralModel neural_model,
-            int rows, int columns, std::string params, float noise=0.0);
-        void add_layer_from_image(std::string name, NeuralModel neural_model,
-            std::string path, std::string params, float noise=0.0);
+        void add_layer(LayerConfig config);
+        void add_layer_from_image(std::string path, LayerConfig config);
         const LayerList& get_layers() const { return layers; }
         const ConnectionList& get_connections() const { return connections; }
 
@@ -62,23 +59,15 @@ class Structure {
         /********* CONNECTIONS *********/
         /*******************************/
         Connection* connect_layers(std::string from_layer_name,
-            std::string to_layer_name,
-            bool plastic, int delay, float max_weight, ConnectionType type,
-            Opcode opcode, std::string params);
+            std::string to_layer_name, ConnectionConfig config);
 
         Connection* connect_layers_expected(
-            std::string from_layer_name, std::string to_layer_name,
-            NeuralModel neural_model, std::string new_layer_params,
-            bool plastic, int delay, float max_weight,
-            ConnectionType type, Opcode opcode, std::string params,
-            float noise=0.0);
+            std::string from_layer_name,
+            LayerConfig layer_config, ConnectionConfig conn_config);
 
         Connection* connect_layers_matching(
-            std::string from_layer_name, std::string to_layer_name,
-            NeuralModel neural_model, std::string new_layer_params,
-            bool plastic, int delay, float max_weight,
-            ConnectionType type, Opcode opcode, std::string params,
-            float noise=0.0);
+            std::string from_layer_name,
+            LayerConfig layer_config, ConnectionConfig conn_config);
 
 
         /* Dendritic internal connection functions */
@@ -86,8 +75,7 @@ class Structure {
 
         Connection* connect_layers_internal(
             DendriticNode *node, std::string from_layer_name,
-            bool plastic, int delay, float max_weight, ConnectionType type,
-            Opcode opcode, std::string params);
+            ConnectionConfig config);
 
 
         /* Adds a module of the given |type| for the given |layer| */
@@ -103,14 +91,12 @@ class Structure {
         /* Internal layer connection functions */
         Connection* connect_layers(
                 Layer *from_layer, Layer *to_layer,
-                bool plastic, int delay, float max_weight,
-                ConnectionType type, Opcode opcode, std::string params);
+                ConnectionConfig config);
 
         Layer* find_layer(std::string name) {
             if (layers_by_name.find(name) != layers_by_name.end())
                 return layers_by_name.find(name)->second;
-            else
-                return NULL;
+            else return NULL;
         }
 
         // Layers

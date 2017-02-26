@@ -7,8 +7,7 @@
 Connection* Structure::connect(
         Structure *from_structure, std::string from_layer_name,
         Structure *to_structure, std::string to_layer_name,
-        bool plastic, int delay, float max_weight, ConnectionType type,
-        Opcode opcode, std::string params) {
+        ConnectionConfig config) {
     Layer *from_layer = from_structure->find_layer(from_layer_name);
     Layer *to_layer = to_structure->find_layer(to_layer_name);
     if (from_layer == NULL)
@@ -19,18 +18,14 @@ Connection* Structure::connect(
             "Could not find layer \"" + to_layer_name + "\"!");
 
     return to_structure->connect_layers(
-        from_layer, to_layer,
-        plastic, delay, max_weight,
-        type, opcode, params);
+        from_layer, to_layer, config);
 }
 
 Connection* Structure::connect_layers(
         Layer *from_layer, Layer *to_layer,
-        bool plastic, int delay, float max_weight,
-        ConnectionType type, Opcode opcode, std::string params) {
+        ConnectionConfig config) {
     Connection *conn = new Connection(
-        from_layer, to_layer,
-        plastic, delay, max_weight, type, params, opcode);
+        from_layer, to_layer, config);
     to_layer->add_to_root(conn);
     this->connections.push_back(conn);
     return conn;
@@ -38,8 +33,7 @@ Connection* Structure::connect_layers(
 
 Connection* Structure::connect_layers(
         std::string from_layer_name, std::string to_layer_name,
-        bool plastic, int delay, float max_weight,
-        ConnectionType type, Opcode opcode, std::string params) {
+        ConnectionConfig config) {
     Layer *from_layer = find_layer(from_layer_name);
     Layer *to_layer = find_layer(to_layer_name);
     if (from_layer == NULL)
@@ -48,58 +42,48 @@ Connection* Structure::connect_layers(
     if (to_layer == NULL)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + to_layer_name + "\"!");
-    return connect_layers(from_layer, to_layer,
-        plastic, delay, max_weight,
-        type, opcode, params);
+    return connect_layers(from_layer, to_layer, config);
 }
 
 Connection* Structure::connect_layers_expected(
-        std::string from_layer_name, std::string to_layer_name,
-        NeuralModel neural_model, std::string new_layer_params,
-        bool plastic, int delay,
-        float max_weight, ConnectionType type, Opcode opcode,
-        std::string params, float noise) {
+        std::string from_layer_name, LayerConfig layer_config,
+        ConnectionConfig conn_config) {
     Layer *from_layer = find_layer(from_layer_name);
     if (from_layer == NULL)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
 
     // Determine new layer size and create
-    int expected_rows = get_expected_dimension(
-        from_layer->rows, type, params);
-    int expected_columns = get_expected_dimension(
-        from_layer->columns, type, params);
-    add_layer(to_layer_name, neural_model,
-        expected_rows, expected_columns, new_layer_params, noise);
-    Layer *to_layer = find_layer(to_layer_name);
+    layer_config.rows =
+        get_expected_dimension(from_layer->rows, conn_config.type, conn_config.params);
+    layer_config.columns =
+        get_expected_dimension(from_layer->columns, conn_config.type, conn_config.params);
+    add_layer(layer_config);
+    Layer *to_layer = find_layer(layer_config.name);
 
     // Connect new layer to given layer
     Connection *conn = connect_layers(
-        from_layer, to_layer,
-        plastic, delay, max_weight, type, opcode, params);
+        from_layer, to_layer, conn_config);
     return conn;
 }
 
 Connection* Structure::connect_layers_matching(
-        std::string from_layer_name, std::string to_layer_name,
-        NeuralModel neural_model, std::string new_layer_params,
-        bool plastic, int delay,
-        float max_weight, ConnectionType type, Opcode opcode,
-        std::string params, float noise) {
+        std::string from_layer_name,
+        LayerConfig layer_config, ConnectionConfig conn_config) {
     Layer *from_layer = find_layer(from_layer_name);
     if (from_layer == NULL)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
 
     // Determine new layer size and create
-    add_layer(to_layer_name, neural_model,
-        from_layer->rows, from_layer->columns, new_layer_params, noise);
-    Layer *to_layer = find_layer(to_layer_name);
+    layer_config.rows = from_layer->rows;
+    layer_config.columns = from_layer->columns;
+    add_layer(layer_config);
+    Layer *to_layer = find_layer(layer_config.name);
 
     // Connect new layer to given layer
     Connection *conn = connect_layers(
-        from_layer, to_layer,
-        plastic, delay, max_weight, type, opcode, params);
+        from_layer, to_layer, conn_config);
     return conn;
 }
 
@@ -113,8 +97,7 @@ DendriticNode *Structure::spawn_dendritic_node(std::string to_layer_name) {
 
 Connection* Structure::connect_layers_internal(
         DendriticNode *node, std::string from_layer_name,
-        bool plastic, int delay, float max_weight, ConnectionType type,
-        Opcode opcode, std::string params) {
+        ConnectionConfig config) {
     Layer *from_layer = find_layer(from_layer_name);
     Layer *to_layer = node->to_layer;
     if (from_layer == NULL)
@@ -122,32 +105,30 @@ Connection* Structure::connect_layers_internal(
             "Could not find layer \"" + from_layer_name + "\"!");
 
     Connection *conn = new Connection(
-        from_layer, to_layer,
-        plastic, delay, max_weight, type, params, opcode);
+        from_layer, to_layer, config);
     node->add_child(conn);
     this->connections.push_back(conn);
     return conn;
 }
 
-void Structure::add_layer(std::string name, NeuralModel neural_model,
-        int rows, int columns, std::string params, float noise) {
-    if (this->layers_by_name.find(name) != this->layers_by_name.end())
+void Structure::add_layer(LayerConfig config) {
+    if (this->layers_by_name.find(config.name) != this->layers_by_name.end())
         ErrorManager::get_instance()->log_error(
             "Repeated layer name!");
 
-    Layer* layer = new Layer(name, neural_model, this,
-        rows, columns, params, noise);
+    Layer* layer = new Layer(this, config);
     this->layers.push_back(layer);
-    this->layers_by_name[name] = layer;
+    this->layers_by_name[config.name] = layer;
     this->total_neurons += layer->size;
     this->num_neurons[layer->get_type()] += layer->size;
-    this->neural_model_flags[neural_model] = true;
+    this->neural_model_flags[config.neural_model] = true;
 }
 
-void Structure::add_layer_from_image(std::string name, NeuralModel neural_model,
-        std::string path, std::string params, float noise) {
+void Structure::add_layer_from_image(std::string path, LayerConfig config) {
     cimg_library::CImg<unsigned char> img(path.c_str());
-    this->add_layer(name, neural_model, img.height(), img.width(), params, noise);
+    config.rows = img.height();
+    config.columns = img.width();
+    this->add_layer(config);
 }
 
 void Structure::add_module(std::string layer_name,
