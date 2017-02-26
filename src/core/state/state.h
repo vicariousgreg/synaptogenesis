@@ -19,8 +19,6 @@ class State {
         virtual std::string get_stream_cluster_name(Structure *structure);
 
         /* Getters for layer related data */
-        int get_input_start_index(Layer *layer) const;
-        int get_output_start_index(Layer *layer) const;
         int get_other_start_index(Layer *layer) const;
         Pointer<float> get_input(Layer *layer, int register_index = 0) const;
         Pointer<Output> get_output(Layer *layer, int word_index = 0) const;

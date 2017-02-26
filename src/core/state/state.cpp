@@ -48,14 +48,6 @@ Pointer<Output> State::get_output(Layer *layer, int word_index) const {
         ->get_output(layer->id, word_index);
 }
 
-int State::get_input_start_index(Layer *layer) const {
-    return attributes.at(layer->structure)->get_input_start_index(layer->id);
-}
-
-int State::get_output_start_index(Layer *layer) const {
-    return attributes.at(layer->structure)->get_output_start_index(layer->id);
-}
-
 int State::get_other_start_index(Layer *layer) const {
     return attributes.at(layer->structure)->get_other_start_index(layer->id);
 }

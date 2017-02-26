@@ -44,8 +44,7 @@ void RateEncodingAttributes::transfer_to_device() {
 
 GLOBAL void re_attribute_kernel(const AttributeData attribute_data) {
     PREAMBLE_ATTRIBUTES;
-    float *outputs = (float*)att->output.get(output_start_index);
-    float *inputs = att->input.get(output_start_index);
+    float *f_outputs = (float*)outputs;
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -53,15 +52,15 @@ GLOBAL void re_attribute_kernel(const AttributeData attribute_data) {
 #else
     for (int nid = 0 ; nid < size; ++nid) {
 #endif
-        float next_value = outputs[nid];
+        float next_value = f_outputs[nid];
         int index;
         for (index = 0 ; index < history_size-1 ; ++index) {
             float curr_value = next_value;
-            next_value = outputs[size * (index + 1) + nid];
-            outputs[size * index + nid] = next_value;
+            next_value = f_outputs[size * (index + 1) + nid];
+            f_outputs[size * index + nid] = next_value;
         }
         float input = inputs[nid];
-        outputs[size * index + nid] =
+        f_outputs[size * index + nid] =
             (input > 0.0) ? tanh(0.1*input) : 0.0;
             //(input > 0.0) ? input : 0.0;
             //tanh(input);

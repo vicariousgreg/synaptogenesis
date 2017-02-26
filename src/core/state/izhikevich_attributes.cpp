@@ -104,8 +104,7 @@ GLOBAL void iz_attribute_kernel(const AttributeData attribute_data) {
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
     float *voltages = iz_att->voltage.get(other_start_index);
     float *recoveries = iz_att->recovery.get(other_start_index);
-    float *currents = iz_att->current.get(input_start_index);
-    unsigned int *spikes = iz_att->spikes.get(output_start_index);
+    unsigned int *spikes = (unsigned int*)outputs;
     IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
 
 #ifdef PARALLEL
@@ -119,7 +118,7 @@ GLOBAL void iz_attribute_kernel(const AttributeData attribute_data) {
          **********************/
         float voltage = voltages[nid];
         float recovery = recoveries[nid];
-        float current = currents[nid];
+        float current = inputs[nid];
 
         float a = params[nid].a;
         float b = params[nid].b;

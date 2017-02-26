@@ -3,6 +3,7 @@
 
 #include "model/layer.h"
 #include "util/parallel.h"
+#include "util/pointer.h"
 
 class State;
 class Attributes;
@@ -12,8 +13,8 @@ class AttributeData {
     public:
         AttributeData(Layer *layer, State *state);
         const Attributes *attributes;
-        const int input_start_index;
-        const int output_start_index;
+        Pointer<float> input;
+        Pointer<Output> output;
         const int other_start_index;
         const int size;
         int history_size;

@@ -84,9 +84,8 @@ GLOBAL void hh_attribute_kernel(const AttributeData attribute_data) {
     float *hs = hh_att->h.get(other_start_index);
     float *ms = hh_att->m.get(other_start_index);
     float *ns = hh_att->n.get(other_start_index);
-    float *currents = hh_att->current.get(input_start_index);
     float *current_traces = hh_att->current_trace.get(other_start_index);
-    unsigned int *spikes = hh_att->spikes.get(output_start_index);
+    unsigned int *spikes = (unsigned int*)outputs;
     HodgkinHuxleyParameters *params = hh_att->neuron_parameters.get(other_start_index);
 
 #ifdef PARALLEL
@@ -99,7 +98,7 @@ GLOBAL void hh_attribute_kernel(const AttributeData attribute_data) {
          *** VOLTAGE UPDATE ***
          **********************/
         float current =
-             (currents[nid] / HH_RESOLUTION) +
+             (inputs[nid] / HH_RESOLUTION) +
             (current_traces[nid] * 0.1);
 
         float voltage = voltages[nid];

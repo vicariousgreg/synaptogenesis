@@ -5,8 +5,8 @@
 
 AttributeData::AttributeData(Layer *layer, State *state) :
         attributes(state->get_attributes_pointer(layer)),
-        input_start_index(state->get_input_start_index(layer)),
-        output_start_index(state->get_output_start_index(layer)),
+        input(state->get_input(layer)),
+        output(state->get_output(layer)),
         other_start_index(state->get_other_start_index(layer)),
         size(layer->size) {
     // Calculate history size

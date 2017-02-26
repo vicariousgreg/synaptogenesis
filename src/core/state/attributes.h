@@ -17,8 +17,8 @@
 typedef void(*ATTRIBUTE_KERNEL)(const AttributeData attribute_data);
 #define PREAMBLE_ATTRIBUTES \
     const Attributes *att = attribute_data.attributes; \
-    int input_start_index = attribute_data.input_start_index; \
-    int output_start_index = attribute_data.output_start_index; \
+    float *inputs = attribute_data.input.get(); \
+    Output *outputs = attribute_data.output.get(); \
     int other_start_index = attribute_data.other_start_index; \
     int size = attribute_data.size; \
     int history_size = attribute_data.history_size;
@@ -50,8 +50,6 @@ class Attributes {
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
 
         // Layer data retrieval
-        int get_input_start_index(int id) const;
-        int get_output_start_index(int id) const;
         int get_other_start_index(int id) const;
         Pointer<float> get_input(int id, int register_index = 0) const;
         Pointer<Output> get_output(int id, int word_index = 0) const;

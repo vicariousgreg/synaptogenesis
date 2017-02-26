@@ -22,12 +22,6 @@ class SpikingAttributes : public Attributes {
 
         // Neuron Attributes
         Pointer<float> voltage;
-
-        // Neuron Current (copy of input)
-        Pointer<float> current;
-
-        // Neuron Spikes (copy of output)
-        Pointer<unsigned int> spikes;
 };
 
 #endif

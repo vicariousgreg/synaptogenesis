@@ -6,8 +6,6 @@
 SpikingAttributes::SpikingAttributes(Structure* structure, ATTRIBUTE_KERNEL kernel)
         : Attributes(structure, BIT, kernel) {
     this->voltage = Pointer<float>(total_neurons);
-    this->current = this->input;
-    this->spikes = this->output.cast<unsigned int>();
 }
 
 SpikingAttributes::~SpikingAttributes() {
@@ -16,9 +14,6 @@ SpikingAttributes::~SpikingAttributes() {
 
 void SpikingAttributes::transfer_to_device() {
     Attributes::transfer_to_device();
-
-    this->current = this->input;
-    this->spikes = this->output.cast<unsigned int>();
     this->voltage.transfer_to_device();
 }
 

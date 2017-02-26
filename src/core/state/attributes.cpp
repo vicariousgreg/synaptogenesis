@@ -95,14 +95,6 @@ void Attributes::transfer_to_device() {
     this->output.transfer_to_device();
 }
 
-int Attributes::get_input_start_index(int id) const {
-    return input_start_indices.at(id);
-}
-
-int Attributes::get_output_start_index(int id) const {
-    return output_start_indices.at(id);
-}
-
 int Attributes::get_other_start_index(int id) const {
     return other_start_indices.at(id);
 }
