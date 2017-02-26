@@ -45,8 +45,8 @@ class Attributes {
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
 
         // Layer data retrieval
-        int get_start_index(int id) const;
-        Pointer<float> get_input(int id) const;
+        int get_start_index(int id, int register_index = 0) const;
+        Pointer<float> get_input(int id, int register_index = 0) const;
         Pointer<Output> get_output(int id, int word_index = 0) const;
 
         // Number of neurons
@@ -56,15 +56,17 @@ class Attributes {
         EXTRACTOR extractor;
         const OutputType output_type;
         Pointer<Output> output;
+        // Input is a vector because some layers have extra input
+        //   registers for dendritic tree computations
         Pointer<float> input;
+        std::vector<Pointer<float> > input_registers;
 
         // Pointer to this object
         // If parallel, this will point to the device copy
         Attributes *pointer;
 
     protected:
-        int max_input_registers;
-        std::map<int, int> start_indices;
+        std::vector<std::map<int, int> > start_indices;
         std::map<int, int> sizes;
 };
 

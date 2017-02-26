@@ -38,16 +38,19 @@ std::string State::get_stream_cluster_name(Structure *structure) {
     return attributes.at(structure)->get_stream_cluster_name();
 }
 
-Pointer<float> State::get_input(Layer *layer) const {
-    return attributes.at(layer->structure)->get_input(layer->id);
+Pointer<float> State::get_input(Layer *layer, int register_index) const {
+    return attributes.at(layer->structure)
+        ->get_input(layer->id, register_index);
 }
 
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
-    return attributes.at(layer->structure)->get_output(layer->id, word_index);
+    return attributes.at(layer->structure)
+        ->get_output(layer->id, word_index);
 }
 
-int State::get_start_index(Layer *layer) const {
-    return attributes.at(layer->structure)->get_start_index(layer->id);
+int State::get_start_index(Layer *layer, int register_index) const {
+    return attributes.at(layer->structure)
+        ->get_start_index(layer->id, register_index);
 }
 
 const Attributes* State::get_attributes_pointer(Layer *layer) const {

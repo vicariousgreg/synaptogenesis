@@ -70,22 +70,29 @@ static IOType IOTypes[] = { INPUT, INPUT_OUTPUT, OUTPUT, INTERNAL };
  * Convergent connections converge from a larger layer to a smaller one.
  * Convolutional layers share weights.
  */
-enum ConnectionType {
+typedef enum {
     FULLY_CONNECTED,
     ONE_TO_ONE,
     CONVERGENT,
     CONVOLUTIONAL
-};
+} ConnectionType;
 
-/* Synaptic operation opcode
+/* Synaptic operation opcode.
  * Defines how activity across a connection interacts with the current state.
  * This allows for more complex synaptic functions.
  * */
-enum Opcode {
+typedef enum {
     ADD,
     SUB,
     MULT,
     DIV
-};
+} Opcode;
+
+/* Enumeration of possible neural models. */
+typedef enum {
+    IZHIKEVICH,
+    HODGKIN_HUXLEY,
+    RATE_ENCODING
+} NeuralModel;
 
 #endif

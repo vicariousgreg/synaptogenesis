@@ -4,7 +4,7 @@
 
 ParallelStreamCluster::ParallelStreamCluster(Structure *structure,
         State *state, Environment *environment)
-        : StreamCluster(structure, state, environment) {
+        : StreamCluster(state, environment) {
     // Build instructions
     for (auto& layer : structure->get_layers())
         streams[layer->get_type()].push_back(
@@ -45,11 +45,11 @@ InstructionList ParallelStreamCluster::sort_instructions(
     // Connections should be initialized this way to take advantage of
     //   stream overlap
     while (schedules.size() > 0) {
-        for (auto& schedule : schedules) {
-            destination.push_back(schedule.second.front());
-            schedule.second.pop();
-            if (schedule.second.size() == 0)
-                schedules.erase(schedule.first);
+        for (auto it = schedules.begin(); it != schedules.end(); ) {
+            destination.push_back(it->second.front());
+            it->second.pop();
+            if (it->second.size() == 0) it = schedules.erase(it);
+            else ++it;
         }
     }
     return destination;

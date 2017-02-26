@@ -37,25 +37,32 @@ Attributes::Attributes(Structure *structure, OutputType output_type)
         : output_type(output_type),
           total_neurons(structure->get_num_neurons()),
           pointer(this) {
-    // Determine start indices for each layer
-    int curr_index = 0;
-    for (auto& layer : structure->get_layers()) {
-        start_indices[layer->id] = curr_index;
-        sizes[layer->id] = layer->size;
-        curr_index += layer->size;
-    }
+    // Keep track of register sizes
+    std::vector<int> register_sizes;
 
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
-    max_input_registers = 1;
     for (auto& layer : structure->get_layers()) {
+        sizes[layer->id] = layer->size;
         int register_count = layer->dendritic_root->get_max_register_index() + 1;
-        if (register_count > max_input_registers)
-            max_input_registers = register_count;
+
+        // Ensure enough sizes exist
+        while (register_count > register_sizes.size()) {
+            register_sizes.push_back(0);
+            start_indices.push_back(std::map<int,int>());
+        }
+
+        // Set start indices and update size
+        for (int i = 0; i < register_count; ++i) {
+            start_indices[i][layer->id] = register_sizes[i];
+            register_sizes[i] += layer->size;
+        }
     }
 
     // Allocate space for input and output
-    this->input = Pointer<float>(this->total_neurons * max_input_registers, 0.0);
+    for (int i = 0; i < register_sizes.size(); ++i)
+        this->input_registers.push_back(Pointer<float>(register_sizes[i], 0.0));
+    this->input = this->input_registers[0];
     this->output = Pointer<Output>(this->total_neurons * HISTORY_SIZE);
 
     // Retrieve extractor
@@ -63,7 +70,7 @@ Attributes::Attributes(Structure *structure, OutputType output_type)
 }
 
 Attributes::~Attributes() {
-    this->input.free();
+    for (auto& ptr : this->input_registers) ptr.free();
     this->output.free();
 #ifdef PARALLEL
     cudaFree(this->pointer);
@@ -72,16 +79,19 @@ Attributes::~Attributes() {
 
 void Attributes::transfer_to_device() {
     // Transfer data
-    this->input.transfer_to_device();
+    for (auto& ptr : this->input_registers) ptr.transfer_to_device();
+    this->input = this->input_registers[0];
     this->output.transfer_to_device();
 }
 
-int Attributes::get_start_index(int id) const {
-    return start_indices.at(id);
+int Attributes::get_start_index(int id, int register_index) const {
+    return start_indices[register_index].at(id);
 }
 
-Pointer<float> Attributes::get_input(int id) const {
-    return input.slice(start_indices.at(id), sizes.at(id));
+Pointer<float> Attributes::get_input(int id, int register_index) const {
+    return input_registers[register_index].slice(
+        start_indices[register_index].at(id),
+        sizes.at(id));
 }
 
 Pointer<Output> Attributes::get_output(int id, int word_index) const {
@@ -89,5 +99,5 @@ Pointer<Output> Attributes::get_output(int id, int word_index) const {
         ErrorManager::get_instance()->log_error(
             "Cannot retrieve output word index past history length!");
     return output.slice(
-        (total_neurons * word_index) + start_indices.at(id), sizes.at(id));
+        (total_neurons * word_index) + start_indices[0].at(id), sizes.at(id));
 }

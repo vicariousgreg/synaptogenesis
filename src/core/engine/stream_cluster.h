@@ -13,9 +13,8 @@
 
 class StreamCluster {
     public:
-        StreamCluster(Structure *structure, State *state, Environment *environment)
-                : structure(structure),
-                  state(state),
+        StreamCluster(State *state, Environment *environment)
+                : state(state),
                   environment(environment) { }
         virtual ~StreamCluster() { }
 
@@ -32,7 +31,6 @@ class StreamCluster {
 #endif
 
     protected:
-        Structure *structure;
         State *state;
         Environment *environment;
 };

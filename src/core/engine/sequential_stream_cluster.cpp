@@ -5,7 +5,7 @@
 
 SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
         State *state, Environment *environment)
-        : StreamCluster(structure, state, environment) {
+        : StreamCluster(state, environment) {
 #ifdef PARALLEL
     cudaStreamCreate(&this->compute_cuda_stream);
 #endif
