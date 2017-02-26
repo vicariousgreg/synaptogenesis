@@ -137,10 +137,9 @@ void OutputTransferInstruction::activate() {
 
 void StateUpdateInstruction::activate() {
 #ifdef PARALLEL
-    attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(
-        attributes, start_index, to_layer->size);
+    attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(attribute_data);
 #else
-    attribute_kernel(attributes, start_index, to_layer->size);
+    attribute_kernel(attribute_data);
 #endif
     Instruction::record_events();
 }

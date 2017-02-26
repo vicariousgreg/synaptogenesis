@@ -11,7 +11,7 @@ class RateEncodingParameters {
         float x;
 };
 
-GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int count);
+GLOBAL void re_attribute_kernel(const AttributeData attribute_data);
 
 class RateEncodingAttributes : public Attributes {
     public:
@@ -22,10 +22,6 @@ class RateEncodingAttributes : public Attributes {
 
         /* Trace learning rules */
         virtual SYNAPSE_KERNEL get_updater(ConnectionType type);
-
-        ATTRIBUTE_KERNEL get_attribute_kernel() const {
-            return re_attribute_kernel;
-        }
 
         virtual void transfer_to_device();
 

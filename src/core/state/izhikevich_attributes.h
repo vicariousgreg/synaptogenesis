@@ -12,16 +12,12 @@ class IzhikevichParameters {
         float a, b, c, d;
 };
 
-GLOBAL void iz_attribute_kernel(const Attributes *att, int start_index, int count);
+GLOBAL void iz_attribute_kernel(const AttributeData attribute_data);
 
 class IzhikevichAttributes : public SpikingAttributes {
     public:
         IzhikevichAttributes(Structure* structure);
         virtual ~IzhikevichAttributes();
-
-        ATTRIBUTE_KERNEL get_attribute_kernel() const {
-            return iz_attribute_kernel;
-        }
 
         virtual void transfer_to_device();
 

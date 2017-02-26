@@ -33,12 +33,18 @@ Attributes *build_attributes(Structure *structure) {
     return attributes;
 }
 
-Attributes::Attributes(Structure *structure, OutputType output_type)
+Attributes::Attributes(Structure *structure, OutputType output_type,
+        ATTRIBUTE_KERNEL kernel)
         : output_type(output_type),
           total_neurons(structure->get_num_neurons()),
+          kernel(kernel),
           pointer(this) {
     // Keep track of register sizes
-    std::vector<int> register_sizes;
+    int input_size = 0;
+    int output_size = 0;
+    int other_size = 0;
+
+    int timesteps_per_output = get_timesteps_per_output(output_type);
 
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
@@ -46,31 +52,37 @@ Attributes::Attributes(Structure *structure, OutputType output_type)
         sizes[layer->id] = layer->size;
         int register_count = layer->dendritic_root->get_max_register_index() + 1;
 
-        // Ensure enough sizes exist
-        while (register_count > register_sizes.size()) {
-            register_sizes.push_back(0);
-            start_indices.push_back(std::map<int,int>());
+        // Determine max delay for output connections
+        int max_delay_registers = 0;
+        for (auto& conn : layer->get_output_connections()) {
+            int delay_registers = conn->delay / timesteps_per_output;
+            if (delay_registers > max_delay_registers)
+                max_delay_registers = delay_registers;
         }
+        ++max_delay_registers;
+
 
         // Set start indices and update size
-        for (int i = 0; i < register_count; ++i) {
-            start_indices[i][layer->id] = register_sizes[i];
-            register_sizes[i] += layer->size;
-        }
+        input_start_indices[layer->id] = input_size;
+        input_size += register_count * layer->size;
+
+        output_start_indices[layer->id] = output_size;
+        output_size += max_delay_registers * layer->size;
+
+        other_start_indices[layer->id] = other_size;
+        other_size += layer->size;
     }
 
     // Allocate space for input and output
-    for (int i = 0; i < register_sizes.size(); ++i)
-        this->input_registers.push_back(Pointer<float>(register_sizes[i], 0.0));
-    this->input = this->input_registers[0];
-    this->output = Pointer<Output>(this->total_neurons * HISTORY_SIZE);
+    this->input = Pointer<float>(input_size, 0.0);
+    this->output = Pointer<Output>(output_size);
 
     // Retrieve extractor
     get_extractor(&this->extractor, output_type);
 }
 
 Attributes::~Attributes() {
-    for (auto& ptr : this->input_registers) ptr.free();
+    this->input.free();
     this->output.free();
 #ifdef PARALLEL
     cudaFree(this->pointer);
@@ -79,25 +91,28 @@ Attributes::~Attributes() {
 
 void Attributes::transfer_to_device() {
     // Transfer data
-    for (auto& ptr : this->input_registers) ptr.transfer_to_device();
-    this->input = this->input_registers[0];
+    this->input.transfer_to_device();
     this->output.transfer_to_device();
 }
 
-int Attributes::get_start_index(int id, int register_index) const {
-    return start_indices[register_index].at(id);
+int Attributes::get_input_start_index(int id) const {
+    return input_start_indices.at(id);
+}
+
+int Attributes::get_output_start_index(int id) const {
+    return output_start_indices.at(id);
+}
+
+int Attributes::get_other_start_index(int id) const {
+    return other_start_indices.at(id);
 }
 
 Pointer<float> Attributes::get_input(int id, int register_index) const {
-    return input_registers[register_index].slice(
-        start_indices[register_index].at(id),
-        sizes.at(id));
+    int size = sizes.at(id);
+    return input.slice(input_start_indices.at(id) + (register_index * size), size);
 }
 
 Pointer<Output> Attributes::get_output(int id, int word_index) const {
-    if (word_index >= HISTORY_SIZE)
-        ErrorManager::get_instance()->log_error(
-            "Cannot retrieve output word index past history length!");
-    return output.slice(
-        (total_neurons * word_index) + start_indices[0].at(id), sizes.at(id));
+    int size = sizes.at(id);
+    return output.slice(output_start_indices.at(id) + (word_index * size), size);
 }

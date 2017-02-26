@@ -74,15 +74,15 @@ Pointer<T> Pointer<T>::pinned_pointer(int size, T val) {
 }
 
 template<typename T>
-HOST DEVICE T* Pointer<T>::get() const {
+HOST DEVICE T* Pointer<T>::get(int offset) const {
 #ifdef __CUDA_ARCH__
     if (local) assert(false);
-    return ptr;
+    return ptr + offset;
 #else
     if (not local)
         ErrorManager::get_instance()->log_error(
             "Attempted to dereference device pointer from host!");
-    return ptr;
+    return ptr + offset;
 #endif
 }
 

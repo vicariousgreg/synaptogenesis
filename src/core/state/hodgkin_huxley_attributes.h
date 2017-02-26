@@ -11,16 +11,12 @@ class HodgkinHuxleyParameters {
         float iapp;
 };
 
-GLOBAL void hh_attribute_kernel(const Attributes *att, int start_index, int count);
+GLOBAL void hh_attribute_kernel(const AttributeData attribute_data);
 
 class HodgkinHuxleyAttributes : public SpikingAttributes {
     public:
         HodgkinHuxleyAttributes(Structure* structure);
         virtual ~HodgkinHuxleyAttributes();
-
-        ATTRIBUTE_KERNEL get_attribute_kernel() const {
-            return hh_attribute_kernel;
-        }
 
         virtual void transfer_to_device();
 

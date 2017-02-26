@@ -47,7 +47,7 @@ class Pointer {
         // Get the encapsulated pointer
         // This method has host/device protections to ensure that pointers
         //   are only accessed from locations where they are relevant
-        HOST DEVICE T* get() const;
+        HOST DEVICE T* get(int offset=0) const;
 
 
         /*************************/

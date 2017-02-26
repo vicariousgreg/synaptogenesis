@@ -48,9 +48,16 @@ Pointer<Output> State::get_output(Layer *layer, int word_index) const {
         ->get_output(layer->id, word_index);
 }
 
-int State::get_start_index(Layer *layer, int register_index) const {
-    return attributes.at(layer->structure)
-        ->get_start_index(layer->id, register_index);
+int State::get_input_start_index(Layer *layer) const {
+    return attributes.at(layer->structure)->get_input_start_index(layer->id);
+}
+
+int State::get_output_start_index(Layer *layer) const {
+    return attributes.at(layer->structure)->get_output_start_index(layer->id);
+}
+
+int State::get_other_start_index(Layer *layer) const {
+    return attributes.at(layer->structure)->get_other_start_index(layer->id);
 }
 
 const Attributes* State::get_attributes_pointer(Layer *layer) const {
@@ -58,7 +65,7 @@ const Attributes* State::get_attributes_pointer(Layer *layer) const {
 }
 
 const ATTRIBUTE_KERNEL State::get_attribute_kernel(Layer *layer) const {
-    return attributes.at(layer->structure)->get_attribute_kernel();
+    return attributes.at(layer->structure)->kernel;
 }
 
 Pointer<float> State::get_matrix(Connection* conn) const {

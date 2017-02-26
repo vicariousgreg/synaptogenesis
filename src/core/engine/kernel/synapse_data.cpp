@@ -26,14 +26,9 @@ SynapseData::SynapseData(Connection *conn, State *state) :
             ? field_size / 2 : 0;
 
     // Set up word index
-    int timesteps_per_output = get_timesteps_per_output(output_type);
-    int word_index = HISTORY_SIZE - 1 -
-        (conn->delay / timesteps_per_output);
-    if (word_index < 0)
-        ErrorManager::get_instance()->log_error(
-            "Invalid delay in connection!");
+    int word_index = conn->delay / get_timesteps_per_output(output_type);
 
-    destination_outputs = state->get_output(conn->to_layer, word_index);
+    destination_outputs = state->get_output(conn->to_layer);
     outputs = state->get_output(conn->from_layer, word_index);
     inputs = state->get_input(conn->to_layer);
 }

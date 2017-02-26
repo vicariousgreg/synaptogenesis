@@ -3,8 +3,8 @@
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
-SpikingAttributes::SpikingAttributes(Structure* structure)
-        : Attributes(structure, BIT) {
+SpikingAttributes::SpikingAttributes(Structure* structure, ATTRIBUTE_KERNEL kernel)
+        : Attributes(structure, BIT, kernel) {
     this->voltage = Pointer<float>(total_neurons);
     this->current = this->input;
     this->spikes = this->output.cast<unsigned int>();

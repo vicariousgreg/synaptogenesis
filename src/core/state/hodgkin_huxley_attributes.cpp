@@ -14,7 +14,7 @@ static HodgkinHuxleyParameters create_parameters(std::string str) {
 }
 
 HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(Structure* structure)
-        : SpikingAttributes(structure) {
+        : SpikingAttributes(structure, hh_attribute_kernel) {
     this->h = Pointer<float>(total_neurons);
     this->m = Pointer<float>(total_neurons);
     this->n = Pointer<float>(total_neurons);
@@ -76,24 +76,24 @@ void HodgkinHuxleyAttributes::transfer_to_device() {
 #define HH_VL -54.4
 #define HH_CM 1.0
 
-GLOBAL void hh_attribute_kernel(const Attributes *att, int start_index, int count) {
+GLOBAL void hh_attribute_kernel(const AttributeData attribute_data) {
+    PREAMBLE_ATTRIBUTES;
+
     HodgkinHuxleyAttributes *hh_att = (HodgkinHuxleyAttributes*)att;
-    float *voltages = hh_att->voltage.get();
-    float *hs = hh_att->h.get();
-    float *ms = hh_att->m.get();
-    float *ns = hh_att->n.get();
-    float *currents = hh_att->current.get();
-    float *current_traces = hh_att->current_trace.get();
-    unsigned int *spikes = hh_att->spikes.get();
-    int total_neurons = hh_att->total_neurons;
-    HodgkinHuxleyParameters *params = hh_att->neuron_parameters.get();
+    float *voltages = hh_att->voltage.get(other_start_index);
+    float *hs = hh_att->h.get(other_start_index);
+    float *ms = hh_att->m.get(other_start_index);
+    float *ns = hh_att->n.get(other_start_index);
+    float *currents = hh_att->current.get(input_start_index);
+    float *current_traces = hh_att->current_trace.get(other_start_index);
+    unsigned int *spikes = hh_att->spikes.get(output_start_index);
+    HodgkinHuxleyParameters *params = hh_att->neuron_parameters.get(other_start_index);
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < count) {
-        nid += start_index;
+    if (nid < size) {
 #else
-    for (int nid = start_index; nid < start_index+count; ++nid) {
+    for (int nid = 0; nid < size; ++nid) {
 #endif
         /**********************
          *** VOLTAGE UPDATE ***
@@ -160,16 +160,16 @@ GLOBAL void hh_attribute_kernel(const Attributes *att, int start_index, int coun
         // Shift all the bits.
         // Check if next word is odd (1 for LSB).
         int index;
-        for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
+        for (index = 0 ; index < history_size-1 ; ++index) {
             unsigned int curr_value = next_value;
-            next_value = spikes[total_neurons * (index + 1) + nid];
+            next_value = spikes[size * (index + 1) + nid];
 
             // Shift bits, carry over LSB from next value.
-            spikes[total_neurons*index + nid] = (curr_value >> 1) | (next_value << 31);
+            spikes[size*index + nid] = (curr_value >> 1) | (next_value << 31);
         }
 
         // Least significant value already loaded into next_value.
         // Index moved appropriately from loop.
-        spikes[total_neurons*index + nid] = (next_value >> 1) | (spike << 31);
+        spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
     }
 }

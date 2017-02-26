@@ -56,7 +56,7 @@ static IzhikevichParameters create_parameters(std::string str) {
 }
 
 IzhikevichAttributes::IzhikevichAttributes(Structure* structure)
-        : SpikingAttributes(structure) {
+        : SpikingAttributes(structure, iz_attribute_kernel) {
     this->recovery = Pointer<float>(total_neurons);
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
 
@@ -98,21 +98,21 @@ void IzhikevichAttributes::transfer_to_device() {
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
 
-GLOBAL void iz_attribute_kernel(const Attributes *att, int start_index, int count) {
+GLOBAL void iz_attribute_kernel(const AttributeData attribute_data) {
+    PREAMBLE_ATTRIBUTES;
+
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
-    float *voltages = iz_att->voltage.get();
-    float *recoveries = iz_att->recovery.get();
-    float *currents = iz_att->current.get();
-    unsigned int *spikes = iz_att->spikes.get();
-    int total_neurons = iz_att->total_neurons;
-    IzhikevichParameters *params = iz_att->neuron_parameters.get();
+    float *voltages = iz_att->voltage.get(other_start_index);
+    float *recoveries = iz_att->recovery.get(other_start_index);
+    float *currents = iz_att->current.get(input_start_index);
+    unsigned int *spikes = iz_att->spikes.get(output_start_index);
+    IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < count) {
-        nid += start_index;
+    if (nid < size) {
 #else
-    for (int nid = start_index; nid < start_index+count; ++nid) {
+    for (int nid = 0; nid < size; ++nid) {
 #endif
         /**********************
          *** VOLTAGE UPDATE ***
@@ -145,17 +145,17 @@ GLOBAL void iz_attribute_kernel(const Attributes *att, int start_index, int coun
         // Shift all the bits.
         // Check if next word is odd (1 for LSB).
         int index;
-        for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
+        for (index = 0 ; index < history_size-1 ; ++index) {
             unsigned int curr_value = next_value;
-            next_value = spikes[total_neurons * (index + 1) + nid];
+            next_value = spikes[size * (index + 1) + nid];
 
             // Shift bits, carry over LSB from next value.
-            spikes[total_neurons*index + nid] = (curr_value >> 1) | (next_value << 31);
+            spikes[size*index + nid] = (curr_value >> 1) | (next_value << 31);
         }
 
         // Least significant value already loaded into next_value.
         // Index moved appropriately from loop.
-        spikes[total_neurons*index + nid] = (next_value >> 1) | (spike << 31);
+        spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
 
         // Reset voltage if spiked.
         if (spike) {

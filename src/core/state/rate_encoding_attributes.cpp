@@ -12,7 +12,8 @@ static RateEncodingParameters create_parameters(std::string str) {
     //    "Unrecognized parameter string: " + str);
 }
 
-RateEncodingAttributes::RateEncodingAttributes(Structure* structure) : Attributes(structure, FLOAT) {
+RateEncodingAttributes::RateEncodingAttributes(Structure* structure)
+        : Attributes(structure, FLOAT, re_attribute_kernel) {
     this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
 
     // Fill in table
@@ -41,27 +42,26 @@ void RateEncodingAttributes::transfer_to_device() {
 
 #include <math.h>
 
-GLOBAL void re_attribute_kernel(const Attributes *att, int start_index, int count) {
-    float *outputs = (float*)att->output.get();
-    float *inputs = att->input.get();
-    int total_neurons = att->total_neurons;
+GLOBAL void re_attribute_kernel(const AttributeData attribute_data) {
+    PREAMBLE_ATTRIBUTES;
+    float *outputs = (float*)att->output.get(output_start_index);
+    float *inputs = att->input.get(output_start_index);
 
 #ifdef PARALLEL
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < count) {
-        nid += start_index;
+    if (nid < size) {
 #else
-    for (int nid = start_index ; nid < start_index+count; ++nid) {
+    for (int nid = 0 ; nid < size; ++nid) {
 #endif
         float next_value = outputs[nid];
         int index;
-        for (index = 0 ; index < HISTORY_SIZE-1 ; ++index) {
+        for (index = 0 ; index < history_size-1 ; ++index) {
             float curr_value = next_value;
-            next_value = outputs[total_neurons * (index + 1) + nid];
-            outputs[total_neurons * index + nid] = next_value;
+            next_value = outputs[size * (index + 1) + nid];
+            outputs[size * index + nid] = next_value;
         }
         float input = inputs[nid];
-        outputs[total_neurons * index + nid] =
+        outputs[size * index + nid] =
             (input > 0.0) ? tanh(0.1*input) : 0.0;
             //(input > 0.0) ? input : 0.0;
             //tanh(input);

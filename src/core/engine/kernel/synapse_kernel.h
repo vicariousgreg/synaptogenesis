@@ -99,7 +99,7 @@ inline GLOBAL void randomize_data(Pointer<float> ptr, int count, float max, bool
 // Extract fields from synapse_data
 // This makes a surprising difference in runtime
 // This macro only contains extractions relevant to all connection kernels
-#define PREAMBLE \
+#define SYNAPSE_PREAMBLE \
     const Opcode opcode = synapse_data.opcode; \
     const int delay = synapse_data.delay; \
     float * const weights = synapse_data.weights.get(); \
@@ -119,7 +119,7 @@ inline GLOBAL void randomize_data(Pointer<float> ptr, int count, float max, bool
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
-    PREAMBLE; \
+    SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
     for (int to_index = 0 ; to_index < to_size ; ++to_index) { \
@@ -135,7 +135,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 #define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
-    PREAMBLE; \
+    SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -153,7 +153,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 #define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
 GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
-    PREAMBLE; \
+    SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
     for (int index = 0 ; index < to_size ; ++index) { \
@@ -163,7 +163,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 #define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
 GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
-    PREAMBLE; \
+    SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
     int index = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -176,7 +176,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 #define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
-    PREAMBLE; \
+    SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
     const int field_size = synapse_data.field_size; \
     const int stride = synapse_data.stride; \
@@ -226,7 +226,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 #define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
-    PREAMBLE; \
+    SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
     const int field_size = synapse_data.field_size; \
     const int stride = synapse_data.stride; \

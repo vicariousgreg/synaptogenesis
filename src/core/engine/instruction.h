@@ -127,16 +127,14 @@ class StateUpdateInstruction : public Instruction {
     public:
         StateUpdateInstruction(Layer *to_layer, State *state)
             : Instruction(to_layer),
-              start_index(state->get_start_index(to_layer)),
-              attributes(state->get_attributes_pointer(to_layer)),
+              attribute_data(to_layer, state),
               attribute_kernel(state->get_attribute_kernel(to_layer)) { }
 
         void activate();
 
     protected:
-        const int start_index;
-        const Attributes *attributes;
         ATTRIBUTE_KERNEL attribute_kernel;
+        const AttributeData attribute_data;
 };
 
 typedef std::vector<Instruction*> InstructionList;

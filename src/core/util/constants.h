@@ -1,18 +1,6 @@
 #ifndef constants_h
 #define constants_h
 
-/* Size (in Outputs) of output history.
- * A size of 1 indicates the usage of 1 Output, which on most systems is
- *     4 bytes, or 32 bits.  This means that a history of 32 timesteps will
- *     be kept for neuron spikes, as they are represented by a single bit.
- *     For rate encoding, one Output is used for timestep.  Much more space
- *     is needed to hold longer delays in such a network.
- * The history size limits the longest connection delay possible, and also
- *     affects learning for STDP rules that use more than just the most
- *     recent Output.
- */
-#define HISTORY_SIZE 2
-
 /* Output type enumeration.
  * Different engines may use different output formats.
  * This enumeration is used to keep track of this information.
