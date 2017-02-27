@@ -14,7 +14,6 @@
 class Instruction {
     public:
         Instruction(Layer *layer);
-        virtual ~Instruction();
 
         virtual void activate() = 0;
         virtual void update() { }
@@ -24,10 +23,7 @@ class Instruction {
 
         Layer* const to_layer;
 
-        void set_stream(Stream *stream) {
-            delete this->stream;
-            this->stream = stream;
-        }
+        void set_stream(Stream *stream) { this->stream = stream; }
         void add_event(Event *event) { this->events.push_back(event); }
 
     protected:

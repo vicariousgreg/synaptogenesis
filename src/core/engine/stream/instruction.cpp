@@ -8,12 +8,7 @@ Instruction::Instruction(Layer *layer) : to_layer(layer) {
     this->activator_blocks = calc_blocks(layer->size);
 
     // Default stream
-    this->stream = new DefaultStream();
-}
-
-Instruction::~Instruction() {
-    delete this->stream;
-    for (auto& event : events) delete event;
+    this->stream = Stream::get_default_stream();
 }
 
 void Instruction::record_events() {

@@ -16,9 +16,13 @@ class Stream {
         void run_kernel(void (*kernel)(ARGS...),
             int blocks, int threads, ARGS... args);
 
+        static Stream *get_default_stream();
+
     protected:
-        Stream(bool default_stream);
-        bool default_stream;
+        static Stream *default_stream;
+
+        Stream(bool is_default_stream);
+        bool is_default_stream;
 #ifdef __CUDACC__
         cudaStream_t cuda_stream;
 #endif

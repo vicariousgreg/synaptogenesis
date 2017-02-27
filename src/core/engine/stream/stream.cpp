@@ -1,5 +1,13 @@
 #include "engine/stream/stream.h"
 
+Stream *Stream::default_stream = 0;
+
+Stream *Stream::get_default_stream() {
+    if (Stream::default_stream == nullptr)
+        Stream::default_stream = new DefaultStream();
+    return Stream::default_stream;
+}
+
 Stream::Stream() {
 #ifdef __CUDACC__
     this->default_stream = false;
@@ -7,8 +15,8 @@ Stream::Stream() {
 #endif
 }
 
-Stream::Stream(bool default_stream)
-    : default_stream(default_stream) { }
+Stream::Stream(bool is_default_stream)
+    : is_default_stream(is_default_stream) { }
 
 Stream::~Stream() {
 #ifdef __CUDACC__
