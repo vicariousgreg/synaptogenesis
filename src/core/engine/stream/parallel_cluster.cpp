@@ -8,7 +8,7 @@ ParallelCluster::ParallelCluster(Structure *structure,
     // Build instructions
     for (auto& layer : structure->get_layers())
         nodes[layer->get_type()].push_back(
-            new ClusterNode(layer, state, environment));
+            new ClusterNode(layer, state, environment, io_stream));
 
     // Schedule instructions
     post_input_instructions = sort_instructions(

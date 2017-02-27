@@ -15,8 +15,9 @@ class Cluster {
     public:
         Cluster(State *state, Environment *environment)
                 : state(state),
-                  environment(environment) { }
-        virtual ~Cluster() { }
+                  environment(environment),
+                  io_stream(new Stream()) { }
+        virtual ~Cluster() { delete io_stream; }
 
         virtual void launch_pre_input_calculations() { };
         virtual void launch_input() = 0;
@@ -31,6 +32,7 @@ class Cluster {
     protected:
         State *state;
         Environment *environment;
+        Stream *io_stream;
 };
 
 typedef std::vector<IOType> IOTypeVector;

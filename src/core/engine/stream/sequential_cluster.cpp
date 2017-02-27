@@ -25,7 +25,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
 
         // Add elements to beginning of list
         nodes.insert(nodes.begin(),
-            new ClusterNode(curr_layer, state, environment, compute_stream));
+            new ClusterNode(curr_layer, state, environment, io_stream, compute_stream));
 
         // Add any layers that feed into this one to if all of its
         //     output layers have been visited and its not in the queue

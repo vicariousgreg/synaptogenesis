@@ -26,13 +26,11 @@ State::State(Model *model)
             }
         }
     }
-    this->io_stream = new Stream();
 }
 
 State::~State() {
     for (auto att : attributes) if (att != nullptr) delete att;
     for (auto matrix : this->weight_matrices) delete matrix.second;
-    delete io_stream;
 }
 
 bool State::check_compatibility(Structure *structure) {

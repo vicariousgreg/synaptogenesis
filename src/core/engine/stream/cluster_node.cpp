@@ -1,25 +1,20 @@
 #include "engine/stream/cluster_node.h"
 #include "util/error_manager.h"
 
-ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment)
+ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
+        Stream *io_stream, Stream *compute_stream)
         : to_layer(layer),
+          io_stream(io_stream),
           state(state),
           environment(environment) {
-    this->stream = new Stream();
-    this->external_stream = false;
-    this->init();
-}
+    if (compute_stream == nullptr) {
+        this->compute_stream = new Stream();
+        this->external_stream = false;
+    } else {
+        this->compute_stream = compute_stream;
+        this->external_stream = true;
+    }
 
-ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment, Stream *stream)
-        : to_layer(layer),
-          state(state),
-          environment(environment),
-          stream(stream) {
-    this->external_stream = true;
-    this->init();
-}
-
-void ClusterNode::init() {
     this->finished_event = new Event();
     this->input_event = new Event();
     this->output_event = new Event();
@@ -56,7 +51,7 @@ ClusterNode::~ClusterNode() {
     if (this->input_instruction) delete input_instruction;
     if (this->output_instruction) delete output_instruction;
     delete state_instruction;
-    if (not this->external_stream) delete stream;
+    if (not this->external_stream) delete compute_stream;
 
     delete finished_event;
     delete input_event;
@@ -82,7 +77,7 @@ void ClusterNode::set_input_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple input instructions to stream!");
     this->input_instruction = inst;
-    inst->set_stream(this->stream);
+    inst->set_stream(this->compute_stream);
     inst->add_event(input_event);
 }
 
@@ -91,7 +86,7 @@ void ClusterNode::set_output_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple output instructions to stream!");
     this->output_instruction = inst;
-    inst->set_stream(state->io_stream);
+    inst->set_stream(this->io_stream);
     inst->add_event(output_event);
 }
 
@@ -100,19 +95,19 @@ void ClusterNode::set_state_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple state instructions to stream!");
     this->state_instruction = inst;
-    inst->set_stream(this->stream);
+    inst->set_stream(this->compute_stream);
     inst->add_event(state_event);
 }
 
 void ClusterNode::add_instruction(Instruction *inst) {
     this->instructions.push_back(inst);
-    inst->set_stream(this->stream);
+    inst->set_stream(this->compute_stream);
 }
 
 void ClusterNode::activate_input_instruction() {
     if (input_instruction != NULL)
         input_instruction->activate();
-    stream->wait(input_event);
+    compute_stream->wait(input_event);
 }
 
 void ClusterNode::activate_output_instruction() {
@@ -121,7 +116,7 @@ void ClusterNode::activate_output_instruction() {
 }
 
 void ClusterNode::activate_state_instruction() {
-    stream->wait(output_event);
+    compute_stream->wait(output_event);
     state_instruction->activate();
-    stream->wait(state_event);
+    compute_stream->wait(state_event);
 }

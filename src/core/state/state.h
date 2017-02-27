@@ -33,8 +33,6 @@ class State {
         SYNAPSE_KERNEL get_activator(Connection *conn) const;
         SYNAPSE_KERNEL get_updater(Connection *conn) const;
 
-        Stream *io_stream;
-
         Model* const model;
 
     private:
