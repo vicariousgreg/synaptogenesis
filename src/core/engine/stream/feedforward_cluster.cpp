@@ -1,6 +1,6 @@
 #include <set>
 
-#include "engine/stream_cluster.h"
+#include "engine/stream/cluster.h"
 
 static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
     if (visited.find(curr_layer) != visited.end()) {
@@ -19,9 +19,9 @@ static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
     }
 }
 
-FeedforwardStreamCluster::FeedforwardStreamCluster(Structure *structure,
+FeedforwardCluster::FeedforwardCluster(Structure *structure,
         State *state, Environment *environment)
-        : SequentialStreamCluster(structure, state, environment) {
+        : SequentialCluster(structure, state, environment) {
     // Determine if there are any cycles
     // Perform DFS on all input layers
     std::set<Layer*> visited;
@@ -35,9 +35,9 @@ FeedforwardStreamCluster::FeedforwardStreamCluster(Structure *structure,
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
-void FeedforwardStreamCluster::launch_weight_update() {
+void FeedforwardCluster::launch_weight_update() {
     // Perform learning in reverse
-    for (auto it = streams.rbegin() ; it != streams.rend() ; ++it)
+    for (auto it = nodes.rbegin() ; it != nodes.rend() ; ++it)
         for (auto& inst : (*it)->get_instructions())
             if (inst->is_plastic()) inst->update();
 }

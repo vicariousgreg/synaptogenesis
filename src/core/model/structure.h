@@ -20,8 +20,8 @@
  */
 class Structure {
     public:
-        Structure (std::string name, StreamType stream_type)
-                : name(name), stream_type(stream_type) {
+        Structure (std::string name, ClusterType cluster_type)
+                : name(name), cluster_type(cluster_type) {
             for (auto type : IOTypes) this->num_neurons[type] = 0;
             for (auto neural_model : NeuralModels)
                 this->neural_model_flags.push_back(false);
@@ -85,7 +85,7 @@ class Structure {
         const std::string name;
 
         // Stream type for iteration computation order
-        const StreamType stream_type;
+        const ClusterType cluster_type;
 
     private:
         /* Internal layer connection functions */

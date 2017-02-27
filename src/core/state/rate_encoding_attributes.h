@@ -19,9 +19,9 @@ class RateEncodingAttributes : public Attributes {
         virtual ~RateEncodingAttributes();
 
         /* Checks whether these attributes are compatible
-         *   with the given stream_type */
-        virtual bool check_compatibility(StreamType stream_type) {
-            return stream_type == FEEDFORWARD;
+         *   with the given cluster_type */
+        virtual bool check_compatibility(ClusterType cluster_type) {
+            return cluster_type == FEEDFORWARD;
         }
 
         /* Trace learning rules */

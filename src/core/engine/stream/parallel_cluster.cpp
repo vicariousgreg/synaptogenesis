@@ -1,14 +1,14 @@
 #include <queue>
 
-#include "engine/stream_cluster.h"
+#include "engine/stream/cluster.h"
 
-ParallelStreamCluster::ParallelStreamCluster(Structure *structure,
+ParallelCluster::ParallelCluster(Structure *structure,
         State *state, Environment *environment)
-        : StreamCluster(state, environment) {
+        : Cluster(state, environment) {
     // Build instructions
     for (auto& layer : structure->get_layers())
-        streams[layer->get_type()].push_back(
-            new Stream(layer, state, environment));
+        nodes[layer->get_type()].push_back(
+            new ClusterNode(layer, state, environment));
 
     // Schedule instructions
     post_input_instructions = sort_instructions(
@@ -22,26 +22,26 @@ ParallelStreamCluster::ParallelStreamCluster(Structure *structure,
         true);
 }
 
-ParallelStreamCluster::~ParallelStreamCluster() {
-    // Delete streams
+ParallelCluster::~ParallelCluster() {
+    // Delete nodes
     for (auto type : IOTypes)
-        for (auto stream : streams[type]) delete stream;
+        for (auto node : nodes[type]) delete node;
 }
 
-InstructionList ParallelStreamCluster::sort_instructions(
+InstructionList ParallelCluster::sort_instructions(
         IOTypeVector types, bool plastic) {
     std::map<Layer*, std::queue<Instruction* > > schedules;
     InstructionList destination;
 
     // Extract instructions
     for (auto type : types)
-        for (auto& stream : streams[type])
-            for (auto& inst : stream->get_instructions())
+        for (auto& node : nodes[type])
+            for (auto& inst : node->get_instructions())
                 if (not plastic or inst->is_plastic())
                     // Add to schedule map for round robin
-                    schedules[stream->to_layer].push(inst);
+                    schedules[node->to_layer].push(inst);
 
-    // Perform round robin on streams
+    // Perform round robin on nodes
     // Connections should be initialized this way to take advantage of
     //   stream overlap
     while (schedules.size() > 0) {
@@ -59,35 +59,35 @@ InstructionList ParallelStreamCluster::sort_instructions(
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
-void ParallelStreamCluster::launch_pre_input_calculations() {
+void ParallelCluster::launch_pre_input_calculations() {
     for (auto& inst : this->pre_input_instructions) inst->activate();
 }
 
-void ParallelStreamCluster::launch_input() {
-    for (auto& stream : streams[INPUT])
-        stream->activate_input_instruction();
-    for (auto& stream : streams[INPUT_OUTPUT])
-        stream->activate_input_instruction();
+void ParallelCluster::launch_input() {
+    for (auto& node : nodes[INPUT])
+        node->activate_input_instruction();
+    for (auto& node : nodes[INPUT_OUTPUT])
+        node->activate_input_instruction();
 }
 
-void ParallelStreamCluster::launch_post_input_calculations() {
+void ParallelCluster::launch_post_input_calculations() {
     for (auto& inst : this->post_input_instructions) inst->activate();
 }
 
-void ParallelStreamCluster::launch_output() {
-    for (auto& stream : streams[INPUT_OUTPUT])
-        stream->activate_output_instruction();
-    for (auto& stream : streams[OUTPUT])
-        stream->activate_output_instruction();
+void ParallelCluster::launch_output() {
+    for (auto& node : nodes[INPUT_OUTPUT])
+        node->activate_output_instruction();
+    for (auto& node : nodes[OUTPUT])
+        node->activate_output_instruction();
 }
 
-void ParallelStreamCluster::launch_state_update() {
+void ParallelCluster::launch_state_update() {
     for (auto type : IOTypes)
-        for (auto& stream : streams[type])
-            stream->activate_state_instruction();
+        for (auto& node : nodes[type])
+            node->activate_state_instruction();
 }
 
-void ParallelStreamCluster::launch_weight_update() {
+void ParallelCluster::launch_weight_update() {
     for (auto& inst : this->plastic_instructions) inst->update();
 }
 
@@ -95,18 +95,16 @@ void ParallelStreamCluster::launch_weight_update() {
 /**************************** EVENT HANDLING **********************************/
 /******************************************************************************/
 
-#ifdef __CUDACC__
-void ParallelStreamCluster::wait_for_input() {
-    for (auto& stream : streams[INPUT])
-        cudaEventSynchronize(stream->get_input_event());
-    for (auto& stream : streams[INPUT_OUTPUT])
-        cudaEventSynchronize(stream->get_input_event());
+void ParallelCluster::wait_for_input() {
+    for (auto& node : nodes[INPUT])
+        node->get_input_event()->synchronize();
+    for (auto& node : nodes[INPUT_OUTPUT])
+        node->get_input_event()->synchronize();
 }
 
-void ParallelStreamCluster::wait_for_output() {
-    for (auto& stream : streams[INPUT_OUTPUT])
-        cudaEventSynchronize(stream->get_output_event());
-    for (auto& stream : streams[OUTPUT])
-        cudaEventSynchronize(stream->get_output_event());
+void ParallelCluster::wait_for_output() {
+    for (auto& node : nodes[INPUT_OUTPUT])
+        node->get_output_event()->synchronize();
+    for (auto& node : nodes[OUTPUT])
+        node->get_output_event()->synchronize();
 }
-#endif

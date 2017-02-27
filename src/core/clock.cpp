@@ -69,14 +69,12 @@ void Clock::environment_loop(int iterations, bool verbose) {
 }
 
 void Clock::run(Model *model, int iterations, bool verbose) {
-#ifdef __CUDACC__
     // Initialize cuda random states
     int max_size = 0;
     for (auto& structure : model->get_structures())
         for (auto& layer : structure->get_layers())
             if (layer->size > max_size) max_size = layer->size;
-    init_cuda_rand(max_size);
-#endif
+    init_rand(max_size);
 
     // Initialization
     this->sensory_lock.set_owner(ENVIRONMENT);
@@ -97,12 +95,10 @@ void Clock::run(Model *model, int iterations, bool verbose) {
         run_timer.query("Initialization");
     }
 
-#ifdef __CUDACC__
     // Ensure device is synchronized without errors
-    cudaSync();
-    cudaCheckError("Clock device synchronization failed!");
-    check_memory();
-#endif
+    device_synchronize();
+    device_check_error("Clock device synchronization failed!");
+    device_check_memory();
 
     // Launch threads
     std::thread engine_thread(
@@ -124,7 +120,5 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     this->engine = NULL;
     this->environment = NULL;
 
-#ifdef __CUDACC__
-    free_cuda_rand();
-#endif
+    free_rand();
 }

@@ -4,8 +4,8 @@
 #include "state/state.h"
 #include "model/model.h"
 #include "io/environment.h"
-#include "engine/stream_cluster.h"
-#include "engine/instruction.h"
+#include "engine/stream/cluster.h"
+#include "engine/stream/instruction.h"
 
 class Engine {
     public:
@@ -14,12 +14,12 @@ class Engine {
                   environment(environment),
                   learning_flag(true) {
             for (auto& structure : state->model->get_structures())
-                stream_clusters.push_back(build_stream_cluster(
+                clusters.push_back(build_cluster(
                     structure, state, environment));
         }
 
         virtual ~Engine() {
-            for (auto& cluster : stream_clusters)
+            for (auto& cluster : clusters)
                 delete cluster;
         }
 
@@ -34,7 +34,7 @@ class Engine {
     protected:
         State *state;
         Environment *environment;
-        std::vector<StreamCluster*> stream_clusters;
+        std::vector<Cluster*> clusters;
         bool learning_flag;
 };
 

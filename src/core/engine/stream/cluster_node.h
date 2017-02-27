@@ -1,18 +1,16 @@
-#ifndef stream_h
-#define stream_h
+#ifndef cluster_node_h
+#define cluster_node_h
 
 #include "model/layer.h"
 #include "io/environment.h"
-#include "engine/instruction.h"
+#include "engine/stream/instruction.h"
 #include "util/parallel.h"
 
-class Stream {
+class ClusterNode {
     public:
-        Stream(Layer *layer, State *state, Environment *environment);
-#ifdef __CUDACC__
-        Stream(Layer *layer, State *state, Environment *environment, cudaStream_t cuda_stream);
-#endif
-        virtual ~Stream();
+        ClusterNode(Layer *layer, State *state, Environment *environment);
+        ClusterNode(Layer *layer, State *state, Environment *environment, Stream *stream);
+        virtual ~ClusterNode();
 
         void activate_output_instruction();
         void activate_input_instruction();
@@ -21,13 +19,10 @@ class Stream {
             return instructions;
         }
 
-#ifdef __CUDACC__
-        cudaStream_t get_cuda_stream() const { return cuda_stream; }
-        cudaEvent_t get_finished_event() const { return finished_event; }
-        cudaEvent_t get_input_event() const { return input_event; }
-        cudaEvent_t get_output_event() const { return output_event; }
-        cudaEvent_t get_state_event() const { return state_event; }
-#endif
+        Event *get_finished_event() const { return finished_event; }
+        Event *get_input_event() const { return input_event; }
+        Event *get_output_event() const { return output_event; }
+        Event *get_state_event() const { return state_event; }
         Layer* const to_layer;
 
     private:
@@ -45,14 +40,13 @@ class Stream {
         Instruction *output_instruction;
         Instruction *state_instruction;
 
-#ifdef __CUDACC__
-        cudaEvent_t finished_event;
-        cudaEvent_t input_event;
-        cudaEvent_t output_event;
-        cudaEvent_t state_event;
-        cudaStream_t cuda_stream;
+        Event *finished_event;
+        Event *input_event;
+        Event *output_event;
+        Event *state_event;
+
+        Stream *stream;
         bool external_stream;
-#endif
 };
 
 #endif

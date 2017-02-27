@@ -10,7 +10,7 @@ int calc_blocks(int computations, int threads) {
     return ceil((float) computations / calc_threads(computations));
 }
 
-void cudaSync() {
+void device_synchronize() {
     cudaDeviceSynchronize();
 }
 
@@ -22,7 +22,7 @@ void gpuAssert(const char* file, int line, const char* msg) {
     }
 }
 
-void check_memory() {
+void device_check_memory() {
     // show memory usage of GPU
     size_t free_byte ;
     size_t total_byte ;
@@ -38,10 +38,10 @@ void check_memory() {
 void* allocate_device(int count, int size, void* source_data) {
     void* ptr;
     cudaMalloc(&ptr, count * size);
-    cudaCheckError("Failed to allocate memory on device for neuron state!");
+    device_check_error("Failed to allocate memory on device for neuron state!");
     if (source_data != NULL)
         cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
-    cudaCheckError("Failed to initialize memory on device for neuron state!");
+    device_check_error("Failed to initialize memory on device for neuron state!");
     return ptr;
 }
 
@@ -53,7 +53,7 @@ GLOBAL void init_curand(int count){
         curand_init(clock64(), idx, 0, &cuda_rand_states[idx]);
 }
 
-void init_cuda_rand(int count) {
+void init_rand(int count) {
     curandState_t* states;
     cudaMalloc((void**) &states, count * sizeof(curandState_t));
     cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
@@ -61,7 +61,7 @@ void init_cuda_rand(int count) {
         <<<calc_blocks(count), calc_threads(count)>>>(count);
 }
 
-void free_cuda_rand() {
+void free_rand() {
     curandState_t* states;
     cudaMemcpyFromSymbol(&states, cuda_rand_states, sizeof(void *));
     cudaFree(states);

@@ -14,6 +14,7 @@
 class Instruction {
     public:
         Instruction(Layer *layer);
+        virtual ~Instruction();
 
         virtual void activate() = 0;
         virtual void update() { }
@@ -23,16 +24,17 @@ class Instruction {
 
         Layer* const to_layer;
 
-#ifdef __CUDACC__
-        void set_stream(cudaStream_t stream) { this->stream = stream; }
-        void add_event(cudaEvent_t event) { this->events.push_back(event); }
+        void set_stream(Stream *stream) {
+            delete this->stream;
+            this->stream = stream;
+        }
+        void add_event(Event *event) { this->events.push_back(event); }
 
     protected:
-        dim3 activator_blocks, activator_threads;
-        dim3 updater_blocks, updater_threads;
-        cudaStream_t stream;
-        std::vector<cudaEvent_t> events;
-#endif
+        Stream *stream;
+        std::vector<Event*> events;
+        int activator_blocks, activator_threads;
+        int updater_blocks, updater_threads;
 };
 
 /* Instructions that initialize the input without connections */

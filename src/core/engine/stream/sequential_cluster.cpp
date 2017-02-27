@@ -1,14 +1,11 @@
 #include <queue>
 #include <set>
 
-#include "engine/stream_cluster.h"
+#include "engine/stream/cluster.h"
 
-SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
+SequentialCluster::SequentialCluster(Structure *structure,
         State *state, Environment *environment)
-        : StreamCluster(state, environment) {
-#ifdef __CUDACC__
-    cudaStreamCreate(&this->compute_cuda_stream);
-#endif
+        : Cluster(state, environment), compute_stream(new Stream()) {
     // Keep track of visited layers;
     std::set<Layer*> visited;
 
@@ -17,7 +14,7 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
     for (auto layer : structure->get_layers())
         if (layer->is_output()) queue.push(layer);
 
-    /* Do breadth first search backwards on the model and create streams */
+    /* Do breadth first search backwards on the model and create nodes */
     while (not queue.empty()) {
         auto curr_layer = queue.front();
         queue.pop();
@@ -27,13 +24,8 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
         visited.insert(curr_layer);
 
         // Add elements to beginning of list
-#ifdef __CUDACC__
-        streams.insert(streams.begin(),
-            new Stream(curr_layer, state, environment, compute_cuda_stream));
-#else
-        streams.insert(streams.begin(),
-            new Stream(curr_layer, state, environment));
-#endif
+        nodes.insert(nodes.begin(),
+            new ClusterNode(curr_layer, state, environment, compute_stream));
 
         // Add any layers that feed into this one to if all of its
         //     output layers have been visited and its not in the queue
@@ -51,40 +43,38 @@ SequentialStreamCluster::SequentialStreamCluster(Structure *structure,
     }
 }
 
-SequentialStreamCluster::~SequentialStreamCluster() {
-    // Delete streams
-    for (auto stream : streams) delete stream;
-#ifdef __CUDACC__
-    cudaStreamDestroy(compute_cuda_stream);
-#endif
+SequentialCluster::~SequentialCluster() {
+    // Delete nodes
+    for (auto node : nodes) delete node;
+    delete compute_stream;
 }
 
 /******************************************************************************/
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
-void SequentialStreamCluster::launch_input() {
-    for (auto& stream : streams)
-        stream->activate_input_instruction();
+void SequentialCluster::launch_input() {
+    for (auto& node : nodes)
+        node->activate_input_instruction();
 }
 
-void SequentialStreamCluster::launch_output() {
-    for (auto& stream : streams)
-        stream->activate_output_instruction();
+void SequentialCluster::launch_output() {
+    for (auto& node : nodes)
+        node->activate_output_instruction();
 }
 
-void SequentialStreamCluster::launch_post_input_calculations() {
-    // Activate streams
-    for (auto it = streams.begin() ; it != streams.end(); ++it) {
+void SequentialCluster::launch_post_input_calculations() {
+    // Activate nodes
+    for (auto it = nodes.begin() ; it != nodes.end(); ++it) {
         for (auto& inst : (*it)->get_instructions())
             inst->activate();
         (*it)->activate_state_instruction();
     }
 }
 
-void SequentialStreamCluster::launch_weight_update() {
-    // Update streams backwards
-    for (auto it = streams.rbegin() ; it != streams.rend(); ++it)
+void SequentialCluster::launch_weight_update() {
+    // Update nodes backwards
+    for (auto it = nodes.rbegin() ; it != nodes.rend(); ++it)
         for (auto& inst : (*it)->get_instructions())
             if (inst->is_plastic()) inst->update();
 }
@@ -93,13 +83,11 @@ void SequentialStreamCluster::launch_weight_update() {
 /**************************** EVENT HANDLING **********************************/
 /******************************************************************************/
 
-#ifdef __CUDACC__
-void SequentialStreamCluster::wait_for_input() {
-    for (auto stream : streams)
-        cudaEventSynchronize(stream->get_input_event());
+void SequentialCluster::wait_for_input() {
+    for (auto node : nodes)
+        node->get_input_event()->synchronize();
 }
-void SequentialStreamCluster::wait_for_output() {
-    for (auto stream : streams)
-        cudaEventSynchronize(stream->get_output_event());
+void SequentialCluster::wait_for_output() {
+    for (auto node : nodes)
+        node->get_output_event()->synchronize();
 }
-#endif

@@ -10,12 +10,12 @@ Model* Model::load(std::string path) {
     return load_model(path);
 }
 
-Structure* Model::add_structure(std::string name, StreamType stream_type) {
+Structure* Model::add_structure(std::string name, ClusterType cluster_type) {
     for (auto& st : this->structures)
         if (st->name == name)
             ErrorManager::get_instance()->log_error(
                 "Repeated structure name!");
-    Structure *structure = new Structure(name, stream_type);
+    Structure *structure = new Structure(name, cluster_type);
     this->structures.push_back(structure);
     return structure;
 }

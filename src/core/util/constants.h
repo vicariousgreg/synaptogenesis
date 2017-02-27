@@ -85,11 +85,11 @@ typedef enum {
 
 static NeuralModel NeuralModels[] = { IZHIKEVICH, HODGKIN_HUXLEY, RATE_ENCODING };
 
-/* Enumeration of stream cluster types. */
+/* Enumeration of cluster types. */
 typedef enum {
     PARALLEL,
     SEQUENTIAL,
     FEEDFORWARD
-} StreamType;
+} ClusterType;
 
 #endif

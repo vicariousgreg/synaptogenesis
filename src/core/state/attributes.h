@@ -30,8 +30,8 @@ class Attributes {
         virtual ~Attributes();
 
         /* Checks whether these attributes are compatible
-         *   with the given stream_type */
-        virtual bool check_compatibility(StreamType stream_type) { return true; }
+         *   with the given cluster_type */
+        virtual bool check_compatibility(ClusterType cluster_type) { return true; }
 
         virtual void transfer_to_device();
 

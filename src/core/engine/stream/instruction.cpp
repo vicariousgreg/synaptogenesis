@@ -1,23 +1,24 @@
 #include <cstring>
-#include "engine/instruction.h"
+#include "engine/stream/instruction.h"
 #include "util/error_manager.h"
 
 Instruction::Instruction(Layer *layer) : to_layer(layer) {
-#ifdef __CUDACC__
-    // Default stream
-    this->stream = 0;
-
     // Calculate grid and block sizes
-    this->activator_threads = dim3(calc_threads(layer->size));
-    this->activator_blocks = dim3(calc_blocks(layer->size));
-#endif
+    this->activator_threads = calc_threads(layer->size);
+    this->activator_blocks = calc_blocks(layer->size);
+
+    // Default stream
+    this->stream = new DefaultStream();
+}
+
+Instruction::~Instruction() {
+    delete this->stream;
+    for (auto& event : events) delete event;
 }
 
 void Instruction::record_events() {
-#ifdef __CUDACC__
     // Record added events
-    for (auto& event : events) cudaEventRecord(event, this->stream);
-#endif
+    for (auto& event : events) stream->record(event);
 }
 
 InitializeInstruction::InitializeInstruction(Layer *layer, State *state)
@@ -26,26 +27,14 @@ InitializeInstruction::InitializeInstruction(Layer *layer, State *state)
 }
 
 void ClearInstruction::activate() {
-#ifdef __CUDACC__
-    // Launch computation on provided stream, or default if none
-    clear_data
-        <<<activator_blocks, activator_threads, 0, this->stream>>>
-        (dst, to_layer->size);
-#else
-    clear_data(dst, to_layer->size);
-#endif
+    stream->run_kernel(clear_data, activator_blocks, activator_threads,
+        dst, to_layer->size);
     Instruction::record_events();
 }
 
 void NoiseInstruction::activate() {
-#ifdef __CUDACC__
-    // Launch computation on provided stream, or default if none
-    randomize_data
-        <<<activator_blocks, activator_threads, 0, this->stream>>>
-        (dst, to_layer->size, to_layer->noise, init);
-#else
-    randomize_data(dst, to_layer->size, to_layer->noise, init);
-#endif
+    stream->run_kernel(randomize_data, activator_blocks, activator_threads,
+        dst, to_layer->size, to_layer->noise, init);
     Instruction::record_events();
 }
 
@@ -57,40 +46,26 @@ SynapseInstruction::SynapseInstruction(Connection *conn, State *state) :
     this->activator = state->get_activator(conn);
     this->updater = (conn->plastic) ? state->get_updater(conn) : NULL;
 
-#ifdef __CUDACC__
     if (conn->convolutional) {
         int num_weights = connection->get_num_weights();
-        this->updater_threads = dim3(calc_threads(num_weights));
-        this->updater_blocks = dim3(calc_blocks(num_weights));
+        this->updater_threads = calc_threads(num_weights);
+        this->updater_blocks = calc_blocks(num_weights);
     } else {
-        this->updater_threads = dim3(calc_threads(to_layer->size));
-        this->updater_blocks = dim3(calc_blocks(to_layer->size));
+        this->updater_threads = calc_threads(to_layer->size);
+        this->updater_blocks = calc_blocks(to_layer->size);
     }
-#endif
 }
 
 void SynapseInstruction::activate() {
-#ifdef __CUDACC__
-    // Launch computation on provided stream, or default if none
-    activator
-        <<<activator_blocks, activator_threads, 0, this->stream>>>
-        (this->synapse_data);
-#else
-    activator(this->synapse_data);
-#endif
+    stream->run_kernel(activator, activator_blocks, activator_threads,
+        this->synapse_data);
     Instruction::record_events();
 }
 
 void SynapseInstruction::update() {
-    if (this->updater != NULL) {
-#ifdef __CUDACC__
-        updater
-            <<<updater_blocks, updater_threads, 0, this->stream>>>
-            (this->synapse_data);
-#else
-        updater(this->synapse_data);
-#endif
-    }
+    if (this->updater != NULL)
+        stream->run_kernel(updater, updater_blocks, updater_threads,
+            this->synapse_data);
 }
 
 DendriticInstruction::DendriticInstruction(DendriticNode *parent,
@@ -102,14 +77,8 @@ DendriticInstruction::DendriticInstruction(DendriticNode *parent,
 }
 
 void DendriticInstruction::activate() {
-#ifdef __CUDACC__
-    // Launch computation on provided stream, or default if none
-    calc_internal
-        <<<activator_blocks, activator_threads, 0, this->stream>>>
-        (to_layer->size, src, dst, this->init);
-#else
-    calc_internal(to_layer->size, src, dst, this->init);
-#endif
+    stream->run_kernel(calc_internal, activator_blocks, activator_threads,
+        to_layer->size, src, dst, this->init);
     Instruction::record_events();
 }
 
@@ -136,10 +105,7 @@ void OutputTransferInstruction::activate() {
 }
 
 void StateUpdateInstruction::activate() {
-#ifdef __CUDACC__
-    attribute_kernel<<<activator_blocks, activator_threads, 0, this->stream>>>(attribute_data);
-#else
-    attribute_kernel(attribute_data);
-#endif
+    stream->run_kernel(attribute_kernel, activator_blocks, activator_threads,
+        attribute_data);
     Instruction::record_events();
 }

@@ -26,19 +26,13 @@ State::State(Model *model)
             }
         }
     }
-
-#ifdef __CUDACC__
-    cudaStreamCreate(&this->io_stream);
-#endif
+    this->io_stream = new Stream();
 }
 
 State::~State() {
     for (auto att : attributes) if (att != nullptr) delete att;
     for (auto matrix : this->weight_matrices) delete matrix.second;
-
-#ifdef __CUDACC__
-    cudaStreamDestroy(this->io_stream);
-#endif
+    delete io_stream;
 }
 
 bool State::check_compatibility(Structure *structure) {
@@ -48,7 +42,7 @@ bool State::check_compatibility(Structure *structure) {
     // Check relevant attributes for compatibility
     for (auto n : NeuralModels)
         if (flags[n] and
-                not attributes[n]->check_compatibility(structure->stream_type))
+                not attributes[n]->check_compatibility(structure->cluster_type))
             return false;
     return true;
 }
