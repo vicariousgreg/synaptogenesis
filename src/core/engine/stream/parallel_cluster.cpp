@@ -8,7 +8,7 @@ ParallelCluster::ParallelCluster(Structure *structure,
     // Build instructions
     for (auto& layer : structure->get_layers())
         nodes[layer->get_type()].push_back(
-            new ClusterNode(layer, state, environment, io_stream));
+            new ClusterNode(layer, state, environment, io_stream, new Stream()));
 
     // Schedule instructions
     post_input_instructions = sort_instructions(
@@ -23,9 +23,13 @@ ParallelCluster::ParallelCluster(Structure *structure,
 }
 
 ParallelCluster::~ParallelCluster() {
-    // Delete nodes
-    for (auto type : IOTypes)
-        for (auto node : nodes[type]) delete node;
+    // Delete nodes and their compute streams
+    for (auto type : IOTypes) {
+        for (auto node : nodes[type]) {
+            delete node->compute_stream;
+            delete node;
+        }
+    }
 }
 
 InstructionList ParallelCluster::sort_instructions(

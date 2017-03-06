@@ -13,13 +13,19 @@
 
 class Instruction {
     public:
-        Instruction(Layer *layer);
+        Instruction(Layer *layer)
+                : to_layer(layer),
+                  activator_threads(calc_threads(layer->size)),
+                  activator_blocks(calc_blocks(layer->size)),
+                  stream(Stream::get_default_stream()) { }
 
         virtual void activate() = 0;
         virtual void update() { }
         virtual bool is_plastic() const { return false; }
 
-        void record_events();
+        void record_events() {
+            for (auto& event : events) stream->record(event);
+        }
 
         Layer* const to_layer;
 
@@ -36,7 +42,9 @@ class Instruction {
 /* Instructions that initialize the input without connections */
 class InitializeInstruction : public Instruction {
     public:
-        InitializeInstruction(Layer *layer, State *state);
+        InitializeInstruction(Layer *layer, State *state)
+                : Instruction(layer),
+                  dst(state->get_input(layer)) { }
 
     protected:
         Pointer<float> dst;
@@ -48,7 +56,12 @@ class ClearInstruction : public InitializeInstruction {
         ClearInstruction(Layer *layer, State *state)
                 : InitializeInstruction(layer, state) { }
 
-        void activate();
+        void activate() {
+            stream->run_kernel(clear_data,
+                activator_blocks, activator_threads,
+                dst, to_layer->size);
+            Instruction::record_events();
+        }
 };
 
 /* Adds noise to the input */
@@ -58,7 +71,12 @@ class NoiseInstruction : public InitializeInstruction {
                 : InitializeInstruction(layer, state),
                   init(layer->get_input_module() == NULL) { }
 
-        void activate();
+        void activate() {
+            stream->run_kernel(randomize_data,
+                activator_blocks, activator_threads,
+                dst, to_layer->size, to_layer->noise, init);
+            Instruction::record_events();
+        }
 
     protected:
         bool init;
@@ -67,10 +85,37 @@ class NoiseInstruction : public InitializeInstruction {
 /* Computes synaptic connection */
 class SynapseInstruction : public Instruction {
     public:
-        SynapseInstruction(Connection *conn, State *state);
+        SynapseInstruction(Connection *conn, State *state)
+                : Instruction(conn->to_layer),
+                  connection(conn),
+                  synapse_data(conn, state),
+                  type(conn->type),
+                  activator(state->get_activator(conn)),
+                  updater((conn->plastic) ? state->get_updater(conn) : NULL) {
+            if (conn->convolutional) {
+                int num_weights = connection->get_num_weights();
+                this->updater_threads = calc_threads(num_weights);
+                this->updater_blocks = calc_blocks(num_weights);
+            } else {
+                this->updater_threads = calc_threads(to_layer->size);
+                this->updater_blocks = calc_blocks(to_layer->size);
+            }
+        }
 
-        void activate();
-        void update();
+        void activate() {
+            stream->run_kernel(activator,
+                activator_blocks, activator_threads,
+                synapse_data);
+            Instruction::record_events();
+        }
+
+        void update() {
+            if (this->updater != NULL)
+                stream->run_kernel(updater,
+                    updater_blocks, updater_threads,
+                    synapse_data);
+        }
+
         bool is_plastic() const { return synapse_data.plastic; }
 
         const ConnectionType type;
@@ -87,9 +132,18 @@ class SynapseInstruction : public Instruction {
 class DendriticInstruction : public Instruction {
     public:
         DendriticInstruction(DendriticNode *parent,
-            DendriticNode *child, State *state);
+            DendriticNode *child, State *state)
+                : Instruction(parent->to_layer),
+                  init(child->register_index != 0),
+                  src(state->get_input(to_layer, child->register_index)),
+                  dst(state->get_input(to_layer, parent->register_index)) { }
 
-        void activate();
+        void activate() {
+            stream->run_kernel(calc_internal,
+                activator_blocks, activator_threads,
+                to_layer->size, src, dst, init);
+            Instruction::record_events();
+        }
 
     protected:
         Pointer<float> src, dst;
@@ -99,10 +153,16 @@ class DendriticInstruction : public Instruction {
 /* Transfers input data */
 class InputTransferInstruction : public Instruction {
     public:
-        InputTransferInstruction(Layer *to_layer, State *state,
-            Environment *environment);
+        InputTransferInstruction(Layer *layer, State *state,
+            Environment *environment)
+                : Instruction(layer),
+                  src(environment->buffer->get_input(layer)),
+                  dst(state->get_input(layer)) { }
 
-        void activate();
+        void activate() {
+            src.copy_to(dst);
+            Instruction::record_events();
+        }
 
     protected:
         Pointer<float> src, dst;
@@ -111,10 +171,16 @@ class InputTransferInstruction : public Instruction {
 /* Transfers output data */
 class OutputTransferInstruction : public Instruction {
     public:
-        OutputTransferInstruction(Layer *to_layer, State *state,
-            Environment *environment);
+        OutputTransferInstruction(Layer *layer,
+            State *state, Environment *environment)
+                : Instruction(layer),
+                  src(state->get_output(layer)),
+                  dst(environment->buffer->get_output(layer)) { }
 
-        void activate();
+        void activate() {
+            src.copy_to(dst);
+            Instruction::record_events();
+        }
 
     protected:
         Pointer<Output> src, dst;
@@ -128,7 +194,11 @@ class StateUpdateInstruction : public Instruction {
               attribute_data(to_layer, state),
               attribute_kernel(state->get_attribute_kernel(to_layer)) { }
 
-        void activate();
+        void activate() {
+            stream->run_kernel(attribute_kernel, activator_blocks, activator_threads,
+                attribute_data);
+            Instruction::record_events();
+        }
 
     protected:
         ATTRIBUTE_KERNEL attribute_kernel;

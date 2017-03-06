@@ -9,7 +9,7 @@
 class ClusterNode {
     public:
         ClusterNode(Layer *layer, State *state, Environment *environment,
-            Stream *io_stream, Stream *compute_stream = NULL);
+            Stream *io_stream, Stream *compute_stream);
         virtual ~ClusterNode();
 
         void activate_output_instruction();
@@ -24,6 +24,9 @@ class ClusterNode {
         Event *get_output_event() const { return output_event; }
         Event *get_state_event() const { return state_event; }
         Layer* const to_layer;
+
+        Stream* const io_stream;
+        Stream* const compute_stream;
 
     private:
         void dendrite_DFS(DendriticNode *curr);
@@ -43,10 +46,6 @@ class ClusterNode {
         Event *input_event;
         Event *output_event;
         Event *state_event;
-
-        Stream *io_stream;
-        Stream *compute_stream;
-        bool external_stream;
 };
 
 #endif
