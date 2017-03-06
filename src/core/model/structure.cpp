@@ -10,10 +10,10 @@ Connection* Structure::connect(
         ConnectionConfig config) {
     Layer *from_layer = from_structure->find_layer(from_layer_name);
     Layer *to_layer = to_structure->find_layer(to_layer_name);
-    if (from_layer == NULL)
+    if (from_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
-    if (to_layer == NULL)
+    if (to_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + to_layer_name + "\"!");
 
@@ -36,10 +36,10 @@ Connection* Structure::connect_layers(
         ConnectionConfig config) {
     Layer *from_layer = find_layer(from_layer_name);
     Layer *to_layer = find_layer(to_layer_name);
-    if (from_layer == NULL)
+    if (from_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
-    if (to_layer == NULL)
+    if (to_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + to_layer_name + "\"!");
     return connect_layers(from_layer, to_layer, config);
@@ -49,7 +49,7 @@ Connection* Structure::connect_layers_expected(
         std::string from_layer_name, LayerConfig layer_config,
         ConnectionConfig conn_config) {
     Layer *from_layer = find_layer(from_layer_name);
-    if (from_layer == NULL)
+    if (from_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
 
@@ -71,7 +71,7 @@ Connection* Structure::connect_layers_matching(
         std::string from_layer_name,
         LayerConfig layer_config, ConnectionConfig conn_config) {
     Layer *from_layer = find_layer(from_layer_name);
-    if (from_layer == NULL)
+    if (from_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
 
@@ -89,7 +89,7 @@ Connection* Structure::connect_layers_matching(
 
 DendriticNode *Structure::spawn_dendritic_node(std::string to_layer_name) {
     Layer *to_layer = find_layer(to_layer_name);
-    if (to_layer == NULL)
+    if (to_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + to_layer_name + "\"!");
     return to_layer->dendritic_root->add_child();
@@ -100,7 +100,7 @@ Connection* Structure::connect_layers_internal(
         ConnectionConfig config) {
     Layer *from_layer = find_layer(from_layer_name);
     Layer *to_layer = node->to_layer;
-    if (from_layer == NULL)
+    if (from_layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + from_layer_name + "\"!");
 
@@ -134,7 +134,7 @@ void Structure::add_layer_from_image(std::string path, LayerConfig config) {
 void Structure::add_module(std::string layer_name,
         std::string type, std::string params) {
     Layer *layer = find_layer(layer_name);
-    if (layer == NULL)
+    if (layer == nullptr)
         ErrorManager::get_instance()->log_error(
             "Could not find layer \"" + layer_name + "\"!");
 

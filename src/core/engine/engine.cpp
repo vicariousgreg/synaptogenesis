@@ -45,5 +45,5 @@ void Engine::stage_calc() {
 
     // Synchronize and check for errors
     device_synchronize();
-    device_check_error(NULL);
+    device_check_error(nullptr);
 }

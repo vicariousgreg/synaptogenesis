@@ -1,7 +1,7 @@
 #include "model/dendritic_node.h"
 
 DendriticNode* DendriticNode::add_child() {
-    if (this->conn != NULL)
+    if (this->conn != nullptr)
         ErrorManager::get_instance()->log_error(
             "Dendritic node cannot have children if it has a connection!");
     int child_register = this->register_index;
@@ -12,7 +12,7 @@ DendriticNode* DendriticNode::add_child() {
 }
 
 DendriticNode* DendriticNode::add_child(Connection *conn) {
-    if (this->conn != NULL)
+    if (this->conn != nullptr)
         ErrorManager::get_instance()->log_error(
             "Dendritic node cannot have children if it has a connection!");
     auto child = new DendriticNode(this->register_index, this->to_layer, conn);

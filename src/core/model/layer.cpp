@@ -15,7 +15,7 @@ Layer::Layer(Structure *structure, LayerConfig config)
           params(config.params),
           noise(config.noise),
           type(INTERNAL),
-          input_module(NULL),
+          input_module(nullptr),
           dendritic_root(new DendriticNode(0, this)) { }
 
 void Layer::add_input_connection(Connection* connection) {
@@ -35,7 +35,7 @@ void Layer::add_module(Module *module) {
 
     switch (new_type) {
         case INPUT:
-            if (this->input_module != NULL)
+            if (this->input_module != nullptr)
                 ErrorManager::get_instance()->log_error(
                     "Layer cannot have more than one input module!");
             this->input_module = module;
@@ -44,7 +44,7 @@ void Layer::add_module(Module *module) {
             this->output_modules.push_back(module);
             break;
         case INPUT_OUTPUT:
-            if (this->input_module != NULL)
+            if (this->input_module != nullptr)
                 ErrorManager::get_instance()->log_error(
                     "Layer cannot have more than one input module!");
             this->input_module = module;
@@ -55,9 +55,9 @@ void Layer::add_module(Module *module) {
                 "Unrecognized module type!");
     }
 
-    if (this->input_module != NULL and this->output_modules.size() > 0)
+    if (this->input_module != nullptr and this->output_modules.size() > 0)
         this->type = INPUT_OUTPUT;
-    else if (this->input_module != NULL)
+    else if (this->input_module != nullptr)
         this->type = INPUT;
     else if (this->output_modules.size() > 0)
         this->type = OUTPUT;

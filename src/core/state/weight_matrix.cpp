@@ -85,7 +85,7 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn
     // Allocate matrix on host
     // If parallel, it will be copied below
     mData = Pointer<float>(matrix_size);
-    if (mData.get() == NULL)
+    if (mData.get() == nullptr)
         ErrorManager::get_instance()->log_error(
             "Failed to allocate space for weight matrices on host!");
 

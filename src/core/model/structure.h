@@ -96,7 +96,7 @@ class Structure {
         Layer* find_layer(std::string name) {
             if (layers_by_name.find(name) != layers_by_name.end())
                 return layers_by_name.find(name)->second;
-            else return NULL;
+            else return nullptr;
         }
 
         // Layers

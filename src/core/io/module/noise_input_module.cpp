@@ -8,7 +8,7 @@
 
 NoiseInputModule::NoiseInputModule(Layer *layer, std::string params)
         : Module(layer) {
-    this->max_value = strtof(params.c_str(), NULL);
+    this->max_value = strtof(params.c_str(), nullptr);
     if (this->max_value == 0.0)
         ErrorManager::get_instance()->log_error(
             "Invalid max value for random input generator!");

@@ -37,6 +37,20 @@ LayerList Model::get_layers(NeuralModel neural_model) const {
     return layers;
 }
 
+LayerList Model::get_input_layers() const {
+    LayerList layers;
+    for (auto layer : this->get_layers())
+        if (layer->is_input()) layers.push_back(layer);
+    return layers;
+}
+
+LayerList Model::get_output_layers() const {
+    LayerList layers;
+    for (auto layer : this->get_layers())
+        if (layer->is_output()) layers.push_back(layer);
+    return layers;
+}
+
 int Model::get_num_neurons() const {
     int num_neurons = 0;
     for (auto structure : structures)

@@ -654,7 +654,7 @@ void re_test() {
 
 int main(int argc, char *argv[]) {
     // Seed random number generator
-    srand(time(NULL));
+    srand(time(nullptr));
 
     try {
         //stress_test();

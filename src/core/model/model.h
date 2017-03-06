@@ -25,6 +25,8 @@ class Model {
         const StructureList& get_structures() const { return structures; }
         LayerList get_layers() const;
         LayerList get_layers(NeuralModel neural_model) const;
+        LayerList get_input_layers() const;
+        LayerList get_output_layers() const;
 
         // Sum caluclators
         int get_num_neurons() const;

@@ -108,7 +108,7 @@ inline Cluster *build_cluster(Structure *structure,
             ErrorManager::get_instance()->log_error(
                 "Unrecognized stream cluster type!");
     }
-    return NULL;
+    return nullptr;
 }
 
 #endif

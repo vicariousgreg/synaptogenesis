@@ -39,13 +39,13 @@ void* allocate_device(int count, int size, void* source_data) {
     void* ptr;
     cudaMalloc(&ptr, count * size);
     device_check_error("Failed to allocate memory on device for neuron state!");
-    if (source_data != NULL)
+    if (source_data != nullptr)
         cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
     device_check_error("Failed to initialize memory on device for neuron state!");
     return ptr;
 }
 
-DEVICE curandState_t* cuda_rand_states = NULL;
+DEVICE curandState_t* cuda_rand_states = nullptr;
 
 GLOBAL void init_curand(int count){
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -66,7 +66,7 @@ void free_rand() {
     cudaMemcpyFromSymbol(&states, cuda_rand_states, sizeof(void *));
     cudaFree(states);
 
-    states = NULL;
+    states = nullptr;
     cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
 }
 

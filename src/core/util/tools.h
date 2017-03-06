@@ -21,7 +21,7 @@ inline float fRand(float fMin, float fMax) {
 
 inline void* allocate_host(int count, int size) {
     void* ptr = calloc(count, size);
-    if (ptr == NULL)
+    if (ptr == nullptr)
         ErrorManager::get_instance()->log_error(
             "Failed to allocate space on host for neuron state!");
     return ptr;
@@ -49,7 +49,7 @@ class Timer {
         float query(const char header[]) {
             Time_point curr_time = CClock::now();
             float total = get_diff(curr_time, this->start_time);
-            if (header != NULL) {
+            if (header != nullptr) {
                 printf("%s: %f\n", header, total);
             }
             return total;

@@ -4,7 +4,6 @@
 #include <climits>
 
 #include "model/model.h"
-#include "io/buffer.h"
 #include "util/tools.h"
 #include "io/environment.h"
 #include "engine/engine.h"

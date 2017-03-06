@@ -13,12 +13,12 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     this->output_event = new Event();
     this->state_event = new Event();
 
-    input_instruction = NULL;
-    output_instruction = NULL;
-    state_instruction = NULL;
+    input_instruction = nullptr;
+    output_instruction = nullptr;
+    state_instruction = nullptr;
 
     // Add input transfer instruction
-    if (to_layer->get_input_module() != NULL)
+    if (to_layer->get_input_module() != nullptr)
         this->set_input_instruction(new InputTransferInstruction(to_layer, state, environment));
     // Add output transfer instruction
     if (to_layer->get_output_modules().size() > 0)
@@ -28,7 +28,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     // Add noise / clear instruction
     if (to_layer->noise != 0.0)
         add_instruction(new NoiseInstruction(to_layer, state));
-    else if (to_layer->get_input_module() == NULL)
+    else if (to_layer->get_input_module() == nullptr)
         add_instruction(new ClearInstruction(to_layer, state));
 
     // Beform DFS on dendritic tree
@@ -65,7 +65,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
 }
 
 void ClusterNode::set_input_instruction(Instruction *inst) {
-    if (input_instruction != NULL)
+    if (input_instruction != nullptr)
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple input instructions to stream!");
     this->input_instruction = inst;
@@ -74,7 +74,7 @@ void ClusterNode::set_input_instruction(Instruction *inst) {
 }
 
 void ClusterNode::set_output_instruction(Instruction *inst) {
-    if (output_instruction != NULL)
+    if (output_instruction != nullptr)
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple output instructions to stream!");
     this->output_instruction = inst;
@@ -83,7 +83,7 @@ void ClusterNode::set_output_instruction(Instruction *inst) {
 }
 
 void ClusterNode::set_state_instruction(Instruction *inst) {
-    if (state_instruction != NULL)
+    if (state_instruction != nullptr)
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple state instructions to stream!");
     this->state_instruction = inst;
@@ -97,13 +97,13 @@ void ClusterNode::add_instruction(Instruction *inst) {
 }
 
 void ClusterNode::activate_input_instruction() {
-    if (input_instruction != NULL)
+    if (input_instruction != nullptr)
         input_instruction->activate();
     compute_stream->wait(input_event);
 }
 
 void ClusterNode::activate_output_instruction() {
-    if (output_instruction != NULL)
+    if (output_instruction != nullptr)
         output_instruction->activate();
     compute_stream->wait(output_event);
 }

@@ -42,7 +42,7 @@ class Attributes {
         }
 
         // Updater Kernel
-        virtual SYNAPSE_KERNEL get_updater(ConnectionType type) { return NULL; }
+        virtual SYNAPSE_KERNEL get_updater(ConnectionType type) { return nullptr; }
 
         // Depth of weight matrices
         virtual int get_matrix_depth(Connection *conn) { return 1; }

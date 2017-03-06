@@ -2,11 +2,12 @@
 #define environment_h
 
 #include "model/structure.h"
-#include "io/buffer.h"
-#include "io/module/module.h"
 
 class Visualizer;
 class State;
+class HostBuffer;
+class Module;
+typedef std::vector<Module*> ModuleList;
 
 class Environment {
     public:
@@ -20,7 +21,7 @@ class Environment {
 
         OutputType get_output_type(Layer *layer);
 
-        Buffer* const buffer;
+        HostBuffer* const buffer;
         State* const state;
 
     private:

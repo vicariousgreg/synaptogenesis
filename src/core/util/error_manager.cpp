@@ -15,7 +15,7 @@ void ErrorManager::log_error(std::string error) {
 }
 
 ErrorManager* ErrorManager::get_instance() {
-    if (ErrorManager::instance == NULL)
+    if (ErrorManager::instance == nullptr)
         ErrorManager::instance = new ErrorManager();
     return ErrorManager::instance;
 }

@@ -1,4 +1,5 @@
 #include "io/environment.h"
+#include "io/buffer.h"
 #include "io/module/module.h"
 #include "io/module/visualizer_input_module.h"
 #include "io/module/visualizer_output_module.h"
@@ -6,7 +7,7 @@
 #include "visualizer.h"
 
 Environment::Environment(State *state)
-        : state(state), buffer(new Buffer(state->model)), visualizer(NULL) {
+        : state(state), buffer(new HostBuffer(state->model)), visualizer(nullptr) {
     // Extract modules
     for (auto& layer : state->model->get_layers()) {
         bool visualizer_input = false;
@@ -15,10 +16,10 @@ Environment::Environment(State *state)
         // Add input module
         // If visualizer input module, set flag
         Module *input_module = layer->get_input_module();
-        if (input_module != NULL) {
+        if (input_module != nullptr) {
             this->input_modules.push_back(input_module);
             visualizer_input =
-                dynamic_cast<VisualizerInputModule*>(input_module) != NULL;
+                dynamic_cast<VisualizerInputModule*>(input_module) != nullptr;
         }
 
         // Add output modules
@@ -27,11 +28,11 @@ Environment::Environment(State *state)
         for (auto& output_module : output_modules) {
             this->output_modules.push_back(output_module);
             visualizer_output |=
-                dynamic_cast<VisualizerOutputModule*>(output_module) != NULL;
+                dynamic_cast<VisualizerOutputModule*>(output_module) != nullptr;
         }
 
         if (visualizer_input or visualizer_output) {
-            if (visualizer == NULL) visualizer = new Visualizer(this);
+            if (visualizer == nullptr) visualizer = new Visualizer(this);
             visualizer->add_layer(layer, visualizer_input, visualizer_output);
         }
     }
@@ -41,7 +42,7 @@ Environment::~Environment() {
     delete buffer;
     for (auto& module : this->input_modules) delete module;
     for (auto& module : this->output_modules) delete module;
-    if (visualizer != NULL) delete visualizer;
+    if (visualizer != nullptr) delete visualizer;
 }
 
 OutputType Environment::get_output_type(Layer *layer) {
@@ -59,9 +60,9 @@ void Environment::step_output() {
 }
 
 void Environment::ui_launch() {
-    if (visualizer != NULL) visualizer->launch();
+    if (visualizer != nullptr) visualizer->launch();
 }
 
 void Environment::ui_update() {
-    if (visualizer != NULL) visualizer->update();
+    if (visualizer != nullptr) visualizer->update();
 }

@@ -33,7 +33,7 @@ void Clock::engine_loop(int iterations, bool verbose) {
 
         // Set the refresh rate if calc_rate is true
         if (this->calc_rate and i == 9) {
-            this->time_limit = (run_timer.query(NULL)*1.1) / (i+1);
+            this->time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
             this->refresh_rate = 1.0 / this->time_limit;
             if (verbose)
                 printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
@@ -117,8 +117,8 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     delete state;
     delete this->engine;
     delete this->environment;
-    this->engine = NULL;
-    this->environment = NULL;
+    this->engine = nullptr;
+    this->environment = nullptr;
 
     free_rand();
 }

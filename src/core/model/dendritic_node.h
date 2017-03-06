@@ -27,7 +27,7 @@ class DendriticNode {
         DendriticNode(int register_index, Layer *to_layer)
                 : register_index(register_index),
                   to_layer(to_layer),
-                  conn(NULL) { }
+                  conn(nullptr) { }
 
         /* Constructor for a leaf node */
         DendriticNode(int register_index, Layer *to_layer, Connection *conn)
@@ -45,7 +45,7 @@ class DendriticNode {
         DendriticNode *add_child(Connection *conn);
 
         /* Returns whether this node is a leaf node */
-        bool is_leaf() const { return conn != NULL; }
+        bool is_leaf() const { return conn != nullptr; }
 
         /* Constant getters */
         int get_max_register_index() const;

@@ -69,7 +69,7 @@ class NoiseInstruction : public InitializeInstruction {
     public:
         NoiseInstruction(Layer *layer, State *state)
                 : InitializeInstruction(layer, state),
-                  init(layer->get_input_module() == NULL) { }
+                  init(layer->get_input_module() == nullptr) { }
 
         void activate() {
             stream->run_kernel(randomize_data,
@@ -91,7 +91,7 @@ class SynapseInstruction : public Instruction {
                   synapse_data(conn, state),
                   type(conn->type),
                   activator(state->get_activator(conn)),
-                  updater((conn->plastic) ? state->get_updater(conn) : NULL) {
+                  updater((conn->plastic) ? state->get_updater(conn) : nullptr) {
             if (conn->convolutional) {
                 int num_weights = connection->get_num_weights();
                 this->updater_threads = calc_threads(num_weights);
@@ -110,7 +110,7 @@ class SynapseInstruction : public Instruction {
         }
 
         void update() {
-            if (this->updater != NULL)
+            if (this->updater != nullptr)
                 stream->run_kernel(updater,
                     updater_blocks, updater_threads,
                     synapse_data);
@@ -195,7 +195,8 @@ class StateUpdateInstruction : public Instruction {
               attribute_kernel(state->get_attribute_kernel(to_layer)) { }
 
         void activate() {
-            stream->run_kernel(attribute_kernel, activator_blocks, activator_threads,
+            stream->run_kernel(attribute_kernel,
+                activator_blocks, activator_threads,
                 attribute_data);
             Instruction::record_events();
         }
