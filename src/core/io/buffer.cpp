@@ -11,6 +11,7 @@ Buffer::Buffer(Model *model)
 Buffer::Buffer(LayerList input_layers, LayerList output_layers) {
     this->input_layers = input_layers;
     this->output_layers = output_layers;
+    for (auto layer : input_layers) dirty_map[layer] = false;
 
     input_size = output_size = 0;
     for (auto layer : input_layers) input_size += layer->size;
@@ -38,6 +39,7 @@ Buffer::~Buffer() {
 
 void Buffer::set_input(Layer* layer, Pointer<float> source) {
     source.copy_to(this->get_input(layer), false);
+    dirty_map[layer] = true;
 }
 
 void Buffer::set_output(Layer* layer, Pointer<Output> source) {

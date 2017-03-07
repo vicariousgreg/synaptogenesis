@@ -2,7 +2,6 @@
 #include "io/module/print_output_module.h"
 #include "io/module/print_rate_module.h"
 #include "io/module/random_input_module.h"
-#include "io/module/noise_input_module.h"
 #include "io/module/image_input_module.h"
 #include "io/module/visualizer_input_module.h"
 #include "io/module/visualizer_output_module.h"
@@ -14,8 +13,6 @@ Module* build_module(Layer *layer, std::string type,
         std::string params) {
     if (type == "random_input")
         return new RandomInputModule(layer, params);
-    else if (type == "noise_input")
-        return new NoiseInputModule(layer, params);
     else if (type == "image_input")
         return new ImageInputModule(layer, params);
     else if (type == "print_output")

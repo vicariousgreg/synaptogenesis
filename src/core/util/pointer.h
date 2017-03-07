@@ -66,6 +66,8 @@ class Pointer {
         void set(T val, bool async=true);
 
     protected:
+        friend class Stream;
+
         T* ptr;
         int size;
         bool local;

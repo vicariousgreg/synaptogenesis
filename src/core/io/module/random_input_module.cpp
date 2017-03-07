@@ -49,7 +49,6 @@ RandomInputModule::RandomInputModule(Layer *layer, std::string params)
             "Invalid shuffle rate for random input generator!");
 
     this->random_values = (float*) malloc (layer->size * sizeof(float));
-    shuffle(this->random_values, this->max_value, layer->size);
 }
 
 RandomInputModule::~RandomInputModule() {
@@ -57,15 +56,12 @@ RandomInputModule::~RandomInputModule() {
 }
 
 void RandomInputModule::feed_input(Buffer *buffer) {
-    timesteps++;
-
-    if (timesteps % shuffle_rate == 0) {
+    if (timesteps++ % shuffle_rate == 0) {
         std::cout << "============================ SHUFFLE\n";
         shuffle(this->random_values, this->max_value, layer->size);
-    }
-
-    float *input = buffer->get_input(this->layer);
-    for (int nid = 0 ; nid < this->layer->size; ++nid) {
-        input[nid] = this->random_values[nid];
+        float *input = buffer->get_input(this->layer);
+        for (int nid = 0 ; nid < this->layer->size; ++nid)
+            input[nid] = this->random_values[nid];
+        buffer->set_dirty(this->layer);
     }
 }

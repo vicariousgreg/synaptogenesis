@@ -18,6 +18,7 @@ class ImageInputModule : public Module {
         virtual IOType get_type() { return INPUT; }
 
     private:
+        bool transferred;
         int width;
         int height;
         Pointer<float> gray, red, green, blue;

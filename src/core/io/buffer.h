@@ -23,6 +23,12 @@ class Buffer {
         Pointer<float> get_input(Layer *layer) { return input_map[layer]; }
         Pointer<Output> get_output(Layer *layer) { return output_map[layer]; }
 
+        /* Dirty */
+        bool get_dirty(Layer *layer) const { return dirty_map.at(layer); }
+        bool set_dirty(Layer *layer, bool dirty=true) {
+            dirty_map[layer] = dirty;
+        }
+
     protected:
         virtual void init();
 
@@ -35,6 +41,7 @@ class Buffer {
         int input_size;
         int output_size;
 
+        std::map<Layer*, bool> dirty_map;
         std::map<Layer*, Pointer<float> > input_map;
         std::map<Layer*, Pointer<Output> > output_map;
 };

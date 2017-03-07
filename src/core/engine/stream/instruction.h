@@ -150,40 +150,73 @@ class DendriticInstruction : public Instruction {
         bool init;
 };
 
+/* Transfers data */
+template<class T>
+class TransferInstruction : public Instruction {
+    public:
+        TransferInstruction(Layer *layer, Pointer<T> src, Pointer<T> dst)
+                : Instruction(layer),
+                  src(src), dst(dst) { }
+
+        virtual void activate() {
+            this->stream->transfer(src, dst);
+            Instruction::record_events();
+        }
+
+    protected:
+        Pointer<T> src, dst;
+};
+
 /* Transfers input data */
-class InputTransferInstruction : public Instruction {
+class InputTransferInstruction : public TransferInstruction<float> {
     public:
         InputTransferInstruction(Layer *layer, State *state,
             Environment *environment)
-                : Instruction(layer),
-                  src(environment->buffer->get_input(layer)),
-                  dst(state->get_input(layer)) { }
+                : TransferInstruction(layer,
+                      environment->buffer->get_input(layer),
+                      state->buffer->get_input(layer)),
+                  buffer(environment->buffer) { }
 
-        void activate() {
-            src.copy_to(dst);
-            Instruction::record_events();
+        virtual void activate() {
+            // Only transfer if the buffer is dirty
+            if (buffer->get_dirty(to_layer)) {
+                buffer->set_dirty(to_layer, false);
+                TransferInstruction<float>::activate();
+            } else {
+                Instruction::record_events();
+            }
         }
 
     protected:
-        Pointer<float> src, dst;
+        Buffer* buffer;
+};
+
+/* Sets input from buffer */
+class InternalInputTransferInstruction : public TransferInstruction<float> {
+    public:
+        InternalInputTransferInstruction(Layer *layer, State *state)
+                : TransferInstruction(layer,
+                      state->buffer->get_input(layer),
+                      state->get_input(layer)) { }
 };
 
 /* Transfers output data */
-class OutputTransferInstruction : public Instruction {
+class OutputTransferInstruction : public TransferInstruction<Output> {
     public:
         OutputTransferInstruction(Layer *layer,
             State *state, Environment *environment)
-                : Instruction(layer),
-                  src(state->get_output(layer)),
-                  dst(environment->buffer->get_output(layer)) { }
+                : TransferInstruction(layer,
+                      state->buffer->get_output(layer),
+                      environment->buffer->get_output(layer)) { }
+};
 
-        void activate() {
-            src.copy_to(dst);
-            Instruction::record_events();
-        }
-
-    protected:
-        Pointer<Output> src, dst;
+/* Sets output to buffer */
+class InternalOutputTransferInstruction : public TransferInstruction<Output> {
+    public:
+        InternalOutputTransferInstruction(Layer *layer, State *state)
+                : TransferInstruction(layer,
+                      state->get_output(layer),
+                      state->buffer->get_output(layer)) { }
 };
 
 /* Updates layer state */

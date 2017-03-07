@@ -5,7 +5,8 @@
 #include "util/parallel.h"
 
 State::State(Model *model)
-        : model(model) {
+        : model(model),
+          buffer(new DeviceBuffer(model)) {
     for (auto neural_model : NeuralModels) {
         auto layers = model->get_layers(neural_model);
         if (layers.size() == 0) {
@@ -29,7 +30,8 @@ State::State(Model *model)
 }
 
 State::~State() {
-    for (auto att : attributes) if (att != nullptr) delete att;
+    for (auto neural_model : NeuralModels)
+        if (attributes[neural_model] != nullptr) delete attributes[neural_model];
     for (auto matrix : this->weight_matrices) delete matrix.second;
 }
 

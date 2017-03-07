@@ -122,20 +122,11 @@ void Pointer<T>::copy_to(Pointer<T> dst, bool async) const {
     if (dst.size != this->size)
         ErrorManager::get_instance()->log_error(
             "Attempted to copy memory between pointers of different sizes!");
-#ifdef __CUDACC__
-    if (local and dst.local) memcpy(dst.ptr, ptr, size * sizeof(T));
-    else {
-        auto kind = cudaMemcpyDeviceToDevice;
-
-        if (local and not dst.local) kind = cudaMemcpyDeviceToHost;
-        else if (dst.local) kind = cudaMemcpyHostToDevice;
-
-        if (async) cudaMemcpyAsync(dst.ptr, ptr, size * sizeof(T), kind);
-        else cudaMemcpy(dst.ptr, ptr, size * sizeof(T), kind);
-    }
-#else
-    memcpy(dst.ptr, ptr, size * sizeof(T));
-#endif
+    if (local and dst.local)
+        memcpy(dst.ptr, ptr, size * sizeof(T));
+    else
+        ErrorManager::get_instance()->log_error(
+            "Non-local transfers must be handled by a Stream!");
 }
 
 template<typename T>

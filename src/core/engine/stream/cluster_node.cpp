@@ -8,23 +8,20 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
           compute_stream(compute_stream),
           state(state),
           environment(environment) {
-    this->finished_event = new Event();
     this->input_event = new Event();
     this->output_event = new Event();
-    this->state_event = new Event();
 
     input_instruction = nullptr;
-    output_instruction = nullptr;
     state_instruction = nullptr;
+    output_copy_instruction = nullptr;
+    output_instruction = nullptr;
 
     // Add input transfer instruction
-    if (to_layer->get_input_module() != nullptr)
+    if (to_layer->get_input_module() != nullptr) {
         this->set_input_instruction(new InputTransferInstruction(to_layer, state, environment));
-    // Add output transfer instruction
-    if (to_layer->get_output_modules().size() > 0)
-        this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
-    // Add state instruction
-    this->set_state_instruction(new StateUpdateInstruction(to_layer, state));
+        add_instruction(new InternalInputTransferInstruction(to_layer, state));
+    }
+
     // Add noise / clear instruction
     if (to_layer->noise != 0.0)
         add_instruction(new NoiseInstruction(to_layer, state));
@@ -34,9 +31,14 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     // Beform DFS on dendritic tree
     dendrite_DFS(to_layer->dendritic_root);
 
-    // Add finished event to last synaptic/dendritic connection
-    if (instructions.size() > 0)
-        instructions[instructions.size()-1]->add_event(finished_event);
+    // Add state instruction
+    this->set_state_instruction(new StateUpdateInstruction(to_layer, state));
+
+    // Add output transfer instruction
+    if (to_layer->get_output_modules().size() > 0) {
+        this->set_output_copy_instruction(new InternalOutputTransferInstruction(to_layer, state));
+        this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
+    }
 }
 
 ClusterNode::~ClusterNode() {
@@ -45,10 +47,8 @@ ClusterNode::~ClusterNode() {
     if (this->output_instruction) delete output_instruction;
     delete state_instruction;
 
-    delete finished_event;
     delete input_event;
     delete output_event;
-    delete state_event;
 }
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
@@ -73,6 +73,14 @@ void ClusterNode::set_input_instruction(Instruction *inst) {
     inst->add_event(input_event);
 }
 
+void ClusterNode::set_output_copy_instruction(Instruction *inst) {
+    if (output_instruction != nullptr)
+        ErrorManager::get_instance()->log_error(
+            "Cannot add multiple output copy instructions to stream!");
+    this->output_copy_instruction = inst;
+    inst->set_stream(this->compute_stream);
+}
+
 void ClusterNode::set_output_instruction(Instruction *inst) {
     if (output_instruction != nullptr)
         ErrorManager::get_instance()->log_error(
@@ -88,7 +96,6 @@ void ClusterNode::set_state_instruction(Instruction *inst) {
             "Cannot add multiple state instructions to stream!");
     this->state_instruction = inst;
     inst->set_stream(this->compute_stream);
-    inst->add_event(state_event);
 }
 
 void ClusterNode::add_instruction(Instruction *inst) {
@@ -99,16 +106,21 @@ void ClusterNode::add_instruction(Instruction *inst) {
 void ClusterNode::activate_input_instruction() {
     if (input_instruction != nullptr)
         input_instruction->activate();
-    compute_stream->wait(input_event);
 }
 
 void ClusterNode::activate_output_instruction() {
     if (output_instruction != nullptr)
         output_instruction->activate();
-    compute_stream->wait(output_event);
 }
 
 void ClusterNode::activate_state_instruction() {
     state_instruction->activate();
-    compute_stream->wait(state_event);
+    if (output_copy_instruction != nullptr) {
+        this->wait(output_event);
+        output_copy_instruction->activate();
+    }
+}
+
+void ClusterNode::wait(Event *event) {
+    compute_stream->wait(event);
 }

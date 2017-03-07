@@ -4,13 +4,13 @@ Stream *Stream::default_stream = 0;
 
 Stream *Stream::get_default_stream() {
     if (Stream::default_stream == nullptr)
-        Stream::default_stream = new DefaultStream();
+        Stream::default_stream = new Stream(true);
     return Stream::default_stream;
 }
 
 Stream::Stream() {
+    this->is_default_stream = false;
 #ifdef __CUDACC__
-    this->default_stream = false;
     cudaStreamCreate(&this->cuda_stream);
 #endif
 }
@@ -27,24 +27,18 @@ Stream::~Stream() {
 
 void Stream::record(Event *event) {
 #ifdef __CUDACC__
-    cudaEventRecord(event->cuda_event, cuda_stream);
+    if (is_default_stream)
+        cudaEventRecord(event->cuda_event, 0);
+    else
+        cudaEventRecord(event->cuda_event, cuda_stream);
 #endif
 }
 
 void Stream::wait(Event *event) {
 #ifdef __CUDACC__
-    cudaStreamWaitEvent(cuda_stream, event->cuda_event, 0);
-#endif
-}
-
-void DefaultStream::record(Event *event) {
-#ifdef __CUDACC__
-    cudaEventRecord(event->cuda_event, 0);
-#endif
-}
-
-void DefaultStream::wait(Event *event) {
-#ifdef __CUDACC__
-    cudaStreamWaitEvent(0, event->cuda_event, 0);
+    if (is_default_stream)
+        cudaStreamWaitEvent(0, event->cuda_event, 0);
+    else
+        cudaStreamWaitEvent(cuda_stream, event->cuda_event, 0);
 #endif
 }

@@ -5,7 +5,7 @@
 
 class Visualizer;
 class State;
-class HostBuffer;
+class Buffer;
 class Module;
 typedef std::vector<Module*> ModuleList;
 
@@ -21,7 +21,7 @@ class Environment {
 
         OutputType get_output_type(Layer *layer);
 
-        HostBuffer* const buffer;
+        Buffer* const buffer;
         State* const state;
 
     private:

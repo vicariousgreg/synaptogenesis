@@ -9,7 +9,7 @@
 #include "libs/CImg.h"
 
 ImageInputModule::ImageInputModule(Layer *layer, std::string params)
-        : Module(layer) {
+        : Module(layer), transferred(false) {
     try {
         cimg_library::CImg<unsigned char> img(params.c_str());
         width = img.width();
@@ -57,5 +57,8 @@ ImageInputModule::ImageInputModule(Layer *layer, std::string params)
 }
 
 void ImageInputModule::feed_input(Buffer *buffer) {
-    buffer->set_input(this->layer, this->gray);
+    if (not this->transferred) {
+        buffer->set_input(this->layer, this->gray);
+        this->transferred = true;
+    }
 }

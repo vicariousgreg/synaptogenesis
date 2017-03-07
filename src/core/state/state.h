@@ -11,6 +11,8 @@
 #include "util/constants.h"
 #include "util/pointer.h"
 
+class Buffer;
+
 class State {
     public:
         State(Model *model);
@@ -34,6 +36,7 @@ class State {
         SYNAPSE_KERNEL get_updater(Connection *conn) const;
 
         Model* const model;
+        Buffer* const buffer;
 
     private:
         Attributes* attributes[sizeof(NeuralModels)];
