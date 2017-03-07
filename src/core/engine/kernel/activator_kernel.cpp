@@ -11,15 +11,15 @@ ACTIVATE_FULLY_CONNECTED(activate_fully_connected , , );
 ACTIVATE_ONE_TO_ONE(activate_one_to_one , , );
 ACTIVATE_CONVERGENT(activate_convergent , , );
 
-Kernel<SYNAPSE_KERNEL> *get_base_activator_kernel(ConnectionType conn_type) {
+Kernel<SYNAPSE_KERNEL>get_base_activator_kernel(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
-            return activate_fully_connected;
+            return get_activate_fully_connected();
         case ONE_TO_ONE:
-            return activate_one_to_one;
+            return get_activate_one_to_one();
         case CONVERGENT:
         case CONVOLUTIONAL:
-            return activate_convergent;
+            return get_activate_convergent();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");
@@ -52,15 +52,13 @@ inline GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
         if (clear) src[index] = 0.0;
     }
 }
-auto calc_internal =
-    new Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
+Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)> get_calc_internal() {
+    return Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
         calc_internal_SERIAL, calc_internal_PARALLEL);
-#else
-auto calc_internal =
-    new Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
-        calc_internal_SERIAL);
-#endif
-
-Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>* get_calc_internal() {
-    return calc_internal;
 }
+#else
+Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)> get_calc_internal() {
+    return Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
+        calc_internal_SERIAL);
+}
+#endif

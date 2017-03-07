@@ -133,7 +133,7 @@ BUILD_ATTRIBUTE_KERNEL(hh_attribute_kernel,
 /******************************************************************************/
 
 HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(LayerList &layers)
-        : SpikingAttributes(layers, hh_attribute_kernel) {
+        : SpikingAttributes(layers, get_hh_attribute_kernel()) {
     this->h = Pointer<float>(total_neurons);
     this->m = Pointer<float>(total_neurons);
     this->n = Pointer<float>(total_neurons);

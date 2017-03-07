@@ -88,16 +88,16 @@ CALC_ONE_TO_ONE(update_convolutional_hebbian,
     UPDATE_WEIGHT_CONVOLUTIONAL(index);
     );
 
-Kernel<SYNAPSE_KERNEL> *RateEncodingAttributes::get_updater(ConnectionType conn_type) {
+Kernel<SYNAPSE_KERNEL>RateEncodingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
-            return update_fully_connected_hebbian;
+            return get_update_fully_connected_hebbian();
         case ONE_TO_ONE:
-            return update_one_to_one_hebbian;
+            return get_update_one_to_one_hebbian();
         case CONVERGENT:
-            return update_convergent_hebbian;
+            return get_update_convergent_hebbian();
         case CONVOLUTIONAL:
-            return update_convolutional_hebbian;
+            return get_update_convolutional_hebbian();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");
@@ -109,7 +109,7 @@ Kernel<SYNAPSE_KERNEL> *RateEncodingAttributes::get_updater(ConnectionType conn_
 /******************************************************************************/
 
 RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT, re_attribute_kernel) {
+        : Attributes(layers, FLOAT, get_re_attribute_kernel()) {
     this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
 
     // Fill in table

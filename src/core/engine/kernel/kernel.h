@@ -7,10 +7,12 @@ template<class K>
 class Kernel {
     public:
 #ifdef __CUDACC__
+        Kernel() : serial_kernel(nullptr), parallel_kernel(nullptr) { }
         Kernel(K serial_kernel, K parallel_kernel)
                 : serial_kernel(serial_kernel),
                   parallel_kernel(parallel_kernel) { }
 #else
+        Kernel() : serial_kernel(nullptr) { }
         Kernel(K kernel)
                 : serial_kernel(kernel) { }
 #endif

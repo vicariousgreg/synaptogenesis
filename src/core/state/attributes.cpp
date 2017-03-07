@@ -39,7 +39,7 @@ Attributes *build_attributes(LayerList &layers, NeuralModel neural_model) {
 }
 
 Attributes::Attributes(LayerList &layers, OutputType output_type,
-        Kernel<ATTRIBUTE_KERNEL> *kernel)
+        Kernel<ATTRIBUTE_KERNEL>kernel)
         : output_type(output_type),
           kernel(kernel),
           pointer(this) {

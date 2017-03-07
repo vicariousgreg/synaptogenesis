@@ -17,7 +17,7 @@ class Stream {
         void wait(Event *event);
 
         template <typename... ARGS>
-        void run_kernel(Kernel<void(*)(ARGS...)> *kernel,
+        void run_kernel(Kernel<void(*)(ARGS...)>kernel,
             int blocks, int threads, ARGS... args);
 
         static Stream *get_default_stream();
@@ -56,13 +56,13 @@ void Stream::transfer(Pointer<T> src, Pointer<T> dst) {
 }
 
 template <typename... ARGS>
-void Stream::run_kernel(Kernel<void(*)(ARGS...)> *kernel,
+void Stream::run_kernel(Kernel<void(*)(ARGS...)>kernel,
     int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
-    auto f = kernel->get_function(true);
+    auto f = kernel.get_function(true);
     f<<<blocks, threads, 0, cuda_stream>>>(args...);
 #else
-    auto f = kernel->get_function(false);
+    auto f = kernel.get_function(false);
     f(args...);
 #endif
 }

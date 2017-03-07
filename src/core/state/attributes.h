@@ -20,7 +20,7 @@ typedef void(*ATTRIBUTE_KERNEL)(const AttributeData attribute_data);
 class Attributes {
     public:
         Attributes(LayerList &layers, OutputType output_type,
-                   Kernel<ATTRIBUTE_KERNEL> *kernel);
+                   Kernel<ATTRIBUTE_KERNEL>kernel);
         virtual ~Attributes();
 
         /* Checks whether these attributes are compatible
@@ -31,12 +31,14 @@ class Attributes {
 
         /* Learning Rule functions */
         // Activator Kernel
-        virtual Kernel<SYNAPSE_KERNEL> *get_activator(ConnectionType type) {
+        virtual Kernel<SYNAPSE_KERNEL>get_activator(ConnectionType type) {
             return get_base_activator_kernel(type);
         }
 
         // Updater Kernel
-        virtual Kernel<SYNAPSE_KERNEL> *get_updater(ConnectionType type) { return nullptr; }
+        virtual Kernel<SYNAPSE_KERNEL>get_updater(ConnectionType type) {
+            return Kernel<SYNAPSE_KERNEL>();
+        }
 
         // Depth of weight matrices
         virtual int get_matrix_depth(Connection *conn) { return 1; }
@@ -60,7 +62,7 @@ class Attributes {
         Attributes *pointer;
 
         // Pointer to attribute kernel
-        Kernel<ATTRIBUTE_KERNEL> *kernel;
+        Kernel<ATTRIBUTE_KERNEL>kernel;
 
     protected:
         // Number of neurons
@@ -101,8 +103,9 @@ GLOBAL void FUNC_NAME##_PARALLEL(const AttributeData attribute_data) { \
         BODY; \
     } \
 } \
-static auto FUNC_NAME = \
-    new Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL);
+static Kernel<ATTRIBUTE_KERNEL> get_##FUNC_NAME() { \
+    return Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
 
 #else
 
@@ -115,7 +118,9 @@ GLOBAL void FUNC_NAME##_SERIAL(const AttributeData attribute_data) { \
         BODY; \
     } \
 } \
-static auto FUNC_NAME = new Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL);
+static Kernel<ATTRIBUTE_KERNEL> get_##FUNC_NAME() { \
+    return Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL); \
+}
 
 #endif
 

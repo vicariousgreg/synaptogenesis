@@ -16,22 +16,21 @@ inline GLOBAL void clear_data_PARALLEL(Pointer<float> ptr, int count) {
     if (nid < count)
         data[nid] = 0.0;
 }
-static auto clear_data =
-    new Kernel<void(*)(Pointer<float>, int)>(
+Kernel<void(*)(Pointer<float>, int)> get_clear_data() {
+    return Kernel<void(*)(Pointer<float>, int)>(
         clear_data_SERIAL, clear_data_PARALLEL);
+}
 #else
-static auto clear_data =
-    new Kernel<void(*)(Pointer<float>, int)>(
-        clear_data_SERIAL);
+Kernel<void(*)(Pointer<float>, int)> get_clear_data() {
+    return Kernel<void(*)(Pointer<float>, int)>(clear_data_SERIAL);
+}
 #endif
 
-Kernel<void(*)(Pointer<float>, int)>* get_clear_data() {
-    return clear_data;
-}
 
 
 /* Randomizes input data */
-inline void randomize_data_SERIAL(Pointer<float> ptr, int count, float max, bool init) {
+inline void randomize_data_SERIAL(Pointer<float> ptr,
+        int count, float max, bool init) {
     float* data = ptr.get();
 
     if (init)
@@ -42,7 +41,8 @@ inline void randomize_data_SERIAL(Pointer<float> ptr, int count, float max, bool
             data[nid] += fRand(0.0, max);
 }
 #ifdef __CUDACC__
-inline GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr, int count, float max, bool init) {
+inline GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr,
+        int count, float max, bool init) {
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -54,15 +54,13 @@ inline GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr, int count, float 
             data[nid] += val;
     }
 }
-static auto randomize_data =
-    new Kernel<void(*)(Pointer<float>, int, float, bool)>(
+Kernel<void(*)(Pointer<float>, int, float, bool)> get_randomize_data() {
+    return Kernel<void(*)(Pointer<float>, int, float, bool)>(
         randomize_data_SERIAL, randomize_data_PARALLEL);
-#else
-static auto randomize_data =
-    new Kernel<void(*)(Pointer<float>, int, float, bool)>(
-        randomize_data_SERIAL);
-#endif
-
-Kernel<void(*)(Pointer<float>, int, float, bool)>* get_randomize_data() {
-    return randomize_data;
 }
+#else
+Kernel<void(*)(Pointer<float>, int, float, bool)> get_randomize_data() {
+    return Kernel<void(*)(Pointer<float>, int, float, bool)>(
+        randomize_data_SERIAL);
+}
+#endif

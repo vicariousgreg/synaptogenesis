@@ -27,13 +27,13 @@ class State {
         Pointer<Output> get_output(Layer *layer, int word_index = 0) const;
         OutputType get_output_type(Layer *layer) const;
         const Attributes *get_attributes_pointer(Layer *layer) const;
-        Kernel<ATTRIBUTE_KERNEL>* const get_attribute_kernel(Layer *layer) const;
+        Kernel<ATTRIBUTE_KERNEL> const get_attribute_kernel(Layer *layer) const;
 
         /* Getters for connection related data */
         Pointer<float> get_matrix(Connection *conn) const;
         EXTRACTOR get_extractor(Connection *conn) const;
-        Kernel<SYNAPSE_KERNEL> *get_activator(Connection *conn) const;
-        Kernel<SYNAPSE_KERNEL> *get_updater(Connection *conn) const;
+        Kernel<SYNAPSE_KERNEL>get_activator(Connection *conn) const;
+        Kernel<SYNAPSE_KERNEL>get_updater(Connection *conn) const;
 
         Model* const model;
         Buffer* const buffer;

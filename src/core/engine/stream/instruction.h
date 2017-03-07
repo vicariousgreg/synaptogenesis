@@ -90,8 +90,8 @@ class SynapseInstruction : public Instruction {
                   connection(conn),
                   synapse_data(conn, state),
                   type(conn->type),
-                  activator(state->get_activator(conn)),
-                  updater((conn->plastic) ? state->get_updater(conn) : nullptr) {
+                  activator(state->get_activator(conn)) {
+            if (conn->plastic) this->updater = state->get_updater(conn);
             if (conn->convolutional) {
                 int num_weights = connection->get_num_weights();
                 this->updater_threads = calc_threads(num_weights);
@@ -110,7 +110,7 @@ class SynapseInstruction : public Instruction {
         }
 
         void update() {
-            if (this->updater != nullptr)
+            if (this->is_plastic())
                 stream->run_kernel(updater,
                     updater_blocks, updater_threads,
                     synapse_data);
@@ -123,8 +123,8 @@ class SynapseInstruction : public Instruction {
 
     protected:
         EXTRACTOR extractor;
-        Kernel<SYNAPSE_KERNEL> *activator;
-        Kernel<SYNAPSE_KERNEL> *updater;
+        Kernel<SYNAPSE_KERNEL>activator;
+        Kernel<SYNAPSE_KERNEL>updater;
         const SynapseData synapse_data;
 };
 
@@ -235,7 +235,7 @@ class StateUpdateInstruction : public Instruction {
         }
 
     protected:
-        Kernel<ATTRIBUTE_KERNEL> *attribute_kernel;
+        Kernel<ATTRIBUTE_KERNEL>attribute_kernel;
         const AttributeData attribute_data;
 };
 

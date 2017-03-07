@@ -139,7 +139,7 @@ BUILD_ATTRIBUTE_KERNEL(iz_attribute_kernel,
 /******************************************************************************/
 
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
-        : SpikingAttributes(layers, iz_attribute_kernel) {
+        : SpikingAttributes(layers, get_iz_attribute_kernel()) {
     this->recovery = Pointer<float>(total_neurons);
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
 
