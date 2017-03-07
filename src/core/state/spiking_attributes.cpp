@@ -35,14 +35,6 @@ void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
 /************************* TRACE ACTIVATOR KERNELS ****************************/
 /******************************************************************************/
 
-// Different minimum functions are used on the host and device
-#ifdef __CUDACC__
-#define MIN min
-#else
-#include <algorithm>
-#define MIN std::fmin
-#endif
-
 #define MOD_RATE 0.05
 #define MOD_DECAY 0.005
 #define MOD_MAX 10.0

@@ -73,7 +73,8 @@ typedef enum {
     ADD,
     SUB,
     MULT,
-    DIV
+    DIV,
+    POOL
 } Opcode;
 
 /* Enumeration of neural models. */

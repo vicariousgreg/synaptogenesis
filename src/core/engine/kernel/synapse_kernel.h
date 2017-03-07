@@ -9,6 +9,16 @@
 #include "util/tools.h"
 #include "util/pointer.h"
 
+// Different min and max functions are used on the host and device
+#ifdef __CUDACC__
+#define MIN min
+#define MAX max
+#else
+#include <algorithm>
+#define MIN std::fmin
+#define MAX std::fmax
+#endif
+
 /* Typedef for kernel functions, which just take SynapseData */
 typedef void(*SYNAPSE_KERNEL)(const SynapseData);
 
@@ -26,6 +36,7 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
         case SUB:  return prior - input;
         case MULT: return prior * (1+input);
         case DIV:  return prior / (1+input);
+        case POOL:  return MAX(prior, (1+input));
     }
     return 0.0;
 }
