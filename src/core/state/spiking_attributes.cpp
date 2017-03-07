@@ -3,7 +3,7 @@
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
-SpikingAttributes::SpikingAttributes(LayerList &layers, ATTRIBUTE_KERNEL kernel)
+SpikingAttributes::SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_KERNEL> *kernel)
         : Attributes(layers, BIT, kernel) {
     this->voltage = Pointer<float>(total_neurons);
 }
@@ -76,7 +76,7 @@ ACTIVATE_CONVERGENT(activate_convergent_trace,
     }
 );
 
-SYNAPSE_KERNEL SpikingAttributes::get_activator(ConnectionType type) {
+Kernel<SYNAPSE_KERNEL> *SpikingAttributes::get_activator(ConnectionType type) {
     switch (type) {
         case FULLY_CONNECTED:
             return activate_fully_connected_trace;
@@ -137,7 +137,7 @@ CALC_ONE_TO_ONE(update_convolutional_trace,
     UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]);
     );
 
-SYNAPSE_KERNEL SpikingAttributes::get_updater(ConnectionType conn_type) {
+Kernel<SYNAPSE_KERNEL> *SpikingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return update_fully_connected_trace;

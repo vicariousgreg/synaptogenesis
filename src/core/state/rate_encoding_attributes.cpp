@@ -5,35 +5,15 @@
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
+/******************************************************************************/
+/******************************** PARAMS **************************************/
+/******************************************************************************/
+
 static RateEncodingParameters create_parameters(std::string str) {
     return RateEncodingParameters(0.0);
 
     //ErrorManager::get_instance()->log_error(
     //    "Unrecognized parameter string: " + str);
-}
-
-RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT, re_attribute_kernel) {
-    this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
-
-    // Fill in table
-    int start_index = 0;
-    for (auto& layer : layers) {
-        RateEncodingParameters params = create_parameters(layer->params);
-        for (int j = 0 ; j < layer->size ; ++j)
-            neuron_parameters[start_index+j] = params;
-        start_index += layer->size;
-    }
-}
-
-RateEncodingAttributes::~RateEncodingAttributes() {
-    this->neuron_parameters.free();
-}
-
-void RateEncodingAttributes::transfer_to_device() {
-    Attributes::transfer_to_device();
-
-    this->neuron_parameters.transfer_to_device();
 }
 
 /******************************************************************************/
@@ -42,30 +22,24 @@ void RateEncodingAttributes::transfer_to_device() {
 
 #include <math.h>
 
-GLOBAL void re_attribute_kernel(const AttributeData attribute_data) {
-    PREAMBLE_ATTRIBUTES;
+BUILD_ATTRIBUTE_KERNEL(re_attribute_kernel,
     float *f_outputs = (float*)outputs;
 
-#ifdef __CUDACC__
-    int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < size) {
-#else
-    for (int nid = 0 ; nid < size; ++nid) {
-#endif
-        float next_value = f_outputs[nid];
-        int index;
-        for (index = 0 ; index < history_size-1 ; ++index) {
-            float curr_value = next_value;
-            next_value = f_outputs[size * (index + 1) + nid];
-            f_outputs[size * index + nid] = next_value;
-        }
-        float input = inputs[nid];
-        f_outputs[size * index + nid] =
-            (input > 0.0) ? tanh(0.1*input) : 0.0;
-            //(input > 0.0) ? input : 0.0;
-            //tanh(input);
+    ,
+
+    float next_value = f_outputs[nid];
+    int index;
+    for (index = 0 ; index < history_size-1 ; ++index) {
+        float curr_value = next_value;
+        next_value = f_outputs[size * (index + 1) + nid];
+        f_outputs[size * index + nid] = next_value;
     }
-}
+    float input = inputs[nid];
+    f_outputs[size * index + nid] =
+        (input > 0.0) ? tanh(0.1*input) : 0.0;
+        //(input > 0.0) ? input : 0.0;
+        //tanh(input);
+)
 
 /******************************************************************************/
 /**************************** HEBBIAN LEARNING ********************************/
@@ -114,7 +88,7 @@ CALC_ONE_TO_ONE(update_convolutional_hebbian,
     UPDATE_WEIGHT_CONVOLUTIONAL(index);
     );
 
-SYNAPSE_KERNEL RateEncodingAttributes::get_updater(ConnectionType conn_type) {
+Kernel<SYNAPSE_KERNEL> *RateEncodingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return update_fully_connected_hebbian;
@@ -129,3 +103,32 @@ SYNAPSE_KERNEL RateEncodingAttributes::get_updater(ConnectionType conn_type) {
                 "Unimplemented connection type!");
     }
 }
+
+/******************************************************************************/
+/************************** CLASS FUNCTIONS ***********************************/
+/******************************************************************************/
+
+RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
+        : Attributes(layers, FLOAT, re_attribute_kernel) {
+    this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
+
+    // Fill in table
+    int start_index = 0;
+    for (auto& layer : layers) {
+        RateEncodingParameters params = create_parameters(layer->params);
+        for (int j = 0 ; j < layer->size ; ++j)
+            neuron_parameters[start_index+j] = params;
+        start_index += layer->size;
+    }
+}
+
+RateEncodingAttributes::~RateEncodingAttributes() {
+    this->neuron_parameters.free();
+}
+
+void RateEncodingAttributes::transfer_to_device() {
+    Attributes::transfer_to_device();
+
+    this->neuron_parameters.transfer_to_device();
+}
+

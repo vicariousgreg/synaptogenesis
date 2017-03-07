@@ -5,6 +5,10 @@
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
+/******************************************************************************/
+/******************************** PARAMS **************************************/
+/******************************************************************************/
+
 #define DEF_PARAM(name, a,b,c,d) \
     static const IzhikevichParameters name = IzhikevichParameters(a,b,c,d);
 
@@ -55,6 +59,85 @@ static IzhikevichParameters create_parameters(std::string str) {
             "Unrecognizer parameter string: " + str);
 }
 
+/******************************************************************************/
+/******************************** KERNEL **************************************/
+/******************************************************************************/
+
+/* Voltage threshold for neuron spiking. */
+#define IZ_SPIKE_THRESH 30
+
+/* Euler resolution for voltage update. */
+#define IZ_EULER_RES 2
+
+/* Milliseconds per timestep */
+#define IZ_TIMESTEP_MS 1
+
+BUILD_ATTRIBUTE_KERNEL(iz_attribute_kernel,
+    IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
+    float *voltages = iz_att->voltage.get(other_start_index);
+    float *recoveries = iz_att->recovery.get(other_start_index);
+    unsigned int *spikes = (unsigned int*)outputs;
+    IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
+
+    ,
+
+    /**********************
+     *** VOLTAGE UPDATE ***
+     **********************/
+    float voltage = voltages[nid];
+    float recovery = recoveries[nid];
+    float current = inputs[nid];
+
+    float a = params[nid].a;
+    float b = params[nid].b;
+
+    // Euler's method for voltage/recovery update
+    // If the voltage exceeds the spiking threshold, break
+    for (int i = 0 ; i < IZ_TIMESTEP_MS * IZ_EULER_RES && voltage < IZ_SPIKE_THRESH ; ++i) {
+        float delta_v = (0.04 * voltage * voltage) +
+                        (5*voltage) + 140 - recovery + current;
+        voltage += delta_v / IZ_EULER_RES;
+        recovery += a * ((b * voltage) - recovery) / IZ_EULER_RES;
+    }
+
+    /********************
+     *** SPIKE UPDATE ***
+     ********************/
+    // Determine if spike occurred
+    unsigned int spike = voltage >= IZ_SPIKE_THRESH;
+
+    // Reduce reads, chain values.
+    unsigned int next_value = spikes[nid];
+
+    // Shift all the bits.
+    // Check if next word is odd (1 for LSB).
+    int index;
+    for (index = 0 ; index < history_size-1 ; ++index) {
+        unsigned int curr_value = next_value;
+        next_value = spikes[size * (index + 1) + nid];
+
+        // Shift bits, carry over LSB from next value.
+        spikes[size*index + nid] = (curr_value >> 1) | (next_value << 31);
+    }
+
+    // Least significant value already loaded into next_value.
+    // Index moved appropriately from loop.
+    spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
+
+    // Reset voltage if spiked.
+    if (spike) {
+        voltages[nid] = params[nid].c;
+        recoveries[nid] = recovery + params[nid].d;
+    } else {
+        voltages[nid] = voltage;
+        recoveries[nid] = recovery;
+    }
+)
+
+/******************************************************************************/
+/************************** CLASS FUNCTIONS ***********************************/
+/******************************************************************************/
+
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : SpikingAttributes(layers, iz_attribute_kernel) {
     this->recovery = Pointer<float>(total_neurons);
@@ -85,84 +168,3 @@ void IzhikevichAttributes::transfer_to_device() {
     this->neuron_parameters.transfer_to_device();
 }
 
-/******************************************************************************/
-/******************************** KERNEL **************************************/
-/******************************************************************************/
-
-/* Voltage threshold for neuron spiking. */
-#define IZ_SPIKE_THRESH 30
-
-/* Euler resolution for voltage update. */
-#define IZ_EULER_RES 2
-
-/* Milliseconds per timestep */
-#define IZ_TIMESTEP_MS 1
-
-GLOBAL void iz_attribute_kernel(const AttributeData attribute_data) {
-    PREAMBLE_ATTRIBUTES;
-
-    IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
-    float *voltages = iz_att->voltage.get(other_start_index);
-    float *recoveries = iz_att->recovery.get(other_start_index);
-    unsigned int *spikes = (unsigned int*)outputs;
-    IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
-
-#ifdef __CUDACC__
-    int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < size) {
-#else
-    for (int nid = 0; nid < size; ++nid) {
-#endif
-        /**********************
-         *** VOLTAGE UPDATE ***
-         **********************/
-        float voltage = voltages[nid];
-        float recovery = recoveries[nid];
-        float current = inputs[nid];
-
-        float a = params[nid].a;
-        float b = params[nid].b;
-
-        // Euler's method for voltage/recovery update
-        // If the voltage exceeds the spiking threshold, break
-        for (int i = 0 ; i < IZ_TIMESTEP_MS * IZ_EULER_RES && voltage < IZ_SPIKE_THRESH ; ++i) {
-            float delta_v = (0.04 * voltage * voltage) +
-                            (5*voltage) + 140 - recovery + current;
-            voltage += delta_v / IZ_EULER_RES;
-            recovery += a * ((b * voltage) - recovery) / IZ_EULER_RES;
-        }
-
-        /********************
-         *** SPIKE UPDATE ***
-         ********************/
-        // Determine if spike occurred
-        unsigned int spike = voltage >= IZ_SPIKE_THRESH;
-
-        // Reduce reads, chain values.
-        unsigned int next_value = spikes[nid];
-
-        // Shift all the bits.
-        // Check if next word is odd (1 for LSB).
-        int index;
-        for (index = 0 ; index < history_size-1 ; ++index) {
-            unsigned int curr_value = next_value;
-            next_value = spikes[size * (index + 1) + nid];
-
-            // Shift bits, carry over LSB from next value.
-            spikes[size*index + nid] = (curr_value >> 1) | (next_value << 31);
-        }
-
-        // Least significant value already loaded into next_value.
-        // Index moved appropriately from loop.
-        spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
-
-        // Reset voltage if spiked.
-        if (spike) {
-            voltages[nid] = params[nid].c;
-            recoveries[nid] = recovery + params[nid].d;
-        } else {
-            voltages[nid] = voltage;
-            recoveries[nid] = recovery;
-        }
-    }
-}

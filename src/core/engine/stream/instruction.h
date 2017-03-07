@@ -57,7 +57,7 @@ class ClearInstruction : public InitializeInstruction {
                 : InitializeInstruction(layer, state) { }
 
         void activate() {
-            stream->run_kernel(clear_data,
+            stream->run_kernel(get_clear_data(),
                 activator_blocks, activator_threads,
                 dst, to_layer->size);
             Instruction::record_events();
@@ -72,7 +72,7 @@ class NoiseInstruction : public InitializeInstruction {
                   init(layer->get_input_module() == nullptr) { }
 
         void activate() {
-            stream->run_kernel(randomize_data,
+            stream->run_kernel(get_randomize_data(),
                 activator_blocks, activator_threads,
                 dst, to_layer->size, to_layer->noise, init);
             Instruction::record_events();
@@ -123,8 +123,8 @@ class SynapseInstruction : public Instruction {
 
     protected:
         EXTRACTOR extractor;
-        SYNAPSE_KERNEL activator;
-        SYNAPSE_KERNEL updater;
+        Kernel<SYNAPSE_KERNEL> *activator;
+        Kernel<SYNAPSE_KERNEL> *updater;
         const SynapseData synapse_data;
 };
 
@@ -139,7 +139,7 @@ class DendriticInstruction : public Instruction {
                   dst(state->get_input(to_layer, parent->register_index)) { }
 
         void activate() {
-            stream->run_kernel(calc_internal,
+            stream->run_kernel(get_calc_internal(),
                 activator_blocks, activator_threads,
                 to_layer->size, src, dst, init);
             Instruction::record_events();
@@ -235,7 +235,7 @@ class StateUpdateInstruction : public Instruction {
         }
 
     protected:
-        ATTRIBUTE_KERNEL attribute_kernel;
+        Kernel<ATTRIBUTE_KERNEL> *attribute_kernel;
         const AttributeData attribute_data;
 };
 

@@ -12,8 +12,6 @@ class IzhikevichParameters {
         float a, b, c, d;
 };
 
-GLOBAL void iz_attribute_kernel(const AttributeData attribute_data);
-
 class IzhikevichAttributes : public SpikingAttributes {
     public:
         IzhikevichAttributes(LayerList &layers);

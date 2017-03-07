@@ -63,7 +63,7 @@ const Attributes* State::get_attributes_pointer(Layer *layer) const {
     return attributes[layer->neural_model]->pointer;
 }
 
-const ATTRIBUTE_KERNEL State::get_attribute_kernel(Layer *layer) const {
+Kernel<ATTRIBUTE_KERNEL>* const State::get_attribute_kernel(Layer *layer) const {
     return attributes[layer->neural_model]->kernel;
 }
 
@@ -75,11 +75,11 @@ EXTRACTOR State::get_extractor(Connection *conn) const {
     return attributes[conn->from_layer->neural_model]->extractor;
 }
 
-SYNAPSE_KERNEL State::get_activator(Connection *conn) const {
+Kernel<SYNAPSE_KERNEL> *State::get_activator(Connection *conn) const {
     return attributes[conn->to_layer->neural_model]->get_activator(conn->type);
 }
 
-SYNAPSE_KERNEL State::get_updater(Connection *conn) const {
+Kernel<SYNAPSE_KERNEL> *State::get_updater(Connection *conn) const {
     return attributes[conn->to_layer->neural_model]->get_updater(conn->type);
 }
 

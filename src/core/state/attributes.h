@@ -6,6 +6,7 @@
 #include "model/layer.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/extractor.h"
+#include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "engine/kernel/attribute_data.h"
 #include "engine/kernel/activator_kernel.h"
@@ -15,18 +16,11 @@
 
 /* Typedef for attribute kernel functions */
 typedef void(*ATTRIBUTE_KERNEL)(const AttributeData attribute_data);
-#define PREAMBLE_ATTRIBUTES \
-    const Attributes *att = attribute_data.attributes; \
-    float *inputs = attribute_data.input.get(); \
-    Output *outputs = attribute_data.output.get(); \
-    int other_start_index = attribute_data.other_start_index; \
-    int size = attribute_data.size; \
-    int history_size = attribute_data.history_size;
 
 class Attributes {
     public:
         Attributes(LayerList &layers, OutputType output_type,
-                   ATTRIBUTE_KERNEL kernel);
+                   Kernel<ATTRIBUTE_KERNEL> *kernel);
         virtual ~Attributes();
 
         /* Checks whether these attributes are compatible
@@ -37,12 +31,12 @@ class Attributes {
 
         /* Learning Rule functions */
         // Activator Kernel
-        virtual SYNAPSE_KERNEL get_activator(ConnectionType type) {
+        virtual Kernel<SYNAPSE_KERNEL> *get_activator(ConnectionType type) {
             return get_base_activator_kernel(type);
         }
 
         // Updater Kernel
-        virtual SYNAPSE_KERNEL get_updater(ConnectionType type) { return nullptr; }
+        virtual Kernel<SYNAPSE_KERNEL> *get_updater(ConnectionType type) { return nullptr; }
 
         // Depth of weight matrices
         virtual int get_matrix_depth(Connection *conn) { return 1; }
@@ -66,7 +60,7 @@ class Attributes {
         Attributes *pointer;
 
         // Pointer to attribute kernel
-        ATTRIBUTE_KERNEL kernel;
+        Kernel<ATTRIBUTE_KERNEL> *kernel;
 
     protected:
         // Number of neurons
@@ -79,5 +73,50 @@ class Attributes {
 };
 
 Attributes *build_attributes(LayerList &layers, NeuralModel neural_model);
+
+#define PREAMBLE_ATTRIBUTES \
+    const Attributes *att = attribute_data.attributes; \
+    float *inputs = attribute_data.input.get(); \
+    Output *outputs = attribute_data.output.get(); \
+    int other_start_index = attribute_data.other_start_index; \
+    int size = attribute_data.size; \
+    int history_size = attribute_data.history_size;
+
+#ifdef __CUDACC__
+
+#define BUILD_ATTRIBUTE_KERNEL( \
+    FUNC_NAME, PREAMBLE, BODY) \
+GLOBAL void FUNC_NAME##_SERIAL(const AttributeData attribute_data) { \
+    PREAMBLE_ATTRIBUTES \
+    PREAMBLE \
+    for (int nid = 0; nid < size; ++nid) { \
+        BODY; \
+    } \
+} \
+GLOBAL void FUNC_NAME##_PARALLEL(const AttributeData attribute_data) { \
+    PREAMBLE_ATTRIBUTES \
+    PREAMBLE \
+    int nid = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (nid < size) { \
+        BODY; \
+    } \
+} \
+static auto FUNC_NAME = \
+    new Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL);
+
+#else
+
+#define BUILD_ATTRIBUTE_KERNEL( \
+    FUNC_NAME, PREAMBLE, BODY) \
+GLOBAL void FUNC_NAME##_SERIAL(const AttributeData attribute_data) { \
+    PREAMBLE_ATTRIBUTES \
+    PREAMBLE \
+    for (int nid = 0; nid < size; ++nid) { \
+        BODY; \
+    } \
+} \
+static auto FUNC_NAME = new Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL);
+
+#endif
 
 #endif

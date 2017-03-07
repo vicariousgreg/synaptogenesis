@@ -1,6 +1,7 @@
 #ifndef synapse_kernel_h
 #define synapse_kernel_h
 
+#include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
@@ -30,40 +31,10 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
 }
 
 /* Clears input data */
-inline GLOBAL void clear_data(Pointer<float> ptr, int count) {
-    float* data = ptr.get();
-
-#ifdef __CUDACC__
-    int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < count)
-#else
-    for (int nid = 0; nid < count; ++nid)
-#endif
-        data[nid] = 0.0;
-}
+Kernel<void(*)(Pointer<float>, int)>* get_clear_data();
 
 /* Randomizes input data */
-inline GLOBAL void randomize_data(Pointer<float> ptr, int count, float max, bool init) {
-    float* data = ptr.get();
-
-#ifdef __CUDACC__
-    int nid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (nid < count) {
-        float val = curand_uniform(&cuda_rand_states[nid]) * max;
-        if (init)
-            data[nid] = val;
-        else
-            data[nid] += val;
-    }
-#else
-    if (init)
-        for (int nid = 0; nid < count; ++nid)
-            data[nid] = fRand(0.0, max);
-    else
-        for (int nid = 0; nid < count; ++nid)
-            data[nid] += fRand(0.0, max);
-#endif
-}
+Kernel<void(*)(Pointer<float>, int, float, bool)>* get_randomize_data();
 
 /******************************************************************************/
 /*************************** CONNECTION KERNELS *******************************/
@@ -278,15 +249,40 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
     } \
 }
 
-
 #ifdef __CUDACC__
-#define CALC_FULLY_CONNECTED FULLY_CONNECTED_PARALLEL
-#define CALC_ONE_TO_ONE ONE_TO_ONE_PARALLEL
-#define CALC_CONVERGENT CONVERGENT_PARALLEL
+
+#define CALC_FULLY_CONNECTED(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+FULLY_CONNECTED_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+FULLY_CONNECTED_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static auto FUNC_NAME = new Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL);
+
+#define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
+ONE_TO_ONE_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, WEIGHT_OP) \
+ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_OP) \
+static auto FUNC_NAME = new Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL);
+
+#define CALC_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+CONVERGENT_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+CONVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static auto FUNC_NAME = new Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL);
+
+
 #else
-#define CALC_FULLY_CONNECTED FULLY_CONNECTED_SERIAL
-#define CALC_ONE_TO_ONE ONE_TO_ONE_SERIAL
-#define CALC_CONVERGENT CONVERGENT_SERIAL
+
+
+#define CALC_FULLY_CONNECTED(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+FULLY_CONNECTED_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static auto FUNC_NAME = new Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL);
+
+#define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
+ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_OP) \
+static auto FUNC_NAME = new Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL);
+
+#define CALC_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+CONVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static auto FUNC_NAME = new Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL);
+
 #endif
+
 
 #endif

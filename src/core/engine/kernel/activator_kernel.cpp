@@ -6,7 +6,12 @@
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
 /******************************************************************************/
 
-SYNAPSE_KERNEL get_base_activator_kernel(ConnectionType conn_type) {
+/* Vanilla versions of activator functions */
+ACTIVATE_FULLY_CONNECTED(activate_fully_connected , , );
+ACTIVATE_ONE_TO_ONE(activate_one_to_one , , );
+ACTIVATE_CONVERGENT(activate_convergent , , );
+
+Kernel<SYNAPSE_KERNEL> *get_base_activator_kernel(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return activate_fully_connected;
@@ -21,24 +26,9 @@ SYNAPSE_KERNEL get_base_activator_kernel(ConnectionType conn_type) {
     }
 }
 
-/* Vanilla versions of activator functions */
-ACTIVATE_FULLY_CONNECTED(activate_fully_connected , , );
-ACTIVATE_ONE_TO_ONE(activate_one_to_one , , );
-ACTIVATE_CONVERGENT(activate_convergent , , );
-
 /* Dendritic tree internal computation */
-#ifdef __CUDACC__
-GLOBAL void calc_internal(int size, Pointer<float> src_ptr, Pointer<float> dst_ptr, bool clear) {
-    float* src = src_ptr.get();
-    float* dst = dst_ptr.get();
-    int index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < size) {
-        dst[index] += src[index];
-        if (clear) src[index] = 0.0;
-    }
-}
-#else
-GLOBAL void calc_internal(int size, Pointer<float> src_ptr, Pointer<float> dst_ptr, bool clear) {
+inline void calc_internal_SERIAL(int size, Pointer<float> src_ptr,
+        Pointer<float> dst_ptr, bool clear=false) {
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();
     if (clear) {
@@ -50,4 +40,27 @@ GLOBAL void calc_internal(int size, Pointer<float> src_ptr, Pointer<float> dst_p
         for (int index = 0 ; index < size ; ++index)
             dst[index] += src[index];
 }
+
+#ifdef __CUDACC__
+inline GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
+        Pointer<float> dst_ptr, bool clear=false) {
+    float* src = src_ptr.get();
+    float* dst = dst_ptr.get();
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index < size) {
+        dst[index] += src[index];
+        if (clear) src[index] = 0.0;
+    }
+}
+auto calc_internal =
+    new Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
+        calc_internal_SERIAL, calc_internal_PARALLEL);
+#else
+auto calc_internal =
+    new Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
+        calc_internal_SERIAL);
 #endif
+
+Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>* get_calc_internal() {
+    return calc_internal;
+}

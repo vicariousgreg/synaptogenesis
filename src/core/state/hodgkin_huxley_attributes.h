@@ -11,8 +11,6 @@ class HodgkinHuxleyParameters {
         float iapp;
 };
 
-GLOBAL void hh_attribute_kernel(const AttributeData attribute_data);
-
 class HodgkinHuxleyAttributes : public SpikingAttributes {
     public:
         HodgkinHuxleyAttributes(LayerList &layers);
