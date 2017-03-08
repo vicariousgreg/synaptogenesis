@@ -14,10 +14,17 @@ void device_synchronize() {
     cudaDeviceSynchronize();
 }
 
+int get_num_cuda_devices() {
+  int nDevices;
+  cudaGetDeviceCount(&nDevices);
+  return nDevices;
+}
+
 void gpuAssert(const char* file, int line, const char* msg) {
     cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) {
         printf("Cuda failure (%s: %d): '%s'\n", file, line, cudaGetErrorString(e));
+        if (msg == nullptr) msg = "";
         ErrorManager::get_instance()->log_error(msg);
     }
 }
@@ -54,20 +61,32 @@ GLOBAL void init_curand(int count){
 }
 
 void init_rand(int count) {
-    curandState_t* states;
-    cudaMalloc((void**) &states, count * sizeof(curandState_t));
-    cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
-    init_curand
-        <<<calc_blocks(count), calc_threads(count)>>>(count);
+    int prev_device;
+    cudaGetDevice(&prev_device);
+    for (int i = 0; i < get_num_cuda_devices(); ++i) {
+        cudaSetDevice(i);
+        curandState_t* states;
+        cudaMalloc((void**) &states, count * sizeof(curandState_t));
+        cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
+        init_curand
+            <<<calc_blocks(count), calc_threads(count)>>>(count);
+    }
+    cudaSetDevice(prev_device);
 }
 
 void free_rand() {
-    curandState_t* states;
-    cudaMemcpyFromSymbol(&states, cuda_rand_states, sizeof(void *));
-    cudaFree(states);
+    int prev_device;
+    cudaGetDevice(&prev_device);
+    for (int i = 0; i < get_num_cuda_devices(); ++i) {
+        cudaSetDevice(i);
+        curandState_t* states;
+        cudaMemcpyFromSymbol(&states, cuda_rand_states, sizeof(void *));
+        cudaFree(states);
 
-    states = nullptr;
-    cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
+        states = nullptr;
+        cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
+    }
+    cudaSetDevice(prev_device);
 }
 
 #endif

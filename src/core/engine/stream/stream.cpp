@@ -20,7 +20,7 @@ Stream::Stream(bool is_default_stream)
 
 Stream::~Stream() {
 #ifdef __CUDACC__
-    if (not default_stream)
+    if (not is_default_stream)
         cudaStreamDestroy(this->cuda_stream);
 #endif
 }

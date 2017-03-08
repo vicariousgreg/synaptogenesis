@@ -42,8 +42,4 @@ void Engine::stage_calc() {
         if (learning_flag) cluster->launch_weight_update();
     }
 #endif
-
-    // Synchronize and check for errors
-    device_synchronize();
-    device_check_error(nullptr);
 }

@@ -38,9 +38,6 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             if (this->field_size == 1)
                 ErrorManager::get_instance()->log_error(
                     "Arborized connections cannot have field size of 1!");
-            else if (this->field_size % 2 == 0)
-                ErrorManager::get_instance()->log_error(
-                    "Arborized connections cannot have an even field size!");
 
             // Extract stride
             if (stream.eof())

@@ -19,6 +19,7 @@
 
 // These will be dummy functions without CUDA
 inline void device_synchronize() { }
+inline int get_num_cuda_devices() { return 0; }
 inline void init_rand(int count) { }
 inline void free_rand() { }
 inline int calc_threads(int computations) { return 0; }
@@ -46,6 +47,7 @@ inline void device_check_memory() { }
 #define MAX_BLOCKS 65535
 
 void device_synchronize();
+int get_num_cuda_devices();
 
 int calc_threads(int computations);
 int calc_blocks(int computations, int threads=IDEAL_THREADS);

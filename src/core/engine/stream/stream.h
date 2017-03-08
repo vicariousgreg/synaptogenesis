@@ -60,7 +60,10 @@ void Stream::run_kernel(Kernel<void(*)(ARGS...)>kernel,
     int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
     auto f = kernel.get_function(true);
-    f<<<blocks, threads, 0, cuda_stream>>>(args...);
+    if (is_default_stream)
+        f<<<blocks, threads>>>(args...);
+    else
+        f<<<blocks, threads, 0, cuda_stream>>>(args...);
 #else
     auto f = kernel.get_function(false);
     f(args...);

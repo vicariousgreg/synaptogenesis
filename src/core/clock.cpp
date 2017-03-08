@@ -38,7 +38,13 @@ void Clock::engine_loop(int iterations, bool verbose) {
             if (verbose)
                 printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
         }
+
+        // Check for errors
+        device_check_error(nullptr);
     }
+
+    // Final synchronize
+    device_synchronize();
 
     // Report time if verbose
     if (verbose) {
