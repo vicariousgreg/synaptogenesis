@@ -4,28 +4,31 @@
 ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         Stream *io_stream, Stream *compute_stream)
         : to_layer(layer),
+          is_input(layer->is_input()),
+          is_output(layer->is_output()),
+          input_event(new Event()),
+          input_copy_event(new Event()),
+          output_event(new Event()),
+          output_copy_event(new Event()),
+          input_instruction(nullptr),
+          input_copy_instruction(nullptr),
+          output_instruction(nullptr),
+          output_copy_instruction(nullptr),
+          state_instruction(nullptr),
           io_stream(io_stream),
           compute_stream(compute_stream),
           state(state),
           environment(environment) {
-    this->input_event = new Event();
-    this->output_event = new Event();
-
-    input_instruction = nullptr;
-    state_instruction = nullptr;
-    output_copy_instruction = nullptr;
-    output_instruction = nullptr;
-
     // Add input transfer instruction
-    if (to_layer->get_input_module() != nullptr) {
+    if (this->is_input) {
         this->set_input_instruction(new InputTransferInstruction(to_layer, state, environment));
-        add_instruction(new InternalInputTransferInstruction(to_layer, state));
+        this->set_input_copy_instruction(new InternalInputTransferInstruction(to_layer, state));
     }
 
     // Add noise / clear instruction
     if (to_layer->noise != 0.0)
         add_instruction(new NoiseInstruction(to_layer, state));
-    else if (to_layer->get_input_module() == nullptr)
+    else if (not this->is_input)
         add_instruction(new ClearInstruction(to_layer, state));
 
     // Beform DFS on dendritic tree
@@ -35,9 +38,9 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     this->set_state_instruction(new StateUpdateInstruction(to_layer, state));
 
     // Add output transfer instruction
-    if (to_layer->get_output_modules().size() > 0) {
-        this->set_output_copy_instruction(new InternalOutputTransferInstruction(to_layer, state));
+    if (this->is_output) {
         this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
+        this->set_output_copy_instruction(new InternalOutputTransferInstruction(to_layer, state));
     }
 }
 
@@ -49,6 +52,8 @@ ClusterNode::~ClusterNode() {
 
     delete input_event;
     delete output_event;
+    delete input_copy_event;
+    delete output_copy_event;
 }
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
@@ -64,6 +69,15 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     }
 }
 
+void ClusterNode::set_input_copy_instruction(Instruction *inst) {
+    if (input_copy_instruction != nullptr)
+        ErrorManager::get_instance()->log_error(
+            "Cannot add multiple input copy instructions to stream!");
+    this->input_copy_instruction = inst;
+    inst->set_stream(this->compute_stream);
+    inst->add_event(input_copy_event);
+}
+
 void ClusterNode::set_input_instruction(Instruction *inst) {
     if (input_instruction != nullptr)
         ErrorManager::get_instance()->log_error(
@@ -74,11 +88,12 @@ void ClusterNode::set_input_instruction(Instruction *inst) {
 }
 
 void ClusterNode::set_output_copy_instruction(Instruction *inst) {
-    if (output_instruction != nullptr)
+    if (output_copy_instruction != nullptr)
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple output copy instructions to stream!");
     this->output_copy_instruction = inst;
     inst->set_stream(this->compute_stream);
+    inst->add_event(output_copy_event);
 }
 
 void ClusterNode::set_output_instruction(Instruction *inst) {
@@ -104,18 +119,24 @@ void ClusterNode::add_instruction(Instruction *inst) {
 }
 
 void ClusterNode::activate_input_instruction() {
-    if (input_instruction != nullptr)
+    if (this->is_input) {
+        this->wait(input_copy_event);
         input_instruction->activate();
+        this->wait(input_event);
+        input_copy_instruction->activate();
+    }
 }
 
 void ClusterNode::activate_output_instruction() {
-    if (output_instruction != nullptr)
+    if (this->is_output) {
+        this->wait(output_copy_event);
         output_instruction->activate();
+    }
 }
 
 void ClusterNode::activate_state_instruction() {
     state_instruction->activate();
-    if (output_copy_instruction != nullptr) {
+    if (this->is_output) {
         this->wait(output_event);
         output_copy_instruction->activate();
     }

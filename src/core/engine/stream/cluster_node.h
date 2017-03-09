@@ -33,20 +33,28 @@ class ClusterNode {
         void set_input_instruction(Instruction *inst);
         void set_output_instruction(Instruction *inst);
         void set_state_instruction(Instruction *inst);
+        void set_input_copy_instruction(Instruction *inst);
         void set_output_copy_instruction(Instruction *inst);
         void add_instruction(Instruction *inst);
 
         State* const state;
         Environment* const environment;
-        InstructionList instructions;
 
-        Instruction *input_instruction;
+        InstructionList instructions;
         Instruction *state_instruction;
-        Instruction *output_copy_instruction;
+
+        bool is_input;
+        Instruction *input_instruction;
+        Instruction *input_copy_instruction;
+
+        bool is_output;
         Instruction *output_instruction;
+        Instruction *output_copy_instruction;
 
         Event *input_event;
         Event *output_event;
+        Event *input_copy_event;
+        Event *output_copy_event;
 };
 
 #endif
