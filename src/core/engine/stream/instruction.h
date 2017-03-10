@@ -76,7 +76,7 @@ class NoiseInstruction : public InitializeInstruction {
     public:
         NoiseInstruction(Layer *layer, State *state)
                 : InitializeInstruction(layer, state),
-                  init(layer->get_input_module() == nullptr) { }
+                  init(not layer->is_input()) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
