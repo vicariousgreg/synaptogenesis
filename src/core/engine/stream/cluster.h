@@ -8,7 +8,6 @@
 #include "engine/stream/cluster_node.h"
 #include "engine/stream/instruction.h"
 #include "io/environment.h"
-#include "util/parallel.h"
 #include "util/constants.h"
 
 class Cluster {

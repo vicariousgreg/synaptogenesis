@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include "util/error_manager.h"
+#include "util/resource_manager.h"
 #include "util/tools.h"
 
 template<typename T>
@@ -21,7 +22,7 @@ Pointer<T>::Pointer()
 
 template<typename T>
 Pointer<T>::Pointer(int size)
-    : ptr((T*)allocate_host(size, sizeof(T))),
+    : ptr((T*)ResourceManager::get_instance()->allocate_host(size, sizeof(T))),
       size(size),
       local(true),
       pinned(false),
@@ -103,10 +104,11 @@ void Pointer<T>::free() {
 }
 
 template<typename T>
-void Pointer<T>::transfer_to_device() {
+void Pointer<T>::transfer_to_device(int device_id) {
 #ifdef __CUDACC__
     if (local) {
-        T* new_ptr = (T*) allocate_device(size, sizeof(T), this->ptr);
+        T* new_ptr = (T*) ResourceManager::get_instance()->allocate_device(
+            size, sizeof(T), this->ptr, device_id);
         std::free(this->ptr);
         this->ptr = new_ptr;
         local = false;

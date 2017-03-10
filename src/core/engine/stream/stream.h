@@ -2,9 +2,11 @@
 #define stream_h
 
 #include "engine/stream/event.h"
-#include "engine/kernel/kernel.h"
 #include "util/pointer.h"
 #include "util/parallel.h"
+
+template <typename... ARGS>
+class Kernel;
 
 class Stream {
     public:
@@ -16,13 +18,12 @@ class Stream {
         void record(Event *event);
         void wait(Event *event);
 
-        template <typename... ARGS>
-        void run_kernel(Kernel<void(*)(ARGS...)>kernel,
-            int blocks, int threads, ARGS... args);
-
         static Stream *get_default_stream();
 
     protected:
+        template <typename... ARGS>
+        friend class Kernel;
+
         static Stream *default_stream;
 
         Stream(bool is_default_stream);
@@ -52,21 +53,6 @@ void Stream::transfer(Pointer<T> src, Pointer<T> dst) {
     }
 #else
     memcpy(dst.ptr, src.ptr, src.size * sizeof(T));
-#endif
-}
-
-template <typename... ARGS>
-void Stream::run_kernel(Kernel<void(*)(ARGS...)>kernel,
-    int blocks, int threads, ARGS... args) {
-#ifdef __CUDACC__
-    auto f = kernel.get_function(true);
-    if (is_default_stream)
-        f<<<blocks, threads>>>(args...);
-    else
-        f<<<blocks, threads, 0, cuda_stream>>>(args...);
-#else
-    auto f = kernel.get_function(false);
-    f(args...);
 #endif
 }
 

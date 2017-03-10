@@ -16,13 +16,13 @@ inline GLOBAL void clear_data_PARALLEL(Pointer<float> ptr, int count) {
     if (nid < count)
         data[nid] = 0.0;
 }
-Kernel<void(*)(Pointer<float>, int)> get_clear_data() {
-    return Kernel<void(*)(Pointer<float>, int)>(
+Kernel<Pointer<float>, int> get_clear_data() {
+    return Kernel<Pointer<float>, int>(
         clear_data_SERIAL, clear_data_PARALLEL);
 }
 #else
-Kernel<void(*)(Pointer<float>, int)> get_clear_data() {
-    return Kernel<void(*)(Pointer<float>, int)>(clear_data_SERIAL);
+Kernel<Pointer<float>, int> get_clear_data() {
+    return Kernel<Pointer<float>, int>(clear_data_SERIAL);
 }
 #endif
 
@@ -54,13 +54,13 @@ inline GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr,
             data[nid] += val;
     }
 }
-Kernel<void(*)(Pointer<float>, int, float, bool)> get_randomize_data() {
-    return Kernel<void(*)(Pointer<float>, int, float, bool)>(
+Kernel<Pointer<float>, int, float, bool> get_randomize_data() {
+    return Kernel<Pointer<float>, int, float, bool>(
         randomize_data_SERIAL, randomize_data_PARALLEL);
 }
 #else
-Kernel<void(*)(Pointer<float>, int, float, bool)> get_randomize_data() {
-    return Kernel<void(*)(Pointer<float>, int, float, bool)>(
+Kernel<Pointer<float>, int, float, bool> get_randomize_data() {
+    return Kernel<Pointer<float>, int, float, bool>(
         randomize_data_SERIAL);
 }
 #endif

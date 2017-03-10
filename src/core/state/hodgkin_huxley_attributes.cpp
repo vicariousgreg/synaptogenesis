@@ -4,7 +4,6 @@
 #include "state/hodgkin_huxley_attributes.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
-#include "util/parallel.h"
 
 /******************************************************************************/
 /******************************** PARAMS **************************************/

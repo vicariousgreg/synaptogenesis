@@ -1,9 +1,8 @@
 #include "state/spiking_attributes.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
-#include "util/parallel.h"
 
-SpikingAttributes::SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_KERNEL>kernel)
+SpikingAttributes::SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_ARGS>kernel)
         : Attributes(layers, BIT, kernel) {
     this->voltage = Pointer<float>(total_neurons);
 }
@@ -68,7 +67,7 @@ ACTIVATE_CONVERGENT(activate_convergent_trace,
     }
 );
 
-Kernel<SYNAPSE_KERNEL>SpikingAttributes::get_activator(ConnectionType type) {
+Kernel<SYNAPSE_ARGS>SpikingAttributes::get_activator(ConnectionType type) {
     switch (type) {
         case FULLY_CONNECTED:
             return get_activate_fully_connected_trace();
@@ -129,7 +128,7 @@ CALC_ONE_TO_ONE(update_convolutional_trace,
     UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]);
     );
 
-Kernel<SYNAPSE_KERNEL>SpikingAttributes::get_updater(ConnectionType conn_type) {
+Kernel<SYNAPSE_ARGS>SpikingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return get_update_fully_connected_trace();

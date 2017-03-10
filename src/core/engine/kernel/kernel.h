@@ -2,37 +2,38 @@
 #define kernel_h
 
 #include "util/error_manager.h"
+#include "engine/stream/stream.h"
 
-template<class K>
+template<typename... ARGS>
 class Kernel {
     public:
 #ifdef __CUDACC__
         Kernel() : serial_kernel(nullptr), parallel_kernel(nullptr) { }
-        Kernel(K serial_kernel, K parallel_kernel)
+        Kernel(void(*serial_kernel)(ARGS...), void (*parallel_kernel)(ARGS...))
                 : serial_kernel(serial_kernel),
                   parallel_kernel(parallel_kernel) { }
 #else
         Kernel() : serial_kernel(nullptr) { }
-        Kernel(K kernel)
+        Kernel(void(*kernel)(ARGS...))
                 : serial_kernel(kernel) { }
 #endif
 
-        K get_function(bool parallel) const {
-            if (parallel)
+        void run(Stream *stream, int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
-                return parallel_kernel;
+            if (stream->is_default_stream)
+                parallel_kernel<<<blocks, threads>>>(args...);
+            else
+                parallel_kernel<<<blocks, threads, 0, stream->cuda_stream>>>(args...);
 #else
-                ErrorManager::get_instance()->log_error(
-                    "Attempted to retrieve parallel kernel on serial build.");
+            serial_kernel(args...);
 #endif
-            else return serial_kernel;
         }
 
     protected:
-        K serial_kernel;
+        void (*serial_kernel)(ARGS...);
 
 #ifdef __CUDACC__
-        K parallel_kernel;
+        void (*parallel_kernel)(ARGS...);
 #endif
 };
 

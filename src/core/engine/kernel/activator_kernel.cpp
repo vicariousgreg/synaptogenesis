@@ -11,7 +11,7 @@ ACTIVATE_FULLY_CONNECTED(activate_fully_connected , , );
 ACTIVATE_ONE_TO_ONE(activate_one_to_one , , );
 ACTIVATE_CONVERGENT(activate_convergent , , );
 
-Kernel<SYNAPSE_KERNEL>get_base_activator_kernel(ConnectionType conn_type) {
+Kernel<SYNAPSE_ARGS>get_base_activator_kernel(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return get_activate_fully_connected();
@@ -52,13 +52,13 @@ inline GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
         if (clear) src[index] = 0.0;
     }
 }
-Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)> get_calc_internal() {
-    return Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
+Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal() {
+    return Kernel<int, Pointer<float>, Pointer<float>, bool>(
         calc_internal_SERIAL, calc_internal_PARALLEL);
 }
 #else
-Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)> get_calc_internal() {
-    return Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)>(
+Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal() {
+    return Kernel<int, Pointer<float>, Pointer<float>, bool>(
         calc_internal_SERIAL);
 }
 #endif

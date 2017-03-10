@@ -57,7 +57,7 @@ class Pointer {
         void free();
 
         // Transfer the data to the device
-        void transfer_to_device();
+        void transfer_to_device(int device_id=0);
 
         // Copy data from this pointer to a given destination
         void copy_to(Pointer<T> dst, bool async=true) const;

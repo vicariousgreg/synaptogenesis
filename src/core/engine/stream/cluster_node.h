@@ -4,7 +4,6 @@
 #include "model/layer.h"
 #include "io/environment.h"
 #include "engine/stream/instruction.h"
-#include "util/parallel.h"
 
 class ClusterNode {
     public:

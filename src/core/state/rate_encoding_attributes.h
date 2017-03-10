@@ -23,7 +23,7 @@ class RateEncodingAttributes : public Attributes {
         }
 
         /* Trace learning rules */
-        virtual Kernel<SYNAPSE_KERNEL>get_updater(ConnectionType type);
+        virtual Kernel<SYNAPSE_ARGS>get_updater(ConnectionType type);
 
         virtual void transfer_to_device();
 

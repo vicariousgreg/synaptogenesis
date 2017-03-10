@@ -15,12 +15,13 @@
 #include "util/error_manager.h"
 
 /* Typedef for attribute kernel functions */
-typedef void(*ATTRIBUTE_KERNEL)(const AttributeData attribute_data);
+typedef AttributeData ATTRIBUTE_ARGS;
+typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
 
 class Attributes {
     public:
         Attributes(LayerList &layers, OutputType output_type,
-                   Kernel<ATTRIBUTE_KERNEL>kernel);
+                   Kernel<ATTRIBUTE_ARGS>kernel);
         virtual ~Attributes();
 
         /* Checks whether these attributes are compatible
@@ -31,13 +32,13 @@ class Attributes {
 
         /* Learning Rule functions */
         // Activator Kernel
-        virtual Kernel<SYNAPSE_KERNEL>get_activator(ConnectionType type) {
+        virtual Kernel<SYNAPSE_ARGS>get_activator(ConnectionType type) {
             return get_base_activator_kernel(type);
         }
 
         // Updater Kernel
-        virtual Kernel<SYNAPSE_KERNEL>get_updater(ConnectionType type) {
-            return Kernel<SYNAPSE_KERNEL>();
+        virtual Kernel<SYNAPSE_ARGS>get_updater(ConnectionType type) {
+            return Kernel<SYNAPSE_ARGS>();
         }
 
         // Depth of weight matrices
@@ -62,7 +63,7 @@ class Attributes {
         Attributes *pointer;
 
         // Pointer to attribute kernel
-        Kernel<ATTRIBUTE_KERNEL>kernel;
+        Kernel<ATTRIBUTE_ARGS>kernel;
 
     protected:
         // Number of neurons
@@ -88,14 +89,14 @@ Attributes *build_attributes(LayerList &layers, NeuralModel neural_model);
 
 #define BUILD_ATTRIBUTE_KERNEL( \
     FUNC_NAME, PREAMBLE, BODY) \
-GLOBAL void FUNC_NAME##_SERIAL(const AttributeData attribute_data) { \
+GLOBAL void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
         BODY; \
     } \
 } \
-GLOBAL void FUNC_NAME##_PARALLEL(const AttributeData attribute_data) { \
+GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
     PREAMBLE \
     int nid = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -103,8 +104,8 @@ GLOBAL void FUNC_NAME##_PARALLEL(const AttributeData attribute_data) { \
         BODY; \
     } \
 } \
-static Kernel<ATTRIBUTE_KERNEL> get_##FUNC_NAME() { \
-    return Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+static Kernel<ATTRIBUTE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
 #else
@@ -118,8 +119,8 @@ GLOBAL void FUNC_NAME##_SERIAL(const AttributeData attribute_data) { \
         BODY; \
     } \
 } \
-static Kernel<ATTRIBUTE_KERNEL> get_##FUNC_NAME() { \
-    return Kernel<ATTRIBUTE_KERNEL>(FUNC_NAME##_SERIAL); \
+static Kernel<ATTRIBUTE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
 #endif

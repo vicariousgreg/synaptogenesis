@@ -4,10 +4,10 @@
 #include "engine/kernel/synapse_kernel.h"
 
 /* Activators are responsible for performing connection computation */
-Kernel<SYNAPSE_KERNEL>get_base_activator_kernel(ConnectionType conn_type);
+Kernel<SYNAPSE_ARGS>get_base_activator_kernel(ConnectionType conn_type);
 
 /* Dendritic tree internal computation */
-Kernel<void(*)(int, Pointer<float>, Pointer<float>, bool)> get_calc_internal();
+Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal();
 
 #define CALC_VAL(from_index, weight_index) \
     float val = extractor(outputs[from_index], delay) * weights[weight_index];

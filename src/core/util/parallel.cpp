@@ -30,25 +30,38 @@ void gpuAssert(const char* file, int line, const char* msg) {
 }
 
 void device_check_memory() {
-    // show memory usage of GPU
-    size_t free_byte ;
-    size_t total_byte ;
-    cudaMemGetInfo( &free_byte, &total_byte ) ;
+    int prev_device;
+    cudaGetDevice(&prev_device);
+    for (int i = 0; i < get_num_cuda_devices(); ++i) {
+        cudaSetDevice(i);
 
-    double free_db = (double)free_byte ;
-    double total_db = (double)total_byte ;
-    double used_db = total_db - free_db ;
-    printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
-        used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
+        // show memory usage of GPU
+        size_t free_byte ;
+        size_t total_byte ;
+        cudaMemGetInfo( &free_byte, &total_byte ) ;
+
+        double free_db = (double)free_byte ;
+        double total_db = (double)total_byte ;
+        double used_db = total_db - free_db ;
+        printf("GPU %d memory usage: used = %f, free = %f MB, total = %f MB\n",
+            i, used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
+    }
+    cudaSetDevice(prev_device);
 }
 
-void* allocate_device(int count, int size, void* source_data) {
+void* cuda_allocate_device(int device_id, int count, int size, void* source_data) {
+    int prev_device;
+    cudaGetDevice(&prev_device);
+    cudaSetDevice(device_id);
+
     void* ptr;
     cudaMalloc(&ptr, count * size);
     device_check_error("Failed to allocate memory on device for neuron state!");
     if (source_data != nullptr)
         cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
     device_check_error("Failed to initialize memory on device for neuron state!");
+
+    cudaSetDevice(prev_device);
     return ptr;
 }
 

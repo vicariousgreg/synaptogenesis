@@ -9,7 +9,6 @@
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "engine/kernel/activator_kernel.h"
-#include "util/parallel.h"
 
 class Instruction {
     public:
@@ -64,7 +63,7 @@ class ClearInstruction : public InitializeInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            stream->run_kernel(get_clear_data(),
+            get_clear_data().run(stream,
                 activator_blocks, activator_threads,
                 dst, to_layer->size);
             Instruction::record_events();
@@ -80,7 +79,7 @@ class NoiseInstruction : public InitializeInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            stream->run_kernel(get_randomize_data(),
+            get_randomize_data().run(stream,
                 activator_blocks, activator_threads,
                 dst, to_layer->size, to_layer->noise, init);
             Instruction::record_events();
@@ -112,7 +111,7 @@ class SynapseInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            stream->run_kernel(activator,
+            activator.run(stream,
                 activator_blocks, activator_threads,
                 synapse_data);
             Instruction::record_events();
@@ -120,7 +119,7 @@ class SynapseInstruction : public Instruction {
 
         void update() {
             if (this->is_plastic())
-                stream->run_kernel(updater,
+                updater.run(stream,
                     updater_blocks, updater_threads,
                     synapse_data);
         }
@@ -132,9 +131,9 @@ class SynapseInstruction : public Instruction {
 
     protected:
         EXTRACTOR extractor;
-        Kernel<SYNAPSE_KERNEL>activator;
-        Kernel<SYNAPSE_KERNEL>updater;
-        const SynapseData synapse_data;
+        Kernel<SYNAPSE_ARGS>activator;
+        Kernel<SYNAPSE_ARGS>updater;
+        SynapseData synapse_data;
 };
 
 /* Computes dendritic node connection */
@@ -149,7 +148,7 @@ class DendriticInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            stream->run_kernel(get_calc_internal(),
+            get_calc_internal().run(stream,
                 activator_blocks, activator_threads,
                 to_layer->size, src, dst, init);
             Instruction::record_events();
@@ -170,7 +169,7 @@ class TransferInstruction : public Instruction {
 
         virtual void activate() {
             Instruction::wait_for_dependencies();
-            this->stream->transfer(src, dst);
+            stream->transfer(src, dst);
             Instruction::record_events();
         }
 
@@ -238,15 +237,15 @@ class StateUpdateInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            stream->run_kernel(attribute_kernel,
+            attribute_kernel.run(stream,
                 activator_blocks, activator_threads,
                 attribute_data);
             Instruction::record_events();
         }
 
     protected:
-        Kernel<ATTRIBUTE_KERNEL>attribute_kernel;
-        const AttributeData attribute_data;
+        Kernel<ATTRIBUTE_ARGS>attribute_kernel;
+        AttributeData attribute_data;
 };
 
 typedef std::vector<Instruction*> InstructionList;

@@ -20,7 +20,8 @@
 #endif
 
 /* Typedef for kernel functions, which just take SynapseData */
-typedef void(*SYNAPSE_KERNEL)(const SynapseData);
+typedef SynapseData SYNAPSE_ARGS;
+typedef void(*SYNAPSE_KERNEL)(SYNAPSE_ARGS);
 
 /* Synaptic operations
  * |prior| is the current state of the neuron.
@@ -42,10 +43,10 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
 }
 
 /* Clears input data */
-Kernel<void(*)(Pointer<float>, int)> get_clear_data();
+Kernel<Pointer<float>, int> get_clear_data();
 
 /* Randomizes input data */
-Kernel<void(*)(Pointer<float>, int, float, bool)> get_randomize_data();
+Kernel<Pointer<float>, int, float, bool> get_randomize_data();
 
 /******************************************************************************/
 /*************************** CONNECTION KERNELS *******************************/
@@ -100,7 +101,7 @@ Kernel<void(*)(Pointer<float>, int, float, bool)> get_randomize_data();
     const EXTRACTOR extractor = synapse_data.extractor;
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -116,7 +117,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 
 #define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -134,7 +135,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 
 #define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -144,7 +145,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 }
 
 #define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -157,7 +158,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 
 
 #define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
     const int field_size = synapse_data.field_size; \
@@ -207,7 +208,7 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 }
 
 #define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
     const int field_size = synapse_data.field_size; \
@@ -265,22 +266,22 @@ GLOBAL void FUNC_NAME(const SynapseData synapse_data) { \
 #define CALC_FULLY_CONNECTED(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 FULLY_CONNECTED_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 FULLY_CONNECTED_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static Kernel<SYNAPSE_KERNEL> get_##FUNC_NAME() {\
-    return Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() {\
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
 #define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
 ONE_TO_ONE_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, WEIGHT_OP) \
 ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_OP) \
-static Kernel<SYNAPSE_KERNEL> get_##FUNC_NAME() { \
-    return Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
 #define CALC_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CONVERGENT_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CONVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static Kernel<SYNAPSE_KERNEL> get_##FUNC_NAME() { \
-    return Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
 
@@ -289,20 +290,20 @@ static Kernel<SYNAPSE_KERNEL> get_##FUNC_NAME() { \
 
 #define CALC_FULLY_CONNECTED(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 FULLY_CONNECTED_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static Kernel<SYNAPSE_KERNEL> get_##FUNC_NAME() { \
-    return Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL); \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
 #define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
 ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_OP) \
-static Kernel<SYNAPSE_KERNEL> get_##FUNC_NAME() { \
-    return Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL); \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
 #define CALC_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CONVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static Kernel<SYNAPSE_KERNEL> get_##FUNC_NAME() { \
-    return Kernel<SYNAPSE_KERNEL>(FUNC_NAME##_SERIAL); \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
 #endif

@@ -19,14 +19,6 @@ inline float fRand(float fMin, float fMax) {
     return fMin + f * (fMax - fMin);
 }
 
-inline void* allocate_host(int count, int size) {
-    void* ptr = calloc(count, size);
-    if (ptr == nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Failed to allocate space on host for neuron state!");
-    return ptr;
-}
-
 static float get_diff(Time_point a, Time_point b) {
     return (float)duration_cast<milliseconds>(a - b).count() / 1000;
 }

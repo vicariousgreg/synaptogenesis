@@ -33,13 +33,13 @@ Attributes *build_attributes(LayerList &layers, NeuralModel neural_model) {
     // Superclass will set its own pointer otherwise
     attributes->transfer_to_device();
     attributes->pointer = (Attributes*)
-        allocate_device(1, object_size, attributes);
+        ResourceManager::get_instance()->allocate_device(1, object_size, attributes);
 #endif
     return attributes;
 }
 
 Attributes::Attributes(LayerList &layers, OutputType output_type,
-        Kernel<ATTRIBUTE_KERNEL>kernel)
+        Kernel<ATTRIBUTE_ARGS>kernel)
         : output_type(output_type),
           kernel(kernel),
           pointer(this) {

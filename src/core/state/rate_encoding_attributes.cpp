@@ -3,7 +3,6 @@
 #include "state/rate_encoding_attributes.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
-#include "util/parallel.h"
 
 /******************************************************************************/
 /******************************** PARAMS **************************************/
@@ -88,7 +87,7 @@ CALC_ONE_TO_ONE(update_convolutional_hebbian,
     UPDATE_WEIGHT_CONVOLUTIONAL(index);
     );
 
-Kernel<SYNAPSE_KERNEL>RateEncodingAttributes::get_updater(ConnectionType conn_type) {
+Kernel<SYNAPSE_ARGS>RateEncodingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return get_update_fully_connected_hebbian();
