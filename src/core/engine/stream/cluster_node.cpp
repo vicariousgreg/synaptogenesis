@@ -146,3 +146,11 @@ void ClusterNode::activate_output() {
     if (this->is_output)
         output_instruction->activate();
 }
+
+void ClusterNode::synchronize_input() {
+    if (is_input) input_event->synchronize();
+}
+
+void ClusterNode::synchronize_output() {
+    if (is_output) output_event->synchronize();
+}

@@ -6,26 +6,24 @@ ParallelCluster::ParallelCluster(Structure *structure,
         State *state, Environment *environment)
         : Cluster(state, environment) {
     // Build instructions
-    for (auto& layer : structure->get_layers())
-        nodes[layer->get_type()].push_back(
-            new ClusterNode(layer, state, environment, io_stream, new Stream()));
+    for (auto& layer : structure->get_layers()) {
+        auto node = new ClusterNode(
+            layer, state, environment, io_stream, new Stream());
+        nodes.push_back(node);
+        sorted_nodes[layer->get_type()].push_back(node);
+    }
 
     // Schedule instructions
     post_input_instructions = sort_instructions(
-        IOTypeVector { INPUT, INPUT_OUTPUT },
-        false);
+        IOTypeVector { INPUT, INPUT_OUTPUT });
     pre_input_instructions = sort_instructions(
-        IOTypeVector { OUTPUT, INTERNAL },
-        false);
-    plastic_instructions = sort_instructions(
-        IOTypeVector { INPUT, INPUT_OUTPUT, OUTPUT, INTERNAL },
-        true);
+        IOTypeVector { OUTPUT, INTERNAL });
 }
 
 ParallelCluster::~ParallelCluster() {
     // Delete nodes and their compute streams
     for (auto type : IOTypes) {
-        for (auto node : nodes[type]) {
+        for (auto node : sorted_nodes[type]) {
             delete node->compute_stream;
             delete node;
         }
@@ -33,17 +31,16 @@ ParallelCluster::~ParallelCluster() {
 }
 
 InstructionList ParallelCluster::sort_instructions(
-        IOTypeVector types, bool plastic) {
+        IOTypeVector types) {
     std::map<Layer*, std::queue<Instruction* > > schedules;
     InstructionList destination;
 
     // Extract instructions
     for (auto type : types)
-        for (auto& node : nodes[type])
+        for (auto& node : sorted_nodes[type])
             for (auto& inst : node->get_instructions())
-                if (not plastic or inst->is_plastic())
-                    // Add to schedule map for round robin
-                    schedules[node->to_layer].push(inst);
+                // Add to schedule map for round robin
+                schedules[node->to_layer].push(inst);
 
     // Perform round robin on nodes
     // Connections should be initialized this way to take advantage of
@@ -68,9 +65,9 @@ void ParallelCluster::launch_pre_input_calculations() {
 }
 
 void ParallelCluster::launch_input() {
-    for (auto& node : nodes[INPUT])
+    for (auto& node : sorted_nodes[INPUT])
         node->activate_input();
-    for (auto& node : nodes[INPUT_OUTPUT])
+    for (auto& node : sorted_nodes[INPUT_OUTPUT])
         node->activate_input();
 }
 
@@ -79,36 +76,20 @@ void ParallelCluster::launch_post_input_calculations() {
 }
 
 void ParallelCluster::launch_output() {
-    for (auto& node : nodes[INPUT_OUTPUT])
+    for (auto& node : sorted_nodes[INPUT_OUTPUT])
         node->activate_output();
-    for (auto& node : nodes[OUTPUT])
+    for (auto& node : sorted_nodes[OUTPUT])
         node->activate_output();
 }
 
 void ParallelCluster::launch_state_update() {
     for (auto type : IOTypes)
-        for (auto& node : nodes[type])
+        for (auto& node : sorted_nodes[type])
             node->activate_state();
 }
 
 void ParallelCluster::launch_weight_update() {
-    for (auto& inst : this->plastic_instructions) inst->update();
-}
-
-/******************************************************************************/
-/**************************** EVENT HANDLING **********************************/
-/******************************************************************************/
-
-void ParallelCluster::wait_for_input() {
-    for (auto& node : nodes[INPUT])
-        node->get_input_event()->synchronize();
-    for (auto& node : nodes[INPUT_OUTPUT])
-        node->get_input_event()->synchronize();
-}
-
-void ParallelCluster::wait_for_output() {
-    for (auto& node : nodes[INPUT_OUTPUT])
-        node->get_output_event()->synchronize();
-    for (auto& node : nodes[OUTPUT])
-        node->get_output_event()->synchronize();
+    for (auto& node : nodes)
+        for (auto& inst : node->get_instructions())
+            if (inst->is_plastic()) inst->update();
 }

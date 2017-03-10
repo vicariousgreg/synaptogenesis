@@ -22,17 +22,25 @@ class Cluster {
         virtual void launch_pre_input_calculations() { };
         virtual void launch_input() = 0;
         virtual void launch_post_input_calculations() = 0;
-        virtual void launch_output() = 0;
         virtual void launch_state_update() { }
         virtual void launch_weight_update() = 0;
+        virtual void launch_output() = 0;
 
-        virtual void wait_for_input() = 0;
-        virtual void wait_for_output() = 0;
+        void wait_for_input() {
+            for (auto& node : nodes)
+                node->synchronize_input();
+        }
+
+        void wait_for_output() {
+            for (auto& node : nodes)
+                node->synchronize_output();
+        }
 
     protected:
         State *state;
         Environment *environment;
         Stream *io_stream;
+        std::vector<ClusterNode*> nodes;
 };
 
 typedef std::vector<IOType> IOTypeVector;
@@ -46,21 +54,17 @@ class ParallelCluster : public Cluster {
         virtual void launch_pre_input_calculations();
         virtual void launch_input();
         virtual void launch_post_input_calculations();
-        virtual void launch_output();
         virtual void launch_state_update();
         virtual void launch_weight_update();
-
-        virtual void wait_for_input();
-        virtual void wait_for_output();
+        virtual void launch_output();
 
     protected:
-        InstructionList sort_instructions(IOTypeVector types, bool plastic);
+        InstructionList sort_instructions(IOTypeVector types);
 
-        std::vector<ClusterNode*> nodes[sizeof(IOTypes)];
+        std::vector<ClusterNode*> sorted_nodes[sizeof(IOTypes)];
 
         InstructionList pre_input_instructions;
         InstructionList post_input_instructions;
-        InstructionList plastic_instructions;
 };
 
 class SequentialCluster : public Cluster {
@@ -74,13 +78,7 @@ class SequentialCluster : public Cluster {
         virtual void launch_output();
         virtual void launch_weight_update();
 
-        virtual void wait_for_input();
-        virtual void wait_for_output();
-
         Stream *compute_stream;
-
-    protected:
-        std::vector<ClusterNode*> nodes;
 };
 
 class FeedforwardCluster : public SequentialCluster {

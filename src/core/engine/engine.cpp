@@ -17,12 +17,14 @@ void Engine::stage_input() {
 }
 
 void Engine::stage_calc() {
-    // Launch post-input calculations
-    // Launch state update
-    // Launch weight updates
     for (auto& cluster : clusters) {
+        // Launch post-input calculations
         cluster->launch_post_input_calculations();
+
+        // Launch state update
         cluster->launch_state_update();
+
+        // Launch weight updates
         if (learning_flag) cluster->launch_weight_update();
     }
 }

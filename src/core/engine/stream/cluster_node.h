@@ -20,8 +20,8 @@ class ClusterNode {
             return instructions;
         }
 
-        Event *get_input_event() const { return input_event; }
-        Event *get_output_event() const { return output_event; }
+        void synchronize_input();
+        void synchronize_output();
 
         Layer* const to_layer;
         Stream* const io_stream;

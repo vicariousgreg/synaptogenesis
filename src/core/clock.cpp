@@ -2,41 +2,41 @@
 #include "util/parallel.h"
 
 void Clock::engine_loop(int iterations, bool verbose) {
-    this->run_timer.reset();
+    run_timer.reset();
 
     for (int i = 0 ; i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
-        this->iteration_timer.reset();
-        this->engine->stage_clear();
+        iteration_timer.reset();
+        engine->stage_clear();
 
         // Read sensory input
-        this->sensory_lock.wait(DRIVER);
-        this->engine->stage_input();
-        this->sensory_lock.pass(ENVIRONMENT);
+        sensory_lock.wait(DRIVER);
+        engine->stage_input();
+        sensory_lock.pass(ENVIRONMENT);
 
-        // Finish computations
-        this->engine->stage_calc();
+        // Perform computations
+        engine->stage_calc();
 
         // Write motor output
-        this->motor_lock.wait(DRIVER);
+        motor_lock.wait(DRIVER);
         // Use (i+1) because the locks belong to the Environment
         //   during the first iteration (Environment uses blank data
         //   on first iteration before the Engine sends any data)
-        if ((i+1) % this->environment_rate == 0) {
+        if ((i+1) % environment_rate == 0) {
             //if (verbose) printf("Sending output... %d\n", i);
-            this->engine->stage_output();
+            engine->stage_output();
         }
-        this->motor_lock.pass(ENVIRONMENT);
+        motor_lock.pass(ENVIRONMENT);
 
         // Synchronize with the clock
-        this->iteration_timer.wait(this->time_limit);
+        iteration_timer.wait(time_limit);
 
         // Set the refresh rate if calc_rate is true
-        if (this->calc_rate and i == 99) {
-            this->time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
-            this->refresh_rate = 1.0 / this->time_limit;
+        if (calc_rate and i == 99) {
+            time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
+            refresh_rate = 1.0 / time_limit;
             if (verbose)
-                printf("Updated refresh rate to %.2f fps\n", this->refresh_rate);
+                printf("Updated refresh rate to %.2f fps\n", refresh_rate);
         }
 
         // Check for errors
@@ -48,29 +48,28 @@ void Clock::engine_loop(int iterations, bool verbose) {
 
     // Report time if verbose
     if (verbose) {
-        float time = this->run_timer.query("Total time");
+        float time = run_timer.query("Total time");
         printf("Time averaged over %d iterations: %f\n",
-            iterations, time/iterations);
+               iterations, time/iterations);
     }
 }
 
 void Clock::environment_loop(int iterations, bool verbose) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
-        this->sensory_lock.wait(ENVIRONMENT);
-        this->environment->step_input();
-        this->sensory_lock.pass(DRIVER);
+        sensory_lock.wait(ENVIRONMENT);
+        environment->step_input();
+        sensory_lock.pass(DRIVER);
 
-        // Compute
-
-        this->motor_lock.wait(ENVIRONMENT);
-        if (i % this->environment_rate == 0) {
+        // Read motor buffer
+        motor_lock.wait(ENVIRONMENT);
+        if (i % environment_rate == 0) {
             // Stream output and update UI
             //if (verbose) printf("Updating UI... %d\n", i);
-            this->environment->step_output();
-            this->environment->ui_update();
+            environment->step_output();
+            environment->ui_update();
         }
-        this->motor_lock.pass(DRIVER);
+        motor_lock.pass(DRIVER);
     }
 }
 
@@ -82,9 +81,11 @@ void Clock::run(Model *model, int iterations, bool verbose) {
             if (layer->size > max_size) max_size = layer->size;
     init_rand(max_size);
 
-    // Initialization
-    this->sensory_lock.set_owner(ENVIRONMENT);
-    this->motor_lock.set_owner(DRIVER);
+    /**********************/
+    /*** Initialization ***/
+    /**********************/
+    sensory_lock.set_owner(ENVIRONMENT);
+    motor_lock.set_owner(DRIVER);
 
     run_timer.reset();
 
@@ -92,39 +93,43 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     State *state = new State(model);
 
     // Build environment
-    this->environment = new Environment(state);
+    environment = new Environment(state);
 
     // Build engine
-    this->engine = new Engine(state, environment);
-    //this->engine->set_learning_flag(false);  // disable learning
-    if (verbose) {
-        run_timer.query("Initialization");
-    }
+    engine = new Engine(state, environment);
+    //engine->set_learning_flag(false);  // disable learning
+
+    if (verbose) run_timer.query("Initialization");
 
     // Ensure device is synchronized without errors
     device_synchronize();
     device_check_error("Clock device synchronization failed!");
     device_check_memory();
 
-    // Launch threads
+    /**********************/
+    /*** Launch threads ***/
+    /**********************/
     std::thread engine_thread(
         &Clock::engine_loop, this, iterations, verbose);
     std::thread environment_thread(
         &Clock::environment_loop, this, iterations, verbose);
 
     // Launch UI
-    this->environment->ui_launch();
+    environment->ui_launch();
 
     // Wait for threads
     engine_thread.join();
     environment_thread.join();
 
+    /****************/
+    /*** Clean up ***/
+    /****************/
     // Free memory for engine and environment
     delete state;
-    delete this->engine;
-    delete this->environment;
-    this->engine = nullptr;
-    this->environment = nullptr;
+    delete engine;
+    delete environment;
+    engine = nullptr;
+    environment = nullptr;
 
     free_rand();
 }

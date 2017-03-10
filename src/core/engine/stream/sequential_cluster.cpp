@@ -64,7 +64,7 @@ void SequentialCluster::launch_output() {
 }
 
 void SequentialCluster::launch_post_input_calculations() {
-    // Activate nodes
+    // Activate nodes forwards
     for (auto it = nodes.begin() ; it != nodes.end(); ++it) {
         for (auto& inst : (*it)->get_instructions())
             inst->activate();
@@ -77,17 +77,4 @@ void SequentialCluster::launch_weight_update() {
     for (auto it = nodes.rbegin() ; it != nodes.rend(); ++it)
         for (auto& inst : (*it)->get_instructions())
             if (inst->is_plastic()) inst->update();
-}
-
-/******************************************************************************/
-/**************************** EVENT HANDLING **********************************/
-/******************************************************************************/
-
-void SequentialCluster::wait_for_input() {
-    for (auto node : nodes)
-        node->get_input_event()->synchronize();
-}
-void SequentialCluster::wait_for_output() {
-    for (auto node : nodes)
-        node->get_output_event()->synchronize();
 }

@@ -193,9 +193,6 @@ class InputTransferInstruction : public TransferInstruction<float> {
             if (buffer->get_dirty(to_layer)) {
                 buffer->set_dirty(to_layer, false);
                 TransferInstruction<float>::activate();
-            } else {
-                Instruction::wait_for_dependencies();
-                Instruction::record_events();
             }
         }
 
