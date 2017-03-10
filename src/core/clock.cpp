@@ -9,6 +9,14 @@ void Clock::engine_loop(int iterations, bool verbose) {
         this->iteration_timer.reset();
         this->engine->stage_clear();
 
+        // Read sensory input
+        this->sensory_lock.wait(DRIVER);
+        this->engine->stage_input();
+        this->sensory_lock.pass(ENVIRONMENT);
+
+        // Finish computations
+        this->engine->stage_calc();
+
         // Write motor output
         this->motor_lock.wait(DRIVER);
         // Use (i+1) because the locks belong to the Environment
@@ -18,21 +26,14 @@ void Clock::engine_loop(int iterations, bool verbose) {
             //if (verbose) printf("Sending output... %d\n", i);
             this->engine->stage_output();
         }
+
         this->motor_lock.pass(ENVIRONMENT);
-
-        // Read sensory input
-        this->sensory_lock.wait(DRIVER);
-        this->engine->stage_input();
-        this->sensory_lock.pass(ENVIRONMENT);
-
-        // Finish computations
-        this->engine->stage_calc();
 
         // Synchronize with the clock
         this->iteration_timer.wait(this->time_limit);
 
         // Set the refresh rate if calc_rate is true
-        if (this->calc_rate and i == 9) {
+        if (this->calc_rate and i == 99) {
             this->time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
             this->refresh_rate = 1.0 / this->time_limit;
             if (verbose)
@@ -84,7 +85,7 @@ void Clock::run(Model *model, int iterations, bool verbose) {
 
     // Initialization
     this->sensory_lock.set_owner(ENVIRONMENT);
-    this->motor_lock.set_owner(ENVIRONMENT);
+    this->motor_lock.set_owner(DRIVER);
 
     run_timer.reset();
 

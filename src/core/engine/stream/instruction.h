@@ -23,6 +23,10 @@ class Instruction {
         virtual void update() { }
         virtual bool is_plastic() const { return false; }
 
+        void wait_for_dependencies() {
+            for (auto& dep : dependencies) stream->wait(dep);
+        }
+
         void record_events() {
             for (auto& event : events) stream->record(event);
         }
@@ -31,10 +35,12 @@ class Instruction {
 
         void set_stream(Stream *stream) { this->stream = stream; }
         void add_event(Event *event) { this->events.push_back(event); }
+        void add_dependency(Event *dep) { this->dependencies.push_back(dep); }
 
     protected:
         Stream *stream;
         std::vector<Event*> events;
+        std::vector<Event*> dependencies;
         int activator_blocks, activator_threads;
         int updater_blocks, updater_threads;
 };
@@ -57,6 +63,7 @@ class ClearInstruction : public InitializeInstruction {
                 : InitializeInstruction(layer, state) { }
 
         void activate() {
+            Instruction::wait_for_dependencies();
             stream->run_kernel(get_clear_data(),
                 activator_blocks, activator_threads,
                 dst, to_layer->size);
@@ -72,6 +79,7 @@ class NoiseInstruction : public InitializeInstruction {
                   init(layer->get_input_module() == nullptr) { }
 
         void activate() {
+            Instruction::wait_for_dependencies();
             stream->run_kernel(get_randomize_data(),
                 activator_blocks, activator_threads,
                 dst, to_layer->size, to_layer->noise, init);
@@ -103,6 +111,7 @@ class SynapseInstruction : public Instruction {
         }
 
         void activate() {
+            Instruction::wait_for_dependencies();
             stream->run_kernel(activator,
                 activator_blocks, activator_threads,
                 synapse_data);
@@ -139,6 +148,7 @@ class DendriticInstruction : public Instruction {
                   dst(state->get_input(to_layer, parent->register_index)) { }
 
         void activate() {
+            Instruction::wait_for_dependencies();
             stream->run_kernel(get_calc_internal(),
                 activator_blocks, activator_threads,
                 to_layer->size, src, dst, init);
@@ -159,6 +169,7 @@ class TransferInstruction : public Instruction {
                   src(src), dst(dst) { }
 
         virtual void activate() {
+            Instruction::wait_for_dependencies();
             this->stream->transfer(src, dst);
             Instruction::record_events();
         }
@@ -183,6 +194,7 @@ class InputTransferInstruction : public TransferInstruction<float> {
                 buffer->set_dirty(to_layer, false);
                 TransferInstruction<float>::activate();
             } else {
+                Instruction::wait_for_dependencies();
                 Instruction::record_events();
             }
         }
@@ -228,6 +240,7 @@ class StateUpdateInstruction : public Instruction {
               attribute_kernel(state->get_attribute_kernel(to_layer)) { }
 
         void activate() {
+            Instruction::wait_for_dependencies();
             stream->run_kernel(attribute_kernel,
                 activator_blocks, activator_threads,
                 attribute_data);

@@ -12,9 +12,9 @@ class ClusterNode {
             Stream *io_stream, Stream *compute_stream);
         virtual ~ClusterNode();
 
-        void activate_input_instruction();
-        void activate_state_instruction();
-        void activate_output_instruction();
+        void activate_input();
+        void activate_state();
+        void activate_output();
 
         const InstructionList& get_instructions() const {
             return instructions;
@@ -22,7 +22,6 @@ class ClusterNode {
 
         Event *get_input_event() const { return input_event; }
         Event *get_output_event() const { return output_event; }
-        void wait(Event *event);
 
         Layer* const to_layer;
         Stream* const io_stream;
@@ -30,12 +29,12 @@ class ClusterNode {
 
     private:
         void dendrite_DFS(DendriticNode *curr);
-        void set_input_instruction(Instruction *inst);
-        void set_output_instruction(Instruction *inst);
-        void set_state_instruction(Instruction *inst);
-        void set_input_copy_instruction(Instruction *inst);
-        void set_output_copy_instruction(Instruction *inst);
         void add_instruction(Instruction *inst);
+        void set_input_instruction(Instruction *inst);
+        void set_input_copy_instruction(Instruction *inst);
+        void set_state_instruction(Instruction *inst);
+        void set_output_copy_instruction(Instruction *inst);
+        void set_output_instruction(Instruction *inst);
 
         State* const state;
         Environment* const environment;
@@ -52,9 +51,9 @@ class ClusterNode {
         Instruction *output_copy_instruction;
 
         Event *input_event;
-        Event *output_event;
         Event *input_copy_event;
         Event *output_copy_event;
+        Event *output_event;
 };
 
 #endif

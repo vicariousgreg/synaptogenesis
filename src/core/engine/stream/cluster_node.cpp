@@ -69,13 +69,9 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     }
 }
 
-void ClusterNode::set_input_copy_instruction(Instruction *inst) {
-    if (input_copy_instruction != nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Cannot add multiple input copy instructions to stream!");
-    this->input_copy_instruction = inst;
+void ClusterNode::add_instruction(Instruction *inst) {
+    this->instructions.push_back(inst);
     inst->set_stream(this->compute_stream);
-    inst->add_event(input_copy_event);
 }
 
 void ClusterNode::set_input_instruction(Instruction *inst) {
@@ -84,25 +80,18 @@ void ClusterNode::set_input_instruction(Instruction *inst) {
             "Cannot add multiple input instructions to stream!");
     this->input_instruction = inst;
     inst->set_stream(this->compute_stream);
+    inst->add_dependency(input_copy_event);
     inst->add_event(input_event);
 }
 
-void ClusterNode::set_output_copy_instruction(Instruction *inst) {
-    if (output_copy_instruction != nullptr)
+void ClusterNode::set_input_copy_instruction(Instruction *inst) {
+    if (input_copy_instruction != nullptr)
         ErrorManager::get_instance()->log_error(
-            "Cannot add multiple output copy instructions to stream!");
-    this->output_copy_instruction = inst;
+            "Cannot add multiple input copy instructions to stream!");
+    this->input_copy_instruction = inst;
     inst->set_stream(this->compute_stream);
-    inst->add_event(output_copy_event);
-}
-
-void ClusterNode::set_output_instruction(Instruction *inst) {
-    if (output_instruction != nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Cannot add multiple output instructions to stream!");
-    this->output_instruction = inst;
-    inst->set_stream(this->io_stream);
-    inst->add_event(output_event);
+    inst->add_dependency(input_event);
+    inst->add_event(input_copy_event);
 }
 
 void ClusterNode::set_state_instruction(Instruction *inst) {
@@ -113,35 +102,41 @@ void ClusterNode::set_state_instruction(Instruction *inst) {
     inst->set_stream(this->compute_stream);
 }
 
-void ClusterNode::add_instruction(Instruction *inst) {
-    this->instructions.push_back(inst);
+void ClusterNode::set_output_copy_instruction(Instruction *inst) {
+    if (output_copy_instruction != nullptr)
+        ErrorManager::get_instance()->log_error(
+            "Cannot add multiple output copy instructions to stream!");
+    this->output_copy_instruction = inst;
     inst->set_stream(this->compute_stream);
+    inst->add_dependency(output_event);
+    inst->add_event(output_copy_event);
 }
 
-void ClusterNode::activate_input_instruction() {
+void ClusterNode::set_output_instruction(Instruction *inst) {
+    if (output_instruction != nullptr)
+        ErrorManager::get_instance()->log_error(
+            "Cannot add multiple output instructions to stream!");
+    this->output_instruction = inst;
+    inst->set_stream(this->io_stream);
+    inst->add_dependency(output_copy_event);
+    inst->add_event(output_event);
+}
+
+void ClusterNode::activate_input() {
     if (this->is_input) {
-        this->wait(input_copy_event);
         input_instruction->activate();
-        this->wait(input_event);
         input_copy_instruction->activate();
     }
 }
 
-void ClusterNode::activate_output_instruction() {
-    if (this->is_output) {
-        this->wait(output_copy_event);
-        output_instruction->activate();
-    }
-}
-
-void ClusterNode::activate_state_instruction() {
+void ClusterNode::activate_state() {
     state_instruction->activate();
-    if (this->is_output) {
-        this->wait(output_event);
+
+    if (this->is_output)
         output_copy_instruction->activate();
-    }
 }
 
-void ClusterNode::wait(Event *event) {
-    compute_stream->wait(event);
+void ClusterNode::activate_output() {
+    if (this->is_output)
+        output_instruction->activate();
 }
