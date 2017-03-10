@@ -26,7 +26,6 @@ void Clock::engine_loop(int iterations, bool verbose) {
             //if (verbose) printf("Sending output... %d\n", i);
             this->engine->stage_output();
         }
-
         this->motor_lock.pass(ENVIRONMENT);
 
         // Synchronize with the clock

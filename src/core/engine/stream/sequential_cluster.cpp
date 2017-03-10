@@ -55,12 +55,12 @@ SequentialCluster::~SequentialCluster() {
 
 void SequentialCluster::launch_input() {
     for (auto& node : nodes)
-        node->activate_input_instruction();
+        node->activate_input();
 }
 
 void SequentialCluster::launch_output() {
     for (auto& node : nodes)
-        node->activate_output_instruction();
+        node->activate_output();
 }
 
 void SequentialCluster::launch_post_input_calculations() {
@@ -68,7 +68,7 @@ void SequentialCluster::launch_post_input_calculations() {
     for (auto it = nodes.begin() ; it != nodes.end(); ++it) {
         for (auto& inst : (*it)->get_instructions())
             inst->activate();
-        (*it)->activate_state_instruction();
+        (*it)->activate_state();
     }
 }
 

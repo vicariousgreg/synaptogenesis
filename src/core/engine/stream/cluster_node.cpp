@@ -39,15 +39,21 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
 
     // Add output transfer instruction
     if (this->is_output) {
-        this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
         this->set_output_copy_instruction(new InternalOutputTransferInstruction(to_layer, state));
+        this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
     }
 }
 
 ClusterNode::~ClusterNode() {
     for (auto inst : this->instructions) delete inst;
-    if (this->input_instruction) delete input_instruction;
-    if (this->output_instruction) delete output_instruction;
+    if (is_input) {
+        delete input_instruction;
+        delete input_copy_instruction;
+    }
+    if (is_output) {
+        delete output_copy_instruction;
+        delete output_instruction;
+    }
     delete state_instruction;
 
     delete input_event;

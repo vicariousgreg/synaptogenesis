@@ -69,9 +69,9 @@ void ParallelCluster::launch_pre_input_calculations() {
 
 void ParallelCluster::launch_input() {
     for (auto& node : nodes[INPUT])
-        node->activate_input_instruction();
+        node->activate_input();
     for (auto& node : nodes[INPUT_OUTPUT])
-        node->activate_input_instruction();
+        node->activate_input();
 }
 
 void ParallelCluster::launch_post_input_calculations() {
@@ -80,15 +80,15 @@ void ParallelCluster::launch_post_input_calculations() {
 
 void ParallelCluster::launch_output() {
     for (auto& node : nodes[INPUT_OUTPUT])
-        node->activate_output_instruction();
+        node->activate_output();
     for (auto& node : nodes[OUTPUT])
-        node->activate_output_instruction();
+        node->activate_output();
 }
 
 void ParallelCluster::launch_state_update() {
     for (auto type : IOTypes)
         for (auto& node : nodes[type])
-            node->activate_state_instruction();
+            node->activate_state();
 }
 
 void ParallelCluster::launch_weight_update() {
