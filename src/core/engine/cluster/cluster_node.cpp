@@ -4,12 +4,9 @@
 ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         Stream *io_stream, Stream *compute_stream)
         : to_layer(layer),
+          device_id(state->get_device_id(layer)),
           is_input(layer->is_input()),
           is_output(layer->is_output()),
-          input_event(ResourceManager::get_instance()->create_event(state->device_id)),
-          input_copy_event(ResourceManager::get_instance()->create_event(state->device_id)),
-          output_event(ResourceManager::get_instance()->create_event(state->device_id)),
-          output_copy_event(ResourceManager::get_instance()->create_event(state->device_id)),
           input_instruction(nullptr),
           input_copy_instruction(nullptr),
           output_instruction(nullptr),
@@ -19,14 +16,25 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
           compute_stream(compute_stream),
           state(state),
           environment(environment) {
+    auto res_man = ResourceManager::get_instance();
+
     // Add input transfer instruction
     if (this->is_input) {
-        set_input_instruction(
+        input_event = res_man->create_event(device_id);
+
+        this->input_instruction =
             new InputTransferInstruction(
-                to_layer, state, environment, compute_stream));
-        set_input_copy_instruction(
+                to_layer, state, environment, compute_stream);
+        this->input_copy_instruction =
             new InternalInputTransferInstruction(
-                to_layer, state, compute_stream));
+                to_layer, state, compute_stream);
+
+        input_instruction->add_event(input_event);
+        input_copy_instruction->add_event(
+            res_man->create_event(device_id));
+
+        input_instruction->add_dependency(input_copy_instruction);
+        input_copy_instruction->add_dependency(input_instruction);
     }
 
     // Add noise / clear instruction
@@ -41,18 +49,27 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     dendrite_DFS(to_layer->dendritic_root);
 
     // Add state instruction
-    set_state_instruction(
+    this->state_instruction =
         new StateUpdateInstruction(
-            to_layer, state, compute_stream));
+            to_layer, state, compute_stream);
 
     // Add output transfer instruction
     if (this->is_output) {
-        set_output_copy_instruction(
+        output_event = res_man->create_event(device_id);
+
+        this->output_copy_instruction =
             new InternalOutputTransferInstruction(
-                to_layer, state, compute_stream));
-        set_output_instruction(
+                to_layer, state, compute_stream);
+        this->output_instruction =
             new OutputTransferInstruction(
-                to_layer, state, environment, io_stream));
+                to_layer, state, environment, io_stream);
+
+        output_instruction->add_event(output_event);
+        output_copy_instruction->add_event(
+            res_man->create_event(device_id));
+
+        output_copy_instruction->add_dependency(output_instruction);
+        output_instruction->add_dependency(output_copy_instruction);
     }
 }
 
@@ -67,21 +84,41 @@ ClusterNode::~ClusterNode() {
         delete output_instruction;
     }
     delete state_instruction;
-
-    delete input_event;
-    delete output_event;
-    delete input_copy_event;
-    delete output_copy_event;
 }
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
+    auto res_man = ResourceManager::get_instance();
+
     for (auto& child : curr->get_children()) {
         // Create an instruction
         // If internal, recurse first (post-fix DFS)
         if (child->is_leaf()) {
-            instructions.push_back(
-                new SynapseInstruction(
-                    child->conn, state, compute_stream));
+            auto syn_inst = new SynapseInstruction(
+                child->conn, state, compute_stream);
+
+            // Check to see if connection is inter-device
+            // If so, add an inter-device instruction and an event for transfer
+            if (state->is_inter_device(child->conn)) {
+                // Create transfer instruction
+                auto transfer_inst = new DeviceToDeviceTransferFunction(
+                        child->conn, state, compute_stream);
+                instructions.push_back(transfer_inst);
+
+                // Create an event for synchronization
+                // Synapse instruction depends on it
+                auto event = res_man->create_event(
+                    state->get_device_id(child->conn->from_layer));
+                transfer_inst->add_event(event);
+                syn_inst->add_dependency(event);
+            }
+
+            // Create an event for inter-node dependencies
+            syn_inst->add_event(res_man->create_event(
+                state->get_device_id(child->conn->from_layer)));
+
+            // Create the instruction and add it to the synapse instuction list
+            instructions.push_back(syn_inst);
+            synapse_instructions[child->conn] = syn_inst;
         } else {
             this->dendrite_DFS(child);
             instructions.push_back(
@@ -91,47 +128,12 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     }
 }
 
-void ClusterNode::set_input_instruction(Instruction *inst) {
-    if (input_instruction != nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Cannot add multiple input instructions to stream!");
-    this->input_instruction = inst;
-    inst->add_dependency(input_copy_event);
-    inst->add_event(input_event);
-}
-
-void ClusterNode::set_input_copy_instruction(Instruction *inst) {
-    if (input_copy_instruction != nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Cannot add multiple input copy instructions to stream!");
-    this->input_copy_instruction = inst;
-    inst->add_dependency(input_event);
-    inst->add_event(input_copy_event);
-}
-
-void ClusterNode::set_state_instruction(Instruction *inst) {
-    if (state_instruction != nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Cannot add multiple state instructions to stream!");
-    this->state_instruction = inst;
-}
-
-void ClusterNode::set_output_copy_instruction(Instruction *inst) {
-    if (output_copy_instruction != nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Cannot add multiple output copy instructions to stream!");
-    this->output_copy_instruction = inst;
-    inst->add_dependency(output_event);
-    inst->add_event(output_copy_event);
-}
-
-void ClusterNode::set_output_instruction(Instruction *inst) {
-    if (output_instruction != nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Cannot add multiple output instructions to stream!");
-    this->output_instruction = inst;
-    inst->add_dependency(output_copy_event);
-    inst->add_event(output_event);
+void ClusterNode::add_external_dependencies(std::map<Layer*, ClusterNode*> nodes) {
+    // Crawl through the nodes and add dependencies for state updates
+    // This prevents race conditions from output updates
+    for (auto pair : synapse_instructions)
+        nodes[pair.first->from_layer]
+            ->state_instruction->add_dependency(pair.second);
 }
 
 void ClusterNode::activate_input() {

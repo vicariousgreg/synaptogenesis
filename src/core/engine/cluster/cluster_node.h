@@ -1,6 +1,9 @@
 #ifndef cluster_node_h
 #define cluster_node_h
 
+#include <map>
+#include <vector>
+
 #include "model/layer.h"
 #include "io/environment.h"
 #include "engine/instruction.h"
@@ -10,6 +13,8 @@ class ClusterNode {
         ClusterNode(Layer *layer, State *state, Environment *environment,
             Stream *io_stream, Stream *compute_stream);
         virtual ~ClusterNode();
+
+        void add_external_dependencies(std::map<Layer*, ClusterNode*> nodes);
 
         void activate_input();
         void activate_state();
@@ -23,16 +28,14 @@ class ClusterNode {
         void synchronize_output();
 
         Layer* const to_layer;
+        const DeviceID device_id;
         Stream* const io_stream;
         Stream* const compute_stream;
 
     private:
         void dendrite_DFS(DendriticNode *curr);
-        void set_input_instruction(Instruction *inst);
-        void set_input_copy_instruction(Instruction *inst);
-        void set_state_instruction(Instruction *inst);
-        void set_output_copy_instruction(Instruction *inst);
-        void set_output_instruction(Instruction *inst);
+
+        std::map<Connection*, Instruction*> synapse_instructions;
 
         State* const state;
         Environment* const environment;
@@ -49,8 +52,6 @@ class ClusterNode {
         Instruction *output_copy_instruction;
 
         Event *input_event;
-        Event *input_copy_event;
-        Event *output_copy_event;
         Event *output_event;
 };
 

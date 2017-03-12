@@ -25,10 +25,11 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         (to_rows == from_rows and to_columns == from_columns)
             ? field_size / 2 : 0;
 
-    // Set up word index
-    int word_index = conn->delay / get_timesteps_per_output(output_type);
-
     destination_outputs = state->get_output(conn->to_layer);
-    outputs = state->get_output(conn->from_layer, word_index);
+    if (state->is_inter_device(conn))
+        outputs = state->get_device_output_buffer(conn);
+    else
+        outputs = state->get_output(conn->from_layer,
+            get_word_index(conn->delay, output_type));
     inputs = state->get_input(conn->to_layer);
 }

@@ -15,16 +15,19 @@ class Buffer;
 
 class State {
     public:
-        State(Model *model, DeviceID device_id=0);
+        State(Model *model);
         virtual ~State();
 
         /* Checks if a structure's layers are compatible with its stream type */
         bool check_compatibility(Structure *structure);
 
         /* Getters for layer related data */
+        DeviceID get_device_id(Layer *layer) const;
         int get_other_start_index(Layer *layer) const;
         Pointer<float> get_input(Layer *layer, int register_index = 0) const;
         Pointer<Output> get_output(Layer *layer, int word_index = 0) const;
+        Pointer<float> get_buffer_input(Layer *layer) const;
+        Pointer<Output> get_buffer_output(Layer *layer) const;
         OutputType get_output_type(Layer *layer) const;
         const Attributes *get_attributes_pointer(Layer *layer) const;
         Kernel<ATTRIBUTE_ARGS> const get_attribute_kernel(Layer *layer) const;
@@ -34,14 +37,17 @@ class State {
         EXTRACTOR get_extractor(Connection *conn) const;
         Kernel<SYNAPSE_ARGS>get_activator(Connection *conn) const;
         Kernel<SYNAPSE_ARGS>get_updater(Connection *conn) const;
+        Pointer<Output> get_device_output_buffer(Connection *conn) const;
+        bool is_inter_device(Connection *conn) const;
 
         Model* const model;
-        Buffer* const buffer;
-        const DeviceID device_id;
 
     private:
-        Attributes* attributes[sizeof(NeuralModels)];
+        int num_devices;
+        std::vector<Buffer*> buffers;
+        std::vector<std::vector<Attributes*> > attributes;
         std::map<Connection*, WeightMatrix*> weight_matrices;
+        std::map<Layer*, DeviceID> layer_devices;
 };
 
 #endif

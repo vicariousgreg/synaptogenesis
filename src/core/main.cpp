@@ -255,7 +255,7 @@ Model* build_alignment_model(NeuralModel neural_model) {
     Model *model = new Model();
     Structure *structure = model->add_structure("alignment");
 
-    int resolution = 128;
+    int resolution = 256;
     structure->add_layer(LayerConfig("input_layer",
         neural_model, 1, 10, "default"));
     structure->add_layer(LayerConfig("exc_thalamus",

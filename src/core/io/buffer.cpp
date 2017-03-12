@@ -5,8 +5,18 @@
 #include "model/model.h"
 #include "model/structure.h"
 
-Buffer::Buffer(Model *model)
-    : Buffer(model->get_input_layers(), model->get_output_layers()) { }
+Buffer *build_buffer(DeviceID device_id, Model *model) {
+    return build_buffer(device_id,
+        model->get_input_layers(), model->get_output_layers());
+}
+
+Buffer *build_buffer(DeviceID device_id,
+        LayerList input_layers, LayerList output_layers) {
+    if (device_id == ResourceManager::get_instance()->get_host_id())
+        return new HostBuffer(input_layers, output_layers);
+    else
+        return new DeviceBuffer(input_layers, output_layers, device_id);
+}
 
 Buffer::Buffer(LayerList input_layers, LayerList output_layers) {
     this->input_layers = input_layers;

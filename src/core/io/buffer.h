@@ -12,7 +12,6 @@ class Model;
 
 class Buffer {
     public:
-        Buffer(Model *model);
         Buffer(LayerList input_layers, LayerList output_layers);
         virtual ~Buffer();
 
@@ -49,7 +48,6 @@ class Buffer {
 
 class HostBuffer : public Buffer {
     public:
-        HostBuffer(Model *model) : Buffer(model) { init(); }
         HostBuffer(LayerList input_layers, LayerList output_layers)
                 : Buffer(input_layers, output_layers) { init(); }
 
@@ -59,8 +57,6 @@ class HostBuffer : public Buffer {
 
 class DeviceBuffer : public Buffer {
     public:
-        DeviceBuffer(Model *model, DeviceID device_id)
-                : Buffer(model), device_id(device_id) { init(); }
         DeviceBuffer(LayerList input_layers, LayerList output_layers,
             DeviceID device_id)
                 : Buffer(input_layers, output_layers),
@@ -71,5 +67,9 @@ class DeviceBuffer : public Buffer {
     protected:
         virtual void init();
 };
+
+Buffer *build_buffer(DeviceID device_id, Model *model);
+Buffer *build_buffer(DeviceID device_id,
+    LayerList input_layers, LayerList output_layers);
 
 #endif

@@ -5,8 +5,12 @@
 
 SequentialCluster::SequentialCluster(Structure *structure,
         State *state, Environment *environment)
-        : Cluster(state, environment),
-          compute_stream(ResourceManager::get_instance()->create_stream(state->device_id)) {
+        : Cluster(state, environment) {
+    // Create compute streams
+    auto res_man = ResourceManager::get_instance();
+    for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
+        compute_streams.push_back(res_man->create_stream(i));
+
     // Keep track of visited layers;
     std::set<Layer*> visited;
 
@@ -25,8 +29,10 @@ SequentialCluster::SequentialCluster(Structure *structure,
         visited.insert(curr_layer);
 
         // Add elements to beginning of list
+        DeviceID device_id = state->get_device_id(curr_layer);
         nodes.insert(nodes.begin(),
-            new ClusterNode(curr_layer, state, environment, io_stream, compute_stream));
+            new ClusterNode(curr_layer, state, environment,
+                io_streams[device_id], compute_streams[device_id]));
 
         // Add any layers that feed into this one to if all of its
         //     output layers have been visited and its not in the queue
@@ -47,7 +53,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
 SequentialCluster::~SequentialCluster() {
     // Delete nodes
     for (auto node : nodes) delete node;
-    delete compute_stream;
+    for (auto stream : compute_streams) delete stream;
 }
 
 /******************************************************************************/

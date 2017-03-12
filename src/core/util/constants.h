@@ -24,6 +24,11 @@ inline int get_timesteps_per_output(OutputType output_type) {
     }
 }
 
+/* Gets a word index given a delay and an output type */
+inline int get_word_index(int delay, OutputType output_type) {
+    return delay / get_timesteps_per_output(output_type);
+}
+
 /* Output union.
  * This is used to avoid unnecesary templating.
  * Because all outputs will be of the same type, it would be a waste of

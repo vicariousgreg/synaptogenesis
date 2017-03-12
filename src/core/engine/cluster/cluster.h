@@ -15,10 +15,12 @@ class Cluster {
     public:
         Cluster(State *state, Environment *environment)
                 : state(state),
-                  environment(environment),
-                  io_stream(ResourceManager::get_instance()
-                      ->create_stream(state->device_id)) { }
-        virtual ~Cluster() { delete io_stream; }
+                  environment(environment) {
+            auto res_man = ResourceManager::get_instance();
+            for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
+                io_streams.push_back(res_man->create_stream(i));
+        }
+        virtual ~Cluster() { for (auto stream : io_streams) delete stream; }
 
         virtual void launch_pre_input_calculations() { };
         virtual void launch_input() = 0;
@@ -37,10 +39,12 @@ class Cluster {
                 node->synchronize_output();
         }
 
+        const std::vector<ClusterNode*> get_nodes() { return nodes; }
+
     protected:
         State *state;
         Environment *environment;
-        Stream *io_stream;
+        std::vector<Stream*> io_streams;
         std::vector<ClusterNode*> nodes;
 };
 
@@ -79,7 +83,7 @@ class SequentialCluster : public Cluster {
         virtual void launch_output();
         virtual void launch_weight_update();
 
-        Stream *compute_stream;
+        std::vector<Stream*> compute_streams;
 };
 
 class FeedforwardCluster : public SequentialCluster {

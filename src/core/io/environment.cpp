@@ -7,7 +7,9 @@
 #include "visualizer.h"
 
 Environment::Environment(State *state)
-        : state(state), buffer(new HostBuffer(state->model)), visualizer(nullptr) {
+        : state(state), visualizer(nullptr),
+          buffer(build_buffer(
+              ResourceManager::get_instance()->get_host_id(), state->model)) {
     // Extract modules
     for (auto& layer : state->model->get_layers()) {
         bool visualizer_input = false;

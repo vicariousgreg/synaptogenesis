@@ -10,11 +10,10 @@ AttributeData::AttributeData(Layer *layer, State *state) :
         other_start_index(state->get_other_start_index(layer)),
         size(layer->size) {
     // Calculate history size
-    int timesteps_per_output =
-        get_timesteps_per_output(state->get_output_type(layer));
+    auto output_type = state->get_output_type(layer);
     int max_delay_registers = 0;
     for (auto& conn : layer->get_output_connections()) {
-        int delay_registers = conn->delay / timesteps_per_output;
+        int delay_registers = get_word_index(conn->delay, output_type);
         if (delay_registers > max_delay_registers)
             max_delay_registers = delay_registers;
     }

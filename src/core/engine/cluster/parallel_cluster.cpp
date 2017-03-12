@@ -7,9 +7,10 @@ ParallelCluster::ParallelCluster(Structure *structure,
         : Cluster(state, environment) {
     // Build instructions
     for (auto& layer : structure->get_layers()) {
+        auto device_id = state->get_device_id(layer);
         auto node = new ClusterNode(
-            layer, state, environment, io_stream,
-            ResourceManager::get_instance()->create_stream(state->device_id));
+            layer, state, environment, io_streams[device_id],
+            ResourceManager::get_instance()->create_stream(device_id));
         nodes.push_back(node);
         sorted_nodes[layer->get_type()].push_back(node);
     }
@@ -84,9 +85,8 @@ void ParallelCluster::launch_output() {
 }
 
 void ParallelCluster::launch_state_update() {
-    for (auto type : IOTypes)
-        for (auto& node : sorted_nodes[type])
-            node->activate_state();
+    for (auto& node : nodes)
+        node->activate_state();
 }
 
 void ParallelCluster::launch_weight_update() {

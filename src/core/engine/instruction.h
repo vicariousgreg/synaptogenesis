@@ -18,6 +18,10 @@ class Instruction {
                   activator_blocks(calc_blocks(layer->size)),
                   stream(stream) { }
 
+        virtual ~Instruction() {
+            for (auto event : events) delete event;
+        }
+
         virtual void activate() = 0;
         virtual void update() { }
         virtual bool is_plastic() const { return false; }
@@ -34,6 +38,10 @@ class Instruction {
 
         void add_event(Event *event) { this->events.push_back(event); }
         void add_dependency(Event *dep) { this->dependencies.push_back(dep); }
+        void add_dependency(Instruction *inst) {
+            for (auto event : inst->events)
+                this->dependencies.push_back(event);
+        }
 
     protected:
         Stream *stream;
@@ -184,7 +192,7 @@ class InputTransferInstruction : public TransferInstruction<float> {
             Environment *environment, Stream *stream)
                 : TransferInstruction(layer,
                       environment->buffer->get_input(layer),
-                      state->buffer->get_input(layer),
+                      state->get_buffer_input(layer),
                       stream),
                   buffer(environment->buffer) { }
 
@@ -206,7 +214,7 @@ class InternalInputTransferInstruction : public TransferInstruction<float> {
         InternalInputTransferInstruction(Layer *layer,
             State *state, Stream *stream)
                 : TransferInstruction(layer,
-                      state->buffer->get_input(layer),
+                      state->get_buffer_input(layer),
                       state->get_input(layer),
                       stream) { }
 };
@@ -217,7 +225,7 @@ class OutputTransferInstruction : public TransferInstruction<Output> {
         OutputTransferInstruction(Layer *layer,
             State *state, Environment *environment, Stream *stream)
                 : TransferInstruction(layer,
-                      state->buffer->get_output(layer),
+                      state->get_buffer_output(layer),
                       environment->buffer->get_output(layer),
                       stream) { }
 };
@@ -229,8 +237,21 @@ class InternalOutputTransferInstruction : public TransferInstruction<Output> {
             State *state, Stream *stream)
                 : TransferInstruction(layer,
                       state->get_output(layer),
-                      state->buffer->get_output(layer),
+                      state->get_buffer_output(layer),
                       stream) { }
+};
+
+/* Transfers outputs between devices */
+class DeviceToDeviceTransferFunction : public TransferInstruction<Output> {
+    public:
+        DeviceToDeviceTransferFunction(Connection *conn,
+            State *state, Stream *stream)
+                : TransferInstruction(conn->to_layer,
+                  state->get_output(conn->from_layer,
+                      get_word_index(conn->delay,
+                          state->get_output_type(conn->from_layer))),
+                  state->get_device_output_buffer(conn),
+                  stream) { }
 };
 
 /* Updates layer state */

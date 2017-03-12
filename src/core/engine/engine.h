@@ -12,9 +12,19 @@ class Engine {
                 : state(state),
                   environment(environment),
                   learning_flag(true) {
-            for (auto& structure : state->model->get_structures())
-                clusters.push_back(build_cluster(
-                    structure, state, environment));
+            // Create the clusters and gather their nodes
+            for (auto& structure : state->model->get_structures()) {
+                auto cluster = build_cluster(
+                    structure, state, environment);
+                clusters.push_back(cluster);
+                for (auto& node : cluster->get_nodes())
+                    cluster_nodes[node->to_layer] = node;
+            }
+
+            // Add external dependencies to the nodes
+            for (auto& cluster : clusters)
+                for (auto& node : cluster->get_nodes())
+                    node->add_external_dependencies(cluster_nodes);
         }
 
         virtual ~Engine() {
@@ -34,6 +44,7 @@ class Engine {
         State *state;
         Environment *environment;
         std::vector<Cluster*> clusters;
+        std::map<Layer*, ClusterNode*> cluster_nodes;
         bool learning_flag;
 };
 
