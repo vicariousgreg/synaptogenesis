@@ -3,27 +3,26 @@
 
 #include "util/event.h"
 #include "util/parallel.h"
-
-template <typename... ARGS>
-class Kernel;
-
-template <typename T>
-class Pointer;
+#include "util/resource_manager.h"
 
 class Stream {
     public:
-        Stream();
+        Stream(DeviceID device_id, bool host_flag);
         virtual ~Stream();
 
         void record(Event *event);
         void wait(Event *event);
+        bool is_host() { return host_flag; }
+        DeviceID get_device_id() { return device_id; }
+
+#ifdef __CUDACC__
+        cudaStream_t get_cuda_stream() { return cuda_stream; }
+#endif
 
     protected:
-        template <typename... ARGS>
-        friend class Kernel;
-
-        template <typename T>
-        friend class Pointer;
+        Stream() { }
+        DeviceID device_id;
+        bool host_flag;
 
 #ifdef __CUDACC__
         cudaStream_t cuda_stream;
@@ -32,7 +31,7 @@ class Stream {
 
 class DefaultStream : public Stream {
     public:
-        DefaultStream();
+        DefaultStream(DeviceID device_id, bool host_flag);
 };
 
 #endif

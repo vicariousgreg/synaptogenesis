@@ -20,10 +20,12 @@ class Kernel {
 
         void run(Stream *stream, int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
-            parallel_kernel<<<blocks, threads, 0, stream->cuda_stream>>>(args...);
-#else
-            serial_kernel(args...);
+            if (not stream->is_host()) {
+                cudaSetDevice(stream->get_device_id());
+                parallel_kernel<<<blocks, threads, 0, stream->get_cuda_stream()>>>(args...);
+            } else
 #endif
+            serial_kernel(args...);
         }
 
     protected:

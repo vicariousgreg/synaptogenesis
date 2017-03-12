@@ -18,10 +18,10 @@ ResourceManager::ResourceManager() {
 
     // Create CUDA devices (GPUs)
     for (int i = 0 ; i < get_num_cuda_devices() ; ++i)
-        devices.push_back(new Device(devices.size()));
+        devices.push_back(new Device(devices.size(), false));
 
     // Create host device (CPU)
-    devices.push_back(new Device(devices.size()));
+    devices.push_back(new Device(devices.size(), true));
 }
 
 ResourceManager::~ResourceManager() {
@@ -41,7 +41,6 @@ void* ResourceManager::allocate_device(int count, int size,
     if (device_id >= get_num_devices())
         ErrorManager::get_instance()->log_error(
             "Attempted to allocate memory on non-existent device.");
-
     return cuda_allocate_device(device_id, count, size, source_data);
 }
 
@@ -66,9 +65,10 @@ Event *ResourceManager::create_event(DeviceID device_id) {
     return devices[device_id]->create_event();
 }
 
-ResourceManager::Device::Device(DeviceID device_id)
+ResourceManager::Device::Device(DeviceID device_id, bool host_flag)
         : device_id(device_id),
-          default_stream(new DefaultStream()) { }
+          host_flag(host_flag),
+          default_stream(new DefaultStream(device_id, host_flag)) { }
 
 ResourceManager::Device::~Device() {
     delete default_stream;
@@ -77,7 +77,7 @@ ResourceManager::Device::~Device() {
 }
 
 Stream *ResourceManager::Device::create_stream() {
-    auto stream = new Stream();
+    auto stream = new Stream(device_id, host_flag);
     this->streams.push_back(stream);
     return stream;
 }

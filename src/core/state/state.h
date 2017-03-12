@@ -9,12 +9,13 @@
 #include "state/weight_matrix.h"
 #include "util/constants.h"
 #include "util/pointer.h"
+#include "util/resource_manager.h"
 
 class Buffer;
 
 class State {
     public:
-        State(Model *model);
+        State(Model *model, DeviceID device_id=0);
         virtual ~State();
 
         /* Checks if a structure's layers are compatible with its stream type */
@@ -36,6 +37,7 @@ class State {
 
         Model* const model;
         Buffer* const buffer;
+        const DeviceID device_id;
 
     private:
         Attributes* attributes[sizeof(NeuralModels)];

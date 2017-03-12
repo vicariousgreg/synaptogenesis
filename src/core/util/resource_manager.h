@@ -20,16 +20,15 @@ class ResourceManager {
 
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }
-
-        Device *get_device(DeviceID id) { return devices[id]; }
+        DeviceID get_host_id() { return devices.size()-1; }
 
         void* allocate_host(int count, int size);
         void* allocate_device(int count, int size,
             void* source_data, DeviceID device_id=0);
 
-        Stream *get_default_stream(DeviceID id=0);
-        Stream *create_stream(DeviceID id=0);
-        Event *create_event(DeviceID id=0);
+        Stream *get_default_stream(DeviceID id);
+        Stream *create_stream(DeviceID id);
+        Event *create_event(DeviceID id);
 
     private:
         ResourceManager();
@@ -40,13 +39,15 @@ class ResourceManager {
 
         class Device {
             public:
-                Device(DeviceID device_id);
+                Device(DeviceID device_id, bool host_flag);
                 virtual ~Device();
 
+                bool is_host() { return host_flag; }
                 Stream *create_stream();
                 Event *create_event();
 
                 const DeviceID device_id;
+                const bool host_flag;
                 Stream* const default_stream;
                 std::vector<Stream*> streams;
                 std::vector<Event*> events;

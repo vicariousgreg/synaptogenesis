@@ -13,6 +13,7 @@
 #include "io/environment.h"
 #include "util/constants.h"
 #include "util/error_manager.h"
+#include "util/resource_manager.h"
 
 /* Typedef for attribute kernel functions */
 typedef AttributeData ATTRIBUTE_ARGS;
@@ -23,6 +24,8 @@ class Attributes {
         Attributes(LayerList &layers, OutputType output_type,
                    Kernel<ATTRIBUTE_ARGS>kernel);
         virtual ~Attributes();
+
+        void set_device_id(DeviceID device_id) { this->device_id = device_id; }
 
         /* Checks whether these attributes are compatible
          *   with the given cluster_type */
@@ -65,9 +68,13 @@ class Attributes {
         // Pointer to attribute kernel
         Kernel<ATTRIBUTE_ARGS>kernel;
 
+        DeviceID get_device_id() { return device_id; }
+
     protected:
         // Number of neurons
         int total_neurons;
+
+        DeviceID device_id;
 
         std::map<int, int> other_start_indices;
         std::map<int, int> input_start_indices;
@@ -75,7 +82,8 @@ class Attributes {
         std::map<int, int> sizes;
 };
 
-Attributes *build_attributes(LayerList &layers, NeuralModel neural_model);
+Attributes *build_attributes(LayerList &layers,
+    NeuralModel neural_model, DeviceID device_id);
 
 #define PREAMBLE_ATTRIBUTES \
     const Attributes *att = attribute_data.attributes; \

@@ -9,7 +9,7 @@ ParallelCluster::ParallelCluster(Structure *structure,
     for (auto& layer : structure->get_layers()) {
         auto node = new ClusterNode(
             layer, state, environment, io_stream,
-            ResourceManager::get_instance()->create_stream());
+            ResourceManager::get_instance()->create_stream(state->device_id));
         nodes.push_back(node);
         sorted_nodes[layer->get_type()].push_back(node);
     }

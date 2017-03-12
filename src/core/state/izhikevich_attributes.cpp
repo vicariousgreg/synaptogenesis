@@ -163,7 +163,7 @@ IzhikevichAttributes::~IzhikevichAttributes() {
 void IzhikevichAttributes::transfer_to_device() {
     SpikingAttributes::transfer_to_device();
 
-    this->recovery.transfer_to_device();
-    this->neuron_parameters.transfer_to_device();
+    this->recovery.transfer_to_device(device_id);
+    this->neuron_parameters.transfer_to_device(device_id);
 }
 

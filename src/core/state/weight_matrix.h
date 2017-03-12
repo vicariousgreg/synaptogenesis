@@ -4,6 +4,7 @@
 #include "model/connection.h"
 #include "util/constants.h"
 #include "util/pointer.h"
+#include "util/resource_manager.h"
 
 class WeightMatrix {
     public:
@@ -12,7 +13,7 @@ class WeightMatrix {
 
         Pointer<float> get_data() const { return mData; }
 
-        void transfer_to_device();
+        void transfer_to_device(DeviceID device_id);
 
         Connection* const connection;
 

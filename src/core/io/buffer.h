@@ -6,6 +6,7 @@
 #include "model/layer.h"
 #include "util/constants.h"
 #include "util/pointer.h"
+#include "util/resource_manager.h"
 
 class Model;
 
@@ -58,9 +59,14 @@ class HostBuffer : public Buffer {
 
 class DeviceBuffer : public Buffer {
     public:
-        DeviceBuffer(Model *model) : Buffer(model) { init(); }
-        DeviceBuffer(LayerList input_layers, LayerList output_layers)
-                : Buffer(input_layers, output_layers) { init(); }
+        DeviceBuffer(Model *model, DeviceID device_id)
+                : Buffer(model), device_id(device_id) { init(); }
+        DeviceBuffer(LayerList input_layers, LayerList output_layers,
+            DeviceID device_id)
+                : Buffer(input_layers, output_layers),
+                  device_id(device_id) { init(); }
+
+        const DeviceID device_id;
 
     protected:
         virtual void init();

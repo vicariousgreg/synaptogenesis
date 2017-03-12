@@ -128,6 +128,6 @@ RateEncodingAttributes::~RateEncodingAttributes() {
 void RateEncodingAttributes::transfer_to_device() {
     Attributes::transfer_to_device();
 
-    this->neuron_parameters.transfer_to_device();
+    this->neuron_parameters.transfer_to_device(device_id);
 }
 

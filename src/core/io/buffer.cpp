@@ -57,11 +57,11 @@ void DeviceBuffer::init() {
     // Allocate buffer memory
     if (input_size > 0) {
         input = Pointer<float>(input_size, 0.0);
-        input.transfer_to_device();
+        input.transfer_to_device(device_id);
     }
     if (output_size > 0) {
         output = Pointer<Output>(output_size);
-        output.transfer_to_device();
+        output.transfer_to_device(device_id);
     }
     Buffer::init();
 }

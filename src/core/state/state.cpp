@@ -3,15 +3,16 @@
 #include "state/state.h"
 #include "util/tools.h"
 
-State::State(Model *model)
+State::State(Model *model, DeviceID device_id)
         : model(model),
-          buffer(new DeviceBuffer(model)) {
+          device_id(device_id),
+          buffer(new DeviceBuffer(model, device_id)) {
     for (auto neural_model : NeuralModels) {
         auto layers = model->get_layers(neural_model);
         if (layers.size() == 0) {
             attributes[neural_model] = nullptr;
         } else {
-            auto att = build_attributes(layers, neural_model);
+            auto att = build_attributes(layers, neural_model, device_id);
             attributes[neural_model] = att;
 
             /* Set up weight matrices */
@@ -21,7 +22,7 @@ State::State(Model *model)
                         att->get_matrix_depth(conn));
                     this->weight_matrices[conn] = matrix;
                     att->process_weight_matrix(matrix);
-                    matrix->transfer_to_device();
+                    matrix->transfer_to_device(att->get_device_id());
                 }
             }
         }
@@ -32,6 +33,7 @@ State::~State() {
     for (auto neural_model : NeuralModels)
         if (attributes[neural_model] != nullptr) delete attributes[neural_model];
     for (auto matrix : this->weight_matrices) delete matrix.second;
+    delete this->buffer;
 }
 
 bool State::check_compatibility(Structure *structure) {

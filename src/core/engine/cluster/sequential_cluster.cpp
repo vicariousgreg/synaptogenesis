@@ -6,7 +6,7 @@
 SequentialCluster::SequentialCluster(Structure *structure,
         State *state, Environment *environment)
         : Cluster(state, environment),
-          compute_stream(ResourceManager::get_instance()->create_stream()) {
+          compute_stream(ResourceManager::get_instance()->create_stream(state->device_id)) {
     // Keep track of visited layers;
     std::set<Layer*> visited;
 

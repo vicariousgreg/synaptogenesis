@@ -6,7 +6,8 @@
 #include "util/constants.h"
 #include "util/parallel.h"
 
-Attributes *build_attributes(LayerList &layers, NeuralModel neural_model) {
+Attributes *build_attributes(LayerList &layers,
+        NeuralModel neural_model, DeviceID device_id) {
     Attributes *attributes;
     int object_size;
 
@@ -31,9 +32,11 @@ Attributes *build_attributes(LayerList &layers, NeuralModel neural_model) {
 #ifdef __CUDACC__
     // Copy attributes to device and set the pointer
     // Superclass will set its own pointer otherwise
+    attributes->set_device_id(device_id);
     attributes->transfer_to_device();
     attributes->pointer = (Attributes*)
-        ResourceManager::get_instance()->allocate_device(1, object_size, attributes);
+        ResourceManager::get_instance()->allocate_device(
+            1, object_size, attributes, device_id);
 #endif
     return attributes;
 }
@@ -42,6 +45,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
         Kernel<ATTRIBUTE_ARGS>kernel)
         : output_type(output_type),
           kernel(kernel),
+          device_id(0),
           pointer(this) {
     // Keep track of register sizes
     int input_size = 0;
@@ -96,8 +100,8 @@ Attributes::~Attributes() {
 
 void Attributes::transfer_to_device() {
     // Transfer data
-    this->input.transfer_to_device();
-    this->output.transfer_to_device();
+    this->input.transfer_to_device(device_id);
+    this->output.transfer_to_device(device_id);
 }
 
 int Attributes::get_other_start_index(int id) const {

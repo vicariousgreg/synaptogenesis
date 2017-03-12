@@ -21,7 +21,7 @@ class Pointer {
 
         // Container constructor
         // Encapsulates the pointer but does not claim ownership
-        Pointer(T* ptr, int size, bool local=true);
+        Pointer(T* ptr, int size, bool local, DeviceID device_id);
 
 
         /*****************************/
@@ -50,6 +50,9 @@ class Pointer {
         //   are only accessed from locations where they are relevant
         HOST DEVICE T* get(int offset=0) const;
 
+        // Retrieve containing device ID
+        DeviceID get_device_id() { return device_id; }
+
 
         /*************************/
         /*** Memory management ***/
@@ -58,7 +61,7 @@ class Pointer {
         void free();
 
         // Transfer the data to the device
-        void transfer_to_device(int device_id=0);
+        void transfer_to_device(int device_id);
 
         // Copy data from this pointer to a given destination
         void copy_to(Pointer<T> dst) const;
@@ -68,10 +71,9 @@ class Pointer {
         void set(T val, bool async=true);
 
     protected:
-        friend class Stream;
-
         T* ptr;
         int size;
+        DeviceID device_id;
         bool local;
         bool pinned;
         bool owner;

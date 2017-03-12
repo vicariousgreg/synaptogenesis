@@ -16,7 +16,8 @@ class Cluster {
         Cluster(State *state, Environment *environment)
                 : state(state),
                   environment(environment),
-                  io_stream(ResourceManager::get_instance()->create_stream()) { }
+                  io_stream(ResourceManager::get_instance()
+                      ->create_stream(state->device_id)) { }
         virtual ~Cluster() { delete io_stream; }
 
         virtual void launch_pre_input_calculations() { };

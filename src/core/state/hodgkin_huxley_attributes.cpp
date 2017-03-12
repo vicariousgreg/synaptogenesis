@@ -166,9 +166,9 @@ HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
 void HodgkinHuxleyAttributes::transfer_to_device() {
     SpikingAttributes::transfer_to_device();
 
-    this->h.transfer_to_device();
-    this->m.transfer_to_device();
-    this->n.transfer_to_device();
-    this->current_trace.transfer_to_device();
-    this->neuron_parameters.transfer_to_device();
+    this->h.transfer_to_device(device_id);
+    this->m.transfer_to_device(device_id);
+    this->n.transfer_to_device(device_id);
+    this->current_trace.transfer_to_device(device_id);
+    this->neuron_parameters.transfer_to_device(device_id);
 }

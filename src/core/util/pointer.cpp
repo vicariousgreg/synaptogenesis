@@ -17,6 +17,7 @@ Pointer<T>::Pointer()
     : ptr(nullptr),
       size(0),
       local(true),
+      device_id(ResourceManager::get_instance()->get_host_id()),
       pinned(false),
       owner(false) { }
 
@@ -25,6 +26,7 @@ Pointer<T>::Pointer(int size)
     : ptr((T*)ResourceManager::get_instance()->allocate_host(size, sizeof(T))),
       size(size),
       local(true),
+      device_id(ResourceManager::get_instance()->get_host_id()),
       pinned(false),
       owner(true) { }
 
@@ -35,22 +37,23 @@ Pointer<T>::Pointer(int size, T val)
 }
 
 template<typename T>
-Pointer<T>::Pointer(T* ptr, int size, bool local)
+Pointer<T>::Pointer(T* ptr, int size, bool local, DeviceID device_id)
     : ptr(ptr),
       size(size),
       local(local),
+      device_id(device_id),
       pinned(false),
       owner(false) { }
 
 template<typename T>
 template<typename S>
 Pointer<S> Pointer<T>::cast() const {
-    return Pointer<S>((S*)ptr, size, local);
+    return Pointer<S>((S*)ptr, size, local, device_id);
 }
 
 template<typename T>
 Pointer<T> Pointer<T>::slice(int offset, int new_size) const {
-    return Pointer<T>(ptr + offset, new_size, local);
+    return Pointer<T>(ptr + offset, new_size, local, device_id);
 }
 
 template<typename T>
@@ -58,7 +61,8 @@ Pointer<T> Pointer<T>::pinned_pointer(int size) {
 #ifdef __CUDACC__
     T* ptr;
     cudaMallocHost((void**) &ptr, size * sizeof(T));
-    auto pointer = Pointer<T>(ptr, size);
+    auto pointer = Pointer<T>(ptr, size, true,
+        ResourceManager::get_instance()->get_host_id());
     pointer.owner = true;
     pointer.pinned = true;
     return pointer;
@@ -111,7 +115,8 @@ void Pointer<T>::transfer_to_device(int device_id) {
             size, sizeof(T), this->ptr, device_id);
         std::free(this->ptr);
         this->ptr = new_ptr;
-        local = false;
+        this->local = false;
+        this->device_id = device_id;
     } else {
         ErrorManager::get_instance()->log_error(
             "Attempted to transfer device pointer to device!");
@@ -139,13 +144,22 @@ void Pointer<T>::copy_to(Pointer<T> dst, Stream *stream) const {
 #ifdef __CUDACC__
     if (this->local and dst.local) memcpy(dst.ptr, this->ptr, this->size * sizeof(T));
     else {
-        auto kind = cudaMemcpyDeviceToDevice;
+        if (stream->is_host())
+            ErrorManager::get_instance()->log_error(
+                "Attempted to copy memory between devices using host stream!");
+        cudaSetDevice(stream->get_device_id());
 
-        if (this->local and not dst.local) kind = cudaMemcpyDeviceToHost;
-        else if (dst.local) kind = cudaMemcpyHostToDevice;
+        if (not this->local and not dst.local) {
+            cudaMemcpyPeerAsync(dst.ptr, dst.device_id,
+                this->ptr, this->device_id, this->size * sizeof(T),
+                stream->get_cuda_stream());
+        } else {
+            auto kind = cudaMemcpyDeviceToHost;
+            if (this->local) kind = cudaMemcpyHostToDevice;
 
-        cudaMemcpyAsync(dst.ptr, this->ptr, this->size * sizeof(T),
-            kind, stream->cuda_stream);
+            cudaMemcpyAsync(dst.ptr, this->ptr, this->size * sizeof(T),
+                kind, stream->get_cuda_stream());
+        }
     }
 #else
     memcpy(dst.ptr, this->ptr, this->size * sizeof(T));
