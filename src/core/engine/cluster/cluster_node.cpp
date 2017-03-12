@@ -1,4 +1,4 @@
-#include "engine/stream/cluster_node.h"
+#include "engine/cluster/cluster_node.h"
 #include "util/error_manager.h"
 
 ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
@@ -6,10 +6,10 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         : to_layer(layer),
           is_input(layer->is_input()),
           is_output(layer->is_output()),
-          input_event(new Event()),
-          input_copy_event(new Event()),
-          output_event(new Event()),
-          output_copy_event(new Event()),
+          input_event(ResourceManager::get_instance()->create_event()),
+          input_copy_event(ResourceManager::get_instance()->create_event()),
+          output_event(ResourceManager::get_instance()->create_event()),
+          output_copy_event(ResourceManager::get_instance()->create_event()),
           input_instruction(nullptr),
           input_copy_instruction(nullptr),
           output_instruction(nullptr),
@@ -21,26 +21,38 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
           environment(environment) {
     // Add input transfer instruction
     if (this->is_input) {
-        this->set_input_instruction(new InputTransferInstruction(to_layer, state, environment));
-        this->set_input_copy_instruction(new InternalInputTransferInstruction(to_layer, state));
+        set_input_instruction(
+            new InputTransferInstruction(
+                to_layer, state, environment, compute_stream));
+        set_input_copy_instruction(
+            new InternalInputTransferInstruction(
+                to_layer, state, compute_stream));
     }
 
     // Add noise / clear instruction
     if (to_layer->noise != 0.0)
-        add_instruction(new NoiseInstruction(to_layer, state));
+        instructions.push_back(
+            new NoiseInstruction(to_layer, state, compute_stream));
     else if (not this->is_input)
-        add_instruction(new ClearInstruction(to_layer, state));
+        instructions.push_back(
+            new ClearInstruction(to_layer, state, compute_stream));
 
     // Beform DFS on dendritic tree
     dendrite_DFS(to_layer->dendritic_root);
 
     // Add state instruction
-    this->set_state_instruction(new StateUpdateInstruction(to_layer, state));
+    set_state_instruction(
+        new StateUpdateInstruction(
+            to_layer, state, compute_stream));
 
     // Add output transfer instruction
     if (this->is_output) {
-        this->set_output_copy_instruction(new InternalOutputTransferInstruction(to_layer, state));
-        this->set_output_instruction(new OutputTransferInstruction(to_layer, state, environment));
+        set_output_copy_instruction(
+            new InternalOutputTransferInstruction(
+                to_layer, state, compute_stream));
+        set_output_instruction(
+            new OutputTransferInstruction(
+                to_layer, state, environment, io_stream));
     }
 }
 
@@ -67,17 +79,16 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         // Create an instruction
         // If internal, recurse first (post-fix DFS)
         if (child->is_leaf()) {
-            add_instruction(new SynapseInstruction(child->conn, state));
+            instructions.push_back(
+                new SynapseInstruction(
+                    child->conn, state, compute_stream));
         } else {
             this->dendrite_DFS(child);
-            add_instruction(new DendriticInstruction(curr, child, state));
+            instructions.push_back(
+                new DendriticInstruction(
+                    curr, child, state, compute_stream));
         }
     }
-}
-
-void ClusterNode::add_instruction(Instruction *inst) {
-    this->instructions.push_back(inst);
-    inst->set_stream(this->compute_stream);
 }
 
 void ClusterNode::set_input_instruction(Instruction *inst) {
@@ -85,7 +96,6 @@ void ClusterNode::set_input_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple input instructions to stream!");
     this->input_instruction = inst;
-    inst->set_stream(this->compute_stream);
     inst->add_dependency(input_copy_event);
     inst->add_event(input_event);
 }
@@ -95,7 +105,6 @@ void ClusterNode::set_input_copy_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple input copy instructions to stream!");
     this->input_copy_instruction = inst;
-    inst->set_stream(this->compute_stream);
     inst->add_dependency(input_event);
     inst->add_event(input_copy_event);
 }
@@ -105,7 +114,6 @@ void ClusterNode::set_state_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple state instructions to stream!");
     this->state_instruction = inst;
-    inst->set_stream(this->compute_stream);
 }
 
 void ClusterNode::set_output_copy_instruction(Instruction *inst) {
@@ -113,7 +121,6 @@ void ClusterNode::set_output_copy_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple output copy instructions to stream!");
     this->output_copy_instruction = inst;
-    inst->set_stream(this->compute_stream);
     inst->add_dependency(output_event);
     inst->add_event(output_copy_event);
 }
@@ -123,7 +130,6 @@ void ClusterNode::set_output_instruction(Instruction *inst) {
         ErrorManager::get_instance()->log_error(
             "Cannot add multiple output instructions to stream!");
     this->output_instruction = inst;
-    inst->set_stream(this->io_stream);
     inst->add_dependency(output_copy_event);
     inst->add_event(output_event);
 }

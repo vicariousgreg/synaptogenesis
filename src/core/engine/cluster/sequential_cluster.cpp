@@ -1,11 +1,12 @@
 #include <queue>
 #include <set>
 
-#include "engine/stream/cluster.h"
+#include "engine/cluster/cluster.h"
 
 SequentialCluster::SequentialCluster(Structure *structure,
         State *state, Environment *environment)
-        : Cluster(state, environment), compute_stream(new Stream()) {
+        : Cluster(state, environment),
+          compute_stream(ResourceManager::get_instance()->create_stream()) {
     // Keep track of visited layers;
     std::set<Layer*> visited;
 

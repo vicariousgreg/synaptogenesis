@@ -3,7 +3,7 @@
 
 #include "model/layer.h"
 #include "io/environment.h"
-#include "engine/stream/instruction.h"
+#include "engine/instruction.h"
 
 class ClusterNode {
     public:
@@ -28,7 +28,6 @@ class ClusterNode {
 
     private:
         void dendrite_DFS(DendriticNode *curr);
-        void add_instruction(Instruction *inst);
         void set_input_instruction(Instruction *inst);
         void set_input_copy_instruction(Instruction *inst);
         void set_state_instruction(Instruction *inst);

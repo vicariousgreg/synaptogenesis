@@ -1,6 +1,6 @@
 #include <queue>
 
-#include "engine/stream/cluster.h"
+#include "engine/cluster/cluster.h"
 
 ParallelCluster::ParallelCluster(Structure *structure,
         State *state, Environment *environment)
@@ -8,7 +8,8 @@ ParallelCluster::ParallelCluster(Structure *structure,
     // Build instructions
     for (auto& layer : structure->get_layers()) {
         auto node = new ClusterNode(
-            layer, state, environment, io_stream, new Stream());
+            layer, state, environment, io_stream,
+            ResourceManager::get_instance()->create_stream());
         nodes.push_back(node);
         sorted_nodes[layer->get_type()].push_back(node);
     }

@@ -2,6 +2,7 @@
 #define pointer_h
 
 #include "util/parallel.h"
+#include "util/stream.h"
 
 template<class T>
 class Pointer {
@@ -60,7 +61,8 @@ class Pointer {
         void transfer_to_device(int device_id=0);
 
         // Copy data from this pointer to a given destination
-        void copy_to(Pointer<T> dst, bool async=true) const;
+        void copy_to(Pointer<T> dst) const;
+        void copy_to(Pointer<T> dst, Stream *stream) const;
 
         // Sets memory
         void set(T val, bool async=true);

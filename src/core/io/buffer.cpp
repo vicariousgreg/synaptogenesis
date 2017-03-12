@@ -38,12 +38,12 @@ Buffer::~Buffer() {
 }
 
 void Buffer::set_input(Layer* layer, Pointer<float> source) {
-    source.copy_to(this->get_input(layer), false);
+    source.copy_to(this->get_input(layer));
     dirty_map[layer] = true;
 }
 
 void Buffer::set_output(Layer* layer, Pointer<Output> source) {
-    source.copy_to(this->get_output(layer), false);
+    source.copy_to(this->get_output(layer));
 }
 
 void HostBuffer::init() {

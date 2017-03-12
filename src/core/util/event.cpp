@@ -1,4 +1,4 @@
-#include "engine/stream/event.h"
+#include "util/event.h"
 
 Event::Event() {
 #ifdef __CUDACC__

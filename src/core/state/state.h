@@ -5,7 +5,6 @@
 #include "model/layer.h"
 #include "io/environment.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "engine/stream/stream.h"
 #include "state/attributes.h"
 #include "state/weight_matrix.h"
 #include "util/constants.h"

@@ -4,8 +4,7 @@
 #include "state/state.h"
 #include "model/model.h"
 #include "io/environment.h"
-#include "engine/stream/cluster.h"
-#include "engine/stream/instruction.h"
+#include "engine/cluster/cluster.h"
 
 class Engine {
     public:

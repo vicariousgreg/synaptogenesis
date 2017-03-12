@@ -12,11 +12,11 @@
 
 class Instruction {
     public:
-        Instruction(Layer *layer)
+        Instruction(Layer *layer, Stream *stream)
                 : to_layer(layer),
                   activator_threads(calc_threads(layer->size)),
                   activator_blocks(calc_blocks(layer->size)),
-                  stream(Stream::get_default_stream()) { }
+                  stream(stream) { }
 
         virtual void activate() = 0;
         virtual void update() { }
@@ -32,7 +32,6 @@ class Instruction {
 
         Layer* const to_layer;
 
-        void set_stream(Stream *stream) { this->stream = stream; }
         void add_event(Event *event) { this->events.push_back(event); }
         void add_dependency(Event *dep) { this->dependencies.push_back(dep); }
 
@@ -47,8 +46,8 @@ class Instruction {
 /* Instructions that initialize the input without connections */
 class InitializeInstruction : public Instruction {
     public:
-        InitializeInstruction(Layer *layer, State *state)
-                : Instruction(layer),
+        InitializeInstruction(Layer *layer, State *state, Stream *stream)
+                : Instruction(layer, stream),
                   dst(state->get_input(layer)) { }
 
     protected:
@@ -58,8 +57,8 @@ class InitializeInstruction : public Instruction {
 /* Clears inputs */
 class ClearInstruction : public InitializeInstruction {
     public:
-        ClearInstruction(Layer *layer, State *state)
-                : InitializeInstruction(layer, state) { }
+        ClearInstruction(Layer *layer, State *state, Stream *stream)
+                : InitializeInstruction(layer, state, stream) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
@@ -73,8 +72,8 @@ class ClearInstruction : public InitializeInstruction {
 /* Adds noise to the input */
 class NoiseInstruction : public InitializeInstruction {
     public:
-        NoiseInstruction(Layer *layer, State *state)
-                : InitializeInstruction(layer, state),
+        NoiseInstruction(Layer *layer, State *state, Stream *stream)
+                : InitializeInstruction(layer, state, stream),
                   init(not layer->is_input()) { }
 
         void activate() {
@@ -92,8 +91,8 @@ class NoiseInstruction : public InitializeInstruction {
 /* Computes synaptic connection */
 class SynapseInstruction : public Instruction {
     public:
-        SynapseInstruction(Connection *conn, State *state)
-                : Instruction(conn->to_layer),
+        SynapseInstruction(Connection *conn, State *state, Stream *stream)
+                : Instruction(conn->to_layer, stream),
                   connection(conn),
                   synapse_data(conn, state),
                   type(conn->type),
@@ -140,8 +139,8 @@ class SynapseInstruction : public Instruction {
 class DendriticInstruction : public Instruction {
     public:
         DendriticInstruction(DendriticNode *parent,
-            DendriticNode *child, State *state)
-                : Instruction(parent->to_layer),
+            DendriticNode *child, State *state, Stream *stream)
+                : Instruction(parent->to_layer, stream),
                   init(child->register_index != 0),
                   src(state->get_input(to_layer, child->register_index)),
                   dst(state->get_input(to_layer, parent->register_index)) { }
@@ -163,13 +162,14 @@ class DendriticInstruction : public Instruction {
 template<class T>
 class TransferInstruction : public Instruction {
     public:
-        TransferInstruction(Layer *layer, Pointer<T> src, Pointer<T> dst)
-                : Instruction(layer),
+        TransferInstruction(Layer *layer,
+            Pointer<T> src, Pointer<T> dst, Stream *stream)
+                : Instruction(layer, stream),
                   src(src), dst(dst) { }
 
         virtual void activate() {
             Instruction::wait_for_dependencies();
-            stream->transfer(src, dst);
+            src.copy_to(dst, stream);
             Instruction::record_events();
         }
 
@@ -181,10 +181,11 @@ class TransferInstruction : public Instruction {
 class InputTransferInstruction : public TransferInstruction<float> {
     public:
         InputTransferInstruction(Layer *layer, State *state,
-            Environment *environment)
+            Environment *environment, Stream *stream)
                 : TransferInstruction(layer,
                       environment->buffer->get_input(layer),
-                      state->buffer->get_input(layer)),
+                      state->buffer->get_input(layer),
+                      stream),
                   buffer(environment->buffer) { }
 
         virtual void activate() {
@@ -202,36 +203,41 @@ class InputTransferInstruction : public TransferInstruction<float> {
 /* Sets input from buffer */
 class InternalInputTransferInstruction : public TransferInstruction<float> {
     public:
-        InternalInputTransferInstruction(Layer *layer, State *state)
+        InternalInputTransferInstruction(Layer *layer,
+            State *state, Stream *stream)
                 : TransferInstruction(layer,
                       state->buffer->get_input(layer),
-                      state->get_input(layer)) { }
+                      state->get_input(layer),
+                      stream) { }
 };
 
 /* Transfers output data */
 class OutputTransferInstruction : public TransferInstruction<Output> {
     public:
         OutputTransferInstruction(Layer *layer,
-            State *state, Environment *environment)
+            State *state, Environment *environment, Stream *stream)
                 : TransferInstruction(layer,
                       state->buffer->get_output(layer),
-                      environment->buffer->get_output(layer)) { }
+                      environment->buffer->get_output(layer),
+                      stream) { }
 };
 
 /* Sets output to buffer */
 class InternalOutputTransferInstruction : public TransferInstruction<Output> {
     public:
-        InternalOutputTransferInstruction(Layer *layer, State *state)
+        InternalOutputTransferInstruction(Layer *layer,
+            State *state, Stream *stream)
                 : TransferInstruction(layer,
                       state->get_output(layer),
-                      state->buffer->get_output(layer)) { }
+                      state->buffer->get_output(layer),
+                      stream) { }
 };
 
 /* Updates layer state */
 class StateUpdateInstruction : public Instruction {
     public:
-        StateUpdateInstruction(Layer *to_layer, State *state)
-            : Instruction(to_layer),
+        StateUpdateInstruction(Layer *to_layer, State *state, Stream *stream)
+            : Instruction(to_layer, stream),
               attribute_data(to_layer, state),
               attribute_kernel(state->get_attribute_kernel(to_layer)) { }
 

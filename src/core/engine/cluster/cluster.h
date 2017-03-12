@@ -5,17 +5,18 @@
 #include <string>
 
 #include "model/structure.h"
-#include "engine/stream/cluster_node.h"
-#include "engine/stream/instruction.h"
+#include "engine/cluster/cluster_node.h"
+#include "engine/instruction.h"
 #include "io/environment.h"
 #include "util/constants.h"
+#include "util/resource_manager.h"
 
 class Cluster {
     public:
         Cluster(State *state, Environment *environment)
                 : state(state),
                   environment(environment),
-                  io_stream(new Stream()) { }
+                  io_stream(ResourceManager::get_instance()->create_stream()) { }
         virtual ~Cluster() { delete io_stream; }
 
         virtual void launch_pre_input_calculations() { };

@@ -2,7 +2,7 @@
 #define kernel_h
 
 #include "util/error_manager.h"
-#include "engine/stream/stream.h"
+#include "util/stream.h"
 
 template<typename... ARGS>
 class Kernel {
@@ -20,10 +20,7 @@ class Kernel {
 
         void run(Stream *stream, int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
-            if (stream->is_default_stream)
-                parallel_kernel<<<blocks, threads>>>(args...);
-            else
-                parallel_kernel<<<blocks, threads, 0, stream->cuda_stream>>>(args...);
+            parallel_kernel<<<blocks, threads, 0, stream->cuda_stream>>>(args...);
 #else
             serial_kernel(args...);
 #endif

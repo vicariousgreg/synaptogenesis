@@ -1,6 +1,6 @@
 #include <set>
 
-#include "engine/stream/cluster.h"
+#include "engine/cluster/cluster.h"
 
 static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
     if (visited.find(curr_layer) != visited.end()) {
