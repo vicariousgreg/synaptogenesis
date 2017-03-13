@@ -16,7 +16,7 @@ class HodgkinHuxleyAttributes : public SpikingAttributes {
         HodgkinHuxleyAttributes(LayerList &layers);
         virtual ~HodgkinHuxleyAttributes();
 
-        virtual void transfer_to_device();
+        virtual void schedule_transfer();
 
         // Neuron Attributes
         Pointer<float> h, m, n, current_trace;

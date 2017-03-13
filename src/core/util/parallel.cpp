@@ -23,7 +23,8 @@ int get_num_cuda_devices() {
 void gpuAssert(const char* file, int line, const char* msg) {
     cudaError_t e = cudaGetLastError();
     if (e != cudaSuccess) {
-        printf("Cuda failure (%s: %d): '%s'\n", file, line, cudaGetErrorString(e));
+        printf("Cuda failure (%s: %d): '%s'\n", file, line,
+            cudaGetErrorString(e));
         if (msg == nullptr) msg = "";
         ErrorManager::get_instance()->log_error(msg);
     }
@@ -44,12 +45,14 @@ void device_check_memory() {
         double total_db = (double)total_byte ;
         double used_db = total_db - free_db ;
         printf("GPU %d memory usage: used = %f, free = %f MB, total = %f MB\n",
-            i, used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
+            i, used_db/1024.0/1024.0, free_db/1024.0/1024.0,
+            total_db/1024.0/1024.0);
     }
     cudaSetDevice(prev_device);
 }
 
-void* cuda_allocate_device(int device_id, int count, int size, void* source_data) {
+void* cuda_allocate_device(int device_id, unsigned long count,
+        int size, void* source_data) {
     int prev_device;
     cudaGetDevice(&prev_device);
     cudaSetDevice(device_id);

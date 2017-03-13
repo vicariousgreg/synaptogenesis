@@ -9,20 +9,19 @@
 Attributes *build_attributes(LayerList &layers,
         NeuralModel neural_model, DeviceID device_id) {
     Attributes *attributes;
-    int object_size;
 
     switch(neural_model) {
         case(IZHIKEVICH):
             attributes = new IzhikevichAttributes(layers);
-            object_size = sizeof(IzhikevichAttributes);
+            attributes->object_size = sizeof(IzhikevichAttributes);
             break;
         case(HODGKIN_HUXLEY):
             attributes = new HodgkinHuxleyAttributes(layers);
-            object_size = sizeof(HodgkinHuxleyAttributes);
+            attributes->object_size = sizeof(HodgkinHuxleyAttributes);
             break;
         case(RATE_ENCODING):
             attributes = new RateEncodingAttributes(layers);
-            object_size = sizeof(RateEncodingAttributes);
+            attributes->object_size = sizeof(RateEncodingAttributes);
             break;
         default:
             ErrorManager::get_instance()->log_error(
@@ -31,12 +30,8 @@ Attributes *build_attributes(LayerList &layers,
 
 #ifdef __CUDACC__
     // Copy attributes to device and set the pointer
-    // Superclass will set its own pointer otherwise
     attributes->set_device_id(device_id);
-    attributes->transfer_to_device();
-    attributes->pointer = (Attributes*)
-        ResourceManager::get_instance()->allocate_device(
-            1, object_size, attributes, device_id);
+    attributes->schedule_transfer();
 #endif
     return attributes;
 }
@@ -99,9 +94,19 @@ Attributes::~Attributes() {
 }
 
 void Attributes::transfer_to_device() {
+#ifdef __CUDACC__
+    // Copy attributes to device and set the pointer
+    if (device_id != ResourceManager::get_instance()->get_host_id())
+        this->pointer = (Attributes*)
+            ResourceManager::get_instance()->allocate_device(
+                1, object_size, this, device_id);
+#endif
+}
+
+void Attributes::schedule_transfer() {
     // Transfer data
-    this->input.transfer_to_device(device_id);
-    this->output.transfer_to_device(device_id);
+    this->input.schedule_transfer(device_id);
+    this->output.schedule_transfer(device_id);
 }
 
 int Attributes::get_other_start_index(int id) const {

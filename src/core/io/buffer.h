@@ -20,8 +20,8 @@ class Buffer {
         void set_output(Layer *layer, Pointer<Output> source);
 
         /* IO getters */
-        Pointer<float> get_input(Layer *layer) { return input_map[layer]; }
-        Pointer<Output> get_output(Layer *layer) { return output_map[layer]; }
+        Pointer<float> get_input(Layer *layer);
+        Pointer<Output> get_output(Layer *layer);
 
         /* Dirty */
         bool get_dirty(Layer *layer) const { return dirty_map.at(layer); }
@@ -42,8 +42,8 @@ class Buffer {
         int output_size;
 
         std::map<Layer*, bool> dirty_map;
-        std::map<Layer*, Pointer<float> > input_map;
-        std::map<Layer*, Pointer<Output> > output_map;
+        std::map<Layer*, int> input_map;
+        std::map<Layer*, int> output_map;
 };
 
 class HostBuffer : public Buffer {

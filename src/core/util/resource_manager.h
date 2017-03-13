@@ -8,6 +8,7 @@
 
 class Stream;
 class Event;
+class BasePointer;
 
 typedef unsigned int DeviceID;
 
@@ -22,9 +23,12 @@ class ResourceManager {
         unsigned int get_num_devices() { return devices.size(); }
         DeviceID get_host_id() { return devices.size()-1; }
 
-        void* allocate_host(int count, int size);
-        void* allocate_device(int count, int size,
+        void* allocate_host(unsigned long count, int size);
+        void* allocate_device(unsigned long count, int size,
             void* source_data, DeviceID device_id=0);
+
+        void schedule_transfer(BasePointer* ptr, DeviceID device_id);
+        void transfer();
 
         Stream *get_default_stream(DeviceID id);
         Stream *create_stream(DeviceID id);
@@ -36,6 +40,9 @@ class ResourceManager {
 
         int num_cores;
         std::vector<Device*> devices;
+
+        std::vector<unsigned long> scheduled_transfer_size;
+        std::vector<std::vector<BasePointer*> > scheduled_transfers;
 
         class Device {
             public:

@@ -7,14 +7,37 @@ State::State(Model *model)
         : model(model) {
 
     // Determine number of non-host devices
+    // Subtract one if cuda is enabled to avoid distribution to the host
     this->num_devices = ResourceManager::get_instance()->get_num_devices();
+#ifdef __CUDACC__
+    --this->num_devices;
+#endif
 
     // Distribute layers
-    // TODO: add algorithm for distributing
-    for (auto layer : model->get_layers())
-        layer_devices[layer] = 0;
+    // Count up weights, and distribute layers in round robin fashion,
+    //    in decreasing order of weights
+    std::map<Layer*, int> num_weights;
+    for (auto layer : model->get_layers()) {
+        num_weights[layer] = 0;
+        for (auto& conn : layer->get_input_connections())
+            num_weights[layer] += conn->get_num_weights();
+    }
 
-    // Create a buffer for each
+    int i = 0;
+    while (num_weights.size() > 0) {
+        Layer *biggest;
+        int size = -1;
+        for (auto pair : num_weights) {
+            if (pair.second > size) {
+                size = pair.second;
+                biggest = pair.first;
+            }
+        }
+        num_weights.erase(biggest);
+        layer_devices[biggest] = (i++ % num_devices);
+    }
+
+    // Create a buffer for each attributes
     for (DeviceID i = 0; i < num_devices; ++i) {
         LayerList input_layers, output_layers;
 
@@ -59,12 +82,18 @@ State::State(Model *model)
                             att->get_matrix_depth(conn));
                         this->weight_matrices[conn] = matrix;
                         att->process_weight_matrix(matrix);
-                        matrix->transfer_to_device(att->get_device_id());
+                        matrix->schedule_transfer(att->get_device_id());
                     }
                 }
             }
         }
     }
+
+    // Finally, transfer data
+    ResourceManager::get_instance()->transfer();
+    for (auto n : NeuralModels)
+        for (int i = 0; i < num_devices; ++i)
+            if (attributes[i][n]) attributes[i][n]->transfer_to_device();
 }
 
 State::~State() {

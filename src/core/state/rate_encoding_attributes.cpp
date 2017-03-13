@@ -125,9 +125,9 @@ RateEncodingAttributes::~RateEncodingAttributes() {
     this->neuron_parameters.free();
 }
 
-void RateEncodingAttributes::transfer_to_device() {
-    Attributes::transfer_to_device();
+void RateEncodingAttributes::schedule_transfer() {
+    Attributes::schedule_transfer();
 
-    this->neuron_parameters.transfer_to_device(device_id);
+    this->neuron_parameters.schedule_transfer(device_id);
 }
 

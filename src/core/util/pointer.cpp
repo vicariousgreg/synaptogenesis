@@ -14,36 +14,42 @@
 
 template<typename T>
 Pointer<T>::Pointer()
-    : ptr(nullptr),
-      size(0),
-      local(true),
-      device_id(ResourceManager::get_instance()->get_host_id()),
-      pinned(false),
-      owner(false) { }
+    : BasePointer(
+          nullptr,
+          0,
+          sizeof(T),
+          ResourceManager::get_instance()->get_host_id(),
+          true,
+          false,
+          false) { }
 
 template<typename T>
-Pointer<T>::Pointer(int size)
-    : ptr((T*)ResourceManager::get_instance()->allocate_host(size, sizeof(T))),
-      size(size),
-      local(true),
-      device_id(ResourceManager::get_instance()->get_host_id()),
-      pinned(false),
-      owner(true) { }
+Pointer<T>::Pointer(unsigned long size)
+    : BasePointer(
+          ResourceManager::get_instance()->allocate_host(size, sizeof(T)),
+          size,
+          sizeof(T),
+          ResourceManager::get_instance()->get_host_id(),
+          true,
+          false,
+          true) { }
 
 template<typename T>
-Pointer<T>::Pointer(int size, T val)
+Pointer<T>::Pointer(unsigned long size, T val)
         : Pointer<T>(size) {
     this->set(val, false);
 }
 
 template<typename T>
-Pointer<T>::Pointer(T* ptr, int size, bool local, DeviceID device_id)
-    : ptr(ptr),
-      size(size),
-      local(local),
-      device_id(device_id),
-      pinned(false),
-      owner(false) { }
+Pointer<T>::Pointer(T* ptr, unsigned long size, bool local, DeviceID device_id)
+    : BasePointer(
+          ptr,
+          size,
+          sizeof(T),
+          device_id,
+          local,
+          false,
+          false) { }
 
 template<typename T>
 template<typename S>
@@ -53,11 +59,11 @@ Pointer<S> Pointer<T>::cast() const {
 
 template<typename T>
 Pointer<T> Pointer<T>::slice(int offset, int new_size) const {
-    return Pointer<T>(ptr + offset, new_size, local, device_id);
+    return Pointer<T>(((T*)ptr) + offset, new_size, local, device_id);
 }
 
 template<typename T>
-Pointer<T> Pointer<T>::pinned_pointer(int size) {
+Pointer<T> Pointer<T>::pinned_pointer(unsigned long size) {
 #ifdef __CUDACC__
     T* ptr;
     cudaMallocHost((void**) &ptr, size * sizeof(T));
@@ -72,7 +78,7 @@ Pointer<T> Pointer<T>::pinned_pointer(int size) {
 }
 
 template<typename T>
-Pointer<T> Pointer<T>::pinned_pointer(int size, T val) {
+Pointer<T> Pointer<T>::pinned_pointer(unsigned long size, T val) {
     auto pointer = Pointer<T>::pinned_pointer(size);
     pointer.set(val, false);
     return pointer;
@@ -82,45 +88,12 @@ template<typename T>
 HOST DEVICE T* Pointer<T>::get(int offset) const {
 #ifdef __CUDA_ARCH__
     if (local) assert(false);
-    return ptr + offset;
+    return ((T*)ptr) + offset;
 #else
     if (not local)
         ErrorManager::get_instance()->log_error(
             "Attempted to dereference device pointer from host!");
-    return ptr + offset;
-#endif
-}
-
-template<typename T>
-void Pointer<T>::free() {
-    if (owner and size > 0) {
-#ifdef __CUDACC__
-        if (local) {
-            if (pinned) cudaFreeHost(ptr); // cuda pinned memory
-            else std::free(ptr);           // unpinned host memory
-        } else {
-            cudaFree(this->ptr);           // cuda device memory
-        }
-#else
-        if (local) std::free(ptr);         // unpinned host memory (default)
-#endif
-    }
-}
-
-template<typename T>
-void Pointer<T>::transfer_to_device(int device_id) {
-#ifdef __CUDACC__
-    if (local) {
-        T* new_ptr = (T*) ResourceManager::get_instance()->allocate_device(
-            size, sizeof(T), this->ptr, device_id);
-        std::free(this->ptr);
-        this->ptr = new_ptr;
-        this->local = false;
-        this->device_id = device_id;
-    } else {
-        ErrorManager::get_instance()->log_error(
-            "Attempted to transfer device pointer to device!");
-    }
+    return ((T*)ptr) + offset;
 #endif
 }
 
@@ -168,8 +141,9 @@ void Pointer<T>::copy_to(Pointer<T> dst, Stream *stream) const {
 
 template<typename T>
 void Pointer<T>::set(T val, bool async) {
+    T* t_ptr = (T*)ptr;
     if (local) {
-        for (int i = 0 ; i < size ; ++i) ptr[i] = val;
+        for (int i = 0 ; i < size ; ++i) t_ptr[i] = val;
 #ifdef __CUDACC__
     } else if (sizeof(T) == 1) {
         if (async) cudaMemsetAsync(ptr,val,size);

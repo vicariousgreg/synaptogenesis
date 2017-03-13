@@ -25,7 +25,7 @@ class RateEncodingAttributes : public Attributes {
         /* Trace learning rules */
         virtual Kernel<SYNAPSE_ARGS>get_updater(ConnectionType type);
 
-        virtual void transfer_to_device();
+        virtual void schedule_transfer();
 
         // Neuron parameters
         Pointer<RateEncodingParameters> neuron_parameters;

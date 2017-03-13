@@ -163,12 +163,12 @@ HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
     this->neuron_parameters.free();
 }
 
-void HodgkinHuxleyAttributes::transfer_to_device() {
-    SpikingAttributes::transfer_to_device();
+void HodgkinHuxleyAttributes::schedule_transfer() {
+    SpikingAttributes::schedule_transfer();
 
-    this->h.transfer_to_device(device_id);
-    this->m.transfer_to_device(device_id);
-    this->n.transfer_to_device(device_id);
-    this->current_trace.transfer_to_device(device_id);
-    this->neuron_parameters.transfer_to_device(device_id);
+    this->h.schedule_transfer(device_id);
+    this->m.schedule_transfer(device_id);
+    this->n.schedule_transfer(device_id);
+    this->current_trace.schedule_transfer(device_id);
+    this->neuron_parameters.schedule_transfer(device_id);
 }

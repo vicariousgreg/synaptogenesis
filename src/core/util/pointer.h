@@ -4,8 +4,39 @@
 #include "util/parallel.h"
 #include "util/stream.h"
 
+class BasePointer {
+    public:
+        // Frees the encapsulated pointer if this is the owner
+        void free();
+
+        // Schedule transfer of data to the device
+        void schedule_transfer(DeviceID device_id);
+        void transfer(DeviceID device_id, void* destination);
+
+    protected:
+        BasePointer(void* ptr, unsigned long size, int unit_size, DeviceID device_id,
+            bool local, bool pinned, bool owner)
+                : ptr(ptr),
+                  size(size),
+                  unit_size(unit_size),
+                  device_id(device_id),
+                  local(local),
+                  pinned(pinned),
+                  owner(owner) { }
+
+        friend class ResourceManager;
+
+        void* ptr;
+        unsigned long size;
+        int unit_size;
+        DeviceID device_id;
+        bool local;
+        bool pinned;
+        bool owner;
+};
+
 template<class T>
-class Pointer {
+class Pointer : public BasePointer {
     public:
         /********************/
         /*** Constructors ***/
@@ -16,12 +47,12 @@ class Pointer {
         // Allocator constructor
         // Allocates space and claims ownership of pointer
         // Second version takes an initialization value
-        Pointer(int size);
-        Pointer(int size, T val);
+        Pointer(unsigned long size);
+        Pointer(unsigned long size, T val);
 
         // Container constructor
         // Encapsulates the pointer but does not claim ownership
-        Pointer(T* ptr, int size, bool local, DeviceID device_id);
+        Pointer(T* ptr, unsigned long size, bool local, DeviceID device_id);
 
 
         /*****************************/
@@ -36,8 +67,8 @@ class Pointer {
 
         // Creates a pinned pointer, which is only supported if CUDA is enabled
         // Comes with a version for initializing
-        static Pointer<T> pinned_pointer(int size);
-        static Pointer<T> pinned_pointer(int size, T val);
+        static Pointer<T> pinned_pointer(unsigned long size);
+        static Pointer<T> pinned_pointer(unsigned long size, T val);
 
 
         /*****************/
@@ -57,26 +88,12 @@ class Pointer {
         /*************************/
         /*** Memory management ***/
         /*************************/
-        // Frees the encapsulated pointer if this is the owner
-        void free();
-
-        // Transfer the data to the device
-        void transfer_to_device(int device_id);
-
         // Copy data from this pointer to a given destination
         void copy_to(Pointer<T> dst) const;
         void copy_to(Pointer<T> dst, Stream *stream) const;
 
         // Sets memory
         void set(T val, bool async=true);
-
-    protected:
-        T* ptr;
-        int size;
-        DeviceID device_id;
-        bool local;
-        bool pinned;
-        bool owner;
 };
 
 #ifndef pointer_cpp

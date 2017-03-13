@@ -33,11 +33,11 @@ void Buffer::init() {
     int input_index = 0;
     int output_index = 0;
     for (auto& layer : input_layers) {
-        input_map[layer] = input.slice(input_index, layer->size);
+        input_map[layer] = input_index;
         input_index += layer->size;
     }
     for (auto& layer : output_layers) {
-        output_map[layer] = output.slice(output_index, layer->size);
+        output_map[layer] = output_index;
         output_index += layer->size;
     }
 }
@@ -56,6 +56,14 @@ void Buffer::set_output(Layer* layer, Pointer<Output> source) {
     source.copy_to(this->get_output(layer));
 }
 
+Pointer<float> Buffer::get_input(Layer *layer) {
+    return input.slice(input_map[layer], layer->size);
+}
+
+Pointer<Output> Buffer::get_output(Layer *layer) {
+    return output.slice(output_map[layer], layer->size);
+}
+
 void HostBuffer::init() {
     // Allocate buffer memory
     if (input_size > 0) input = Pointer<float>::pinned_pointer(input_size, 0.0);
@@ -67,11 +75,11 @@ void DeviceBuffer::init() {
     // Allocate buffer memory
     if (input_size > 0) {
         input = Pointer<float>(input_size, 0.0);
-        input.transfer_to_device(device_id);
+        input.schedule_transfer(device_id);
     }
     if (output_size > 0) {
         output = Pointer<Output>(output_size);
-        output.transfer_to_device(device_id);
+        output.schedule_transfer(device_id);
     }
     Buffer::init();
 }

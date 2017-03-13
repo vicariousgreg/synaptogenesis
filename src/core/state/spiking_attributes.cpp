@@ -11,9 +11,9 @@ SpikingAttributes::~SpikingAttributes() {
     this->voltage.free();
 }
 
-void SpikingAttributes::transfer_to_device() {
-    Attributes::transfer_to_device();
-    this->voltage.transfer_to_device(device_id);
+void SpikingAttributes::schedule_transfer() {
+    Attributes::schedule_transfer();
+    this->voltage.schedule_transfer(device_id);
 }
 
 void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {

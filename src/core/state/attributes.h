@@ -31,7 +31,8 @@ class Attributes {
          *   with the given cluster_type */
         virtual bool check_compatibility(ClusterType cluster_type) { return true; }
 
-        virtual void transfer_to_device();
+        virtual void schedule_transfer();
+        void transfer_to_device();
 
         /* Learning Rule functions */
         // Activator Kernel
@@ -70,11 +71,16 @@ class Attributes {
 
         DeviceID get_device_id() { return device_id; }
 
+
     protected:
+        friend Attributes *build_attributes(LayerList &layers,
+            NeuralModel neural_model, DeviceID device_id);
+
         // Number of neurons
         int total_neurons;
 
         DeviceID device_id;
+        int object_size;
 
         std::map<int, int> other_start_indices;
         std::map<int, int> input_start_indices;

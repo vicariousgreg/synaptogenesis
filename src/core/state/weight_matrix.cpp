@@ -111,6 +111,6 @@ WeightMatrix::~WeightMatrix() {
     this->mData.free();
 }
 
-void WeightMatrix::transfer_to_device(DeviceID device_id) {
-    this->mData.transfer_to_device(device_id);
+void WeightMatrix::schedule_transfer(DeviceID device_id) {
+    this->mData.schedule_transfer(device_id);
 }

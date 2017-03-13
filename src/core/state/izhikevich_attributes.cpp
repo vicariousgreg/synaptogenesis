@@ -160,10 +160,10 @@ IzhikevichAttributes::~IzhikevichAttributes() {
     this->neuron_parameters.free();
 }
 
-void IzhikevichAttributes::transfer_to_device() {
-    SpikingAttributes::transfer_to_device();
+void IzhikevichAttributes::schedule_transfer() {
+    SpikingAttributes::schedule_transfer();
 
-    this->recovery.transfer_to_device(device_id);
-    this->neuron_parameters.transfer_to_device(device_id);
+    this->recovery.schedule_transfer(device_id);
+    this->neuron_parameters.schedule_transfer(device_id);
 }
 

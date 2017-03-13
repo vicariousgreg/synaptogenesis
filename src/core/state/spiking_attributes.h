@@ -18,7 +18,7 @@ class SpikingAttributes : public Attributes {
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
-        virtual void transfer_to_device();
+        virtual void schedule_transfer();
 
         // Neuron Attributes
         Pointer<float> voltage;

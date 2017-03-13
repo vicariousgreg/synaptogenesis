@@ -13,7 +13,7 @@ class WeightMatrix {
 
         Pointer<float> get_data() const { return mData; }
 
-        void transfer_to_device(DeviceID device_id);
+        void schedule_transfer(DeviceID device_id);
 
         Connection* const connection;
 

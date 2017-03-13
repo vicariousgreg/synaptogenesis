@@ -4,6 +4,7 @@
 #include "util/error_manager.h"
 #include "util/stream.h"
 #include "util/event.h"
+#include "util/pointer.h"
 
 ResourceManager *ResourceManager::instance = nullptr;
 
@@ -22,13 +23,18 @@ ResourceManager::ResourceManager() {
 
     // Create host device (CPU)
     devices.push_back(new Device(devices.size(), true));
+
+    for (int i = 0; i < devices.size(); ++i) {
+        scheduled_transfers.push_back(std::vector<BasePointer*>());
+        scheduled_transfer_size.push_back(0);
+    }
 }
 
 ResourceManager::~ResourceManager() {
     for (auto device : devices) delete device;
 }
 
-void* ResourceManager::allocate_host(int count, int size) {
+void* ResourceManager::allocate_host(unsigned long count, int size) {
     void* ptr = calloc(count, size);
     if (ptr == nullptr)
         ErrorManager::get_instance()->log_error(
@@ -36,12 +42,35 @@ void* ResourceManager::allocate_host(int count, int size) {
     return ptr;
 }
 
-void* ResourceManager::allocate_device(int count, int size,
+void* ResourceManager::allocate_device(unsigned long count, int size,
         void* source_data, DeviceID device_id) {
     if (device_id >= get_num_devices())
         ErrorManager::get_instance()->log_error(
             "Attempted to allocate memory on non-existent device.");
     return cuda_allocate_device(device_id, count, size, source_data);
+}
+
+void ResourceManager::schedule_transfer(BasePointer* ptr, DeviceID device_id) {
+    if (device_id >= get_num_devices())
+        ErrorManager::get_instance()->log_error(
+            "Attempted to allocate memory on non-existent device or host.");
+    if (device_id != get_host_id()) {
+        scheduled_transfers[device_id].push_back(ptr);
+        scheduled_transfer_size[device_id] += ptr->size * ptr->unit_size;
+    }
+}
+
+void ResourceManager::transfer() {
+    for (DeviceID i = 0; i < devices.size(); ++i) {
+        unsigned long size = scheduled_transfer_size[i];
+        if (size > 0) {
+            char* data = (char*)this->allocate_device(size, 1, nullptr, i);
+            for (auto ptr : scheduled_transfers[i]) {
+                ptr->transfer(i, data);
+                data += ptr->size * ptr->unit_size;
+            }
+        }
+    }
 }
 
 Stream *ResourceManager::get_default_stream(DeviceID device_id) {

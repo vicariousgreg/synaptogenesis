@@ -17,7 +17,7 @@ class IzhikevichAttributes : public SpikingAttributes {
         IzhikevichAttributes(LayerList &layers);
         virtual ~IzhikevichAttributes();
 
-        virtual void transfer_to_device();
+        virtual void schedule_transfer();
 
         // Neuron Attributes
         Pointer<float> recovery;
