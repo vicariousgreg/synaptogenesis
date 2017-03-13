@@ -6,7 +6,7 @@
 #include "util/error_manager.h"
 
 #define cimg_display 0
-#include "libs/CImg.h"
+#include "CImg.h"
 
 ImageInputModule::ImageInputModule(Layer *layer, std::string params)
         : Module(layer), transferred(false) {

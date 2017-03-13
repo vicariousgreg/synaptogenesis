@@ -2,7 +2,7 @@
 #include "util/error_manager.h"
 
 #define cimg_display 0
-#include "libs/CImg.h"
+#include "CImg.h"
 
 Connection* Structure::connect(
         Structure *from_structure, std::string from_layer_name,

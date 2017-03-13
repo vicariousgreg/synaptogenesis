@@ -1,32 +1,46 @@
 #Compiler and Linker
-CC          := g++
-NVCC        := nvcc
+CC            := g++
+NVCC          := nvcc
 
 #The Target Binary Program
 TARGET_S      := test
 TARGET_P      := parallel_test
 
 #The Directories, Source, Includes, Objects, Binary and Resources
-BUILDDIR_S  := ./build/serial
-BUILDDIR_P  := ./build/parallel
-TARGETDIR   := .
-SRCEXT      := cpp
-DEPEXT      := d
-OBJEXT      := o
+BUILDDIR_S    := ./build/serial
+BUILDDIR_P    := ./build/parallel
+TARGETDIR     := .
+SRCEXT        := cpp
+DEPEXT        := d
+OBJEXT        := o
 
-COREPATH    := src/core
-UIPATH      := src/ui
-BUILDDIR_UI := build/ui
-UILIBPATH   := $(BUILDDIR_UI)/visualizer.a
+COREPATH      := src/core
+UIPATH        := src/ui
+LIBSPATH      := src/libs
+BUILDDIR_UI   := build/ui
+BUILDDIR_LIBS := build/libs
+UILIBPATH     := $(BUILDDIR_UI)/visualizer.a
 
 #Flags, Libraries and Includes
-CCFLAGS      := -w -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH)
-NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH)
+CCFLAGS      := -w -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
+NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
 #Default Make
 all: serial
+
+#---------------------------------------------------------------------------------
+#  LIBS BUILDING
+#---------------------------------------------------------------------------------
+
+SOURCES_LIBS    := $(shell find $(LIBSPATH) -type f -name *.$(SRCEXT))
+OBJECTS_LIBS    := $(patsubst $(LIBSPATH)/%,$(BUILDDIR_LIBS)/%,$(SOURCES_LIBS:.$(SRCEXT)=.$(OBJEXT)))
+
+libs: directories $(OBJECTS_LIBS)
+
+$(BUILDDIR_LIBS)/%.$(OBJEXT): $(LIBSPATH)/%.$(SRCEXT)
+	$(CC) $(CCFLAGS) -c -o $@ $<
 
 #---------------------------------------------------------------------------------
 #  UI BUILDING
@@ -43,12 +57,12 @@ OBJECTS_UI    := $(patsubst $(UIPATH)/%,$(BUILDDIR_UI)/%,$(SOURCES_UI:.$(SRCEXT)
 
 #Link
 $(TARGET_UI): $(UILIBPATH) $(OBJECTS_UI)
-	$(CC) $(CCFLAGS) -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c $^ -o $(BUILDDIR_UI)/$(TARGET_UI) $(LIBS)
+	$(CC) $(CCFLAGS) `pkg-config --cflags gtkmm-3.0` -c $^ -o $(BUILDDIR_UI)/$(TARGET_UI) $(LIBS)
 
 #Compile
 $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
-	$(CC) $(CCFLAGS) -I$(COREPATH) -I$(UIPATH) `pkg-config --cflags gtkmm-3.0` -c -o $@ $< $(LIBS)
+	$(CC) $(CCFLAGS) `pkg-config --cflags gtkmm-3.0` -c -o $@ $< $(LIBS)
 	@$(CC) $(CCFLAGS) -MM $(UIPATH)/$*.$(SRCEXT) > $(BUILDDIR_UI)/$*.$(DEPEXT)
 	@cp -f $(BUILDDIR_UI)/$*.$(DEPEXT) $(BUILDDIR_UI)/$*.$(DEPEXT).tmp
 	@sed -e 's|.*:|$(BUILDDIR_UI)/$*.$(OBJEXT):|' < $(BUILDDIR_UI)/$*.$(DEPEXT).tmp > $(BUILDDIR_UI)/$*.$(DEPEXT)
@@ -63,19 +77,21 @@ $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(COREPATH)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-serial: directories $(TARGET_S)
+serial: directories libs $(TARGET_S)
 
 #Make the Directories
 directories:
 	@mkdir -p $(BUILDDIR_S)
 	@mkdir -p $(BUILDDIR_P)
 	@mkdir -p $(BUILDDIR_UI)
+	@mkdir -p $(BUILDDIR_LIBS)
 
 #Clean only Objects
 clean:
 	@$(RM) -rf $(BUILDDIR_S)
 	@$(RM) -rf $(BUILDDIR_P)
 	@$(RM) -rf $(BUILDDIR_UI)
+	@$(RM) -rf $(BUILDDIR_LIBS)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
@@ -98,7 +114,7 @@ $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-parallel: directories $(TARGET_P)
+parallel: directories libs $(TARGET_P)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
