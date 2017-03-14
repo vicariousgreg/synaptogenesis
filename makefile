@@ -24,7 +24,7 @@ UILIBPATH     := $(BUILDDIR_UI)/visualizer.a
 #Flags, Libraries and Includes
 CCFLAGS      := -w -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
 NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
-NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -DPARALLEL -lcuda -lcudart
+NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
 #Default Make
@@ -97,7 +97,7 @@ clean:
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
 
 #Link
-$(TARGET_S): $(UILIBPATH) $(OBJECTS_S)
+$(TARGET_S): $(UILIBPATH) $(OBJECTS_S) $(OBJECTS_LIBS)
 	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
 
 #Compile
@@ -119,7 +119,7 @@ parallel: directories libs $(TARGET_P)
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
-$(TARGET_P): $(UILIBPATH) $(OBJECTS_P)
+$(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS)
 	$(NVCC) $(NVCCLINK) -o $(TARGETDIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)

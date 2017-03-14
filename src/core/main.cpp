@@ -293,8 +293,8 @@ Model* build_alignment_model(NeuralModel neural_model) {
     std::string output_name = "visualizer_output";
 
     structure->add_module("input_layer", "random_input", "10 500");
-    structure->add_module("exc_thalamus", output_name, "8");
     structure->add_module("exc_cortex", output_name, "8");
+    structure->add_module("exc_thalamus", output_name, "8");
     //structure->add_module("inh_cortex", output_name, "8");
     //structure->add_module("inh_thalamus", output_name, "8");
     structure->add_module("output_layer", output_name, "8");
@@ -652,6 +652,50 @@ void re_test() {
     delete model;
 }
 
+void csv_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = model->add_structure("alignment");
+
+    int resolution = 1024;
+    structure->add_layer(LayerConfig("input_layer",
+        IZHIKEVICH, 28, 28, "default"));
+
+    int num_hidden = 10;
+    for (int i = 0; i < num_hidden; ++i) {
+        structure->add_layer(LayerConfig(std::to_string(i),
+            IZHIKEVICH, 28, 28, "default", 0.5));
+        structure->connect_layers("input_layer", std::to_string(i),
+            ConnectionConfig(true, 0, 5, CONVOLUTIONAL, ADD, "5 1"));
+
+        structure->connect_layers(std::to_string(i), std::to_string(i),
+            ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD, "5 1 0.1"));
+        structure->connect_layers(std::to_string(i), std::to_string(i),
+            ConnectionConfig(false, 0, 2, CONVOLUTIONAL, DIV, "7 1 2"));
+    }
+
+    for (int i = 0; i < num_hidden; ++i)
+        for (int j = 0; j < num_hidden; ++j)
+            if (i != j)
+                structure->connect_layers(std::to_string(i), std::to_string(j),
+                    ConnectionConfig(false, 0, 5, ONE_TO_ONE, DIV, "1"));
+
+    // Modules
+    std::string output_name = "visualizer_output";
+
+    structure->add_module("input_layer", "csv_input", "/HDD/datasets/mnist/mnist_test.csv 1 5000 25");
+    structure->add_module("input_layer", output_name);
+    for (int i = 0; i < num_hidden; ++i)
+        structure->add_module(std::to_string(i), output_name);
+
+    std::cout << "CSV test......\n";
+    print_model(model);
+    run_simulation(model, 100000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
@@ -665,6 +709,7 @@ int main(int argc, char *argv[]) {
         //hh_test();
         //cc_test();
         //re_test();
+        //csv_test();
 
         return 0;
     } catch (const char* msg) {

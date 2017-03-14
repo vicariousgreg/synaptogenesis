@@ -95,16 +95,6 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn
         randomize_weights(mData, num_weights, conn->max_weight);
     else
         initialize(mData, conn);
-
-    if (conn->plastic) {
-        // Baseline
-        if (matrix_depth >= 2)
-            transfer_weights(mData, mData + num_weights, num_weights);
-
-        // Trace
-        if (matrix_depth >= 3)
-            clear_weights(mData + 2*num_weights, num_weights);
-    }
 }
 
 WeightMatrix::~WeightMatrix() {

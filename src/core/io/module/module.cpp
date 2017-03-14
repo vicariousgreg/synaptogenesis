@@ -3,6 +3,7 @@
 #include "io/module/print_rate_module.h"
 #include "io/module/random_input_module.h"
 #include "io/module/image_input_module.h"
+#include "io/module/csv_input_module.h"
 #include "io/module/visualizer_input_module.h"
 #include "io/module/visualizer_output_module.h"
 #include "io/module/dummy_input_module.h"
@@ -15,6 +16,8 @@ Module* build_module(Layer *layer, std::string type,
         return new RandomInputModule(layer, params);
     else if (type == "image_input")
         return new ImageInputModule(layer, params);
+    else if (type == "csv_input")
+        return new CSVInputModule(layer, params);
     else if (type == "print_output")
         return new PrintOutputModule(layer, params);
     else if (type == "print_rate")

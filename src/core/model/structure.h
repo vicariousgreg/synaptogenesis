@@ -79,7 +79,7 @@ class Structure {
 
 
         /* Adds a module of the given |type| for the given |layer| */
-        void add_module(std::string layer, std::string type, std::string params);
+        void add_module(std::string layer, std::string type, std::string params="");
 
         // Structure name
         const std::string name;
