@@ -13,8 +13,6 @@ class BasePointer;
 typedef unsigned int DeviceID;
 
 class ResourceManager {
-        class Device;
-
     public:
         static ResourceManager *get_instance();
         virtual ~ResourceManager();
@@ -38,12 +36,6 @@ class ResourceManager {
         ResourceManager();
         static ResourceManager *instance;
 
-        int num_cores;
-        std::vector<Device*> devices;
-
-        std::vector<unsigned long> scheduled_transfer_size;
-        std::vector<std::vector<BasePointer*> > scheduled_transfers;
-
         class Device {
             public:
                 Device(DeviceID device_id, bool host_flag);
@@ -59,6 +51,12 @@ class ResourceManager {
                 std::vector<Stream*> streams;
                 std::vector<Event*> events;
         };
+
+        int num_cores;
+        std::vector<Device*> devices;
+
+        std::vector<unsigned long> scheduled_transfer_size;
+        std::vector<std::vector<BasePointer*> > scheduled_transfers;
 };
 
 #endif

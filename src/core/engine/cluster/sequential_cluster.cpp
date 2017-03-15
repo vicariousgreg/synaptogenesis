@@ -53,7 +53,6 @@ SequentialCluster::SequentialCluster(Structure *structure,
 SequentialCluster::~SequentialCluster() {
     // Delete nodes
     for (auto node : nodes) delete node;
-    for (auto stream : compute_streams) delete stream;
 }
 
 /******************************************************************************/

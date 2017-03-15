@@ -24,12 +24,8 @@ ParallelCluster::ParallelCluster(Structure *structure,
 
 ParallelCluster::~ParallelCluster() {
     // Delete nodes and their compute streams
-    for (auto type : IOTypes) {
-        for (auto node : sorted_nodes[type]) {
-            delete node->compute_stream;
-            delete node;
-        }
-    }
+    for (auto type : IOTypes)
+        for (auto node : sorted_nodes[type]) delete node;
 }
 
 InstructionList ParallelCluster::sort_instructions(

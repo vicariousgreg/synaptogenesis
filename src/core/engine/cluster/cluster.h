@@ -20,7 +20,7 @@ class Cluster {
             for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
                 io_streams.push_back(res_man->create_stream(i));
         }
-        virtual ~Cluster() { for (auto stream : io_streams) delete stream; }
+        virtual ~Cluster() { }
 
         virtual void launch_pre_input_calculations() { };
         virtual void launch_input() = 0;
