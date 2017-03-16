@@ -20,7 +20,10 @@ class Cluster {
             for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
                 io_streams.push_back(res_man->create_stream(i));
         }
-        virtual ~Cluster() { }
+        virtual ~Cluster() { for (auto node : nodes) delete node; }
+
+        virtual void add_external_dependencies(
+            std::map<Layer*, ClusterNode*> all_nodes) = 0;
 
         virtual void launch_pre_input_calculations() { };
         virtual void launch_input() = 0;
@@ -54,7 +57,9 @@ class ParallelCluster : public Cluster {
     public:
         ParallelCluster(Structure *structure, State *state,
             Environment *environment);
-        virtual ~ParallelCluster();
+
+        virtual void add_external_dependencies(
+            std::map<Layer*, ClusterNode*> all_nodes);
 
         virtual void launch_pre_input_calculations();
         virtual void launch_input();
@@ -76,7 +81,9 @@ class SequentialCluster : public Cluster {
     public:
         SequentialCluster(Structure *structure, State *state,
             Environment *environment);
-        virtual ~SequentialCluster();
+
+        virtual void add_external_dependencies(
+            std::map<Layer*, ClusterNode*> all_nodes);
 
         virtual void launch_input();
         virtual void launch_post_input_calculations();

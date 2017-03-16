@@ -50,9 +50,16 @@ SequentialCluster::SequentialCluster(Structure *structure,
     }
 }
 
-SequentialCluster::~SequentialCluster() {
-    // Delete nodes
-    for (auto node : nodes) delete node;
+void SequentialCluster::add_external_dependencies(
+        std::map<Layer*, ClusterNode*> all_nodes) {
+    // Crawl through the nodes and add dependencies transfers
+    // This prevents race conditions from output updates
+    // Ensure that the latest update is available for this timestep
+    // This is the opposite order of the parallel cluster
+    for (auto node : nodes)
+        for (auto pair : node->get_external_transfer_instructions())
+            pair.second->add_dependency(
+                all_nodes[pair.first->from_layer]->get_state_instruction());
 }
 
 /******************************************************************************/

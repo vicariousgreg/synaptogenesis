@@ -110,6 +110,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
                     state->get_device_id(child->conn->from_layer));
                 transfer_inst->add_event(event);
                 syn_inst->add_dependency(event);
+                external_transfer_instructions[child->conn] = transfer_inst;
             }
 
             // Create an event for inter-node dependencies
@@ -126,14 +127,6 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
                     curr, child, state, compute_stream));
         }
     }
-}
-
-void ClusterNode::add_external_dependencies(std::map<Layer*, ClusterNode*> nodes) {
-    // Crawl through the nodes and add dependencies for state updates
-    // This prevents race conditions from output updates
-    for (auto pair : synapse_instructions)
-        nodes[pair.first->from_layer]
-            ->state_instruction->add_dependency(pair.second);
 }
 
 void ClusterNode::activate_input() {
@@ -161,4 +154,30 @@ void ClusterNode::synchronize_input() {
 
 void ClusterNode::synchronize_output() {
     if (is_output) output_event->synchronize();
+}
+
+const InstructionList ClusterNode::get_instructions() const {
+    return instructions;
+}
+
+Instruction* ClusterNode::get_input_instruction() const {
+    return input_instruction;
+}
+
+Instruction* ClusterNode::get_state_instruction() const {
+    return state_instruction;
+}
+
+Instruction* ClusterNode::get_output_instruction() const {
+    return output_instruction;
+}
+
+const std::map<Connection*, Instruction*>
+        ClusterNode::get_synapse_instructions() const {
+    return synapse_instructions;
+}
+
+const std::map<Connection*, Instruction*>
+        ClusterNode::get_external_transfer_instructions() {
+    return external_transfer_instructions;
 }

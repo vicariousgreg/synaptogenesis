@@ -1,4 +1,5 @@
 #include "engine/kernel/extractor.h"
+#include "util/parallel.h"
 
 DEVICE float extract_float(Output &out, int delay) { return out.f; }
 DEVICE float extract_int(Output &out, int delay) { return out.i; }

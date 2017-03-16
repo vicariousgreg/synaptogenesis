@@ -7,16 +7,10 @@
 template<typename... ARGS>
 class Kernel {
     public:
-#ifdef __CUDACC__
         Kernel() : serial_kernel(nullptr), parallel_kernel(nullptr) { }
-        Kernel(void(*serial_kernel)(ARGS...), void (*parallel_kernel)(ARGS...))
+        Kernel(void(*serial_kernel)(ARGS...), void (*parallel_kernel)(ARGS...)=nullptr)
                 : serial_kernel(serial_kernel),
                   parallel_kernel(parallel_kernel) { }
-#else
-        Kernel() : serial_kernel(nullptr) { }
-        Kernel(void(*kernel)(ARGS...))
-                : serial_kernel(kernel) { }
-#endif
 
         void run(Stream *stream, int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
@@ -30,10 +24,7 @@ class Kernel {
 
     protected:
         void (*serial_kernel)(ARGS...);
-
-#ifdef __CUDACC__
         void (*parallel_kernel)(ARGS...);
-#endif
 };
 
 #endif

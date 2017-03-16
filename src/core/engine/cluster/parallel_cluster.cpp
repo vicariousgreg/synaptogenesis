@@ -22,10 +22,16 @@ ParallelCluster::ParallelCluster(Structure *structure,
         IOTypeVector { OUTPUT, INTERNAL });
 }
 
-ParallelCluster::~ParallelCluster() {
-    // Delete nodes and their compute streams
-    for (auto type : IOTypes)
-        for (auto node : sorted_nodes[type]) delete node;
+void ParallelCluster::add_external_dependencies(
+        std::map<Layer*, ClusterNode*> all_nodes) {
+    // Crawl through the nodes and add dependencies for state updates
+    // This prevents race conditions from output updates
+    // Ensure that the output is not updated until it's been transferred
+    // This is the opposite order of the sequential cluster
+    for (auto node : nodes)
+        for (auto pair : node->get_synapse_instructions())
+            all_nodes[pair.first->from_layer]
+                ->get_state_instruction()->add_dependency(pair.second);
 }
 
 InstructionList ParallelCluster::sort_instructions(

@@ -1,7 +1,6 @@
 #include "engine/kernel/attribute_data.h"
 #include "state/state.h"
 #include "state/attributes.h"
-#include "util/error_manager.h"
 
 AttributeData::AttributeData(Layer *layer, State *state) :
         attributes(state->get_attributes_pointer(layer)),

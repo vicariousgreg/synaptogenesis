@@ -1,9 +1,10 @@
 #include "engine/kernel/synapse_data.h"
 #include "state/state.h"
 #include "state/attributes.h"
-#include "util/error_manager.h"
 
 SynapseData::SynapseData(Connection *conn, State *state) :
+        from_attributes(state->get_attributes_pointer(conn->from_layer)),
+        to_attributes(state->get_attributes_pointer(conn->to_layer)),
         extractor(state->get_extractor(conn)),
         convolutional(conn->convolutional),
         opcode(conn->opcode),

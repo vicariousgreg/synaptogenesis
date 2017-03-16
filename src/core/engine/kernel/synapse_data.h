@@ -14,6 +14,10 @@ class SynapseData {
     public:
         SynapseData(Connection *conn, State *state);
 
+        /* Attributes pointer */
+        const Attributes *from_attributes;
+        const Attributes *to_attributes;
+
         /* Output extractor */
         const EXTRACTOR extractor;
 

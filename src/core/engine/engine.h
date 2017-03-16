@@ -23,8 +23,7 @@ class Engine {
 
             // Add external dependencies to the nodes
             for (auto& cluster : clusters)
-                for (auto& node : cluster->get_nodes())
-                    node->add_external_dependencies(cluster_nodes);
+                cluster->add_external_dependencies(cluster_nodes);
         }
 
         virtual ~Engine() {
