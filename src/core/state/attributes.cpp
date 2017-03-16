@@ -80,9 +80,6 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
     this->total_neurons = other_size;
-
-    // Retrieve extractor
-    get_extractor(&this->extractor, output_type);
 }
 
 Attributes::~Attributes() {

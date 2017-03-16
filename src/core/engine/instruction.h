@@ -7,8 +7,8 @@
 #include "state/state.h"
 #include "state/attributes.h"
 #include "engine/kernel/synapse_data.h"
+#include "engine/kernel/attribute_data.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "engine/kernel/activator_kernel.h"
 
 class Instruction {
     public:
@@ -104,8 +104,8 @@ class SynapseInstruction : public Instruction {
                   connection(conn),
                   synapse_data(conn, state),
                   type(conn->type),
-                  activator(state->get_activator(conn)) {
-            if (conn->plastic) this->updater = state->get_updater(conn);
+                  activator(state->get_activator(conn)),
+                  updater((conn->plastic) ? state->get_updater(conn) : nullptr) {
             if (conn->convolutional) {
                 int num_weights = connection->get_num_weights();
                 this->updater_threads = calc_threads(num_weights);
@@ -201,6 +201,9 @@ class InputTransferInstruction : public TransferInstruction<float> {
             if (buffer->get_dirty(to_layer)) {
                 buffer->set_dirty(to_layer, false);
                 TransferInstruction<float>::activate();
+            } else {
+                Instruction::wait_for_dependencies();
+                Instruction::record_events();
             }
         }
 

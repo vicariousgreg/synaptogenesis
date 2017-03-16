@@ -9,7 +9,6 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "engine/kernel/attribute_data.h"
-#include "engine/kernel/activator_kernel.h"
 #include "io/environment.h"
 #include "util/constants.h"
 #include "util/error_manager.h"
@@ -25,7 +24,13 @@ class Attributes {
                    Kernel<ATTRIBUTE_ARGS>kernel);
         virtual ~Attributes();
 
-        void set_device_id(DeviceID device_id) { this->device_id = device_id; }
+        void set_device_id(DeviceID device_id) {
+            this->device_id = device_id;
+
+            // Retrieve extractor
+            // This has to wait until device_id is set
+            get_extractor(&this->extractor, output_type, device_id);
+        }
 
         /* Checks whether these attributes are compatible
          *   with the given cluster_type */
