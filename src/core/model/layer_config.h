@@ -12,26 +12,30 @@ class LayerConfig {
             int rows=0,
             int columns=0,
             std::string params="",
-            float noise=0.0)
+            float noise=0.0,
+            bool plastic=false)
                 : name(name),
                   neural_model(neural_model),
                   rows(rows),
                   columns(columns),
                   params(params),
-                  noise(noise) { }
+                  noise(noise),
+                  plastic(plastic){ }
 
         LayerConfig(
             std::string name,
             NeuralModel neural_model,
             std::string params="",
-            float noise=0.0)
-                : LayerConfig(name, neural_model, 0, 0, params, noise) { }
+            float noise=0.0,
+            bool plastic=false)
+                : LayerConfig(name, neural_model, 0, 0, params, noise, plastic) { }
         
         std::string name;
         NeuralModel neural_model;
         int rows, columns;
         std::string params;
         float noise;
+        bool plastic;
 };
 
 #endif

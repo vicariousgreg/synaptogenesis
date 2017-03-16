@@ -156,6 +156,11 @@ Kernel<ATTRIBUTE_ARGS> const State::get_attribute_kernel(Layer *layer) const {
     return attributes[layer_devices.at(layer)][layer->neural_model]->kernel;
 }
 
+Kernel<ATTRIBUTE_ARGS> const State::get_attribute_learning_kernel(
+        Layer *layer) const {
+    return attributes[layer_devices.at(layer)][layer->neural_model]->learning_kernel;
+}
+
 Pointer<float> State::get_matrix(Connection* conn) const {
     return weight_matrices.at(conn)->get_data();
 }

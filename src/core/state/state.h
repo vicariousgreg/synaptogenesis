@@ -29,6 +29,8 @@ class State {
         OutputType get_output_type(Layer *layer) const;
         const Attributes *get_attributes_pointer(Layer *layer) const;
         Kernel<ATTRIBUTE_ARGS> const get_attribute_kernel(Layer *layer) const;
+        Kernel<ATTRIBUTE_ARGS> const get_attribute_learning_kernel(
+            Layer *layer) const;
 
         /* Getters for connection related data */
         Pointer<float> get_matrix(Connection *conn) const;

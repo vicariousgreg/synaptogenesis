@@ -7,7 +7,8 @@ AttributeData::AttributeData(Layer *layer, State *state) :
         input(state->get_input(layer)),
         output(state->get_output(layer)),
         other_start_index(state->get_other_start_index(layer)),
-        size(layer->size) {
+        size(layer->size),
+        plastic(layer->plastic) {
     // Calculate history size
     auto output_type = state->get_output_type(layer);
     int max_delay_registers = 0;

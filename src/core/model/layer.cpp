@@ -14,6 +14,7 @@ Layer::Layer(Structure *structure, LayerConfig config)
           size(rows * columns),
           params(config.params),
           noise(config.noise),
+          plastic(config.plastic),
           type(INTERNAL),
           input_module(nullptr),
           dendritic_root(new DendriticNode(0, this)) { }

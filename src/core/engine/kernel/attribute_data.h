@@ -18,6 +18,7 @@ class AttributeData {
         const int other_start_index;
         const int size;
         int history_size;
+        bool plastic;
 };
 
 #endif

@@ -263,7 +263,9 @@ class StateUpdateInstruction : public Instruction {
         StateUpdateInstruction(Layer *to_layer, State *state, Stream *stream)
             : Instruction(to_layer, stream),
               attribute_data(to_layer, state),
-              attribute_kernel(state->get_attribute_kernel(to_layer)) { }
+              attribute_kernel(state->get_attribute_kernel(to_layer)),
+              attribute_learning_kernel(
+                  state->get_attribute_learning_kernel(to_layer)) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
@@ -273,8 +275,18 @@ class StateUpdateInstruction : public Instruction {
             Instruction::record_events();
         }
 
+        void update() {
+            if (this->is_plastic())
+                attribute_learning_kernel.run(stream,
+                    activator_blocks, activator_threads,
+                    attribute_data);
+        }
+
+        bool is_plastic() const { return attribute_data.plastic; }
+
     protected:
-        Kernel<ATTRIBUTE_ARGS>attribute_kernel;
+        Kernel<ATTRIBUTE_ARGS> attribute_kernel;
+        Kernel<ATTRIBUTE_ARGS> attribute_learning_kernel;
         AttributeData attribute_data;
 };
 
