@@ -16,7 +16,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
 
     // Create queue and push output layers
     std::queue<Layer*> queue;
-    for (auto layer : structure->get_layers())
+    for (auto& layer : structure->get_layers())
         if (layer->is_output()) queue.push(layer);
 
     /* Do breadth first search backwards on the model and create nodes */
@@ -37,9 +37,9 @@ SequentialCluster::SequentialCluster(Structure *structure,
         // Add any layers that feed into this one to if all of its
         //     output layers have been visited and its not in the queue
         // Also ensure that the traversal does not leave the structure
-        for (auto conn : curr_layer->get_input_connections()) {
+        for (auto& conn : curr_layer->get_input_connections()) {
             if (visited.find(conn->from_layer) == visited.end()) {
-                for (auto to_conn : conn->to_layer->get_output_connections())
+                for (auto& to_conn : conn->to_layer->get_output_connections())
                     if (visited.find(to_conn->to_layer) == visited.end()
                         or to_conn->to_layer->structure != structure)
                         continue;
@@ -56,8 +56,8 @@ void SequentialCluster::add_external_dependencies(
     // This prevents race conditions from output updates
     // Ensure that the latest update is available for this timestep
     // This is the opposite order of the parallel cluster
-    for (auto node : nodes)
-        for (auto pair : node->get_external_transfer_instructions())
+    for (auto& node : nodes)
+        for (auto& pair : node->get_external_transfer_instructions())
             pair.second->add_dependency(
                 all_nodes[pair.first->from_layer]->get_state_instruction());
 }

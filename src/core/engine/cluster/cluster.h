@@ -20,7 +20,7 @@ class Cluster {
             for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
                 io_streams.push_back(res_man->create_stream(i));
         }
-        virtual ~Cluster() { for (auto node : nodes) delete node; }
+        virtual ~Cluster() { for (auto& node : nodes) delete node; }
 
         virtual void add_external_dependencies(
             std::map<Layer*, ClusterNode*> all_nodes) = 0;

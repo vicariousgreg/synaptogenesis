@@ -19,7 +19,7 @@ class Instruction {
                   stream(stream) { }
 
         virtual ~Instruction() {
-            for (auto event : events) delete event;
+            for (auto& event : events) delete event;
         }
 
         virtual void activate() = 0;
@@ -39,7 +39,7 @@ class Instruction {
         void add_event(Event *event) { this->events.push_back(event); }
         void add_dependency(Event *dep) { this->dependencies.push_back(dep); }
         void add_dependency(Instruction *inst) {
-            for (auto event : inst->events)
+            for (auto& event : inst->events)
                 this->dependencies.push_back(event);
         }
 

@@ -11,7 +11,7 @@ static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
         // Otherwise, push current layer and recurse
         visited.insert(curr_layer);
         // Be careful not to leave the structure
-        for (auto conn : curr_layer->get_output_connections())
+        for (auto& conn : curr_layer->get_output_connections())
             if (conn->to_layer->structure == curr_layer->structure
                 and not DFS(conn->to_layer, visited)) return false;
         visited.erase(curr_layer);
@@ -25,7 +25,7 @@ FeedforwardCluster::FeedforwardCluster(Structure *structure,
     // Determine if there are any cycles
     // Perform DFS on all input layers
     std::set<Layer*> visited;
-    for (auto layer : structure->get_layers())
+    for (auto& layer : structure->get_layers())
         if (layer->is_input() and not DFS(layer, visited))
             ErrorManager::get_instance()->log_error(
                 "Feedforward engine requires a structure with no cycles!");

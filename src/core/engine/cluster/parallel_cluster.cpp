@@ -28,8 +28,8 @@ void ParallelCluster::add_external_dependencies(
     // This prevents race conditions from output updates
     // Ensure that the output is not updated until it's been transferred
     // This is the opposite order of the sequential cluster
-    for (auto node : nodes)
-        for (auto pair : node->get_synapse_instructions())
+    for (auto& node : nodes)
+        for (auto& pair : node->get_synapse_instructions())
             all_nodes[pair.first->from_layer]
                 ->get_state_instruction()->add_dependency(pair.second);
 }
@@ -40,7 +40,7 @@ InstructionList ParallelCluster::sort_instructions(
     InstructionList destination;
 
     // Extract instructions
-    for (auto type : types)
+    for (auto& type : types)
         for (auto& node : sorted_nodes[type])
             for (auto& inst : node->get_instructions())
                 // Add to schedule map for round robin

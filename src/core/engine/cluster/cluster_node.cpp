@@ -74,7 +74,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
 }
 
 ClusterNode::~ClusterNode() {
-    for (auto inst : this->instructions) delete inst;
+    for (auto& inst : this->instructions) delete inst;
     if (is_input) {
         delete input_instruction;
         delete input_copy_instruction;
