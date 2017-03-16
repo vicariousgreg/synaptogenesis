@@ -12,7 +12,7 @@ Buffer *build_buffer(DeviceID device_id, Model *model) {
 
 Buffer *build_buffer(DeviceID device_id,
         LayerList input_layers, LayerList output_layers) {
-    if (device_id == ResourceManager::get_instance()->get_host_id())
+    if (ResourceManager::get_instance()->is_host(device_id))
         return new HostBuffer(input_layers, output_layers);
     else
         return new DeviceBuffer(input_layers, output_layers, device_id);

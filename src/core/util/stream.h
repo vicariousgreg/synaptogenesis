@@ -3,7 +3,6 @@
 
 #include "util/event.h"
 #include "util/parallel.h"
-#include "util/resource_manager.h"
 
 class Stream {
     public:

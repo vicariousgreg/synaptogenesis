@@ -1,6 +1,7 @@
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
 #include "util/error_manager.h"
+#include "util/resource_manager.h"
 
 HOST DEVICE float extract_float(Output &out, int delay) { return out.f; }
 HOST DEVICE float extract_int(Output &out, int delay) { return out.i; }
@@ -18,7 +19,7 @@ DEVICE EXTRACTOR x_int = extract_int;
 DEVICE EXTRACTOR x_bit = extract_bit;
 
 void get_extractor(EXTRACTOR *dest, OutputType output_type, DeviceID device_id) {
-    if (device_id == ResourceManager::get_instance()->get_host_id())
+    if (ResourceManager::get_instance()->is_host(device_id))
         switch (output_type) {
             case FLOAT:  *dest = extract_float;  break;
             case INT:    *dest = extract_int;    break;

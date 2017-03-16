@@ -2,7 +2,6 @@
 
 #include "state/izhikevich_attributes.h"
 #include "util/tools.h"
-#include "util/error_manager.h"
 
 /******************************************************************************/
 /******************************** PARAMS **************************************/

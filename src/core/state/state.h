@@ -3,13 +3,11 @@
 
 #include "model/model.h"
 #include "model/layer.h"
-#include "io/environment.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "state/attributes.h"
 #include "state/weight_matrix.h"
 #include "util/constants.h"
 #include "util/pointer.h"
-#include "util/resource_manager.h"
 
 class Buffer;
 

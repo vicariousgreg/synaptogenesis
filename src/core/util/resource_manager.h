@@ -5,12 +5,11 @@
 #include <vector>
 
 #include "util/parallel.h"
+#include "util/constants.h"
+#include "util/stream.h"
+#include "util/event.h"
 
-class Stream;
-class Event;
 class BasePointer;
-
-typedef unsigned int DeviceID;
 
 class ResourceManager {
     public:
@@ -20,6 +19,7 @@ class ResourceManager {
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }
         DeviceID get_host_id() { return devices.size()-1; }
+        bool is_host(DeviceID device_id) { return device_id == get_host_id(); }
 
         void* allocate_host(unsigned long count, int size);
         void* allocate_device(unsigned long count, int size,

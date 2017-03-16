@@ -1,10 +1,8 @@
 #include <sstream>
 
-#include "model/layer.h"
 #include "state/weight_matrix.h"
-#include "util/tools.h"
+#include "model/layer.h"
 #include "util/error_manager.h"
-#include "util/parallel.h"
 
 /* Sets all values in an array to the given val */
 void set_weights(float* arr, int size, float val) {
@@ -27,13 +25,17 @@ void transfer_weights(float* from, float* to, int size) {
 }
 
 /* Initializes weights using connection parameters */
-static void initialize(float* target_matrix, Connection* conn) {
+static void initialize(float* target_matrix, Connection* conn,
+        DeviceID device_id) {
     std::stringstream stream(conn->get_init_params());
     int num_weights = conn->get_num_weights();
 
     // Extract first value
     float value;
     stream >> value;
+
+    // Check if this weight matrix is staying on the host
+    bool is_host = ResourceManager::get_instance()->is_host(device_id);
 
     // If there are no more values, set all weights to first value
     // Otherwise, read values and initialize
@@ -59,14 +61,12 @@ static void initialize(float* target_matrix, Connection* conn) {
 
         for (int row = 0 ; row < rows ; ++row) {
             for (int col = 0 ; col < cols ; ++col) {
-#ifdef __CUDACC__
                 // If parallel, transpose the input (rows <-> cols)
                 // Parallel convergent matrices are laid out such that each
                 //   kernel is in a column
-                target_matrix[col * rows + row] = value;
-#else
-                target_matrix[row * cols + col] = value;
-#endif
+                if (is_host) target_matrix[row * cols + col] = value;
+                else         target_matrix[col * rows + row] = value;
+
                 if (row != rows-1 and col != cols-1 and stream.eof())
                     ErrorManager::get_instance()->log_error(
                         "Insufficient number of weights specified!");
@@ -76,7 +76,8 @@ static void initialize(float* target_matrix, Connection* conn) {
     }
 }
 
-WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn) {
+WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
+        DeviceID device_id) : connection(conn), device_id(device_id) {
     int num_weights = conn->get_num_weights();
     matrix_size = num_weights;
     // Multiply by depth if plastic
@@ -94,13 +95,13 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth) : connection(conn
     if (conn->get_init_params().size() == 0)
         randomize_weights(mData, num_weights, conn->max_weight);
     else
-        initialize(mData, conn);
+        initialize(mData, conn, device_id);
 }
 
 WeightMatrix::~WeightMatrix() {
     this->mData.free();
 }
 
-void WeightMatrix::schedule_transfer(DeviceID device_id) {
+void WeightMatrix::schedule_transfer() {
     this->mData.schedule_transfer(device_id);
 }

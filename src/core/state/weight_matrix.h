@@ -4,18 +4,18 @@
 #include "model/connection.h"
 #include "util/constants.h"
 #include "util/pointer.h"
-#include "util/resource_manager.h"
 
 class WeightMatrix {
     public:
-        WeightMatrix(Connection *conn, int matrix_depth);
+        WeightMatrix(Connection *conn, int matrix_depth, DeviceID device_id);
         virtual ~WeightMatrix();
 
         Pointer<float> get_data() const { return mData; }
 
-        void schedule_transfer(DeviceID device_id);
+        void schedule_transfer();
 
         Connection* const connection;
+        const DeviceID device_id;
 
     private:
         Pointer<float> mData;

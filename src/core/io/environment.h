@@ -2,12 +2,11 @@
 #define environment_h
 
 #include "model/structure.h"
+#include "io/module/module.h"
+#include "io/buffer.h"
 
 class Visualizer;
 class State;
-class Buffer;
-class Module;
-typedef std::vector<Module*> ModuleList;
 
 class Environment {
     public:

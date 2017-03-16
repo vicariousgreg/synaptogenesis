@@ -2,9 +2,6 @@
 #include "state/izhikevich_attributes.h"
 #include "state/rate_encoding_attributes.h"
 #include "state/hodgkin_huxley_attributes.h"
-#include "util/tools.h"
-#include "util/constants.h"
-#include "util/parallel.h"
 
 Attributes *build_attributes(LayerList &layers,
         NeuralModel neural_model, DeviceID device_id) {
@@ -28,11 +25,9 @@ Attributes *build_attributes(LayerList &layers,
                 "Unrecognized engine type!");
     }
 
-#ifdef __CUDACC__
     // Copy attributes to device and set the pointer
     attributes->set_device_id(device_id);
     attributes->schedule_transfer();
-#endif
     return attributes;
 }
 
@@ -93,7 +88,7 @@ Attributes::~Attributes() {
 void Attributes::transfer_to_device() {
 #ifdef __CUDACC__
     // Copy attributes to device and set the pointer
-    if (device_id != ResourceManager::get_instance()->get_host_id())
+    if (not ResourceManager::get_instance()->is_host(device_id))
         this->pointer = (Attributes*)
             ResourceManager::get_instance()->allocate_device(
                 1, object_size, this, device_id);

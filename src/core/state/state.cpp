@@ -3,9 +3,7 @@
 #include "state/state.h"
 #include "util/tools.h"
 
-State::State(Model *model)
-        : model(model) {
-
+State::State(Model *model) : model(model) {
     // Determine number of non-host devices
     // Subtract one if cuda is enabled to avoid distribution to the host
     this->num_devices = ResourceManager::get_instance()->get_num_devices();
@@ -23,8 +21,7 @@ State::State(Model *model)
             num_weights[layer] += conn->get_num_weights();
     }
 
-    int i = 0;
-    while (num_weights.size() > 0) {
+    for (int i = 0; num_weights.size() > 0; ++i) {
         Layer *biggest;
         int size = -1;
         for (auto pair : num_weights) {
@@ -34,7 +31,7 @@ State::State(Model *model)
             }
         }
         num_weights.erase(biggest);
-        layer_devices[biggest] = (i++ % num_devices);
+        layer_devices[biggest] = (i % num_devices);
     }
 
     // Create a buffer for each attributes
@@ -79,10 +76,10 @@ State::State(Model *model)
                 for (auto& layer : layers) {
                     for (auto& conn : layer->get_input_connections()) {
                         WeightMatrix* matrix = new WeightMatrix(conn,
-                            att->get_matrix_depth(conn));
+                            att->get_matrix_depth(conn), device_id);
                         this->weight_matrices[conn] = matrix;
                         att->process_weight_matrix(matrix);
-                        matrix->schedule_transfer(att->get_device_id());
+                        matrix->schedule_transfer();
                     }
                 }
             }
@@ -93,13 +90,15 @@ State::State(Model *model)
     ResourceManager::get_instance()->transfer();
     for (auto n : NeuralModels)
         for (int i = 0; i < num_devices; ++i)
-            if (attributes[i][n]) attributes[i][n]->transfer_to_device();
+            if (attributes[i][n])
+                attributes[i][n]->transfer_to_device();
 }
 
 State::~State() {
     for (int i = 0; i < num_devices; ++i)
         for (auto neural_model : NeuralModels)
-            if (attributes[i][neural_model] != nullptr) delete attributes[i][neural_model];
+            if (attributes[i][neural_model] != nullptr)
+                delete attributes[i][neural_model];
     for (auto matrix : weight_matrices) delete matrix.second;
     for (auto buffer : buffers) delete buffer;
 }
@@ -117,6 +116,7 @@ bool State::check_compatibility(Structure *structure) {
     return true;
 }
 
+/* Zoo of Getters */
 Pointer<float> State::get_input(Layer *layer, int register_index) const {
     return attributes[layer_devices.at(layer)][layer->neural_model]
         ->get_input(layer->id, register_index);
@@ -181,7 +181,6 @@ Pointer<Output> State::get_device_output_buffer(Connection *conn) const {
 }
 
 bool State::is_inter_device(Connection *conn) const {
-    DeviceID from_device = layer_devices.at(conn->from_layer);
-    DeviceID to_device = layer_devices.at(conn->to_layer);
-    return from_device != to_device;
+    return layer_devices.at(conn->from_layer)
+        != layer_devices.at(conn->to_layer);
 }

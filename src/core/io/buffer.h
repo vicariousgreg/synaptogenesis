@@ -6,7 +6,6 @@
 #include "model/layer.h"
 #include "util/constants.h"
 #include "util/pointer.h"
-#include "util/resource_manager.h"
 
 class Model;
 

@@ -1,18 +1,15 @@
 #ifndef attributes_h
 #define attributes_h
 
-#include <string>
+#include <map>
 
 #include "model/layer.h"
 #include "state/weight_matrix.h"
-#include "engine/kernel/extractor.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "engine/kernel/attribute_data.h"
-#include "io/environment.h"
 #include "util/constants.h"
 #include "util/error_manager.h"
-#include "util/resource_manager.h"
 
 /* Typedef for attribute kernel functions */
 typedef AttributeData ATTRIBUTE_ARGS;
@@ -131,7 +128,7 @@ static Kernel<ATTRIBUTE_ARGS> get_##FUNC_NAME() { \
 
 #define BUILD_ATTRIBUTE_KERNEL( \
     FUNC_NAME, PREAMBLE, BODY) \
-GLOBAL void FUNC_NAME##_SERIAL(const AttributeData attribute_data) { \
+GLOBAL void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \

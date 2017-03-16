@@ -1,6 +1,4 @@
 #include "state/spiking_attributes.h"
-#include "util/tools.h"
-#include "util/error_manager.h"
 
 SpikingAttributes::SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_ARGS>kernel)
         : Attributes(layers, BIT, kernel) {

@@ -2,14 +2,12 @@
 #define cluster_h
 
 #include <map>
-#include <string>
 
 #include "model/structure.h"
 #include "engine/cluster/cluster_node.h"
 #include "engine/instruction.h"
 #include "io/environment.h"
 #include "util/constants.h"
-#include "util/resource_manager.h"
 
 class Cluster {
     public:

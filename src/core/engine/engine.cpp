@@ -1,5 +1,28 @@
 #include "engine/engine.h"
 
+Engine::Engine(State *state, Environment *environment)
+        : state(state),
+          environment(environment),
+          learning_flag(true) {
+    // Create the clusters and gather their nodes
+    for (auto& structure : state->model->get_structures()) {
+        auto cluster = build_cluster(
+            structure, state, environment);
+        clusters.push_back(cluster);
+        for (auto& node : cluster->get_nodes())
+            cluster_nodes[node->to_layer] = node;
+    }
+
+    // Add external dependencies to the nodes
+    for (auto& cluster : clusters)
+        cluster->add_external_dependencies(cluster_nodes);
+}
+
+Engine::~Engine() {
+    for (auto& cluster : clusters)
+        delete cluster;
+}
+
 void Engine::stage_clear() {
     // Launch pre-input calculations
     for (auto& cluster : clusters)

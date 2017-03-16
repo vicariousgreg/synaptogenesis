@@ -98,4 +98,7 @@ typedef enum {
     FEEDFORWARD
 } ClusterType;
 
+/* Typedef for Device Identifier */
+typedef unsigned int DeviceID;
+
 #endif
