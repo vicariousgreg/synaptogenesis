@@ -32,10 +32,9 @@ Attributes *build_attributes(LayerList &layers,
 }
 
 Attributes::Attributes(LayerList &layers, OutputType output_type,
-        Kernel<ATTRIBUTE_ARGS> kernel, Kernel<ATTRIBUTE_ARGS> learning_kernel)
+        Kernel<ATTRIBUTE_ARGS> kernel)
         : output_type(output_type),
           kernel(kernel),
-          learning_kernel(learning_kernel),
           device_id(0),
           pointer(this) {
     // Keep track of register sizes

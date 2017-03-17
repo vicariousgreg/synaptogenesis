@@ -130,6 +130,9 @@ BUILD_ATTRIBUTE_KERNEL(iz_attribute_kernel,
         voltages[nid] = voltage;
         recoveries[nid] = recovery;
     }
+
+    // Here's where plasticity rules go
+    if (plastic) { }
 )
 
 /******************************************************************************/

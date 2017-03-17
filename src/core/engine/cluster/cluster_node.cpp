@@ -141,8 +141,6 @@ void ClusterNode::activate_state() {
 
     if (this->is_output)
         output_copy_instruction->activate();
-
-    state_instruction->update();
 }
 
 void ClusterNode::activate_output() {

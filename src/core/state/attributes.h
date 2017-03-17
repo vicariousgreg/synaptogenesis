@@ -18,8 +18,7 @@ typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
 class Attributes {
     public:
         Attributes(LayerList &layers, OutputType output_type,
-            Kernel<ATTRIBUTE_ARGS>kernel,
-            Kernel<ATTRIBUTE_ARGS> learning_kernel=Kernel<ATTRIBUTE_ARGS>());
+            Kernel<ATTRIBUTE_ARGS>kernel);
         virtual ~Attributes();
 
         void set_device_id(DeviceID device_id) {
@@ -71,7 +70,6 @@ class Attributes {
 
         // Pointer to attribute kernel
         Kernel<ATTRIBUTE_ARGS> kernel;
-        Kernel<ATTRIBUTE_ARGS> learning_kernel;
 
         DeviceID get_device_id() { return device_id; }
 
@@ -101,7 +99,8 @@ Attributes *build_attributes(LayerList &layers,
     Output *outputs = attribute_data.output.get(); \
     int other_start_index = attribute_data.other_start_index; \
     int size = attribute_data.size; \
-    int history_size = attribute_data.history_size;
+    int history_size = attribute_data.history_size; \
+    bool plastic = attribute_data.plastic;
 
 #ifdef __CUDACC__
 
