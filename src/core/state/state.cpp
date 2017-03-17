@@ -36,7 +36,7 @@ State::State(Model *model) : model(model) {
 
     // Create a buffer for each attributes
     for (DeviceID i = 0; i < num_devices; ++i) {
-        LayerList input_layers, output_layers;
+        LayerList input_layers, output_layers, expected_layers;
 
         // Extract layers assigned to this device
         for (auto layer : model->get_input_layers()) {
@@ -47,6 +47,10 @@ State::State(Model *model) : model(model) {
             if (layer_devices[layer] == i)
                 output_layers.push_back(layer);
         }
+        for (auto layer : model->get_expected_layers()) {
+            if (layer_devices[layer] == i)
+                expected_layers.push_back(layer);
+        }
 
         // Identify any inter-device connections and make room for them
         for (auto layer : model->get_layers())
@@ -54,7 +58,8 @@ State::State(Model *model) : model(model) {
                 for (auto conn : layer->get_input_connections())
                     if (is_inter_device(conn))
                         output_layers.push_back(conn->from_layer);
-        buffers.push_back(build_buffer(i, input_layers, output_layers));
+        buffers.push_back(
+            build_buffer(i, input_layers, output_layers, expected_layers));
     }
 
     // Create attributes and weight matrices
@@ -122,6 +127,11 @@ Pointer<float> State::get_input(Layer *layer, int register_index) const {
         ->get_input(layer->id, register_index);
 }
 
+Pointer<Output> State::get_expected(Layer *layer) const {
+    return attributes[layer_devices.at(layer)][layer->neural_model]
+        ->get_expected(layer->id);
+}
+
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
     return attributes[layer_devices.at(layer)][layer->neural_model]
         ->get_output(layer->id, word_index);
@@ -129,6 +139,10 @@ Pointer<Output> State::get_output(Layer *layer, int word_index) const {
 
 Pointer<float> State::get_buffer_input(Layer *layer) const {
     return buffers.at(layer_devices.at(layer))->get_input(layer);
+}
+
+Pointer<Output> State::get_buffer_expected(Layer *layer) const {
+    return buffers.at(layer_devices.at(layer))->get_expected(layer);
 }
 
 Pointer<Output> State::get_buffer_output(Layer *layer) const {

@@ -40,6 +40,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
     // Keep track of register sizes
     int input_size = 0;
     int output_size = 0;
+    int expected_size = 0;
     int other_size = 0;
 
     int timesteps_per_output = get_timesteps_per_output(output_type);
@@ -67,6 +68,11 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
         output_start_indices[layer->id] = output_size;
         output_size += max_delay_registers * layer->size;
 
+        if (layer->is_expected()) {
+            expected_start_indices[layer->id] = expected_size;
+            expected_size += layer->size;
+        }
+
         other_start_indices[layer->id] = other_size;
         other_size += layer->size;
     }
@@ -74,12 +80,14 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
     // Allocate space for input and output
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
+    this->expected = Pointer<Output>(expected_size);
     this->total_neurons = other_size;
 }
 
 Attributes::~Attributes() {
     this->input.free();
     this->output.free();
+    this->expected.free();
 #ifdef __CUDACC__
     cudaFree(this->pointer);
 #endif
@@ -99,6 +107,7 @@ void Attributes::schedule_transfer() {
     // Transfer data
     this->input.schedule_transfer(device_id);
     this->output.schedule_transfer(device_id);
+    this->expected.schedule_transfer(device_id);
 }
 
 int Attributes::get_other_start_index(int id) const {
@@ -108,6 +117,11 @@ int Attributes::get_other_start_index(int id) const {
 Pointer<float> Attributes::get_input(int id, int register_index) const {
     int size = sizes.at(id);
     return input.slice(input_start_indices.at(id) + (register_index * size), size);
+}
+
+Pointer<Output> Attributes::get_expected(int id) const {
+    int size = sizes.at(id);
+    return expected.slice(expected_start_indices.at(id), size);
 }
 
 Pointer<Output> Attributes::get_output(int id, int word_index) const {

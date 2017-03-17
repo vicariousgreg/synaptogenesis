@@ -23,8 +23,10 @@ class State {
         DeviceID get_device_id(Layer *layer) const;
         int get_other_start_index(Layer *layer) const;
         Pointer<float> get_input(Layer *layer, int register_index = 0) const;
+        Pointer<Output> get_expected(Layer *layer) const;
         Pointer<Output> get_output(Layer *layer, int word_index = 0) const;
         Pointer<float> get_buffer_input(Layer *layer) const;
+        Pointer<Output> get_buffer_expected(Layer *layer) const;
         Pointer<Output> get_buffer_output(Layer *layer) const;
         OutputType get_output_type(Layer *layer) const;
         const Attributes *get_attributes_pointer(Layer *layer) const;

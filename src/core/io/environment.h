@@ -26,6 +26,7 @@ class Environment {
     private:
         Visualizer *visualizer;
         ModuleList input_modules;
+        ModuleList expected_modules;
         ModuleList output_modules;
 };
 

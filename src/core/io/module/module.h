@@ -15,6 +15,7 @@ class Module {
         /* Override to implement input and output functionality.
          * If unused, do not override */
         virtual void feed_input(Buffer *buffer) { }
+        virtual void feed_expected(Buffer *buffer) { }
         virtual void report_output(Buffer *buffer, OutputType output_type) { }
 
         /* Override to indicate IO type

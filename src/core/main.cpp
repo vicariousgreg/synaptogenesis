@@ -21,7 +21,7 @@ void print_model(Model *model) {
             std::cout << layer->structure->name << "->" << layer->name;
             if (layer->is_input()) std::cout << "\t\tINPUT";
             if (layer->is_output()) std::cout << "\t\tOUTPUT";
-            if (layer->is_error()) std::cout << "\t\tOUTPUT";
+            if (layer->is_expected()) std::cout << "\t\tOUTPUT";
             std::cout << std::endl;
         }
     }
@@ -710,7 +710,7 @@ int main(int argc, char *argv[]) {
 
         return 0;
     } catch (const char* msg) {
-        printf("\n\nERROR: %s\n", msg);
+        printf("\n\nEXPECTED: %s\n", msg);
         printf("Fatal error -- exiting...\n");
         return 1;
     }

@@ -11,16 +11,19 @@ class Model;
 
 class Buffer {
     public:
-        Buffer(LayerList input_layers, LayerList output_layers);
+        Buffer(LayerList input_layers, LayerList output_layers,
+            LayerList expected_layers);
         virtual ~Buffer();
 
         /* IO setters */
         void set_input(Layer *layer, Pointer<float> source);
         void set_output(Layer *layer, Pointer<Output> source);
+        void set_expected(Layer *layer, Pointer<Output> source);
 
         /* IO getters */
         Pointer<float> get_input(Layer *layer);
         Pointer<Output> get_output(Layer *layer);
+        Pointer<Output> get_expected(Layer *layer);
 
         /* Dirty */
         bool get_dirty(Layer *layer) const { return dirty_map.at(layer); }
@@ -33,22 +36,29 @@ class Buffer {
 
         Pointer<float> input;
         Pointer<Output> output;
+        Pointer<Output> expected;
 
         LayerList input_layers;
         LayerList output_layers;
+        LayerList expected_layers;
 
         int input_size;
         int output_size;
+        int expected_size;
 
         std::map<Layer*, bool> dirty_map;
         std::map<Layer*, int> input_map;
         std::map<Layer*, int> output_map;
+        std::map<Layer*, int> expected_map;
 };
 
 class HostBuffer : public Buffer {
     public:
-        HostBuffer(LayerList input_layers, LayerList output_layers)
-                : Buffer(input_layers, output_layers) { init(); }
+        HostBuffer(LayerList input_layers, LayerList output_layers,
+            LayerList expected_layers)
+                : Buffer(input_layers, output_layers, expected_layers) {
+            init();
+        }
 
     protected:
         virtual void init();
@@ -57,8 +67,8 @@ class HostBuffer : public Buffer {
 class DeviceBuffer : public Buffer {
     public:
         DeviceBuffer(LayerList input_layers, LayerList output_layers,
-            DeviceID device_id)
-                : Buffer(input_layers, output_layers),
+            LayerList expected_layers, DeviceID device_id)
+                : Buffer(input_layers, output_layers, expected_layers),
                   device_id(device_id) { init(); }
 
         const DeviceID device_id;
@@ -69,6 +79,6 @@ class DeviceBuffer : public Buffer {
 
 Buffer *build_buffer(DeviceID device_id, Model *model);
 Buffer *build_buffer(DeviceID device_id,
-    LayerList input_layers, LayerList output_layers);
+    LayerList input_layers, LayerList output_layers, LayerList expected_layers);
 
 #endif

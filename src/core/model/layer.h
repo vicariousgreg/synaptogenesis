@@ -33,9 +33,10 @@ class Layer {
         IOTypeMask get_type() const { return type; }
         bool is_input() const { return type & INPUT; }
         bool is_output() const { return type & OUTPUT; }
-        bool is_error() const { return type & ERROR; }
+        bool is_expected() const { return type & EXPECTED; }
 
         Module* get_input_module() const { return input_module; }
+        Module* get_expected_module() const { return expected_module; }
         const ModuleList get_output_modules() const { return output_modules; }
 
         const ConnectionList& get_input_connections() const { return input_connections; }
@@ -87,7 +88,7 @@ class Layer {
 
         // Modules
         Module* input_module;
-        Module* error_module;
+        Module* expected_module;
         ModuleList output_modules;
 
         // Input and output connections

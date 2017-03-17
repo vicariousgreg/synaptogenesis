@@ -24,6 +24,11 @@ Environment::Environment(State *state)
                 dynamic_cast<VisualizerInputModule*>(input_module) != nullptr;
         }
 
+        // Add expected module
+        Module *expected_module = layer->get_expected_module();
+        if (expected_module != nullptr)
+            this->expected_modules.push_back(expected_module);
+
         // Add output modules
         // If visualizer output module is found, set flag
         auto output_modules = layer->get_output_modules();
@@ -54,6 +59,9 @@ OutputType Environment::get_output_type(Layer *layer) {
 void Environment::step_input() {
     for (auto& module : this->input_modules)
         module->feed_input(buffer);
+
+    for (auto& module : this->expected_modules)
+        module->feed_expected(buffer);
 }
 
 void Environment::step_output() {

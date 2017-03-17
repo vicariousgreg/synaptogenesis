@@ -6,9 +6,12 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         : to_layer(layer),
           device_id(state->get_device_id(layer)),
           is_input(layer->is_input()),
+          is_expected(layer->is_expected()),
           is_output(layer->is_output()),
           input_instruction(nullptr),
           input_copy_instruction(nullptr),
+          expected_instruction(nullptr),
+          expected_copy_instruction(nullptr),
           output_instruction(nullptr),
           output_copy_instruction(nullptr),
           state_instruction(nullptr),
@@ -35,6 +38,24 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
 
         input_instruction->add_dependency(input_copy_instruction);
         input_copy_instruction->add_dependency(input_instruction);
+    }
+
+    if (this->is_expected) {
+        expected_event = res_man->create_event(device_id);
+
+        this->expected_instruction =
+            new InputTransferInstruction(
+                to_layer, state, environment, compute_stream);
+        this->expected_copy_instruction =
+            new InternalInputTransferInstruction(
+                to_layer, state, compute_stream);
+
+        expected_instruction->add_event(expected_event);
+        expected_copy_instruction->add_event(
+            res_man->create_event(device_id));
+
+        expected_instruction->add_dependency(expected_copy_instruction);
+        expected_copy_instruction->add_dependency(expected_instruction);
     }
 
     // Add noise / clear instruction
@@ -78,6 +99,10 @@ ClusterNode::~ClusterNode() {
     if (is_input) {
         delete input_instruction;
         delete input_copy_instruction;
+    }
+    if (is_expected) {
+        delete expected_instruction;
+        delete expected_copy_instruction;
     }
     if (is_output) {
         delete output_copy_instruction;
@@ -134,6 +159,10 @@ void ClusterNode::activate_input() {
         input_instruction->activate();
         input_copy_instruction->activate();
     }
+    if (this->is_expected) {
+        expected_instruction->activate();
+        expected_copy_instruction->activate();
+    }
 }
 
 void ClusterNode::activate_state() {
@@ -150,6 +179,7 @@ void ClusterNode::activate_output() {
 
 void ClusterNode::synchronize_input() {
     if (is_input) input_event->synchronize();
+    if (is_expected) expected_event->synchronize();
 }
 
 void ClusterNode::synchronize_output() {

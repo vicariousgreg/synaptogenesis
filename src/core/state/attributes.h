@@ -57,11 +57,13 @@ class Attributes {
         int get_other_start_index(int id) const;
         Pointer<float> get_input(int id, int register_index = 0) const;
         Pointer<Output> get_output(int id, int word_index = 0) const;
+        Pointer<Output> get_expected(int id) const;
 
         // Neuron IO data
         EXTRACTOR extractor;
         const OutputType output_type;
         Pointer<Output> output;
+        Pointer<Output> expected;
         Pointer<float> input;
 
         // Pointer to this object
@@ -87,6 +89,7 @@ class Attributes {
         std::map<int, int> other_start_indices;
         std::map<int, int> input_start_indices;
         std::map<int, int> output_start_indices;
+        std::map<int, int> expected_start_indices;
         std::map<int, int> sizes;
 };
 

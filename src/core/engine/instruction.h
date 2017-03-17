@@ -222,6 +222,43 @@ class InternalInputTransferInstruction : public TransferInstruction<float> {
                       stream) { }
 };
 
+/* Transfers expected data */
+class ExpectedTransferInstruction : public TransferInstruction<Output> {
+    public:
+        ExpectedTransferInstruction(Layer *layer, State *state,
+            Environment *environment, Stream *stream)
+                : TransferInstruction(layer,
+                      environment->buffer->get_expected(layer),
+                      state->get_buffer_expected(layer),
+                      stream),
+                  buffer(environment->buffer) { }
+
+        virtual void activate() {
+            // Only transfer if the buffer is dirty
+            if (buffer->get_dirty(to_layer)) {
+                buffer->set_dirty(to_layer, false);
+                TransferInstruction<Output>::activate();
+            } else {
+                Instruction::wait_for_dependencies();
+                Instruction::record_events();
+            }
+        }
+
+    protected:
+        Buffer* buffer;
+};
+
+/* Sets expected from buffer */
+class InternalExpectedTransferInstruction : public TransferInstruction<Output> {
+    public:
+        InternalExpectedTransferInstruction(Layer *layer,
+            State *state, Stream *stream)
+                : TransferInstruction(layer,
+                      state->get_buffer_expected(layer),
+                      state->get_expected(layer),
+                      stream) { }
+};
+
 /* Transfers output data */
 class OutputTransferInstruction : public TransferInstruction<Output> {
     public:
