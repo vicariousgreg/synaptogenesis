@@ -19,12 +19,9 @@ void print_model(Model *model) {
     for (auto structure : model->get_structures()) {
         for (auto layer : structure->get_layers()) {
             std::cout << layer->structure->name << "->" << layer->name;
-            switch (layer->get_type()) {
-                case INPUT: std::cout << "\t\tINPUT"; break;
-                case INPUT_OUTPUT: std::cout << "\t\tINPUT_OUTPUT"; break;
-                case OUTPUT: std::cout << "\t\tOUTPUT"; break;
-                case INTERNAL: std::cout << "\t\tINTERNAL"; break;
-            }
+            if (layer->is_input()) std::cout << "\t\tINPUT";
+            if (layer->is_output()) std::cout << "\t\tOUTPUT";
+            if (layer->is_error()) std::cout << "\t\tOUTPUT";
             std::cout << std::endl;
         }
     }

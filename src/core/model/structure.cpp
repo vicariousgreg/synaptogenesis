@@ -120,7 +120,6 @@ void Structure::add_layer(LayerConfig config) {
     this->layers.push_back(layer);
     this->layers_by_name[config.name] = layer;
     this->total_neurons += layer->size;
-    this->num_neurons[layer->get_type()] += layer->size;
     this->neural_model_flags[config.neural_model] = true;
 }
 
@@ -140,12 +139,6 @@ void Structure::add_module(std::string layer_name,
 
     Module *module = build_module(layer, type, params);
 
-    // Remove neurons from old IOType
-    this->num_neurons[layer->get_type()] -= layer->size;
-
     // Add the module
     layer->add_module(module);
-
-    // Add neurons to new IOType
-    this->num_neurons[layer->get_type()] += layer->size;
 }

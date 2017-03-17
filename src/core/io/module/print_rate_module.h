@@ -9,7 +9,7 @@ class PrintRateModule : public Module {
             std::string params);
 
         void report_output(Buffer *buffer, OutputType output_type);
-        virtual IOType get_type() { return OUTPUT; }
+        virtual IOTypeMask get_type() { return OUTPUT; }
 
     private:
         int rate;

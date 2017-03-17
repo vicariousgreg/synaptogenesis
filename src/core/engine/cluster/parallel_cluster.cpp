@@ -12,14 +12,13 @@ ParallelCluster::ParallelCluster(Structure *structure,
             layer, state, environment, io_streams[device_id],
             ResourceManager::get_instance()->create_stream(device_id));
         nodes.push_back(node);
-        sorted_nodes[layer->get_type()].push_back(node);
     }
 
-    // Schedule instructions
-    post_input_instructions = sort_instructions(
-        IOTypeVector { INPUT, INPUT_OUTPUT });
-    pre_input_instructions = sort_instructions(
-        IOTypeVector { OUTPUT, INTERNAL });
+    /* Schedule instructions */
+    // Find all instructions with INPUT flag
+    pre_input_instructions = sort_instructions(0, INPUT);
+    // Find all instructions without INPUT flag
+    post_input_instructions = sort_instructions(INPUT, 0);
 }
 
 void ParallelCluster::add_external_dependencies(
@@ -35,13 +34,14 @@ void ParallelCluster::add_external_dependencies(
 }
 
 InstructionList ParallelCluster::sort_instructions(
-        IOTypeVector types) {
-    std::map<Layer*, std::queue<Instruction* > > schedules;
+        IOTypeMask include, IOTypeMask exclude) {
+    std::map<Layer*, std::queue<Instruction*> > schedules;
     InstructionList destination;
 
     // Extract instructions
-    for (auto& type : types)
-        for (auto& node : sorted_nodes[type])
+    for (auto& node : nodes)
+        if ((include == 0 or (node->to_layer->get_type() & include)) and
+                not (node->to_layer->get_type() & exclude))
             for (auto& inst : node->get_instructions())
                 // Add to schedule map for round robin
                 schedules[node->to_layer].push(inst);
@@ -68,22 +68,8 @@ void ParallelCluster::launch_pre_input_calculations() {
     for (auto& inst : this->pre_input_instructions) inst->activate();
 }
 
-void ParallelCluster::launch_input() {
-    for (auto& node : sorted_nodes[INPUT])
-        node->activate_input();
-    for (auto& node : sorted_nodes[INPUT_OUTPUT])
-        node->activate_input();
-}
-
 void ParallelCluster::launch_post_input_calculations() {
     for (auto& inst : this->post_input_instructions) inst->activate();
-}
-
-void ParallelCluster::launch_output() {
-    for (auto& node : sorted_nodes[INPUT_OUTPUT])
-        node->activate_output();
-    for (auto& node : sorted_nodes[OUTPUT])
-        node->activate_output();
 }
 
 void ParallelCluster::launch_state_update() {

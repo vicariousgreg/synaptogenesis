@@ -20,7 +20,7 @@ class Module {
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call
          */
-        virtual IOType get_type() = 0;
+        virtual IOTypeMask get_type() = 0;
 
         Layer* const layer;
 };

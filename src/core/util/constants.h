@@ -48,13 +48,12 @@ union Output {
  * Internal layers do neither.
  */
 typedef enum {
-    INPUT,
-    INPUT_OUTPUT,
-    OUTPUT,
-    INTERNAL,
+    INPUT = 1,
+    OUTPUT = 2,
+    ERROR = 4,
 } IOType;
 
-static IOType IOTypes[] = { INPUT, INPUT_OUTPUT, OUTPUT, INTERNAL };
+typedef unsigned char IOTypeMask;
 
 /* Matrix Type enumeration.
  * Fully connected represents an n x m matrix.

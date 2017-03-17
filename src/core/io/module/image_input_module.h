@@ -15,7 +15,7 @@ class ImageInputModule : public Module {
         }
 
         void feed_input(Buffer *buffer);
-        virtual IOType get_type() { return INPUT; }
+        virtual IOTypeMask get_type() { return INPUT; }
 
     private:
         bool transferred;

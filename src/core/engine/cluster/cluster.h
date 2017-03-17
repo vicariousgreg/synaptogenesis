@@ -23,12 +23,18 @@ class Cluster {
         virtual void add_external_dependencies(
             std::map<Layer*, ClusterNode*> all_nodes) = 0;
 
+        void launch_input() {
+            for (auto& node : nodes) node->activate_input();
+        }
+
+        void launch_output() {
+            for (auto& node : nodes) node->activate_output();
+        }
+
         virtual void launch_pre_input_calculations() { };
-        virtual void launch_input() = 0;
         virtual void launch_post_input_calculations() = 0;
         virtual void launch_state_update() { }
         virtual void launch_weight_update() = 0;
-        virtual void launch_output() = 0;
 
         void wait_for_input() {
             for (auto& node : nodes)
@@ -49,8 +55,6 @@ class Cluster {
         std::vector<ClusterNode*> nodes;
 };
 
-typedef std::vector<IOType> IOTypeVector;
-
 class ParallelCluster : public Cluster {
     public:
         ParallelCluster(Structure *structure, State *state,
@@ -60,16 +64,13 @@ class ParallelCluster : public Cluster {
             std::map<Layer*, ClusterNode*> all_nodes);
 
         virtual void launch_pre_input_calculations();
-        virtual void launch_input();
         virtual void launch_post_input_calculations();
         virtual void launch_state_update();
         virtual void launch_weight_update();
-        virtual void launch_output();
 
     protected:
-        InstructionList sort_instructions(IOTypeVector types);
-
-        std::vector<ClusterNode*> sorted_nodes[sizeof(IOTypes)];
+        InstructionList sort_instructions(
+            IOTypeMask include, IOTypeMask exclude);
 
         InstructionList pre_input_instructions;
         InstructionList post_input_instructions;
@@ -83,9 +84,7 @@ class SequentialCluster : public Cluster {
         virtual void add_external_dependencies(
             std::map<Layer*, ClusterNode*> all_nodes);
 
-        virtual void launch_input();
         virtual void launch_post_input_calculations();
-        virtual void launch_output();
         virtual void launch_weight_update();
 
         std::vector<Stream*> compute_streams;

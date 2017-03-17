@@ -7,7 +7,7 @@ class VisualizerInputModule : public Module {
     public:
         VisualizerInputModule(Layer *layer, std::string params) : Module(layer) {}
 
-        virtual IOType get_type() { return INPUT; }
+        virtual IOTypeMask get_type() { return INPUT; }
 };
 
 #endif

@@ -7,7 +7,7 @@ class DummyOutputModule : public Module {
     public:
         DummyOutputModule(Layer *layer, std::string params) : Module(layer) {}
 
-        virtual IOType get_type() { return OUTPUT; }
+        virtual IOTypeMask get_type() { return OUTPUT; }
 };
 
 #endif

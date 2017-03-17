@@ -66,16 +66,6 @@ void SequentialCluster::add_external_dependencies(
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
-void SequentialCluster::launch_input() {
-    for (auto& node : nodes)
-        node->activate_input();
-}
-
-void SequentialCluster::launch_output() {
-    for (auto& node : nodes)
-        node->activate_output();
-}
-
 void SequentialCluster::launch_post_input_calculations() {
     // Activate nodes forwards
     for (auto it = nodes.begin() ; it != nodes.end(); ++it) {

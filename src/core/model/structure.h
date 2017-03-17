@@ -22,7 +22,6 @@ class Structure {
     public:
         Structure (std::string name, ClusterType cluster_type)
                 : name(name), cluster_type(cluster_type) {
-            for (auto type : IOTypes) this->num_neurons[type] = 0;
             for (auto neural_model : NeuralModels)
                 this->neural_model_flags.push_back(false);
         }
@@ -38,7 +37,6 @@ class Structure {
 
         /* Gets the total neuron count */
         int get_num_neurons() const { return total_neurons; }
-        int get_num_neurons(IOType type) const { return num_neurons[type]; }
 
         /* Connects layers in two different structures */
         static Connection* connect(
@@ -108,7 +106,6 @@ class Structure {
 
         // Number of neurons
         int total_neurons;
-        int num_neurons[sizeof(IOTypes)];
 
         // Flags for whether this contains layers of a given neural model
         std::vector<bool> neural_model_flags;

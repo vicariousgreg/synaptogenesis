@@ -30,9 +30,10 @@ class Layer {
         }
 
         /* Constant getters */
-        IOType get_type() const { return type; }
-        bool is_input() const { return type == INPUT or type == INPUT_OUTPUT; }
-        bool is_output() const { return type == OUTPUT or type == INPUT_OUTPUT; }
+        IOTypeMask get_type() const { return type; }
+        bool is_input() const { return type & INPUT; }
+        bool is_output() const { return type & OUTPUT; }
+        bool is_error() const { return type & ERROR; }
 
         Module* get_input_module() const { return input_module; }
         const ModuleList get_output_modules() const { return output_modules; }
@@ -82,10 +83,11 @@ class Layer {
         void add_module(Module *module);
 
         // Layer type (input, output, input/output, internal)
-        IOType type;
+        IOTypeMask type;
 
         // Modules
         Module* input_module;
+        Module* error_module;
         ModuleList output_modules;
 
         // Input and output connections

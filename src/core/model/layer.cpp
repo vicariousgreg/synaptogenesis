@@ -15,7 +15,7 @@ Layer::Layer(Structure *structure, LayerConfig config)
           params(config.params),
           noise(config.noise),
           plastic(config.plastic),
-          type(INTERNAL),
+          type(0),
           input_module(nullptr),
           dendritic_root(new DendriticNode(0, this)) { }
 
@@ -31,37 +31,21 @@ void Layer::add_to_root(Connection* connection) {
     this->dendritic_root->add_child(connection);
 }
 
+#include <iostream>
+
 void Layer::add_module(Module *module) {
-    IOType new_type = module->get_type();
+    IOTypeMask model_type = module->get_type();
 
-    switch (new_type) {
-        case INPUT:
-            if (this->input_module != nullptr)
-                ErrorManager::get_instance()->log_error(
-                    "Layer cannot have more than one input module!");
-            this->input_module = module;
-            break;
-        case OUTPUT:
-            this->output_modules.push_back(module);
-            break;
-        case INPUT_OUTPUT:
-            if (this->input_module != nullptr)
-                ErrorManager::get_instance()->log_error(
-                    "Layer cannot have more than one input module!");
-            this->input_module = module;
-            this->output_modules.push_back(module);
-            break;
-        default:
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized module type!");
-    }
+    if ((model_type & INPUT) and (this->type & INPUT))
+        ErrorManager::get_instance()->log_error(
+            "Layer cannot have more than one input module!");
+    if ((model_type & ERROR) and (this->type & ERROR))
+        ErrorManager::get_instance()->log_error(
+            "Layer cannot have more than one error module!");
 
-    if (this->input_module != nullptr and this->output_modules.size() > 0)
-        this->type = INPUT_OUTPUT;
-    else if (this->input_module != nullptr)
-        this->type = INPUT;
-    else if (this->output_modules.size() > 0)
-        this->type = OUTPUT;
-    else  // This shouldn't happen, but here it is anyway
-        this->type = INTERNAL;
+    if (model_type & INPUT) this->input_module = module;
+    if (model_type & OUTPUT) this->output_modules.push_back(module);
+    if (model_type & ERROR) this->error_module = module;
+
+    this->type |= model_type;
 }
