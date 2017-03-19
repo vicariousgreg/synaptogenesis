@@ -112,7 +112,7 @@ Stream *ResourceManager::Device::create_stream() {
 }
 
 Event *ResourceManager::Device::create_event() {
-    auto event = new Event();
+    auto event = new Event(device_id, host_flag);
     this->events.push_back(event);
     return event;
 }

@@ -23,8 +23,6 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
 
     // Add input transfer instruction
     if (this->is_input) {
-        input_event = res_man->create_event(device_id);
-
         this->input_instruction =
             new InputTransferInstruction(
                 to_layer, state, environment, compute_stream);
@@ -32,27 +30,17 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
             new InternalInputTransferInstruction(
                 to_layer, state, compute_stream);
 
-        input_instruction->add_event(input_event);
-        input_copy_instruction->add_event(
-            res_man->create_event(device_id));
-
         input_instruction->add_dependency(input_copy_instruction);
         input_copy_instruction->add_dependency(input_instruction);
     }
 
     if (this->is_expected) {
-        expected_event = res_man->create_event(device_id);
-
         this->expected_instruction =
             new InputTransferInstruction(
                 to_layer, state, environment, compute_stream);
         this->expected_copy_instruction =
             new InternalInputTransferInstruction(
                 to_layer, state, compute_stream);
-
-        expected_instruction->add_event(expected_event);
-        expected_copy_instruction->add_event(
-            res_man->create_event(device_id));
 
         expected_instruction->add_dependency(expected_copy_instruction);
         expected_copy_instruction->add_dependency(expected_instruction);
@@ -76,18 +64,12 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
 
     // Add output transfer instruction
     if (this->is_output) {
-        output_event = res_man->create_event(device_id);
-
         this->output_copy_instruction =
             new InternalOutputTransferInstruction(
                 to_layer, state, compute_stream);
         this->output_instruction =
             new OutputTransferInstruction(
                 to_layer, state, environment, io_stream);
-
-        output_instruction->add_event(output_event);
-        output_copy_instruction->add_event(
-            res_man->create_event(device_id));
 
         output_copy_instruction->add_dependency(output_instruction);
         output_instruction->add_dependency(output_copy_instruction);
@@ -122,25 +104,17 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
                 child->conn, state, compute_stream);
 
             // Check to see if connection is inter-device
-            // If so, add an inter-device instruction and an event for transfer
+            // If so, add an inter-device instruction
             if (state->is_inter_device(child->conn)) {
                 // Create transfer instruction
                 auto transfer_inst = new DeviceToDeviceTransferFunction(
                         child->conn, state, compute_stream);
                 instructions.push_back(transfer_inst);
 
-                // Create an event for synchronization
                 // Synapse instruction depends on it
-                auto event = res_man->create_event(
-                    state->get_device_id(child->conn->from_layer));
-                transfer_inst->add_event(event);
-                syn_inst->add_dependency(event);
+                syn_inst->add_dependency(transfer_inst);
                 external_transfer_instructions[child->conn] = transfer_inst;
             }
-
-            // Create an event for inter-node dependencies
-            syn_inst->add_event(res_man->create_event(
-                state->get_device_id(child->conn->from_layer)));
 
             // Create the instruction and add it to the synapse instuction list
             instructions.push_back(syn_inst);
@@ -178,12 +152,12 @@ void ClusterNode::activate_output() {
 }
 
 void ClusterNode::synchronize_input() {
-    if (is_input) input_event->synchronize();
-    if (is_expected) expected_event->synchronize();
+    if (is_input) input_instruction->synchronize();
+    if (is_expected) expected_instruction->synchronize();
 }
 
 void ClusterNode::synchronize_output() {
-    if (is_output) output_event->synchronize();
+    if (is_output) output_instruction->synchronize();
 }
 
 const InstructionList ClusterNode::get_instructions() const {

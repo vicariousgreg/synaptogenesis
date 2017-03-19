@@ -58,10 +58,6 @@ class ClusterNode {
         bool is_output;
         Instruction *output_instruction;
         Instruction *output_copy_instruction;
-
-        Event *input_event;
-        Event *expected_event;
-        Event *output_event;
 };
 
 #endif

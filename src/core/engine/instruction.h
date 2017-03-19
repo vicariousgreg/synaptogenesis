@@ -16,11 +16,9 @@ class Instruction {
                 : to_layer(layer),
                   activator_threads(calc_threads(layer->size)),
                   activator_blocks(calc_blocks(layer->size)),
-                  stream(stream) { }
-
-        virtual ~Instruction() {
-            for (auto& event : events) delete event;
-        }
+                  stream(stream),
+                  event(nullptr) { }
+        virtual ~Instruction() { }
 
         virtual void activate() = 0;
         virtual void update() { }
@@ -30,22 +28,24 @@ class Instruction {
             for (auto& dep : dependencies) stream->wait(dep);
         }
 
-        void record_events() {
-            for (auto& event : events) stream->record(event);
+        void record_event() { if (event != nullptr) stream->record(event); }
+        void synchronize() { if (event != nullptr) event->synchronize(); }
+
+        void add_dependency(Instruction *inst) {
+            Event* other_event = inst->event;
+            if (other_event == nullptr) {
+                other_event = ResourceManager::get_instance()->create_event(
+                    inst->stream->get_device_id());
+                inst->event = other_event;
+            }
+            this->dependencies.push_back(other_event);
         }
 
         Layer* const to_layer;
 
-        void add_event(Event *event) { this->events.push_back(event); }
-        void add_dependency(Event *dep) { this->dependencies.push_back(dep); }
-        void add_dependency(Instruction *inst) {
-            for (auto& event : inst->events)
-                this->dependencies.push_back(event);
-        }
-
     protected:
         Stream *stream;
-        std::vector<Event*> events;
+        Event* event;
         std::vector<Event*> dependencies;
         int activator_blocks, activator_threads;
         int updater_blocks, updater_threads;
@@ -73,7 +73,7 @@ class ClearInstruction : public InitializeInstruction {
             get_clear_data().run(stream,
                 activator_blocks, activator_threads,
                 dst, to_layer->size);
-            Instruction::record_events();
+            Instruction::record_event();
         }
 };
 
@@ -89,7 +89,7 @@ class NoiseInstruction : public InitializeInstruction {
             get_randomize_data().run(stream,
                 activator_blocks, activator_threads,
                 dst, to_layer->size, to_layer->noise, init);
-            Instruction::record_events();
+            Instruction::record_event();
         }
 
     protected:
@@ -121,7 +121,7 @@ class SynapseInstruction : public Instruction {
             activator.run(stream,
                 activator_blocks, activator_threads,
                 synapse_data);
-            Instruction::record_events();
+            Instruction::record_event();
         }
 
         void update() {
@@ -158,7 +158,7 @@ class DendriticInstruction : public Instruction {
             get_calc_internal().run(stream,
                 activator_blocks, activator_threads,
                 to_layer->size, src, dst, init);
-            Instruction::record_events();
+            Instruction::record_event();
         }
 
     protected:
@@ -178,7 +178,7 @@ class TransferInstruction : public Instruction {
         virtual void activate() {
             Instruction::wait_for_dependencies();
             src.copy_to(dst, stream);
-            Instruction::record_events();
+            Instruction::record_event();
         }
 
     protected:
@@ -203,7 +203,7 @@ class InputTransferInstruction : public TransferInstruction<float> {
                 TransferInstruction<float>::activate();
             } else {
                 Instruction::wait_for_dependencies();
-                Instruction::record_events();
+                Instruction::record_event();
             }
         }
 
@@ -240,7 +240,7 @@ class ExpectedTransferInstruction : public TransferInstruction<Output> {
                 TransferInstruction<Output>::activate();
             } else {
                 Instruction::wait_for_dependencies();
-                Instruction::record_events();
+                Instruction::record_event();
             }
         }
 
@@ -307,7 +307,7 @@ class StateUpdateInstruction : public Instruction {
             attribute_kernel.run(stream,
                 activator_blocks, activator_threads,
                 attribute_data);
-            Instruction::record_events();
+            Instruction::record_event();
         }
 
     protected:

@@ -24,7 +24,7 @@ void Stream::record(Event *event) {
 #ifdef __CUDACC__
     if (not host_flag) {
         cudaSetDevice(device_id);
-        cudaEventRecord(event->cuda_event, cuda_stream);
+        cudaEventRecord(event->get_cuda_event(), cuda_stream);
     }
 #endif
 }
@@ -33,7 +33,7 @@ void Stream::wait(Event *event) {
 #ifdef __CUDACC__
     if (not host_flag) {
         cudaSetDevice(device_id);
-        cudaStreamWaitEvent(cuda_stream, event->cuda_event, 0);
+        cudaStreamWaitEvent(cuda_stream, event->get_cuda_event(), 0);
     }
 #endif
 }
