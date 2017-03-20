@@ -24,7 +24,8 @@ class ClusterNode {
         const InstructionList get_activate_instructions() const;
         const InstructionList get_update_instructions() const;
         Instruction* get_input_instruction() const;
-        Instruction* get_state_instruction() const;
+        Instruction* get_state_update_instruction() const;
+        Instruction* get_state_learning_instruction() const;
         Instruction* get_output_instruction() const;
         const std::map<Connection*, Instruction*>
             get_synapse_instructions() const;
@@ -46,7 +47,8 @@ class ClusterNode {
 
         InstructionList activate_instructions;
         InstructionList update_instructions;
-        Instruction *state_instruction;
+        Instruction *state_update_instruction;
+        Instruction *state_learning_instruction;
 
         bool is_input;
         Instruction *input_instruction;

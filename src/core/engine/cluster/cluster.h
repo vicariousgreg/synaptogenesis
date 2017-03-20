@@ -70,10 +70,11 @@ class ParallelCluster : public Cluster {
 
     protected:
         InstructionList sort_instructions(
-            IOTypeMask include, IOTypeMask exclude);
+            IOTypeMask include, IOTypeMask exclude, bool plastic);
 
         InstructionList pre_input_instructions;
         InstructionList post_input_instructions;
+        InstructionList plastic_instructions;
 };
 
 class SequentialCluster : public Cluster {

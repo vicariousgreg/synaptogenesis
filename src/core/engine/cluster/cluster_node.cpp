@@ -11,7 +11,8 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
           input_instruction(nullptr),
           expected_instruction(nullptr),
           output_instruction(nullptr),
-          state_instruction(nullptr),
+          state_update_instruction(nullptr),
+          state_learning_instruction(nullptr),
           io_stream(io_stream),
           compute_stream(compute_stream),
           state(state),
@@ -37,13 +38,22 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         activate_instructions.push_back(
             new ClearInstruction(to_layer, state, compute_stream));
 
-    // Beform DFS on dendritic tree
-    dendrite_DFS(to_layer->dendritic_root);
-
-    // Add state instruction
-    this->state_instruction =
+    // Add state instructions
+    this->state_update_instruction =
         new StateUpdateInstruction(
             to_layer, state, compute_stream);
+    if (layer->plastic and
+            not state->get_attribute_learning_kernel(layer).is_null()) {
+        this->state_learning_instruction =
+            new StateLearningInstruction(
+                to_layer, state, compute_stream);
+        update_instructions.push_back(this->state_learning_instruction);
+    }
+
+    // Beform DFS on dendritic tree
+    // Do this after so that the state learning instruction comes first
+    //   in the update_instructions list
+    dendrite_DFS(to_layer->dendritic_root);
 
     // Add output transfer instruction
     if (this->is_output)
@@ -58,7 +68,9 @@ ClusterNode::~ClusterNode() {
     if (is_input) delete input_instruction;
     if (is_expected) delete expected_instruction;
     if (is_output) delete output_instruction;
-    delete state_instruction;
+    delete state_update_instruction;
+    if (state_learning_instruction != nullptr)
+        delete state_learning_instruction;
 }
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
@@ -96,7 +108,7 @@ void ClusterNode::activate_input() {
 }
 
 void ClusterNode::activate_state() {
-    state_instruction->activate();
+    state_update_instruction->activate();
 }
 
 void ClusterNode::activate_output() {
@@ -124,8 +136,8 @@ Instruction* ClusterNode::get_input_instruction() const {
     return input_instruction;
 }
 
-Instruction* ClusterNode::get_state_instruction() const {
-    return state_instruction;
+Instruction* ClusterNode::get_state_update_instruction() const {
+    return state_update_instruction;
 }
 
 Instruction* ClusterNode::get_output_instruction() const {

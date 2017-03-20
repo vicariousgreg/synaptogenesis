@@ -18,7 +18,8 @@ typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
 class Attributes {
     public:
         Attributes(LayerList &layers, OutputType output_type,
-            Kernel<ATTRIBUTE_ARGS>kernel);
+            Kernel<ATTRIBUTE_ARGS> kernel,
+            Kernel<ATTRIBUTE_ARGS> learning_kernel=Kernel<ATTRIBUTE_ARGS>());
         virtual ~Attributes();
 
         void set_device_id(DeviceID device_id) {
@@ -72,6 +73,7 @@ class Attributes {
 
         // Pointer to attribute kernel
         Kernel<ATTRIBUTE_ARGS> kernel;
+        Kernel<ATTRIBUTE_ARGS> learning_kernel;
 
         DeviceID get_device_id() { return device_id; }
 

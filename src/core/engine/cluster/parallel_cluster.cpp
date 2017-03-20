@@ -16,9 +16,11 @@ ParallelCluster::ParallelCluster(Structure *structure,
 
     /* Schedule instructions */
     // Find all instructions with INPUT flag
-    pre_input_instructions = sort_instructions(0, INPUT);
+    pre_input_instructions = sort_instructions(0, INPUT, false);
     // Find all instructions without INPUT flag
-    post_input_instructions = sort_instructions(INPUT, 0);
+    post_input_instructions = sort_instructions(INPUT, 0, false);
+    // Find all plastic instructions
+    plastic_instructions = sort_instructions(0, 0, true);
 }
 
 void ParallelCluster::add_external_dependencies(
@@ -30,21 +32,28 @@ void ParallelCluster::add_external_dependencies(
     for (auto& node : nodes)
         for (auto& pair : node->get_synapse_instructions())
             all_nodes[pair.first->from_layer]
-                ->get_state_instruction()->add_dependency(pair.second);
+                ->get_state_update_instruction()->add_dependency(pair.second);
 }
 
 InstructionList ParallelCluster::sort_instructions(
-        IOTypeMask include, IOTypeMask exclude) {
+        IOTypeMask include, IOTypeMask exclude, bool plastic) {
     std::map<Layer*, std::queue<Instruction*> > schedules;
     InstructionList destination;
 
     // Extract instructions
-    for (auto& node : nodes)
+    for (auto& node : nodes) {
         if ((include == 0 or (node->to_layer->get_type() & include)) and
-                not (node->to_layer->get_type() & exclude))
-            for (auto& inst : node->get_activate_instructions())
-                // Add to schedule map for round robin
-                schedules[node->to_layer].push(inst);
+                not (node->to_layer->get_type() & exclude)) {
+            // Add to schedule map for round robin
+            if (plastic) {
+                for (auto& inst : node->get_update_instructions())
+                    schedules[node->to_layer].push(inst);
+            } else {
+                for (auto& inst : node->get_activate_instructions())
+                    schedules[node->to_layer].push(inst);
+            }
+        }
+    }
 
     // Perform round robin on nodes
     // Connections should be initialized this way to take advantage of
@@ -77,7 +86,5 @@ void ParallelCluster::launch_state_update() {
 }
 
 void ParallelCluster::launch_weight_update() {
-    for (auto& node : nodes)
-        for (auto& inst : node->get_update_instructions())
-            inst->activate();
+    for (auto& inst : this->plastic_instructions) inst->activate();
 }

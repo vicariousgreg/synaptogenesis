@@ -24,6 +24,8 @@ class Kernel {
             serial_kernel(args...);
         }
 
+        bool is_null() { return serial_kernel == nullptr; }
+
     protected:
         void (*serial_kernel)(ARGS...);
         void (*parallel_kernel)(ARGS...);

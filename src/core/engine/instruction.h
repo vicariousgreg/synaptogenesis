@@ -278,13 +278,14 @@ class OutputTransferInstruction : public TransferInstruction<Output> {
                       environment->buffer->get_output(layer)) { }
 };
 
-/* Updates layer state */
-class StateUpdateInstruction : public Instruction {
+/* Operates on neuron state */
+class StateInstruction : public Instruction {
     public:
-        StateUpdateInstruction(Layer *to_layer, State *state, Stream *stream)
+        StateInstruction(Layer *to_layer, State *state, Stream *stream,
+            Kernel<ATTRIBUTE_ARGS> attribute_kernel)
             : Instruction(to_layer, stream),
               attribute_data(to_layer, state),
-              attribute_kernel(state->get_attribute_kernel(to_layer)) { }
+              attribute_kernel(attribute_kernel) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
@@ -295,8 +296,24 @@ class StateUpdateInstruction : public Instruction {
         }
 
     protected:
-        Kernel<ATTRIBUTE_ARGS> attribute_kernel;
         AttributeData attribute_data;
+        Kernel<ATTRIBUTE_ARGS> attribute_kernel;
+};
+
+/* Updates layer state */
+class StateUpdateInstruction : public StateInstruction {
+    public:
+        StateUpdateInstruction(Layer *to_layer, State *state, Stream *stream)
+            : StateInstruction(to_layer, state, stream,
+              state->get_attribute_kernel(to_layer)) { }
+};
+
+/* Updates layer state */
+class StateLearningInstruction : public StateInstruction {
+    public:
+        StateLearningInstruction(Layer *to_layer, State *state, Stream *stream)
+            : StateInstruction(to_layer, state, stream,
+              state->get_attribute_learning_kernel(to_layer)) { }
 };
 
 typedef std::vector<Instruction*> InstructionList;

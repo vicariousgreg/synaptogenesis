@@ -166,8 +166,12 @@ const Attributes* State::get_attributes_pointer(Layer *layer) const {
     return attributes[layer_devices.at(layer)][layer->neural_model]->pointer;
 }
 
-Kernel<ATTRIBUTE_ARGS> const State::get_attribute_kernel(Layer *layer) const {
+Kernel<ATTRIBUTE_ARGS> State::get_attribute_kernel(Layer *layer) const {
     return attributes[layer_devices.at(layer)][layer->neural_model]->kernel;
+}
+
+Kernel<ATTRIBUTE_ARGS> State::get_attribute_learning_kernel(Layer *layer) const {
+    return attributes[layer_devices.at(layer)][layer->neural_model]->learning_kernel;
 }
 
 Pointer<float> State::get_matrix(Connection* conn) const {

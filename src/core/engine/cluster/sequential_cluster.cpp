@@ -59,7 +59,7 @@ void SequentialCluster::add_external_dependencies(
     for (auto& node : nodes)
         for (auto& pair : node->get_synapse_instructions())
             pair.second->add_dependency(
-                all_nodes[pair.first->from_layer]->get_state_instruction());
+                all_nodes[pair.first->from_layer]->get_state_update_instruction());
 }
 
 /******************************************************************************/
