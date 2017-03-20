@@ -9,11 +9,8 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
           is_expected(layer->is_expected()),
           is_output(layer->is_output()),
           input_instruction(nullptr),
-          input_copy_instruction(nullptr),
           expected_instruction(nullptr),
-          expected_copy_instruction(nullptr),
           output_instruction(nullptr),
-          output_copy_instruction(nullptr),
           state_instruction(nullptr),
           io_stream(io_stream),
           compute_stream(compute_stream),
@@ -22,36 +19,22 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     auto res_man = ResourceManager::get_instance();
 
     // Add input transfer instruction
-    if (this->is_input) {
+    if (this->is_input)
         this->input_instruction =
             new InputTransferInstruction(
                 to_layer, state, environment, compute_stream);
-        this->input_copy_instruction =
-            new InternalInputTransferInstruction(
-                to_layer, state, compute_stream);
 
-        input_instruction->add_dependency(input_copy_instruction);
-        input_copy_instruction->add_dependency(input_instruction);
-    }
-
-    if (this->is_expected) {
+    if (this->is_expected)
         this->expected_instruction =
             new ExpectedTransferInstruction(
                 to_layer, state, environment, compute_stream);
-        this->expected_copy_instruction =
-            new InternalExpectedTransferInstruction(
-                to_layer, state, compute_stream);
-
-        expected_instruction->add_dependency(expected_copy_instruction);
-        expected_copy_instruction->add_dependency(expected_instruction);
-    }
 
     // Add noise / clear instruction
     if (to_layer->noise != 0.0)
-        instructions.push_back(
+        activate_instructions.push_back(
             new NoiseInstruction(to_layer, state, compute_stream));
     else if (not this->is_input)
-        instructions.push_back(
+        activate_instructions.push_back(
             new ClearInstruction(to_layer, state, compute_stream));
 
     // Beform DFS on dendritic tree
@@ -63,33 +46,18 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
             to_layer, state, compute_stream);
 
     // Add output transfer instruction
-    if (this->is_output) {
-        this->output_copy_instruction =
-            new InternalOutputTransferInstruction(
-                to_layer, state, compute_stream);
+    if (this->is_output)
         this->output_instruction =
             new OutputTransferInstruction(
                 to_layer, state, environment, io_stream);
-
-        output_copy_instruction->add_dependency(output_instruction);
-        output_instruction->add_dependency(output_copy_instruction);
-    }
 }
 
 ClusterNode::~ClusterNode() {
-    for (auto& inst : this->instructions) delete inst;
-    if (is_input) {
-        delete input_instruction;
-        delete input_copy_instruction;
-    }
-    if (is_expected) {
-        delete expected_instruction;
-        delete expected_copy_instruction;
-    }
-    if (is_output) {
-        delete output_copy_instruction;
-        delete output_instruction;
-    }
+    for (auto& inst : this->activate_instructions) delete inst;
+    for (auto& inst : this->update_instructions) delete inst;
+    if (is_input) delete input_instruction;
+    if (is_expected) delete expected_instruction;
+    if (is_output) delete output_instruction;
     delete state_instruction;
 }
 
@@ -100,28 +68,22 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         // Create an instruction
         // If internal, recurse first (post-fix DFS)
         if (child->is_leaf()) {
-            auto syn_inst = new SynapseInstruction(
+            auto syn_inst = new SynapseActivateInstruction(
                 child->conn, state, compute_stream);
 
-            // Check to see if connection is inter-device
-            // If so, add an inter-device instruction
-            if (state->is_inter_device(child->conn)) {
-                // Create transfer instruction
-                auto transfer_inst = new DeviceToDeviceTransferFunction(
-                        child->conn, state, compute_stream);
-                instructions.push_back(transfer_inst);
-
-                // Synapse instruction depends on it
-                syn_inst->add_dependency(transfer_inst);
-                external_transfer_instructions[child->conn] = transfer_inst;
-            }
-
             // Create the instruction and add it to the synapse instuction list
-            instructions.push_back(syn_inst);
             synapse_instructions[child->conn] = syn_inst;
+            activate_instructions.push_back(syn_inst);
+
+            // If plastic, create update instruction
+            if (child->conn->plastic) {
+                auto syn_update_inst = new SynapseUpdateInstruction(
+                    child->conn, state, compute_stream);
+                update_instructions.push_back(syn_update_inst);
+            }
         } else {
             this->dendrite_DFS(child);
-            instructions.push_back(
+            activate_instructions.push_back(
                 new DendriticInstruction(
                     curr, child, state, compute_stream));
         }
@@ -129,26 +91,16 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
 }
 
 void ClusterNode::activate_input() {
-    if (this->is_input) {
-        input_instruction->activate();
-        input_copy_instruction->activate();
-    }
-    if (this->is_expected) {
-        expected_instruction->activate();
-        expected_copy_instruction->activate();
-    }
+    if (this->is_input) input_instruction->activate();
+    if (this->is_expected) expected_instruction->activate();
 }
 
 void ClusterNode::activate_state() {
     state_instruction->activate();
-
-    if (this->is_output)
-        output_copy_instruction->activate();
 }
 
 void ClusterNode::activate_output() {
-    if (this->is_output)
-        output_instruction->activate();
+    if (this->is_output) output_instruction->activate();
 }
 
 void ClusterNode::synchronize_input() {
@@ -160,8 +112,12 @@ void ClusterNode::synchronize_output() {
     if (is_output) output_instruction->synchronize();
 }
 
-const InstructionList ClusterNode::get_instructions() const {
-    return instructions;
+const InstructionList ClusterNode::get_activate_instructions() const {
+    return activate_instructions;
+}
+
+const InstructionList ClusterNode::get_update_instructions() const {
+    return update_instructions;
 }
 
 Instruction* ClusterNode::get_input_instruction() const {
@@ -179,9 +135,4 @@ Instruction* ClusterNode::get_output_instruction() const {
 const std::map<Connection*, Instruction*>
         ClusterNode::get_synapse_instructions() const {
     return synapse_instructions;
-}
-
-const std::map<Connection*, Instruction*>
-        ClusterNode::get_external_transfer_instructions() {
-    return external_transfer_instructions;
 }

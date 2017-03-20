@@ -57,7 +57,7 @@ void SequentialCluster::add_external_dependencies(
     // Ensure that the latest update is available for this timestep
     // This is the opposite order of the parallel cluster
     for (auto& node : nodes)
-        for (auto& pair : node->get_external_transfer_instructions())
+        for (auto& pair : node->get_synapse_instructions())
             pair.second->add_dependency(
                 all_nodes[pair.first->from_layer]->get_state_instruction());
 }
@@ -69,7 +69,7 @@ void SequentialCluster::add_external_dependencies(
 void SequentialCluster::launch_post_input_calculations() {
     // Activate nodes forwards
     for (auto it = nodes.begin() ; it != nodes.end(); ++it) {
-        for (auto& inst : (*it)->get_instructions())
+        for (auto& inst : (*it)->get_activate_instructions())
             inst->activate();
         (*it)->activate_state();
     }
@@ -78,6 +78,6 @@ void SequentialCluster::launch_post_input_calculations() {
 void SequentialCluster::launch_weight_update() {
     // Update nodes backwards
     for (auto it = nodes.rbegin() ; it != nodes.rend(); ++it)
-        for (auto& inst : (*it)->get_instructions())
-            if (inst->is_plastic()) inst->update();
+        for (auto& inst : (*it)->get_update_instructions())
+            inst->activate();
 }

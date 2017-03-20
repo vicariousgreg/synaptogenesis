@@ -38,6 +38,6 @@ FeedforwardCluster::FeedforwardCluster(Structure *structure,
 void FeedforwardCluster::launch_weight_update() {
     // Perform learning in reverse
     for (auto it = nodes.rbegin() ; it != nodes.rend() ; ++it)
-        for (auto& inst : (*it)->get_instructions())
-            if (inst->is_plastic()) inst->update();
+        for (auto& inst : (*it)->get_update_instructions())
+            inst->activate();
 }

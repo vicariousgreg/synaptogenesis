@@ -21,7 +21,8 @@ class ClusterNode {
         void synchronize_input();
         void synchronize_output();
 
-        const InstructionList get_instructions() const;
+        const InstructionList get_activate_instructions() const;
+        const InstructionList get_update_instructions() const;
         Instruction* get_input_instruction() const;
         Instruction* get_state_instruction() const;
         Instruction* get_output_instruction() const;
@@ -42,22 +43,19 @@ class ClusterNode {
         void dendrite_DFS(DendriticNode *curr);
 
         std::map<Connection*, Instruction*> synapse_instructions;
-        std::map<Connection*, Instruction*> external_transfer_instructions;
 
-        InstructionList instructions;
+        InstructionList activate_instructions;
+        InstructionList update_instructions;
         Instruction *state_instruction;
 
         bool is_input;
         Instruction *input_instruction;
-        Instruction *input_copy_instruction;
 
         bool is_expected;
         Instruction *expected_instruction;
-        Instruction *expected_copy_instruction;
 
         bool is_output;
         Instruction *output_instruction;
-        Instruction *output_copy_instruction;
 };
 
 #endif

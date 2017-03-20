@@ -14,29 +14,31 @@ class Instruction {
     public:
         Instruction(Layer *layer, Stream *stream)
                 : to_layer(layer),
-                  activator_threads(calc_threads(layer->size)),
-                  activator_blocks(calc_blocks(layer->size)),
+                  threads(calc_threads(layer->size)),
+                  blocks(calc_blocks(layer->size)),
                   stream(stream),
                   event(nullptr) { }
         virtual ~Instruction() { }
 
         virtual void activate() = 0;
-        virtual void update() { }
-        virtual bool is_plastic() const { return false; }
 
         void wait_for_dependencies() {
             for (auto& dep : dependencies) stream->wait(dep);
         }
 
+        void add_event() {
+            if (event == nullptr)
+                event = ResourceManager::get_instance()->create_event(
+                    stream->get_device_id());
+        }
         void record_event() { if (event != nullptr) stream->record(event); }
         void synchronize() { if (event != nullptr) event->synchronize(); }
 
         void add_dependency(Instruction *inst) {
             Event* other_event = inst->event;
             if (other_event == nullptr) {
-                other_event = ResourceManager::get_instance()->create_event(
-                    inst->stream->get_device_id());
-                inst->event = other_event;
+                inst->add_event();
+                other_event = inst->event;
             }
             this->dependencies.push_back(other_event);
         }
@@ -47,8 +49,7 @@ class Instruction {
         Stream *stream;
         Event* event;
         std::vector<Event*> dependencies;
-        int activator_blocks, activator_threads;
-        int updater_blocks, updater_threads;
+        int blocks, threads;
 };
 
 /* Instructions that initialize the input without connections */
@@ -71,7 +72,7 @@ class ClearInstruction : public InitializeInstruction {
         void activate() {
             Instruction::wait_for_dependencies();
             get_clear_data().run(stream,
-                activator_blocks, activator_threads,
+                blocks, threads,
                 dst, to_layer->size);
             Instruction::record_event();
         }
@@ -87,7 +88,7 @@ class NoiseInstruction : public InitializeInstruction {
         void activate() {
             Instruction::wait_for_dependencies();
             get_randomize_data().run(stream,
-                activator_blocks, activator_threads,
+                blocks, threads,
                 dst, to_layer->size, to_layer->noise, init);
             Instruction::record_event();
         }
@@ -96,50 +97,75 @@ class NoiseInstruction : public InitializeInstruction {
         bool init;
 };
 
-/* Computes synaptic connection */
+/* Operates on synapses */
 class SynapseInstruction : public Instruction {
     public:
         SynapseInstruction(Connection *conn, State *state, Stream *stream)
                 : Instruction(conn->to_layer, stream),
                   connection(conn),
                   synapse_data(conn, state),
-                  type(conn->type),
-                  activator(state->get_activator(conn)),
-                  updater((conn->plastic) ? state->get_updater(conn) : nullptr) {
-            if (conn->convolutional) {
-                int num_weights = connection->get_num_weights();
-                this->updater_threads = calc_threads(num_weights);
-                this->updater_blocks = calc_blocks(num_weights);
-            } else {
-                this->updater_threads = calc_threads(to_layer->size);
-                this->updater_blocks = calc_blocks(to_layer->size);
-            }
-        }
-
-        void activate() {
-            Instruction::wait_for_dependencies();
-            activator.run(stream,
-                activator_blocks, activator_threads,
-                synapse_data);
-            Instruction::record_event();
-        }
-
-        void update() {
-            if (this->is_plastic())
-                updater.run(stream,
-                    updater_blocks, updater_threads,
-                    synapse_data);
-        }
-
-        bool is_plastic() const { return synapse_data.plastic; }
+                  type(conn->type) { }
 
         const ConnectionType type;
         Connection* const connection;
 
     protected:
-        Kernel<SYNAPSE_ARGS> activator;
-        Kernel<SYNAPSE_ARGS> updater;
         SynapseData synapse_data;
+};
+
+/* Activates synaptic connection */
+class SynapseActivateInstruction : public SynapseInstruction {
+    public:
+        SynapseActivateInstruction(
+            Connection *conn, State *state, Stream *stream)
+                : SynapseInstruction(conn, state, stream),
+                  activator(state->get_activator(conn)) {
+            if (state->is_inter_device(conn)) {
+                src = state->get_output(conn->from_layer,
+                        get_word_index(conn->delay,
+                        state->get_output_type(conn->from_layer)));
+                dst = state->get_device_output_buffer(conn);
+            }
+        }
+
+        void activate() {
+            Instruction::wait_for_dependencies();
+            src.copy_to(dst, stream);
+            activator.run(stream,
+                blocks, threads,
+                synapse_data);
+            Instruction::record_event();
+        }
+
+    protected:
+        Kernel<SYNAPSE_ARGS> activator;
+        Pointer<Output> src, dst;
+};
+
+/* Updates synaptic connection */
+class SynapseUpdateInstruction : public SynapseInstruction {
+    public:
+        SynapseUpdateInstruction(
+            Connection *conn, State *state, Stream *stream)
+                : SynapseInstruction(conn, state, stream),
+                  updater(state->get_updater(conn)) {
+            if (conn->convolutional) {
+                int num_weights = connection->get_num_weights();
+                this->threads = calc_threads(num_weights);
+                this->blocks = calc_blocks(num_weights);
+            } else {
+                this->threads = calc_threads(to_layer->size);
+                this->blocks = calc_blocks(to_layer->size);
+            }
+        }
+
+        void activate() {
+            updater.run(stream,
+                blocks, threads,
+                synapse_data);
+        }
+    protected:
+        Kernel<SYNAPSE_ARGS> updater;
 };
 
 /* Computes dendritic node connection */
@@ -155,7 +181,7 @@ class DendriticInstruction : public Instruction {
         void activate() {
             Instruction::wait_for_dependencies();
             get_calc_internal().run(stream,
-                activator_blocks, activator_threads,
+                blocks, threads,
                 to_layer->size, src, dst, init);
             Instruction::record_event();
         }
@@ -169,12 +195,14 @@ class DendriticInstruction : public Instruction {
 template<class T>
 class TransferInstruction : public Instruction {
     public:
-        TransferInstruction(Layer *layer,
-            Pointer<T> src, Pointer<T> dst, Stream *stream)
+        TransferInstruction(Layer *layer, Stream *stream,
+            Pointer<T> src, Pointer<T> dst)
                 : Instruction(layer, stream),
-                  src(src), dst(dst) { }
+                  src(src), dst(dst) {
+            this->add_event();
+        }
 
-        virtual void activate() {
+        void activate() {
             Instruction::wait_for_dependencies();
             src.copy_to(dst, stream);
             Instruction::record_event();
@@ -184,113 +212,70 @@ class TransferInstruction : public Instruction {
         Pointer<T> src, dst;
 };
 
+/* Transfers data with an intermediate buffer */
+template<class T>
+class BufferedTransferInstruction : public Instruction {
+    public:
+        BufferedTransferInstruction(Layer *layer, Stream *stream,
+            Pointer<T> src, Pointer<T> inter, Pointer<T> dst,
+            Buffer *buffer, bool check_dirty=false)
+                : Instruction(layer, stream),
+                  src(src), inter(inter), dst(dst),
+                  buffer(buffer) {
+            this->add_event();
+        }
+
+        void activate() {
+            Instruction::wait_for_dependencies();
+
+            if (not check_dirty or buffer->get_dirty(to_layer)) {
+                buffer->set_dirty(to_layer, false);
+                src.copy_to(inter, stream);
+            }
+            inter.copy_to(dst, stream);
+
+            Instruction::record_event();
+        }
+
+    protected:
+        Pointer<T> src, inter, dst;
+        Buffer* buffer;
+        bool check_dirty;
+};
+
 /* Transfers input data */
-class InputTransferInstruction : public TransferInstruction<float> {
+/* Sets input from buffer */
+class InputTransferInstruction : public BufferedTransferInstruction<float> {
     public:
         InputTransferInstruction(Layer *layer, State *state,
             Environment *environment, Stream *stream)
-                : TransferInstruction(layer,
+                : BufferedTransferInstruction(layer, stream,
                       environment->buffer->get_input(layer),
                       state->get_buffer_input(layer),
-                      stream),
-                  buffer(environment->buffer) { }
-
-        virtual void activate() {
-            // Only transfer if the buffer is dirty
-            if (buffer->get_dirty(to_layer)) {
-                buffer->set_dirty(to_layer, false);
-                TransferInstruction<float>::activate();
-            } else {
-                Instruction::wait_for_dependencies();
-                Instruction::record_event();
-            }
-        }
-
-    protected:
-        Buffer* buffer;
-};
-
-/* Sets input from buffer */
-class InternalInputTransferInstruction : public TransferInstruction<float> {
-    public:
-        InternalInputTransferInstruction(Layer *layer,
-            State *state, Stream *stream)
-                : TransferInstruction(layer,
-                      state->get_buffer_input(layer),
                       state->get_input(layer),
-                      stream) { }
+                      environment->buffer) { }
 };
 
 /* Transfers expected data */
-class ExpectedTransferInstruction : public TransferInstruction<Output> {
+class ExpectedTransferInstruction : public BufferedTransferInstruction<Output> {
     public:
         ExpectedTransferInstruction(Layer *layer, State *state,
             Environment *environment, Stream *stream)
-                : TransferInstruction(layer,
+                : BufferedTransferInstruction(layer, stream,
                       environment->buffer->get_expected(layer),
                       state->get_buffer_expected(layer),
-                      stream),
-                  buffer(environment->buffer) { }
-
-        virtual void activate() {
-            // Only transfer if the buffer is dirty
-            if (buffer->get_dirty(to_layer)) {
-                buffer->set_dirty(to_layer, false);
-                TransferInstruction<Output>::activate();
-            } else {
-                Instruction::wait_for_dependencies();
-                Instruction::record_event();
-            }
-        }
-
-    protected:
-        Buffer* buffer;
-};
-
-/* Sets expected from buffer */
-class InternalExpectedTransferInstruction : public TransferInstruction<Output> {
-    public:
-        InternalExpectedTransferInstruction(Layer *layer,
-            State *state, Stream *stream)
-                : TransferInstruction(layer,
-                      state->get_buffer_expected(layer),
                       state->get_expected(layer),
-                      stream) { }
+                      environment->buffer) { }
 };
 
 /* Transfers output data */
 class OutputTransferInstruction : public TransferInstruction<Output> {
     public:
-        OutputTransferInstruction(Layer *layer,
-            State *state, Environment *environment, Stream *stream)
-                : TransferInstruction(layer,
-                      state->get_buffer_output(layer),
-                      environment->buffer->get_output(layer),
-                      stream) { }
-};
-
-/* Sets output to buffer */
-class InternalOutputTransferInstruction : public TransferInstruction<Output> {
-    public:
-        InternalOutputTransferInstruction(Layer *layer,
-            State *state, Stream *stream)
-                : TransferInstruction(layer,
+        OutputTransferInstruction(Layer *layer, State *state,
+            Environment *environment, Stream *stream)
+                : TransferInstruction(layer, stream,
                       state->get_output(layer),
-                      state->get_buffer_output(layer),
-                      stream) { }
-};
-
-/* Transfers outputs between devices */
-class DeviceToDeviceTransferFunction : public TransferInstruction<Output> {
-    public:
-        DeviceToDeviceTransferFunction(Connection *conn,
-            State *state, Stream *stream)
-                : TransferInstruction(conn->to_layer,
-                  state->get_output(conn->from_layer,
-                      get_word_index(conn->delay,
-                          state->get_output_type(conn->from_layer))),
-                  state->get_device_output_buffer(conn),
-                  stream) { }
+                      environment->buffer->get_output(layer)) { }
 };
 
 /* Updates layer state */
@@ -304,7 +289,7 @@ class StateUpdateInstruction : public Instruction {
         void activate() {
             Instruction::wait_for_dependencies();
             attribute_kernel.run(stream,
-                activator_blocks, activator_threads,
+                blocks, threads,
                 attribute_data);
             Instruction::record_event();
         }

@@ -42,7 +42,7 @@ InstructionList ParallelCluster::sort_instructions(
     for (auto& node : nodes)
         if ((include == 0 or (node->to_layer->get_type() & include)) and
                 not (node->to_layer->get_type() & exclude))
-            for (auto& inst : node->get_instructions())
+            for (auto& inst : node->get_activate_instructions())
                 // Add to schedule map for round robin
                 schedules[node->to_layer].push(inst);
 
@@ -73,12 +73,11 @@ void ParallelCluster::launch_post_input_calculations() {
 }
 
 void ParallelCluster::launch_state_update() {
-    for (auto& node : nodes)
-        node->activate_state();
+    for (auto& node : nodes) node->activate_state();
 }
 
 void ParallelCluster::launch_weight_update() {
     for (auto& node : nodes)
-        for (auto& inst : node->get_instructions())
-            if (inst->is_plastic()) inst->update();
+        for (auto& inst : node->get_update_instructions())
+            inst->activate();
 }
