@@ -179,12 +179,12 @@ EXTRACTOR State::get_extractor(Connection *conn) const {
                      [conn->from_layer->neural_model]->extractor;
 }
 
-Kernel<SYNAPSE_ARGS>State::get_activator(Connection *conn) const {
+Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
     return attributes[layer_devices.at(conn->to_layer)]
                      [conn->to_layer->neural_model]->get_activator(conn->type);
 }
 
-Kernel<SYNAPSE_ARGS>State::get_updater(Connection *conn) const {
+Kernel<SYNAPSE_ARGS> State::get_updater(Connection *conn) const {
     return attributes[layer_devices.at(conn->to_layer)]
                      [conn->to_layer->neural_model]->get_updater(conn->type);
 }

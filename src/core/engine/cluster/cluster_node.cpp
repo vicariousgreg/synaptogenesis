@@ -36,10 +36,10 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
 
     if (this->is_expected) {
         this->expected_instruction =
-            new InputTransferInstruction(
+            new ExpectedTransferInstruction(
                 to_layer, state, environment, compute_stream);
         this->expected_copy_instruction =
-            new InternalInputTransferInstruction(
+            new InternalExpectedTransferInstruction(
                 to_layer, state, compute_stream);
 
         expected_instruction->add_dependency(expected_copy_instruction);

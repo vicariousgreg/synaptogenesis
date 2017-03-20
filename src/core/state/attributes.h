@@ -38,13 +38,13 @@ class Attributes {
 
         /* Learning Rule functions */
         // Activator Kernel
-        virtual Kernel<SYNAPSE_ARGS>get_activator(ConnectionType type) {
+        virtual Kernel<SYNAPSE_ARGS> get_activator(ConnectionType type) {
             return get_base_activator_kernel(type);
         }
 
         // Updater Kernel
-        virtual Kernel<SYNAPSE_ARGS>get_updater(ConnectionType type) {
-            return Kernel<SYNAPSE_ARGS>();
+        virtual Kernel<SYNAPSE_ARGS> get_updater(ConnectionType type) {
+            return Kernel<SYNAPSE_ARGS> ();
         }
 
         // Depth of weight matrices

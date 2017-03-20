@@ -85,10 +85,13 @@ typedef enum {
 typedef enum {
     IZHIKEVICH,
     HODGKIN_HUXLEY,
-    RATE_ENCODING
+    HEBBIAN_RATE_ENCODING,
+    BACKPROP_RATE_ENCODING
 } NeuralModel;
 
-static NeuralModel NeuralModels[] = { IZHIKEVICH, HODGKIN_HUXLEY, RATE_ENCODING };
+static NeuralModel NeuralModels[] =
+    { IZHIKEVICH, HODGKIN_HUXLEY,
+      HEBBIAN_RATE_ENCODING, BACKPROP_RATE_ENCODING };
 
 /* Enumeration of cluster types. */
 typedef enum {

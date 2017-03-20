@@ -1,7 +1,7 @@
 #ifndef rate_encoding_attributes_h
 #define rate_encoding_attributes_h
 
-#include "state/state.h"
+#include "state/attributes.h"
 
 /* Neuron parameters class.
  * Contains parameters for Rate Encoding model */
@@ -21,9 +21,6 @@ class RateEncodingAttributes : public Attributes {
         virtual bool check_compatibility(ClusterType cluster_type) {
             return cluster_type == FEEDFORWARD;
         }
-
-        /* Trace learning rules */
-        virtual Kernel<SYNAPSE_ARGS>get_updater(ConnectionType type);
 
         virtual void schedule_transfer();
 

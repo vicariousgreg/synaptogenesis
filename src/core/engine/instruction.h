@@ -137,9 +137,8 @@ class SynapseInstruction : public Instruction {
         Connection* const connection;
 
     protected:
-        EXTRACTOR extractor;
-        Kernel<SYNAPSE_ARGS>activator;
-        Kernel<SYNAPSE_ARGS>updater;
+        Kernel<SYNAPSE_ARGS> activator;
+        Kernel<SYNAPSE_ARGS> updater;
         SynapseData synapse_data;
 };
 

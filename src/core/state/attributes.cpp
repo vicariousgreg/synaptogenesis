@@ -1,6 +1,7 @@
 #include "state/attributes.h"
 #include "state/izhikevich_attributes.h"
-#include "state/rate_encoding_attributes.h"
+#include "state/hebbian_rate_encoding_attributes.h"
+#include "state/backprop_rate_encoding_attributes.h"
 #include "state/hodgkin_huxley_attributes.h"
 
 Attributes *build_attributes(LayerList &layers,
@@ -16,9 +17,13 @@ Attributes *build_attributes(LayerList &layers,
             attributes = new HodgkinHuxleyAttributes(layers);
             attributes->object_size = sizeof(HodgkinHuxleyAttributes);
             break;
-        case(RATE_ENCODING):
-            attributes = new RateEncodingAttributes(layers);
-            attributes->object_size = sizeof(RateEncodingAttributes);
+        case(HEBBIAN_RATE_ENCODING):
+            attributes = new HebbianRateEncodingAttributes(layers);
+            attributes->object_size = sizeof(HebbianRateEncodingAttributes);
+            break;
+        case(BACKPROP_RATE_ENCODING):
+            attributes = new BackpropRateEncodingAttributes(layers);
+            attributes->object_size = sizeof(BackpropRateEncodingAttributes);
             break;
         default:
             ErrorManager::get_instance()->log_error(

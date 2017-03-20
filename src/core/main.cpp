@@ -505,9 +505,9 @@ Model* build_re_model() {
     Structure *structure = model->add_structure("re", FEEDFORWARD);
 
     int resolution = 128;
-    structure->add_layer(LayerConfig("in", RATE_ENCODING, 1, 8));
-    structure->add_layer(LayerConfig("hid", RATE_ENCODING, resolution, resolution));
-    structure->add_layer(LayerConfig("out", RATE_ENCODING, resolution, resolution));
+    structure->add_layer(LayerConfig("in", HEBBIAN_RATE_ENCODING, 1, 8));
+    structure->add_layer(LayerConfig("hid", HEBBIAN_RATE_ENCODING, resolution, resolution));
+    structure->add_layer(LayerConfig("out", HEBBIAN_RATE_ENCODING, resolution, resolution));
 
     structure->connect_layers("in", "hid",
         ConnectionConfig(true, 0, 5, FULLY_CONNECTED, ADD, ""));
@@ -568,7 +568,7 @@ void image_test() {
 
     std::cout << "Image...\n";
     model = build_image_model(IZHIKEVICH);
-    //model = build_image_model(RATE_ENCODING);
+    //model = build_image_model(HEBBIAN_RATE_ENCODING);
     print_model(model);
     run_simulation(model, 10000, true);
     //run_simulation(model, 100, true);
