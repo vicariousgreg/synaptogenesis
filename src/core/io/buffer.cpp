@@ -34,7 +34,7 @@ Buffer::Buffer(LayerList input_layers, LayerList output_layers,
     this->expected_layers = expected_layers;
     for (auto layer : input_layers) dirty_map[layer] = false;
 
-    input_size = output_size = 0;
+    input_size = output_size = expected_size = 0;
     for (auto layer : input_layers) input_size += layer->size;
     for (auto layer : output_layers) output_size += layer->size;
     for (auto layer : expected_layers) expected_size += layer->size;
