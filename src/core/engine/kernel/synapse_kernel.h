@@ -154,12 +154,15 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
-    const int field_size = synapse_data.field_size; \
-    const int stride = synapse_data.stride; \
-    const int fray = synapse_data.fray; \
+    const int row_field_size = synapse_data.row_field_size; \
+    const int column_field_size = synapse_data.column_field_size; \
+    const int row_stride = synapse_data.row_stride; \
+    const int column_stride = synapse_data.column_stride; \
+    const int row_fray = synapse_data.row_fray; \
+    const int column_fray = synapse_data.column_fray; \
     EXTRACTIONS; \
  \
-    int kernel_size = field_size * field_size; \
+    int kernel_size = row_field_size * column_field_size; \
  \
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
         for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
@@ -167,30 +170,30 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
             NEURON_PRE; \
  \
             /* Determine starting row and column for source neurons */ \
-            int s_row = d_row * stride - fray; \
-            int s_col = d_col * stride - fray; \
+            int s_row = d_row * row_stride - row_fray; \
+            int s_col = d_col * column_stride - column_fray; \
  \
             /* Row of matrix is either the first column (convolutional) */ \
             /*   or the index of the destination neuron otherwise */ \
             int weight_offset = (convolutional) ? 0 : to_index * kernel_size; \
  \
             /* Run the kernel */ \
-            for (int k_row = 0 ; k_row < field_size ; ++k_row) { \
-                for (int k_col = 0 ; k_col < field_size ; ++k_col) { \
+            for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
+                for (int k_col = 0 ; k_col < column_field_size ; ++k_col) { \
                     int k_s_row = s_row + k_row; \
                     int k_s_col = s_col + k_col; \
  \
                     /* The connection is frayed if the layers are the same size */ \
                     /* Avoid making connections with non-existent neurons! */ \
-                    if (fray != 0 and (k_s_row < 0 or k_s_row >= from_rows \
-                        or k_s_col < 0 or k_s_col >= from_columns)) \
+                    if (k_s_row < 0 or k_s_row >= from_rows \
+                        or k_s_col < 0 or k_s_col >= from_columns) \
                         continue; \
  \
                     int from_index = k_s_row * from_columns + k_s_col; \
  \
                     /* Column of matrix is the kernel index */ \
                     int weight_index = weight_offset + \
-                        (k_row * field_size) + k_col; \
+                        (k_row * column_field_size) + k_col; \
  \
                     WEIGHT_OP; \
                 } \
@@ -204,12 +207,15 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
-    const int field_size = synapse_data.field_size; \
-    const int stride = synapse_data.stride; \
-    const int fray = synapse_data.fray; \
+    const int row_field_size = synapse_data.row_field_size; \
+    const int column_field_size = synapse_data.column_field_size; \
+    const int row_stride = synapse_data.row_stride; \
+    const int column_stride = synapse_data.column_stride; \
+    const int row_fray = synapse_data.row_fray; \
+    const int column_fray = synapse_data.column_fray; \
     EXTRACTIONS; \
  \
-    int kernel_size = field_size * field_size; \
+    int kernel_size = row_field_size * column_field_size; \
  \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_index < to_size) { \
@@ -218,8 +224,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         NEURON_PRE; \
 \
         /* Determine starting row and column for source neurons */ \
-        int s_row = d_row * stride - fray; \
-        int s_col = d_col * stride - fray; \
+        int s_row = d_row * row_stride - row_fray; \
+        int s_col = d_col * column_stride - column_fray; \
 \
         /* Column of matrix is either the first column (convolutional) */ \
         /*   or the index of the destination neuron otherwise */ \
@@ -230,22 +236,22 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int kernel_row_size = (convolutional) ? 1 : to_size; \
 \
         /* Run the kernel */ \
-        for (int k_row = 0 ; k_row < field_size ; ++k_row) { \
-            for (int k_col = 0 ; k_col < field_size ; ++k_col) { \
+        for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
+            for (int k_col = 0 ; k_col < column_field_size ; ++k_col) { \
                 int k_s_row = s_row + k_row; \
                 int k_s_col = s_col + k_col; \
 \
                 /* The connection is frayed if the layers are the same size */ \
                 /* Avoid making connections with non-existent neurons! */ \
-                if (fray != 0 and (k_s_row < 0 or k_s_row >= from_rows \
-                    or k_s_col < 0 or k_s_col >= from_columns)) \
+                if (k_s_row < 0 or k_s_row >= from_rows \
+                    or k_s_col < 0 or k_s_col >= from_columns) \
                     continue; \
 \
                 int from_index = k_s_row * from_columns + k_s_col; \
 \
                 /* Row of matrix is the kernel index * row size (see above) */ \
                 int weight_index = weight_col + \
-                    ((k_row*field_size) + k_col) * kernel_row_size; \
+                    ((k_row * column_field_size) + k_col) * kernel_row_size; \
 \
                 WEIGHT_OP; \
             } \
@@ -257,45 +263,51 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const int field_size = synapse_data.field_size; \
-    const int stride = synapse_data.stride; \
-    const int fray = synapse_data.fray; \
-    const int kernel_size = field_size * field_size; \
+    const int row_field_size = synapse_data.row_field_size; \
+    const int column_field_size = synapse_data.column_field_size; \
+    const int row_stride = synapse_data.row_stride; \
+    const int column_stride = synapse_data.column_stride; \
+    const int row_fray = synapse_data.row_fray; \
+    const int column_fray = synapse_data.column_fray; \
+    const int kernel_size = row_field_size * column_field_size; \
     EXTRACTIONS; \
 \
     /* Iterate over destination neurons */ \
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
         for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
             int to_index = d_row*to_columns + d_col; \
-			NEURON_PRE; \
+            NEURON_PRE; \
 \
             /* Determine range of source neurons for divergent kernel */ \
-            int start_s_row = (d_row + fray - field_size + stride) / stride; \
-            int start_s_col = (d_col + fray - field_size + stride) / stride; \
-            int end_s_row = (d_row + fray) / stride; \
-            int end_s_col = (d_col + fray) / stride; \
+            int start_s_row = (d_row + row_fray - row_field_size + row_stride) / row_stride; \
+            int start_s_col = (d_col + column_fray - column_field_size + column_stride) / column_stride; \
+            int end_s_row = (d_row + row_fray) / row_stride; \
+            int end_s_col = (d_col + column_fray) / column_stride; \
 \
-            int start = field_size - stride; \
-            int offset = (stride > (field_size/2)) \
-                         ? (2*stride - field_size) : (stride-1);\
+            int row_start = row_field_size - row_stride; \
+            int row_offset = (row_stride > (row_field_size/2)) \
+                         ? (2*row_stride - row_field_size) : (row_stride-1);\
+            int column_start = column_field_size - column_stride; \
+            int column_offset = (column_stride > (column_field_size/2)) \
+                         ? (2*column_stride - column_field_size) : (column_stride-1);\
 \
             /* Iterate over relevant source neurons... */ \
-            int k_row = start + ((d_row + fray + offset) % stride); \
-            for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= stride)) { \
-                int k_col = start + ((d_col + fray + offset) % stride); \
-                for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= stride)) { \
+            int k_row = row_start + ((d_row + row_fray + row_offset) % row_stride); \
+            for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= row_stride)) { \
+                int k_col = column_start + ((d_col + column_fray + column_offset) % column_stride); \
+                for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= column_stride)) { \
                     /* Avoid making connections with non-existent neurons! */ \
-                    if (fray != 0 and (s_row < 0 or s_row >= from_rows \
-                        or s_col < 0 or s_col >= from_columns)) \
+                    if (s_row < 0 or s_row >= from_rows \
+                        or s_col < 0 or s_col >= from_columns) \
                         continue; \
 \
                     int from_index = (s_row * from_columns) + s_col; \
-					int weight_index = (from_index * kernel_size) \
-						+ (k_row * field_size) + k_col; \
-					WEIGHT_OP; \
+                    int weight_index = (from_index * kernel_size) \
+                        + (k_row * column_field_size) + k_col; \
+                    WEIGHT_OP; \
                 } \
             } \
-			NEURON_POST; \
+            NEURON_POST; \
         } \
     } \
 }
@@ -303,9 +315,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const int field_size = synapse_data.field_size; \
-    const int stride = synapse_data.stride; \
-    const int fray = synapse_data.fray; \
+    const int row_field_size = synapse_data.row_field_size; \
+    const int column_field_size = synapse_data.column_field_size; \
+    const int row_stride = synapse_data.row_stride; \
+    const int column_stride = synapse_data.column_stride; \
+    const int row_fray = synapse_data.row_fray; \
+    const int column_fray = synapse_data.column_fray; \
     EXTRACTIONS; \
 \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -315,28 +330,31 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         NEURON_PRE; \
  \
         /* Determine range of source neurons for divergent kernel */ \
-        int start_s_row = (d_row + fray - field_size + stride) / stride; \
-        int start_s_col = (d_col + fray - field_size + stride) / stride; \
-        int end_s_row = (d_row + fray) / stride; \
-        int end_s_col = (d_col + fray) / stride; \
+        int start_s_row = (d_row + row_fray - row_field_size + row_stride) / row_stride; \
+        int start_s_col = (d_col + column_fray - column_field_size + column_stride) / column_stride; \
+        int end_s_row = (d_row + row_fray) / row_stride; \
+        int end_s_col = (d_col + column_fray) / column_stride; \
 \
-        int start = field_size - stride; \
-        int offset = (stride > (field_size/2)) \
-                     ? (2*stride - field_size) : (stride-1);\
+        int row_start = row_field_size - row_stride; \
+        int row_offset = (row_stride > (row_field_size/2)) \
+                     ? (2*row_stride - row_field_size) : (row_stride-1);\
+        int column_start = column_field_size - column_stride; \
+        int column_offset = (column_stride > (column_field_size/2)) \
+                     ? (2*column_stride - column_field_size) : (column_stride-1);\
 \
         /* Kernels are organized into columns
            One kernel per source neuron */ \
-        int kernel_size = field_size * field_size; \
+        int kernel_size = row_field_size * column_field_size; \
         int kernel_row_size = from_rows * from_columns; \
 \
         /* Iterate over relevant source neurons... */ \
-        int k_row = start + ((d_row + fray + offset) % stride); \
-        for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= stride)) { \
-            int k_col = start + ((d_col + fray + offset) % stride); \
-            for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= stride)) { \
+        int k_row = row_start + ((d_row + row_fray + row_offset) % row_stride); \
+        for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= row_stride)) { \
+            int k_col = column_start + ((d_col + column_fray + column_offset) % column_stride); \
+            for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= column_stride)) { \
                 /* Avoid making connections with non-existent neurons! */ \
-                if (fray != 0 and (s_row < 0 or s_row >= from_rows \
-                    or s_col < 0 or s_col >= from_columns)) \
+                if (s_row < 0 or s_row >= from_rows \
+                    or s_col < 0 or s_col >= from_columns) \
                     continue; \
 \
                 int from_index = (s_row * from_columns) + s_col; \
@@ -344,7 +362,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                 /* Row of matrix is the kernel index * row size (see above)
                    Column of matrix is the index of the source neuron */ \
                 int weight_index = from_index + \
-					(((k_row * field_size) + k_col) * kernel_row_size); \
+                    (((k_row * column_field_size) + k_col) * kernel_row_size); \
                  WEIGHT_OP; \
             } \
         } \

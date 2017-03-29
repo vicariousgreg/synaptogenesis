@@ -10,8 +10,10 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         opcode(conn->opcode),
         plastic(conn->plastic),
         max_weight(conn->max_weight),
-        field_size(conn->get_field_size()),
-        stride(conn->get_stride()),
+        row_field_size(conn->get_row_field_size()),
+        column_field_size(conn->get_column_field_size()),
+        row_stride(conn->get_row_stride()),
+        column_stride(conn->get_column_stride()),
         delay(conn->delay),
         from_size(conn->from_layer->size),
         from_rows(conn->from_layer->rows),
@@ -22,9 +24,12 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         num_weights(conn->get_num_weights()),
         output_type(state->get_output_type(conn->to_layer)),
         weights(state->get_matrix(conn)) {
-    this->fray =
-        (to_rows == from_rows and to_columns == from_columns)
-            ? field_size / 2 : 0;
+    this->row_fray =
+        (to_rows == from_rows)
+            ? row_field_size / 2 : 0;
+    this->column_fray =
+        (to_columns == from_columns)
+            ? column_field_size / 2 : 0;
 
     destination_outputs = state->get_output(conn->to_layer);
     if (state->is_inter_device(conn))

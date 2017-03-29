@@ -13,8 +13,8 @@ class Layer;
  *   a connection |type| and connection |params|.
  * This function only returns meaningful values for connection types that
  *   are not FULLY_CONNECTED, because they can link layers of any sizes */
-int get_expected_dimension(int source_val, ConnectionType type,
-                                            std::string params);
+int get_expected_rows(int rows, ConnectionType type, std::string params);
+int get_expected_columns(int columns, ConnectionType type, std::string params);
 
 /* Represents a connection between two neural layers.
  * Connections bridge Layers and are constructed in the Model class.
@@ -25,8 +25,10 @@ class Connection {
         /* Constant getters */
         int get_num_weights() const { return num_weights; }
         const std::string get_init_params() const { return init_params; }
-        int get_field_size() const { return field_size; }
-        int get_stride() const { return stride; }
+        int get_row_field_size() const { return row_field_size; }
+        int get_column_field_size() const { return column_field_size; }
+        int get_row_stride() const { return row_stride; }
+        int get_column_stride() const { return column_stride; }
 
         // Matrix type
         const ConnectionType type;
@@ -68,7 +70,8 @@ class Connection {
         // Arborization parameters (extracted from params)
         // The receptive field size and stride for arborized
         //   (convergent) connections
-        int field_size, stride;
+        int row_field_size, column_field_size;
+        int row_stride, column_stride;
 };
 
 typedef std::vector<Connection*> ConnectionList;

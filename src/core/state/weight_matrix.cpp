@@ -44,19 +44,20 @@ static void initialize(float* target_matrix, Connection* conn,
     } else {
         int rows = conn->to_layer->size;
         int cols = conn->from_layer->size;
-        int field_size = conn->get_field_size();
+        int row_field_size = conn->get_row_field_size();
+        int column_field_size = conn->get_column_field_size();
         switch (conn->type) {
             case CONVOLUTIONAL:
                 rows = 1;
-                cols = field_size * field_size;
+                cols = row_field_size * column_field_size;
                 break;
             case CONVERGENT:
                 rows = conn->to_layer->size;
-                cols = field_size * field_size;
+                cols = row_field_size * column_field_size;
                 break;
             case DIVERGENT:
                 rows = conn->from_layer->size;
-                cols = field_size * field_size;
+                cols = row_field_size * column_field_size;
                 break;
             case ONE_TO_ONE:
                 rows = 1;

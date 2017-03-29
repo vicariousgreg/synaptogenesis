@@ -24,8 +24,9 @@ class SynapseData {
         /* Connection attributes */
         Opcode opcode;
         bool convolutional;
-        int field_size, stride;
-        int fray;
+        int row_stride, column_stride;
+        int row_field_size, column_field_size;
+        int row_fray, column_fray;
         int delay;
 
         /* Weight attributes */

@@ -55,9 +55,9 @@ Connection* Structure::connect_layers_expected(
 
     // Determine new layer size and create
     layer_config.rows =
-        get_expected_dimension(from_layer->rows, conn_config.type, conn_config.params);
+        get_expected_rows(from_layer->rows, conn_config.type, conn_config.params);
     layer_config.columns =
-        get_expected_dimension(from_layer->columns, conn_config.type, conn_config.params);
+        get_expected_columns(from_layer->columns, conn_config.type, conn_config.params);
     add_layer(layer_config);
     Layer *to_layer = find_layer(layer_config.name);
 
