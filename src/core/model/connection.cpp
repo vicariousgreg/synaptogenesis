@@ -35,16 +35,10 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                 ErrorManager::get_instance()->log_error(
                     "Row field size for arborized connection not specified!");
             stream >> this->row_field_size;
-            if (this->row_field_size == 1)
-                ErrorManager::get_instance()->log_error(
-                    "Arborized connections cannot have field size of 1!");
             if (stream.eof())
                 ErrorManager::get_instance()->log_error(
                     "Column field size for arborized connection not specified!");
             stream >> this->column_field_size;
-            if (this->column_field_size == 1)
-                ErrorManager::get_instance()->log_error(
-                    "Arborized connections cannot have field size of 1!");
 
             // Extract stride
             if (stream.eof())
@@ -109,13 +103,13 @@ int get_expected_rows(int rows, ConnectionType type, std::string params) {
             stream >> col_field_size;
             stream >> row_stride;
             stream >> col_stride;
-            return 1 + ((rows - row_field_size) / row_stride);
+            return max(1, 1 + ((rows - row_field_size) / row_stride));
         case(DIVERGENT):
             stream >> row_field_size;
             stream >> col_field_size;
             stream >> row_stride;
             stream >> col_stride;
-            return row_field_size + (row_stride * (rows - 1));
+            return max(1, row_field_size + (row_stride * (rows - 1)));
         case(FULLY_CONNECTED):
             return rows;
         default:
@@ -138,13 +132,13 @@ int get_expected_columns(int columns, ConnectionType type, std::string params) {
             stream >> column_field_size;
             stream >> row_stride;
             stream >> column_stride;
-            return 1 + ((columns - column_field_size) / column_stride);
+            return max(1, 1 + ((columns - column_field_size) / column_stride));
         case(DIVERGENT):
             stream >> row_field_size;
             stream >> column_field_size;
             stream >> row_stride;
             stream >> column_stride;
-            return column_field_size + (column_stride * (columns - 1));
+            return max(1, column_field_size + (column_stride * (columns - 1)));
         case(FULLY_CONNECTED):
             return columns;
         default:
