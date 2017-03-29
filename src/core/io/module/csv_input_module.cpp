@@ -60,7 +60,8 @@ CSVInputModule::~CSVInputModule() {
 }
 
 void CSVInputModule::feed_input(Buffer *buffer) {
-    if (++age > exposure and curr_row <= this->data.size()) {
+    if (curr_row >= this->data.size()) curr_row = 0;
+    if (++age > exposure) {
         buffer->set_input(this->layer, this->data[curr_row++]);
         this->age = 0;
     }
