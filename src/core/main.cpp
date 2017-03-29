@@ -291,10 +291,12 @@ Model* build_alignment_model(NeuralModel neural_model) {
 
     structure->add_module("input_layer", "random_input", "10 500");
     structure->add_module("exc_cortex", output_name, "8");
+    /*
     structure->add_module("exc_thalamus", output_name, "8");
     //structure->add_module("inh_cortex", output_name, "8");
     //structure->add_module("inh_thalamus", output_name, "8");
     structure->add_module("output_layer", output_name, "8");
+    */
 
     return model;
 }
@@ -652,7 +654,7 @@ void re_test() {
 void csv_test() {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("alignment");
+    Structure *structure = model->add_structure("csv");
 
     int resolution = 1024;
     structure->add_layer(LayerConfig("input_layer",
@@ -693,6 +695,34 @@ void csv_test() {
     delete model;
 }
 
+void divergent_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = model->add_structure("divergent");
+
+    structure->add_layer(LayerConfig("in", IZHIKEVICH, 256, 256, "default"));
+    structure->add_layer(LayerConfig("out", IZHIKEVICH, 256, 256, "default"));
+
+    structure->connect_layers("in", "out",
+        ConnectionConfig(true, 0, 10, DIVERGENT, ADD, "9 1 2"));
+
+    // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+    //std::string output_name = "print_output";
+
+    structure->add_module("in", "random_input", "10 5000");
+    structure->add_module("in", output_name, "8");
+    structure->add_module("out", output_name, "8");
+
+    std::cout << "Divergent test......\n";
+    print_model(model);
+    run_simulation(model, 100000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
@@ -707,6 +737,7 @@ int main(int argc, char *argv[]) {
         //cc_test();
         //re_test();
         //csv_test();
+        //divergent_test();
 
         return 0;
     } catch (const char* msg) {

@@ -104,6 +104,7 @@ Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal() {
 ACTIVATE_FULLY_CONNECTED(activate_fully_connected_base , , );
 ACTIVATE_ONE_TO_ONE(activate_one_to_one_base , , );
 ACTIVATE_CONVERGENT(activate_convergent_base , , );
+ACTIVATE_DIVERGENT(activate_divergent_base , , );
 
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(ConnectionType conn_type) {
     switch (conn_type) {
@@ -114,6 +115,8 @@ Kernel<SYNAPSE_ARGS> get_base_activator_kernel(ConnectionType conn_type) {
         case CONVERGENT:
         case CONVOLUTIONAL:
             return get_activate_convergent_base();
+        case DIVERGENT:
+            return get_activate_divergent_base();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");

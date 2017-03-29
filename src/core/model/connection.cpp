@@ -71,6 +71,11 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     // Convolutional connections use a shared weight kernel
                     this->num_weights = field_size * field_size;
                     break;
+                case(DIVERGENT):
+                    // Divergent connections use unshared mini weight matrices
+                    // Each source neuron connects to field_size squared neurons
+                    this->num_weights = field_size * field_size * from_layer->size;
+                    break;
                 default:
                     ErrorManager::get_instance()->log_error(
                         "Unknown layer connection type!");
@@ -94,6 +99,10 @@ int get_expected_dimension(int source_val, ConnectionType type, std::string para
             stream >> field_size;
             stream >> stride;
             return 1 + ((source_val - field_size) / stride);
+        case(DIVERGENT):
+            stream >> field_size;
+            stream >> stride;
+            return field_size + (stride * (source_val -1));
         case(FULLY_CONNECTED):
             return source_val;
         default:

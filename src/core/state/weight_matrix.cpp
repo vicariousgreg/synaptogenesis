@@ -54,6 +54,10 @@ static void initialize(float* target_matrix, Connection* conn,
                 rows = conn->to_layer->size;
                 cols = field_size * field_size;
                 break;
+            case DIVERGENT:
+                rows = conn->from_layer->size;
+                cols = field_size * field_size;
+                break;
             case ONE_TO_ONE:
                 rows = 1;
                 break;

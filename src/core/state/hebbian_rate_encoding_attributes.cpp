@@ -47,6 +47,11 @@ CALC_ONE_TO_ONE(update_convolutional_hebbian,
     ; ,
     UPDATE_WEIGHT_CONVOLUTIONAL(index);
     );
+CALC_DIVERGENT(update_divergent_hebbian,
+    ; ,
+    EXTRACT_OUT(to_index);,
+    UPDATE_WEIGHT(from_index, weight_index, dest_out);,
+    ; );
 
 Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
@@ -58,6 +63,8 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(ConnectionType c
             return get_update_convergent_hebbian();
         case CONVOLUTIONAL:
             return get_update_convolutional_hebbian();
+        case DIVERGENT:
+            return get_update_divergent_hebbian();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");

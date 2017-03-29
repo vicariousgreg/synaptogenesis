@@ -54,7 +54,7 @@ static IzhikevichParameters create_parameters(std::string str) {
     else if (str == "resonator")          return RESONATOR;
     else
         ErrorManager::get_instance()->log_error(
-            "Unrecognizer parameter string: " + str);
+            "Unrecognized parameter string: " + str);
 }
 
 /******************************************************************************/

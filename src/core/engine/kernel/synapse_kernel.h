@@ -254,6 +254,104 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     } \
 }
 
+#define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    const int field_size = synapse_data.field_size; \
+    const int stride = synapse_data.stride; \
+    const int fray = synapse_data.fray; \
+    const int kernel_size = field_size * field_size; \
+    EXTRACTIONS; \
+\
+    /* Iterate over destination neurons */ \
+    for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
+        for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
+            int to_index = d_row*to_columns + d_col; \
+			NEURON_PRE; \
+\
+            /* Determine range of source neurons for divergent kernel */ \
+            int start_s_row = (d_row + fray - field_size + stride) / stride; \
+            int start_s_col = (d_col + fray - field_size + stride) / stride; \
+            int end_s_row = (d_row + fray) / stride; \
+            int end_s_col = (d_col + fray) / stride; \
+\
+            int start = field_size - stride; \
+            int offset = (stride > (field_size/2)) \
+                         ? (2*stride - field_size) : (stride-1);\
+\
+            /* Iterate over relevant source neurons... */ \
+            int k_row = start + ((d_row + fray + offset) % stride); \
+            for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= stride)) { \
+                int k_col = start + ((d_col + fray + offset) % stride); \
+                for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= stride)) { \
+                    /* Avoid making connections with non-existent neurons! */ \
+                    if (fray != 0 and (s_row < 0 or s_row >= from_rows \
+                        or s_col < 0 or s_col >= from_columns)) \
+                        continue; \
+\
+                    int from_index = (s_row * from_columns) + s_col; \
+					int weight_index = (from_index * kernel_size) \
+						+ (k_row * field_size) + k_col; \
+					WEIGHT_OP; \
+                } \
+            } \
+			NEURON_POST; \
+        } \
+    } \
+}
+
+#define DIVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    const int field_size = synapse_data.field_size; \
+    const int stride = synapse_data.stride; \
+    const int fray = synapse_data.fray; \
+    EXTRACTIONS; \
+\
+    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (to_index < to_size) { \
+        int d_row = to_index / to_columns; \
+        int d_col = to_index % to_columns; \
+        NEURON_PRE; \
+ \
+        /* Determine range of source neurons for divergent kernel */ \
+        int start_s_row = (d_row + fray - field_size + stride) / stride; \
+        int start_s_col = (d_col + fray - field_size + stride) / stride; \
+        int end_s_row = (d_row + fray) / stride; \
+        int end_s_col = (d_col + fray) / stride; \
+\
+        int start = field_size - stride; \
+        int offset = (stride > (field_size/2)) \
+                     ? (2*stride - field_size) : (stride-1);\
+\
+        /* Kernels are organized into columns
+           One kernel per source neuron */ \
+        int kernel_size = field_size * field_size; \
+        int kernel_row_size = from_rows * from_columns; \
+\
+        /* Iterate over relevant source neurons... */ \
+        int k_row = start + ((d_row + fray + offset) % stride); \
+        for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= stride)) { \
+            int k_col = start + ((d_col + fray + offset) % stride); \
+            for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= stride)) { \
+                /* Avoid making connections with non-existent neurons! */ \
+                if (fray != 0 and (s_row < 0 or s_row >= from_rows \
+                    or s_col < 0 or s_col >= from_columns)) \
+                    continue; \
+\
+                int from_index = (s_row * from_columns) + s_col; \
+\
+                /* Row of matrix is the kernel index * row size (see above)
+                   Column of matrix is the index of the source neuron */ \
+                int weight_index = from_index + \
+					(((k_row * field_size) + k_col) * kernel_row_size); \
+                 WEIGHT_OP; \
+            } \
+        } \
+        NEURON_POST; \
+    } \
+}
+
 #ifdef __CUDACC__
 
 #define CALC_FULLY_CONNECTED(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
@@ -277,6 +375,13 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
+#define CALC_DIVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DIVERGENT_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DIVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
+
 
 #else
 
@@ -295,6 +400,12 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
 
 #define CALC_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CONVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
+}
+
+#define CALC_DIVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DIVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
@@ -346,6 +457,26 @@ CALC_ONE_TO_ONE(FUNC_NAME, \
 
 #define ACTIVATE_CONVERGENT(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
 CALC_CONVERGENT(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE
+     * Initialize sum to 0.0 */ \
+    float sum = 0.0;, \
+ \
+    /* WEIGHT_OP
+     * Calculate weight input, add to sum */ \
+    CALC_VAL(from_index, weight_index); \
+    sum += val; \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST
+     * Aggregate sum to input */ \
+    AGGREGATE(to_index, sum); \
+)
+
+#define ACTIVATE_DIVERGENT(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_DIVERGENT(FUNC_NAME, \
     /* EXTRACTIONS */ \
     UPDATE_EXT;, \
  \

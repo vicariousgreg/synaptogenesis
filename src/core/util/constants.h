@@ -66,7 +66,8 @@ typedef enum {
     FULLY_CONNECTED,
     ONE_TO_ONE,
     CONVERGENT,
-    CONVOLUTIONAL
+    CONVOLUTIONAL,
+    DIVERGENT
 } ConnectionType;
 
 /* Synaptic operation opcode.

@@ -64,6 +64,10 @@ ACTIVATE_CONVERGENT(activate_convergent_trace,
         UPDATE_TRACE(weight_index);
     }
 );
+ACTIVATE_DIVERGENT(activate_divergent_trace,
+    EXTRACT_TRACES,
+    UPDATE_TRACE(weight_index);
+);
 
 Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(ConnectionType type) {
     switch (type) {
@@ -74,6 +78,8 @@ Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(ConnectionType type) {
         case CONVERGENT:
         case CONVOLUTIONAL:
             return get_activate_convergent_trace();
+        case DIVERGENT:
+            return get_activate_divergent_trace();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");
@@ -125,6 +131,12 @@ CALC_ONE_TO_ONE(update_convolutional_trace,
     EXTRACT_BASELINES;,
     UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]);
     );
+CALC_DIVERGENT(update_divergent_trace,
+    EXTRACT_TRACES;
+    EXTRACT_BASELINES;,
+    float sum = inputs[to_index];,
+    UPDATE_WEIGHT(weight_index, sum),
+    ; );
 
 Kernel<SYNAPSE_ARGS> SpikingAttributes::get_updater(ConnectionType conn_type) {
     switch (conn_type) {
@@ -136,6 +148,8 @@ Kernel<SYNAPSE_ARGS> SpikingAttributes::get_updater(ConnectionType conn_type) {
             return get_update_convergent_trace();
         case CONVOLUTIONAL:
             return get_update_convolutional_trace();
+        case DIVERGENT:
+            return get_update_divergent_trace();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");
