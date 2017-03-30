@@ -40,14 +40,13 @@ class ConnectionConfig {
             WeightConfig* weight_config,
             ArborizedConfig arborized_config);
 
-        bool plastic;
-        int delay;
-        float max_weight;
-        ConnectionType type;
-        std::string connection_params;
-        ArborizedConfig arborized_config;
-        WeightConfig* weight_config;
-        Opcode opcode;
+        const bool plastic;
+        const int delay;
+        const float max_weight;
+        const ConnectionType type;
+        const ArborizedConfig arborized_config;
+        const WeightConfig* weight_config;
+        const Opcode opcode;
 };
 
 #endif

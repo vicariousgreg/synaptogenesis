@@ -26,7 +26,7 @@ class Connection {
 
         /* Constant getters */
         int get_num_weights() const { return num_weights; }
-        WeightConfig* get_weight_config() const { return weight_config; }
+        const WeightConfig* get_weight_config() const { return weight_config; }
         int get_row_field_size() const { return row_field_size; }
         int get_column_field_size() const { return column_field_size; }
         int get_row_stride() const { return row_stride; }
@@ -64,7 +64,7 @@ class Connection {
         // Number of weights in connection
         int num_weights;
 
-        WeightConfig* weight_config;
+        const WeightConfig* weight_config;
 
         // Arborization parameters (extracted from params)
         // The receptive field size, stride and offset for arborized

@@ -7,7 +7,7 @@
 #include "util/error_manager.h"
 
 void FlatWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn, bool is_host) const {
     int num_weights = conn->get_num_weights();
     set_weights(target_matrix, num_weights, weight);
 }
@@ -20,13 +20,13 @@ RandomWeightConfig::RandomWeightConfig(float max_weight, float fraction)
 }
 
 void RandomWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn, bool is_host) const {
     int num_weights = conn->get_num_weights();
     randomize_weights(target_matrix, num_weights, max_weight, fraction);
 }
 
 void SpecifiedWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn, bool is_host) const {
     std::stringstream stream(weight_string);
     int num_weights = conn->get_num_weights();
 
