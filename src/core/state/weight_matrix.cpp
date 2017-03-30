@@ -16,11 +16,16 @@ void clear_weights(float* arr, int size) {
 
 /* Randomizes an array */
 void randomize_weights(float* arr, int size, float max, float fraction) {
-    for (int i = 0 ; i < size ; ++i)
-        if (fRand(0,1) < fraction)
+    if (fraction == 1.0) {
+        for (int i = 0 ; i < size ; ++i)
             arr[i] = fRand(0, max);
-        else
-            arr[i] = 0.0;
+    } else {
+        for (int i = 0 ; i < size ; ++i)
+            if (fRand(0,1) < fraction)
+                arr[i] = fRand(0, max);
+            else
+                arr[i] = 0.0;
+    }
 }
 
 /* Transfers the values from one array to another */
