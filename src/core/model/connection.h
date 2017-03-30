@@ -29,6 +29,8 @@ class Connection {
         int get_column_field_size() const { return column_field_size; }
         int get_row_stride() const { return row_stride; }
         int get_column_stride() const { return column_stride; }
+        int get_row_offset() const { return row_offset; }
+        int get_column_offset() const { return column_offset; }
 
         // Matrix type
         const ConnectionType type;
@@ -68,10 +70,11 @@ class Connection {
         std::string init_params;
 
         // Arborization parameters (extracted from params)
-        // The receptive field size and stride for arborized
+        // The receptive field size, stride and offset for arborized
         //   (convergent) connections
         int row_field_size, column_field_size;
         int row_stride, column_stride;
+        int row_offset, column_offset;
 };
 
 typedef std::vector<Connection*> ConnectionList;

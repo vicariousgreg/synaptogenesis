@@ -28,9 +28,10 @@ class ArborizedConfig {
     public:
         ArborizedConfig(
             int row_field_size, int column_field_size,
-            int row_stride, int column_stride);
+            int row_stride, int column_stride,
+            int row_offset=0, int column_offset=0);
 
-        ArborizedConfig( int field_size, int stride);
+        ArborizedConfig(int field_size, int stride, int offset=0);
 
         std::string encode();
 
@@ -38,6 +39,7 @@ class ArborizedConfig {
 
         const int row_field_size, column_field_size;
         const int row_stride, column_stride;
+        const int row_offset, column_offset;
 };
 
 #endif

@@ -15,6 +15,12 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             type(config.type),
             convolutional(type == CONVOLUTIONAL) {
     this->init_params = config.init_params;
+    this->row_field_size = 0;
+    this->column_field_size = 0;
+    this->row_stride = 0;
+    this->column_stride = 0;
+    this->row_offset = 0;
+    this->column_offset = 0;
 
     switch (type) {
         case(FULLY_CONNECTED):
@@ -33,6 +39,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             this->column_field_size = arborized_config.column_field_size;
             this->row_stride = arborized_config.row_stride;
             this->column_stride = arborized_config.column_stride;
+            this->row_offset = arborized_config.row_offset;
+            this->column_offset = arborized_config.column_offset;
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.

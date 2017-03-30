@@ -24,12 +24,16 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         num_weights(conn->get_num_weights()),
         output_type(state->get_output_type(conn->to_layer)),
         weights(state->get_matrix(conn)) {
-    this->row_fray =
-        (to_rows == from_rows)
-            ? row_field_size / 2 : 0;
-    this->column_fray =
-        (to_columns == from_columns)
-            ? column_field_size / 2 : 0;
+    // If no offset is specified and the layers are identically
+    //     sized, set the offset to half the field size
+    this->row_offset = conn->get_row_offset();
+    this->row_offset =
+        (to_rows == from_rows and row_offset == 0)
+            ? -row_field_size / 2 : row_offset;
+    this->column_offset = conn->get_column_offset();
+    this->column_offset =
+        (to_columns == from_columns and column_offset == 0)
+            ? -column_field_size / 2 : column_offset;
 
     destination_outputs = state->get_output(conn->to_layer);
     if (state->is_inter_device(conn))

@@ -17,30 +17,33 @@ ConnectionConfig::ConnectionConfig(
 
 ArborizedConfig::ArborizedConfig(
     int row_field_size, int column_field_size,
-    int row_stride, int column_stride)
+    int row_stride, int column_stride,
+    int row_offset, int column_offset)
         : row_field_size(row_field_size),
           column_field_size(column_field_size),
           row_stride(row_stride),
-          column_stride(column_stride) { }
+          column_stride(column_stride),
+          row_offset(row_offset),
+          column_offset(column_offset) { }
 
-ArborizedConfig::ArborizedConfig( int field_size, int stride)
-        : row_field_size(field_size),
-          column_field_size(field_size),
-          row_stride(stride),
-          column_stride(stride) { }
+ArborizedConfig::ArborizedConfig( int field_size, int stride, int offset)
+    : ArborizedConfig(field_size, field_size, stride, stride, offset, offset) { }
 
 std::string ArborizedConfig::encode() {
     std::ostringstream oss;
     oss << row_field_size << " ";
     oss << column_field_size << " ";
     oss << row_stride << " ";
-    oss << column_stride;
+    oss << column_stride << " ";
+    oss << row_offset << " ";
+    oss << column_offset << " ";
     return oss.str();
 }
 
 ArborizedConfig ArborizedConfig::decode(std::string params) {
     int row_field_size, column_field_size;
     int row_stride, column_stride;
+    int row_offset, column_offset;
 
     std::stringstream stream(params);
 
@@ -64,6 +67,16 @@ ArborizedConfig ArborizedConfig::decode(std::string params) {
             "Column stride for arborized connection not specified!");
     stream >> column_stride;
 
+    // Extract offset
+    if (stream.eof())
+        ErrorManager::get_instance()->log_error(
+            "Row offset for arborized connection not specified!");
+    stream >> row_offset;
+    if (stream.eof())
+        ErrorManager::get_instance()->log_error(
+            "Column offset for arborized connection not specified!");
+    stream >> column_offset;
+
     return ArborizedConfig(row_field_size, column_field_size,
-        row_stride, column_stride);
+        row_stride, column_stride, row_offset, column_offset);
 }

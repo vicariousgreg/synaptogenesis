@@ -26,7 +26,7 @@ class SynapseData {
         bool convolutional;
         int row_stride, column_stride;
         int row_field_size, column_field_size;
-        int row_fray, column_fray;
+        int row_offset, column_offset;
         int delay;
 
         /* Weight attributes */
