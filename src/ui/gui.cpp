@@ -50,7 +50,12 @@ void GUI::add_layer(LayerInfo layer_info) {
     this->pixbufs.push_back(pix);
     this->images.push_back(image);
 
-    this->grid->add(*Gtk::manage(image));
+    //this->grid->add(*Gtk::manage(image));
+    this->grid->attach_next_to(
+        *Gtk::manage(image),
+        Gtk::PositionType::POS_BOTTOM,
+        //Gtk::PositionType::POS_RIGHT,
+        cols, rows);
     this->grid->show_all();
 }
 

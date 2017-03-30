@@ -778,95 +778,114 @@ void speech_test() {
 
     // Input layer
     structure->add_layer(LayerConfig("input_layer",
-        IZHIKEVICH, 1, 400, "regular"));
+        IZHIKEVICH, 1, 41, "thalamo_cortical"));
 
     // Convergent layer
     structure->connect_layers_expected("input_layer",
-        LayerConfig("convergent_layer", IZHIKEVICH, "thalamo_cortical"),
-        ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
-            ArborizedConfig(1,10,1,5).encode(), "5"));
+        LayerConfig("convergent_layer", IZHIKEVICH, "regular"),
+        ConnectionConfig(true, 0, 100, CONVERGENT, ADD,
+            ArborizedConfig(1,3,1,1).encode(), "10"));
+
+    int spread = 1;
+    int vertical_inhibition_spread = 1;
 
     // Vertical cluster layer
     structure->connect_layers_expected("convergent_layer",
-        LayerConfig("vertical_layer", IZHIKEVICH, "regular", 0.5),
+        LayerConfig("vertical_layer", IZHIKEVICH, "bursting"), //, 0.5),
         ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
-            ArborizedConfig(50,10,1,1).encode(), "5"));
-
+            ArborizedConfig(spread,10,1,1).encode(), "0.5"));
     // Vertical cluster inhibitory layer
     structure->connect_layers_expected("vertical_layer",
         LayerConfig("vertical_inhibitory", IZHIKEVICH, "fast"),
         ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
-            ArborizedConfig(50,1,1,1).encode(), "0.5"));
+            ArborizedConfig(vertical_inhibition_spread,1,1,1).encode(), "0.5"));
     structure->connect_layers("vertical_inhibitory", "vertical_layer",
         ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
-            ArborizedConfig(50,1,1,1).encode(), "5"));
+            ArborizedConfig(vertical_inhibition_spread,1,1,1).encode(), "5"));
 
     // Block cluster layer
     structure->connect_layers_expected("vertical_layer",
-        LayerConfig("cluster_layer", IZHIKEVICH, "regular", 0.5),
+        LayerConfig("cluster_layer", IZHIKEVICH, "bursting", 0.5),
         ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
-            ArborizedConfig(5,10,1,10).encode(), "1"));
-
+            ArborizedConfig(spread,5,1,1).encode(), "0.5"));
     // Block cluster inhibitory layer
     structure->connect_layers_expected("cluster_layer",
         LayerConfig("cluster_inhibitory", IZHIKEVICH, "fast"),
         ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
-            ArborizedConfig(50,50,1,1).encode(), "0.5"));
+            ArborizedConfig(spread,5,1,1).encode(), "0.5"));
     structure->connect_layers("cluster_inhibitory", "cluster_layer",
         ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
-            ArborizedConfig(50,50,1,1).encode(), "5"));
+            ArborizedConfig(spread,10,1,1).encode(), "5"));
 
-    /*
-    // Convergent inhibition
-    structure->connect_layers_expected("convergent_layer",
-        LayerConfig("lateral_inhibition", IZHIKEVICH, "default"),
-        ConnectionConfig(true, 0, 10, CONVERGENT, ADD, "1 10 5 1 0.5"));
-    structure->connect_layers("lateral_inhibition", "convergent_layer",
-        ConnectionConfig(false, 0, 5, DIVERGENT, DIV, "1 10 5 1 5"));
+    int mot_f_size = 3;
+    int mot_stride = 1;
+    int offset = mot_f_size;
+    int pool_f_size = 10;
+    int pool_stride = 3;
+    std::string pos_strength = "5";
+    std::string neg_strength = "1";
+    std::string mid_strength = "10";
+    std::string pool_strength = "5";
 
-    // Input connection
-    structure->add_layer(LayerConfig("cluster_layer",
-        IZHIKEVICH, 256, 256, "default", 0.1));
-    structure->connect_layers("convergent_layer", "cluster_layer",
-        ConnectionConfig(true, 1, 1, FULLY_CONNECTED, ADD, "", ""));
-
-    // Self connection
-    structure->connect_layers("cluster_layer", "cluster_layer",
-        ConnectionConfig(true, 10, 2, CONVERGENT, ADD, "5 5 1 1 0.05"));
-
-    // Inhibitory connection
+    // Motion detectors
     structure->connect_layers_expected("cluster_layer",
-        LayerConfig("cluster_inhibition", IZHIKEVICH, "default"),
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD, "10 10 5 5 0.5"));
-    structure->connect_layers("cluster_inhibition", "cluster_layer",
-        ConnectionConfig(false, 0, 5, DIVERGENT, DIV, "10 10 5 5 2"));
+        LayerConfig("motion_up", IZHIKEVICH, "bursting", 1),
+        ConnectionConfig(false, 5, 10, CONVERGENT, ADD,
+            ArborizedConfig(1,mot_f_size,1,mot_stride,offset,offset).encode(),
+            pos_strength));
+    structure->connect_layers("cluster_layer", "motion_up",
+        ConnectionConfig(false, 5, 10, CONVERGENT, DIV,
+            ArborizedConfig(1,mot_f_size,1,mot_stride,-offset,-offset).encode(),
+            neg_strength));
+    structure->connect_layers("cluster_layer", "motion_up",
+        ConnectionConfig(false, 0, 10, CONVERGENT, MULT,
+            ArborizedConfig(1,mot_f_size,1,mot_stride).encode(),
+            mid_strength));
+    structure->connect_layers_expected("motion_up",
+        LayerConfig("motion_up_pool", IZHIKEVICH, "chattering", 1),
+        ConnectionConfig(false, 0, 10, CONVERGENT, ADD,
+            ArborizedConfig(1,pool_f_size,1,pool_stride).encode(),
+            pool_strength));
 
-    // Modulatory connection
-    structure->connect_layers_matching("cluster_layer",
-        LayerConfig("output_layer", IZHIKEVICH, "low_threshold"),
-        ConnectionConfig(true, 10, 0.1, CONVERGENT, ADD, "15 15 1 1 0.025"));
-    structure->connect_layers("output_layer", "cluster_layer",
-        ConnectionConfig(false, 10, 1, CONVERGENT, MULT, "15 15 1 1 0.5"));
-    */
-
+    structure->connect_layers_expected("cluster_layer",
+        LayerConfig("motion_down", IZHIKEVICH, "bursting", 1),
+        ConnectionConfig(false, 5, 10, CONVERGENT, ADD,
+            ArborizedConfig(1,mot_f_size,1,mot_stride,-offset,-offset).encode(),
+            pos_strength));
+    structure->connect_layers("cluster_layer", "motion_down",
+        ConnectionConfig(false, 5, 10, CONVERGENT, DIV,
+            ArborizedConfig(1,mot_f_size,1,mot_stride,offset,offset).encode(),
+            neg_strength));
+    structure->connect_layers("cluster_layer", "motion_down",
+        ConnectionConfig(false, 0, 10, CONVERGENT, MULT,
+            ArborizedConfig(1,mot_f_size,1,mot_stride).encode(),
+            mid_strength));
+    structure->connect_layers_expected("motion_down",
+        LayerConfig("motion_down_pool", IZHIKEVICH, "chattering", 1),
+        ConnectionConfig(false, 0, 10, CONVERGENT, ADD,
+            ArborizedConfig(1,pool_f_size,1,pool_stride).encode(),
+            pool_strength));
 
     // Modules
     std::string output_name = "visualizer_output";
 
-    structure->add_module("input_layer", "csv_input", "./resources/english.csv 0 1 0.1");
     //structure->add_module("input_layer", "random_input", "10 500");
+    //structure->add_module("input_layer", "csv_input", "./resources/english.csv 0 1 0.1");
+    structure->add_module("input_layer", "csv_input", "./resources/substitute.csv 0 1 0.01");
 
     //structure->add_module("input_layer", output_name);
-    structure->add_module("convergent_layer", output_name);
-    //structure->add_module("lateral_inhibition", output_name);
-    structure->add_module("vertical_layer", output_name);
+    //structure->add_module("convergent_layer", output_name);
+    //structure->add_module("vertical_layer", output_name);
     structure->add_module("cluster_layer", output_name);
-    //structure->add_module("cluster_inhibition", output_name);
-    //structure->add_module("output_layer", output_name);
+    structure->add_module("motion_up", output_name);
+    structure->add_module("motion_up_pool", output_name);
+    structure->add_module("motion_down", output_name);
+    structure->add_module("motion_down_pool", output_name);
 
     std::cout << "Speech test......\n";
     print_model(model);
-    run_simulation(model, 1000000, true);
+    Clock clock((float)120.0);
+    clock.run(model, 1000000, true);
     std::cout << "\n";
 
     delete model;
