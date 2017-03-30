@@ -1,7 +1,6 @@
 #ifndef connection_h
 #define connection_h
 
-#include <string>
 #include <vector>
 
 #include "model/connection_config.h"
@@ -14,8 +13,8 @@ class Layer;
  *   a connection |type| and connection |params|.
  * This function only returns meaningful values for connection types that
  *   are not FULLY_CONNECTED, because they can link layers of any sizes */
-int get_expected_rows(int rows, ConnectionType type, std::string params);
-int get_expected_columns(int columns, ConnectionType type, std::string params);
+int get_expected_rows(int rows, ConnectionType type, ConnectionConfig config);
+int get_expected_columns(int columns, ConnectionType type, ConnectionConfig config);
 
 /* Represents a connection between two neural layers.
  * Connections bridge Layers and are constructed in the Model class.
@@ -23,6 +22,8 @@ int get_expected_columns(int columns, ConnectionType type, std::string params);
  */
 class Connection {
     public:
+        virtual ~Connection() { delete weight_config; }
+
         /* Constant getters */
         int get_num_weights() const { return num_weights; }
         WeightConfig* get_weight_config() const { return weight_config; }

@@ -1,5 +1,3 @@
-#include <sstream>
-
 #include "model/connection.h"
 #include "model/layer.h"
 #include "util/error_manager.h"
@@ -34,21 +32,20 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     "Cannot connect differently sized layers one-to-one!");
             break;
         default:
-            auto arborized_config = ArborizedConfig::decode(config.connection_params);
-            this->row_field_size = arborized_config.row_field_size;
-            this->column_field_size = arborized_config.column_field_size;
-            this->row_stride = arborized_config.row_stride;
-            this->column_stride = arborized_config.column_stride;
-            this->row_offset = arborized_config.row_offset;
-            this->column_offset = arborized_config.column_offset;
+            this->row_field_size = config.arborized_config.row_field_size;
+            this->column_field_size = config.arborized_config.column_field_size;
+            this->row_stride = config.arborized_config.row_stride;
+            this->column_stride = config.arborized_config.column_stride;
+            this->row_offset = config.arborized_config.row_offset;
+            this->column_offset = config.arborized_config.column_offset;
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.
             if ((to_layer->rows != from_layer->rows and to_layer->rows !=
-                    get_expected_rows(from_layer->rows, type, config.connection_params))
+                    get_expected_rows(from_layer->rows, type, config)
                 or
                 (to_layer->columns != from_layer->columns and to_layer->columns !=
-                    get_expected_columns(from_layer->columns, type, config.connection_params)))
+                    get_expected_columns(from_layer->columns, type, config))))
                 ErrorManager::get_instance()->log_warning(
                     "Unexpected destination layer size for arborized connection!");
 
@@ -78,15 +75,14 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
     to_layer->add_input_connection(this);
 }
 
-int get_expected_rows(int rows, ConnectionType type, std::string connection_params) {
+int get_expected_rows(int rows, ConnectionType type, ConnectionConfig config) {
     switch (type) {
         case(ONE_TO_ONE):
             return rows;
         case(FULLY_CONNECTED):
             return rows;
         default:
-            auto arborized_config =
-                ArborizedConfig::decode(connection_params);
+            auto arborized_config = config.arborized_config;
             int row_field_size = arborized_config.row_field_size;
             int column_field_size = arborized_config.column_field_size;
             int row_stride = arborized_config.row_stride;
@@ -106,15 +102,14 @@ int get_expected_rows(int rows, ConnectionType type, std::string connection_para
     }
 }
 
-int get_expected_columns(int columns, ConnectionType type, std::string connection_params) {
+int get_expected_columns(int columns, ConnectionType type, ConnectionConfig config) {
     switch (type) {
         case(ONE_TO_ONE):
             return columns;
         case(FULLY_CONNECTED):
             return columns;
         default:
-            auto arborized_config =
-                ArborizedConfig::decode(connection_params);
+            auto arborized_config = config.arborized_config;
             int row_field_size = arborized_config.row_field_size;
             int column_field_size = arborized_config.column_field_size;
             int row_stride = arborized_config.row_stride;
