@@ -29,7 +29,7 @@ void set_weights(float* arr, int size, float val);
 void clear_weights(float* arr, int size);
 
 /* Randomizes an array */
-void randomize_weights(float* arr, int size, float max);
+void randomize_weights(float* arr, int size, float max, float fraction=1.0);
 
 /* Transfers the values from one array to another */
 void transfer_weights(float* from, float* to, int size);

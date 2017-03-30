@@ -6,14 +6,14 @@
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
-    std::string connection_params, std::string init_params)
+    std::string connection_params, WeightConfig* weight_config)
         : plastic(plastic),
           delay(delay),
           max_weight(max_weight),
           type(type),
           opcode(opcode),
           connection_params(connection_params),
-          init_params(init_params) { }
+          weight_config(weight_config) { }
 
 ArborizedConfig::ArborizedConfig(
     int row_field_size, int column_field_size,
@@ -29,7 +29,7 @@ ArborizedConfig::ArborizedConfig(
 ArborizedConfig::ArborizedConfig( int field_size, int stride, int offset)
     : ArborizedConfig(field_size, field_size, stride, stride, offset, offset) { }
 
-std::string ArborizedConfig::encode() {
+ArborizedConfig::operator std::string() const {
     std::ostringstream oss;
     oss << row_field_size << " ";
     oss << column_field_size << " ";

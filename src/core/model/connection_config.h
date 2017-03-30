@@ -2,6 +2,8 @@
 #define connection_config_h
 
 #include <string>
+
+#include "model/weight_config.h"
 #include "util/constants.h"
 
 class ConnectionConfig {
@@ -13,14 +15,14 @@ class ConnectionConfig {
             ConnectionType type,
             Opcode opcode,
             std::string connection_params,
-            std::string init_params);
+            WeightConfig* weight_config);
 
         bool plastic;
         int delay;
         float max_weight;
         ConnectionType type;
         std::string connection_params;
-        std::string init_params;
+        WeightConfig* weight_config;
         Opcode opcode;
 };
 
@@ -33,7 +35,7 @@ class ArborizedConfig {
 
         ArborizedConfig(int field_size, int stride, int offset=0);
 
-        std::string encode();
+        operator std::string() const;
 
         static ArborizedConfig decode(std::string params);
 

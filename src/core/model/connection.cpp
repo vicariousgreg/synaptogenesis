@@ -14,7 +14,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             opcode(config.opcode),
             type(config.type),
             convolutional(type == CONVOLUTIONAL) {
-    this->init_params = config.init_params;
+    this->weight_config = config.weight_config;
     this->row_field_size = 0;
     this->column_field_size = 0;
     this->row_stride = 0;

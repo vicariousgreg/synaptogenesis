@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "model/connection_config.h"
+#include "model/weight_config.h"
 #include "util/constants.h"
 
 class Layer;
@@ -24,7 +25,7 @@ class Connection {
     public:
         /* Constant getters */
         int get_num_weights() const { return num_weights; }
-        const std::string get_init_params() const { return init_params; }
+        WeightConfig* get_weight_config() const { return weight_config; }
         int get_row_field_size() const { return row_field_size; }
         int get_column_field_size() const { return column_field_size; }
         int get_row_stride() const { return row_stride; }
@@ -62,12 +63,7 @@ class Connection {
         // Number of weights in connection
         int num_weights;
 
-        // Parameters for matrix construction
-        // Some types will parse values for connection construction
-        //   -> Divergent, Convergent, Convolutional
-        // In this case, the constructor will consume these values and leave
-        //   the remaining values here
-        std::string init_params;
+        WeightConfig* weight_config;
 
         // Arborization parameters (extracted from params)
         // The receptive field size, stride and offset for arborized
