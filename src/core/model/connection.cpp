@@ -14,13 +14,13 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             opcode(config.opcode),
             type(config.type),
             convolutional(type == CONVOLUTIONAL) {
+    this->init_params = config.init_params;
+
     switch (type) {
         case(FULLY_CONNECTED):
-            this->init_params = config.params;
             this->num_weights = from_layer->size * to_layer->size;
             break;
         case(ONE_TO_ONE):
-            this->init_params = config.params;
             if (from_layer->rows == to_layer->rows and from_layer->columns == to_layer->columns)
                 this->num_weights = from_layer->size;
             else
@@ -28,38 +28,19 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     "Cannot connect differently sized layers one-to-one!");
             break;
         default:
-            std::stringstream stream(config.params);
-
-            // Extract field size
-            if (stream.eof())
-                ErrorManager::get_instance()->log_error(
-                    "Row field size for arborized connection not specified!");
-            stream >> this->row_field_size;
-            if (stream.eof())
-                ErrorManager::get_instance()->log_error(
-                    "Column field size for arborized connection not specified!");
-            stream >> this->column_field_size;
-
-            // Extract stride
-            if (stream.eof())
-                ErrorManager::get_instance()->log_error(
-                    "Row stride for arborized connection not specified!");
-            stream >> this->row_stride;
-            if (stream.eof())
-                ErrorManager::get_instance()->log_error(
-                    "Column stride for arborized connection not specified!");
-            stream >> this->column_stride;
-
-            // Extract remaining parameters for later
-            if (!stream.eof()) std::getline(stream, this->init_params);
+            auto arborized_config = ArborizedConfig::decode(config.connection_params);
+            this->row_field_size = arborized_config.row_field_size;
+            this->column_field_size = arborized_config.column_field_size;
+            this->row_stride = arborized_config.row_stride;
+            this->column_stride = arborized_config.column_stride;
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.
             if ((to_layer->rows != from_layer->rows and to_layer->rows !=
-                    get_expected_rows(from_layer->rows, type, config.params))
+                    get_expected_rows(from_layer->rows, type, config.connection_params))
                 or
                 (to_layer->columns != from_layer->columns and to_layer->columns !=
-                    get_expected_columns(from_layer->columns, type, config.params)))
+                    get_expected_columns(from_layer->columns, type, config.connection_params)))
                 ErrorManager::get_instance()->log_warning(
                     "Unexpected destination layer size for arborized connection!");
 
@@ -89,60 +70,58 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
     to_layer->add_input_connection(this);
 }
 
-int get_expected_rows(int rows, ConnectionType type, std::string params) {
-    int row_field_size, row_stride;
-    int col_field_size, col_stride;
-    std::stringstream stream(params);
-
+int get_expected_rows(int rows, ConnectionType type, std::string connection_params) {
     switch (type) {
         case(ONE_TO_ONE):
             return rows;
-        case(CONVERGENT):
-        case(CONVOLUTIONAL):
-            stream >> row_field_size;
-            stream >> col_field_size;
-            stream >> row_stride;
-            stream >> col_stride;
-            return std::max(1, 1 + ((rows - row_field_size) / row_stride));
-        case(DIVERGENT):
-            stream >> row_field_size;
-            stream >> col_field_size;
-            stream >> row_stride;
-            stream >> col_stride;
-            return std::max(1, row_field_size + (row_stride * (rows - 1)));
         case(FULLY_CONNECTED):
             return rows;
         default:
-            ErrorManager::get_instance()->log_error(
-                "Invalid call to get_expected_rows!");
+            auto arborized_config =
+                ArborizedConfig::decode(connection_params);
+            int row_field_size = arborized_config.row_field_size;
+            int column_field_size = arborized_config.column_field_size;
+            int row_stride = arborized_config.row_stride;
+            int column_stride = arborized_config.column_stride;
+            switch(type) {
+                case(CONVERGENT):
+                case(CONVOLUTIONAL):
+                    return std::max(1,
+                        1 + ((rows - row_field_size) / row_stride));
+                case(DIVERGENT):
+                    return std::max(1,
+                        row_field_size + (row_stride * (rows - 1)));
+                default:
+                    ErrorManager::get_instance()->log_error(
+                        "Invalid call to get_expected_rows!");
+            }
     }
 }
 
-int get_expected_columns(int columns, ConnectionType type, std::string params) {
-    int row_field_size, row_stride;
-    int column_field_size, column_stride;
-    std::stringstream stream(params);
-
+int get_expected_columns(int columns, ConnectionType type, std::string connection_params) {
     switch (type) {
         case(ONE_TO_ONE):
             return columns;
-        case(CONVERGENT):
-        case(CONVOLUTIONAL):
-            stream >> row_field_size;
-            stream >> column_field_size;
-            stream >> row_stride;
-            stream >> column_stride;
-            return std::max(1, 1 + ((columns - column_field_size) / column_stride));
-        case(DIVERGENT):
-            stream >> row_field_size;
-            stream >> column_field_size;
-            stream >> row_stride;
-            stream >> column_stride;
-            return std::max(1, column_field_size + (column_stride * (columns - 1)));
         case(FULLY_CONNECTED):
             return columns;
         default:
-            ErrorManager::get_instance()->log_error(
-                "Invalid call to get_expected_columns!");
+            auto arborized_config =
+                ArborizedConfig::decode(connection_params);
+            int row_field_size = arborized_config.row_field_size;
+            int column_field_size = arborized_config.column_field_size;
+            int row_stride = arborized_config.row_stride;
+            int column_stride = arborized_config.column_stride;
+            switch(type) {
+                case(CONVERGENT):
+                case(CONVOLUTIONAL):
+                    return std::max(1,
+                        1 + ((columns - column_field_size) / column_stride));
+                case(DIVERGENT):
+                    return std::max(1,
+                        column_field_size + (column_stride * (columns - 1)));
+                default:
+                    ErrorManager::get_instance()->log_error(
+                        "Invalid call to get_expected_columns!");
+            }
     }
 }

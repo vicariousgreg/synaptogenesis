@@ -93,6 +93,8 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
     float * const inputs = synapse_data.inputs.get(); \
     const EXTRACTOR extractor = synapse_data.extractor;
 
+
+
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
@@ -107,7 +109,6 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         NEURON_POST; \
     } \
 }
-
 
 #define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
@@ -260,6 +261,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     } \
 }
 
+
+
 #define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
@@ -369,6 +372,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         NEURON_POST; \
     } \
 }
+
+
 
 #ifdef __CUDACC__
 
