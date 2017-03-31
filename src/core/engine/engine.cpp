@@ -1,4 +1,8 @@
 #include "engine/engine.h"
+#include "engine/cluster/cluster.h"
+#include "model/model.h"
+#include "state/state.h"
+#include "io/environment.h"
 
 Engine::Engine(State *state, Environment *environment)
         : state(state),

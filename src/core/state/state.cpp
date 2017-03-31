@@ -1,6 +1,8 @@
 #include <cstring>
 
 #include "state/state.h"
+#include "state/weight_matrix.h"
+#include "model/model.h"
 #include "util/tools.h"
 
 State::State(Model *model) : model(model) {
@@ -46,8 +48,7 @@ State::State(Model *model) : model(model) {
         for (auto layer : model->get_output_layers()) {
             if (layer_devices[layer] == i)
                 output_layers.push_back(layer);
-        }
-        for (auto layer : model->get_expected_layers()) {
+        } for (auto layer : model->get_expected_layers()) {
             if (layer_devices[layer] == i)
                 expected_layers.push_back(layer);
         }
@@ -109,14 +110,12 @@ State::~State() {
 }
 
 bool State::check_compatibility(Structure *structure) {
-    // Retrieve represented neural models in the structure
-    auto flags = structure->get_neural_model_flags();
-
     // Check relevant attributes for compatibility
     for (auto n : NeuralModels)
         for (int i = 0; i < num_devices; ++i)
-            if (flags[n] and attributes[i][n] and not
-                    attributes[i][n]->check_compatibility(structure->cluster_type))
+            if (structure->contains(n) and attributes[i][n] and not
+                    attributes[i][n]->check_compatibility(
+                        structure->cluster_type))
                 return false;
     return true;
 }
@@ -150,7 +149,8 @@ Pointer<Output> State::get_buffer_output(Layer *layer) const {
 }
 
 OutputType State::get_output_type(Layer *layer) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]->output_type;
+    return attributes[layer_devices.at(layer)]
+                     [layer->neural_model]->output_type;
 }
 
 DeviceID State::get_device_id(Layer *layer) const {
@@ -170,8 +170,9 @@ Kernel<ATTRIBUTE_ARGS> State::get_attribute_kernel(Layer *layer) const {
     return attributes[layer_devices.at(layer)][layer->neural_model]->kernel;
 }
 
-Kernel<ATTRIBUTE_ARGS> State::get_attribute_learning_kernel(Layer *layer) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]->learning_kernel;
+Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
+    return attributes[layer_devices.at(layer)]
+                     [layer->neural_model]->learning_kernel;
 }
 
 Pointer<float> State::get_matrix(Connection* conn) const {

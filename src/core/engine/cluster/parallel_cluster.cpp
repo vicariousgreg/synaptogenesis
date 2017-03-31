@@ -1,6 +1,10 @@
 #include <queue>
 
 #include "engine/cluster/cluster.h"
+#include "engine/instruction.h"
+#include "model/structure.h"
+#include "state/state.h"
+#include "util/resource_manager.h"
 
 ParallelCluster::ParallelCluster(Structure *structure,
         State *state, Environment *environment)

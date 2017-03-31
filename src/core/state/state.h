@@ -1,15 +1,13 @@
 #ifndef state_h
 #define state_h
 
-#include "model/model.h"
-#include "model/layer.h"
-#include "engine/kernel/synapse_kernel.h"
 #include "state/attributes.h"
-#include "state/weight_matrix.h"
 #include "util/constants.h"
 #include "util/pointer.h"
 
 class Buffer;
+class Model;
+class Layer;
 
 class State {
     public:
@@ -31,7 +29,7 @@ class State {
         OutputType get_output_type(Layer *layer) const;
         const Attributes *get_attributes_pointer(Layer *layer) const;
         Kernel<ATTRIBUTE_ARGS> get_attribute_kernel(Layer *layer) const;
-        Kernel<ATTRIBUTE_ARGS> get_attribute_learning_kernel(Layer *layer) const;
+        Kernel<ATTRIBUTE_ARGS> get_learning_kernel(Layer *layer) const;
 
         /* Getters for connection related data */
         Pointer<float> get_matrix(Connection *conn) const;

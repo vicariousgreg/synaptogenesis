@@ -3,7 +3,7 @@
 #include "util/error_manager.h"
 
 Model::~Model() {
-    for (auto& structure : this->structures) delete structure;
+    for (auto& structure : structures) delete structure;
 }
 
 Model* Model::load(std::string path) {
@@ -20,7 +20,7 @@ Structure* Model::add_structure(std::string name, ClusterType cluster_type) {
     return structure;
 }
 
-LayerList Model::get_layers() const {
+const LayerList Model::get_layers() const {
     LayerList layers;
     for (auto& structure : structures)
         for (auto& layer : structure->get_layers())
@@ -28,7 +28,7 @@ LayerList Model::get_layers() const {
     return layers;
 }
 
-LayerList Model::get_layers(NeuralModel neural_model) const {
+const LayerList Model::get_layers(NeuralModel neural_model) const {
     LayerList layers;
     for (auto& structure : structures)
         for (auto& layer : structure->get_layers())
@@ -37,21 +37,21 @@ LayerList Model::get_layers(NeuralModel neural_model) const {
     return layers;
 }
 
-LayerList Model::get_input_layers() const {
+const LayerList Model::get_input_layers() const {
     LayerList layers;
     for (auto layer : this->get_layers())
         if (layer->is_input()) layers.push_back(layer);
     return layers;
 }
 
-LayerList Model::get_output_layers() const {
+const LayerList Model::get_output_layers() const {
     LayerList layers;
     for (auto layer : this->get_layers())
         if (layer->is_output()) layers.push_back(layer);
     return layers;
 }
 
-LayerList Model::get_expected_layers() const {
+const LayerList Model::get_expected_layers() const {
     LayerList layers;
     for (auto layer : this->get_layers())
         if (layer->is_expected()) layers.push_back(layer);

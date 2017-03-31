@@ -75,6 +75,21 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
     to_layer->add_input_connection(this);
 }
 
+Connection::~Connection() {
+    delete weight_config;
+}
+
+int Connection::get_num_weights() const { return num_weights; }
+int Connection::get_row_field_size() const { return row_field_size; }
+int Connection::get_column_field_size() const { return column_field_size; }
+int Connection::get_row_stride() const { return row_stride; }
+int Connection::get_column_stride() const { return column_stride; }
+int Connection::get_row_offset() const { return row_offset; }
+int Connection::get_column_offset() const { return column_offset; }
+const WeightConfig* Connection::get_weight_config() const {
+    return weight_config;
+}
+
 int get_expected_rows(int rows, ConnectionType type, ConnectionConfig config) {
     switch (type) {
         case(ONE_TO_ONE):

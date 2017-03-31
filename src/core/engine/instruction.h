@@ -6,6 +6,8 @@
 #include "model/connection.h"
 #include "state/state.h"
 #include "state/attributes.h"
+#include "io/buffer.h"
+#include "io/environment.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
 #include "engine/kernel/synapse_kernel.h"
@@ -313,7 +315,7 @@ class StateLearningInstruction : public StateInstruction {
     public:
         StateLearningInstruction(Layer *to_layer, State *state, Stream *stream)
             : StateInstruction(to_layer, state, stream,
-              state->get_attribute_learning_kernel(to_layer)) { }
+              state->get_learning_kernel(to_layer)) { }
 };
 
 typedef std::vector<Instruction*> InstructionList;

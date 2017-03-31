@@ -83,11 +83,17 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
         other_size += layer->size;
     }
 
+    // Set layer indices
+    int layer_index = 0;
+    for (auto& layer : layers)
+        layer_indices[layer->id] = layer_index++;
+
     // Allocate space for input and output
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
     this->expected = Pointer<Output>(expected_size);
     this->total_neurons = other_size;
+    this->total_layers = layers.size();;
 }
 
 Attributes::~Attributes() {
@@ -99,14 +105,20 @@ Attributes::~Attributes() {
 #endif
 }
 
+void Attributes::set_device_id(DeviceID device_id) {
+    this->device_id = device_id;
+
+    // Retrieve extractor
+    // This has to wait until device_id is set
+    get_extractor(&this->extractor, output_type, device_id);
+}
+
 void Attributes::transfer_to_device() {
-#ifdef __CUDACC__
     // Copy attributes to device and set the pointer
     if (not ResourceManager::get_instance()->is_host(device_id))
         this->pointer = (Attributes*)
             ResourceManager::get_instance()->allocate_device(
                 1, object_size, this, device_id);
-#endif
 }
 
 void Attributes::schedule_transfer() {

@@ -13,6 +13,15 @@
 /* Represents a neural structure in a network model.
  * Contains network graph data and parameters for layers/connections.
  *
+ * Each structure is assigned a cluster in the driver that determines the
+ *     sequence of events that happen to its state (ie whether learning happens
+ *     netween layer activations or in a batch at the end of the timestep).
+ *     The type of cluster is determined by the ClusterType passed into the
+ *     constructor.
+ * Note that not all neural models are supported by each cluster type.  This is
+ *     checked for in Attributes::check_compatibility() when the cluster is
+ *     constructed.
+ *
  * Layers and connections can be created using a variety of functions.
  * In addition, input and output modules can be attached to layers using
  *    add_module(). These modules contain hooks for driving input to a layer
@@ -20,19 +29,13 @@
  */
 class Structure {
     public:
-        Structure (std::string name, ClusterType cluster_type)
-                : name(name), cluster_type(cluster_type) {
-            for (auto neural_model : NeuralModels)
-                this->neural_model_flags.push_back(false);
-        }
-        virtual ~Structure() {
-            for (auto layer : layers) delete layer;
-            for (auto conn : connections) delete conn;
-        }
+        Structure(std::string name, ClusterType cluster_type);
+        virtual ~Structure();
 
-        // Returns the flags for which models are represented by this structure
-        const std::vector<bool> get_neural_model_flags() {
-            return neural_model_flags;
+        /* Checks whether this structure contains a layer
+         *     of the given neural_model */
+        bool contains(NeuralModel neural_model) {
+            return neural_model_flags[neural_model];
         }
 
         /* Gets the total neuron count */
@@ -67,8 +70,9 @@ class Structure {
             std::string from_layer_name,
             LayerConfig layer_config, ConnectionConfig conn_config);
 
-
-        /* Dendritic internal connection functions */
+        /*****************************/
+        /********* DENDRITES *********/
+        /*****************************/
         DendriticNode *spawn_dendritic_node(std::string to_layer_name);
 
         Connection* connect_layers_internal(
@@ -91,11 +95,9 @@ class Structure {
                 Layer *from_layer, Layer *to_layer,
                 ConnectionConfig config);
 
-        Layer* find_layer(std::string name) {
-            if (layers_by_name.find(name) != layers_by_name.end())
-                return layers_by_name.find(name)->second;
-            else return nullptr;
-        }
+        /* Find a layer
+         * If not found, logs an error or returns nullptr */
+        Layer* find_layer(std::string name, bool log_error=true);
 
         // Layers
         LayerList layers;
@@ -107,8 +109,7 @@ class Structure {
         // Number of neurons
         int total_neurons;
 
-        // Flags for whether this contains layers of a given neural model
-        std::vector<bool> neural_model_flags;
+        bool neural_model_flags[sizeof(NeuralModels)];
 };
 
 typedef std::vector<Structure*> StructureList;

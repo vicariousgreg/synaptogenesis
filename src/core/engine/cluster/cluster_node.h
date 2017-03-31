@@ -4,9 +4,15 @@
 #include <map>
 #include <vector>
 
-#include "model/layer.h"
-#include "io/environment.h"
-#include "engine/instruction.h"
+#include "util/stream.h"
+
+class Layer;
+class DendriticNode;
+class Connection;
+class State;
+class Environment;
+class Instruction;
+typedef std::vector<Instruction*> InstructionList;
 
 class ClusterNode {
     public:

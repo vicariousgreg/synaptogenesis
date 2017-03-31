@@ -1,4 +1,9 @@
 #include "clock.h"
+#include "model/model.h"
+#include "io/environment.h"
+#include "engine/engine.h"
+#include "model/model.h"
+#include "state/state.h"
 #include "util/parallel.h"
 
 void Clock::engine_loop(int iterations, bool verbose) {

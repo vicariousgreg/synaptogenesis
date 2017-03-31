@@ -1,6 +1,6 @@
 #include "state/spiking_attributes.h"
 
-SpikingAttributes::SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_ARGS>kernel)
+SpikingAttributes::SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_ARGS> kernel)
         : Attributes(layers, BIT, kernel) {
     this->voltage = Pointer<float>(total_neurons);
 }

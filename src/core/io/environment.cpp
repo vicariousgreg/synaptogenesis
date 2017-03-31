@@ -3,6 +3,7 @@
 #include "io/module/module.h"
 #include "io/module/visualizer_input_module.h"
 #include "io/module/visualizer_output_module.h"
+#include "model/model.h"
 #include "state/state.h"
 #include "visualizer.h"
 

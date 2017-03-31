@@ -1,4 +1,7 @@
 #include "engine/cluster/cluster_node.h"
+#include "model/layer.h"
+#include "io/environment.h"
+#include "engine/instruction.h"
 #include "util/error_manager.h"
 
 ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
@@ -43,7 +46,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         new StateUpdateInstruction(
             to_layer, state, compute_stream);
     if (layer->plastic and
-            not state->get_attribute_learning_kernel(layer).is_null()) {
+            not state->get_learning_kernel(layer).is_null()) {
         this->state_learning_instruction =
             new StateLearningInstruction(
                 to_layer, state, compute_stream);

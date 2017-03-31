@@ -1,8 +1,6 @@
 #ifndef connection_config_h
 #define connection_config_h
 
-#include <string>
-
 #include "model/weight_config.h"
 #include "util/constants.h"
 

@@ -4,43 +4,36 @@
 #include <vector>
 #include <string>
 
-#include "model/dendritic_node.h"
 #include "model/layer_config.h"
+#include "model/dendritic_node.h"
 #include "util/constants.h"
 
 class Structure;
 class Connection;
+typedef std::vector<Connection*> ConnectionList;
 class Module;
 typedef std::vector<Module*> ModuleList;
 
 /* Represents a two dimensional layer of neurons.
- * Layers can be constructed and connected into networks using the Model class.
- *
- * Layers contain:
- *   - unique identifier
- *   - starting index in the neural arrays
- *   - size information
- *   - parameters for matrix initialization
- *
+ * Layers can be constructed and connected into networks using the Structure class.
+ * Layers contain a boatload of information.
  */
 class Layer {
     public:
-        virtual ~Layer() {
-            delete this->dendritic_root;
-        }
+        virtual ~Layer();
 
         /* Constant getters */
-        IOTypeMask get_type() const { return type; }
-        bool is_input() const { return type & INPUT; }
-        bool is_output() const { return type & OUTPUT; }
-        bool is_expected() const { return type & EXPECTED; }
+        IOTypeMask get_type() const;
+        bool is_input() const;
+        bool is_output() const;
+        bool is_expected() const;
 
-        Module* get_input_module() const { return input_module; }
-        Module* get_expected_module() const { return expected_module; }
-        const ModuleList get_output_modules() const { return output_modules; }
+        Module* get_input_module() const;
+        Module* get_expected_module() const;
+        const ModuleList get_output_modules() const;
 
-        const ConnectionList& get_input_connections() const { return input_connections; }
-        const ConnectionList& get_output_connections() const { return output_connections; }
+        const ConnectionList& get_input_connections() const;
+        const ConnectionList& get_output_connections() const;
 
         // Layer name
         const std::string name;
@@ -70,20 +63,21 @@ class Layer {
         DendriticNode* const dendritic_root;
 
     private:
-        friend class Model;
         friend class Structure;
         friend class Connection;
 
+        // Global counter for ID assignment
         static int count;
 
         Layer(Structure *structure, LayerConfig config);
 
+        // Methods for adding connections and modules
         void add_input_connection(Connection* connection);
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
         void add_module(Module *module);
 
-        // Layer type (input, output, input/output, internal)
+        // Layer IO type mask
         IOTypeMask type;
 
         // Modules

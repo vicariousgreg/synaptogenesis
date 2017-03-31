@@ -1,10 +1,14 @@
 #ifndef engine_h
 #define engine_h
 
-#include "state/state.h"
-#include "model/model.h"
-#include "io/environment.h"
-#include "engine/cluster/cluster.h"
+#include <vector>
+#include <map>
+
+class Layer;
+class State;
+class Environment;
+class Cluster;
+class ClusterNode;
 
 class Engine {
     public:

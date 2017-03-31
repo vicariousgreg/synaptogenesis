@@ -2,49 +2,37 @@
 #define cluster_h
 
 #include <map>
+#include <vector>
 
-#include "model/structure.h"
 #include "engine/cluster/cluster_node.h"
-#include "engine/instruction.h"
-#include "io/environment.h"
 #include "util/constants.h"
+#include "util/stream.h"
+
+class Layer;
+class Structure;
+class State;
+class Environment;
+class Instruction;
+typedef std::vector<Instruction*> InstructionList;
 
 class Cluster {
     public:
-        Cluster(State *state, Environment *environment)
-                : state(state),
-                  environment(environment) {
-            auto res_man = ResourceManager::get_instance();
-            for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
-                io_streams.push_back(res_man->create_stream(i));
-        }
-        virtual ~Cluster() { for (auto& node : nodes) delete node; }
+        Cluster(State *state, Environment *environment);
+        virtual ~Cluster();
 
         virtual void add_external_dependencies(
             std::map<Layer*, ClusterNode*> all_nodes) = 0;
 
-        void launch_input() {
-            for (auto& node : nodes) node->activate_input();
-        }
-
-        void launch_output() {
-            for (auto& node : nodes) node->activate_output();
-        }
+        void launch_input();
+        void launch_output();
 
         virtual void launch_pre_input_calculations() { };
         virtual void launch_post_input_calculations() = 0;
         virtual void launch_state_update() { }
         virtual void launch_weight_update() = 0;
 
-        void wait_for_input() {
-            for (auto& node : nodes)
-                node->synchronize_input();
-        }
-
-        void wait_for_output() {
-            for (auto& node : nodes)
-                node->synchronize_output();
-        }
+        void wait_for_input();
+        void wait_for_output();
 
         const std::vector<ClusterNode*> get_nodes() { return nodes; }
 
@@ -99,24 +87,7 @@ class FeedforwardCluster : public SequentialCluster {
         virtual void launch_weight_update();
 };
 
-inline Cluster *build_cluster(Structure *structure,
-        State *state, Environment *environment) {
-    if (not state->check_compatibility(structure))
-        ErrorManager::get_instance()->log_error(
-            "Cluster compatibility conflict detected!");
-
-    switch (structure->cluster_type) {
-        case(PARALLEL):
-            return new ParallelCluster(structure, state, environment);
-        case(SEQUENTIAL):
-            return new SequentialCluster(structure, state, environment);
-        case(FEEDFORWARD):
-            return new FeedforwardCluster(structure, state, environment);
-        default:
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized stream cluster type!");
-    }
-    return nullptr;
-}
+Cluster *build_cluster(Structure *structure,
+        State *state, Environment *environment);
 
 #endif

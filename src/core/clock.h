@@ -3,10 +3,12 @@
 #include <mutex>
 #include <climits>
 
-#include "model/model.h"
 #include "util/tools.h"
-#include "io/environment.h"
-#include "engine/engine.h"
+
+class Model;
+class State;
+class Environment;
+class Engine;
 
 enum Thread_ID {
     CLOCK,

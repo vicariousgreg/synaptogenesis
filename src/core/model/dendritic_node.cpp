@@ -1,5 +1,22 @@
 #include "model/dendritic_node.h"
 
+/* Constructor for an internal node */
+DendriticNode::DendriticNode(int register_index, Layer *to_layer)
+        : register_index(register_index),
+          to_layer(to_layer),
+          conn(nullptr) { }
+
+/* Constructor for a leaf node */
+DendriticNode::DendriticNode(int register_index,
+    Layer *to_layer, Connection *conn)
+        : register_index(register_index),
+          to_layer(to_layer),
+          conn(conn) { }
+
+DendriticNode::~DendriticNode() {
+    for (auto& child : children) delete child;
+}
+
 DendriticNode* DendriticNode::add_child() {
     if (this->conn != nullptr)
         ErrorManager::get_instance()->log_error(
@@ -28,4 +45,8 @@ int DendriticNode::get_max_register_index() const {
             max_register = child_register;
     }
     return max_register;
+}
+
+const DendriticNodeList DendriticNode::get_children() const {
+    return children;
 }

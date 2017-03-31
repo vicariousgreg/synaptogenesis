@@ -24,23 +24,16 @@ typedef std::vector<DendriticNode*> DendriticNodeList;
 class DendriticNode {
     public:
         /* Constructor for an internal node */
-        DendriticNode(int register_index, Layer *to_layer)
-                : register_index(register_index),
-                  to_layer(to_layer),
-                  conn(nullptr) { }
+        DendriticNode(int register_index, Layer *to_layer);
 
         /* Constructor for a leaf node */
-        DendriticNode(int register_index, Layer *to_layer, Connection *conn)
-                : register_index(register_index),
-                  to_layer(to_layer),
-                  conn(conn) { }
+        DendriticNode(int register_index, Layer *to_layer, Connection *conn);
 
-        virtual ~DendriticNode() {
-            for (auto& child : children) delete child;
-        }
+        virtual ~DendriticNode();
 
         /* Add a child internal node */
         DendriticNode *add_child();
+
         /* Add a child leaf node */
         DendriticNode *add_child(Connection *conn);
 
@@ -49,7 +42,7 @@ class DendriticNode {
 
         /* Constant getters */
         int get_max_register_index() const;
-        const DendriticNodeList get_children() const { return children; }
+        const DendriticNodeList get_children() const;
 
         Connection* const conn;
         Layer* const to_layer;

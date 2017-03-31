@@ -1,9 +1,10 @@
 #ifndef weight_matrix_h
 #define weight_matrix_h
 
-#include "model/connection.h"
 #include "util/constants.h"
 #include "util/pointer.h"
+
+class Connection;
 
 class WeightMatrix {
     public:

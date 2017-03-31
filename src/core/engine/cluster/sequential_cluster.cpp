@@ -2,6 +2,10 @@
 #include <set>
 
 #include "engine/cluster/cluster.h"
+#include "engine/instruction.h"
+#include "model/structure.h"
+#include "state/state.h"
+#include "util/resource_manager.h"
 
 SequentialCluster::SequentialCluster(Structure *structure,
         State *state, Environment *environment)

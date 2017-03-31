@@ -22,18 +22,17 @@ class Attributes {
             Kernel<ATTRIBUTE_ARGS> learning_kernel=Kernel<ATTRIBUTE_ARGS>());
         virtual ~Attributes();
 
-        void set_device_id(DeviceID device_id) {
-            this->device_id = device_id;
-
-            // Retrieve extractor
-            // This has to wait until device_id is set
-            get_extractor(&this->extractor, output_type, device_id);
-        }
+        /* Assigns the attributes to a device
+         * This must be done prior to use */
+        void set_device_id(DeviceID device_id);
 
         /* Checks whether these attributes are compatible
          *   with the given cluster_type */
-        virtual bool check_compatibility(ClusterType cluster_type) { return true; }
+        virtual bool check_compatibility(ClusterType cluster_type) {
+            return true;
+        }
 
+        // Schedule and conduct transfer to device
         virtual void schedule_transfer();
         void transfer_to_device();
 
@@ -77,17 +76,18 @@ class Attributes {
 
         DeviceID get_device_id() { return device_id; }
 
-
     protected:
         friend Attributes *build_attributes(LayerList &layers,
             NeuralModel neural_model, DeviceID device_id);
 
-        // Number of neurons
+        // Number of neurons and layers
         int total_neurons;
+        int total_layers;
 
         DeviceID device_id;
         int object_size;
 
+        std::map<int, int> layer_indices;
         std::map<int, int> other_start_indices;
         std::map<int, int> input_start_indices;
         std::map<int, int> output_start_indices;

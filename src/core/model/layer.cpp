@@ -20,6 +20,25 @@ Layer::Layer(Structure *structure, LayerConfig config)
           expected_module(nullptr),
           dendritic_root(new DendriticNode(0, this)) { }
 
+Layer::~Layer() {
+    delete dendritic_root;
+}
+
+IOTypeMask Layer::get_type() const { return type; }
+bool Layer::is_input() const { return type & INPUT; }
+bool Layer::is_output() const { return type & OUTPUT; }
+bool Layer::is_expected() const { return type & EXPECTED; }
+
+Module* Layer::get_input_module() const { return input_module; }
+Module* Layer::get_expected_module() const { return expected_module; }
+const ModuleList Layer::get_output_modules() const { return output_modules; }
+
+const ConnectionList& Layer::get_input_connections() const {
+    return input_connections; }
+const ConnectionList& Layer::get_output_connections() const {
+    return output_connections;
+}
+
 void Layer::add_input_connection(Connection* connection) {
     this->input_connections.push_back(connection);
 }
@@ -31,8 +50,6 @@ void Layer::add_output_connection(Connection* connection) {
 void Layer::add_to_root(Connection* connection) {
     this->dendritic_root->add_child(connection);
 }
-
-#include <iostream>
 
 void Layer::add_module(Module *module) {
     IOTypeMask model_type = module->get_type();
