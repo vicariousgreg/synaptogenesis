@@ -48,13 +48,14 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
     int output_size = 0;
     int expected_size = 0;
     int other_size = 0;
+    int second_order_size = 0;
 
     int timesteps_per_output = get_timesteps_per_output(output_type);
 
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
     for (auto& layer : layers) {
-        sizes[layer->id] = layer->size;
+        layer_sizes[layer->id] = layer->size;
         int register_count = layer->dendritic_root->get_max_register_index() + 1;
 
         // Determine max delay for output connections
@@ -65,7 +66,6 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
                 max_delay_registers = delay_registers;
         }
         ++max_delay_registers;
-
 
         // Set start indices and update size
         input_start_indices[layer->id] = input_size;
@@ -81,6 +81,10 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
 
         other_start_indices[layer->id] = other_size;
         other_size += layer->size;
+
+        // Find any second order dendritic nodes
+        second_order_size =
+            dendrite_DFS(layer->dendritic_root, second_order_size);
     }
 
     // Set layer indices
@@ -92,6 +96,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type,
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
     this->expected = Pointer<Output>(expected_size);
+    this->second_order_input = Pointer<float>(second_order_size, 0.0);
     this->total_neurons = other_size;
     this->total_layers = layers.size();;
 }
@@ -100,9 +105,28 @@ Attributes::~Attributes() {
     this->input.free();
     this->output.free();
     this->expected.free();
+    this->second_order_input.free();
 #ifdef __CUDACC__
     cudaFree(this->pointer);
 #endif
+}
+
+int Attributes::dendrite_DFS(DendriticNode *curr, int second_order_size) {
+    auto res_man = ResourceManager::get_instance();
+
+    if (curr->is_second_order()) {
+        second_order_indices[curr->id] = second_order_size;
+        int size = curr->get_second_order_size();
+        second_order_sizes[curr->id] = size;
+        second_order_size += size;
+    } else {
+        // Recurse on internal children
+        for (auto& child : curr->get_children())
+            if (not child->is_leaf())
+                second_order_size =
+                    this->dendrite_DFS(child, second_order_size);
+    }
+    return second_order_size;
 }
 
 void Attributes::set_device_id(DeviceID device_id) {
@@ -126,6 +150,7 @@ void Attributes::schedule_transfer() {
     this->input.schedule_transfer(device_id);
     this->output.schedule_transfer(device_id);
     this->expected.schedule_transfer(device_id);
+    this->second_order_input.schedule_transfer(device_id);
 }
 
 int Attributes::get_other_start_index(int id) const {
@@ -133,16 +158,21 @@ int Attributes::get_other_start_index(int id) const {
 }
 
 Pointer<float> Attributes::get_input(int id, int register_index) const {
-    int size = sizes.at(id);
+    int size = layer_sizes.at(id);
     return input.slice(input_start_indices.at(id) + (register_index * size), size);
 }
 
+Pointer<float> Attributes::get_second_order_input(int id) const {
+    int size = second_order_sizes.at(id);
+    return second_order_input.slice(second_order_indices.at(id), size);
+}
+
 Pointer<Output> Attributes::get_expected(int id) const {
-    int size = sizes.at(id);
+    int size = layer_sizes.at(id);
     return expected.slice(expected_start_indices.at(id), size);
 }
 
 Pointer<Output> Attributes::get_output(int id, int word_index) const {
-    int size = sizes.at(id);
+    int size = layer_sizes.at(id);
     return output.slice(output_start_indices.at(id) + (word_index * size), size);
 }

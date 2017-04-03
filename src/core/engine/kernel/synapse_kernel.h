@@ -436,7 +436,7 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
 #endif
 
 /******************************************************************************/
-/********************** CONNECTION ACTIVATOR KERNELS **************************/
+/***************** FIRST ORDER CONNECTION ACTIVATOR KERNELS *******************/
 /******************************************************************************/
 
 #define CALC_VAL(from_index, weight_index) \
@@ -516,6 +516,81 @@ CALC_DIVERGENT(FUNC_NAME, \
     /* NEURON_POST
      * Aggregate sum to input */ \
     AGGREGATE(to_index, sum); \
+)
+
+/******************************************************************************/
+/*************** SECOND ORDER CONNECTION ACTIVATOR KERNELS ********************/
+/******************************************************************************/
+
+#define EXTRACT_SECOND_ORDER \
+    float * const second_order_inputs = synapse_data.second_order_inputs.get(); \
+
+#define CALC_VAL_SECOND_ORDER(from_index, weight_index) \
+    float val = extractor(outputs[from_index], delay) * weights[weight_index]; \
+    second_order_inputs[weight_index] = \
+        calc(opcode, second_order_inputs[weight_index], val); \
+
+#define ACTIVATE_FULLY_CONNECTED_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_FULLY_CONNECTED(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    EXTRACT_SECOND_ORDER; \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE */ \
+    , \
+ \
+    /* WEIGHT_OP
+     * Calculate weight input, aggregate to second order buffer */ \
+    CALC_VAL_SECOND_ORDER(from_index, weight_index); \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST */ \
+)
+
+#define ACTIVATE_ONE_TO_ONE_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_ONE_TO_ONE(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    EXTRACT_SECOND_ORDER; \
+    UPDATE_EXT;, \
+ \
+    /* WEIGHT_OP
+     * Calculate weight input, aggregate to second order buffer */ \
+    CALC_VAL_SECOND_ORDER(index, index); \
+    UPDATE_CALC; \
+)
+
+#define ACTIVATE_CONVERGENT_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_CONVERGENT(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    EXTRACT_SECOND_ORDER; \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE */ \
+    , \
+ \
+    /* WEIGHT_OP
+     * Calculate weight input, aggregate to second order buffer */ \
+    CALC_VAL_SECOND_ORDER(from_index, weight_index); \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST */ \
+)
+
+#define ACTIVATE_DIVERGENT_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_DIVERGENT(FUNC_NAME, \
+    /* EXTRACTIONS */ \
+    EXTRACT_SECOND_ORDER; \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE */ \
+    , \
+ \
+    /* WEIGHT_OP
+     * Calculate weight input, aggregate to second order buffer */ \
+    CALC_VAL_SECOND_ORDER(from_index, weight_index); \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST */ \
 )
 
 #endif

@@ -53,7 +53,12 @@ CALC_DIVERGENT(update_divergent_hebbian,
     UPDATE_WEIGHT(from_index, weight_index, dest_out);,
     ; );
 
-Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(ConnectionType conn_type) {
+Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
+        ConnectionType conn_type, bool second_order) {
+    if (second_order)
+        ErrorManager::get_instance()->log_error(
+            "Second order plastic connections not supported!");
+
     switch (conn_type) {
         case FULLY_CONNECTED:
             return get_update_fully_connected_hebbian();

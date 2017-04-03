@@ -73,6 +73,7 @@ class Structure {
         /*****************************/
         /********* DENDRITES *********/
         /*****************************/
+        DendriticNode *get_dendritic_root(std::string to_layer_name);
         DendriticNode *spawn_dendritic_node(std::string to_layer_name);
 
         Connection* connect_layers_internal(

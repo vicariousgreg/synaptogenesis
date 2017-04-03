@@ -38,12 +38,14 @@ class Attributes {
 
         /* Learning Rule functions */
         // Activator Kernel
-        virtual Kernel<SYNAPSE_ARGS> get_activator(ConnectionType type) {
-            return get_base_activator_kernel(type);
+        virtual Kernel<SYNAPSE_ARGS> get_activator(
+                ConnectionType type, bool second_order) {
+            return get_base_activator_kernel(type, second_order);
         }
 
         // Updater Kernel
-        virtual Kernel<SYNAPSE_ARGS> get_updater(ConnectionType type) {
+        virtual Kernel<SYNAPSE_ARGS> get_updater(
+            ConnectionType type, bool second_order) {
             return Kernel<SYNAPSE_ARGS> ();
         }
 
@@ -56,6 +58,7 @@ class Attributes {
         // Layer data retrieval
         int get_other_start_index(int id) const;
         Pointer<float> get_input(int id, int register_index = 0) const;
+        Pointer<float> get_second_order_input(int id) const;
         Pointer<Output> get_output(int id, int word_index = 0) const;
         Pointer<Output> get_expected(int id) const;
 
@@ -65,6 +68,7 @@ class Attributes {
         Pointer<Output> output;
         Pointer<Output> expected;
         Pointer<float> input;
+        Pointer<float> second_order_input;
 
         // Pointer to this object
         // If parallel, this will point to the device copy
@@ -80,6 +84,9 @@ class Attributes {
         friend Attributes *build_attributes(LayerList &layers,
             NeuralModel neural_model, DeviceID device_id);
 
+        // Traverse the dendritic tree and find second order nodes
+        int dendrite_DFS(DendriticNode *curr, int second_order_size);
+
         // Number of neurons and layers
         int total_neurons;
         int total_layers;
@@ -92,7 +99,10 @@ class Attributes {
         std::map<int, int> input_start_indices;
         std::map<int, int> output_start_indices;
         std::map<int, int> expected_start_indices;
-        std::map<int, int> sizes;
+        std::map<int, int> layer_sizes;
+
+        std::map<int, int> second_order_indices;
+        std::map<int, int> second_order_sizes;
 };
 
 Attributes *build_attributes(LayerList &layers,

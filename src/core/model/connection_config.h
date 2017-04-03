@@ -38,6 +38,12 @@ class ConnectionConfig {
             WeightConfig* weight_config,
             ArborizedConfig arborized_config);
 
+        /* Gets the expected row/col size of a destination layer given.
+         * This function only returns meaningful values for connection types that
+         *   are not FULLY_CONNECTED, because they can link layers of any sizes */
+        int get_expected_rows(int from_rows);
+        int get_expected_columns(int from_columns);
+
         const bool plastic;
         const int delay;
         const float max_weight;

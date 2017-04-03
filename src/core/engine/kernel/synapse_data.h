@@ -2,6 +2,7 @@
 #define synapse_data_h
 
 #include "model/connection.h"
+#include "model/dendritic_node.h"
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
 #include "util/pointer.h"
@@ -12,7 +13,7 @@ class Attributes;
 /* Data package that is passed into synaptic kernel functions */
 class SynapseData {
     public:
-        SynapseData(Connection *conn, State *state);
+        SynapseData(DendriticNode *parent_node, Connection *conn, State *state);
 
         /* Attributes pointer */
         const Attributes *from_attributes;
@@ -28,6 +29,7 @@ class SynapseData {
         int row_field_size, column_field_size;
         int row_offset, column_offset;
         int delay;
+        bool second_order;
 
         /* Weight attributes */
         Pointer<float> weights;
@@ -44,6 +46,7 @@ class SynapseData {
         Pointer<Output> outputs;
         Pointer<Output> destination_outputs;
         Pointer<float> inputs;
+        Pointer<float> second_order_inputs;
 };
 
 #endif

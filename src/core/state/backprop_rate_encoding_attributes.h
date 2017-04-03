@@ -8,7 +8,8 @@ class BackpropRateEncodingAttributes : public RateEncodingAttributes {
         BackpropRateEncodingAttributes(LayerList &layers);
         virtual ~BackpropRateEncodingAttributes();
 
-        virtual Kernel<SYNAPSE_ARGS> get_updater(ConnectionType type);
+        virtual Kernel<SYNAPSE_ARGS> get_updater(
+            ConnectionType type, bool second_order);
 
         virtual void schedule_transfer();
 

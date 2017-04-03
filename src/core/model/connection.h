@@ -9,13 +9,6 @@
 
 class Layer;
 
-/* Gets the expected row/col size of a destination layer given a |source_layer|,
- *   a connection |type| and connection |params|.
- * This function only returns meaningful values for connection types that
- *   are not FULLY_CONNECTED, because they can link layers of any sizes */
-int get_expected_rows(int rows, ConnectionType type, ConnectionConfig config);
-int get_expected_columns(int columns, ConnectionType type, ConnectionConfig config);
-
 /* Represents a connection between two neural layers.
  * Connections bridge Layers and are constructed in the Model class.
  * Connections have several types, enumerated and documented in "util/constants.h".

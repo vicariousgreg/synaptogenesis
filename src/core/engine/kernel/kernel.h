@@ -31,16 +31,19 @@ class Kernel {
         void (*parallel_kernel)(ARGS...);
 };
 
-/* Clears input data */
-Kernel<Pointer<float>, int> get_clear_data();
+/* Sets input data (use val=0.0 for clear) */
+Kernel<float, Pointer<float>, int> get_set_data();
 
 /* Randomizes input data */
 Kernel<Pointer<float>, int, float, bool> get_randomize_data();
 
 /* Dendritic tree internal computation */
 Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal();
+Kernel<int, int, Pointer<float>, Pointer<float> >
+get_calc_internal_second_order();
 
 /* Base activator kernel */
-Kernel<SYNAPSE_ARGS> get_base_activator_kernel(ConnectionType conn_type);
+Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
+    ConnectionType conn_type, bool second_order);
 
 #endif

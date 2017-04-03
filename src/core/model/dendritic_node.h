@@ -31,6 +31,20 @@ class DendriticNode {
 
         virtual ~DendriticNode();
 
+        /* Sets this node as a second order node.
+         * This can be applied to internal nodes with only leaf children.
+         * It indicates that the synaptic activities of corresponding synapses
+         *   should be multiplied together before aggregation.
+         * If a node is second order, all of its children must have connections
+         *   of the same size */
+        void set_second_order();
+
+        /* Returns whether this node is second order */
+        bool is_second_order() const { return second_order; }
+
+        /* Returns the size of the second order input buffer */
+        int get_second_order_size() const;
+
         /* Add a child internal node */
         DendriticNode *add_child();
 
@@ -47,9 +61,14 @@ class DendriticNode {
         Connection* const conn;
         Layer* const to_layer;
         const int register_index;
+        const int id;
 
     private:
+        // Global counter for ID assignment
+        static int count;
+
         DendriticNodeList children;
+        bool second_order;
 };
 
 #endif

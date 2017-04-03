@@ -59,9 +59,9 @@ Connection* Structure::connect_layers_expected(
 
     // Determine new layer size and create
     layer_config.rows =
-        get_expected_rows(from_layer->rows, conn_config.type, conn_config);
+        conn_config.get_expected_rows(from_layer->rows);
     layer_config.columns =
-        get_expected_columns(from_layer->columns, conn_config.type, conn_config);
+        conn_config.get_expected_columns(from_layer->columns);
     add_layer(layer_config);
     Layer *to_layer = find_layer(layer_config.name);
 
@@ -86,6 +86,10 @@ Connection* Structure::connect_layers_matching(
     Connection *conn = connect_layers(
         from_layer, to_layer, conn_config);
     return conn;
+}
+
+DendriticNode *Structure::get_dendritic_root(std::string to_layer_name) {
+    return find_layer(to_layer_name)->dendritic_root;
 }
 
 DendriticNode *Structure::spawn_dendritic_node(std::string to_layer_name) {

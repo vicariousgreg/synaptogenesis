@@ -2,7 +2,8 @@
 #include "state/state.h"
 #include "state/attributes.h"
 
-SynapseData::SynapseData(Connection *conn, State *state) :
+SynapseData::SynapseData(DendriticNode *parent_node,
+    Connection *conn, State *state) :
         from_attributes(state->get_attributes_pointer(conn->from_layer)),
         to_attributes(state->get_attributes_pointer(conn->to_layer)),
         extractor(state->get_extractor(conn)),
@@ -15,6 +16,7 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         row_stride(conn->get_row_stride()),
         column_stride(conn->get_column_stride()),
         delay(conn->delay),
+        second_order(parent_node->is_second_order()),
         from_size(conn->from_layer->size),
         from_rows(conn->from_layer->rows),
         from_columns(conn->from_layer->columns),
@@ -42,4 +44,7 @@ SynapseData::SynapseData(Connection *conn, State *state) :
         outputs = state->get_output(conn->from_layer,
             get_word_index(conn->delay, output_type));
     inputs = state->get_input(conn->to_layer);
+
+    if (second_order)
+        second_order_inputs = state->get_second_order_input(parent_node);
 }

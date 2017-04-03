@@ -5,26 +5,26 @@
 /******************************************************************************/
 
 /* Clears input data */
-void clear_data_SERIAL(Pointer<float> ptr, int count) {
+void set_data_SERIAL(float val, Pointer<float> ptr, int count) {
     float* data = ptr.get();
 
     for (int nid = 0; nid < count; ++nid)
-        data[nid] = 0.0;
+        data[nid] = val;
 }
 #ifdef __CUDACC__
-GLOBAL void clear_data_PARALLEL(Pointer<float> ptr, int count) {
+GLOBAL void set_data_PARALLEL(float val, Pointer<float> ptr, int count) {
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count)
-        data[nid] = 0.0;
+        data[nid] = val;
 }
 #else
-GLOBAL void clear_data_PARALLEL(Pointer<float> ptr, int count) { }
+GLOBAL void set_data_PARALLEL(float val, Pointer<float> ptr, int count) { }
 #endif
-Kernel<Pointer<float>, int> get_clear_data() {
-    return Kernel<Pointer<float>, int>(
-        clear_data_SERIAL, clear_data_PARALLEL);
+Kernel<float, Pointer<float>, int> get_set_data() {
+    return Kernel<float, Pointer<float>, int>(
+        set_data_SERIAL, set_data_PARALLEL);
 }
 
 /* Randomizes input data */
@@ -96,6 +96,43 @@ Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal() {
         calc_internal_SERIAL, calc_internal_PARALLEL);
 }
 
+/* Dendritic tree second order internal computation */
+void calc_internal_second_order_SERIAL(int from_size, int to_size,
+        Pointer<float> src_ptr, Pointer<float> dst_ptr) {
+    float* src = src_ptr.get();
+    float* dst = dst_ptr.get();
+
+    for (int to_index = 0 ; to_index < to_size ; ++to_index) {
+        float sum = 0.0;
+        for (int from_index = 0 ; from_index < from_size ; ++from_index)
+            sum += src[to_index * from_size + from_index];
+        dst[to_index] = sum;
+    }
+}
+#ifdef __CUDACC__
+GLOBAL void calc_internal_second_order_PARALLEL(int from_size, int to_size,
+        Pointer<float> src_ptr, Pointer<float> dst_ptr) {
+    float* src = src_ptr.get();
+    float* dst = dst_ptr.get();
+    int to_index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (to_index < to_size) {
+        float sum = 0.0;
+        for (int from_index = 0 ; from_index < from_size ; ++from_index)
+            sum += src[from_index * to_size + to_index];
+        dst[to_index] = sum;
+    }
+}
+#else
+GLOBAL void calc_internal_second_order_PARALLEL(int from_size, int to_size,
+        Pointer<float> src_ptr, Pointer<float> dst_ptr) { }
+#endif
+Kernel<int, int, Pointer<float>, Pointer<float> >
+get_calc_internal_second_order() {
+    return Kernel<int, int, Pointer<float>, Pointer<float> >(
+        calc_internal_second_order_SERIAL, calc_internal_second_order_PARALLEL);
+}
+
 /******************************************************************************/
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
 /******************************************************************************/
@@ -106,17 +143,32 @@ ACTIVATE_ONE_TO_ONE(activate_one_to_one_base , , );
 ACTIVATE_CONVERGENT(activate_convergent_base , , );
 ACTIVATE_DIVERGENT(activate_divergent_base , , );
 
-Kernel<SYNAPSE_ARGS> get_base_activator_kernel(ConnectionType conn_type) {
+/* Second order */
+ACTIVATE_FULLY_CONNECTED_SECOND_ORDER(activate_fully_connected_base_second_order , , );
+ACTIVATE_ONE_TO_ONE_SECOND_ORDER(activate_one_to_one_base_second_order , , );
+ACTIVATE_CONVERGENT_SECOND_ORDER(activate_convergent_base_second_order , , );
+ACTIVATE_DIVERGENT_SECOND_ORDER(activate_divergent_base_second_order , , );
+
+Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
+        ConnectionType conn_type, bool second_order) {
     switch (conn_type) {
         case FULLY_CONNECTED:
-            return get_activate_fully_connected_base();
+            return (second_order)
+                ? get_activate_fully_connected_base_second_order()
+                : get_activate_fully_connected_base();
         case ONE_TO_ONE:
-            return get_activate_one_to_one_base();
+            return (second_order)
+                ? get_activate_one_to_one_base_second_order()
+                : get_activate_one_to_one_base();
         case CONVERGENT:
         case CONVOLUTIONAL:
-            return get_activate_convergent_base();
+            return (second_order)
+                ? get_activate_convergent_base_second_order()
+                : get_activate_convergent_base();
         case DIVERGENT:
-            return get_activate_divergent_base();
+            return (second_order)
+                ?  get_activate_divergent_base_second_order()
+                : get_activate_divergent_base();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");

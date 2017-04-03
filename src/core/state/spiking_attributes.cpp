@@ -69,17 +69,50 @@ ACTIVATE_DIVERGENT(activate_divergent_trace,
     UPDATE_TRACE(weight_index);
 );
 
-Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(ConnectionType type) {
+/* Second order */
+ACTIVATE_FULLY_CONNECTED_SECOND_ORDER(
+        activate_fully_connected_trace_second_order,
+    EXTRACT_TRACES,
+    UPDATE_TRACE(weight_index));
+ACTIVATE_ONE_TO_ONE_SECOND_ORDER(
+        activate_one_to_one_trace_second_order,
+    EXTRACT_TRACES,
+    UPDATE_TRACE(index));
+ACTIVATE_CONVERGENT_SECOND_ORDER(
+        activate_convergent_trace_second_order,
+    EXTRACT_TRACES,
+    if (convolutional) {
+        UPDATE_TRACE((to_index*num_weights + weight_index));
+    } else {
+        UPDATE_TRACE(weight_index);
+    }
+);
+ACTIVATE_DIVERGENT_SECOND_ORDER(
+        activate_divergent_trace_second_order,
+    EXTRACT_TRACES,
+    UPDATE_TRACE(weight_index);
+);
+
+Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(
+        ConnectionType type, bool second_order) {
     switch (type) {
         case FULLY_CONNECTED:
-            return get_activate_fully_connected_trace();
+            return (second_order)
+                ? get_activate_fully_connected_trace_second_order()
+                : get_activate_fully_connected_trace();
         case ONE_TO_ONE:
-            return get_activate_one_to_one_trace();
+            return (second_order)
+                ? get_activate_one_to_one_trace_second_order()
+                : get_activate_one_to_one_trace();
         case CONVERGENT:
         case CONVOLUTIONAL:
-            return get_activate_convergent_trace();
+            return (second_order)
+                ? get_activate_convergent_trace_second_order()
+                : get_activate_convergent_trace();
         case DIVERGENT:
-            return get_activate_divergent_trace();
+            return (second_order)
+                ? get_activate_divergent_trace_second_order()
+                : get_activate_divergent_trace();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");
@@ -138,7 +171,8 @@ CALC_DIVERGENT(update_divergent_trace,
     UPDATE_WEIGHT(weight_index, sum),
     ; );
 
-Kernel<SYNAPSE_ARGS> SpikingAttributes::get_updater(ConnectionType conn_type) {
+Kernel<SYNAPSE_ARGS> SpikingAttributes::get_updater(
+        ConnectionType conn_type, bool second_order) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return get_update_fully_connected_trace();

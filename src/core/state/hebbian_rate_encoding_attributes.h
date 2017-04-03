@@ -8,7 +8,8 @@ class HebbianRateEncodingAttributes : public RateEncodingAttributes {
         HebbianRateEncodingAttributes(LayerList &layers);
         virtual ~HebbianRateEncodingAttributes();
 
-        virtual Kernel<SYNAPSE_ARGS> get_updater(ConnectionType type);
+        virtual Kernel<SYNAPSE_ARGS> get_updater(
+            ConnectionType type, bool second_order);
 
         virtual void schedule_transfer();
 };

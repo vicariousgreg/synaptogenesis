@@ -57,25 +57,41 @@ class Instruction {
 /* Instructions that initialize the input without connections */
 class InitializeInstruction : public Instruction {
     public:
+        // Initialize layer buffers
         InitializeInstruction(Layer *layer, State *state, Stream *stream)
                 : Instruction(layer, stream),
-                  dst(state->get_input(layer)) { }
+                  dst(state->get_input(layer)),
+                  size(layer->size) { }
+
+        // Initialize second order buffers
+        InitializeInstruction(DendriticNode *second_order_node,
+            State *state, Stream *stream)
+                : Instruction(second_order_node->to_layer, stream),
+                  dst(state->get_second_order_input(second_order_node)),
+                  size(second_order_node->get_second_order_size()) { }
 
     protected:
         Pointer<float> dst;
+        int size;
 };
 
 /* Clears inputs */
 class ClearInstruction : public InitializeInstruction {
     public:
+        // Clear layer buffers
         ClearInstruction(Layer *layer, State *state, Stream *stream)
                 : InitializeInstruction(layer, state, stream) { }
 
+        // Clear second order buffers
+        ClearInstruction(DendriticNode *second_order_node,
+            State *state, Stream *stream)
+                : InitializeInstruction(second_order_node, state, stream) { }
+
         void activate() {
             Instruction::wait_for_dependencies();
-            get_clear_data().run(stream,
+            get_set_data().run(stream,
                 blocks, threads,
-                dst, to_layer->size);
+                0.0, dst, size);
             Instruction::record_event();
         }
 };
@@ -91,7 +107,7 @@ class NoiseInstruction : public InitializeInstruction {
             Instruction::wait_for_dependencies();
             get_randomize_data().run(stream,
                 blocks, threads,
-                dst, to_layer->size, to_layer->noise, init);
+                dst, size, to_layer->noise, init);
             Instruction::record_event();
         }
 
@@ -102,10 +118,11 @@ class NoiseInstruction : public InitializeInstruction {
 /* Operates on synapses */
 class SynapseInstruction : public Instruction {
     public:
-        SynapseInstruction(Connection *conn, State *state, Stream *stream)
+        SynapseInstruction(DendriticNode* parent_node, Connection *conn,
+            State *state, Stream *stream)
                 : Instruction(conn->to_layer, stream),
                   connection(conn),
-                  synapse_data(conn, state),
+                  synapse_data(parent_node, conn, state),
                   type(conn->type) { }
 
         const ConnectionType type;
@@ -118,10 +135,11 @@ class SynapseInstruction : public Instruction {
 /* Activates synaptic connection */
 class SynapseActivateInstruction : public SynapseInstruction {
     public:
-        SynapseActivateInstruction(
+        SynapseActivateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
-                : SynapseInstruction(conn, state, stream),
-                  activator(state->get_activator(conn)) {
+                : SynapseInstruction(parent_node, conn, state, stream),
+                  activator(state->get_activator(conn,
+                      parent_node->is_second_order())) {
             if (state->is_inter_device(conn)) {
                 src = state->get_output(conn->from_layer,
                         get_word_index(conn->delay,
@@ -147,10 +165,11 @@ class SynapseActivateInstruction : public SynapseInstruction {
 /* Updates synaptic connection */
 class SynapseUpdateInstruction : public SynapseInstruction {
     public:
-        SynapseUpdateInstruction(
+        SynapseUpdateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
-                : SynapseInstruction(conn, state, stream),
-                  updater(state->get_updater(conn)) {
+                : SynapseInstruction(parent_node, conn, state, stream),
+                  updater(state->get_updater(conn,
+                      parent_node->is_second_order())) {
             if (conn->convolutional) {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
@@ -182,8 +201,8 @@ class DendriticInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_calc_internal().run(stream,
-                blocks, threads,
+            get_calc_internal().run(
+                stream, blocks, threads,
                 to_layer->size, src, dst, init);
             Instruction::record_event();
         }
@@ -191,6 +210,29 @@ class DendriticInstruction : public Instruction {
     protected:
         Pointer<float> src, dst;
         bool init;
+};
+
+/* Computes second order dendritic node connection */
+class SecondOrderDendriticInstruction : public Instruction {
+    public:
+        SecondOrderDendriticInstruction(DendriticNode *parent,
+            State *state, Stream *stream)
+                : Instruction(parent->to_layer, stream),
+                  from_size(parent->get_second_order_size() / to_layer->size),
+                  src(state->get_second_order_input(parent)),
+                  dst(state->get_input(to_layer, parent->register_index)) { }
+
+        void activate() {
+            Instruction::wait_for_dependencies();
+            get_calc_internal_second_order().run(
+                stream, blocks, threads,
+                from_size, to_layer->size, src, dst);
+            Instruction::record_event();
+        }
+
+    protected:
+        Pointer<float> src, dst;
+        int from_size;
 };
 
 /* Transfers data */

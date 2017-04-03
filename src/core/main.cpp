@@ -958,6 +958,42 @@ void speech_test() {
     delete model;
 }
 
+void second_order_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = model->add_structure("second_order");
+
+    structure->add_layer(LayerConfig("in1", IZHIKEVICH, 100, 100, "default"));
+    structure->add_layer(LayerConfig("in2", IZHIKEVICH, 100, 100, "default"));
+    structure->add_layer(LayerConfig("out", IZHIKEVICH, 100, 100, "default"));
+
+    structure->get_dendritic_root("out")->set_second_order();
+
+    structure->connect_layers("in1", "out",
+        ConnectionConfig(false, 0, 100, ONE_TO_ONE, ADD,
+            new RandomWeightConfig(10)));
+    structure->connect_layers("in2", "out",
+        ConnectionConfig(false, 0, 100, ONE_TO_ONE, MULT,
+            new RandomWeightConfig(10)));
+
+    // Modules
+    std::string output_name = "visualizer_output";
+    //std::string output_name = "dummy_output";
+
+    structure->add_module("in1", "random_input", "10 5000");
+    structure->add_module("in2", "random_input", "10 5000");
+    structure->add_module("in1", output_name);
+    structure->add_module("in2", output_name);
+    structure->add_module("out", output_name);
+
+    std::cout << "Second order test......\n";
+    print_model(model);
+    run_simulation(model, 100000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
@@ -973,6 +1009,7 @@ int main(int argc, char *argv[]) {
         //re_test();
         //mnist_test();
         //divergent_test();
+        //second_order_test();
         //speech_test();
 
         return 0;

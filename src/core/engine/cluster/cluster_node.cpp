@@ -53,7 +53,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         update_instructions.push_back(this->state_learning_instruction);
     }
 
-    // Beform DFS on dendritic tree
+    // Perform DFS on dendritic tree
     // Do this after so that the state learning instruction comes first
     //   in the update_instructions list
     dendrite_DFS(to_layer->dendritic_root);
@@ -79,12 +79,19 @@ ClusterNode::~ClusterNode() {
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     auto res_man = ResourceManager::get_instance();
 
+    // Second order connections need their own clear instruction
+    // This sets the initial values to 1.0 so that subsequent multiplications
+    //   work properly
+    if (curr->is_second_order())
+        activate_instructions.push_back(
+            new ClearInstruction(curr, state, compute_stream));
+
     for (auto& child : curr->get_children()) {
         // Create an instruction
         // If internal, recurse first (post-fix DFS)
         if (child->is_leaf()) {
             auto syn_inst = new SynapseActivateInstruction(
-                child->conn, state, compute_stream);
+                curr, child->conn, state, compute_stream);
 
             // Create the instruction and add it to the synapse instuction list
             synapse_instructions[child->conn] = syn_inst;
@@ -93,16 +100,25 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
             // If plastic, create update instruction
             if (child->conn->plastic) {
                 auto syn_update_inst = new SynapseUpdateInstruction(
-                    child->conn, state, compute_stream);
+                    curr, child->conn, state, compute_stream);
                 update_instructions.push_back(syn_update_inst);
             }
         } else {
             this->dendrite_DFS(child);
+
+            // Second order connections won't reach here
+            //   because they can't have internal children
             activate_instructions.push_back(
                 new DendriticInstruction(
                     curr, child, state, compute_stream));
         }
     }
+
+    // Add second order aggregator if applicable
+    if (curr->is_second_order())
+        activate_instructions.push_back(
+            new SecondOrderDendriticInstruction(
+                curr, state, compute_stream));
 }
 
 void ClusterNode::activate_input() {
