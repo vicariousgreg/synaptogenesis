@@ -30,7 +30,7 @@ void DendriticNode::set_second_order() {
             "Leaf dendritic nodes cannot be second order!");
 
     // This must be set before children are added
-    if (children.size() > 0)
+    if (children.size() > 1)
         ErrorManager::get_instance()->log_error(
             "Dendritic nodes must be set to second order before adding children!");
 

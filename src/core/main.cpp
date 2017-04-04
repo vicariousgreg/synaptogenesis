@@ -963,27 +963,42 @@ void second_order_test() {
     Model *model = new Model();
     Structure *structure = model->add_structure("second_order");
 
-    structure->add_layer(LayerConfig("in1", IZHIKEVICH, 100, 100, "default"));
-    structure->add_layer(LayerConfig("in2", IZHIKEVICH, 100, 100, "default"));
-    structure->add_layer(LayerConfig("out", IZHIKEVICH, 100, 100, "default"));
+    // Size of large receptive field
+    int field_size = 100;
+
+    const char* image_path = "resources/bird-head.jpg";
+    structure->add_layer_from_image(image_path,
+        LayerConfig("image", IZHIKEVICH, "default"));
+
+    structure->connect_layers_expected("image",
+        LayerConfig("pool", IZHIKEVICH, "default"),
+        ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(1),
+            ArborizedConfig(10,3)));
+
+    structure->connect_layers_matching("pool",
+        LayerConfig("out", IZHIKEVICH, "default"),
+        ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
+            new FlatWeightConfig(100),
+            ArborizedConfig(field_size,1)));
 
     structure->get_dendritic_root("out")->set_second_order();
 
-    structure->connect_layers("in1", "out",
-        ConnectionConfig(false, 0, 100, ONE_TO_ONE, ADD,
-            new RandomWeightConfig(10)));
-    structure->connect_layers("in2", "out",
-        ConnectionConfig(false, 0, 100, ONE_TO_ONE, MULT,
-            new RandomWeightConfig(10)));
+    structure->add_layer(LayerConfig("predict", IZHIKEVICH, field_size, field_size, "default"));
+    structure->connect_layers("predict", "out",
+        ConnectionConfig(false, 0, 100, CONVERGENT, MULT,
+            new FlatWeightConfig(1),
+            ArborizedConfig(field_size,0)));
 
     // Modules
     std::string output_name = "visualizer_output";
     //std::string output_name = "dummy_output";
 
-    structure->add_module("in1", "random_input", "10 5000");
-    structure->add_module("in2", "random_input", "10 5000");
-    structure->add_module("in1", output_name);
-    structure->add_module("in2", output_name);
+    structure->add_module("image", "image_input", image_path);
+    structure->add_module("predict", "one_hot_random_input", "100 50");
+    structure->add_module("image", output_name);
+    structure->add_module("pool", output_name);
+    structure->add_module("predict", output_name);
     structure->add_module("out", output_name);
 
     std::cout << "Second order test......\n";
@@ -1002,15 +1017,15 @@ int main(int argc, char *argv[]) {
         //stress_test();
         //image_test();
         //reentrant_image_test();
-        alignment_test();
+        //alignment_test();
         //dendritic_test();
         //hh_test();
         //cc_test();
         //re_test();
         //mnist_test();
         //divergent_test();
-        //second_order_test();
         //speech_test();
+        second_order_test();
 
         return 0;
     } catch (const char* msg) {

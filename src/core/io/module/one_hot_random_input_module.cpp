@@ -1,6 +1,6 @@
 #include <cstdlib>
 
-#include "io/module/random_input_module.h"
+#include "io/module/one_hot_random_input_module.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 
@@ -10,13 +10,14 @@
 static void shuffle(float *vals, float max, int size) {
     int random_index = rand() % size;
     for (int nid = 0 ; nid < size; ++nid) {
-        vals[nid] = fRand(0, max);
+        /*  Randomly selects one input to activate */
+        vals[nid] =  (nid == random_index) ? max : 0;
         std::cout << vals[nid] << " ";
     }
     std::cout << std::endl;
 }
 
-RandomInputModule::RandomInputModule(Layer *layer, std::string params)
+OneHotRandomInputModule::OneHotRandomInputModule(Layer *layer, std::string params)
         : Module(layer), timesteps(0) {
     std::stringstream stream(params);
     if (!stream.eof()) {
@@ -42,11 +43,11 @@ RandomInputModule::RandomInputModule(Layer *layer, std::string params)
     this->random_values = (float*) malloc (layer->size * sizeof(float));
 }
 
-RandomInputModule::~RandomInputModule() {
+OneHotRandomInputModule::~OneHotRandomInputModule() {
     free(this->random_values);
 }
 
-void RandomInputModule::feed_input(Buffer *buffer) {
+void OneHotRandomInputModule::feed_input(Buffer *buffer) {
     if (timesteps++ % shuffle_rate == 0) {
         std::cout << "============================ SHUFFLE\n";
         shuffle(this->random_values, this->max_value, layer->size);

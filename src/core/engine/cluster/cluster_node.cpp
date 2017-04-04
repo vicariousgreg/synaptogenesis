@@ -80,8 +80,6 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     auto res_man = ResourceManager::get_instance();
 
     // Second order connections need their own clear instruction
-    // This sets the initial values to 1.0 so that subsequent multiplications
-    //   work properly
     if (curr->is_second_order())
         activate_instructions.push_back(
             new ClearInstruction(curr, state, compute_stream));

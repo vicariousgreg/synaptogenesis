@@ -49,12 +49,11 @@ int ConnectionConfig::get_expected_rows(int rows) {
             return rows;
         default:
             int row_field_size = arborized_config.row_field_size;
-            int column_field_size = arborized_config.column_field_size;
             int row_stride = arborized_config.row_stride;
-            int column_stride = arborized_config.column_stride;
             switch(type) {
                 case(CONVERGENT):
                 case(CONVOLUTIONAL):
+                    if (row_stride == 0) return rows;
                     return std::max(1,
                         1 + ((rows - row_field_size) / row_stride));
                 case(DIVERGENT):
@@ -74,13 +73,12 @@ int ConnectionConfig::get_expected_columns(int columns) {
         case(FULLY_CONNECTED):
             return columns;
         default:
-            int row_field_size = arborized_config.row_field_size;
             int column_field_size = arborized_config.column_field_size;
-            int row_stride = arborized_config.row_stride;
             int column_stride = arborized_config.column_stride;
             switch(type) {
                 case(CONVERGENT):
                 case(CONVOLUTIONAL):
+                    if (column_stride == 0) return columns;
                     return std::max(1,
                         1 + ((columns - column_field_size) / column_stride));
                 case(DIVERGENT):

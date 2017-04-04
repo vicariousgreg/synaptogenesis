@@ -34,7 +34,8 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
     switch (opcode) {
         case ADD:  return prior + input;
         case SUB:  return prior - input;
-        case MULT: return prior * (1+input);
+        //case MULT: return prior * (1+input);
+        case MULT: return prior * input;
         case DIV:  return prior / (1+input);
         case POOL: return MAX(prior, (1+input));
     }
