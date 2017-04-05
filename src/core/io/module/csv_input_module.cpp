@@ -27,7 +27,7 @@ CSVInputModule::CSVInputModule(Layer *layer, std::string params)
     // Pull exposure
     if (not stream.eof())
         stream >> this->exposure;
-    else this->exposure = 0;
+    else this->exposure = 1;
     this->age = this->exposure;
 
     // Pull normalization constant
@@ -61,7 +61,7 @@ CSVInputModule::~CSVInputModule() {
 
 void CSVInputModule::feed_input(Buffer *buffer) {
     if (curr_row >= this->data.size()) curr_row = 0;
-    if (++age > exposure) {
+    if (++age >= exposure) {
         buffer->set_input(this->layer, this->data[curr_row++]);
         this->age = 0;
     }

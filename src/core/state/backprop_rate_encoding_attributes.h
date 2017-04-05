@@ -8,6 +8,10 @@ class BackpropRateEncodingAttributes : public RateEncodingAttributes {
         BackpropRateEncodingAttributes(LayerList &layers);
         virtual ~BackpropRateEncodingAttributes();
 
+        virtual bool check_compatibility(ClusterType cluster_type) {
+            return cluster_type == FEEDFORWARD;
+        }
+
         virtual Kernel<SYNAPSE_ARGS> get_updater(
             ConnectionType type, bool second_order);
 

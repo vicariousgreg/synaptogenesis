@@ -9,8 +9,8 @@ class LayerConfig {
         LayerConfig(
             std::string name,
             NeuralModel neural_model,
-            int rows=0,
-            int columns=0,
+            int rows,
+            int columns,
             std::string params="",
             float noise=0.0,
             bool plastic=false)

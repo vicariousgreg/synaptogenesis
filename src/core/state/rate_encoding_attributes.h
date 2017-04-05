@@ -16,12 +16,6 @@ class RateEncodingAttributes : public Attributes {
         RateEncodingAttributes(LayerList &layers);
         virtual ~RateEncodingAttributes();
 
-        /* Checks whether these attributes are compatible
-         *   with the given cluster_type */
-        virtual bool check_compatibility(ClusterType cluster_type) {
-            return cluster_type == FEEDFORWARD;
-        }
-
         virtual void schedule_transfer();
 
         // Neuron parameters
