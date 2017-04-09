@@ -24,10 +24,10 @@ GUI::~GUI() {
     free(this->argv);
 }
 
-void GUI::add_layer(LayerInfo layer_info) {
+void GUI::add_layer(LayerInfo* layer_info) {
     this->layers.push_back(layer_info);
-    int cols = layer_info.layer->columns;
-    int rows = layer_info.layer->rows;
+    int cols = layer_info->layer->columns;
+    int rows = layer_info->layer->rows;
 
     // If there is only one row, expand it
     rows = (rows == 1) ? 50 : rows;
@@ -43,7 +43,7 @@ void GUI::add_layer(LayerInfo layer_info) {
         data[j*4 + 0] = 0;
         data[j*4 + 1] = 0;
         data[j*4 + 2] = 0;
-        data[j*4 + 3] = 0;
+        data[j*4 + 3] = 255;
     }
     auto image = new Gtk::Image(pix);
 

@@ -1,6 +1,8 @@
 #ifndef visualizer_h
 #define visualizer_h
 
+#include <map>
+
 #include "model/layer.h"
 #include "layer_info.h"
 
@@ -9,16 +11,22 @@ class Environment;
 
 class Visualizer {
     public:
-        Visualizer(Environment *environment);
+        static Visualizer *get_instance(bool init);
+        static void delete_instance();
+
         virtual ~Visualizer();
 
-        void add_layer(Layer *layer, bool input, bool output);
+        void add_input_layer(Layer *layer);
+        void add_output_layer(Layer *layer);
         void launch();
-        void update();
+        void update(Environment *environment);
 
     private:
-        Environment *environment;
+        static Visualizer *instance;
+        Visualizer();
+
         GUI *gui;
+        std::map<Layer*, LayerInfo*> layer_map;
 };
 
 #endif

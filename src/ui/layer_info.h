@@ -7,12 +7,19 @@ class Structure;
 
 class LayerInfo {
     public:
-        LayerInfo(Layer* layer, bool input, bool output)
+        LayerInfo(Layer* layer)
             : layer(layer), structure(layer->structure),
-              input(input), output(output) {}
+              input(false), output(false) {}
 
-        Layer *layer;
-        Structure *structure;
+        void set_input() { input = true; }
+        void set_output() { output = true; }
+        bool get_input() { return input; }
+        bool get_output() { return output; }
+
+        Layer* const layer;
+        Structure* const structure;
+
+    private:
         bool input, output;
 };
 
