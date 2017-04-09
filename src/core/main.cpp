@@ -339,8 +339,6 @@ Model* build_alignment_model(NeuralModel neural_model) {
     //structure->add_module("inh_cortex", output_name, "8");
     //structure->add_module("inh_thalamus", output_name, "8");
     structure->add_module("output_layer", output_name, "8");
-    /*
-    */
 
     return model;
 }
@@ -838,51 +836,62 @@ void speech_test() {
 
     // Input layer
     structure->add_layer(LayerConfig("input_layer",
-        IZHIKEVICH, 1, 41, "thalamo_cortical"));
+        IZHIKEVICH, 1, 41, "fast"));
 
-    // Convergent layer
-    structure->connect_layers_expected("input_layer",
-        LayerConfig("convergent_layer", IZHIKEVICH, "regular"),
-        ConnectionConfig(true, 0, 100, CONVERGENT, ADD,
-            new RandomWeightConfig(10),
+    // Convergent layers
+    structure->connect_layers_matching("input_layer",
+        LayerConfig("convergent_layer", IZHIKEVICH, "fast"),
+        ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
+            new FlatWeightConfig(10),
             ArborizedConfig(1,3,1,1)));
 
-    int spread = 1;
-    int vertical_inhibition_spread = 1;
+    structure->connect_layers_matching("input_layer",
+        LayerConfig("convergent_layer_inhibitory", IZHIKEVICH, "fast"),
+        ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
+            new FlatWeightConfig(3),
+            ArborizedConfig(1,10,1,1)));
+    structure->connect_layers("convergent_layer_inhibitory",
+        "convergent_layer",
+        ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,
+            new FlatWeightConfig(10)));
+
+    /*
+    int vertical_spread = 1;
+    int horizontal_spread = 10;
 
     // Vertical cluster layer
     structure->connect_layers_expected("convergent_layer",
-        LayerConfig("vertical_layer", IZHIKEVICH, "bursting"), //, 0.5),
+        LayerConfig("vertical_layer", IZHIKEVICH, "bursting"),
         ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(spread,10,1,1)));
+            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     // Vertical cluster inhibitory layer
-    structure->connect_layers_expected("vertical_layer",
+    structure->connect_layers_expected("convergent_layer",
         LayerConfig("vertical_inhibitory", IZHIKEVICH, "fast"),
         ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(vertical_inhibition_spread,1,1,1)));
+            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     structure->connect_layers("vertical_inhibitory", "vertical_layer",
         ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(vertical_inhibition_spread,1,1,1)));
+            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
 
     // Block cluster layer
     structure->connect_layers_expected("vertical_layer",
         LayerConfig("cluster_layer", IZHIKEVICH, "bursting", 0.5),
         ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(spread,5,1,1)));
+            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     // Block cluster inhibitory layer
-    structure->connect_layers_expected("cluster_layer",
+    structure->connect_layers_expected("vertical_layer",
         LayerConfig("cluster_inhibitory", IZHIKEVICH, "fast"),
         ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(spread,5,1,1)));
+            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     structure->connect_layers("cluster_inhibitory", "cluster_layer",
         ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(spread,10,1,1)));
+            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
 
     int mot_f_size = 3;
     int mot_stride = 1;
@@ -932,26 +941,90 @@ void speech_test() {
         ConnectionConfig(false, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(pool_strength),
             ArborizedConfig(1,pool_f_size,1,pool_stride)));
+    */
 
     // Modules
     std::string output_name = "visualizer_output";
 
     //structure->add_module("input_layer", "random_input", "10 500");
-    //structure->add_module("input_layer", "csv_input", "./resources/english.csv 0 1 0.1");
-    structure->add_module("input_layer", "csv_input", "./resources/substitute.csv 0 1 0.01");
+    //structure->add_module("input_layer", "csv_input",
+    //    "./resources/substitute.csv 0 1 0.1");
+    //structure->add_module("input_layer", "csv_input",
+    //    "./resources/sample.csv 0 1 0.01");
+    structure->add_module("input_layer", "csv_input",
+        "./resources/substitute.csv 0 1 0.01");
 
-    //structure->add_module("input_layer", output_name);
-    //structure->add_module("convergent_layer", output_name);
-    //structure->add_module("vertical_layer", output_name);
+    structure->add_module("input_layer", output_name);
+    structure->add_module("convergent_layer", output_name);
+    structure->add_module("convergent_layer_inhibitory", output_name);
+
+    structure->add_module("convergent_layer", "csv_output");
+
+    /*
+    structure->add_module("vertical_layer", output_name);
     structure->add_module("cluster_layer", output_name);
     structure->add_module("motion_up", output_name);
     structure->add_module("motion_up_pool", output_name);
     structure->add_module("motion_down", output_name);
     structure->add_module("motion_down_pool", output_name);
+    */
 
     std::cout << "Speech test......\n";
     print_model(model);
-    Clock clock((float)120.0);
+    Clock clock((float)240.0);
+    //Clock clock(true);
+    clock.run(model, 1000000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
+void re_speech_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = model->add_structure("speech", SEQUENTIAL);
+
+    // Input layer
+    structure->add_layer(LayerConfig("input_layer", RELAY, 1, 41));
+
+    // Convergent layers
+    structure->connect_layers_matching("input_layer",
+        LayerConfig("convergent_layer", HEBBIAN_RATE_ENCODING),
+        ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
+            new FlatWeightConfig(35),
+            ArborizedConfig(1,1,1,1)));
+
+    structure->connect_layers_matching("input_layer",
+        LayerConfig("convergent_layer_inhibitory", HEBBIAN_RATE_ENCODING),
+        ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
+            new FlatWeightConfig(3),
+            ArborizedConfig(1,10,1,1)));
+    structure->connect_layers("convergent_layer_inhibitory",
+        "convergent_layer",
+        ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,
+            new FlatWeightConfig(1)));
+
+    // Modules
+    std::string output_name = "visualizer_output";
+
+    //structure->add_module("input_layer", "random_input", "10 500");
+    //structure->add_module("input_layer", "csv_input",
+    //    "./resources/substitute.csv 0 1 1");
+    //structure->add_module("input_layer", "csv_input",
+    //    "./resources/sample.csv 0 1 1");
+    structure->add_module("input_layer", "csv_input",
+        "./resources/speech.csv 0 1 1");
+
+    structure->add_module("input_layer", output_name);
+    structure->add_module("convergent_layer", output_name);
+    structure->add_module("convergent_layer_inhibitory", output_name);
+
+    structure->add_module("convergent_layer", "csv_output");
+
+    std::cout << "Rate encoding speech test......\n";
+    print_model(model);
+    Clock clock((float)240.0);
+    //Clock clock(true);
     clock.run(model, 1000000, true);
     std::cout << "\n";
 
@@ -1017,7 +1090,7 @@ int main(int argc, char *argv[]) {
         //stress_test();
         //image_test();
         //reentrant_image_test();
-        //alignment_test();
+        alignment_test();
         //dendritic_test();
         //hh_test();
         //cc_test();
@@ -1025,7 +1098,8 @@ int main(int argc, char *argv[]) {
         //mnist_test();
         //divergent_test();
         //speech_test();
-        second_order_test();
+        //re_speech_test();
+        //second_order_test();
 
         return 0;
     } catch (const char* msg) {

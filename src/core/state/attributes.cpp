@@ -1,4 +1,5 @@
 #include "state/attributes.h"
+#include "state/relay_attributes.h"
 #include "state/izhikevich_attributes.h"
 #include "state/hebbian_rate_encoding_attributes.h"
 #include "state/backprop_rate_encoding_attributes.h"
@@ -24,6 +25,10 @@ Attributes *build_attributes(LayerList &layers,
         case(BACKPROP_RATE_ENCODING):
             attributes = new BackpropRateEncodingAttributes(layers);
             attributes->object_size = sizeof(BackpropRateEncodingAttributes);
+            break;
+        case(RELAY):
+            attributes = new RelayAttributes(layers);
+            attributes->object_size = sizeof(RelayAttributes);
             break;
         default:
             ErrorManager::get_instance()->log_error(
