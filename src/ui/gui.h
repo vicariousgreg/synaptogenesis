@@ -1,29 +1,32 @@
 #ifndef gui_h
 #define gui_h
 
+#include <vector>
 #include <gtkmm.h>
 
 #include "layer_info.h"
+#include "gui_window.h"
 
 class GUI {
     public:
+        static GUI *get_instance();
+        static void delete_instance();
+
         GUI();
         virtual ~GUI();
 
-        void add_layer(LayerInfo *layer_info);
+        void add_window(GuiWindow *window);
         void launch();
         void update();
 
         Glib::Dispatcher dispatcher;
-        std::vector<LayerInfo*> layers;
-        std::vector<Gtk::Image*> images;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf> > pixbufs;
 
     private:
+        static GUI *instance;
+
         char** argv;
         Glib::RefPtr<Gtk::Application> app;
-        Gtk::Window *window;
-        Gtk::Grid *grid;
+        std::vector<GuiWindow*> windows;
 };
 
 #endif

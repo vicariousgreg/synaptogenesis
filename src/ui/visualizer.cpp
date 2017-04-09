@@ -1,8 +1,10 @@
 #include <climits>
 
-#include "io/environment.h"
 #include "visualizer.h"
+#include "visualizer_window.h"
 #include "gui.h"
+#include "model/layer.h"
+#include "io/environment.h"
 
 Visualizer *Visualizer::instance = nullptr;
 
@@ -30,11 +32,14 @@ static guint8 convert(Output out, OutputType type) {
 }
 
 Visualizer::Visualizer() {
-    this->gui = new GUI();
+    this->gui = GUI::get_instance();
+    this->window = new VisualizerWindow();
+    this->gui->add_window(this->window);
 }
 
 Visualizer::~Visualizer() {
-    delete this->gui;
+    GUI::delete_instance();
+    delete window;
     for (auto pair : layer_map) delete pair.second;
 }
 
@@ -62,16 +67,16 @@ void Visualizer::add_output_layer(Layer *layer) {
 
 void Visualizer::launch() {
     for (auto pair : layer_map)
-        this->gui->add_layer(pair.second);
+        this->window->add_layer(pair.second);
     this->gui->launch();
 }
 
 void Visualizer::update(Environment *environment) {
     // Copy data over
-    for (int i = 0; i < gui->layers.size(); ++i) {
-        LayerInfo *info = gui->layers[i];
+    for (int i = 0; i < window->layers.size(); ++i) {
+        LayerInfo *info = window->layers[i];
         if (info->get_output()) {
-            guint8* data = gui->pixbufs[i]->get_pixels();
+            guint8* data = window->pixbufs[i]->get_pixels();
             Buffer *buffer = environment->buffer;
             Output *output = buffer->get_output(info->layer);
             OutputType output_type = environment->get_output_type(info->layer);

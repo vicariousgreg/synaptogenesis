@@ -19,7 +19,7 @@ UIPATH        := src/ui
 LIBSPATH      := src/libs
 BUILDDIR_UI   := build/ui
 BUILDDIR_LIBS := build/libs
-UILIBPATH     := $(BUILDDIR_UI)/visualizer.a
+UILIBPATH     := $(BUILDDIR_UI)/gui.a
 
 #Flags, Libraries and Includes
 CCFLAGS      := -w -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
@@ -46,8 +46,8 @@ $(BUILDDIR_LIBS)/%.$(OBJEXT): $(LIBSPATH)/%.$(SRCEXT)
 #  UI BUILDING
 #---------------------------------------------------------------------------------
 
-$(UILIBPATH): $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o
-	ar rvs $(UILIBPATH) $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o
+$(UILIBPATH): $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o $(BUILDDIR_UI)/visualizer_window.o
+	ar rvs $(UILIBPATH) $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o $(BUILDDIR_UI)/visualizer_window.o
 
 SOURCES_UI    := $(shell find $(UIPATH) -type f -name *.$(SRCEXT))
 OBJECTS_UI    := $(patsubst $(UIPATH)/%,$(BUILDDIR_UI)/%,$(SOURCES_UI:.$(SRCEXT)=.$(OBJEXT)))

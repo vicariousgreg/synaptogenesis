@@ -3,10 +3,11 @@
 
 #include <map>
 
-#include "model/layer.h"
 #include "layer_info.h"
 
 class GUI;
+class VisualizerWindow;
+class Layer;
 class Environment;
 
 class Visualizer {
@@ -26,6 +27,7 @@ class Visualizer {
         Visualizer();
 
         GUI *gui;
+        VisualizerWindow *window;
         std::map<Layer*, LayerInfo*> layer_map;
 };
 
