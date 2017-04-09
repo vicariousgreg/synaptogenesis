@@ -1,17 +1,20 @@
-#ifndef visualizer_h
-#define visualizer_h
+#ifndef maze_game_h
+#define maze_game_h
+
+#include <map>
+#include <string>
 
 #include "frontend.h"
 
-class VisualizerWindow;
+class MazeGameWindow;
 class Layer;
 class Environment;
 
-class Visualizer : public Frontend {
+class MazeGame : public Frontend {
     public:
-        static Visualizer *get_instance(bool init);
+        static MazeGame *get_instance(bool init);
 
-        virtual ~Visualizer();
+        virtual ~MazeGame();
 
         bool add_input_layer(Layer *layer, std::string params);
         bool add_output_layer(Layer *layer, std::string params);
@@ -19,9 +22,9 @@ class Visualizer : public Frontend {
 
     private:
         static int instance_id;
-        Visualizer();
+        MazeGame();
 
-        VisualizerWindow *visualizer_window;
+        MazeGameWindow *maze_window;
 };
 
 #endif

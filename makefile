@@ -46,11 +46,11 @@ $(BUILDDIR_LIBS)/%.$(OBJEXT): $(LIBSPATH)/%.$(SRCEXT)
 #  UI BUILDING
 #---------------------------------------------------------------------------------
 
-$(UILIBPATH): $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o $(BUILDDIR_UI)/visualizer_window.o
-	ar rvs $(UILIBPATH) $(BUILDDIR_UI)/visualizer.o $(BUILDDIR_UI)/gui.o $(BUILDDIR_UI)/visualizer_window.o
-
 SOURCES_UI    := $(shell find $(UIPATH) -type f -name *.$(SRCEXT))
 OBJECTS_UI    := $(patsubst $(UIPATH)/%,$(BUILDDIR_UI)/%,$(SOURCES_UI:.$(SRCEXT)=.$(OBJEXT)))
+
+$(UILIBPATH): $(OBJECTS_UI)
+	ar rvs $(UILIBPATH) $^
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_UI:.$(OBJEXT)=.$(DEPEXT))

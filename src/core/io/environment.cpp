@@ -1,15 +1,12 @@
 #include "io/environment.h"
 #include "io/buffer.h"
 #include "io/module/module.h"
-#include "io/module/visualizer_input_module.h"
-#include "io/module/visualizer_output_module.h"
 #include "model/model.h"
 #include "state/state.h"
-#include "visualizer.h"
+#include "frontend.h"
 
 Environment::Environment(State *state)
         : state(state),
-          visualizer(Visualizer::get_instance(false)),
           buffer(build_buffer(
               ResourceManager::get_instance()->get_host_id(), state->model)) {
     // Extract modules
@@ -54,9 +51,9 @@ void Environment::step_output() {
 }
 
 void Environment::ui_launch() {
-    if (visualizer != nullptr) visualizer->launch();
+    Frontend::launch_all();
 }
 
 void Environment::ui_update() {
-    if (visualizer != nullptr) visualizer->update(this);
+    Frontend::update_all(this);
 }

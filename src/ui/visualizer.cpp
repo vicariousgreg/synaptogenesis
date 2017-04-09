@@ -6,18 +6,20 @@
 #include "model/layer.h"
 #include "io/environment.h"
 
-Visualizer *Visualizer::instance = nullptr;
+int Visualizer::instance_id = -1;
 
 Visualizer *Visualizer::get_instance(bool init) {
-    if (Visualizer::instance == nullptr and init)
-        Visualizer::instance = new Visualizer();
-    return Visualizer::instance;
-}
-
-void Visualizer::delete_instance() {
-    if (Visualizer::instance != nullptr)
-        delete Visualizer::instance;
-    Visualizer::instance = nullptr;
+    int id = Visualizer::instance_id;
+    if ((id == -1 or id >= Frontend::instances.size())) {
+        if (init) {
+            new Visualizer();
+            Visualizer::instance_id = Frontend::instances.size()-1;
+        } else {
+            Visualizer::instance_id = -1;
+            return nullptr;
+        }
+    }
+    return (Visualizer*)Frontend::instances[Visualizer::instance_id];
 }
 
 static guint8 convert(Output out, OutputType type) {
@@ -32,18 +34,13 @@ static guint8 convert(Output out, OutputType type) {
 }
 
 Visualizer::Visualizer() {
-    this->gui = GUI::get_instance();
-    this->window = new VisualizerWindow();
-    this->gui->add_window(this->window);
+    this->visualizer_window = new VisualizerWindow();
+    Frontend::set_window(this->visualizer_window);
 }
 
-Visualizer::~Visualizer() {
-    GUI::delete_instance();
-    delete window;
-    for (auto pair : layer_map) delete pair.second;
-}
+Visualizer::~Visualizer() { }
 
-void Visualizer::add_input_layer(Layer *layer) {
+bool Visualizer::add_input_layer(Layer *layer, std::string params) {
     LayerInfo* info;
     try {
         info = layer_map.at(layer);
@@ -52,9 +49,10 @@ void Visualizer::add_input_layer(Layer *layer) {
         layer_map[layer] = info;
     }
     info->set_input();
+    return true;
 }
 
-void Visualizer::add_output_layer(Layer *layer) {
+bool Visualizer::add_output_layer(Layer *layer, std::string params) {
     LayerInfo* info;
     try {
         info = layer_map.at(layer);
@@ -63,20 +61,15 @@ void Visualizer::add_output_layer(Layer *layer) {
         layer_map[layer] = info;
     }
     info->set_output();
-}
-
-void Visualizer::launch() {
-    for (auto pair : layer_map)
-        this->window->add_layer(pair.second);
-    this->gui->launch();
+    return true;
 }
 
 void Visualizer::update(Environment *environment) {
     // Copy data over
-    for (int i = 0; i < window->layers.size(); ++i) {
-        LayerInfo *info = window->layers[i];
+    for (int i = 0; i < visualizer_window->layers.size(); ++i) {
+        LayerInfo *info = visualizer_window->layers[i];
         if (info->get_output()) {
-            guint8* data = window->pixbufs[i]->get_pixels();
+            guint8* data = visualizer_window->pixbufs[i]->get_pixels();
             Buffer *buffer = environment->buffer;
             Output *output = buffer->get_output(info->layer);
             OutputType output_type = environment->get_output_type(info->layer);

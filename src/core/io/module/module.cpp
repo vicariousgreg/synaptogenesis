@@ -8,6 +8,8 @@
 #include "io/module/csv_output_module.h"
 #include "io/module/visualizer_input_module.h"
 #include "io/module/visualizer_output_module.h"
+#include "io/module/maze_input_module.h"
+#include "io/module/maze_output_module.h"
 #include "io/module/dummy_input_module.h"
 #include "io/module/dummy_output_module.h"
 #include "util/error_manager.h"
@@ -32,6 +34,10 @@ Module* build_module(Layer *layer, std::string type,
         return new VisualizerInputModule(layer, params);
     else if (type == "visualizer_output")
         return new VisualizerOutputModule(layer, params);
+    else if (type == "maze_input")
+        return new MazeInputModule(layer, params);
+    else if (type == "maze_output")
+        return new MazeOutputModule(layer, params);
     else if (type == "dummy_input")
         return new DummyInputModule(layer, params);
     else if (type == "dummy_output")
