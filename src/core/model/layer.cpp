@@ -4,17 +4,18 @@
 
 int Layer::count = 0;
 
-Layer::Layer(Structure *structure, LayerConfig config)
-        : name(config.name),
+Layer::Layer(Structure *structure, LayerConfig *config)
+        : config(config),
+          name(config->name),
           id(Layer::count++),
-          neural_model(config.neural_model),
+          neural_model(config->neural_model),
           structure(structure),
-          rows(config.rows),
-          columns(config.columns),
+          rows(config->rows),
+          columns(config->columns),
           size(rows * columns),
-          params(config.params),
-          noise(config.noise),
-          plastic(config.plastic),
+          params(config->params),
+          noise(config->noise),
+          plastic(config->plastic),
           type(0),
           input_module(nullptr),
           expected_module(nullptr),
@@ -22,6 +23,7 @@ Layer::Layer(Structure *structure, LayerConfig config)
 
 Layer::~Layer() {
     delete dendritic_root;
+    delete config;
 }
 
 IOTypeMask Layer::get_type() const { return type; }

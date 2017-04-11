@@ -3,16 +3,16 @@
 #include "util/error_manager.h"
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,
-        ConnectionConfig config) :
+        ConnectionConfig *config) :
+            config(config),
             from_layer(from_layer),
             to_layer(to_layer),
-            plastic(config.plastic),
-            delay(config.delay),
-            max_weight(config.max_weight),
-            opcode(config.opcode),
-            type(config.type),
+            plastic(config->plastic),
+            delay(config->delay),
+            max_weight(config->max_weight),
+            opcode(config->opcode),
+            type(config->type),
             convolutional(type == CONVOLUTIONAL) {
-    this->weight_config = config.weight_config;
     this->row_field_size = 0;
     this->column_field_size = 0;
     this->row_stride = 0;
@@ -32,20 +32,20 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     "Cannot connect differently sized layers one-to-one!");
             break;
         default:
-            this->row_field_size = config.arborized_config.row_field_size;
-            this->column_field_size = config.arborized_config.column_field_size;
-            this->row_stride = config.arborized_config.row_stride;
-            this->column_stride = config.arborized_config.column_stride;
-            this->row_offset = config.arborized_config.row_offset;
-            this->column_offset = config.arborized_config.column_offset;
+            this->row_field_size = config->arborized_config->row_field_size;
+            this->column_field_size = config->arborized_config->column_field_size;
+            this->row_stride = config->arborized_config->row_stride;
+            this->column_stride = config->arborized_config->column_stride;
+            this->row_offset = config->arborized_config->row_offset;
+            this->column_offset = config->arborized_config->column_offset;
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.
             if ((to_layer->rows != from_layer->rows and to_layer->rows !=
-                    config.get_expected_rows(from_layer->rows)
+                    config->get_expected_rows(from_layer->rows)
                 or
                 (to_layer->columns != from_layer->columns and to_layer->columns !=
-                    config.get_expected_columns(from_layer->columns))))
+                    config->get_expected_columns(from_layer->columns))))
                 ErrorManager::get_instance()->log_warning(
                     "Unexpected destination layer size for arborized connection!");
 
@@ -76,7 +76,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
 }
 
 Connection::~Connection() {
-    delete weight_config;
+    delete config;
 }
 
 int Connection::get_num_weights() const { return num_weights; }
@@ -86,6 +86,4 @@ int Connection::get_row_stride() const { return row_stride; }
 int Connection::get_column_stride() const { return column_stride; }
 int Connection::get_row_offset() const { return row_offset; }
 int Connection::get_column_offset() const { return column_offset; }
-const WeightConfig* Connection::get_weight_config() const {
-    return weight_config;
-}
+const ConnectionConfig* Connection::get_config() const { return config; }

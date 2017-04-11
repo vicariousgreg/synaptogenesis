@@ -69,13 +69,16 @@ class Layer {
         // Global counter for ID assignment
         static int count;
 
-        Layer(Structure *structure, LayerConfig config);
+        Layer(Structure *structure, LayerConfig *config);
 
         // Methods for adding connections and modules
         void add_input_connection(Connection* connection);
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
         void add_module(Module *module);
+
+        // Config
+        LayerConfig *config;
 
         // Layer IO type mask
         IOTypeMask type;

@@ -1,6 +1,9 @@
 #ifndef connection_config_h
 #define connection_config_h
 
+#include <map>
+#include <string>
+
 #include "model/weight_config.h"
 #include "util/constants.h"
 
@@ -27,16 +30,15 @@ class ConnectionConfig {
             float max_weight,
             ConnectionType type,
             Opcode opcode,
-            WeightConfig* weight_config);
-
-        ConnectionConfig(
-            bool plastic,
-            int delay,
-            float max_weight,
-            ConnectionType type,
-            Opcode opcode,
             WeightConfig* weight_config,
-            ArborizedConfig arborized_config);
+            ArborizedConfig* arborized_config = new ArborizedConfig());
+
+        virtual ~ConnectionConfig();
+
+        /* Getter and setter for generic properties
+         * Setter returns self pointer for convenience */
+        std::string get_property(std::string key);
+        ConnectionConfig *set_property(std::string key, std::string value);
 
         /* Gets the expected row/col size of a destination layer given.
          * This function only returns meaningful values for connection types that
@@ -48,9 +50,12 @@ class ConnectionConfig {
         const int delay;
         const float max_weight;
         const ConnectionType type;
-        const ArborizedConfig arborized_config;
-        const WeightConfig* weight_config;
         const Opcode opcode;
+        const WeightConfig* weight_config;
+        const ArborizedConfig* arborized_config;
+
+    private:
+        std::map<std::string, std::string> properties;
 };
 
 #endif

@@ -20,19 +20,8 @@ ArborizedConfig::ArborizedConfig(int field_size, int stride, int offset)
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
-    WeightConfig* weight_config)
-        : plastic(plastic),
-          delay(delay),
-          max_weight(max_weight),
-          type(type),
-          opcode(opcode),
-          weight_config(weight_config) { }
-
-ConnectionConfig::ConnectionConfig(
-    bool plastic, int delay, float max_weight,
-    ConnectionType type, Opcode opcode,
     WeightConfig* weight_config,
-    ArborizedConfig arborized_config)
+    ArborizedConfig* arborized_config)
         : plastic(plastic),
           delay(delay),
           max_weight(max_weight),
@@ -41,6 +30,20 @@ ConnectionConfig::ConnectionConfig(
           weight_config(weight_config),
           arborized_config(arborized_config) { }
 
+ConnectionConfig::~ConnectionConfig() {
+    delete weight_config;
+    delete arborized_config;
+}
+
+std::string ConnectionConfig::get_property(std::string key) {
+    return properties.at(key);
+}
+
+ConnectionConfig *ConnectionConfig::set_property(
+        std::string key, std::string value) {
+    properties[key] = value;
+}
+
 int ConnectionConfig::get_expected_rows(int rows) {
     switch (type) {
         case(ONE_TO_ONE):
@@ -48,8 +51,8 @@ int ConnectionConfig::get_expected_rows(int rows) {
         case(FULLY_CONNECTED):
             return rows;
         default:
-            int row_field_size = arborized_config.row_field_size;
-            int row_stride = arborized_config.row_stride;
+            int row_field_size = arborized_config->row_field_size;
+            int row_stride = arborized_config->row_stride;
             switch(type) {
                 case(CONVERGENT):
                 case(CONVOLUTIONAL):
@@ -73,8 +76,8 @@ int ConnectionConfig::get_expected_columns(int columns) {
         case(FULLY_CONNECTED):
             return columns;
         default:
-            int column_field_size = arborized_config.column_field_size;
-            int column_stride = arborized_config.column_stride;
+            int column_field_size = arborized_config->column_field_size;
+            int column_stride = arborized_config->column_stride;
             switch(type) {
                 case(CONVERGENT):
                 case(CONVOLUTIONAL):

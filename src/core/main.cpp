@@ -33,21 +33,21 @@ Model* build_stress_model(NeuralModel neural_model) {
     Structure *structure = model->add_structure("Self-connected");
 
     int size = 800 * 19;
-    structure->add_layer(LayerConfig("pos",
+    structure->add_layer(new LayerConfig("pos",
         neural_model, 1, size, "random positive", 5));
-    structure->add_layer(LayerConfig("neg",
+    structure->add_layer(new LayerConfig("neg",
         neural_model, 1, size / 4, "random negative", 2));
     structure->connect_layers("pos", "pos",
-        ConnectionConfig(false, 0, .5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, .5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(0.5)));
     structure->connect_layers("pos", "neg",
-        ConnectionConfig(false, 0, .5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, .5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(0.5)));
     structure->connect_layers("neg", "pos",
-        ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
+        new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
             new RandomWeightConfig(1)));
     structure->connect_layers("neg", "neg",
-        ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
+        new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
             new RandomWeightConfig(1)));
 
     return model;
@@ -68,12 +68,12 @@ Model* build_image_model(NeuralModel neural_model) {
     //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
     structure->add_layer_from_image(image_path,
-        LayerConfig("photoreceptor", neural_model, "default"));
+        new LayerConfig("photoreceptor", neural_model, "default"));
 
     // Vertical line detection
     structure->connect_layers_expected("photoreceptor",
-        LayerConfig("vertical", neural_model, "default"),
-        ConnectionConfig(
+        new LayerConfig("vertical", neural_model, "default"),
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 "-5 -5  0  0  5 10  5  0  0 -5 -5 "
@@ -87,9 +87,9 @@ Model* build_image_model(NeuralModel neural_model) {
                 "-5 -5  0  0  5 10  5  0  0 -5 -5 "
                 "-5 -5  0  0  5 10  5  0  0 -5 -5 "
                 "-5 -5  0  0  5 10  5  0  0 -5 -5 "),
-            ArborizedConfig(11,1)));
+            new ArborizedConfig(11,1)));
     structure->connect_layers("vertical", "vertical",
-        ConnectionConfig(
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 "-5  0  5  0 -5 "
@@ -97,12 +97,12 @@ Model* build_image_model(NeuralModel neural_model) {
                 "-5  0  5  0 -5 "
                 "-5  0  5  0 -5 "
                 "-5  0  5  0 -5 "),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Horizontal line detection
     structure->connect_layers_expected("photoreceptor",
-        LayerConfig("horizontal", neural_model, "default"),
-        ConnectionConfig(
+        new LayerConfig("horizontal", neural_model, "default"),
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
@@ -116,9 +116,9 @@ Model* build_image_model(NeuralModel neural_model) {
                 " 0  0  0  0  0  0  0  0  0  0  0 "
                 "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "
                 "-5 -5 -5 -5 -5 -5 -5 -5 -5 -5 -5 "),
-            ArborizedConfig(11,1)));
+            new ArborizedConfig(11,1)));
     structure->connect_layers("horizontal", "horizontal",
-        ConnectionConfig(
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 "-5 -5 -5 -5 -5 "
@@ -126,12 +126,12 @@ Model* build_image_model(NeuralModel neural_model) {
                 " 5  5  5  5  5 "
                 " 0  0  0  0  0 "
                 "-5 -5 -5 -5 -5 "),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Cross detection
     structure->connect_layers_expected("vertical",
-        LayerConfig("cross", neural_model, "default"),
-        ConnectionConfig(
+        new LayerConfig("cross", neural_model, "default"),
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 "-5  0 10  0 -5 "
@@ -139,9 +139,9 @@ Model* build_image_model(NeuralModel neural_model) {
                 "-5  0 10  0 -5 "
                 "-5  0 10  0 -5 "
                 "-5  0 10  0 -5 "),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
     structure->connect_layers("horizontal", "cross",
-        ConnectionConfig(
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 "-5 -5 -5 -5 -5 "
@@ -149,12 +149,12 @@ Model* build_image_model(NeuralModel neural_model) {
                 "10 10 10 10 10 "
                 " 0  0  0  0  0 "
                 "-5 -5 -5 -5 -5 "),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Forward slash
     structure->connect_layers_expected("photoreceptor",
-        LayerConfig("forward_slash", neural_model, "default"),
-        ConnectionConfig(
+        new LayerConfig("forward_slash", neural_model, "default"),
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 " 0  0  0  0 -5 -5  0  5 10 "
@@ -166,9 +166,9 @@ Model* build_image_model(NeuralModel neural_model) {
                 " 0  5 10  5  0 -5 -5  0  0 "
                 " 5 10  5  0 -5 -5  0  0  0 "
                 "10  5  0 -5 -5  0  0  0  0 "),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
     structure->connect_layers("forward_slash", "forward_slash",
-        ConnectionConfig(
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 " 0  0 -5  0  5 "
@@ -176,12 +176,12 @@ Model* build_image_model(NeuralModel neural_model) {
                 "-5  0  5  0 -5 "
                 " 0  5  0 -5  0 "
                 " 5  0 -5  0  0 "),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Back slash
     structure->connect_layers_expected("photoreceptor",
-        LayerConfig("back_slash", neural_model, "default"),
-            ConnectionConfig(
+        new LayerConfig("back_slash", neural_model, "default"),
+            new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 "10  5  0 -5 -5  0  0  0  0 "
@@ -193,9 +193,9 @@ Model* build_image_model(NeuralModel neural_model) {
                 " 0  0 -5 -5  0  5 10  5  0 "
                 " 0  0  0 -5 -5  0  5 10  5 "
                 " 0  0  0  0 -5 -5  0  5 10 "),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
     structure->connect_layers("back_slash", "back_slash",
-        ConnectionConfig(
+        new ConnectionConfig(
             false, 0, 5, CONVOLUTIONAL, ADD,
             new SpecifiedWeightConfig(
                 " 5  0 -5  0  0 "
@@ -203,7 +203,7 @@ Model* build_image_model(NeuralModel neural_model) {
                 "-5  0  5  0 -5 "
                 " 0 -5  0  5  0 "
                 " 0  0 -5  0  5 "),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
@@ -232,36 +232,36 @@ Model* build_reentrant_image_model(NeuralModel neural_model) {
     //const char* image_path = "resources/bird-head-small.jpg";
     //const char* image_path = "resources/grid.png";
     structure->add_layer_from_image(image_path,
-        LayerConfig("photoreceptor", neural_model, "default"));
+        new LayerConfig("photoreceptor", neural_model, "default"));
 
     // Connect first layer to receptor
     structure->connect_layers_matching("photoreceptor",
-        LayerConfig("layer1", neural_model, "default"),
-        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
+        new LayerConfig("layer1", neural_model, "default"),
+        new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
             new RandomWeightConfig(1),
-            ArborizedConfig(21,1)));
+            new ArborizedConfig(21,1)));
 
     // Create reentrant pair
     structure->connect_layers_matching("layer1",
-        LayerConfig("layer2", neural_model, "default", 5),
-        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
+        new LayerConfig("layer2", neural_model, "default", 5),
+        new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
             new RandomWeightConfig(1),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
     structure->connect_layers("layer2","layer1",
-        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
+        new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
             new RandomWeightConfig(1),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
 
     // Inhibitory self connections
     structure->connect_layers("layer1", "layer1",
-        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, SUB,
+        new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, SUB,
             new RandomWeightConfig(10),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     structure->connect_layers("layer2", "layer2",
-        ConnectionConfig(false, 0, 1, CONVOLUTIONAL, SUB,
+        new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, SUB,
             new RandomWeightConfig(10),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Modules
     structure->add_module("photoreceptor", "image_input", image_path);
@@ -278,56 +278,56 @@ Model* build_alignment_model(NeuralModel neural_model) {
     Structure *structure = model->add_structure("alignment");
 
     int resolution = 256;
-    structure->add_layer(LayerConfig("input_layer",
+    structure->add_layer(new LayerConfig("input_layer",
         neural_model, 1, 10, "default"));
-    structure->add_layer(LayerConfig("exc_thalamus",
+    structure->add_layer(new LayerConfig("exc_thalamus",
         neural_model, resolution, resolution, "low_threshold", 0.5));
-    structure->add_layer(LayerConfig("inh_thalamus",
+    structure->add_layer(new LayerConfig("inh_thalamus",
         neural_model, resolution, resolution, "default"));
-    structure->add_layer(LayerConfig("exc_cortex",
+    structure->add_layer(new LayerConfig("exc_cortex",
         neural_model, resolution, resolution, "thalamo_cortical"));
-    structure->add_layer(LayerConfig("inh_cortex",
+    structure->add_layer(new LayerConfig("inh_cortex",
         neural_model, resolution, resolution, "default"));
 
     structure->connect_layers("input_layer", "exc_thalamus",
-        ConnectionConfig(true, 0, 5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(true, 0, 5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(5)));
-        //ConnectionConfig(true, 0, 5, DIVERGENT, ADD,
-        //    ArborizedConfig(36,22)));
+        //new ConnectionConfig(true, 0, 5, DIVERGENT, ADD,
+        //    new ArborizedConfig(36,22)));
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(7,1)));
+            new ArborizedConfig(7,1)));
     structure->connect_layers("exc_cortex", "inh_cortex",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
     structure->connect_layers("exc_cortex", "exc_cortex",
-        ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
     structure->connect_layers("inh_cortex", "exc_cortex",
-        ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
     structure->connect_layers("exc_cortex", "inh_thalamus",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(7,1)));
+            new ArborizedConfig(7,1)));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
-        ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     structure->connect_layers_matching("exc_cortex",
-        LayerConfig("output_layer", neural_model, "low_threshold"),
-        ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
+        new LayerConfig("output_layer", neural_model, "low_threshold"),
+        new ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
             new RandomWeightConfig(0.025),
-            ArborizedConfig(15,1)));
+            new ArborizedConfig(15,1)));
     structure->connect_layers("output_layer", "exc_cortex",
-        ConnectionConfig(false, 40, 1, CONVERGENT, ADD,
+        new ConnectionConfig(false, 40, 1, CONVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(15,1)));
+            new ArborizedConfig(15,1)));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -349,81 +349,81 @@ Model* build_dendritic_model(NeuralModel neural_model) {
     Structure *structure = model->add_structure("dendritic");
 
     int resolution = 128;
-    structure->add_layer(LayerConfig("input_layer1",
+    structure->add_layer(new LayerConfig("input_layer1",
         neural_model, 1, 10, "default"));
-    structure->add_layer(LayerConfig("input_layer2",
+    structure->add_layer(new LayerConfig("input_layer2",
         neural_model, 1, 10, "default"));
-    structure->add_layer(LayerConfig("exc_thalamus",
+    structure->add_layer(new LayerConfig("exc_thalamus",
         neural_model, resolution, resolution, "low_threshold", 0.5));
-    structure->add_layer(LayerConfig("inh_thalamus1",
+    structure->add_layer(new LayerConfig("inh_thalamus1",
         neural_model, resolution, resolution, "default"));
-    structure->add_layer(LayerConfig("inh_thalamus2",
+    structure->add_layer(new LayerConfig("inh_thalamus2",
         neural_model, resolution, resolution, "default"));
-    structure->add_layer(LayerConfig("exc_cortex",
+    structure->add_layer(new LayerConfig("exc_cortex",
         neural_model, resolution, resolution, "thalamo_cortical"));
-    structure->add_layer(LayerConfig("inh_cortex",
+    structure->add_layer(new LayerConfig("inh_cortex",
         neural_model, resolution, resolution, "default"));
 
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(7,1)));
+            new ArborizedConfig(7,1)));
     structure->connect_layers("exc_cortex", "inh_cortex",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
     structure->connect_layers("exc_cortex", "exc_cortex",
-        ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
     structure->connect_layers("inh_cortex", "exc_cortex",
-        ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Input branch 1
     auto node1 = structure->spawn_dendritic_node("exc_thalamus");
     structure->connect_layers_internal(node1, "input_layer1",
-        ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(5)));
     structure->connect_layers("input_layer1", "inh_thalamus1",
-        ConnectionConfig(false, 0, 10, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(10)));
     structure->connect_layers("exc_cortex", "inh_thalamus1",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(7,1)));
+            new ArborizedConfig(7,1)));
     structure->connect_layers_internal(node1, "inh_thalamus1",
-        ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     // Input branch 2
     auto node2 = structure->spawn_dendritic_node("exc_thalamus");
     structure->connect_layers_internal(node2, "input_layer2",
-        ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(5)));
     structure->connect_layers("input_layer2", "inh_thalamus2",
-        ConnectionConfig(false, 0, 10, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(10)));
     structure->connect_layers("exc_cortex", "inh_thalamus2",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(7,1)));
+            new ArborizedConfig(7,1)));
     structure->connect_layers_internal(node2, "inh_thalamus2",
-        ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     structure->connect_layers_matching("exc_cortex",
-        LayerConfig("output_layer", neural_model, "low_threshold"),
-        ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
+        new LayerConfig("output_layer", neural_model, "low_threshold"),
+        new ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
             new RandomWeightConfig(0.025),
-            ArborizedConfig(15,1)));
+            new ArborizedConfig(15,1)));
     structure->connect_layers("output_layer", "exc_cortex",
-        ConnectionConfig(false, 40, 1, CONVERGENT, ADD,
+        new ConnectionConfig(false, 40, 1, CONVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(15,1)));
+            new ArborizedConfig(15,1)));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -447,57 +447,57 @@ Model* build_hh_model() {
     Structure *structure = model->add_structure("hh");
 
     int resolution = 128;
-    structure->add_layer(LayerConfig("input_layer",
+    structure->add_layer(new LayerConfig("input_layer",
         HODGKIN_HUXLEY, 1, 10, "0"));
-    structure->add_layer(LayerConfig("exc_thalamus",
+    structure->add_layer(new LayerConfig("exc_thalamus",
         HODGKIN_HUXLEY, resolution, resolution, "0", 0.5));
-    structure->add_layer(LayerConfig("inh_thalamus",
+    structure->add_layer(new LayerConfig("inh_thalamus",
         HODGKIN_HUXLEY, resolution, resolution, "0"));
-    structure->add_layer(LayerConfig("exc_cortex",
+    structure->add_layer(new LayerConfig("exc_cortex",
         HODGKIN_HUXLEY, resolution, resolution, "0"));
-    structure->add_layer(LayerConfig("inh_cortex",
+    structure->add_layer(new LayerConfig("inh_cortex",
         HODGKIN_HUXLEY, resolution, resolution, "0"));
 
     structure->connect_layers("input_layer", "exc_thalamus",
-        ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(5)));
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(7,1)));
+            new ArborizedConfig(7,1)));
     structure->connect_layers("exc_cortex", "inh_cortex",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
     structure->connect_layers("exc_cortex", "exc_cortex",
-        ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
     structure->connect_layers("inh_cortex", "exc_cortex",
-        ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
     structure->connect_layers("exc_cortex", "inh_thalamus",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.25),
-            ArborizedConfig(7,1)));
+            new ArborizedConfig(7,1)));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
-        ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(5,1)));
+            new ArborizedConfig(5,1)));
 
     structure->connect_layers_matching("exc_cortex",
-        LayerConfig("output_layer", HODGKIN_HUXLEY, "0"),
-        ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
+        new LayerConfig("output_layer", HODGKIN_HUXLEY, "0"),
+        new ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
             new RandomWeightConfig(0.025),
-            ArborizedConfig(15,1)));
-        //ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
+            new ArborizedConfig(15,1)));
+        //new ConnectionConfig(true, 40, 0.1, CONVERGENT, ADD,
         //    RandomWeightConfig(0.0001),
-        //    ArborizedConfig(15,1)));
+        //    new ArborizedConfig(15,1)));
     structure->connect_layers("output_layer", "exc_cortex",
-        ConnectionConfig(false, 40, 1, CONVERGENT, ADD,
+        new ConnectionConfig(false, 40, 1, CONVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(15,1)));
+            new ArborizedConfig(15,1)));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -523,44 +523,44 @@ Model* build_cc_model(NeuralModel neural_model) {
         Structure *structure = model->add_structure(std::to_string(i));
 
         int resolution = 128;
-        structure->add_layer(LayerConfig("input_layer",
+        structure->add_layer(new LayerConfig("input_layer",
             neural_model, 1, 10, "default"));
-        structure->add_layer(LayerConfig("exc_thalamus",
+        structure->add_layer(new LayerConfig("exc_thalamus",
             neural_model, resolution, resolution, "low_threshold", 0.5));
-        structure->add_layer(LayerConfig("inh_thalamus",
+        structure->add_layer(new LayerConfig("inh_thalamus",
             neural_model, resolution, resolution, "default"));
-        structure->add_layer(LayerConfig("exc_cortex",
+        structure->add_layer(new LayerConfig("exc_cortex",
             neural_model, resolution, resolution, "thalamo_cortical"));
-        structure->add_layer(LayerConfig("inh_cortex",
+        structure->add_layer(new LayerConfig("inh_cortex",
             neural_model, resolution, resolution, "default"));
 
         structure->connect_layers("input_layer", "exc_thalamus",
-            ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+            new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
                 new RandomWeightConfig(5)));
         structure->connect_layers("exc_thalamus", "exc_cortex",
-            ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
+            new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
                 new RandomWeightConfig(0.25),
-                ArborizedConfig(7,1)));
+                new ArborizedConfig(7,1)));
         structure->connect_layers("exc_cortex", "inh_cortex",
-            ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+            new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
                 new RandomWeightConfig(0.25),
-                ArborizedConfig(9,1)));
+                new ArborizedConfig(9,1)));
         structure->connect_layers("exc_cortex", "exc_cortex",
-            ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
+            new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
                 new RandomWeightConfig(0.25),
-                ArborizedConfig(5,1)));
+                new ArborizedConfig(5,1)));
         structure->connect_layers("inh_cortex", "exc_cortex",
-            ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+            new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
                 new RandomWeightConfig(10),
-                ArborizedConfig(5,1)));
+                new ArborizedConfig(5,1)));
         structure->connect_layers("exc_cortex", "inh_thalamus",
-            ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+            new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
                 new RandomWeightConfig(0.25),
-                ArborizedConfig(7,1)));
+                new ArborizedConfig(7,1)));
         structure->connect_layers("inh_thalamus", "exc_thalamus",
-            ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
+            new ConnectionConfig(false, 0, 5, CONVERGENT, DIV,
                 new RandomWeightConfig(10),
-                ArborizedConfig(5,1)));
+                new ArborizedConfig(5,1)));
 
         // Modules
         //std::string output_name = "dummy_output";
@@ -583,12 +583,12 @@ Model* build_cc_model(NeuralModel neural_model) {
             "exc_cortex",
             structures[(i+1)%num_structures],
             "exc_cortex",
-            //ConnectionConfig(true, 20, 1, ONE_TO_ONE, ADD,
+            //new ConnectionConfig(true, 20, 1, ONE_TO_ONE, ADD,
             //    new RandomWeightConfig(0.1)));
-            ConnectionConfig(true, 10, 0.1, CONVERGENT, MULT,
+            new ConnectionConfig(true, 10, 0.1, CONVERGENT, MULT,
                 new RandomWeightConfig(0.01),
-                ArborizedConfig(9,1)));
-            //ConnectionConfig(true, 20, 0.01, FULLY_CONNECTED, ADD,
+                new ArborizedConfig(9,1)));
+            //new ConnectionConfig(true, 20, 0.01, FULLY_CONNECTED, ADD,
             //    new RandomWeightConfig(0.001)));
     }
 
@@ -601,17 +601,17 @@ Model* build_re_model() {
     Structure *structure = model->add_structure("re", FEEDFORWARD);
 
     int resolution = 128;
-    structure->add_layer(LayerConfig("in", HEBBIAN_RATE_ENCODING, 1, 8));
-    structure->add_layer(LayerConfig("hid", HEBBIAN_RATE_ENCODING, resolution, resolution));
-    structure->add_layer(LayerConfig("out", HEBBIAN_RATE_ENCODING, resolution, resolution));
+    structure->add_layer(new LayerConfig("in", HEBBIAN_RATE_ENCODING, 1, 8));
+    structure->add_layer(new LayerConfig("hid", HEBBIAN_RATE_ENCODING, resolution, resolution));
+    structure->add_layer(new LayerConfig("out", HEBBIAN_RATE_ENCODING, resolution, resolution));
 
     structure->connect_layers("in", "hid",
-        ConnectionConfig(true, 0, 5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(true, 0, 5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(5)));
     structure->connect_layers("hid", "out",
-        ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(5),
-            ArborizedConfig(9,1)));
+            new ArborizedConfig(9,1)));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -754,33 +754,33 @@ void mnist_test() {
     Structure *structure = model->add_structure("mnist");
 
     int resolution = 1024;
-    structure->add_layer(LayerConfig("input_layer",
+    structure->add_layer(new LayerConfig("input_layer",
         IZHIKEVICH, 28, 28, "default"));
 
     int num_hidden = 10;
     for (int i = 0; i < num_hidden; ++i) {
-        structure->add_layer(LayerConfig(std::to_string(i),
+        structure->add_layer(new LayerConfig(std::to_string(i),
             IZHIKEVICH, 28, 28, "default", 0.5));
         structure->connect_layers("input_layer", std::to_string(i),
-            ConnectionConfig(true, 0, 5, CONVOLUTIONAL, ADD,
+            new ConnectionConfig(true, 0, 5, CONVOLUTIONAL, ADD,
                 new RandomWeightConfig(5),
-                ArborizedConfig(5,1)));
+                new ArborizedConfig(5,1)));
 
         structure->connect_layers(std::to_string(i), std::to_string(i),
-            ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
+            new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
                 new RandomWeightConfig(0.1),
-                ArborizedConfig(5,1)));
+                new ArborizedConfig(5,1)));
         structure->connect_layers(std::to_string(i), std::to_string(i),
-            ConnectionConfig(false, 0, 2, CONVOLUTIONAL, DIV,
+            new ConnectionConfig(false, 0, 2, CONVOLUTIONAL, DIV,
                 new RandomWeightConfig(2),
-                ArborizedConfig(7,1)));
+                new ArborizedConfig(7,1)));
     }
 
     for (int i = 0; i < num_hidden; ++i)
         for (int j = 0; j < num_hidden; ++j)
             if (i != j)
                 structure->connect_layers(std::to_string(i), std::to_string(j),
-                    ConnectionConfig(false, 0, 5, ONE_TO_ONE, DIV,
+                    new ConnectionConfig(false, 0, 5, ONE_TO_ONE, DIV,
                         new RandomWeightConfig(1)));
 
     // Modules
@@ -804,13 +804,13 @@ void divergent_test() {
     Model *model = new Model();
     Structure *structure = model->add_structure("divergent");
 
-    structure->add_layer(LayerConfig("in", IZHIKEVICH, 10, 10, "default"));
-    structure->add_layer(LayerConfig("out", IZHIKEVICH, 100, 55, "default"));
+    structure->add_layer(new LayerConfig("in", IZHIKEVICH, 10, 10, "default"));
+    structure->add_layer(new LayerConfig("out", IZHIKEVICH, 100, 55, "default"));
 
     structure->connect_layers("in", "out",
-        ConnectionConfig(true, 0, 100, DIVERGENT, ADD,
+        new ConnectionConfig(true, 0, 100, DIVERGENT, ADD,
             new RandomWeightConfig(100),
-            ArborizedConfig(10,10,10,5)));
+            new ArborizedConfig(10,10,10,5)));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -835,24 +835,24 @@ void speech_test() {
     Structure *structure = model->add_structure("speech", PARALLEL);
 
     // Input layer
-    structure->add_layer(LayerConfig("input_layer",
+    structure->add_layer(new LayerConfig("input_layer",
         IZHIKEVICH, 1, 41, "fast"));
 
     // Convergent layers
     structure->connect_layers_matching("input_layer",
-        LayerConfig("convergent_layer", IZHIKEVICH, "fast"),
-        ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
+        new LayerConfig("convergent_layer", IZHIKEVICH, "fast"),
+        new ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
             new FlatWeightConfig(10),
-            ArborizedConfig(1,3,1,1)));
+            new ArborizedConfig(1,3,1,1)));
 
     structure->connect_layers_matching("input_layer",
-        LayerConfig("convergent_layer_inhibitory", IZHIKEVICH, "fast"),
-        ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
+        new LayerConfig("convergent_layer_inhibitory", IZHIKEVICH, "fast"),
+        new ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
             new FlatWeightConfig(3),
-            ArborizedConfig(1,10,1,1)));
+            new ArborizedConfig(1,10,1,1)));
     structure->connect_layers("convergent_layer_inhibitory",
         "convergent_layer",
-        ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,
+        new ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,
             new FlatWeightConfig(10)));
 
     /*
@@ -861,37 +861,37 @@ void speech_test() {
 
     // Vertical cluster layer
     structure->connect_layers_expected("convergent_layer",
-        LayerConfig("vertical_layer", IZHIKEVICH, "bursting"),
-        ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
+        new LayerConfig("vertical_layer", IZHIKEVICH, "bursting"),
+        new ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
+            new ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     // Vertical cluster inhibitory layer
     structure->connect_layers_expected("convergent_layer",
-        LayerConfig("vertical_inhibitory", IZHIKEVICH, "fast"),
-        ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
+        new LayerConfig("vertical_inhibitory", IZHIKEVICH, "fast"),
+        new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
+            new ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     structure->connect_layers("vertical_inhibitory", "vertical_layer",
-        ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
+            new ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
 
     // Block cluster layer
     structure->connect_layers_expected("vertical_layer",
-        LayerConfig("cluster_layer", IZHIKEVICH, "bursting", 0.5),
-        ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
+        new LayerConfig("cluster_layer", IZHIKEVICH, "bursting", 0.5),
+        new ConnectionConfig(true, 0, 10, DIVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
+            new ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     // Block cluster inhibitory layer
     structure->connect_layers_expected("vertical_layer",
-        LayerConfig("cluster_inhibitory", IZHIKEVICH, "fast"),
-        ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
+        new LayerConfig("cluster_inhibitory", IZHIKEVICH, "fast"),
+        new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(0.5),
-            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
+            new ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
     structure->connect_layers("cluster_inhibitory", "cluster_layer",
-        ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
+        new ConnectionConfig(false, 0, 5, DIVERGENT, DIV,
             new RandomWeightConfig(5),
-            ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
+            new ArborizedConfig(vertical_spread,horizontal_spread,1,1)));
 
     int mot_f_size = 3;
     int mot_stride = 1;
@@ -905,42 +905,42 @@ void speech_test() {
 
     // Motion detectors
     structure->connect_layers_expected("cluster_layer",
-        LayerConfig("motion_up", IZHIKEVICH, "bursting", 1),
-        ConnectionConfig(false, 5, 10, CONVERGENT, ADD,
+        new LayerConfig("motion_up", IZHIKEVICH, "bursting", 1),
+        new ConnectionConfig(false, 5, 10, CONVERGENT, ADD,
             new RandomWeightConfig(pos_strength),
-            ArborizedConfig(1,mot_f_size,1,mot_stride,offset,offset)));
+            new ArborizedConfig(1,mot_f_size,1,mot_stride,offset,offset)));
     structure->connect_layers("cluster_layer", "motion_up",
-        ConnectionConfig(false, 5, 10, CONVERGENT, DIV,
+        new ConnectionConfig(false, 5, 10, CONVERGENT, DIV,
             new RandomWeightConfig(neg_strength),
-            ArborizedConfig(1,mot_f_size,1,mot_stride,-offset,-offset)));
+            new ArborizedConfig(1,mot_f_size,1,mot_stride,-offset,-offset)));
     structure->connect_layers("cluster_layer", "motion_up",
-        ConnectionConfig(false, 0, 10, CONVERGENT, MULT,
+        new ConnectionConfig(false, 0, 10, CONVERGENT, MULT,
             new RandomWeightConfig(mid_strength),
-            ArborizedConfig(1,mot_f_size,1,mot_stride)));
+            new ArborizedConfig(1,mot_f_size,1,mot_stride)));
     structure->connect_layers_expected("motion_up",
-        LayerConfig("motion_up_pool", IZHIKEVICH, "chattering", 1),
-        ConnectionConfig(false, 0, 10, CONVERGENT, ADD,
+        new LayerConfig("motion_up_pool", IZHIKEVICH, "chattering", 1),
+        new ConnectionConfig(false, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(pool_strength),
-            ArborizedConfig(1,pool_f_size,1,pool_stride)));
+            new ArborizedConfig(1,pool_f_size,1,pool_stride)));
 
     structure->connect_layers_expected("cluster_layer",
-        LayerConfig("motion_down", IZHIKEVICH, "bursting", 1),
-        ConnectionConfig(false, 5, 10, CONVERGENT, ADD,
+        new LayerConfig("motion_down", IZHIKEVICH, "bursting", 1),
+        new ConnectionConfig(false, 5, 10, CONVERGENT, ADD,
             new RandomWeightConfig(pos_strength),
-            ArborizedConfig(1,mot_f_size,1,mot_stride,-offset,-offset)));
+            new ArborizedConfig(1,mot_f_size,1,mot_stride,-offset,-offset)));
     structure->connect_layers("cluster_layer", "motion_down",
-        ConnectionConfig(false, 5, 10, CONVERGENT, DIV,
+        new ConnectionConfig(false, 5, 10, CONVERGENT, DIV,
             new RandomWeightConfig(neg_strength),
-            ArborizedConfig(1,mot_f_size,1,mot_stride,offset,offset)));
+            new ArborizedConfig(1,mot_f_size,1,mot_stride,offset,offset)));
     structure->connect_layers("cluster_layer", "motion_down",
-        ConnectionConfig(false, 0, 10, CONVERGENT, MULT,
+        new ConnectionConfig(false, 0, 10, CONVERGENT, MULT,
             new RandomWeightConfig(mid_strength),
-            ArborizedConfig(1,mot_f_size,1,mot_stride)));
+            new ArborizedConfig(1,mot_f_size,1,mot_stride)));
     structure->connect_layers_expected("motion_down",
-        LayerConfig("motion_down_pool", IZHIKEVICH, "chattering", 1),
-        ConnectionConfig(false, 0, 10, CONVERGENT, ADD,
+        new LayerConfig("motion_down_pool", IZHIKEVICH, "chattering", 1),
+        new ConnectionConfig(false, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(pool_strength),
-            ArborizedConfig(1,pool_f_size,1,pool_stride)));
+            new ArborizedConfig(1,pool_f_size,1,pool_stride)));
     */
 
     // Modules
@@ -985,23 +985,23 @@ void re_speech_test() {
     Structure *structure = model->add_structure("speech", SEQUENTIAL);
 
     // Input layer
-    structure->add_layer(LayerConfig("input_layer", RELAY, 1, 41));
+    structure->add_layer(new LayerConfig("input_layer", RELAY, 1, 41));
 
     // Convergent layers
     structure->connect_layers_matching("input_layer",
-        LayerConfig("convergent_layer", HEBBIAN_RATE_ENCODING),
-        ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
+        new LayerConfig("convergent_layer", HEBBIAN_RATE_ENCODING),
+        new ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
             new FlatWeightConfig(35),
-            ArborizedConfig(1,1,1,1)));
+            new ArborizedConfig(1,1,1,1)));
 
     structure->connect_layers_matching("input_layer",
-        LayerConfig("convergent_layer_inhibitory", HEBBIAN_RATE_ENCODING),
-        ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
+        new LayerConfig("convergent_layer_inhibitory", HEBBIAN_RATE_ENCODING),
+        new ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
             new FlatWeightConfig(3),
-            ArborizedConfig(1,10,1,1)));
+            new ArborizedConfig(1,10,1,1)));
     structure->connect_layers("convergent_layer_inhibitory",
         "convergent_layer",
-        ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,
+        new ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,
             new FlatWeightConfig(1)));
 
     // Modules
@@ -1041,27 +1041,27 @@ void second_order_test() {
 
     const char* image_path = "resources/bird-head.jpg";
     structure->add_layer_from_image(image_path,
-        LayerConfig("image", IZHIKEVICH, "default"));
+        new LayerConfig("image", IZHIKEVICH, "default"));
 
     structure->connect_layers_expected("image",
-        LayerConfig("pool", IZHIKEVICH, "default"),
-        ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
+        new LayerConfig("pool", IZHIKEVICH, "default"),
+        new ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(1),
-            ArborizedConfig(10,3)));
+            new ArborizedConfig(10,3)));
 
     structure->connect_layers_matching("pool",
-        LayerConfig("out", IZHIKEVICH, "default"),
-        ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
+        new LayerConfig("out", IZHIKEVICH, "default"),
+        new ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
             new FlatWeightConfig(100),
-            ArborizedConfig(field_size,1)));
+            new ArborizedConfig(field_size,1)));
 
     structure->get_dendritic_root("out")->set_second_order();
 
-    structure->add_layer(LayerConfig("predict", IZHIKEVICH, field_size, field_size, "default"));
+    structure->add_layer(new LayerConfig("predict", IZHIKEVICH, field_size, field_size, "default"));
     structure->connect_layers("predict", "out",
-        ConnectionConfig(false, 0, 100, CONVERGENT, MULT,
+        new ConnectionConfig(false, 0, 100, CONVERGENT, MULT,
             new FlatWeightConfig(1),
-            ArborizedConfig(field_size,0)));
+            new ArborizedConfig(field_size,0)));
 
     // Modules
     std::string output_name = "visualizer_output";
