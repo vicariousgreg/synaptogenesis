@@ -79,7 +79,11 @@ typedef enum {
     SUB,
     MULT,
     DIV,
-    POOL
+    POOL,
+    AMPA,
+    NMDA,
+    GABAA,
+    GABAB
 } Opcode;
 
 /* Enumeration of neural models. */

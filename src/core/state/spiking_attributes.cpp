@@ -42,26 +42,57 @@ void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
         traces[weight_index] = trace = ((val > 0.0) ? g : (trace - (trace / tau))); \
         val = trace \
             * weights[weight_index] \
-            * -(voltage + v_off); \
+            * adjusted_voltage; \
     }
 
 #define GET_DEST_VOLTAGE(to_index) \
     float voltage = *att->voltage.get(to_index); \
+    float adjusted_voltage; \
+    switch(opcode) { \
+        case(AMPA): \
+            adjusted_voltage = voltage; \
+            break; \
+        case(GABAA): \
+            adjusted_voltage = voltage + 70; \
+            break; \
+        case(NMDA): {\
+            float temp = (voltage + 80) / 60; \
+            temp = temp * temp; \
+            adjusted_voltage = (temp / (1+temp)) * voltage; \
+            break; \
+        } \
+        case(GABAB): \
+            adjusted_voltage = voltage + 90; \
+            break; \
+    }
 
 #define ACTIV_EXTRACTIONS \
     SpikingAttributes *att = (SpikingAttributes*)synapse_data.to_attributes; \
-    float tau = 5; \
-    float g = 0.0025; \
-    float v_off = 0; \
-    if (opcode == SUB) { \
-        tau = 7; \
-        g = -0.005; \
-        v_off = 70; \
+    float tau; \
+    float g; \
+    switch(opcode) { \
+        case(AMPA): \
+            tau = 5; \
+            g = -0.0025; \
+            break; \
+        case(GABAA): \
+            tau = 7; \
+            /* g = -0.005; */ \
+            g = -0.0025; \
+            break; \
+        case(NMDA): \
+            tau = 150; \
+            g = -0.000025; \
+            break; \
+        case(GABAB): \
+            tau = 150; \
+            g = -0.00005; \
+            break; \
     } \
     EXTRACT_TRACES;
 
 #define AGGREGATE(to_index, sum) \
-    inputs[to_index] = calc(opcode, inputs[to_index], sum);
+    inputs[to_index] = inputs[to_index] + sum;
 
 
 /* Trace versions of activator functions */
@@ -166,8 +197,8 @@ Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-#define WEIGHT_DECAY 1.0
-#define WEIGHT_COEFFICIENT 10000
+#define WEIGHT_DECAY 0.9999
+#define WEIGHT_COEFFICIENT 1
 
 #define EXTRACT_BASELINES \
     float *baselines = weights + num_weights;
@@ -178,7 +209,7 @@ Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(
         MAX(baselines[weight_index], \
             MIN(max_weight, \
                 (weights[weight_index] * WEIGHT_DECAY) \
-                + (trace * WEIGHT_COEFFICIENT)));
+                + (-trace * WEIGHT_COEFFICIENT)));
 
 #define UPDATE_WEIGHT_CONVOLUTIONAL(weight_index, dest_spike) \
     float trace = 0.0; \

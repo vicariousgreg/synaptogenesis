@@ -8,12 +8,13 @@
 #include "util/tools.h"
 #include "util/pointer.h"
 
-// Different min and max functions are used on the host and device
+// Different min, max, and assert functions are used on the host and device
 #ifdef __CUDACC__
 #define MIN min
 #define MAX max
 #else
 #include <algorithm>
+#include <assert.h>
 #define MIN std::fmin
 #define MAX std::fmax
 #endif
@@ -35,9 +36,9 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
         case ADD:  return prior + input;
         case SUB:  return prior - input;
         case MULT: return prior * (1+input);
-        //case MULT: return prior * input;
         case DIV:  return prior / (1+input);
         case POOL: return MAX(prior, (1+input));
+        default: assert(false);
     }
     return 0.0;
 }

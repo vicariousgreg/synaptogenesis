@@ -310,18 +310,18 @@ Model* build_working_memory_model(NeuralModel neural_model) {
 
     // Feedforward input
     structure->connect_layers("input_layer", "feedforward",
-        new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+        new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, AMPA,
             new RandomWeightConfig(100, 0.1)));
 
     // Sensory relay to cortex
     int sensory_center = 15;
     int sensory_surround = 25;
     structure->connect_layers("feedforward", "3_cortex",
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa*thal_ratio),
             new ArborizedConfig(sensory_center,1)));
     structure->connect_layers("feedforward", "3_cortex",
-        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(sensory_center,
                 new FlatWeightConfig(gaba*thal_ratio)),
             new ArborizedConfig(sensory_surround,1)));
@@ -330,20 +330,20 @@ Model* build_working_memory_model(NeuralModel neural_model) {
     int inter_cortex_center = 9;
     int inter_cortex_surround = 25;
     structure->connect_layers("3_cortex", "6_cortex",
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa),
             new ArborizedConfig(inter_cortex_center,1)));
     structure->connect_layers("6_cortex", "3_cortex",
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa),
             new ArborizedConfig(inter_cortex_center,1)));
     structure->connect_layers("3_cortex", "6_cortex",
-        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(inter_cortex_center,
                 new FlatWeightConfig(gaba)),
             new ArborizedConfig(inter_cortex_surround,1)));
     structure->connect_layers("6_cortex", "3_cortex",
-        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(inter_cortex_center,
                 new FlatWeightConfig(gaba)),
             new ArborizedConfig(inter_cortex_surround,1)));
@@ -352,31 +352,31 @@ Model* build_working_memory_model(NeuralModel neural_model) {
     int intra_cortex_center = 5;
     int intra_cortex_surround = 25;
     structure->connect_layers("3_cortex", "3_cortex",
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa),
             new ArborizedConfig(intra_cortex_center,1)));
     structure->connect_layers("6_cortex", "6_cortex",
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa),
             new ArborizedConfig(intra_cortex_center,1)));
     structure->connect_layers("3_cortex", "3_cortex",
-        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(intra_cortex_center,
                 new FlatWeightConfig(gaba)),
             new ArborizedConfig(intra_cortex_surround,1)));
     structure->connect_layers("6_cortex", "6_cortex",
-        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(intra_cortex_center,
                 new FlatWeightConfig(gaba)),
             new ArborizedConfig(intra_cortex_surround,1)));
 
     // Feedforward recurrence
     structure->connect_layers("feedforward", "feedforward",
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa),
             new ArborizedConfig(intra_cortex_center,1)));
     structure->connect_layers("feedforward", "feedforward",
-        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(intra_cortex_center,
                 new FlatWeightConfig(gaba)),
             new ArborizedConfig(intra_cortex_surround,1)));
@@ -385,20 +385,20 @@ Model* build_working_memory_model(NeuralModel neural_model) {
     int gamma_center = 5;
     int gamma_surround = 9;
     structure->connect_layers("gamma_thalamus", "3_cortex",
-        new ConnectionConfig(exc_plastic, 10, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 10, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa*thal_ratio),
             new ArborizedConfig(gamma_center,1)));
     structure->connect_layers("gamma_thalamus", "3_cortex",
-        new ConnectionConfig(inh_plastic, 10, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 10, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(gamma_center,
                 new FlatWeightConfig(gaba*thal_ratio)),
             new ArborizedConfig(gamma_surround,1)));
     structure->connect_layers("6_cortex", "gamma_thalamus",
-        new ConnectionConfig(exc_plastic, 10, 4, CONVERGENT, ADD,
+        new ConnectionConfig(exc_plastic, 10, 4, CONVERGENT, AMPA,
             new FlatWeightConfig(ampa*thal_ratio),
             new ArborizedConfig(gamma_center,1)));
     structure->connect_layers("6_cortex", "gamma_thalamus",
-        new ConnectionConfig(inh_plastic, 10, 4, CONVERGENT, SUB,
+        new ConnectionConfig(inh_plastic, 10, 4, CONVERGENT, GABAA,
             new SurroundWeightConfig(gamma_center,
                 new FlatWeightConfig(gaba*thal_ratio)),
             new ArborizedConfig(gamma_surround,1)));
@@ -406,16 +406,16 @@ Model* build_working_memory_model(NeuralModel neural_model) {
     */
 
     //structure->connect_layers("gamma_thalamus", "3_cortex",
-    //    new ConnectionConfig(exc_plastic, 10, 4, ONE_TO_ONE, ADD,
+    //    new ConnectionConfig(exc_plastic, 10, 4, ONE_TO_ONE, AMPA,
     //        new FlatWeightConfig(ampa*thal_ratio)));
     //structure->connect_layers("gamma_thalamus", "3_cortex",
-    //    new ConnectionConfig(inh_plastic, 10, 4, ONE_TO_ONE, SUB,
+    //    new ConnectionConfig(inh_plastic, 10, 4, ONE_TO_ONE, GABAA,
     //        new FlatWeightConfig(gaba*thal_ratio)));
     //structure->connect_layers("6_cortex", "gamma_thalamus",
-    //    new ConnectionConfig(exc_plastic, 10, 4, ONE_TO_ONE, ADD,
+    //    new ConnectionConfig(exc_plastic, 10, 4, ONE_TO_ONE, AMPA,
     //        new FlatWeightConfig(ampa*thal_ratio)));
     //structure->connect_layers("6_cortex", "gamma_thalamus",
-    //    new ConnectionConfig(inh_plastic, 10, 4, ONE_TO_ONE, SUB,
+    //    new ConnectionConfig(inh_plastic, 10, 4, ONE_TO_ONE, GABAA,
     //        new FlatWeightConfig(gaba*thal_ratio)));
 
     // Thalamocortical control connectivity
