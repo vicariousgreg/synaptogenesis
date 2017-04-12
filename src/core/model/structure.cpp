@@ -5,7 +5,7 @@
 #include "CImg.h"
 
 Structure::Structure(std::string name, ClusterType cluster_type)
-        : name(name), cluster_type(cluster_type) { }
+        : name(name), cluster_type(cluster_type), total_neurons(0) { }
 
 Structure::~Structure() {
     for (auto layer : layers) delete layer;

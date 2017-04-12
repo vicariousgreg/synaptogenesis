@@ -272,10 +272,10 @@ Model* build_reentrant_image_model(NeuralModel neural_model) {
     return model;
 }
 
-Model* build_alignment_model(NeuralModel neural_model) {
+Model* build_working_memory_model(NeuralModel neural_model) {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = model->add_structure("alignment", SEQUENTIAL);
+    Structure *structure = model->add_structure("working memory", PARALLEL);
 
     int thal_ratio = 1;
     int cortex_size = 128;
@@ -776,11 +776,11 @@ void image_test() {
     delete model;
 }
 
-void alignment_test() {
+void working_memory_test() {
     Model *model;
 
     std::cout << "Alignment...\n";
-    model = build_alignment_model(IZHIKEVICH);
+    model = build_working_memory_model(IZHIKEVICH);
     print_model(model);
     run_simulation(model, 1000000, true);
     //run_simulation(model, 100, true);
@@ -809,7 +809,6 @@ void hh_test() {
 
     std::cout << "Hodgkin-Huxley...\n";
     model = build_hh_model();
-    //model = build_alignment_model(HODGKIN_HUXLEY);
     print_model(model);
     run_simulation(model, 1000000, true);
     //run_simulation(model, 100, true);
@@ -1189,7 +1188,7 @@ int main(int argc, char *argv[]) {
         //stress_test();
         //image_test();
         //reentrant_image_test();
-        alignment_test();
+        working_memory_test();
         //dendritic_test();
         //hh_test();
         //cc_test();

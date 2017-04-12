@@ -19,9 +19,15 @@ SequentialCluster::SequentialCluster(Structure *structure,
     std::set<Layer*> visited;
 
     // Create queue and push output layers
+    // Add formal output layers, and any layers that project
+    //   to another structure
     std::queue<Layer*> queue;
     for (auto& layer : structure->get_layers())
         if (layer->is_output()) queue.push(layer);
+        else
+            for (auto& conn : layer->get_output_connections())
+                if (conn->to_layer->structure != structure)
+                    queue.push(layer);
 
     /* Do breadth first search backwards on the model and create nodes */
     while (not queue.empty()) {
@@ -52,6 +58,10 @@ SequentialCluster::SequentialCluster(Structure *structure,
             }
         }
     }
+
+    if (visited.size() < structure->get_layers().size())
+        ErrorManager::get_instance()->log_error(
+            "Sequential cluster failed to process all layers!");
 }
 
 void SequentialCluster::add_external_dependencies(
