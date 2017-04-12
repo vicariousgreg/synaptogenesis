@@ -82,6 +82,9 @@ Connection::~Connection() {
 int Connection::get_num_weights() const { return num_weights; }
 int Connection::get_row_field_size() const { return row_field_size; }
 int Connection::get_column_field_size() const { return column_field_size; }
+int Connection::get_total_field_size() const {
+    return row_field_size * column_field_size;
+}
 int Connection::get_row_stride() const { return row_stride; }
 int Connection::get_column_stride() const { return column_stride; }
 int Connection::get_row_offset() const { return row_offset; }

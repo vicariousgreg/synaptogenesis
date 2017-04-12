@@ -22,6 +22,7 @@ class Connection {
         const ConnectionConfig* get_config() const;
         int get_row_field_size() const;
         int get_column_field_size() const;
+        int get_total_field_size() const;
         int get_row_stride() const;
         int get_column_stride() const;
         int get_row_offset() const;

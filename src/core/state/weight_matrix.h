@@ -24,7 +24,7 @@ class WeightMatrix {
 };
 
 /* Sets all values in an array to the given val */
-void set_weights(float* arr, int size, float val);
+void set_weights(float* arr, int size, float val, float fraction=1.0);
 
 /* Clears an array */
 void clear_weights(float* arr, int size);

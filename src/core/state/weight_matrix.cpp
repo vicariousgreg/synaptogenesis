@@ -6,8 +6,17 @@
 #include "util/error_manager.h"
 
 /* Sets all values in an array to the given val */
-void set_weights(float* arr, int size, float val) {
-    for (int i = 0 ; i < size ; ++i) arr[i] = val;
+void set_weights(float* arr, int size, float val, float fraction) {
+    if (fraction == 1.0) {
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = val;
+    } else {
+        for (int i = 0 ; i < size ; ++i)
+            if (fRand(0,1) < fraction)
+                arr[i] = val;
+            else
+                arr[i] = 0.0;
+    }
 }
 
 /* Clears an array */
@@ -37,9 +46,7 @@ void transfer_weights(float* from, float* to, int size) {
 WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
         DeviceID device_id) : connection(conn), device_id(device_id) {
     int num_weights = conn->get_num_weights();
-    matrix_size = num_weights;
-    // Multiply by depth if plastic
-    if (conn->plastic) matrix_size *= matrix_depth;
+    matrix_size = num_weights * matrix_depth;
 
     // Allocate matrix on host
     // If parallel, it will be copied below

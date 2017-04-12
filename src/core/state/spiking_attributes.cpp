@@ -17,70 +17,113 @@ void SpikingAttributes::schedule_transfer() {
 void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Connection *conn = matrix->connection;
     Pointer<float> mData = matrix->get_data();
-    if (conn->plastic) {
-        int num_weights = conn->get_num_weights();
 
-        // Baseline
-        transfer_weights(mData, mData + num_weights, num_weights);
+    int num_weights = conn->get_num_weights();
 
-        // Trace
-        clear_weights(mData + 2*num_weights, num_weights);
-    }
+    // Baseline
+    transfer_weights(mData, mData + num_weights, num_weights);
+
+    // Trace
+    clear_weights(mData + 2*num_weights, num_weights);
 }
 
 /******************************************************************************/
 /************************* TRACE ACTIVATOR KERNELS ****************************/
 /******************************************************************************/
 
-#define MOD_RATE 0.05
-#define MOD_DECAY 0.005
-#define MOD_MAX 10.0
-
-#define EXTRACT_BASELINES \
-    float *baselines = weights + num_weights;
-
 #define EXTRACT_TRACES \
     float *traces = weights + (2*num_weights);
 
-#define UPDATE_TRACE(weight_index) \
-    if (plastic) { \
-        float old_trace = traces[weight_index]; \
-        float new_trace = old_trace + (MOD_RATE * val) - (MOD_DECAY * old_trace); \
-        traces[weight_index] = MIN(MOD_MAX, new_trace);  \
+#define CALC_VAL(from_index, weight_index) \
+    float val = extractor(outputs[from_index], delay); \
+    if (opcode != MULT) { \
+        float trace = traces[weight_index]; \
+    \
+        traces[weight_index] = trace = ((val > 0.0) ? g : (trace - (trace / tau))); \
+        val = trace \
+            * weights[weight_index] \
+            * -(voltage + v_off); \
     }
 
+#define GET_DEST_VOLTAGE(to_index) \
+    float voltage = *att->voltage.get(to_index); \
+
+#define ACTIV_EXTRACTIONS \
+    SpikingAttributes *att = (SpikingAttributes*)synapse_data.to_attributes; \
+    float tau = 5; \
+    float g = 0.0025; \
+    float v_off = 0; \
+    if (opcode == SUB) { \
+        tau = 7; \
+        g = -0.005; \
+        v_off = 70; \
+    } \
+    EXTRACT_TRACES;
+
+#define AGGREGATE(to_index, sum) \
+    inputs[to_index] = calc(opcode, inputs[to_index], sum);
+
+
 /* Trace versions of activator functions */
-ACTIVATE_FULLY_CONNECTED(activate_fully_connected_trace,
-    EXTRACT_TRACES,
-    UPDATE_TRACE(weight_index));
-ACTIVATE_ONE_TO_ONE(activate_one_to_one_trace,
-    EXTRACT_TRACES,
-    UPDATE_TRACE(index));
-ACTIVATE_CONVERGENT(activate_convergent_trace,
-    EXTRACT_TRACES,
+CALC_FULLY_CONNECTED(activate_fully_connected_trace,
+    ACTIV_EXTRACTIONS,
+
+    GET_DEST_VOLTAGE(to_index)
+    float sum = 0.0;,
+
+    CALC_VAL(from_index, weight_index)
+    sum += val;,
+
+    AGGREGATE(to_index, sum));
+
+CALC_ONE_TO_ONE(activate_one_to_one_trace,
+    ACTIV_EXTRACTIONS,
+
+    GET_DEST_VOLTAGE(index)
+    CALC_VAL(index, index)
+    AGGREGATE(index, inputs[index]));
+CALC_CONVERGENT(activate_convergent_trace,
+    ACTIV_EXTRACTIONS,
+
+    GET_DEST_VOLTAGE(to_index)
+    float sum = 0.0;,
+
     if (convolutional) {
-        UPDATE_TRACE((to_index*num_weights + weight_index));
+        CALC_VAL(from_index, (to_index*num_weights + weight_index));
+        sum += val;
     } else {
-        UPDATE_TRACE(weight_index);
-    }
+        CALC_VAL(from_index, weight_index);
+        sum += val;
+    },
+
+    AGGREGATE(to_index, sum);
 );
-ACTIVATE_DIVERGENT(activate_divergent_trace,
-    EXTRACT_TRACES,
-    UPDATE_TRACE(weight_index);
+CALC_DIVERGENT(activate_divergent_trace,
+    ACTIV_EXTRACTIONS,
+
+    GET_DEST_VOLTAGE(to_index)
+    float sum = 0.0;,
+
+    CALC_VAL(from_index, weight_index)
+    sum += val;,
+
+    AGGREGATE(to_index, sum);
 );
+
+#define UPDATE_TRACE(weight_index)
 
 /* Second order */
 ACTIVATE_FULLY_CONNECTED_SECOND_ORDER(
         activate_fully_connected_trace_second_order,
-    EXTRACT_TRACES,
+    ACTIV_EXTRACTIONS,
     UPDATE_TRACE(weight_index));
 ACTIVATE_ONE_TO_ONE_SECOND_ORDER(
         activate_one_to_one_trace_second_order,
-    EXTRACT_TRACES,
+    ACTIV_EXTRACTIONS,
     UPDATE_TRACE(index));
 ACTIVATE_CONVERGENT_SECOND_ORDER(
         activate_convergent_trace_second_order,
-    EXTRACT_TRACES,
+    ACTIV_EXTRACTIONS,
     if (convolutional) {
         UPDATE_TRACE((to_index*num_weights + weight_index));
     } else {
@@ -89,7 +132,7 @@ ACTIVATE_CONVERGENT_SECOND_ORDER(
 );
 ACTIVATE_DIVERGENT_SECOND_ORDER(
         activate_divergent_trace_second_order,
-    EXTRACT_TRACES,
+    ACTIV_EXTRACTIONS,
     UPDATE_TRACE(weight_index);
 );
 
@@ -123,52 +166,65 @@ Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-#define SUM_COEFFICIENT 0.01
-#define WEIGHT_DECAY 0.0001
+#define WEIGHT_DECAY 1.0
+#define WEIGHT_COEFFICIENT 10000
 
-#define UPDATE_WEIGHT(weight_index, input) \
-    float old_weight = weights[weight_index]; \
-    float new_weight = old_weight + (traces[weight_index] * input * SUM_COEFFICIENT) \
-                        - (WEIGHT_DECAY * (old_weight - baselines[weight_index])); \
-    weights[weight_index] = (new_weight > max_weight) ? max_weight : new_weight;
+#define EXTRACT_BASELINES \
+    float *baselines = weights + num_weights;
 
-#define UPDATE_WEIGHT_CONVOLUTIONAL(weight_index, input) \
-    float old_weight = weights[weight_index]; \
-    float t = 0.0; \
-    for (int i = 0; i < to_size; ++i) { \
-        t += traces[i*num_weights + weight_index]; \
+#define UPDATE_WEIGHT(weight_index, dest_spike) \
+    float trace = (dest_spike) ? traces[weight_index] : 0.0; \
+    weights[weight_index] = \
+        MAX(baselines[weight_index], \
+            MIN(max_weight, \
+                (weights[weight_index] * WEIGHT_DECAY) \
+                + (trace * WEIGHT_COEFFICIENT)));
+
+#define UPDATE_WEIGHT_CONVOLUTIONAL(weight_index, dest_spike) \
+    float trace = 0.0; \
+    if (dest_spike) { \
+        for (int i = 0; i < to_size; ++i) { \
+            trace += traces[i*num_weights + weight_index]; \
+        } \
+        trace /= to_size; \
     } \
-    t /= to_size; \
-    float new_weight = old_weight + (t * input * SUM_COEFFICIENT) \
-                        - (WEIGHT_DECAY * (old_weight - baselines[weight_index])); \
-    weights[weight_index] = (new_weight > max_weight) ? max_weight : new_weight;
+    weights[weight_index] = \
+        MAX(baselines[weight_index], \
+            MIN(max_weight, \
+                (weights[weight_index] * WEIGHT_DECAY) \
+                + (trace * WEIGHT_COEFFICIENT)));
+
+#define UPDATE_EXTRACTIONS \
+    EXTRACT_TRACES; \
+    EXTRACT_BASELINES; \
+
+#define GET_DEST_ACTIVITY(to_index) \
+    bool dest_spike = extractor(destination_outputs[to_index], 0);
 
 CALC_FULLY_CONNECTED(update_fully_connected_trace,
-    EXTRACT_TRACES;
-    EXTRACT_BASELINES;,
-    float sum = inputs[to_index];,
-    UPDATE_WEIGHT(weight_index, sum),
+    UPDATE_EXTRACTIONS;,
+    GET_DEST_ACTIVITY(to_index);,
+    UPDATE_WEIGHT(weight_index, dest_spike),
     ; );
 CALC_ONE_TO_ONE(update_one_to_one_trace,
-    EXTRACT_TRACES;
-    EXTRACT_BASELINES;,
-    UPDATE_WEIGHT(index, inputs[index]));
+    UPDATE_EXTRACTIONS;,
+    GET_DEST_ACTIVITY(index);
+    UPDATE_WEIGHT(index, dest_spike)
+    );
 CALC_CONVERGENT(update_convergent_trace,
-    EXTRACT_TRACES;
-    EXTRACT_BASELINES;,
-    float sum = inputs[to_index];,
-    UPDATE_WEIGHT(weight_index, sum),
+    UPDATE_EXTRACTIONS;,
+    GET_DEST_ACTIVITY(to_index);,
+    UPDATE_WEIGHT(weight_index, dest_spike),
     ; );
 CALC_ONE_TO_ONE(update_convolutional_trace,
-    EXTRACT_TRACES;
-    EXTRACT_BASELINES;,
-    UPDATE_WEIGHT_CONVOLUTIONAL(index, inputs[index]);
+    UPDATE_EXTRACTIONS;,
+    GET_DEST_ACTIVITY(index);
+    UPDATE_WEIGHT_CONVOLUTIONAL(index, dest_spike)
     );
 CALC_DIVERGENT(update_divergent_trace,
-    EXTRACT_TRACES;
-    EXTRACT_BASELINES;,
-    float sum = inputs[to_index];,
-    UPDATE_WEIGHT(weight_index, sum),
+    UPDATE_EXTRACTIONS;,
+    GET_DEST_ACTIVITY(to_index);,
+    UPDATE_WEIGHT(weight_index, dest_spike),
     ; );
 
 Kernel<SYNAPSE_ARGS> SpikingAttributes::get_updater(

@@ -13,13 +13,14 @@ class WeightConfig {
 
 class FlatWeightConfig : public WeightConfig {
     public:
-        FlatWeightConfig(float weight) : weight(weight) { }
+        FlatWeightConfig(float weight, float fraction=1.0);
 
         virtual void initialize(float* target_matrix,
             Connection* conn, bool is_host) const;
 
     private:
         float weight;
+        float fraction;
 };
 
 class RandomWeightConfig : public WeightConfig {
@@ -32,6 +33,20 @@ class RandomWeightConfig : public WeightConfig {
     private:
         float max_weight;
         float fraction;
+};
+
+class SurroundWeightConfig : public WeightConfig {
+    public:
+        SurroundWeightConfig(int rows, int cols, WeightConfig* base_config);
+        SurroundWeightConfig(int size, WeightConfig* base_config);
+        virtual ~SurroundWeightConfig();
+
+        virtual void initialize(float* target_matrix,
+            Connection* conn, bool is_host) const;
+
+    private:
+        int rows, cols;
+        WeightConfig *base_config;
 };
 
 class SpecifiedWeightConfig : public WeightConfig {
