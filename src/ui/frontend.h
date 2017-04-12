@@ -25,6 +25,7 @@ class Frontend {
         virtual void update(Environment *environment) = 0;
 
         static const std::vector<Frontend*> get_instances();
+        static void init_all();
         static void launch_all();
         static void update_all(Environment *environment);
         static void cleanup();

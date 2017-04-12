@@ -15,6 +15,7 @@ class Environment {
 
         void step_input();
         void step_output();
+        void ui_init();
         void ui_launch();
         void ui_update();
 

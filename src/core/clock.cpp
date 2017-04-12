@@ -111,6 +111,9 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     device_check_error("Clock device synchronization failed!");
     device_check_memory();
 
+    // Initialize UI
+    environment->ui_init();
+
     /**********************/
     /*** Launch threads ***/
     /**********************/

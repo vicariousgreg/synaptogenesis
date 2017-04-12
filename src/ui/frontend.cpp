@@ -24,11 +24,14 @@ const std::vector<Frontend*> Frontend::get_instances() {
     return Frontend::instances;
 }
 
-void Frontend::launch_all() {
+void Frontend::init_all() {
     for (auto f : Frontend::instances)
         if (f->gui_window != nullptr)
             for (auto pair : f->layer_map)
                 f->gui_window->add_layer(pair.second);
+}
+
+void Frontend::launch_all() {
     if (Frontend::instances.size() > 0)
         GUI::get_instance()->launch();
 }

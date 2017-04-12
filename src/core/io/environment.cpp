@@ -50,6 +50,10 @@ void Environment::step_output() {
         module->report_output(buffer, state->get_output_type(module->layer));
 }
 
+void Environment::ui_init() {
+    Frontend::init_all();
+}
+
 void Environment::ui_launch() {
     Frontend::launch_all();
 }
