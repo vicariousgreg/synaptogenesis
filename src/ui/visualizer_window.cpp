@@ -4,6 +4,8 @@
 
 VisualizerWindow::VisualizerWindow() {
     grid = new Gtk::Grid();
+    grid->set_row_spacing(1);
+    grid->set_column_spacing(1);
     this->add(*grid);
 }
 
@@ -41,8 +43,8 @@ void VisualizerWindow::add_layer(LayerInfo* layer_info) {
     //this->grid->add(*Gtk::manage(image));
     this->grid->attach_next_to(
         *Gtk::manage(image),
-        Gtk::PositionType::POS_BOTTOM,
-        //Gtk::PositionType::POS_RIGHT,
+        //Gtk::PositionType::POS_BOTTOM,
+        Gtk::PositionType::POS_RIGHT,
         cols, rows);
     this->grid->show_all();
 }
