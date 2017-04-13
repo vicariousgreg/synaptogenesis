@@ -368,7 +368,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                    Column of matrix is the index of the source neuron */ \
                 int weight_index = from_index + \
                     (((k_row * column_field_size) + k_col) * kernel_row_size); \
-                 WEIGHT_OP; \
+                WEIGHT_OP; \
             } \
         } \
         NEURON_POST; \

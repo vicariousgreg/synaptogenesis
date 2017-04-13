@@ -69,9 +69,16 @@ void SurroundWeightConfig::initialize(float* target_matrix,
     int row_offset = (row_field_size - rows) / 2;
     int col_offset = (col_field_size - cols) / 2;
 
+    // Divergent connections are unique in that there is a kernel per source
+    //   neuron.  All other connection types organize based on the
+    //   destination layer.
+    int size = (conn->type == DIVERGENT)
+        ? conn->from_layer->size
+        : conn->to_layer->size;
+
     if (is_host) {
-        for (int to_index = 0 ; to_index < conn->to_layer->size ; ++to_index) {
-            int weight_offset = (conn->convolutional) ? 0 : (to_index * kernel_size);
+        for (int index = 0 ; index < size ; ++index) {
+            int weight_offset = (conn->convolutional) ? 0 : (index * kernel_size);
 
             for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
                 for (int k_col = col_offset ; k_col < col_offset + cols ; ++k_col) {
@@ -81,9 +88,9 @@ void SurroundWeightConfig::initialize(float* target_matrix,
             }
         }
     } else {
-        for (int to_index = 0 ; to_index < conn->to_layer->size ; ++to_index) {
-            int weight_col = (conn->convolutional) ? 0 : to_index;
-            int kernel_row_size = (conn->convolutional) ? 1 : conn->to_layer->size;
+        for (int index = 0 ; index < size ; ++index) {
+            int weight_col = (conn->convolutional) ? 0 : index;
+            int kernel_row_size = (conn->convolutional) ? 1 : size;
 
             for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
                 for (int k_col = col_offset ; k_col < col_offset + cols ; ++k_col) {

@@ -41,13 +41,19 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.
-            if ((to_layer->rows != from_layer->rows and to_layer->rows !=
-                    config->get_expected_rows(from_layer->rows)
+            int expected_rows = config->get_expected_rows(from_layer->rows);
+            int expected_columns = config->get_expected_columns(from_layer->columns);
+            if ((to_layer->rows != from_layer->rows and to_layer->rows != expected_rows)
                 or
-                (to_layer->columns != from_layer->columns and to_layer->columns !=
-                    config->get_expected_columns(from_layer->columns))))
+                (to_layer->columns != from_layer->columns
+                    and to_layer->columns != expected_columns))
                 ErrorManager::get_instance()->log_warning(
-                    "Unexpected destination layer size for arborized connection!");
+                    "Unexpected destination layer size for arborized connection"
+                    " from " + from_layer->name + " to " + to_layer->name +
+                    " (" + std::to_string(to_layer->rows)
+                        + ", " + std::to_string(to_layer->columns) + ") vs (" +
+                    std::to_string(expected_rows) + ", "
+                        + std::to_string(expected_columns) + ")!");
 
             switch (type) {
                 case(CONVERGENT):
