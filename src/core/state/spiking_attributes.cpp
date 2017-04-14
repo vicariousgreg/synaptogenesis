@@ -39,9 +39,8 @@ void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
     float trace = traces[weight_index]; \
 \
     traces[weight_index] = trace = ((val > 0.0) \
-        ? (weights[weight_index] * g) \
-        : (trace - (trace / tau))); \
-    val = trace * adjusted_voltage;
+        ? g : (trace - (trace / tau))); \
+    val = weights[weight_index] * trace * adjusted_voltage;
 
 #define GET_DEST_VOLTAGE(to_index) \
     float voltage = *att->voltage.get(to_index); \
@@ -228,19 +227,19 @@ Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(
     switch(opcode) { \
         case(AMPA): \
             decay = 0.999; \
-            coefficient = 100; \
+            coefficient = 400; \
             break; \
         case(GABAA): \
             decay = 0.999; \
-            coefficient = 100; \
+            coefficient = 400; \
             break; \
         case(NMDA): \
             decay = 1.0; \
-            coefficient = 10; \
+            coefficient = 1000; \
             break; \
         case(GABAB): \
             decay = 1.0; \
-            coefficient = 10; \
+            coefficient = 1000; \
             break; \
     }
 

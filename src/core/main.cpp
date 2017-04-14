@@ -291,7 +291,9 @@ Model* build_working_memory_model(NeuralModel neural_model) {
     float gabab = 10;
 
     bool exc_plastic = true;
-    bool inh_plastic = false;
+    bool inh_plastic = true;
+    int exc_delay = 0;
+    int inh_delay = 3;
 
     int sensory_center = 15;
     int sensory_surround = 15;
@@ -314,7 +316,7 @@ Model* build_working_memory_model(NeuralModel neural_model) {
 
     // Feedforward input
     main_structure->connect_layers("input_layer", "feedforward",
-        new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, AMPA,
+        new ConnectionConfig(false, exc_delay, 1, FULLY_CONNECTED, AMPA,
             new RandomWeightConfig(100, 0.1)));
 
     std::vector<Structure*> sub_structures;
@@ -335,62 +337,62 @@ Model* build_working_memory_model(NeuralModel neural_model) {
 
         // Cortico-cortical connectivity
         sub_structure->connect_layers("3_cortex", "6_cortex",
-            new ConnectionConfig(exc_plastic, 0, 4*nmda, CONVERGENT, NMDA,
+            new ConnectionConfig(exc_plastic, exc_delay, 4*nmda, CONVERGENT, NMDA,
                 new FlatWeightConfig(nmda),
                 new ArborizedConfig(inter_cortex_center,1)));
 
         sub_structure->connect_layers("3_cortex", "6_cortex",
-            new ConnectionConfig(exc_plastic, 0, 4*ampa, CONVERGENT, AMPA,
+            new ConnectionConfig(exc_plastic, exc_delay, 4*ampa, CONVERGENT, AMPA,
                 new FlatWeightConfig(ampa/3),
                 new ArborizedConfig(inter_cortex_center,1)));
 
         sub_structure->connect_layers("6_cortex", "3_cortex",
-            new ConnectionConfig(exc_plastic, 0, 4*nmda, CONVERGENT, NMDA,
+            new ConnectionConfig(exc_plastic, exc_delay, 4*nmda, CONVERGENT, NMDA,
                 new FlatWeightConfig(nmda),
                 new ArborizedConfig(inter_cortex_center,1)));
 
         sub_structure->connect_layers("6_cortex", "3_cortex",
-            new ConnectionConfig(exc_plastic, 0, 4*ampa, CONVERGENT, AMPA,
+            new ConnectionConfig(exc_plastic, exc_delay, 4*ampa, CONVERGENT, AMPA,
                 new FlatWeightConfig(ampa/3),
                 new ArborizedConfig(inter_cortex_center,1)));
 
         sub_structure->connect_layers("3_cortex", "6_cortex",
-            new ConnectionConfig(inh_plastic, 0, 4*gabab, CONVERGENT, GABAB,
+            new ConnectionConfig(inh_plastic, inh_delay, 4*gabab, CONVERGENT, GABAB,
                 new SurroundWeightConfig(inter_cortex_center,
                     new FlatWeightConfig(gabab)),
                 new ArborizedConfig(inter_cortex_surround,1)));
         sub_structure->connect_layers("3_cortex", "6_cortex",
-            new ConnectionConfig(inh_plastic, 0, 4*gabaa, CONVERGENT, GABAA,
+            new ConnectionConfig(inh_plastic, inh_delay, 4*gabaa, CONVERGENT, GABAA,
                 new SurroundWeightConfig(inter_cortex_center,
                     new FlatWeightConfig(gabaa)),
                 new ArborizedConfig(inter_cortex_surround,1)));
         sub_structure->connect_layers("6_cortex", "3_cortex",
-            new ConnectionConfig(inh_plastic, 0, 4*gabab, CONVERGENT, GABAB,
+            new ConnectionConfig(inh_plastic, inh_delay, 4*gabab, CONVERGENT, GABAB,
                 new SurroundWeightConfig(inter_cortex_center,
                     new FlatWeightConfig(gabab)),
                 new ArborizedConfig(inter_cortex_surround,1)));
         sub_structure->connect_layers("6_cortex", "3_cortex",
-            new ConnectionConfig(inh_plastic, 0, 4*gabaa, CONVERGENT, GABAA,
+            new ConnectionConfig(inh_plastic, inh_delay, 4*gabaa, CONVERGENT, GABAA,
                 new SurroundWeightConfig(inter_cortex_center,
                     new FlatWeightConfig(gabaa)),
                 new ArborizedConfig(inter_cortex_surround,1)));
 
         // Gamma connectivity
         sub_structure->connect_layers("gamma_thalamus", "3_cortex",
-            new ConnectionConfig(exc_plastic, 10, 4*ampa, CONVERGENT, AMPA,
+            new ConnectionConfig(exc_plastic, 10 + exc_delay, 4*ampa, CONVERGENT, AMPA,
                 new FlatWeightConfig(ampa*thal_ratio),
                 new ArborizedConfig(gamma_center,1)));
         sub_structure->connect_layers("gamma_thalamus", "3_cortex",
-            new ConnectionConfig(inh_plastic, 10, 4*gabaa, CONVERGENT, GABAA,
+            new ConnectionConfig(inh_plastic, 10 + inh_delay, 4*gabaa, CONVERGENT, GABAA,
                 new SurroundWeightConfig(gamma_center,
                     new FlatWeightConfig(gabaa*thal_ratio)),
                 new ArborizedConfig(gamma_surround,1)));
         sub_structure->connect_layers("6_cortex", "gamma_thalamus",
-            new ConnectionConfig(exc_plastic, 10, 4*ampa, CONVERGENT, AMPA,
+            new ConnectionConfig(exc_plastic, 10 + exc_delay, 4*ampa, CONVERGENT, AMPA,
                 new FlatWeightConfig(ampa*thal_ratio),
                 new ArborizedConfig(gamma_center,1)));
         sub_structure->connect_layers("6_cortex", "gamma_thalamus",
-            new ConnectionConfig(inh_plastic, 10, 4*gabaa, CONVERGENT, GABAA,
+            new ConnectionConfig(inh_plastic, 10 + inh_delay, 4*gabaa, CONVERGENT, GABAA,
                 new SurroundWeightConfig(gamma_center,
                     new FlatWeightConfig(gabaa*thal_ratio)),
                 new ArborizedConfig(gamma_surround,1)));
@@ -406,8 +408,8 @@ Model* build_working_memory_model(NeuralModel neural_model) {
                 new FlatWeightConfig(ampa*thal_ratio)));
 
         sub_structure->add_module("3_cortex", output_name, "8");
-        sub_structure->add_module("6_cortex", output_name, "8");
-        sub_structure->add_module("gamma_thalamus", output_name, "8");
+        //sub_structure->add_module("6_cortex", output_name, "8");
+        //sub_structure->add_module("gamma_thalamus", output_name, "8");
     }
 
     // Sensory relay to cortex
