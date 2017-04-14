@@ -31,7 +31,7 @@ void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
     float trace = traces[weight_index]; \
 \
     traces[weight_index] = trace = ((val > 0.0) \
-        ? g : (trace - (trace / tau))); \
+        ? g : (trace * tau)); \
     val = weights[weight_index] * trace * adjusted_voltage;
 
 #define GET_DEST_VOLTAGE(to_index) \
@@ -57,25 +57,24 @@ void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
 #define ACTIV_EXTRACTIONS \
     SpikingAttributes *att = (SpikingAttributes*)synapse_data.to_attributes; \
-    float tau = 10; \
+    float tau = 1 - 1.0/10; \
     float g = 1; \
     switch(opcode) { \
         case(AMPA): \
-            tau = 5; \
+            tau = 1 - 1.0/5; \
             g = -0.0025; \
             break; \
         case(GABAA): \
-            tau = 7; \
-            /* g = -0.005; */ \
+            tau = 1 - 1.0/7; \
             g = -0.0025; \
             break; \
         case(NMDA): \
-            tau = 150; \
+            tau = 1 - 1.0/150; \
             g = -0.000025; \
             break; \
         case(GABAB): \
-            tau = 150; \
-            g = -0.00005; \
+            tau = 1 - 1.0/150; \
+            g = -0.000025; \
             break; \
     } \
     EXTRACT_TRACES;
