@@ -5,7 +5,7 @@
 
 class SpikingAttributes : public Attributes {
     public:
-        SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_ARGS> kernel);
+        SpikingAttributes(LayerList &layers);
 
         virtual Kernel<SYNAPSE_ARGS> get_activator(
             ConnectionType type, bool second_order);

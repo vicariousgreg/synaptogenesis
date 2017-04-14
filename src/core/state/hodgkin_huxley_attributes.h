@@ -21,6 +21,7 @@ class HodgkinHuxleyAttributes : public SpikingAttributes {
         // Neuron parameters
         Pointer<HodgkinHuxleyParameters> neuron_parameters;
 
+    GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };
 

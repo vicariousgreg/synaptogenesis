@@ -17,6 +17,8 @@ class RateEncodingAttributes : public Attributes {
 
         // Neuron parameters
         Pointer<RateEncodingParameters> neuron_parameters;
+
+    GET_KERNEL_DEF
 };
 
 #endif

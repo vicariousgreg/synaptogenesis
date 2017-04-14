@@ -18,13 +18,13 @@
 typedef AttributeData ATTRIBUTE_ARGS;
 typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
 
+/* Typedef for subclass build method
+ * This can't be virtual because it's a class method */
 typedef Attributes* (*BUILD_PTR)(LayerList &layers);
 
 class Attributes {
     public:
-        Attributes(LayerList &layers, OutputType output_type,
-            Kernel<ATTRIBUTE_ARGS> kernel,
-            Kernel<ATTRIBUTE_ARGS> learning_kernel=Kernel<ATTRIBUTE_ARGS>());
+        Attributes(LayerList &layers, OutputType output_type);
         virtual ~Attributes();
 
         /* Assigns the attributes to a device
@@ -79,9 +79,11 @@ class Attributes {
         // If parallel, this will point to the device copy
         Attributes *pointer;
 
-        // Pointer to attribute kernel
-        Kernel<ATTRIBUTE_ARGS> kernel;
-        Kernel<ATTRIBUTE_ARGS> learning_kernel;
+        // Getter for attribute kernels
+        virtual Kernel<ATTRIBUTE_ARGS> get_kernel() = 0;
+        virtual Kernel<ATTRIBUTE_ARGS> get_learning_kernel() {
+            return Kernel<ATTRIBUTE_ARGS>(nullptr, nullptr);
+        }
 
         DeviceID get_device_id() { return device_id; }
 
@@ -154,6 +156,17 @@ Attributes *CLASS_NAME::build(LayerList &layers) { \
         static Attributes *build(LayerList &layers); \
         static int neural_model_id;
 
+// Put this one in .h if the class implements the attribute kernel
+#define GET_KERNEL_DEF \
+    public: \
+        virtual Kernel<ATTRIBUTE_ARGS> get_kernel(); \
+
+// Put this one in .h if the class implements the attribute learning kernel
+#define GET_LEARNING_KERNEL_DEF \
+    public: \
+        virtual Kernel<ATTRIBUTE_ARGS> get_learning_kernel();
+
+
 
 /* Macros for Attribute kernels */
 #define PREAMBLE_ATTRIBUTES \
@@ -167,8 +180,8 @@ Attributes *CLASS_NAME::build(LayerList &layers) { \
 
 #ifdef __CUDACC__
 
-#define BUILD_ATTRIBUTE_KERNEL( \
-    FUNC_NAME, PREAMBLE, BODY) \
+// Skeletons -- don't use this directly
+#define DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
 GLOBAL void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
     PREAMBLE \
@@ -183,23 +196,49 @@ GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
     if (nid < size) { \
         BODY; \
     } \
-} \
-static Kernel<ATTRIBUTE_ARGS> get_##FUNC_NAME() { \
+}
+
+// Use this to set up attributes kernel
+#define BUILD_ATTRIBUTE_KERNEL( \
+    CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
+    return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
+
+// Use this to set up attributes learning kernel
+#define BUILD_ATTRIBUTE_LEARNING_KERNEL( \
+    CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
 #else
 
-#define BUILD_ATTRIBUTE_KERNEL( \
-    FUNC_NAME, PREAMBLE, BODY) \
+// Skeletons -- don't use this directly
+#define DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
 GLOBAL void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
         BODY; \
     } \
-} \
-static Kernel<ATTRIBUTE_ARGS> get_##FUNC_NAME() { \
+}
+
+// Use this to set up attributes kernel
+#define BUILD_ATTRIBUTE_KERNEL( \
+    CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
+    return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
+}
+
+// Use this to set up attributes learning kernel
+#define BUILD_ATTRIBUTE_LEARNING_KERNEL( \
+    CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 

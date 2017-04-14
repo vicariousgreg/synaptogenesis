@@ -20,7 +20,7 @@ static RateEncodingParameters create_parameters(std::string str) {
 
 #include <math.h>
 
-BUILD_ATTRIBUTE_KERNEL(re_attribute_kernel,
+BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
     float *f_outputs = (float*)outputs;
 
     ,
@@ -44,7 +44,7 @@ BUILD_ATTRIBUTE_KERNEL(re_attribute_kernel,
 /******************************************************************************/
 
 RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT, get_re_attribute_kernel()) {
+        : Attributes(layers, FLOAT) {
     this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
     Attributes::register_variable(&this->neuron_parameters);
 

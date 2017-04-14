@@ -9,7 +9,7 @@ REGISTER_ATTRIBUTES(RelayAttributes, "relay")
 /******************************** KERNEL **************************************/
 /******************************************************************************/
 
-BUILD_ATTRIBUTE_KERNEL(relay_attribute_kernel,
+BUILD_ATTRIBUTE_KERNEL(RelayAttributes, relay_attribute_kernel,
     float *f_outputs = (float*)outputs;
 
     ,
@@ -30,4 +30,4 @@ BUILD_ATTRIBUTE_KERNEL(relay_attribute_kernel,
 /******************************************************************************/
 
 RelayAttributes::RelayAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT, get_relay_attribute_kernel()) { }
+        : Attributes(layers, FLOAT) { }

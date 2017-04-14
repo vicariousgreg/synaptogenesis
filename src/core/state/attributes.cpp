@@ -42,11 +42,8 @@ int Attributes::register_neural_model(std::string neural_model,
     return bank->neural_models.size() - 1;
 }
 
-Attributes::Attributes(LayerList &layers, OutputType output_type,
-        Kernel<ATTRIBUTE_ARGS> kernel, Kernel<ATTRIBUTE_ARGS> learning_kernel)
+Attributes::Attributes(LayerList &layers, OutputType output_type)
         : output_type(output_type),
-          kernel(kernel),
-          learning_kernel(learning_kernel),
           device_id(0),
           pointer(this) {
     // Keep track of register sizes

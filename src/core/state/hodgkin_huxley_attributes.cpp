@@ -37,7 +37,7 @@ static HodgkinHuxleyParameters create_parameters(std::string str) {
 #define HH_VL -54.4
 #define HH_CM 1.0
 
-BUILD_ATTRIBUTE_KERNEL(hh_attribute_kernel,
+BUILD_ATTRIBUTE_KERNEL(HodgkinHuxleyAttributes, hh_attribute_kernel,
     HodgkinHuxleyAttributes *hh_att = (HodgkinHuxleyAttributes*)att;
     float *voltages = hh_att->voltage.get(other_start_index);
     float *hs = hh_att->h.get(other_start_index);
@@ -132,7 +132,7 @@ BUILD_ATTRIBUTE_KERNEL(hh_attribute_kernel,
 /******************************************************************************/
 
 HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(LayerList &layers)
-        : SpikingAttributes(layers, get_hh_attribute_kernel()) {
+        : SpikingAttributes(layers) {
     this->h = Pointer<float>(total_neurons);
     this->m = Pointer<float>(total_neurons);
     this->n = Pointer<float>(total_neurons);

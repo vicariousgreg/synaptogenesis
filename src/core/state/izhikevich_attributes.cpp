@@ -72,7 +72,7 @@ static IzhikevichParameters create_parameters(std::string str) {
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
 
-BUILD_ATTRIBUTE_KERNEL(iz_attribute_kernel,
+BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
     float *voltages = iz_att->voltage.get(other_start_index);
     float *recoveries = iz_att->recovery.get(other_start_index);
@@ -139,7 +139,7 @@ BUILD_ATTRIBUTE_KERNEL(iz_attribute_kernel,
 /******************************************************************************/
 
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
-        : SpikingAttributes(layers, get_iz_attribute_kernel()) {
+        : SpikingAttributes(layers) {
     this->recovery = Pointer<float>(total_neurons);
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
     Attributes::register_variable(&this->recovery);

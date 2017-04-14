@@ -22,6 +22,7 @@ class IzhikevichAttributes : public SpikingAttributes {
         // Neuron parameters
         Pointer<IzhikevichParameters> neuron_parameters;
 
+    GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };
 
