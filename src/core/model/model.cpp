@@ -28,7 +28,7 @@ const LayerList Model::get_layers() const {
     return layers;
 }
 
-const LayerList Model::get_layers(NeuralModel neural_model) const {
+const LayerList Model::get_layers(std::string neural_model) const {
     LayerList layers;
     for (auto& structure : structures)
         for (auto& layer : structure->get_layers())

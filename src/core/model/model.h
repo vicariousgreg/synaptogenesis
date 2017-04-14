@@ -25,7 +25,7 @@ class Model {
 
         const StructureList& get_structures() const { return structures; }
         const LayerList get_layers() const;
-        const LayerList get_layers(NeuralModel neural_model) const;
+        const LayerList get_layers(std::string neural_model) const;
         const LayerList get_input_layers() const;
         const LayerList get_output_layers() const;
         const LayerList get_expected_layers() const;

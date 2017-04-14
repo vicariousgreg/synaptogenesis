@@ -86,20 +86,6 @@ typedef enum {
     GABAB
 } Opcode;
 
-/* Enumeration of neural models. */
-typedef enum {
-    IZHIKEVICH,
-    HODGKIN_HUXLEY,
-    HEBBIAN_RATE_ENCODING,
-    BACKPROP_RATE_ENCODING,
-    RELAY
-} NeuralModel;
-
-static NeuralModel NeuralModels[] =
-    { IZHIKEVICH, HODGKIN_HUXLEY,
-      HEBBIAN_RATE_ENCODING, BACKPROP_RATE_ENCODING,
-      RELAY};
-
 /* Enumeration of cluster types. */
 typedef enum {
     PARALLEL,

@@ -1,6 +1,14 @@
 #include "state/hebbian_rate_encoding_attributes.h"
 #include "util/error_manager.h"
 
+int HebbianRateEncodingAttributes::neural_model_id =
+    Attributes::register_neural_model("hebbian_rate_encoding",
+        sizeof(HebbianRateEncodingAttributes), HebbianRateEncodingAttributes::build);
+
+Attributes *HebbianRateEncodingAttributes::build(LayerList &layers) {
+    return new HebbianRateEncodingAttributes(layers);
+}
+
 /******************************************************************************/
 /**************************** HEBBIAN LEARNING ********************************/
 /******************************************************************************/

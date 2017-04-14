@@ -2,6 +2,7 @@
 #define structure_h
 
 #include <map>
+#include <set>
 #include <vector>
 #include <string>
 
@@ -34,8 +35,8 @@ class Structure {
 
         /* Checks whether this structure contains a layer
          *     of the given neural_model */
-        bool contains(NeuralModel neural_model) {
-            return neural_model_flags[neural_model];
+        bool contains(std::string neural_model) {
+            return neural_model_flags.count(neural_model);
         }
 
         /* Gets the total neuron count */
@@ -110,7 +111,7 @@ class Structure {
         // Number of neurons
         int total_neurons;
 
-        bool neural_model_flags[sizeof(NeuralModels)];
+        std::set<std::string> neural_model_flags;
 };
 
 typedef std::vector<Structure*> StructureList;

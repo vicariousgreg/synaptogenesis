@@ -1,44 +1,45 @@
 #include "state/attributes.h"
-#include "state/relay_attributes.h"
-#include "state/izhikevich_attributes.h"
-#include "state/hebbian_rate_encoding_attributes.h"
-#include "state/backprop_rate_encoding_attributes.h"
-#include "state/hodgkin_huxley_attributes.h"
+#include "state/state.h"
 
 Attributes *build_attributes(LayerList &layers,
-        NeuralModel neural_model, DeviceID device_id) {
-    Attributes *attributes;
+        std::string neural_model, DeviceID device_id) {
+    auto bank = Attributes::get_neural_model_bank();
+    if (bank->neural_models.count(neural_model) == 0)
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized neural model string: " + neural_model + "!");
 
-    switch(neural_model) {
-        case(IZHIKEVICH):
-            attributes = new IzhikevichAttributes(layers);
-            attributes->object_size = sizeof(IzhikevichAttributes);
-            break;
-        case(HODGKIN_HUXLEY):
-            attributes = new HodgkinHuxleyAttributes(layers);
-            attributes->object_size = sizeof(HodgkinHuxleyAttributes);
-            break;
-        case(HEBBIAN_RATE_ENCODING):
-            attributes = new HebbianRateEncodingAttributes(layers);
-            attributes->object_size = sizeof(HebbianRateEncodingAttributes);
-            break;
-        case(BACKPROP_RATE_ENCODING):
-            attributes = new BackpropRateEncodingAttributes(layers);
-            attributes->object_size = sizeof(BackpropRateEncodingAttributes);
-            break;
-        case(RELAY):
-            attributes = new RelayAttributes(layers);
-            attributes->object_size = sizeof(RelayAttributes);
-            break;
-        default:
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized engine type!");
-    }
+    Attributes *attributes =
+        bank->build_pointers[neural_model](layers);
+    attributes->object_size =
+        bank->sizes[neural_model];
 
     // Copy attributes to device and set the pointer
     attributes->set_device_id(device_id);
     attributes->schedule_transfer();
     return attributes;
+}
+
+Attributes::NeuralModelBank* Attributes::get_neural_model_bank() {
+    static Attributes::NeuralModelBank* bank = new NeuralModelBank();
+    return bank;
+}
+
+const std::set<std::string> Attributes::get_neural_models() {
+    return Attributes::get_neural_model_bank()->neural_models;
+}
+
+int Attributes::register_neural_model(std::string neural_model,
+        int object_size, BUILD_PTR build_ptr) {
+    auto bank = Attributes::get_neural_model_bank();
+    if (bank->neural_models.count(neural_model) == 1)
+        ErrorManager::get_instance()->log_error(
+            "Duplicate neural model string: " + neural_model + "!");
+    bank->neural_models.insert(neural_model);
+    bank->build_pointers[neural_model] = build_ptr;
+    bank->sizes[neural_model] = object_size;
+
+    // Return index as an identifier
+    return bank->neural_models.size() - 1;
 }
 
 Attributes::Attributes(LayerList &layers, OutputType output_type,

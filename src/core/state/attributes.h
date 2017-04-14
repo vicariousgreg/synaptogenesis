@@ -2,6 +2,7 @@
 #define attributes_h
 
 #include <map>
+#include <set>
 #include <vector>
 
 #include "model/layer.h"
@@ -16,6 +17,8 @@
 /* Typedef for attribute kernel functions */
 typedef AttributeData ATTRIBUTE_ARGS;
 typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
+
+typedef Attributes* (*BUILD_PTR)(LayerList &layers);
 
 class Attributes {
     public:
@@ -82,9 +85,27 @@ class Attributes {
 
         DeviceID get_device_id() { return device_id; }
 
+        // Get the set of neural model strings
+        static const std::set<std::string> get_neural_models();
+
     protected:
+        class NeuralModelBank {
+            public:
+                // Set of neural model implementations
+                std::set<std::string> neural_models;
+                std::map<std::string, BUILD_PTR> build_pointers;
+                std::map<std::string, int> sizes;
+        };
+
         friend Attributes *build_attributes(LayerList &layers,
-            NeuralModel neural_model, DeviceID device_id);
+            std::string neural_model, DeviceID device_id);
+
+        // Registers a subclass neural model name with the state
+        static int register_neural_model(std::string neural_model,
+            int object_size, BUILD_PTR build_ptr);
+
+        // Set of neural model implementations
+        static NeuralModelBank* get_neural_model_bank();
 
         // Registers a variable to be handled by the superclass
         void register_variable(BasePointer *pointer);
@@ -114,7 +135,7 @@ class Attributes {
 };
 
 Attributes *build_attributes(LayerList &layers,
-    NeuralModel neural_model, DeviceID device_id);
+    std::string neural_model, DeviceID device_id);
 
 #define PREAMBLE_ATTRIBUTES \
     const Attributes *att = attribute_data.attributes; \

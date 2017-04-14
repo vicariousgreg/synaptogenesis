@@ -63,20 +63,27 @@ State::State(Model *model) : model(model) {
             build_buffer(i, input_layers, output_layers, expected_layers));
     }
 
+    // Validate neural model strings
+    for (auto layer : model->get_layers())
+        if (Attributes::get_neural_models().count(layer->neural_model) == 0)
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized neural model \"" + layer->neural_model +
+                "\" in layer \"" + layer->name + "\"!");
+
     // Create attributes and weight matrices
     for (DeviceID device_id = 0 ; device_id < num_devices ; ++device_id) {
-        attributes.push_back(std::vector<Attributes*>());
-        for (auto neural_model : NeuralModels) {
+        attributes.push_back(std::map<std::string, Attributes*>());
+        for (auto neural_model : Attributes::get_neural_models()) {
             LayerList layers;
             for (auto layer : model->get_layers(neural_model))
                 if (layer_devices[layer] == device_id)
                     layers.push_back(layer);
 
             if (layers.size() == 0) {
-                attributes[device_id].push_back(nullptr);
+                attributes[device_id][neural_model] = nullptr;
             } else {
                 auto att = build_attributes(layers, neural_model, device_id);
-                attributes[device_id].push_back(att);
+                attributes[device_id][neural_model] = att;
 
                 /* Set up weight matrices */
                 for (auto& layer : layers) {
@@ -94,15 +101,15 @@ State::State(Model *model) : model(model) {
 
     // Finally, transfer data
     ResourceManager::get_instance()->transfer();
-    for (auto n : NeuralModels)
+    for (auto n : Attributes::get_neural_models())
         for (int i = 0; i < num_devices; ++i)
-            if (attributes[i][n])
+            if (attributes[i][n] != nullptr)
                 attributes[i][n]->transfer_to_device();
 }
 
 State::~State() {
     for (int i = 0; i < num_devices; ++i)
-        for (auto neural_model : NeuralModels)
+        for (auto neural_model : Attributes::get_neural_models())
             if (attributes[i][neural_model] != nullptr)
                 delete attributes[i][neural_model];
     for (auto matrix : weight_matrices) delete matrix.second;
@@ -111,7 +118,7 @@ State::~State() {
 
 bool State::check_compatibility(Structure *structure) {
     // Check relevant attributes for compatibility
-    for (auto n : NeuralModels)
+    for (auto n : Attributes::get_neural_models())
         for (int i = 0; i < num_devices; ++i)
             if (structure->contains(n) and attributes[i][n] and not
                     attributes[i][n]->check_compatibility(
@@ -122,22 +129,22 @@ bool State::check_compatibility(Structure *structure) {
 
 /* Zoo of Getters */
 Pointer<float> State::get_input(Layer *layer, int register_index) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]
+    return attributes[layer_devices.at(layer)].at(layer->neural_model)
         ->get_input(layer->id, register_index);
 }
 
 Pointer<float> State::get_second_order_input(DendriticNode *node) const {
     return attributes[layer_devices.at(node->to_layer)]
-        [node->to_layer->neural_model]->get_second_order_input(node->id);
+        .at(node->to_layer->neural_model)->get_second_order_input(node->id);
 }
 
 Pointer<Output> State::get_expected(Layer *layer) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]
+    return attributes[layer_devices.at(layer)].at(layer->neural_model)
         ->get_expected(layer->id);
 }
 
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]
+    return attributes[layer_devices.at(layer)].at(layer->neural_model)
         ->get_output(layer->id, word_index);
 }
 
@@ -155,7 +162,7 @@ Pointer<Output> State::get_buffer_output(Layer *layer) const {
 
 OutputType State::get_output_type(Layer *layer) const {
     return attributes[layer_devices.at(layer)]
-                     [layer->neural_model]->output_type;
+                     .at(layer->neural_model)->output_type;
 }
 
 DeviceID State::get_device_id(Layer *layer) const {
@@ -163,21 +170,21 @@ DeviceID State::get_device_id(Layer *layer) const {
 }
 
 int State::get_other_start_index(Layer *layer) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]
+    return attributes[layer_devices.at(layer)].at(layer->neural_model)
         ->get_other_start_index(layer->id);
 }
 
 const Attributes* State::get_attributes_pointer(Layer *layer) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]->pointer;
+    return attributes[layer_devices.at(layer)].at(layer->neural_model)->pointer;
 }
 
 Kernel<ATTRIBUTE_ARGS> State::get_attribute_kernel(Layer *layer) const {
-    return attributes[layer_devices.at(layer)][layer->neural_model]->kernel;
+    return attributes[layer_devices.at(layer)].at(layer->neural_model)->kernel;
 }
 
 Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
     return attributes[layer_devices.at(layer)]
-                     [layer->neural_model]->learning_kernel;
+                     .at(layer->neural_model)->learning_kernel;
 }
 
 Pointer<float> State::get_matrix(Connection* conn) const {
@@ -186,20 +193,20 @@ Pointer<float> State::get_matrix(Connection* conn) const {
 
 EXTRACTOR State::get_extractor(Connection *conn) const {
     return attributes[layer_devices.at(conn->from_layer)]
-                     [conn->from_layer->neural_model]->extractor;
+                     .at(conn->from_layer->neural_model)->extractor;
 }
 
 Kernel<SYNAPSE_ARGS> State::get_activator(
         Connection *conn, bool second_order) const {
     return attributes[layer_devices.at(conn->to_layer)]
-                     [conn->to_layer->neural_model]
+                     .at(conn->to_layer->neural_model)
                      ->get_activator(conn->type, second_order);
 }
 
 Kernel<SYNAPSE_ARGS> State::get_updater(
         Connection *conn, bool second_order) const {
     return attributes[layer_devices.at(conn->to_layer)]
-                     [conn->to_layer->neural_model]
+                     .at(conn->to_layer->neural_model)
                      ->get_updater(conn->type, second_order);
 }
 

@@ -42,7 +42,7 @@ class Layer {
         const int id;
 
         // Neural model
-        const NeuralModel neural_model;
+        const std::string neural_model;
 
         // Housing structure
         Structure* const structure;

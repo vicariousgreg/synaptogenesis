@@ -8,7 +8,7 @@ class LayerConfig {
     public:
         LayerConfig(
             std::string name,
-            NeuralModel neural_model,
+            std::string neural_model,
             int rows,
             int columns,
             std::string params="",
@@ -24,7 +24,7 @@ class LayerConfig {
 
         LayerConfig(
             std::string name,
-            NeuralModel neural_model,
+            std::string neural_model,
             std::string params="",
             float noise=0.0,
             bool plastic=false)
@@ -32,7 +32,7 @@ class LayerConfig {
                     0, 0, params, noise, plastic) { }
         
         std::string name;
-        NeuralModel neural_model;
+        std::string neural_model;
         int rows, columns;
         std::string params;
         float noise;

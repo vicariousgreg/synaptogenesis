@@ -6,9 +6,10 @@
 class RelayAttributes : public Attributes {
     public:
         RelayAttributes(LayerList &layers);
-        virtual ~RelayAttributes();
+        static Attributes *build(LayerList &layers);
 
-        virtual void schedule_transfer();
+    private:
+        static int neural_model_id;
 };
 
 #endif

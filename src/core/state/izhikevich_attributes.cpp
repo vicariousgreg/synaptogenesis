@@ -3,6 +3,14 @@
 #include "state/izhikevich_attributes.h"
 #include "util/tools.h"
 
+int IzhikevichAttributes::neural_model_id =
+    Attributes::register_neural_model("izhikevich",
+        sizeof(IzhikevichAttributes), IzhikevichAttributes::build);
+
+Attributes *IzhikevichAttributes::build(LayerList &layers) {
+    return new IzhikevichAttributes(layers);
+}
+
 /******************************************************************************/
 /******************************** PARAMS **************************************/
 /******************************************************************************/

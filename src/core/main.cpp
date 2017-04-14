@@ -10,6 +10,12 @@
 #include "util/tools.h"
 #include "clock.h"
 
+#define IZHIKEVICH "izhikevich"
+#define HODGKIN_HUXLEY "hodgkin_huxley"
+#define HEBBIAN_RATE_ENCODING "hebbian_rate_encoding"
+#define BACKPROP_RATE_ENCODING "backprop_rate_encoding"
+#define RELAY "relay"
+
 void print_model(Model *model) {
     printf("Built model.\n");
     printf("  - neurons     : %10d\n", model->get_num_neurons());
@@ -28,7 +34,7 @@ void print_model(Model *model) {
     }
 }
 
-Model* build_stress_model(NeuralModel neural_model) {
+Model* build_stress_model(std::string neural_model) {
     Model *model = new Model();
     Structure *structure = model->add_structure("Self-connected");
 
@@ -53,7 +59,7 @@ Model* build_stress_model(NeuralModel neural_model) {
     return model;
 }
 
-Model* build_image_model(NeuralModel neural_model) {
+Model* build_image_model(std::string neural_model) {
     /* Determine output type */
     //std::string output_name = "print_output";
     std::string output_name = "visualizer_output";
@@ -217,7 +223,7 @@ Model* build_image_model(NeuralModel neural_model) {
     return model;
 }
 
-Model* build_reentrant_image_model(NeuralModel neural_model) {
+Model* build_reentrant_image_model(std::string neural_model) {
     /* Determine output type */
     //std::string output_name = "print_output";
     std::string output_name = "visualizer_output";
@@ -272,7 +278,7 @@ Model* build_reentrant_image_model(NeuralModel neural_model) {
     return model;
 }
 
-Model* build_working_memory_model(NeuralModel neural_model) {
+Model* build_working_memory_model(std::string neural_model) {
     /* Construct the model */
     Model *model = new Model();
     Structure *main_structure = model->add_structure("working memory", PARALLEL);
@@ -447,7 +453,7 @@ Model* build_working_memory_model(NeuralModel neural_model) {
     return model;
 }
 
-Model* build_fc_working_memory_model(NeuralModel neural_model) {
+Model* build_fc_working_memory_model(std::string neural_model) {
     /* Construct the model */
     Model *model = new Model();
     Structure *main_structure = model->add_structure("working memory", PARALLEL);
@@ -673,7 +679,7 @@ Model* build_fc_working_memory_model(NeuralModel neural_model) {
     return model;
 }
 
-Model* build_dendritic_model(NeuralModel neural_model) {
+Model* build_dendritic_model(std::string neural_model) {
     /* Construct the model */
     Model *model = new Model();
     Structure *structure = model->add_structure("dendritic");
@@ -843,7 +849,7 @@ Model* build_hh_model() {
     return model;
 }
 
-Model* build_cc_model(NeuralModel neural_model) {
+Model* build_cc_model(std::string neural_model) {
     /* Construct the model */
     Model *model = new Model();
     std::vector<Structure*> structures;

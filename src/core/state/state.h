@@ -1,6 +1,10 @@
 #ifndef state_h
 #define state_h
 
+#include <map>
+#include <set>
+#include <vector>
+
 #include "state/attributes.h"
 #include "util/constants.h"
 #include "util/pointer.h"
@@ -48,7 +52,7 @@ class State {
     private:
         int num_devices;
         std::vector<Buffer*> buffers;
-        std::vector<std::vector<Attributes*> > attributes;
+        std::vector<std::map<std::string, Attributes*> > attributes;
         std::map<Connection*, WeightMatrix*> weight_matrices;
         std::map<Layer*, DeviceID> layer_devices;
 };

@@ -3,6 +3,14 @@
 #include "state/relay_attributes.h"
 #include "util/error_manager.h"
 
+int RelayAttributes::neural_model_id =
+    Attributes::register_neural_model("relay",
+        sizeof(RelayAttributes), RelayAttributes::build);
+
+Attributes *RelayAttributes::build(LayerList &layers) {
+    return new RelayAttributes(layers);
+}
+
 /******************************************************************************/
 /******************************** KERNEL **************************************/
 /******************************************************************************/
@@ -29,10 +37,3 @@ BUILD_ATTRIBUTE_KERNEL(relay_attribute_kernel,
 
 RelayAttributes::RelayAttributes(LayerList &layers)
         : Attributes(layers, FLOAT, get_relay_attribute_kernel()) { }
-
-RelayAttributes::~RelayAttributes() { }
-
-void RelayAttributes::schedule_transfer() {
-    Attributes::schedule_transfer();
-}
-
