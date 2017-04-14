@@ -14,9 +14,6 @@ class RateEncodingParameters {
 class RateEncodingAttributes : public Attributes {
     public:
         RateEncodingAttributes(LayerList &layers);
-        virtual ~RateEncodingAttributes();
-
-        virtual void schedule_transfer();
 
         // Neuron parameters
         Pointer<RateEncodingParameters> neuron_parameters;

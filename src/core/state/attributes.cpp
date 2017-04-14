@@ -111,6 +111,8 @@ Attributes::~Attributes() {
     this->output.free();
     this->expected.free();
     this->second_order_input.free();
+    for (auto ptr : managed_variables) ptr->free();
+
 #ifdef __CUDACC__
     cudaFree(this->pointer);
 #endif
@@ -156,6 +158,13 @@ void Attributes::schedule_transfer() {
     this->output.schedule_transfer(device_id);
     this->expected.schedule_transfer(device_id);
     this->second_order_input.schedule_transfer(device_id);
+
+    for (auto ptr : managed_variables)
+        ptr->schedule_transfer(device_id);
+}
+
+void Attributes::register_variable(BasePointer* ptr) {
+    this->managed_variables.push_back(ptr);
 }
 
 int Attributes::get_other_start_index(int id) const {

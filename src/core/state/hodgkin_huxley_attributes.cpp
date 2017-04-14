@@ -136,6 +136,11 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(LayerList &layers)
     this->n = Pointer<float>(total_neurons);
     this->current_trace = Pointer<float>(total_neurons);
     this->neuron_parameters = Pointer<HodgkinHuxleyParameters>(total_neurons);
+    Attributes::register_variable(&this->h);
+    Attributes::register_variable(&this->m);
+    Attributes::register_variable(&this->n);
+    Attributes::register_variable(&this->current_trace);
+    Attributes::register_variable(&this->neuron_parameters);
 
     // Fill in table
     int start_index = 0;
@@ -151,22 +156,4 @@ HodgkinHuxleyAttributes::HodgkinHuxleyAttributes(LayerList &layers)
         }
         start_index += layer->size;
     }
-}
-
-HodgkinHuxleyAttributes::~HodgkinHuxleyAttributes() {
-    this->h.free();
-    this->m.free();
-    this->n.free();
-    this->current_trace.free();
-    this->neuron_parameters.free();
-}
-
-void HodgkinHuxleyAttributes::schedule_transfer() {
-    SpikingAttributes::schedule_transfer();
-
-    this->h.schedule_transfer(device_id);
-    this->m.schedule_transfer(device_id);
-    this->n.schedule_transfer(device_id);
-    this->current_trace.schedule_transfer(device_id);
-    this->neuron_parameters.schedule_transfer(device_id);
 }

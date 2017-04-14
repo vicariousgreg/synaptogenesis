@@ -13,15 +13,5 @@ Kernel<SYNAPSE_ARGS> BackpropRateEncodingAttributes::get_updater(
 BackpropRateEncodingAttributes::BackpropRateEncodingAttributes(LayerList &layers)
         : RateEncodingAttributes(layers) {
     this->error_deltas = Pointer<float>(total_neurons, 0.0);
+    Attributes::register_variable(&this->error_deltas);
 }
-
-BackpropRateEncodingAttributes::~BackpropRateEncodingAttributes() {
-    this->error_deltas.free();
-}
-
-void BackpropRateEncodingAttributes::schedule_transfer() {
-    RateEncodingAttributes::schedule_transfer();
-
-    this->error_deltas.schedule_transfer(device_id);
-}
-

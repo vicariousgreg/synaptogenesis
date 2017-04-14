@@ -82,10 +82,3 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
 
 HebbianRateEncodingAttributes::HebbianRateEncodingAttributes(LayerList &layers)
         : RateEncodingAttributes(layers) { }
-
-HebbianRateEncodingAttributes::~HebbianRateEncodingAttributes() { }
-
-void HebbianRateEncodingAttributes::schedule_transfer() {
-    RateEncodingAttributes::schedule_transfer();
-}
-

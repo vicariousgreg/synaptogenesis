@@ -3,15 +3,7 @@
 SpikingAttributes::SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_ARGS> kernel)
         : Attributes(layers, BIT, kernel) {
     this->voltage = Pointer<float>(total_neurons);
-}
-
-SpikingAttributes::~SpikingAttributes() {
-    this->voltage.free();
-}
-
-void SpikingAttributes::schedule_transfer() {
-    Attributes::schedule_transfer();
-    this->voltage.schedule_transfer(device_id);
+    Attributes::register_variable(&this->voltage);
 }
 
 void SpikingAttributes::process_weight_matrix(WeightMatrix* matrix) {
@@ -227,19 +219,19 @@ Kernel<SYNAPSE_ARGS> SpikingAttributes::get_activator(
     switch(opcode) { \
         case(AMPA): \
             decay = 0.999; \
-            coefficient = 400; \
+            coefficient = 40; \
             break; \
         case(GABAA): \
             decay = 0.999; \
-            coefficient = 400; \
+            coefficient = 40; \
             break; \
         case(NMDA): \
             decay = 1.0; \
-            coefficient = 1000; \
+            coefficient = 10; \
             break; \
         case(GABAB): \
             decay = 1.0; \
-            coefficient = 1000; \
+            coefficient = 10; \
             break; \
     }
 

@@ -2,6 +2,7 @@
 #define attributes_h
 
 #include <map>
+#include <vector>
 
 #include "model/layer.h"
 #include "state/weight_matrix.h"
@@ -9,6 +10,7 @@
 #include "engine/kernel/synapse_kernel.h"
 #include "engine/kernel/attribute_data.h"
 #include "util/constants.h"
+#include "util/pointer.h"
 #include "util/error_manager.h"
 
 /* Typedef for attribute kernel functions */
@@ -33,7 +35,7 @@ class Attributes {
         }
 
         // Schedule and conduct transfer to device
-        virtual void schedule_transfer();
+        void schedule_transfer();
         void transfer_to_device();
 
         /* Learning Rule functions */
@@ -84,6 +86,9 @@ class Attributes {
         friend Attributes *build_attributes(LayerList &layers,
             NeuralModel neural_model, DeviceID device_id);
 
+        // Registers a variable to be handled by the superclass
+        void register_variable(BasePointer *pointer);
+
         // Traverse the dendritic tree and find second order nodes
         int dendrite_DFS(DendriticNode *curr, int second_order_size);
 
@@ -93,6 +98,9 @@ class Attributes {
 
         DeviceID device_id;
         int object_size;
+
+        // Managed pointers
+        std::vector<BasePointer*> managed_variables;
 
         std::map<int, int> layer_indices;
         std::map<int, int> other_start_indices;

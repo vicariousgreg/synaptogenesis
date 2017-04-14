@@ -140,6 +140,8 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : SpikingAttributes(layers, get_iz_attribute_kernel()) {
     this->recovery = Pointer<float>(total_neurons);
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
+    Attributes::register_variable(&this->recovery);
+    Attributes::register_variable(&this->neuron_parameters);
 
     // Fill in table
     int start_index = 0;
@@ -153,16 +155,3 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         start_index += layer->size;
     }
 }
-
-IzhikevichAttributes::~IzhikevichAttributes() {
-    this->recovery.free();
-    this->neuron_parameters.free();
-}
-
-void IzhikevichAttributes::schedule_transfer() {
-    SpikingAttributes::schedule_transfer();
-
-    this->recovery.schedule_transfer(device_id);
-    this->neuron_parameters.schedule_transfer(device_id);
-}
-

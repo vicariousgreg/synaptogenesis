@@ -46,6 +46,7 @@ BUILD_ATTRIBUTE_KERNEL(re_attribute_kernel,
 RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
         : Attributes(layers, FLOAT, get_re_attribute_kernel()) {
     this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
+    Attributes::register_variable(&this->neuron_parameters);
 
     // Fill in table
     int start_index = 0;
@@ -56,14 +57,3 @@ RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
         start_index += layer->size;
     }
 }
-
-RateEncodingAttributes::~RateEncodingAttributes() {
-    this->neuron_parameters.free();
-}
-
-void RateEncodingAttributes::schedule_transfer() {
-    Attributes::schedule_transfer();
-
-    this->neuron_parameters.schedule_transfer(device_id);
-}
-

@@ -6,7 +6,6 @@
 class SpikingAttributes : public Attributes {
     public:
         SpikingAttributes(LayerList &layers, Kernel<ATTRIBUTE_ARGS> kernel);
-        virtual ~SpikingAttributes();
 
         virtual Kernel<SYNAPSE_ARGS> get_activator(
             ConnectionType type, bool second_order);
@@ -17,8 +16,6 @@ class SpikingAttributes : public Attributes {
                 (conn->to_layer->size + 2) : 3;
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
-
-        virtual void schedule_transfer();
 
         // Neuron Attributes
         Pointer<float> voltage;

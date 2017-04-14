@@ -6,7 +6,6 @@
 class BackpropRateEncodingAttributes : public RateEncodingAttributes {
     public:
         BackpropRateEncodingAttributes(LayerList &layers);
-        virtual ~BackpropRateEncodingAttributes();
 
         virtual bool check_compatibility(ClusterType cluster_type) {
             return cluster_type == FEEDFORWARD;
@@ -14,8 +13,6 @@ class BackpropRateEncodingAttributes : public RateEncodingAttributes {
 
         virtual Kernel<SYNAPSE_ARGS> get_updater(
             ConnectionType type, bool second_order);
-
-        virtual void schedule_transfer();
 
         Pointer<float> error_deltas;
 };
