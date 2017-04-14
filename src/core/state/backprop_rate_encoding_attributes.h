@@ -6,7 +6,6 @@
 class BackpropRateEncodingAttributes : public RateEncodingAttributes {
     public:
         BackpropRateEncodingAttributes(LayerList &layers);
-        static Attributes *build(LayerList &layers);
 
         virtual bool check_compatibility(ClusterType cluster_type) {
             return cluster_type == FEEDFORWARD;
@@ -17,8 +16,7 @@ class BackpropRateEncodingAttributes : public RateEncodingAttributes {
 
         Pointer<float> error_deltas;
 
-    private:
-        static int neural_model_id;
+    ATTRIBUTE_MEMBERS
 };
 
 #endif

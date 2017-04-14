@@ -6,10 +6,8 @@
 class RelayAttributes : public Attributes {
     public:
         RelayAttributes(LayerList &layers);
-        static Attributes *build(LayerList &layers);
 
-    private:
-        static int neural_model_id;
+    ATTRIBUTE_MEMBERS
 };
 
 #endif

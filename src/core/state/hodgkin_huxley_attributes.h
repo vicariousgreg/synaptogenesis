@@ -14,7 +14,6 @@ class HodgkinHuxleyParameters {
 class HodgkinHuxleyAttributes : public SpikingAttributes {
     public:
         HodgkinHuxleyAttributes(LayerList &layers);
-        static Attributes *build(LayerList &layers);
 
         // Neuron Attributes
         Pointer<float> h, m, n, current_trace;
@@ -22,8 +21,7 @@ class HodgkinHuxleyAttributes : public SpikingAttributes {
         // Neuron parameters
         Pointer<HodgkinHuxleyParameters> neuron_parameters;
 
-    private:
-        static int neural_model_id;
+    ATTRIBUTE_MEMBERS
 };
 
 #endif

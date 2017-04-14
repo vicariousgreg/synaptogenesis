@@ -3,13 +3,7 @@
 #include "state/relay_attributes.h"
 #include "util/error_manager.h"
 
-int RelayAttributes::neural_model_id =
-    Attributes::register_neural_model("relay",
-        sizeof(RelayAttributes), RelayAttributes::build);
-
-Attributes *RelayAttributes::build(LayerList &layers) {
-    return new RelayAttributes(layers);
-}
+REGISTER_ATTRIBUTES(RelayAttributes, "relay")
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/

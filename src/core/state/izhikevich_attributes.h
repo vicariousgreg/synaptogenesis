@@ -15,7 +15,6 @@ class IzhikevichParameters {
 class IzhikevichAttributes : public SpikingAttributes {
     public:
         IzhikevichAttributes(LayerList &layers);
-        static Attributes *build(LayerList &layers);
 
         // Neuron Attributes
         Pointer<float> recovery;
@@ -23,8 +22,7 @@ class IzhikevichAttributes : public SpikingAttributes {
         // Neuron parameters
         Pointer<IzhikevichParameters> neuron_parameters;
 
-    private:
-        static int neural_model_id;
+    ATTRIBUTE_MEMBERS
 };
 
 #endif

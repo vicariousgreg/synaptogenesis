@@ -6,13 +6,11 @@
 class HebbianRateEncodingAttributes : public RateEncodingAttributes {
     public:
         HebbianRateEncodingAttributes(LayerList &layers);
-        static Attributes *build(LayerList &layers);
 
         virtual Kernel<SYNAPSE_ARGS> get_updater(
             ConnectionType type, bool second_order);
 
-    private:
-        static int neural_model_id;
+    ATTRIBUTE_MEMBERS
 };
 
 #endif

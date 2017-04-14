@@ -3,13 +3,7 @@
 
 #include "state/hodgkin_huxley_attributes.h"
 
-int HodgkinHuxleyAttributes::neural_model_id =
-    Attributes::register_neural_model("hodgkin_huxley",
-        sizeof(HodgkinHuxleyAttributes), HodgkinHuxleyAttributes::build);
-
-Attributes *HodgkinHuxleyAttributes::build(LayerList &layers) {
-    return new HodgkinHuxleyAttributes(layers);
-}
+REGISTER_ATTRIBUTES(HodgkinHuxleyAttributes, "hodgkin_huxley")
 
 /******************************************************************************/
 /******************************** PARAMS **************************************/

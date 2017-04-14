@@ -137,6 +137,25 @@ class Attributes {
 Attributes *build_attributes(LayerList &layers,
     std::string neural_model, DeviceID device_id);
 
+/* Macros for Attribute subclass Registry */
+// Put this one in .cpp
+#define REGISTER_ATTRIBUTES(CLASS_NAME, STRING) \
+int CLASS_NAME::neural_model_id = \
+    Attributes::register_neural_model(STRING, \
+        sizeof(CLASS_NAME), CLASS_NAME::build); \
+\
+Attributes *CLASS_NAME::build(LayerList &layers) { \
+    return new CLASS_NAME(layers); \
+}
+
+// Put this one in .h at bottom of class definition
+#define ATTRIBUTE_MEMBERS \
+    private: \
+        static Attributes *build(LayerList &layers); \
+        static int neural_model_id;
+
+
+/* Macros for Attribute kernels */
 #define PREAMBLE_ATTRIBUTES \
     const Attributes *att = attribute_data.attributes; \
     float *inputs = attribute_data.input.get(); \

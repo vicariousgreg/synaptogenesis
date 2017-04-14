@@ -108,13 +108,9 @@ CALC_CONVERGENT(activate_convergent_trace,
     GET_DEST_VOLTAGE(to_index)
     float sum = 0.0;,
 
-    if (convolutional) {
-        CALC_VAL(from_index, (to_index*num_weights + weight_index));
-        sum += val;
-    } else {
-        CALC_VAL(from_index, weight_index);
-        sum += val;
-    },
+    weight_index += (convolutional) ? (to_index*num_weights) : 0;
+    CALC_VAL(from_index, weight_index);
+    sum += val;,
 
     AGGREGATE(to_index, sum);
 );
@@ -144,11 +140,8 @@ ACTIVATE_ONE_TO_ONE_SECOND_ORDER(
 ACTIVATE_CONVERGENT_SECOND_ORDER(
         activate_convergent_trace_second_order,
     ACTIV_EXTRACTIONS,
-    if (convolutional) {
-        UPDATE_TRACE((to_index*num_weights + weight_index));
-    } else {
-        UPDATE_TRACE(weight_index);
-    }
+    weight_index += (convolutional) ? (to_index*num_weights) : 0;
+    UPDATE_TRACE(weight_index);
 );
 ACTIVATE_DIVERGENT_SECOND_ORDER(
         activate_divergent_trace_second_order,
