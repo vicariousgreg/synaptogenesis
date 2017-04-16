@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <ctime>
 #include <chrono>
+#include <random>
 
 #include "util/error_manager.h"
 
@@ -13,10 +14,12 @@ using Time_point = CClock::time_point;
 using std::chrono::milliseconds;
 using std::chrono::duration_cast;
 
+static std::default_random_engine generator(time(0));
+static std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
 /* Calculates a random float between |fMin| and |fMax| */
 inline float fRand(float fMin, float fMax) {
-    float f = (float)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
+    return fMin + (distribution(generator) * (fMax - fMin));
 }
 
 static float get_diff(Time_point a, Time_point b) {

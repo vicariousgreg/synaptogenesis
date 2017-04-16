@@ -25,10 +25,12 @@ const std::vector<Frontend*> Frontend::get_instances() {
 }
 
 void Frontend::init_all() {
-    for (auto f : Frontend::instances)
+    for (auto f : Frontend::instances) {
+        f->init();
         if (f->gui_window != nullptr)
             for (auto pair : f->layer_map)
                 f->gui_window->add_layer(pair.second);
+    }
 }
 
 void Frontend::launch_all() {

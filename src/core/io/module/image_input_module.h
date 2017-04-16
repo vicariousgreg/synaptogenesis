@@ -8,10 +8,10 @@ class ImageInputModule : public Module {
     public:
         ImageInputModule(Layer *layer, std::string params);
         virtual ~ImageInputModule() {
-            free(this->gray);
-            free(this->red);
-            free(this->green);
-            free(this->blue);
+            this->gray.free();
+            this->red.free();
+            this->green.free();
+            this->blue.free();
         }
 
         void feed_input(Buffer *buffer);

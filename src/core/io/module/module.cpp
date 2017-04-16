@@ -44,5 +44,5 @@ Module* build_module(Layer *layer, std::string type,
         return new DummyOutputModule(layer, params);
     else
         ErrorManager::get_instance()->log_error(
-            "Unrecognized output type!");
+            "Unrecognized module!");
 }

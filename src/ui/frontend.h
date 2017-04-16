@@ -18,6 +18,7 @@ class Frontend {
 
         void set_window(GuiWindow *gui_window);
 
+        virtual void init() { }
         virtual bool add_input_layer(Layer *layer,
             std::string params) = 0;
         virtual bool add_output_layer(Layer *layer,

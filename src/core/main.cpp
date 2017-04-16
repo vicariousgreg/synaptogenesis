@@ -1431,6 +1431,41 @@ void second_order_test() {
     delete model;
 }
 
+void maze_game_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = model->add_structure("maze_game");
+
+    int board_size = 3;
+
+    structure->add_layer(new LayerConfig("player_layer", RELAY, 3, 3));
+    structure->add_layer(new LayerConfig("goal_layer", RELAY, 3, 3));
+
+    structure->add_layer(new LayerConfig("movement_layer", RELAY, 1, 4));
+
+    // Modules
+    std::string output_name = "print_output";
+    //std::string output_name = "dummy_output";
+
+    structure->add_module("player_layer", "maze_input", "player");
+    structure->add_module("goal_layer", "maze_input", "goal");
+    structure->add_module("movement_layer", "one_hot_random_input", "10 2");
+    structure->add_module("movement_layer", "maze_output");
+
+    //structure->add_module("player_layer", output_name, "8");
+    //structure->add_module("goal_layer", output_name, "8");
+    //structure->add_module("movement_layer", output_name, "8");
+
+    std::cout << "Maze game test......\n";
+    print_model(model);
+    Clock clock((float)1.0);
+    //Clock clock(true);
+    clock.run(model, 1000000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
@@ -1450,6 +1485,7 @@ int main(int argc, char *argv[]) {
         //speech_test();
         //re_speech_test();
         //second_order_test();
+        //maze_game_test();
 
         return 0;
     } catch (const char* msg) {
