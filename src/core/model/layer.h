@@ -50,9 +50,6 @@ class Layer {
         // Layer rows, columns, and total size
         const int rows, columns, size;
 
-        // Parameters for initializing neural properties
-        const std::string params;
-
         // Noise parameter
         const float noise;
 
@@ -61,6 +58,9 @@ class Layer {
 
         // Root node of dendritic tree
         DendriticNode* const dendritic_root;
+
+        // Config
+        LayerConfig* const config;
 
     private:
         friend class Structure;
@@ -76,9 +76,6 @@ class Layer {
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
         void add_module(Module *module);
-
-        // Config
-        LayerConfig *config;
 
         // Layer IO type mask
         IOTypeMask type;

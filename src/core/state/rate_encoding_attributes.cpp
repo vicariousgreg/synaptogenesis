@@ -51,7 +51,8 @@ RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
     // Fill in table
     int start_index = 0;
     for (auto& layer : layers) {
-        RateEncodingParameters params = create_parameters(layer->params);
+        RateEncodingParameters params =
+            create_parameters(layer->config->get_property("init"));
         for (int j = 0 ; j < layer->size ; ++j)
             neuron_parameters[start_index+j] = params;
         start_index += layer->size;

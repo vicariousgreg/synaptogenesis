@@ -42,6 +42,7 @@ std::string ConnectionConfig::get_property(std::string key) {
 ConnectionConfig *ConnectionConfig::set_property(
         std::string key, std::string value) {
     properties[key] = value;
+    return this;
 }
 
 int ConnectionConfig::get_expected_rows(int rows) {

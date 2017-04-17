@@ -30,6 +30,8 @@ class MazeGame : public Frontend {
         void move_left();
         void move_right();
 
+        int get_board_dim() { return board_dim; }
+
     private:
         friend class MazeGameWindow;
 

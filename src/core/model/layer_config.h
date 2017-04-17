@@ -2,6 +2,8 @@
 #define layer_config_h
 
 #include <string>
+#include <map>
+
 #include "util/constants.h"
 
 class LayerConfig {
@@ -11,32 +13,36 @@ class LayerConfig {
             std::string neural_model,
             int rows,
             int columns,
-            std::string params="",
             float noise=0.0,
             bool plastic=false)
                 : name(name),
                   neural_model(neural_model),
                   rows(rows),
                   columns(columns),
-                  params(params),
                   noise(noise),
                   plastic(plastic){ }
 
         LayerConfig(
             std::string name,
             std::string neural_model,
-            std::string params="",
             float noise=0.0,
             bool plastic=false)
                 : LayerConfig(name, neural_model,
-                    0, 0, params, noise, plastic) { }
+                    0, 0, noise, plastic) { }
+
+        /* Getter and setter for generic properties
+         * Setter returns self pointer for convenience */
+        std::string get_property(std::string key);
+        LayerConfig *set_property(std::string key, std::string value);
         
         std::string name;
         std::string neural_model;
         int rows, columns;
-        std::string params;
         float noise;
         bool plastic;
+
+    private:
+        std::map<std::string, std::string> properties;
 };
 
 #endif

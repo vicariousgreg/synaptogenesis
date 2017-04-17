@@ -37,6 +37,7 @@ void GUI::add_window(GuiWindow *window) {
 }
 
 void GUI::launch() {
+    for (auto window : windows) window->show();
     if (windows.size() > 0)
         app->run(*windows[0]);
 }

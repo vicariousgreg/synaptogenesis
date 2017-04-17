@@ -13,7 +13,6 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           rows(config->rows),
           columns(config->columns),
           size(rows * columns),
-          params(config->params),
           noise(config->noise),
           plastic(config->plastic),
           type(0),

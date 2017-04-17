@@ -24,7 +24,7 @@ MazeGame *MazeGame::get_instance(bool init) {
 }
 
 MazeGame::MazeGame() {
-    this->board_dim = 3;
+    this->board_dim = 10;
     this->ui_dirty = true;
     this->maze_window = new MazeGameWindow(this);
     Frontend::set_window(this->maze_window);
