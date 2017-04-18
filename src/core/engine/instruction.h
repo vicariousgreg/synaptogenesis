@@ -138,9 +138,10 @@ class SynapseActivateInstruction : public SynapseInstruction {
         SynapseActivateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
+                  inter_device(state->is_inter_device(conn)),
                   activator(state->get_activator(conn,
                       parent_node->is_second_order())) {
-            if (state->is_inter_device(conn)) {
+            if (inter_device) {
                 src = state->get_output(conn->from_layer,
                         get_word_index(conn->delay,
                         state->get_output_type(conn->from_layer)));
@@ -150,7 +151,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            src.copy_to(dst, stream);
+            if (inter_device) src.copy_to(dst, stream);
             activator.run(stream,
                 blocks, threads,
                 synapse_data);
@@ -160,6 +161,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
     protected:
         Kernel<SYNAPSE_ARGS> activator;
         Pointer<Output> src, dst;
+        bool inter_device;
 };
 
 /* Updates synaptic connection */

@@ -54,7 +54,10 @@ class Layer {
         const float noise;
 
         // Plasticity flag
-        bool plastic;
+        const bool plastic;
+
+        // Global flag
+        const bool global;
 
         // Root node of dendritic tree
         DendriticNode* const dendritic_root;

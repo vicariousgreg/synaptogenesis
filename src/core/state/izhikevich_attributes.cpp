@@ -72,10 +72,14 @@ static IzhikevichParameters create_parameters(std::string str) {
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
 
+#define TRACE_BASE 0.1
+#define TRACE_TAU 0.98  // 50ms
+
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
     float *voltages = iz_att->voltage.get(other_start_index);
     float *recoveries = iz_att->recovery.get(other_start_index);
+    float *neuron_traces = iz_att->neuron_trace.get(other_start_index);
     unsigned int *spikes = (unsigned int*)outputs;
     IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
 
@@ -124,14 +128,11 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     // Index moved appropriately from loop.
     spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
 
-    // Reset voltage if spiked.
-    if (spike) {
-        voltages[nid] = params[nid].c;
-        recoveries[nid] = recovery + params[nid].d;
-    } else {
-        voltages[nid] = voltage;
-        recoveries[nid] = recovery;
-    }
+    // Update trace, voltage, recovery
+    neuron_traces[nid] = (spike)
+        ? TRACE_BASE : (neuron_traces[nid] * TRACE_TAU);
+    voltages[nid] = (spike) ? params[nid].c : voltage;
+    recoveries[nid] = recovery + ((spike) ? params[nid].d : 0.0);
 )
 
 /******************************************************************************/

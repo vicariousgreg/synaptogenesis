@@ -15,6 +15,7 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           size(rows * columns),
           noise(config->noise),
           plastic(config->plastic),
+          global(config->global),
           type(0),
           input_module(nullptr),
           expected_module(nullptr),

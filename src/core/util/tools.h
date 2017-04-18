@@ -17,10 +17,18 @@ using std::chrono::duration_cast;
 static std::default_random_engine generator(time(0));
 static std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
-/* Calculates a random float between |fMin| and |fMax| */
+/* Random float functions */
+inline float fRand() {
+    return distribution(generator);
+}
+inline float fRand(float fMax) {
+    return distribution(generator) * fMax;
+}
 inline float fRand(float fMin, float fMax) {
     return fMin + (distribution(generator) * (fMax - fMin));
 }
+
+
 
 static float get_diff(Time_point a, Time_point b) {
     return (float)duration_cast<milliseconds>(a - b).count() / 1000;

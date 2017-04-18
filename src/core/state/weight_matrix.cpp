@@ -12,10 +12,7 @@ void set_weights(float* arr, int size, float val, float fraction) {
             arr[i] = val;
     } else {
         for (int i = 0 ; i < size ; ++i)
-            if (fRand(0,1) < fraction)
-                arr[i] = val;
-            else
-                arr[i] = 0.0;
+            arr[i] = (fRand() < fraction) ? val : 0.0;
     }
 }
 
@@ -28,13 +25,10 @@ void clear_weights(float* arr, int size) {
 void randomize_weights(float* arr, int size, float max, float fraction) {
     if (fraction == 1.0) {
         for (int i = 0 ; i < size ; ++i)
-            arr[i] = fRand(0, max);
+            arr[i] = fRand(max);
     } else {
         for (int i = 0 ; i < size ; ++i)
-            if (fRand(0,1) < fraction)
-                arr[i] = fRand(0, max);
-            else
-                arr[i] = 0.0;
+            arr[i] = (fRand() < fraction) ? fRand(max) : 0.0;
     }
 }
 

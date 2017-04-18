@@ -12,13 +12,20 @@ class SpikingAttributes : public Attributes {
         virtual Kernel<SYNAPSE_ARGS> get_updater(
             ConnectionType type, bool second_order);
         virtual int get_matrix_depth(Connection* conn) {
-            return (conn->convolutional) ?
-                (conn->to_layer->size + 2) : 3;
+            /*
+             Weight
+             Baseline
+             Short term (AMPA/GABAA) conductance trace
+             Long term (NMDA/GABAB) conductance trace
+             Plasticity trace
+            */
+            return 5;
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
         // Neuron Attributes
         Pointer<float> voltage;
+        Pointer<float> neuron_trace;
 };
 
 #endif
