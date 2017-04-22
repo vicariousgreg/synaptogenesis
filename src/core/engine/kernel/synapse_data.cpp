@@ -20,11 +20,13 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         from_size(conn->from_layer->size),
         from_rows(conn->from_layer->rows),
         from_columns(conn->from_layer->columns),
+        from_start_index(state->get_other_start_index(conn->from_layer)),
         to_size(conn->to_layer->size),
         to_rows(conn->to_layer->rows),
         to_columns(conn->to_layer->columns),
+        to_start_index(state->get_other_start_index(conn->to_layer)),
         num_weights(conn->get_num_weights()),
-        output_type(state->get_output_type(conn->to_layer)),
+        output_type(state->get_output_type(conn->from_layer)),
         weights(state->get_matrix(conn)) {
     // If no offset is specified and the layers are identically
     //     sized, set the offset to half the field size

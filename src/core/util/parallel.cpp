@@ -11,7 +11,10 @@ int calc_blocks(int computations, int threads) {
 }
 
 void device_synchronize() {
-    cudaDeviceSynchronize();
+    for (int i = 0; i < get_num_cuda_devices(); ++i) {
+        cudaSetDevice(i);
+        cudaDeviceSynchronize();
+    }
 }
 
 int get_num_cuda_devices() {

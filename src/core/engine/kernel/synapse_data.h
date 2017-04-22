@@ -40,6 +40,7 @@ class SynapseData {
         /* Layer attributes */
         int from_size, from_rows, from_columns;
         int to_size, to_rows, to_columns;
+        int from_start_index, to_start_index;
 
         /* IO attributes */
         OutputType output_type;

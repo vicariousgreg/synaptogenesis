@@ -31,6 +31,18 @@ void randomize_weights(float* arr, int size, float max, float fraction) {
             arr[i] = (fRand() < fraction) ? fRand(max) : 0.0;
     }
 }
+void randomize_weights_gaussian(float* arr, int size,
+        float mean, float std_dev, float fraction) {
+    std::default_random_engine generator(time(0));
+    std::normal_distribution<double> distribution(mean, std_dev);
+    if (fraction == 1.0) {
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = distribution(generator);
+    } else {
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = (fRand() < fraction) ? distribution(generator) : 0.0;
+    }
+}
 
 /* Transfers the values from one array to another */
 void transfer_weights(float* from, float* to, int size) {

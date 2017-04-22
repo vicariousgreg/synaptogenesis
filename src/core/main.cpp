@@ -37,6 +37,18 @@ void print_model(Model *model) {
     }
 }
 
+void run_simulation(Model *model, int iterations, bool verbose) {
+    // Calculate ideal refresh rate, run for iterations
+    Clock clock(true);
+    clock.run(model, iterations, verbose);
+
+    // Benchmark the network
+    // Use max refresh rate possible
+    // Run for 100 iterations
+    //Clock clock(false);  // No refresh rate synchronization
+    //clock.run(model, 100, verbose);
+}
+
 Model* build_working_memory_model(std::string neural_model) {
     /* Construct the model */
     Model *model = new Model();
@@ -54,8 +66,8 @@ Model* build_working_memory_model(std::string neural_model) {
     float thal_noise = 0.0;
     float cortex_noise = 1.0;
 
-    bool exc_plastic = true;
-    bool inh_plastic = true;
+    bool exc_plastic = false;
+    bool inh_plastic = false;
     int exc_delay = 3;
     int inh_delay = 0;
 
@@ -83,7 +95,7 @@ Model* build_working_memory_model(std::string neural_model) {
     // Feedforward input
     main_structure->connect_layers("input_layer", "feedforward",
         new ConnectionConfig(false, exc_delay, 1, FULLY_CONNECTED, ADD,
-            new RandomWeightConfig(100, 0.1)));
+            new FlatWeightConfig(100, 0.1)));
 
     std::vector<Structure*> sub_structures;
     for (int i = 0 ; i < 2 ; ++i) {
@@ -107,54 +119,54 @@ Model* build_working_memory_model(std::string neural_model) {
         // Cortico-cortical connectivity
         sub_structure->connect_layers("3_cortex", "6_cortex",
             new ConnectionConfig(exc_plastic, exc_delay, 4, CONVERGENT, ADD,
-                new RandomWeightConfig(1, inter_conn_ratio),
+                new FlatWeightConfig(1, inter_conn_ratio),
                 new ArborizedConfig(inter_cortex_center,1)));
 
         sub_structure->connect_layers("6_cortex", "3_cortex",
             new ConnectionConfig(exc_plastic, exc_delay, 4, CONVERGENT, ADD,
-                new RandomWeightConfig(1, inter_conn_ratio),
+                new FlatWeightConfig(1, inter_conn_ratio),
                 new ArborizedConfig(inter_cortex_center,1)));
 
         sub_structure->connect_layers("3_cortex", "6_cortex",
             new ConnectionConfig(inh_plastic, inh_delay, 4, CONVERGENT, SUB,
                 new SurroundWeightConfig(inter_cortex_center,
-                    new RandomWeightConfig(1, inter_conn_ratio)),
+                    new FlatWeightConfig(1, inter_conn_ratio)),
                 new ArborizedConfig(inter_cortex_surround,1)));
         sub_structure->connect_layers("6_cortex", "3_cortex",
             new ConnectionConfig(inh_plastic, inh_delay, 4, CONVERGENT, SUB,
                 new SurroundWeightConfig(inter_cortex_center,
-                    new RandomWeightConfig(1, inter_conn_ratio)),
+                    new FlatWeightConfig(1, inter_conn_ratio)),
                 new ArborizedConfig(inter_cortex_surround,1)));
 
         // Gamma connectivity
         sub_structure->connect_layers("gamma_thalamus", "3_cortex",
             new ConnectionConfig(exc_plastic, 10 + exc_delay, 4, CONVERGENT, ADD,
-                new RandomWeightConfig(1*thal_ratio, gamma_conn_ratio),
+                new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio),
                 new ArborizedConfig(gamma_center,1)));
         sub_structure->connect_layers("gamma_thalamus", "3_cortex",
             new ConnectionConfig(inh_plastic, 10 + inh_delay, 4, CONVERGENT, SUB,
                 new SurroundWeightConfig(gamma_center,
-                    new RandomWeightConfig(1*thal_ratio, gamma_conn_ratio)),
+                    new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio)),
                 new ArborizedConfig(gamma_surround,1)));
         sub_structure->connect_layers("6_cortex", "gamma_thalamus",
             new ConnectionConfig(exc_plastic, 10 + exc_delay, 4, CONVERGENT, ADD,
-                new RandomWeightConfig(1*thal_ratio, gamma_conn_ratio),
+                new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio),
                 new ArborizedConfig(gamma_center,1)));
         sub_structure->connect_layers("6_cortex", "gamma_thalamus",
             new ConnectionConfig(inh_plastic, 10 + inh_delay, 4, CONVERGENT, SUB,
                 new SurroundWeightConfig(gamma_center,
-                    new RandomWeightConfig(1*thal_ratio, gamma_conn_ratio)),
+                    new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio)),
                 new ArborizedConfig(gamma_surround,1)));
 
         // Thalamocortical control connectivity
         Structure::connect(main_structure, "tl1_thalamus",
             sub_structure, "3_cortex",
             new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, MULT,
-                new RandomWeightConfig(1*thal_ratio, inter_conn_ratio)));
+                new FlatWeightConfig(1*thal_ratio, inter_conn_ratio)));
         Structure::connect(main_structure, "tl1_thalamus",
             sub_structure, "6_cortex",
             new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, MULT,
-                new RandomWeightConfig(1*thal_ratio, inter_conn_ratio)));
+                new FlatWeightConfig(1*thal_ratio, inter_conn_ratio)));
 
         sub_structure->add_module("3_cortex", output_name, "8");
         sub_structure->add_module("6_cortex", output_name, "8");
@@ -163,6 +175,7 @@ Model* build_working_memory_model(std::string neural_model) {
 
     // Sensory relay to cortex
     for (int i = 0 ; i < 1 ; ++i) {
+        /*
         Structure::connect(main_structure, "feedforward",
             sub_structures[i], "3_cortex",
             new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
@@ -174,18 +187,23 @@ Model* build_working_memory_model(std::string neural_model) {
                 new SurroundWeightConfig(sensory_center,
                     new RandomWeightConfig(1*thal_ratio, ff_conn_ratio)),
                 new ArborizedConfig(sensory_surround,1)));
+        */
+        Structure::connect(main_structure, "feedforward",
+            sub_structures[i], "3_cortex",
+            new ConnectionConfig(exc_plastic, 0, 4, ONE_TO_ONE, ADD,
+                new FlatWeightConfig(1*thal_ratio, ff_conn_ratio)));
     }
 
     Structure::connect(sub_structures[0], "3_cortex",
         sub_structures[1], "3_cortex",
         new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
-            new RandomWeightConfig(1*thal_ratio, ff_conn_ratio),
+            new FlatWeightConfig(1*thal_ratio, ff_conn_ratio),
             new ArborizedConfig(sensory_center,1)));
     Structure::connect(sub_structures[0], "3_cortex",
         sub_structures[1], "3_cortex",
         new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
             new SurroundWeightConfig(sensory_center,
-                new RandomWeightConfig(1*thal_ratio, ff_conn_ratio)),
+                new FlatWeightConfig(1*thal_ratio, ff_conn_ratio)),
             new ArborizedConfig(sensory_surround,1)));
 
     // Modules
@@ -194,18 +212,6 @@ Model* build_working_memory_model(std::string neural_model) {
     main_structure->add_module("feedforward", output_name, "8");
 
     return model;
-}
-
-void run_simulation(Model *model, int iterations, bool verbose) {
-    // Calculate ideal refresh rate, run for iterations
-    Clock clock(true);
-    clock.run(model, iterations, verbose);
-
-    // Benchmark the network
-    // Use max refresh rate possible
-    // Run for 100 iterations
-    //Clock clock(false);  // No refresh rate synchronization
-    //clock.run(model, 100, verbose);
 }
 
 void working_memory_test() {
@@ -421,16 +427,77 @@ void maze_game_test() {
     delete model;
 }
 
+void symbol_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = model->add_structure("symbol");
+
+    int cortex_size = 64;
+    float noise = 1.0;
+    bool exc_plastic = true;
+    bool inh_plastic = false;
+    std::string output_name = "visualizer_output";
+
+    structure->add_layer(new LayerConfig("input_layer", RELAY, 1, 10));
+
+    // Layers
+    for (int i = 0 ; i < 2 ; ++i) {
+        std::string pos_name = std::string("pos") + std::to_string(i);
+        std::string neg_name = std::string("neg") + std::to_string(i);
+        structure->add_layer((new LayerConfig(pos_name,
+            IZHIKEVICH, cortex_size, cortex_size, noise))
+                ->set_property(IZ_INIT, "regular"));
+        structure->add_layer((new LayerConfig(neg_name,
+            IZHIKEVICH, cortex_size/2, cortex_size/2, noise))
+                ->set_property(IZ_INIT, "fast"));
+
+        structure->connect_layers(pos_name, pos_name,
+            new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
+                new GaussianWeightConfig(1, 0.3, 0.1)));
+        structure->connect_layers(pos_name, neg_name,
+            new ConnectionConfig(false, 0, 4*4, FULLY_CONNECTED, ADD,
+                new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
+
+        structure->connect_layers(neg_name, pos_name,
+            new ConnectionConfig(inh_plastic, 0, 4*4, FULLY_CONNECTED, SUB,
+                new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
+        structure->add_module(pos_name, output_name, "8");
+        structure->add_module(neg_name, output_name, "8");
+    }
+
+    // Chain inputs
+    structure->connect_layers("input_layer", "pos0",
+        new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(100, 0.01)));
+    structure->connect_layers("pos0", "pos1",
+        new ConnectionConfig(exc_plastic, 0, 4*10, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(1, 0.3, 0.01)));
+
+
+    // Modules
+    structure->add_module("input_layer", "one_hot_random_input", "1 500");
+
+    std::cout << "Symbol test......\n";
+    print_model(model);
+    //Clock clock((float)120.0);
+    Clock clock(true);
+    clock.run(model, 1000000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
 
     try {
-        working_memory_test();
+        //working_memory_test();
         //mnist_test();
         //speech_test();
         //second_order_test();
         //maze_game_test();
+        symbol_test();
 
         return 0;
     } catch (const char* msg) {

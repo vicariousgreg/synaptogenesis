@@ -35,6 +35,18 @@ class RandomWeightConfig : public WeightConfig {
         float fraction;
 };
 
+class GaussianWeightConfig : public WeightConfig {
+    public:
+        GaussianWeightConfig(float mean, float std_dev, float fraction=1.0);
+
+        virtual void initialize(float* target_matrix,
+            Connection* conn, bool is_host) const;
+
+    private:
+        float mean, std_dev;
+        float fraction;
+};
+
 class SurroundWeightConfig : public WeightConfig {
     public:
         SurroundWeightConfig(int rows, int cols, WeightConfig* base_config);

@@ -1,7 +1,7 @@
 #ifndef izhikevich_attributes_h
 #define izhikevich_attributes_h
 
-#include "state/spiking_attributes.h"
+#include "state/attributes.h"
 
 /* Neuron parameters class.
  * Contains a,b,c,d parameters for Izhikevich model */
@@ -12,12 +12,42 @@ class IzhikevichParameters {
         float a, b, c, d;
 };
 
-class IzhikevichAttributes : public SpikingAttributes {
+class IzhikevichAttributes : public Attributes {
     public:
         IzhikevichAttributes(LayerList &layers);
 
-        // Neuron Attributes
+        virtual Kernel<SYNAPSE_ARGS> get_activator(
+            ConnectionType type, bool second_order);
+        virtual Kernel<SYNAPSE_ARGS> get_updater(
+            ConnectionType type, bool second_order);
+        virtual int get_matrix_depth(Connection* conn) {
+            /*
+             Weight
+             Baseline
+             Short term (AMPA/GABAA) conductance trace
+             Long term (NMDA/GABAA) conductance trace
+             Plasticity trace
+            */
+            return 5;
+        }
+        virtual void process_weight_matrix(WeightMatrix* matrix);
+
+        /* Neuron Attributes */
+        // Conductances for different ion channels
+        Pointer<float> ampa_conductance;
+        Pointer<float> nmda_conductance;
+        Pointer<float> gabaa_conductance;
+        Pointer<float> gabab_conductance;
+
+        // Multiplicative factor
+        Pointer<float> multiplicative_factor;
+
+        // Voltage and recovery variables
+        Pointer<float> voltage;
         Pointer<float> recovery;
+
+        // Spike trace for learning
+        Pointer<float> neuron_trace;
 
         // Neuron parameters
         Pointer<IzhikevichParameters> neuron_parameters;

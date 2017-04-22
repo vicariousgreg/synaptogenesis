@@ -31,6 +31,8 @@ void clear_weights(float* arr, int size);
 
 /* Randomizes an array */
 void randomize_weights(float* arr, int size, float max, float fraction=1.0);
+void randomize_weights_gaussian(float* arr, int size,
+    float mean, float std_dev, float fraction=1.0);
 
 /* Transfers the values from one array to another */
 void transfer_weights(float* from, float* to, int size);
