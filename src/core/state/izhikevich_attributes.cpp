@@ -401,8 +401,16 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     // Fill in table
     int start_index = 0;
     for (auto& layer : layers) {
-        IzhikevichParameters params =
-            create_parameters(layer->config->get_property("init"));
+        std::string init_param;
+        try {
+            init_param = layer->config->get_property("init");
+        } catch (...) {
+            ErrorManager::get_instance()->log_warning(
+                "Unspecified Izhikevich init params for layer \""
+                + layer->name + "\" -- using regular spiking.");
+            init_param = "regular";
+        }
+        IzhikevichParameters params = create_parameters(init_param);
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;
             voltage[start_index+j] = params.c;
