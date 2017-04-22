@@ -1,6 +1,7 @@
 #ifndef frontend_h
 #define frontend_h
 
+#include <vector>
 #include <map>
 #include <string>
 
@@ -17,6 +18,7 @@ class Frontend {
         virtual ~Frontend();
 
         void set_window(GuiWindow *gui_window);
+        void add_layer(Layer* layer, LayerInfo* info);
 
         virtual void init() { }
         virtual bool add_input_layer(Layer *layer,
@@ -35,6 +37,7 @@ class Frontend {
         GUI *gui;
         GuiWindow *gui_window;
         static std::vector<Frontend*> instances;
+        std::vector<Layer*> layer_list;
         std::map<Layer*, LayerInfo*> layer_map;
 };
 

@@ -89,7 +89,7 @@ bool MazeGame::add_input_layer(Layer *layer, std::string params) {
     if (layer->size != (board_dim * board_dim)) return false;
 
     LayerInfo* info = new LayerInfo(layer);
-    layer_map[layer] = info;
+    this->add_layer(layer, info);
     info->set_input();
     return true;
 }
@@ -106,7 +106,7 @@ bool MazeGame::add_output_layer(Layer *layer, std::string params) {
     if (layer->size != 4) return false;
 
     LayerInfo* info = new LayerInfo(layer);
-    layer_map[layer] = info;
+    this->add_layer(layer, info);
     info->set_output();
     return true;
 }

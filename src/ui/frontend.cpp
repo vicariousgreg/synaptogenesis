@@ -15,6 +15,11 @@ void Frontend::set_window(GuiWindow *gui_window) {
     this->gui->add_window(gui_window);
 }
 
+void Frontend::add_layer(Layer* layer, LayerInfo* info) {
+    layer_list.push_back(layer);
+    layer_map[layer] = info;
+}
+
 Frontend::~Frontend() {
     if (gui_window != nullptr) delete gui_window;
     for (auto pair : layer_map) delete pair.second;
@@ -28,8 +33,8 @@ void Frontend::init_all() {
     for (auto f : Frontend::instances) {
         f->init();
         if (f->gui_window != nullptr)
-            for (auto pair : f->layer_map)
-                f->gui_window->add_layer(pair.second);
+            for (auto layer : f->layer_list)
+                f->gui_window->add_layer(f->layer_map[layer]);
     }
 }
 

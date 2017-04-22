@@ -44,9 +44,10 @@ bool Visualizer::add_input_layer(Layer *layer, std::string params) {
     LayerInfo* info;
     try {
         info = layer_map.at(layer);
+        return false;
     } catch (...) {
         info = new LayerInfo(layer);
-        layer_map[layer] = info;
+        this->add_layer(layer, info);
     }
     info->set_input();
     return true;
@@ -56,9 +57,10 @@ bool Visualizer::add_output_layer(Layer *layer, std::string params) {
     LayerInfo* info;
     try {
         info = layer_map.at(layer);
+        return false;
     } catch (...) {
         info = new LayerInfo(layer);
-        layer_map[layer] = info;
+        this->add_layer(layer, info);
     }
     info->set_output();
     return true;
