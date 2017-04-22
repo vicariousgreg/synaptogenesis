@@ -29,6 +29,7 @@ class ResourceManager {
         void transfer();
 
         Stream *get_default_stream(DeviceID id);
+        Stream *get_inter_device_stream(DeviceID id);
         Stream *create_stream(DeviceID id);
         Event *create_event(DeviceID id);
 
@@ -48,6 +49,7 @@ class ResourceManager {
                 const DeviceID device_id;
                 const bool host_flag;
                 Stream* const default_stream;
+                Stream* const inter_device_stream;
                 std::vector<Stream*> streams;
                 std::vector<Event*> events;
         };

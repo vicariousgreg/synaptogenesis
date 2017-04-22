@@ -80,6 +80,13 @@ Stream *ResourceManager::get_default_stream(DeviceID device_id) {
     return devices[device_id]->default_stream;
 }
 
+Stream *ResourceManager::get_inter_device_stream(DeviceID device_id) {
+    if (device_id >= get_num_devices())
+        ErrorManager::get_instance()->log_error(
+            "Attempted to retrieve inter-device stream for non-existent device.");
+    return devices[device_id]->inter_device_stream;
+}
+
 Stream *ResourceManager::create_stream(DeviceID device_id) {
     if (device_id >= get_num_devices())
         ErrorManager::get_instance()->log_error(
@@ -97,10 +104,12 @@ Event *ResourceManager::create_event(DeviceID device_id) {
 ResourceManager::Device::Device(DeviceID device_id, bool host_flag)
         : device_id(device_id),
           host_flag(host_flag),
-          default_stream(new DefaultStream(device_id, host_flag)) { }
+          default_stream(new DefaultStream(device_id, host_flag)),
+          inter_device_stream(new Stream(device_id, host_flag)) { }
 
 ResourceManager::Device::~Device() {
     delete default_stream;
+    delete inter_device_stream;
     for (auto stream : streams) delete stream;
     for (auto event : events) delete event;
 }

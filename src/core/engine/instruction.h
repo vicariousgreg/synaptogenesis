@@ -139,6 +139,8 @@ class SynapseActivateInstruction : public SynapseInstruction {
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
                   inter_device(state->is_inter_device(conn)),
+                  d_to_d_event(nullptr),
+                  inter_device_stream(nullptr),
                   activator(state->get_activator(conn,
                       parent_node->is_second_order())) {
             if (inter_device) {
@@ -146,12 +148,22 @@ class SynapseActivateInstruction : public SynapseInstruction {
                         get_word_index(conn->delay,
                         state->get_output_type(conn->from_layer)));
                 dst = state->get_device_output_buffer(conn);
+
+                DeviceID source_device = state->get_device_id(conn->from_layer);
+                inter_device_stream = ResourceManager::get_instance()
+                    ->get_inter_device_stream(source_device);
+                d_to_d_event = ResourceManager::get_instance()
+                    ->create_event(source_device);
             }
         }
 
         void activate() {
             Instruction::wait_for_dependencies();
-            if (inter_device) src.copy_to(dst, stream);
+            if (inter_device) {
+                src.copy_to(dst, inter_device_stream);
+                inter_device_stream->record(d_to_d_event);
+                stream->wait(d_to_d_event);
+            }
             activator.run(stream,
                 blocks, threads,
                 synapse_data);
@@ -162,6 +174,8 @@ class SynapseActivateInstruction : public SynapseInstruction {
         Kernel<SYNAPSE_ARGS> activator;
         Pointer<Output> src, dst;
         bool inter_device;
+        Event *d_to_d_event;
+        Stream *inter_device_stream;
 };
 
 /* Updates synaptic connection */
