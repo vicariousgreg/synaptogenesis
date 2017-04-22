@@ -442,7 +442,12 @@ void symbol_test() {
     structure->add_layer(new LayerConfig("input_layer", RELAY, 1, 10));
     structure->add_layer((new LayerConfig("output_layer",
         IZHIKEVICH, 1, 10, noise))
-            ->set_property(IZ_INIT, "regular"));
+            ->set_property(IZ_INIT, "bursting"));
+
+    // Output inhibition
+    structure->connect_layers("output_layer", "output_layer",
+        new ConnectionConfig(inh_plastic, 0, 4, FULLY_CONNECTED, SUB,
+            new GaussianWeightConfig(1, 0.3, 0.1)));
 
     // Layers
     for (int i = 0 ; i < 2 ; ++i) {
@@ -455,29 +460,35 @@ void symbol_test() {
             IZHIKEVICH, cortex_size/2, cortex_size/2, noise))
                 ->set_property(IZ_INIT, "fast"));
 
-        //structure->connect_layers(pos_name, pos_name,
-        //    new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
-        //        new GaussianWeightConfig(1, 0.3, 0.1)));
+        /* Fully connected
+        structure->connect_layers(pos_name, pos_name,
+            new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
+                new GaussianWeightConfig(1, 0.3, 0.1)));
+        */
         structure->connect_layers(pos_name, pos_name,
             new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
-                new GaussianWeightConfig(1, 0.3, 0.25),
+                new GaussianWeightConfig(1, 0.3, 0.1),
                 new ArborizedConfig(cortex_spread,1)));
 
-        //structure->connect_layers(pos_name, neg_name,
-        //    new ConnectionConfig(false, 0, 4*4, FULLY_CONNECTED, ADD,
-        //        new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
+        /* Fully connected
+        structure->connect_layers(pos_name, neg_name,
+            new ConnectionConfig(false, 0, 4*4, FULLY_CONNECTED, ADD,
+                new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
+        */
         structure->connect_layers(pos_name, neg_name,
             new ConnectionConfig(false, 0, 4*4, CONVERGENT, ADD,
-                new GaussianWeightConfig(4*1, 4*0.3, 1),
+                new GaussianWeightConfig(4*4*1, 4*0.3, 1.0),
                 new ArborizedConfig(cortex_spread/2,2,-cortex_spread/4)));
 
-        //structure->connect_layers(neg_name, pos_name,
-        //    new ConnectionConfig(inh_plastic, 0, 4*4, FULLY_CONNECTED, SUB,
-        //        new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
-        //structure->connect_layers(neg_name, pos_name,
-        //    new ConnectionConfig(inh_plastic, 0, 4*4, DIVERGENT, SUB,
-        //        new GaussianWeightConfig(4*1, 4*0.3, 0.1),
-        //        new ArborizedConfig(cortex_spread/2,2,-cortex_spread/4)));
+        /* Fully connected
+        structure->connect_layers(neg_name, pos_name,
+            new ConnectionConfig(inh_plastic, 0, 4*4, FULLY_CONNECTED, SUB,
+                new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
+        */
+        structure->connect_layers(neg_name, pos_name,
+            new ConnectionConfig(inh_plastic, 0, 4*4, DIVERGENT, SUB,
+                new GaussianWeightConfig(4*4*1, 4*0.3, 1.0),
+                new ArborizedConfig(cortex_spread/2,2,-cortex_spread/4)));
 
         structure->add_module(pos_name, output_name, "");
         structure->add_module(neg_name, output_name, "");
@@ -489,10 +500,10 @@ void symbol_test() {
             new GaussianWeightConfig(100, 10, 0.01)));
     structure->connect_layers("pos0", "pos1",
         new ConnectionConfig(exc_plastic, 0, 4*10, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.3, 0.1)));
+            new GaussianWeightConfig(1, 0.3, 0.01)));
     structure->connect_layers("pos1", "output_layer",
         new ConnectionConfig(exc_plastic, 0, 4*10, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.3, 0.1)));
+            new GaussianWeightConfig(4*1, 0.3, 0.1)));
 
 
     // Modules
@@ -501,7 +512,6 @@ void symbol_test() {
 
     std::cout << "Symbol test......\n";
     print_model(model);
-    //Clock clock((float)120.0);
     Clock clock(true);
     clock.run(model, 1000000, true);
     std::cout << "\n";

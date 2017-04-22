@@ -289,27 +289,19 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
             int end_s_row = (d_row - row_offset) / row_stride; \
             int end_s_col = (d_col - column_offset) / column_stride; \
 \
-            int k_row_start = row_field_size - row_stride; \
-            int k_row_offset = (row_stride > (row_field_size/2)) \
-                         ? (2*row_stride - row_field_size) : (row_stride-1);\
-            int column_start = column_field_size - column_stride; \
-            int k_column_offset = (column_stride > (column_field_size/2)) \
-                         ? (2*column_stride - column_field_size) : (column_stride-1);\
-\
             /* Iterate over relevant source neurons... */ \
-            int k_row = k_row_start + ((d_row + k_row_offset - row_offset) % row_stride); \
-            for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= row_stride)) { \
-                int k_col = column_start + ((d_col + k_column_offset - column_offset) % column_stride); \
-                for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= column_stride)) { \
+            int k_index = 0; \
+            for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
+                for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) { \
                     /* Avoid making connections with non-existent neurons! */ \
                     if (s_row < 0 or s_row >= from_rows \
                         or s_col < 0 or s_col >= from_columns) \
                         continue; \
 \
                     int from_index = (s_row * from_columns) + s_col; \
-                    int weight_index = (from_index * kernel_size) \
-                        + (k_row * column_field_size) + k_col; \
+                    int weight_index = (from_index * kernel_size) + k_index; \
                     WEIGHT_OP; \
+                    ++k_index; \
                 } \
             } \
             NEURON_POST; \
@@ -340,23 +332,15 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int end_s_row = (d_row - row_offset) / row_stride; \
         int end_s_col = (d_col - column_offset) / column_stride; \
 \
-        int k_row_start = row_field_size - row_stride; \
-        int k_row_offset = (row_stride > (row_field_size/2)) \
-                     ? (2*row_stride - row_field_size) : (row_stride-1);\
-        int column_start = column_field_size - column_stride; \
-        int k_column_offset = (column_stride > (column_field_size/2)) \
-                     ? (2*column_stride - column_field_size) : (column_stride-1);\
-\
         /* Kernels are organized into columns
            One kernel per source neuron */ \
         int kernel_size = row_field_size * column_field_size; \
         int kernel_row_size = from_rows * from_columns; \
 \
         /* Iterate over relevant source neurons... */ \
-        int k_row = k_row_start + ((d_row + k_row_offset - row_offset) % row_stride); \
-        for (int s_row = start_s_row ; s_row <= end_s_row ; (++s_row, k_row -= row_stride)) { \
-            int k_col = column_start + ((d_col + k_column_offset - column_offset) % column_stride); \
-            for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, k_col -= column_stride)) { \
+        int k_index = 0; \
+        for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
+            for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) { \
                 /* Avoid making connections with non-existent neurons! */ \
                 if (s_row < 0 or s_row >= from_rows \
                     or s_col < 0 or s_col >= from_columns) \
@@ -366,9 +350,9 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 /* Row of matrix is the kernel index * row size (see above)
                    Column of matrix is the index of the source neuron */ \
-                int weight_index = from_index + \
-                    (((k_row * column_field_size) + k_col) * kernel_row_size); \
+                int weight_index = to_index + (k_index * kernel_row_size); \
                 WEIGHT_OP; \
+                ++k_index; \
             } \
         } \
         NEURON_POST; \
