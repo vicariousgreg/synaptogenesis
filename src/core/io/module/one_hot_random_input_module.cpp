@@ -25,6 +25,11 @@ OneHotRandomInputModule::OneHotRandomInputModule(Layer *layer, std::string param
 
         if (!stream.eof()) {
             stream >> this->shuffle_rate;
+            if (!stream.eof()) {
+                stream >> this->end;
+            } else {
+                this->end = 0;
+            }
         } else {
             this->shuffle_rate = 100;
         }
@@ -48,12 +53,21 @@ OneHotRandomInputModule::~OneHotRandomInputModule() {
 }
 
 void OneHotRandomInputModule::feed_input(Buffer *buffer) {
-    if (timesteps++ % shuffle_rate == 0) {
-        std::cout << "============================ SHUFFLE\n";
-        shuffle(this->random_values, this->max_value, layer->size);
+    if (end == 0 or timesteps < end) {
+        if ((end == 0 or timesteps < end) and timesteps++ % shuffle_rate == 0) {
+            std::cout << "============================ SHUFFLE\n";
+            if (end != 0) std::cout << "  *  ";
+            shuffle(this->random_values, this->max_value, layer->size);
+            float *input = buffer->get_input(this->layer);
+            for (int nid = 0 ; nid < this->layer->size; ++nid)
+                input[nid] = this->random_values[nid];
+            buffer->set_dirty(this->layer);
+        }
+    } else if (timesteps++ == end) {
+        std::cout << "========================================== CLEAR\n";
         float *input = buffer->get_input(this->layer);
         for (int nid = 0 ; nid < this->layer->size; ++nid)
-            input[nid] = this->random_values[nid];
+            input[nid] = 0.0;
         buffer->set_dirty(this->layer);
     }
 }

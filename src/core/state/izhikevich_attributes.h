@@ -48,6 +48,8 @@ class IzhikevichAttributes : public Attributes {
 
         // Spike trace for learning
         Pointer<float> neuron_trace;
+        // Time since last spike
+        Pointer<int> delta_t;
 
         // Neuron parameters
         Pointer<IzhikevichParameters> neuron_parameters;

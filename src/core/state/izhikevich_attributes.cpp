@@ -73,8 +73,7 @@ static IzhikevichParameters create_parameters(std::string str) {
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
 
-#define TRACE_BASE 0.1
-#define TRACE_TAU 0.98  // 50ms
+#define TRACE_TAU 0.833  // 6ms
 
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
@@ -88,6 +87,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *voltages = iz_att->voltage.get(other_start_index);
     float *recoveries = iz_att->recovery.get(other_start_index);
     float *neuron_traces = iz_att->neuron_trace.get(other_start_index);
+    int *delta_ts = iz_att->delta_t.get(other_start_index);
     unsigned int *spikes = (unsigned int*)outputs;
     IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
 
@@ -113,14 +113,12 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     // If the voltage exceeds the spiking threshold, break
     for (int i = 0 ; i < IZ_TIMESTEP_MS * IZ_EULER_RES && voltage < IZ_SPIKE_THRESH ; ++i) {
         float current = base_current;
-        current += ampa_conductance * voltage;
+        current -= ampa_conductance * voltage;
         float temp = pow((voltage + 80) / 60, 2);
-        current += nmda_conductance * (temp / (1+temp)) * voltage;
-        current += gabaa_conductance * (voltage + 70);
-        current += gabab_conductance * (voltage + 90);
+        current -= nmda_conductance * (temp / (1+temp)) * voltage;
+        current -= gabaa_conductance * (voltage + 70);
+        current -= gabab_conductance * (voltage + 90);
         current *= (1+multiplicative_factor);
-
-        //if (current != 0.0) printf("%f\n", current);
 
         float delta_v = (0.04 * voltage * voltage) +
                         (5*voltage) + 140 - recovery + current;
@@ -160,7 +158,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
     // Update trace, voltage, recovery
     neuron_traces[nid] = (spike)
-        ? TRACE_BASE : (neuron_traces[nid] * TRACE_TAU);
+        ? 1.0 : (neuron_traces[nid] * TRACE_TAU);
+    delta_ts[nid] = (spike) ? 0 : (delta_ts[nid] + 1);
     voltages[nid] = (spike) ? params[nid].c : voltage;
     recoveries[nid] = recovery + ((spike) ? params[nid].d : 0.0);
 )
@@ -169,22 +168,57 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 /************************* TRACE ACTIVATOR KERNELS ****************************/
 /******************************************************************************/
 
-#define AMPA_TAU    0.8    // tau = 5
-#define GABAA_TAU   0.857  // tau = 7
-#define NMDA_TAU    0.993  // tau = 150
-#define GABAB_TAU   0.993  // tau = 150
-#define PLASTIC_TAU 0.95   // tau = 20
+#define AMPA_TAU    0.8        // tau = 5
+#define GABAA_TAU   0.857      // tau = 7
+#define NMDA_TAU    0.993      // tau = 150
+#define GABAB_TAU   0.993      // tau = 150
+#define EXC_PLASTIC_TAU 0.444  // tau = 1.8
+#define INH_PLASTIC_TAU 0.833  // tau = 6
 
-#define SHORT_G  -0.0025
-#define LONG_G   -0.000025
-#define PLASTIC_BASE 0.1
+#define SHORT_G  0.0025
+#define LONG_G   0.000025
 
-#define EXTRACT_TRACES \
+// Extraction at start of kernel
+#define ACTIV_EXTRACTIONS \
+    IzhikevichAttributes *att = \
+        (IzhikevichAttributes*)synapse_data.to_attributes; \
+    int to_start_index = synapse_data.to_start_index; \
+    float *short_conductances = nullptr; \
+    float *long_conductances = nullptr; \
+\
+    float short_tau = 0.9; \
+    float long_tau = 0.9; \
+    float plastic_tau = 0.9; \
+    switch(opcode) { \
+        case(ADD): \
+            short_conductances = att->ampa_conductance.get(to_start_index); \
+            long_conductances  = att->nmda_conductance.get(to_start_index); \
+            short_tau   = AMPA_TAU; \
+            long_tau    = NMDA_TAU; \
+            plastic_tau = EXC_PLASTIC_TAU; \
+            break; \
+        case(SUB): \
+            short_conductances = att->gabaa_conductance.get(to_start_index); \
+            long_conductances  = att->gabab_conductance.get(to_start_index); \
+            short_tau   = GABAA_TAU; \
+            long_tau    = GABAB_TAU; \
+            plastic_tau = INH_PLASTIC_TAU; \
+            break; \
+        case(MULT): \
+            short_conductances = att->multiplicative_factor.get(to_start_index); \
+            break; \
+    } \
     float *baselines    = weights + (1*num_weights); \
     float *short_traces = weights + (2*num_weights); \
     float *long_traces  = weights + (3*num_weights); \
     float *pl_traces    = weights + (4*num_weights);
 
+// Neuron Pre Operation
+#define INIT_SUM \
+    float short_sum = 0.0; \
+    float long_sum = 0.0;
+
+// Weight Operation
 #define CALC_VAL(from_index, weight_index) \
     if (baselines[weight_index] > 0.0) { \
         bool spike = extractor(outputs[from_index], delay) > 0.0; \
@@ -200,42 +234,17 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
                 ? LONG_G : (trace * long_tau)); \
             long_sum += trace * weights[weight_index]; \
         \
-            trace = pl_traces[weight_index]; \
-            pl_traces[weight_index] = (spike \
-                ? PLASTIC_BASE : (trace * PLASTIC_TAU)); \
+            if (plastic) { \
+                trace = pl_traces[weight_index]; \
+                pl_traces[weight_index] = (spike \
+                    ? 1.0 : (trace * plastic_tau)); \
+            } \
         } else { \
             short_sum += spike * weights[weight_index]; \
         } \
     }
 
-#define ACTIV_EXTRACTIONS \
-    IzhikevichAttributes *att = \
-        (IzhikevichAttributes*)synapse_data.to_attributes; \
-    int to_start_index = synapse_data.to_start_index; \
-    float *short_conductances = nullptr; \
-    float *long_conductances = nullptr; \
-\
-    float short_tau = 0.9; \
-    float long_tau = 0.9; \
-    switch(opcode) { \
-        case(ADD): \
-            short_conductances = att->ampa_conductance.get(to_start_index); \
-            long_conductances = att->nmda_conductance.get(to_start_index); \
-            short_tau = AMPA_TAU; \
-            long_tau  = NMDA_TAU; \
-            break; \
-        case(SUB): \
-            short_conductances = att->gabaa_conductance.get(to_start_index); \
-            long_conductances = att->gabab_conductance.get(to_start_index); \
-            short_tau = GABAA_TAU; \
-            long_tau  = GABAB_TAU; \
-            break; \
-        case(MULT): \
-            short_conductances = att->multiplicative_factor.get(to_start_index); \
-            break; \
-    } \
-    EXTRACT_TRACES;
-
+// Neuron Post Operation
 #define AGGREGATE(to_index) \
     short_conductances[to_index] += short_sum; \
     if (long_conductances != nullptr) long_conductances[to_index] += long_sum;
@@ -245,8 +254,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 CALC_FULLY_CONNECTED(activate_fully_connected_trace,
     ACTIV_EXTRACTIONS,
 
-    float short_sum = 0.0;
-    float long_sum = 0.0;,
+    INIT_SUM,
 
     CALC_VAL(from_index, weight_index),
 
@@ -255,30 +263,27 @@ CALC_FULLY_CONNECTED(activate_fully_connected_trace,
 CALC_ONE_TO_ONE(activate_one_to_one_trace,
     ACTIV_EXTRACTIONS,
 
-    float short_sum = 0.0;
-    float long_sum = 0.0;
+    INIT_SUM
     CALC_VAL(index, index)
     AGGREGATE(index)
 );
 CALC_CONVERGENT(activate_convergent_trace,
     ACTIV_EXTRACTIONS,
 
-    float short_sum = 0.0;
-    float long_sum = 0.0;,
+    INIT_SUM,
 
     CALC_VAL(from_index, weight_index),
 
-    AGGREGATE(to_index);
+    AGGREGATE(to_index)
 );
 CALC_DIVERGENT(activate_divergent_trace,
     ACTIV_EXTRACTIONS,
 
-    float short_sum = 0.0;
-    float long_sum = 0.0;,
+    INIT_SUM,
 
     CALC_VAL(from_index, weight_index),
 
-    AGGREGATE(to_index);
+    AGGREGATE(to_index)
 );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
@@ -302,33 +307,50 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-#define DECAY 1.0
-#define LEARNING_RATE 1.0
+#define EXC_POS_LR 1.0
+#define EXC_NEG_LR 0.05
+#define INH_POS_LR 0.1
+#define INH_NEG_LR 0.1
 #define MIN_WEIGHT 0.0
+
+#define UPDATE_EXTRACTIONS \
+    float *baselines = weights + (1*num_weights); \
+    float *pl_traces = weights + (4*num_weights); \
+    IzhikevichAttributes *to_att = \
+        (IzhikevichAttributes*)synapse_data.to_attributes; \
+    float *to_traces = to_att->neuron_trace.get(synapse_data.to_start_index); \
+    int *to_delta_ts = to_att->delta_t.get(synapse_data.to_start_index); \
+
+#define GET_DEST_ACTIVITY(to_index) \
+    float dest_trace = to_traces[to_index]; \
+    float to_power; \
+    if (opcode == SUB) to_power = 0.2 * __powf(to_delta_ts[to_index], 1.5); \
+    bool dest_spike = extractor(destination_outputs[to_index], 0);
 
 #define UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike) \
     bool src_spike = extractor(outputs[from_index], 0); \
     float src_trace = pl_traces[weight_index]; \
     float weight = weights[weight_index]; \
     if (baselines[weight_index] > 0.0) { \
-        float delta = (src_spike) \
-            ? ((max_weight - weight) * src_trace * LEARNING_RATE) : 0.0; \
-        delta -= (dest_spike) \
-            ? ((weight - MIN_WEIGHT) * dest_trace * LEARNING_RATE) : 0.0; \
-        weights[weight_index] = (weight * DECAY) + delta; \
+        switch(opcode) { \
+            case(ADD): { \
+                float delta = (dest_spike) \
+                    ? ((max_weight - weight) * src_trace * EXC_POS_LR) : 0.0; \
+                delta -= (src_spike) \
+                    ? ((weight - MIN_WEIGHT) * dest_trace * EXC_NEG_LR) : 0.0; \
+                weights[weight_index] = weight + delta; \
+                } \
+                break; \
+            case(SUB): { \
+                float delta = (dest_spike and src_trace > 0.001) \
+                    ? ((max_weight - weight) * 0.2 * pow(-__logf(src_trace) * 1.8, 1.5) * src_trace * INH_POS_LR) : 0.0; \
+                delta -= (src_spike and dest_trace > 0.001) \
+                    ? ((weight - MIN_WEIGHT) * to_power * dest_trace * INH_NEG_LR) : 0.0; \
+                weights[weight_index] = weight + delta; \
+                } \
+                break; \
+        } \
     }
-
-#define UPDATE_EXTRACTIONS \
-    float *baselines = weights + (1*num_weights); \
-    float *pl_traces = weights + (4*num_weights); \
-    int to_start_index = synapse_data.to_start_index; \
-    float *neuron_traces = \
-        ((IzhikevichAttributes*)synapse_data.to_attributes) \
-            ->neuron_trace.get(to_start_index);
-
-#define GET_DEST_ACTIVITY(to_index) \
-    float dest_trace = neuron_traces[to_index]; \
-    bool dest_spike = extractor(destination_outputs[to_index], 0);
 
 CALC_FULLY_CONNECTED(update_fully_connected_trace,
     UPDATE_EXTRACTIONS;,
@@ -390,13 +412,15 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     this->voltage = Pointer<float>(total_neurons);
     this->recovery = Pointer<float>(total_neurons);
     this->neuron_trace = Pointer<float>(total_neurons);
+    this->delta_t = Pointer<int>(total_neurons);
     Attributes::register_variable(&this->recovery);
-    Attributes::register_variable(&this->neuron_parameters);
     Attributes::register_variable(&this->voltage);
+    Attributes::register_variable(&this->neuron_trace);
+    Attributes::register_variable(&this->delta_t);
 
     // Neuron parameters
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
-    Attributes::register_variable(&this->neuron_trace);
+    Attributes::register_variable(&this->neuron_parameters);
 
     // Fill in table
     int start_index = 0;
@@ -415,6 +439,8 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
             neuron_parameters[start_index+j] = params;
             voltage[start_index+j] = params.c;
             recovery[start_index+j] = params.b * params.c;
+            neuron_trace[start_index+j] = 0.0;
+            delta_t[start_index+j] = 0;
         }
         start_index += layer->size;
     }

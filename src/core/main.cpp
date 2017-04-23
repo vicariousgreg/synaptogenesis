@@ -431,47 +431,28 @@ Structure *add_column(Model *model, std::string name, std::string output_name,
         int size, float noise, bool exc_plastic, bool inh_plastic) {
     Structure *structure = model->add_structure(name);
 
-    int spread = size / 3;
-
     std::string pos_name = std::string("pos");
     std::string neg_name = std::string("neg");
+
+    // Create layers
     structure->add_layer((new LayerConfig(pos_name,
         IZHIKEVICH, size, size, noise))
-            ->set_property(IZ_INIT, "regular"));
+            ->set_property(IZ_INIT, "random positive"));
     structure->add_layer((new LayerConfig(neg_name,
         IZHIKEVICH, size/2, size/2, noise))
-            ->set_property(IZ_INIT, "fast"));
+            ->set_property(IZ_INIT, "random negative"));
 
-    /* Fully connected
-    structure->connect_layers(pos_name, pos_name,
-        new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.3, 0.1)));
-    */
-    structure->connect_layers(pos_name, pos_name,
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
-            new GaussianWeightConfig(1, 0.3, 0.1),
-            new ArborizedConfig(spread,1)));
-
-    /* Fully connected
+    // Excitatory -> Inhibitory Connection
     structure->connect_layers(pos_name, neg_name,
         new ConnectionConfig(false, 0, 4*4, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
-    */
-    structure->connect_layers(pos_name, neg_name,
-        new ConnectionConfig(false, 0, 4*4, CONVERGENT, ADD,
-            new GaussianWeightConfig(4*4*1, 4*0.3, 1.0),
-            new ArborizedConfig(spread/2,2,-spread/4)));
 
-    /* Fully connected
+    // Inhibitory -> Excitatory Connection
     structure->connect_layers(neg_name, pos_name,
         new ConnectionConfig(inh_plastic, 0, 4*4, FULLY_CONNECTED, SUB,
             new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
-    */
-    structure->connect_layers(neg_name, pos_name,
-        new ConnectionConfig(inh_plastic, 0, 4*4, DIVERGENT, SUB,
-            new GaussianWeightConfig(4*4*1, 4*0.3, 1.0),
-            new ArborizedConfig(spread/2,2,-spread/4)));
 
+    // Output modules
     if (output_name != "") {
         structure->add_module(pos_name, output_name, "");
         structure->add_module(neg_name, output_name, "");
@@ -488,31 +469,24 @@ void symbol_test() {
     std::string output_name = "visualizer_output";
 
     // Input layer
-    base->add_layer(new LayerConfig("input_layer", RELAY, 1, 10));
-    base->add_module("input_layer", "one_hot_random_input", "1 1000");
+    base->add_layer(new LayerConfig("input_layer", RELAY, 1, 5));
+    base->add_module("input_layer", "one_hot_random_input", "1 2000");
     base->add_module("input_layer", output_name, "");
 
     // Intermediate cortical layers
     int cortex_size = 64;
-    float noise = 1.0;
+    float noise = 0.0;
     bool exc_plastic = true;
-    bool inh_plastic = false;
+    bool inh_plastic = true;
     Structure *column1 = add_column(model, "col1", output_name,
         cortex_size, noise, exc_plastic, inh_plastic);
     Structure *column2 = add_column(model, "col2", output_name,
         cortex_size, noise, exc_plastic, inh_plastic);
 
     // Output Layer
-    base->add_layer((new LayerConfig("output_layer",
-        IZHIKEVICH, 1, 4, 0.0))
-            ->set_property(IZ_INIT, "regular"));
+    base->add_layer(new LayerConfig("output_layer", RELAY, 1, 5));
+    base->add_module("output_layer", "one_hot_random_input", "1 1000 1000");
     base->add_module("output_layer", output_name, "");
-
-    // Output inhibition
-    base->connect_layers("output_layer", "output_layer",
-        new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, SUB,
-            (new FlatWeightConfig(1))
-                ->set_diagonal(false)));
 
     // Feedforward connections
     Structure::connect(
@@ -521,17 +495,24 @@ void symbol_test() {
             new GaussianWeightConfig(100, 10, 0.01)));
     Structure::connect(
         column1, "pos", column2, "pos",
-        new ConnectionConfig(exc_plastic, 0, 4*10, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.3, 0.01)));
+        new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(0.1, 0.03, 1.0)));
+
+    // Feedback connection
     Structure::connect(
-        column2, "pos", base, "output_layer",
-        new ConnectionConfig(exc_plastic, 0, 4*10, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(8*1, 8*0.3, 1.0)));
+        column2, "pos", column1, "pos",
+        new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(0.1, 0.03, 1.0)));
+    Structure::connect(
+        base, "output_layer",
+        column2, "pos",
+        new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(100, 10, 0.01)));
 
     std::cout << "Symbol test......\n";
     print_model(model);
     Clock clock(true);
-    clock.run(model, 1000000, true);
+    clock.run(model, 20000, true);
     std::cout << "\n";
 
     delete model;

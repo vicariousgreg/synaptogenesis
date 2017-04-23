@@ -13,6 +13,7 @@ class OneHotRandomInputModule : public Module {
 
     private:
         int timesteps;
+        int end;
         int shuffle_rate;
         float max_value;
         float *random_values;
