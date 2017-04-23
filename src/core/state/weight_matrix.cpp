@@ -49,6 +49,16 @@ void transfer_weights(float* from, float* to, int size) {
     for (int i = 0 ; i < size ; ++i) to[i] = from[i];
 }
 
+/* Clears the diagonal of a weight matrix */
+void clear_diagonal(float *arr, int rows, int cols) {
+    if (rows != cols)
+        ErrorManager::get_instance()->log_error(
+            "Attempted to clear diagonal of non-square weight matrix!");
+
+    for (int i = 0 ; i < rows ; ++i)
+        arr[i * rows + i] = 0.0;
+}
+
 WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
         DeviceID device_id) : connection(conn), device_id(device_id) {
     int num_weights = conn->get_num_weights();

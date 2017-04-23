@@ -303,7 +303,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 /******************************************************************************/
 
 #define DECAY 1.0
-#define LEARNING_RATE 0.1
+#define LEARNING_RATE 1.0
 #define MIN_WEIGHT 0.0
 
 #define UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike) \

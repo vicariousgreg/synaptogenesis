@@ -6,6 +6,13 @@
 #include "state/weight_matrix.h"
 #include "util/error_manager.h"
 
+void WeightConfig::initialize(float* target_matrix,
+        Connection* conn, bool is_host) {
+    if (not diagonal)
+        clear_diagonal(target_matrix,
+            conn->from_layer->size, conn->to_layer->size);
+}
+
 FlatWeightConfig::FlatWeightConfig(float weight, float fraction)
         : weight(weight), fraction(fraction) {
     if (fraction < 0 or fraction > 1.0)
@@ -14,9 +21,10 @@ FlatWeightConfig::FlatWeightConfig(float weight, float fraction)
 }
 
 void FlatWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) const {
+        Connection* conn, bool is_host) {
     int num_weights = conn->get_num_weights();
     set_weights(target_matrix, num_weights, weight, fraction);
+    WeightConfig::initialize(target_matrix, conn, is_host);
 }
 
 RandomWeightConfig::RandomWeightConfig(float max_weight, float fraction)
@@ -27,9 +35,10 @@ RandomWeightConfig::RandomWeightConfig(float max_weight, float fraction)
 }
 
 void RandomWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) const {
+        Connection* conn, bool is_host) {
     int num_weights = conn->get_num_weights();
     randomize_weights(target_matrix, num_weights, max_weight, fraction);
+    WeightConfig::initialize(target_matrix, conn, is_host);
 }
 
 GaussianWeightConfig::GaussianWeightConfig(float mean, float std_dev, float fraction)
@@ -43,9 +52,10 @@ GaussianWeightConfig::GaussianWeightConfig(float mean, float std_dev, float frac
 }
 
 void GaussianWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) const {
+        Connection* conn, bool is_host) {
     int num_weights = conn->get_num_weights();
     randomize_weights_gaussian(target_matrix, num_weights, mean, std_dev, fraction);
+    WeightConfig::initialize(target_matrix, conn, is_host);
 }
 
 SurroundWeightConfig::SurroundWeightConfig(
@@ -64,7 +74,7 @@ SurroundWeightConfig::~SurroundWeightConfig() {
 }
 
 void SurroundWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) const {
+        Connection* conn, bool is_host) {
     switch (conn->type) {
         case(CONVERGENT):
         case(DIVERGENT):
@@ -120,7 +130,7 @@ void SurroundWeightConfig::initialize(float* target_matrix,
 }
 
 void SpecifiedWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) const {
+        Connection* conn, bool is_host) {
     std::stringstream stream(weight_string);
     int num_weights = conn->get_num_weights();
 
@@ -161,4 +171,6 @@ void SpecifiedWeightConfig::initialize(float* target_matrix,
             else         target_matrix[col * rows + row] = value;
         }
     }
+
+    WeightConfig::initialize(target_matrix, conn, is_host);
 }

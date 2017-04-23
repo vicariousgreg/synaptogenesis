@@ -37,4 +37,7 @@ void randomize_weights_gaussian(float* arr, int size,
 /* Transfers the values from one array to another */
 void transfer_weights(float* from, float* to, int size);
 
+/* Clears the diagonal of a weight matrix */
+void clear_diagonal(float *arr, int rows, int cols);
+
 #endif

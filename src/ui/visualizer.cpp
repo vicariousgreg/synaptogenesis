@@ -76,13 +76,21 @@ void Visualizer::update(Environment *environment) {
             Output *output = buffer->get_output(info->layer);
             OutputType output_type = environment->get_output_type(info->layer);
 
-            for (int j = 0; j < info->layer->size; ++j)
-                data[j*4 + 3] = 255 - convert(output[j], output_type);
+            for (int j = 0; j < info->layer->size; ++j) {
+                data[j*4 + 0] = convert(output[j], output_type);
+                data[j*4 + 1] = convert(output[j], output_type);
+                data[j*4 + 2] = convert(output[j], output_type);
+            }
 
             if (info->layer->rows == 1)
-                for (int j = 1; j < 50; ++j)
-                    for (int k = 0; k < info->layer->size; ++k)
-                        data[(j*info->layer->size * 4) + (k*4 + 3)] = data[k*4 + 3];
+                for (int j = 1; j < 50; ++j) {
+                    int index = j*info->layer->size * 4;
+                    for (int k = 0; k < info->layer->size; ++k) {
+                        data[index + (k*4 + 0)] = data[k*4 + 0];
+                        data[index + (k*4 + 1)] = data[k*4 + 1];
+                        data[index + (k*4 + 2)] = data[k*4 + 2];
+                    }
+                }
         }
     }
 

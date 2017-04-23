@@ -6,6 +6,7 @@ VisualizerWindow::VisualizerWindow() {
     grid = new Gtk::Grid();
     grid->set_row_spacing(1);
     grid->set_column_spacing(1);
+    grid->override_background_color(Gdk::RGBA("DarkSlateGray"));
     this->add(*grid);
 }
 

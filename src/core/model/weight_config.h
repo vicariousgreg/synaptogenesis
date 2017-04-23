@@ -7,8 +7,17 @@ class Connection;
 
 class WeightConfig {
     public:
+        WeightConfig() : diagonal(true) { }
         virtual void initialize(float* target_matrix,
-            Connection* conn, bool is_host) const = 0;
+            Connection* conn, bool is_host);
+
+        WeightConfig *set_diagonal(bool diag) {
+            diagonal = diag;
+            return this;
+        }
+
+    protected:
+        bool diagonal;
 };
 
 class FlatWeightConfig : public WeightConfig {
@@ -16,7 +25,7 @@ class FlatWeightConfig : public WeightConfig {
         FlatWeightConfig(float weight, float fraction=1.0);
 
         virtual void initialize(float* target_matrix,
-            Connection* conn, bool is_host) const;
+            Connection* conn, bool is_host);
 
     private:
         float weight;
@@ -28,7 +37,7 @@ class RandomWeightConfig : public WeightConfig {
         RandomWeightConfig(float max_weight, float fraction=1.0);
 
         virtual void initialize(float* target_matrix,
-            Connection* conn, bool is_host) const;
+            Connection* conn, bool is_host);
 
     private:
         float max_weight;
@@ -40,7 +49,7 @@ class GaussianWeightConfig : public WeightConfig {
         GaussianWeightConfig(float mean, float std_dev, float fraction=1.0);
 
         virtual void initialize(float* target_matrix,
-            Connection* conn, bool is_host) const;
+            Connection* conn, bool is_host);
 
     private:
         float mean, std_dev;
@@ -54,7 +63,7 @@ class SurroundWeightConfig : public WeightConfig {
         virtual ~SurroundWeightConfig();
 
         virtual void initialize(float* target_matrix,
-            Connection* conn, bool is_host) const;
+            Connection* conn, bool is_host);
 
     private:
         int rows, cols;
@@ -67,7 +76,7 @@ class SpecifiedWeightConfig : public WeightConfig {
             : weight_string(weight_string) { }
 
         virtual void initialize(float* target_matrix,
-            Connection* conn, bool is_host) const;
+            Connection* conn, bool is_host);
 
     private:
         std::string weight_string;

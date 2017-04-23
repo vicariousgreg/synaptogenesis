@@ -51,8 +51,8 @@ class ConnectionConfig {
         const float max_weight;
         const ConnectionType type;
         const Opcode opcode;
-        const WeightConfig* weight_config;
-        const ArborizedConfig* arborized_config;
+        WeightConfig* const weight_config;
+        ArborizedConfig* const arborized_config;
 
     private:
         std::map<std::string, std::string> properties;
