@@ -304,10 +304,10 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-#define EXC_POS_LR 0.1 // 0.05 // 0.01
-#define EXC_NEG_LR 0.05 // 0.025 // 0.005
-#define INH_POS_LR 0.1 // 0.05 // 0.01
-#define INH_NEG_LR 0.1 // 0.05 // 0.01
+#define EXC_POS_LR 0.05 // 0.01
+#define EXC_NEG_LR 0.025 // 0.005
+#define INH_POS_LR 0.05 // 0.01
+#define INH_NEG_LR 0.05 // 0.01
 #define MIN_WEIGHT 0.0
 
 #define UPDATE_EXTRACTIONS \
