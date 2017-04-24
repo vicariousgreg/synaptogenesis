@@ -61,15 +61,22 @@ void Column::connect(Column *col_a, Column *col_b,
     static float std_dev = 0.0;
     static float fraction = 1.0;
     static float max_weight = 1.0;
+    static std::string conductance = "0.01";
+    static std::string learning_rate = "0.1";
 
     Structure::connect(
         col_a, name_a, col_b, name_b,
-        new ConnectionConfig(
+        (new ConnectionConfig(
             true, intercortical_delay, max_weight, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(mean, std_dev, fraction)));
+            new GaussianWeightConfig(mean, std_dev, fraction)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 }
 
 void Column::add_neural_field(std::string field_name) {
+    static std::string conductance = "0.01";
+    static std::string learning_rate = "0.1";
+
     std::string pos_name = field_name + "_" + "pos";
     std::string neg_name = field_name + "_" + "neg";
 
@@ -82,54 +89,71 @@ void Column::add_neural_field(std::string field_name) {
 
     // Excitatory -> Inhibitory Connection
     connect_layers(pos_name, neg_name,
-        new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.3, 0.1)));
+        (new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(1, 0.3, 0.1)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 
     // Inhibitory -> Excitatory Connection
     connect_layers(neg_name, pos_name,
-        new ConnectionConfig(
+        (new ConnectionConfig(
             inh_plastic, 0, inh_ratio*inh_ratio*4, FULLY_CONNECTED, SUB,
             new GaussianWeightConfig(
-                inh_ratio*inh_ratio*1, inh_ratio*inh_ratio*0.3, 0.1)));
+                inh_ratio*inh_ratio*1, inh_ratio*inh_ratio*0.3, 0.1)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 }
 
 void Column::connect_fields_one_way(std::string src, std::string dest) {
-    float max_weight = spread_ratio;
+    static std::string conductance = "0.01";
+    static std::string learning_rate = "0.1";
 
+    float max_weight = spread_ratio;
     float fraction = 0.05;
     float mean = 1.0 * spread_ratio / fraction;
     float std_dev = 0.3 * spread_ratio / fraction;
 
     connect_layers(
         src + "_pos", dest + "_pos",
-        new ConnectionConfig(
+        (new ConnectionConfig(
             exc_plastic, intracortical_delay, max_weight, CONVERGENT, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction),
-            new ArborizedConfig(spread,1,-spread/2)));
+            new ArborizedConfig(spread,1,-spread/2)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 }
 
 void Column::connect_fields_reentrant(std::string src, std::string dest) {
-    float max_weight = spread_ratio;
+    static std::string conductance = "0.01";
+    static std::string learning_rate = "0.1";
 
+    float max_weight = spread_ratio;
     float mean = 0.05 * spread_ratio;
     float std_dev = 0.01 * spread_ratio;
     float fraction = 1.0;
 
     connect_layers(
         src + "_pos", dest + "_pos",
-        new ConnectionConfig(
+        (new ConnectionConfig(
             exc_plastic, intracortical_delay, max_weight, CONVERGENT, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction),
-            new ArborizedConfig(spread,1,-spread/2)));
+            new ArborizedConfig(spread,1,-spread/2)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
     connect_layers(
         dest + "_pos", src + "_pos",
-        new ConnectionConfig(
+        (new ConnectionConfig(
             exc_plastic, intracortical_delay, max_weight, CONVERGENT, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction),
-            new ArborizedConfig(spread,1,-spread/2)));
+            new ArborizedConfig(spread,1,-spread/2)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 }
 
 void Column::add_thalamic_nucleus() {
+    static std::string conductance = "0.01";
+    static std::string learning_rate = "0.1";
+
     // Thalamic exc-inh pair
     std::string thal_pos_name = "thal_pos";
     std::string thal_neg_name = "thal_neg";
@@ -142,18 +166,24 @@ void Column::add_thalamic_nucleus() {
 
     // Excitatory -> Inhibitory Connection
     connect_layers(thal_pos_name, thal_neg_name,
-        new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.3, 0.1)));
+        (new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(1, 0.3, 0.1)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 
     // Inhibitory -> Excitatory Connection
     connect_layers(thal_neg_name, thal_pos_name,
-        new ConnectionConfig(inh_plastic, 0, 4, FULLY_CONNECTED, SUB,
-            new GaussianWeightConfig(1, 0.3, 0.1)));
+        (new ConnectionConfig(inh_plastic, 0, 4, FULLY_CONNECTED, SUB,
+            new GaussianWeightConfig(1, 0.3, 0.1)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 }
 
 void Column::add_thalamocortical_reentry(std::string src) {
-    float max_weight = spread_ratio * thal_ratio;
+    static std::string conductance = "0.01";
+    static std::string learning_rate = "0.1";
 
+    float max_weight = spread_ratio * thal_ratio;
     float mean = 0.05 * spread_ratio * thal_ratio;
     float std_dev = 0.01 * spread_ratio * thal_ratio;
     float fraction = 1.0;
@@ -161,14 +191,18 @@ void Column::add_thalamocortical_reentry(std::string src) {
     std::string dest = "thal_pos";
     connect_layers(
         src + "_pos", dest,
-        new ConnectionConfig(
+        (new ConnectionConfig(
             exc_plastic, thalamocortical_delay, max_weight, CONVERGENT, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction),
-            new ArborizedConfig(thal_spread,thal_ratio,-thal_spread/2)));
+            new ArborizedConfig(thal_spread,thal_ratio,-thal_spread/2)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
     connect_layers(
         dest, src + "_pos",
-        new ConnectionConfig(
+        (new ConnectionConfig(
             exc_plastic, thalamocortical_delay, max_weight, DIVERGENT, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction),
-            new ArborizedConfig(thal_spread,thal_ratio,-thal_spread/2)));
+            new ArborizedConfig(thal_spread,thal_ratio,-thal_spread/2)))
+        ->set_property("conductance", conductance)
+        ->set_property("learning rate", learning_rate));
 }

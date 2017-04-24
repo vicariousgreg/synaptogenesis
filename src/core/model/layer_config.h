@@ -38,7 +38,7 @@ class LayerConfig {
 
         /* Getter and setter for generic properties
          * Setter returns self pointer for convenience */
-        std::string get_property(std::string key);
+        std::string get_property(std::string key) const;
         LayerConfig *set_property(std::string key, std::string value);
         
         std::string name;

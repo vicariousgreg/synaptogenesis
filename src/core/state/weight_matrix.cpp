@@ -1,5 +1,3 @@
-#include <sstream>
-
 #include "state/weight_matrix.h"
 #include "model/layer.h"
 #include "model/connection.h"

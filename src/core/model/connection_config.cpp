@@ -35,7 +35,7 @@ ConnectionConfig::~ConnectionConfig() {
     delete arborized_config;
 }
 
-std::string ConnectionConfig::get_property(std::string key) {
+std::string ConnectionConfig::get_property(std::string key) const {
     return properties.at(key);
 }
 

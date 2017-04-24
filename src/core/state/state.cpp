@@ -169,6 +169,11 @@ DeviceID State::get_device_id(Layer *layer) const {
     return layer_devices.at(layer);
 }
 
+int State::get_layer_index(Layer *layer) const {
+    return attributes[layer_devices.at(layer)].at(layer->neural_model)
+        ->get_layer_index(layer->id);
+}
+
 int State::get_other_start_index(Layer *layer) const {
     return attributes[layer_devices.at(layer)].at(layer->neural_model)
         ->get_other_start_index(layer->id);
@@ -186,6 +191,12 @@ Kernel<ATTRIBUTE_ARGS> State::get_attribute_kernel(Layer *layer) const {
 Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
     return attributes[layer_devices.at(layer)]
                      .at(layer->neural_model)->get_learning_kernel();
+}
+
+int State::get_connection_index(Connection *conn) const {
+    return attributes[layer_devices.at(conn->to_layer)]
+                     .at(conn->to_layer->neural_model)
+                     ->get_connection_index(conn->id);
 }
 
 Pointer<float> State::get_matrix(Connection* conn) const {

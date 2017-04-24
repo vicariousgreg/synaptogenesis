@@ -23,6 +23,7 @@ class Layer {
         virtual ~Layer();
 
         /* Constant getters */
+        const LayerConfig* get_config() const;
         IOTypeMask get_type() const;
         bool is_input() const;
         bool is_output() const;
@@ -63,9 +64,6 @@ class Layer {
         // Root node of dendritic tree
         DendriticNode* const dendritic_root;
 
-        // Config
-        LayerConfig* const config;
-
     private:
         friend class Structure;
         friend class Connection;
@@ -92,6 +90,9 @@ class Layer {
         // Input and output connections
         ConnectionList input_connections;
         ConnectionList output_connections;
+
+        // Layer config
+        LayerConfig* const config;
 };
 
 typedef std::vector<Layer*> LayerList;

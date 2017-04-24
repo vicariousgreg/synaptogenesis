@@ -95,6 +95,12 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
     for (auto& layer : layers)
         layer_indices[layer->id] = layer_index++;
 
+    // Set connection indices
+    int conn_index = 0;
+    for (auto& layer : layers)
+        for (auto& conn : layer->get_input_connections())
+            connection_indices[conn->id] = conn_index++;
+
     // Allocate space for input and output
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
@@ -165,6 +171,10 @@ void Attributes::register_variable(BasePointer* ptr) {
     this->managed_variables.push_back(ptr);
 }
 
+int Attributes::get_layer_index(int id) const {
+    return layer_indices.at(id);
+}
+
 int Attributes::get_other_start_index(int id) const {
     return other_start_indices.at(id);
 }
@@ -187,4 +197,8 @@ Pointer<Output> Attributes::get_expected(int id) const {
 Pointer<Output> Attributes::get_output(int id, int word_index) const {
     int size = layer_sizes.at(id);
     return output.slice(output_start_indices.at(id) + (word_index * size), size);
+}
+
+int Attributes::get_connection_index(int id) const {
+    return connection_indices.at(id);
 }

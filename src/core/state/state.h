@@ -24,6 +24,7 @@ class State {
 
         /* Getters for layer related data */
         DeviceID get_device_id(Layer *layer) const;
+        int get_layer_index(Layer *layer) const;
         int get_other_start_index(Layer *layer) const;
         Pointer<float> get_input(Layer *layer, int register_index = 0) const;
         Pointer<float> get_second_order_input(DendriticNode *node) const;
@@ -38,6 +39,7 @@ class State {
         Kernel<ATTRIBUTE_ARGS> get_learning_kernel(Layer *layer) const;
 
         /* Getters for connection related data */
+        int get_connection_index(Connection *conn) const;
         Pointer<float> get_matrix(Connection *conn) const;
         EXTRACTOR get_extractor(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_activator(

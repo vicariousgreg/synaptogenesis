@@ -16,13 +16,13 @@ class SynapseData {
         SynapseData(DendriticNode *parent_node, Connection *conn, State *state);
 
         /* Attributes pointer */
-        const Attributes *from_attributes;
         const Attributes *to_attributes;
 
         /* Output extractor */
         const EXTRACTOR extractor;
 
         /* Connection attributes */
+        int connection_index;
         Opcode opcode;
         bool convolutional;
         int row_stride, column_stride;
@@ -38,9 +38,10 @@ class SynapseData {
         float max_weight;
 
         /* Layer attributes */
+        int to_layer_index;
+        int to_start_index;
         int from_size, from_rows, from_columns;
         int to_size, to_rows, to_columns;
-        int from_start_index, to_start_index;
 
         /* IO attributes */
         OutputType output_type;

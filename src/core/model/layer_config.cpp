@@ -1,6 +1,6 @@
 #include "model/layer_config.h"
 
-std::string LayerConfig::get_property(std::string key) {
+std::string LayerConfig::get_property(std::string key) const {
     return properties.at(key);
 }
 

@@ -28,6 +28,9 @@ class Connection {
         int get_row_offset() const;
         int get_column_offset() const;
 
+        // Connection ID
+        const int id;
+
         // Matrix type
         const ConnectionType type;
 
@@ -52,6 +55,9 @@ class Connection {
 
     private:
         friend class Structure;
+
+        // Global counter for ID assignment
+        static int count;
 
         Connection(Layer *from_layer, Layer *to_layer, ConnectionConfig *config);
 

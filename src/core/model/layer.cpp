@@ -27,6 +27,7 @@ Layer::~Layer() {
     delete config;
 }
 
+const LayerConfig *Layer::get_config() const { return config; }
 IOTypeMask Layer::get_type() const { return type; }
 bool Layer::is_input() const { return type & INPUT; }
 bool Layer::is_output() const { return type & OUTPUT; }

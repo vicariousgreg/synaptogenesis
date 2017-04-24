@@ -175,9 +175,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define EXC_PLASTIC_TAU 0.444  // tau = 1.8
 #define INH_PLASTIC_TAU 0.833  // tau = 6
 
-#define SHORT_G  0.01
-#define LONG_G   0.0001
-
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS \
     IzhikevichAttributes *att = \
@@ -185,6 +182,10 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     int to_start_index = synapse_data.to_start_index; \
     float *short_conductances = nullptr; \
     float *long_conductances = nullptr; \
+\
+    float baseline_short_conductance = \
+        att->baseline_conductance.get()[synapse_data.connection_index]; \
+    float baseline_long_conductance = baseline_short_conductance * 0.01; \
 \
     float short_tau = 0.9; \
     float long_tau = 0.9; \
@@ -224,12 +225,12 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     if (opcode == ADD or opcode == SUB) { \
         float trace = short_traces[weight_index]; \
         short_traces[weight_index] = trace = (spike \
-            ? SHORT_G : (trace * short_tau)); \
+            ? baseline_short_conductance : (trace * short_tau)); \
         short_sum += trace * weights[weight_index]; \
     \
         trace = long_traces[weight_index]; \
         long_traces[weight_index] = trace = (spike \
-            ? LONG_G : (trace * long_tau)); \
+            ? baseline_long_conductance : (trace * long_tau)); \
         long_sum += trace * weights[weight_index]; \
     \
         if (plastic) { \
@@ -304,18 +305,14 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-#define EXC_POS_LR 0.1 // 0.05 // 0.01
-#define EXC_NEG_LR 0.05 // 0.025 // 0.005
-#define INH_POS_LR 0.1 // 0.05 // 0.01
-#define INH_NEG_LR 0.1 // 0.05 // 0.01
-#define MIN_WEIGHT 0.0
-
 #define UPDATE_EXTRACTIONS \
     float *pl_traces = weights + (3*num_weights); \
-    IzhikevichAttributes *to_att = \
+    IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
-    float *to_traces = to_att->neuron_trace.get(synapse_data.to_start_index); \
-    int *to_delta_ts = to_att->delta_t.get(synapse_data.to_start_index); \
+    float *to_traces = att->neuron_trace.get(synapse_data.to_start_index); \
+    int *to_delta_ts = att->delta_t.get(synapse_data.to_start_index); \
+    float learning_rate = \
+        att->learning_rate.get()[synapse_data.connection_index];
 
 #define GET_DEST_ACTIVITY(to_index) \
     float dest_trace = to_traces[to_index]; \
@@ -330,17 +327,18 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     switch(opcode) { \
         case(ADD): { \
             float delta = (dest_spike) \
-                ? ((max_weight - weight) * src_trace * EXC_POS_LR) : 0.0; \
-            delta -= (src_spike) \
-                ? ((weight - MIN_WEIGHT) * dest_trace * EXC_NEG_LR) : 0.0; \
+                ? ((max_weight - weight) * src_trace * learning_rate) : 0.0; \
+            delta -= (src_spike) /* use 1/2 learning rate for negative delta */ \
+                ? (weight * dest_trace * learning_rate * 0.5) : 0.0; \
             weights[weight_index] = weight + delta; \
             } \
             break; \
         case(SUB): { \
             float delta = (dest_spike and src_trace > 0.001) \
-                ? ((max_weight - weight) * 0.2 * pow(-__logf(src_trace) * 1.8, 1.5) * src_trace * INH_POS_LR) : 0.0; \
+                ? ((max_weight - weight) * 0.2 * pow(-__logf(src_trace) * 1.8, 1.5) \
+                    * src_trace * learning_rate) : 0.0; \
             delta -= (src_spike and dest_trace > 0.001) \
-                ? ((weight - MIN_WEIGHT) * to_power * dest_trace * INH_NEG_LR) : 0.0; \
+                ? (weight * to_power * dest_trace * learning_rate) : 0.0; \
             weights[weight_index] = weight + delta; \
             } \
             break; \
@@ -390,7 +388,20 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
 
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : Attributes(layers, BIT) {
-    // Condutances
+    // Count connections
+    int num_connections = 0;
+    for (auto& layer : layers)
+        num_connections += layer->get_input_connections().size();
+
+    // Baseline conductances
+    this->baseline_conductance = Pointer<float>(num_connections);
+    Attributes::register_variable(&this->baseline_conductance);
+
+    // Learning rate
+    this->learning_rate = Pointer<float>(num_connections);
+    Attributes::register_variable(&this->learning_rate);
+
+    // Conductances
     this->ampa_conductance = Pointer<float>(total_neurons);
     this->nmda_conductance = Pointer<float>(total_neurons);
     this->gabaa_conductance = Pointer<float>(total_neurons);
@@ -421,13 +432,14 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     for (auto& layer : layers) {
         std::string init_param;
         try {
-            init_param = layer->config->get_property("init");
+            init_param = layer->get_config()->get_property("init");
         } catch (...) {
             ErrorManager::get_instance()->log_warning(
-                "Unspecified Izhikevich init params for layer \""
+                "Unspecified init params for layer \""
                 + layer->name + "\" -- using regular spiking.");
             init_param = "regular";
         }
+
         IzhikevichParameters params = create_parameters(init_param);
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;
@@ -437,6 +449,33 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
             delta_t[start_index+j] = 0;
         }
         start_index += layer->size;
+
+        // Connection properties
+        for (auto& conn : layer->get_input_connections()) {
+            float bc;
+            try {
+                bc = std::stof(conn->get_config()->get_property("conductance"));
+            } catch (...) {
+                ErrorManager::get_instance()->log_warning(
+                    "Unspecified baseline conductance param for conn \""
+                    + conn->from_layer->name + "\" -> \""
+                    + conn->to_layer->name + "\" -- using 0.01.");
+                bc = 0.01;
+            }
+            baseline_conductance[connection_indices[conn->id]] = bc;
+
+            float lr;
+            try {
+                lr = std::stof(conn->get_config()->get_property("learning rate"));
+            } catch (...) {
+                ErrorManager::get_instance()->log_warning(
+                    "Unspecified learning rate param for conn \""
+                    + conn->from_layer->name + "\" -> \""
+                    + conn->to_layer->name + "\" -- using 0.1.");
+                lr = 0.1;
+            }
+            learning_rate[connection_indices[conn->id]] = lr;
+        }
     }
 }
 

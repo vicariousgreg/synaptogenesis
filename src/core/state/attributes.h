@@ -61,11 +61,15 @@ class Attributes {
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
 
         // Layer data retrieval
+        int get_layer_index(int id) const;
         int get_other_start_index(int id) const;
         Pointer<float> get_input(int id, int register_index = 0) const;
         Pointer<float> get_second_order_input(int id) const;
         Pointer<Output> get_output(int id, int word_index = 0) const;
         Pointer<Output> get_expected(int id) const;
+
+        // Connection data retrieval
+        int get_connection_index(int id) const;
 
         // Neuron IO data
         EXTRACTOR extractor;
@@ -131,6 +135,8 @@ class Attributes {
         std::map<int, int> output_start_indices;
         std::map<int, int> expected_start_indices;
         std::map<int, int> layer_sizes;
+
+        std::map<int, int> connection_indices;
 
         std::map<int, int> second_order_indices;
         std::map<int, int> second_order_sizes;

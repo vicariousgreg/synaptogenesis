@@ -2,8 +2,11 @@
 #include "model/layer.h"
 #include "util/error_manager.h"
 
+int Connection::count = 0;
+
 Connection::Connection(Layer *from_layer, Layer *to_layer,
         ConnectionConfig *config) :
+            id(Connection::count++),
             config(config),
             from_layer(from_layer),
             to_layer(to_layer),

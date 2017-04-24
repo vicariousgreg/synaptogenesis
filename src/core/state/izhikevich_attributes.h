@@ -31,6 +31,13 @@ class IzhikevichAttributes : public Attributes {
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
+        /* Connection Attributes */
+        // Baseline conductances
+        Pointer<float> baseline_conductance;
+
+        // Learning rate
+        Pointer<float> learning_rate;
+
         /* Neuron Attributes */
         // Conductances for different ion channels
         Pointer<float> ampa_conductance;

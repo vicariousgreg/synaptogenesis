@@ -37,7 +37,7 @@ class ConnectionConfig {
 
         /* Getter and setter for generic properties
          * Setter returns self pointer for convenience */
-        std::string get_property(std::string key);
+        std::string get_property(std::string key) const;
         ConnectionConfig *set_property(std::string key, std::string value);
 
         /* Gets the expected row/col size of a destination layer given.
