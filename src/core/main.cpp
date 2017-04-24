@@ -258,6 +258,9 @@ int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
 
+    // Suppress warnings
+    ErrorManager::get_instance()->suppress_warnings();
+
     try {
         //mnist_test();
         //speech_test();

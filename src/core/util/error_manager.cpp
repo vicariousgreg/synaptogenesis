@@ -5,7 +5,8 @@
 ErrorManager *ErrorManager::instance = 0;
 
 void ErrorManager::log_warning(std::string error) {
-    std::cout << "WARNING: \n" << error << "\n";
+    if (warnings)
+        std::cout << "WARNING: \n" << error << "\n";
 }
 
 void ErrorManager::log_error(std::string error) {

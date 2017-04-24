@@ -5,13 +5,17 @@
 
 class ErrorManager {
     public:
+        static ErrorManager *get_instance();
+        void suppress_warnings() { warnings = false; }
+
         void log_warning(std::string error);
         void log_error(std::string error);
-        static ErrorManager *get_instance();
 
     private:
         static ErrorManager *instance;
-        ErrorManager() { }
+        ErrorManager() : warnings(true) { }
+
+        bool warnings;
 };
 
 #endif

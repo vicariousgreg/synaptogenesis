@@ -26,8 +26,9 @@ class IzhikevichAttributes : public Attributes {
              Short term (AMPA/GABAA) conductance trace
              Long term (NMDA/GABAA) conductance trace
              Plasticity trace
+             STP (Short Term Plasticity)
             */
-            return 4;
+            return 5;
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
@@ -37,6 +38,10 @@ class IzhikevichAttributes : public Attributes {
 
         // Learning rate
         Pointer<float> learning_rate;
+
+        // STP variables
+        Pointer<float> stp_p;
+        Pointer<float> stp_tau;
 
         /* Neuron Attributes */
         // Conductances for different ion channels

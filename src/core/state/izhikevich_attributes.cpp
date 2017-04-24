@@ -168,10 +168,10 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 /************************* TRACE ACTIVATOR KERNELS ****************************/
 /******************************************************************************/
 
-#define AMPA_TAU    0.8        // tau = 5
-#define GABAA_TAU   0.857      // tau = 7
-#define NMDA_TAU    0.993      // tau = 150
-#define GABAB_TAU   0.993      // tau = 150
+#define AMPA_TAU        0.8    // tau = 5
+#define GABAA_TAU       0.857  // tau = 7
+#define NMDA_TAU        0.993  // tau = 150
+#define GABAB_TAU       0.993  // tau = 150
 #define EXC_PLASTIC_TAU 0.444  // tau = 1.8
 #define INH_PLASTIC_TAU 0.833  // tau = 6
 
@@ -186,6 +186,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float baseline_short_conductance = \
         att->baseline_conductance.get()[synapse_data.connection_index]; \
     float baseline_long_conductance = baseline_short_conductance * 0.01; \
+\
+    float stp_p = att->stp_p.get()[synapse_data.connection_index]; \
+    float stp_tau = att->stp_tau.get()[synapse_data.connection_index]; \
 \
     float short_tau = 0.9; \
     float long_tau = 0.9; \
@@ -211,7 +214,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     } \
     float *short_traces = weights + (1*num_weights); \
     float *long_traces  = weights + (2*num_weights); \
-    float *pl_traces    = weights + (3*num_weights);
+    float *pl_traces    = weights + (3*num_weights); \
+    float *stps         = weights + (4*num_weights);
 
 // Neuron Pre Operation
 #define INIT_SUM \
@@ -223,17 +227,22 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     bool spike = extractor(outputs[from_index], delay) > 0.0; \
 \
     if (opcode == ADD or opcode == SUB) { \
+        float stp = stps[weight_index]; \
+        float weight = weights[weight_index] * stp; \
+\
         float trace = short_traces[weight_index]; \
         short_traces[weight_index] = trace = (spike \
             ? baseline_short_conductance : (trace * short_tau)); \
-        short_sum += trace * weights[weight_index]; \
+        short_sum += trace * weight; \
     \
         trace = long_traces[weight_index]; \
         long_traces[weight_index] = trace = (spike \
             ? baseline_long_conductance : (trace * long_tau)); \
-        long_sum += trace * weights[weight_index]; \
+        long_sum += trace * weight; \
     \
         if (plastic) { \
+            stp *= (spike) ? stp_p : 1; \
+            stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
             trace = pl_traces[weight_index]; \
             pl_traces[weight_index] = (spike \
                 ? 1.0 : (trace * plastic_tau)); \
@@ -310,6 +319,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 
 #define UPDATE_EXTRACTIONS \
     float *pl_traces = weights + (3*num_weights); \
+\
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     float *to_traces = att->neuron_trace.get(synapse_data.to_start_index); \
@@ -389,6 +399,32 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
+static std::string extract_parameter(Layer *layer,
+        std::string key, std::string default_val) {
+    try {
+        return layer->get_config()->get_property(key);
+    } catch (...) {
+        ErrorManager::get_instance()->log_warning(
+            "Unspecified parameter: " + key + " for layer \""
+            + layer->name + "\" -- using " + default_val + ".");
+        return default_val;
+    }
+}
+
+static float extract_parameter(Connection *conn,
+        std::string key, float default_val) {
+    try {
+        return std::stof(conn->get_config()->get_property(key));
+    } catch (...) {
+        ErrorManager::get_instance()->log_warning(
+            "Unspecified parameter: " + key + " for conn \""
+            + conn->from_layer->name + "\" -> \""
+            + conn->to_layer->name + "\" -- using "
+            + std::to_string(default_val) + ".");
+        return default_val;
+    }
+}
+
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : Attributes(layers, BIT) {
     // Count connections
@@ -403,6 +439,12 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     // Learning rate
     this->learning_rate = Pointer<float>(num_connections);
     Attributes::register_variable(&this->learning_rate);
+
+    // STP variables
+    this->stp_p = Pointer<float>(num_connections);
+    this->stp_tau = Pointer<float>(num_connections);
+    Attributes::register_variable(&this->stp_p);
+    Attributes::register_variable(&this->stp_tau);
 
     // Conductances
     this->ampa_conductance = Pointer<float>(total_neurons);
@@ -433,17 +475,8 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     // Fill in table
     int start_index = 0;
     for (auto& layer : layers) {
-        std::string init_param;
-        try {
-            init_param = layer->get_config()->get_property("init");
-        } catch (...) {
-            ErrorManager::get_instance()->log_warning(
-                "Unspecified init params for layer \""
-                + layer->name + "\" -- using regular spiking.");
-            init_param = "regular";
-        }
-
-        IzhikevichParameters params = create_parameters(init_param);
+        IzhikevichParameters params = create_parameters(
+            extract_parameter(layer, "init", "regular"));
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;
             voltage[start_index+j] = params.c;
@@ -456,31 +489,17 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         // Connection properties
         for (auto& conn : layer->get_input_connections()) {
             // Retrieve baseline conductance
-            float bc;
-            try {
-                bc = std::stof(conn->get_config()->get_property("conductance"));
-            } catch (...) {
-                ErrorManager::get_instance()->log_warning(
-                    "Unspecified baseline conductance param for conn \""
-                    + conn->from_layer->name + "\" -> \""
-                    + conn->to_layer->name + "\" -- using 0.01.");
-                bc = 0.01;
-            }
-            baseline_conductance[connection_indices[conn->id]] = bc;
+            baseline_conductance[connection_indices[conn->id]] =
+                extract_parameter(conn, "conductance", 0.01);
 
-            // Retrieve learning rate if plastic
+            // Retrieve learning rate and STP parameters if plastic
             if (conn->plastic) {
-                float lr;
-                try {
-                    lr = std::stof(conn->get_config()->get_property("learning rate"));
-                } catch (...) {
-                    ErrorManager::get_instance()->log_warning(
-                        "Unspecified learning rate param for conn \""
-                        + conn->from_layer->name + "\" -> \""
-                        + conn->to_layer->name + "\" -- using 0.1.");
-                    lr = 0.1;
-                }
-                learning_rate[connection_indices[conn->id]] = lr;
+                learning_rate[connection_indices[conn->id]] =
+                    extract_parameter(conn, "learning_rate", 0.1);
+                stp_p[connection_indices[conn->id]] =
+                    extract_parameter(conn, "stp p", 1.0);
+                stp_tau[connection_indices[conn->id]] =
+                    extract_parameter(conn, "stp tau", 0.01);
             }
         }
     }
@@ -492,8 +511,12 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     int num_weights = conn->get_num_weights();
 
-    // Traces
-    for (int i = 1 ; i < this->get_matrix_depth(conn) ; ++i) {
+    // Clear traces
+    int matrix_depth = this->get_matrix_depth(conn);
+    for (int i = 1 ; i < matrix_depth - 1 ; ++i) {
         clear_weights(mData + i*num_weights, num_weights);
     }
+
+    // Set STP
+    set_weights(mData + (matrix_depth-1)*num_weights, num_weights, 1.0);
 }
