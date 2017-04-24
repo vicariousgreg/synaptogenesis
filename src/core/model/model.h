@@ -21,7 +21,7 @@ class Model {
         /* TODO: Loads a model from a file using the model builder */
         static Model* load(std::string path);
 
-        Structure* add_structure(std::string name, ClusterType cluster_type = PARALLEL);
+        void add_structure(Structure *structure);
 
         const StructureList& get_structures() const { return structures; }
         const LayerList get_layers() const;

@@ -10,14 +10,12 @@ Model* Model::load(std::string path) {
     return load_model(path);
 }
 
-Structure* Model::add_structure(std::string name, ClusterType cluster_type) {
+void Model::add_structure(Structure *structure) {
     for (auto& st : this->structures)
-        if (st->name == name)
+        if (st->name == structure->name)
             ErrorManager::get_instance()->log_error(
                 "Repeated structure name!");
-    Structure *structure = new Structure(name, cluster_type);
     this->structures.push_back(structure);
-    return structure;
 }
 
 const LayerList Model::get_layers() const {

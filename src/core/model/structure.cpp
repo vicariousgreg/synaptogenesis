@@ -132,3 +132,8 @@ void Structure::add_module(std::string layer_name,
     Layer *layer = find_layer(layer_name);
     layer->add_module(build_module(layer, type, params));
 }
+
+void Structure::add_module_all(std::string type, std::string params) {
+    for (auto layer : layers)
+        layer->add_module(build_module(layer, type, params));
+}

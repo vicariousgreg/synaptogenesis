@@ -30,7 +30,7 @@
  */
 class Structure {
     public:
-        Structure(std::string name, ClusterType cluster_type);
+        Structure(std::string name, ClusterType cluster_type=PARALLEL);
         virtual ~Structure();
 
         /* Checks whether this structure contains a layer
@@ -84,6 +84,7 @@ class Structure {
 
         /* Adds a module of the given |type| for the given |layer| */
         void add_module(std::string layer, std::string type, std::string params="");
+        void add_module_all(std::string type, std::string params="");
 
         // Structure name
         const std::string name;
