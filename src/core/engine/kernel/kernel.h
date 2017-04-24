@@ -35,7 +35,7 @@ class Kernel {
 Kernel<float, Pointer<float>, int> get_set_data();
 
 /* Randomizes input data */
-Kernel<Pointer<float>, int, float, bool> get_randomize_data();
+Kernel<Pointer<float>, int, float, float, bool> get_randomize_data();
 
 /* Dendritic tree internal computation */
 Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal();

@@ -107,7 +107,9 @@ class NoiseInstruction : public InitializeInstruction {
             Instruction::wait_for_dependencies();
             get_randomize_data().run(stream,
                 blocks, threads,
-                dst, size, to_layer->noise, init);
+                dst, size,
+                to_layer->noise_mean, to_layer->noise_std_dev,
+                init);
             Instruction::record_event();
         }
 

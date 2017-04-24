@@ -34,7 +34,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
                 to_layer, state, environment, compute_stream);
 
     // Add noise / clear instruction
-    if (to_layer->noise != 0.0)
+    if (to_layer->noise_mean != 0.0 and to_layer->noise_std_dev != 0.0)
         activate_instructions.push_back(
             new NoiseInstruction(to_layer, state, compute_stream));
     else if (not this->is_input)

@@ -68,7 +68,7 @@ static IzhikevichParameters create_parameters(std::string str) {
 #define IZ_SPIKE_THRESH 30
 
 /* Euler resolution for voltage update. */
-#define IZ_EULER_RES 2
+#define IZ_EULER_RES 10
 
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
@@ -175,8 +175,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define EXC_PLASTIC_TAU 0.444  // tau = 1.8
 #define INH_PLASTIC_TAU 0.833  // tau = 6
 
-#define SHORT_G  0.0025
-#define LONG_G   0.000025
+#define SHORT_G  0.01
+#define LONG_G   0.0001
 
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS \
@@ -208,10 +208,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             short_conductances = att->multiplicative_factor.get(to_start_index); \
             break; \
     } \
-    float *baselines    = weights + (1*num_weights); \
-    float *short_traces = weights + (2*num_weights); \
-    float *long_traces  = weights + (3*num_weights); \
-    float *pl_traces    = weights + (4*num_weights);
+    float *short_traces = weights + (1*num_weights); \
+    float *long_traces  = weights + (2*num_weights); \
+    float *pl_traces    = weights + (3*num_weights);
 
 // Neuron Pre Operation
 #define INIT_SUM \
@@ -220,28 +219,26 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
 // Weight Operation
 #define CALC_VAL(from_index, weight_index) \
-    if (baselines[weight_index] > 0.0) { \
-        bool spike = extractor(outputs[from_index], delay) > 0.0; \
+    bool spike = extractor(outputs[from_index], delay) > 0.0; \
+\
+    if (opcode == ADD or opcode == SUB) { \
+        float trace = short_traces[weight_index]; \
+        short_traces[weight_index] = trace = (spike \
+            ? SHORT_G : (trace * short_tau)); \
+        short_sum += trace * weights[weight_index]; \
     \
-        if (opcode == ADD or opcode == SUB) { \
-            float trace = short_traces[weight_index]; \
-            short_traces[weight_index] = trace = (spike \
-                ? SHORT_G : (trace * short_tau)); \
-            short_sum += trace * weights[weight_index]; \
-        \
-            trace = long_traces[weight_index]; \
-            long_traces[weight_index] = trace = (spike \
-                ? LONG_G : (trace * long_tau)); \
-            long_sum += trace * weights[weight_index]; \
-        \
-            if (plastic) { \
-                trace = pl_traces[weight_index]; \
-                pl_traces[weight_index] = (spike \
-                    ? 1.0 : (trace * plastic_tau)); \
-            } \
-        } else { \
-            short_sum += spike * weights[weight_index]; \
+        trace = long_traces[weight_index]; \
+        long_traces[weight_index] = trace = (spike \
+            ? LONG_G : (trace * long_tau)); \
+        long_sum += trace * weights[weight_index]; \
+    \
+        if (plastic) { \
+            trace = pl_traces[weight_index]; \
+            pl_traces[weight_index] = (spike \
+                ? 1.0 : (trace * plastic_tau)); \
         } \
+    } else { \
+        short_sum += spike * weights[weight_index]; \
     }
 
 // Neuron Post Operation
@@ -307,15 +304,14 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-#define EXC_POS_LR 1.0
-#define EXC_NEG_LR 0.05
-#define INH_POS_LR 0.1
-#define INH_NEG_LR 0.1
+#define EXC_POS_LR 0.1 // 0.05 // 0.01
+#define EXC_NEG_LR 0.05 // 0.025 // 0.005
+#define INH_POS_LR 0.1 // 0.05 // 0.01
+#define INH_NEG_LR 0.1 // 0.05 // 0.01
 #define MIN_WEIGHT 0.0
 
 #define UPDATE_EXTRACTIONS \
-    float *baselines = weights + (1*num_weights); \
-    float *pl_traces = weights + (4*num_weights); \
+    float *pl_traces = weights + (3*num_weights); \
     IzhikevichAttributes *to_att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     float *to_traces = to_att->neuron_trace.get(synapse_data.to_start_index); \
@@ -331,26 +327,24 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     bool src_spike = extractor(outputs[from_index], 0); \
     float src_trace = pl_traces[weight_index]; \
     float weight = weights[weight_index]; \
-    if (baselines[weight_index] > 0.0) { \
-        switch(opcode) { \
-            case(ADD): { \
-                float delta = (dest_spike) \
-                    ? ((max_weight - weight) * src_trace * EXC_POS_LR) : 0.0; \
-                delta -= (src_spike) \
-                    ? ((weight - MIN_WEIGHT) * dest_trace * EXC_NEG_LR) : 0.0; \
-                weights[weight_index] = weight + delta; \
-                } \
-                break; \
-            case(SUB): { \
-                float delta = (dest_spike and src_trace > 0.001) \
-                    ? ((max_weight - weight) * 0.2 * pow(-__logf(src_trace) * 1.8, 1.5) * src_trace * INH_POS_LR) : 0.0; \
-                delta -= (src_spike and dest_trace > 0.001) \
-                    ? ((weight - MIN_WEIGHT) * to_power * dest_trace * INH_NEG_LR) : 0.0; \
-                weights[weight_index] = weight + delta; \
-                } \
-                break; \
-        } \
-    }
+    switch(opcode) { \
+        case(ADD): { \
+            float delta = (dest_spike) \
+                ? ((max_weight - weight) * src_trace * EXC_POS_LR) : 0.0; \
+            delta -= (src_spike) \
+                ? ((weight - MIN_WEIGHT) * dest_trace * EXC_NEG_LR) : 0.0; \
+            weights[weight_index] = weight + delta; \
+            } \
+            break; \
+        case(SUB): { \
+            float delta = (dest_spike and src_trace > 0.001) \
+                ? ((max_weight - weight) * 0.2 * pow(-__logf(src_trace) * 1.8, 1.5) * src_trace * INH_POS_LR) : 0.0; \
+            delta -= (src_spike and dest_trace > 0.001) \
+                ? ((weight - MIN_WEIGHT) * to_power * dest_trace * INH_NEG_LR) : 0.0; \
+            weights[weight_index] = weight + delta; \
+            } \
+            break; \
+    } \
 
 CALC_FULLY_CONNECTED(update_fully_connected_trace,
     UPDATE_EXTRACTIONS;,
@@ -452,11 +446,8 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     int num_weights = conn->get_num_weights();
 
-    // Copy initial weights to baseline
-    transfer_weights(mData, mData + (1*num_weights), num_weights);
-
     // Traces
-    for (int i = 2 ; i < this->get_matrix_depth(conn) ; ++i) {
+    for (int i = 1 ; i < this->get_matrix_depth(conn) ; ++i) {
         clear_weights(mData + i*num_weights, num_weights);
     }
 }

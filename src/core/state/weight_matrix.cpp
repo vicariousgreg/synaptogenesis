@@ -37,10 +37,10 @@ void randomize_weights_gaussian(float* arr, int size,
     std::normal_distribution<double> distribution(mean, std_dev);
     if (fraction == 1.0) {
         for (int i = 0 ; i < size ; ++i)
-            arr[i] = distribution(generator);
+            arr[i] = max(0.0, distribution(generator));
     } else {
         for (int i = 0 ; i < size ; ++i)
-            arr[i] = (fRand() < fraction) ? distribution(generator) : 0.0;
+            arr[i] = (fRand() < fraction) ? max(0.0, distribution(generator)) : 0.0;
     }
 }
 

@@ -29,36 +29,36 @@ Kernel<float, Pointer<float>, int> get_set_data() {
 
 /* Randomizes input data */
 void randomize_data_SERIAL(Pointer<float> ptr,
-        int count, float max, bool init) {
+        int count, float mean, float std_dev, bool init) {
+    std::default_random_engine generator(time(0));
+    std::normal_distribution<double> distribution(mean, std_dev);
     float* data = ptr.get();
 
     if (init)
         for (int nid = 0; nid < count; ++nid)
-            data[nid] = fRand(0.0, max);
+            data[nid] = distribution(generator);
     else
         for (int nid = 0; nid < count; ++nid)
-            data[nid] += fRand(0.0, max);
+            data[nid] += distribution(generator);
 }
 #ifdef __CUDACC__
 GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr,
-        int count, float max, bool init) {
+        int count, float mean, float std_dev, bool init) {
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
-        float val = curand_uniform(&cuda_rand_states[nid]) * max;
-        if (init)
-            data[nid] = val;
-        else
-            data[nid] += val;
+        float val = (curand_normal(&cuda_rand_states[nid]) * std_dev) + mean;
+        if (init) data[nid] = val;
+        else      data[nid] += val;
     }
 }
 #else
 GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr,
-        int count, float max, bool init) { }
+        int count, float mean, float std_dev, bool init) { }
 #endif
-Kernel<Pointer<float>, int, float, bool> get_randomize_data() {
-    return Kernel<Pointer<float>, int, float, bool>(
+Kernel<Pointer<float>, int, float, float, bool> get_randomize_data() {
+    return Kernel<Pointer<float>, int, float, float, bool>(
         randomize_data_SERIAL, randomize_data_PARALLEL);
 }
 

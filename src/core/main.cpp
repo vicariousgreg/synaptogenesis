@@ -49,185 +49,6 @@ void run_simulation(Model *model, int iterations, bool verbose) {
     //clock.run(model, 100, verbose);
 }
 
-Model* build_working_memory_model(std::string neural_model) {
-    /* Construct the model */
-    Model *model = new Model();
-    Structure *main_structure = model->add_structure("working memory", PARALLEL);
-
-    int thal_ratio = 1;
-    int cortex_size = 128 + 64;
-    int thal_size = cortex_size / thal_ratio;
-
-    float inter_conn_ratio = 0.2;
-    float ff_conn_ratio = 0.5;
-    float gamma_conn_ratio = 1.0;
-
-    float ff_noise = 0.0;
-    float thal_noise = 0.0;
-    float cortex_noise = 1.0;
-
-    bool exc_plastic = false;
-    bool inh_plastic = false;
-    int exc_delay = 3;
-    int inh_delay = 0;
-
-    int sensory_center = 15;
-    int sensory_surround = 15;
-    int inter_cortex_center = 15;
-    int inter_cortex_surround = 25;
-    int gamma_center = 3;
-    int gamma_surround = 3;
-
-    //std::string output_name = "dummy_output";
-    std::string output_name = "visualizer_output";
-
-    // Feedforward circuit
-    main_structure->add_layer(new LayerConfig("input_layer", RELAY, 1, 10));
-    main_structure->add_layer((new LayerConfig("feedforward",
-        neural_model, cortex_size, cortex_size, ff_noise))
-            ->set_property(IZ_INIT, "regular"));
-
-    // Thalamic relay
-    main_structure->add_layer((new LayerConfig("tl1_thalamus",
-        neural_model, 1, 1, thal_noise))
-            ->set_property(IZ_INIT, "thalamo_cortical"));
-
-    // Feedforward input
-    main_structure->connect_layers("input_layer", "feedforward",
-        new ConnectionConfig(false, exc_delay, 1, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(100, 0.1)));
-
-    std::vector<Structure*> sub_structures;
-    for (int i = 0 ; i < 2 ; ++i) {
-        Structure *sub_structure =
-            model->add_structure(std::to_string(i), PARALLEL);
-        sub_structures.push_back(sub_structure);
-
-        // Thalamic gamma nucleus
-        sub_structure->add_layer((new LayerConfig("gamma_thalamus",
-            neural_model, thal_size, thal_size, thal_noise))
-                ->set_property(IZ_INIT, "thalamo_cortical"));
-
-        // Cortical layers
-        sub_structure->add_layer((new LayerConfig("3_cortex",
-            neural_model, cortex_size, cortex_size, cortex_noise))
-                ->set_property(IZ_INIT, "random positive"));
-        sub_structure->add_layer((new LayerConfig("6_cortex",
-            neural_model, cortex_size, cortex_size, cortex_noise))
-                ->set_property(IZ_INIT, "random positive"));
-
-        // Cortico-cortical connectivity
-        sub_structure->connect_layers("3_cortex", "6_cortex",
-            new ConnectionConfig(exc_plastic, exc_delay, 4, CONVERGENT, ADD,
-                new FlatWeightConfig(1, inter_conn_ratio),
-                new ArborizedConfig(inter_cortex_center,1)));
-
-        sub_structure->connect_layers("6_cortex", "3_cortex",
-            new ConnectionConfig(exc_plastic, exc_delay, 4, CONVERGENT, ADD,
-                new FlatWeightConfig(1, inter_conn_ratio),
-                new ArborizedConfig(inter_cortex_center,1)));
-
-        sub_structure->connect_layers("3_cortex", "6_cortex",
-            new ConnectionConfig(inh_plastic, inh_delay, 4, CONVERGENT, SUB,
-                new SurroundWeightConfig(inter_cortex_center,
-                    new FlatWeightConfig(1, inter_conn_ratio)),
-                new ArborizedConfig(inter_cortex_surround,1)));
-        sub_structure->connect_layers("6_cortex", "3_cortex",
-            new ConnectionConfig(inh_plastic, inh_delay, 4, CONVERGENT, SUB,
-                new SurroundWeightConfig(inter_cortex_center,
-                    new FlatWeightConfig(1, inter_conn_ratio)),
-                new ArborizedConfig(inter_cortex_surround,1)));
-
-        // Gamma connectivity
-        sub_structure->connect_layers("gamma_thalamus", "3_cortex",
-            new ConnectionConfig(exc_plastic, 10 + exc_delay, 4, CONVERGENT, ADD,
-                new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio),
-                new ArborizedConfig(gamma_center,1)));
-        sub_structure->connect_layers("gamma_thalamus", "3_cortex",
-            new ConnectionConfig(inh_plastic, 10 + inh_delay, 4, CONVERGENT, SUB,
-                new SurroundWeightConfig(gamma_center,
-                    new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio)),
-                new ArborizedConfig(gamma_surround,1)));
-        sub_structure->connect_layers("6_cortex", "gamma_thalamus",
-            new ConnectionConfig(exc_plastic, 10 + exc_delay, 4, CONVERGENT, ADD,
-                new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio),
-                new ArborizedConfig(gamma_center,1)));
-        sub_structure->connect_layers("6_cortex", "gamma_thalamus",
-            new ConnectionConfig(inh_plastic, 10 + inh_delay, 4, CONVERGENT, SUB,
-                new SurroundWeightConfig(gamma_center,
-                    new FlatWeightConfig(1*thal_ratio, gamma_conn_ratio)),
-                new ArborizedConfig(gamma_surround,1)));
-
-        // Thalamocortical control connectivity
-        Structure::connect(main_structure, "tl1_thalamus",
-            sub_structure, "3_cortex",
-            new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, MULT,
-                new FlatWeightConfig(1*thal_ratio, inter_conn_ratio)));
-        Structure::connect(main_structure, "tl1_thalamus",
-            sub_structure, "6_cortex",
-            new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, MULT,
-                new FlatWeightConfig(1*thal_ratio, inter_conn_ratio)));
-
-        sub_structure->add_module("3_cortex", output_name, "8");
-        sub_structure->add_module("6_cortex", output_name, "8");
-        sub_structure->add_module("gamma_thalamus", output_name, "8");
-    }
-
-    // Sensory relay to cortex
-    for (int i = 0 ; i < 1 ; ++i) {
-        /*
-        Structure::connect(main_structure, "feedforward",
-            sub_structures[i], "3_cortex",
-            new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
-                new RandomWeightConfig(1*thal_ratio, ff_conn_ratio),
-                new ArborizedConfig(sensory_center,1)));
-        Structure::connect(main_structure, "feedforward",
-            sub_structures[i], "3_cortex",
-            new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
-                new SurroundWeightConfig(sensory_center,
-                    new RandomWeightConfig(1*thal_ratio, ff_conn_ratio)),
-                new ArborizedConfig(sensory_surround,1)));
-        */
-        Structure::connect(main_structure, "feedforward",
-            sub_structures[i], "3_cortex",
-            new ConnectionConfig(exc_plastic, 0, 4, ONE_TO_ONE, ADD,
-                new FlatWeightConfig(1*thal_ratio, ff_conn_ratio)));
-    }
-
-    Structure::connect(sub_structures[0], "3_cortex",
-        sub_structures[1], "3_cortex",
-        new ConnectionConfig(exc_plastic, 0, 4, CONVERGENT, ADD,
-            new FlatWeightConfig(1*thal_ratio, ff_conn_ratio),
-            new ArborizedConfig(sensory_center,1)));
-    Structure::connect(sub_structures[0], "3_cortex",
-        sub_structures[1], "3_cortex",
-        new ConnectionConfig(inh_plastic, 0, 4, CONVERGENT, SUB,
-            new SurroundWeightConfig(sensory_center,
-                new FlatWeightConfig(1*thal_ratio, ff_conn_ratio)),
-            new ArborizedConfig(sensory_surround,1)));
-
-    // Modules
-    main_structure->add_module("input_layer", "one_hot_random_input", "1 5000");
-    main_structure->add_module("tl1_thalamus", "random_input", "1 500");
-    main_structure->add_module("feedforward", output_name, "8");
-
-    return model;
-}
-
-void working_memory_test() {
-    Model *model;
-
-    std::cout << "Working memory...\n";
-    model = build_working_memory_model(IZHIKEVICH);
-    print_model(model);
-    run_simulation(model, 1000000, true);
-    //run_simulation(model, 100, true);
-    //run_simulation(model, 10, true);
-    std::cout << "\n";
-
-    delete model;
-}
-
 void mnist_test() {
     /* Construct the model */
     Model *model = new Model();
@@ -427,38 +248,106 @@ void maze_game_test() {
     delete model;
 }
 
-Structure *add_column(Model *model, std::string name, std::string output_name,
-        int size, float noise, bool exc_plastic, bool inh_plastic) {
+Structure *add_column(Model *model, std::string name, std::string output_name, int size,
+        float exc_noise_mean, float exc_noise_std_dev,
+        float inh_noise_mean, float inh_noise_std_dev,
+        bool exc_plastic, bool inh_plastic) {
     Structure *structure = model->add_structure(name);
 
     std::string pos_name = std::string("pos");
     std::string neg_name = std::string("neg");
 
-    // Create layers
-    structure->add_layer((new LayerConfig(pos_name,
-        IZHIKEVICH, size, size, noise))
-            ->set_property(IZ_INIT, "random positive"));
-    structure->add_layer((new LayerConfig(neg_name,
-        IZHIKEVICH, size/2, size/2, noise))
-            ->set_property(IZ_INIT, "random negative"));
+    // Ratio of inh:exc weights
+    int inh_factor = 4;
 
-    // Excitatory -> Inhibitory Connection
-    structure->connect_layers(pos_name, neg_name,
-        new ConnectionConfig(false, 0, 4*4, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
+    //std::string stack_names[] = { "2_", "3a_", "4_", "56_" };
+    //for (int i = 0 ; i < 4 ; ++i) {
+    std::string stack_names[] = { "3a_", "4_", "56_" };
+    for (int i = 0 ; i < 3 ; ++i) {
+        std::string name = stack_names[i];
 
-    // Inhibitory -> Excitatory Connection
-    structure->connect_layers(neg_name, pos_name,
-        new ConnectionConfig(inh_plastic, 0, 4*4, FULLY_CONNECTED, SUB,
-            new GaussianWeightConfig(4*1, 4*0.3, 0.1)));
+        // Create layers
+        structure->add_layer((new LayerConfig(name + pos_name,
+            IZHIKEVICH, size, size, exc_noise_mean, exc_noise_std_dev))
+                ->set_property(IZ_INIT, "random positive"));
+        structure->add_layer((new LayerConfig(name + neg_name,
+            IZHIKEVICH, size/2, size/2, inh_noise_mean, inh_noise_std_dev))
+                ->set_property(IZ_INIT, "random negative"));
 
-    // Output modules
-    if (output_name != "") {
-        structure->add_module(pos_name, output_name, "");
-        structure->add_module(neg_name, output_name, "");
+        // Excitatory -> Inhibitory Connection
+        structure->connect_layers(name + pos_name, name + neg_name,
+            new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, ADD,
+                new GaussianWeightConfig(1, 0.3, 0.1)));
+
+        // Inhibitory -> Excitatory Connection
+        structure->connect_layers(name + neg_name, name + pos_name,
+            new ConnectionConfig(inh_plastic, 0, inh_factor*4, FULLY_CONNECTED, SUB,
+                new GaussianWeightConfig(inh_factor*1, inh_factor*0.3, 0.1)));
+
+        // Output modules
+        if (output_name != "") {
+            structure->add_module(name + pos_name, output_name, "");
+            structure->add_module(name + neg_name, output_name, "");
+        }
+    }
+
+    int spread_ratio = 4;
+    int spread = size / spread_ratio;
+    int delay = 5;
+    float max_weight = spread_ratio;
+
+    std::map<std::string, std::vector<std::string> > one_way;
+    //one_way["2_pos"].push_back("3a_pos");
+    one_way["4_pos"].push_back("3a_pos");
+    one_way["4_pos"].push_back("56_pos");
+
+    std::map<std::string, std::vector<std::string> > reentry;
+    reentry["3a_pos"].push_back("56_pos");
+
+    float mean = 1.0 * spread_ratio;
+    float std_dev = 0.3 * spread_ratio;
+    float fraction = 1.0;
+    for (auto pair : one_way) {
+        auto src = pair.first;
+        for (auto dest : pair.second) {
+            structure->connect_layers(
+                src, dest,
+                new ConnectionConfig(exc_plastic, delay, max_weight, CONVERGENT, ADD,
+                    new GaussianWeightConfig(mean, std_dev, fraction),
+                    new ArborizedConfig(spread,1,-spread/2)));
+        }
+    }
+
+    mean = 0.05 * spread_ratio;
+    std_dev = 0.01 * spread_ratio;
+    fraction = 1.0;
+    for (auto pair : reentry) {
+        auto src = pair.first;
+        for (auto dest : pair.second) {
+            structure->connect_layers(
+                src, dest,
+                new ConnectionConfig(exc_plastic, delay, max_weight, CONVERGENT, ADD,
+                    new GaussianWeightConfig(mean, std_dev, fraction),
+                    new ArborizedConfig(spread,1,-spread/2)));
+            structure->connect_layers(
+                dest, src,
+                new ConnectionConfig(exc_plastic, delay, max_weight, CONVERGENT, ADD,
+                    new GaussianWeightConfig(mean, std_dev, fraction),
+                    new ArborizedConfig(spread,1,-spread/2)));
+        }
     }
 
     return structure;
+}
+
+void connect_columns(Structure *column1, Structure *column2,
+        std::string name1, std::string name2,
+        float mean, float std_dev, float fraction, float max,
+        bool plastic) {
+    Structure::connect(
+        column1, name1, column2, name2,
+        new ConnectionConfig(plastic, 2, max, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(mean, std_dev, fraction)));
 }
 
 void symbol_test() {
@@ -468,51 +357,89 @@ void symbol_test() {
 
     std::string output_name = "visualizer_output";
 
-    // Input layer
-    base->add_layer(new LayerConfig("input_layer", RELAY, 1, 5));
-    base->add_module("input_layer", "one_hot_random_input", "1 2000");
-    base->add_module("input_layer", output_name, "");
+    // Input layers
+    base->add_layer(new LayerConfig("input1", RELAY, 1, 1));
+    base->add_module("input1", "one_hot_cyclic_input", "1 10000");
+    base->add_module("input1", output_name, "");
+
+    base->add_layer(new LayerConfig("input3", RELAY, 1, 1));
+    base->add_module("input3", "one_hot_cyclic_input", "1 10000 10000");
+    base->add_module("input3", output_name, "");
+
 
     // Intermediate cortical layers
-    int cortex_size = 64;
-    float noise = 0.0;
+    int cortex_size = 32;
+    float exc_noise_mean = 1.0;
+    float exc_noise_std_dev = 0.1;
+    float inh_noise_mean = 0.0;
+    float inh_noise_std_dev = 0.0;
     bool exc_plastic = true;
     bool inh_plastic = true;
-    Structure *column1 = add_column(model, "col1", output_name,
-        cortex_size, noise, exc_plastic, inh_plastic);
-    Structure *column2 = add_column(model, "col2", output_name,
-        cortex_size, noise, exc_plastic, inh_plastic);
+    Structure *column1 = add_column(model, "col1", output_name, cortex_size,
+        exc_noise_mean, exc_noise_std_dev,
+        inh_noise_mean, inh_noise_std_dev,
+        exc_plastic, inh_plastic);
+    /*
+    Structure *column2 = add_column(model, "col2", output_name, cortex_size,
+        exc_noise_mean, exc_noise_std_dev,
+        inh_noise_mean, inh_noise_std_dev,
+        exc_plastic, inh_plastic);
+    */
+    Structure *column3 = add_column(model, "col3", output_name, cortex_size,
+        exc_noise_mean, exc_noise_std_dev,
+        inh_noise_mean, inh_noise_std_dev,
+        exc_plastic, inh_plastic);
 
-    // Output Layer
-    base->add_layer(new LayerConfig("output_layer", RELAY, 1, 5));
-    base->add_module("output_layer", "one_hot_random_input", "1 1000 1000");
-    base->add_module("output_layer", output_name, "");
-
-    // Feedforward connections
+    // Input connections
+    float input_strength = 25;
     Structure::connect(
-        base, "input_layer", column1, "pos",
+        base, "input1",
+        column1, "4_pos",
         new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(100, 10, 0.01)));
+            new GaussianWeightConfig(input_strength, input_strength/10, 0.025)));
     Structure::connect(
-        column1, "pos", column2, "pos",
-        new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(0.1, 0.03, 1.0)));
-
-    // Feedback connection
-    Structure::connect(
-        column2, "pos", column1, "pos",
-        new ConnectionConfig(exc_plastic, 0, 4, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(0.1, 0.03, 1.0)));
-    Structure::connect(
-        base, "output_layer",
-        column2, "pos",
+        base, "input3",
+        column3, "4_pos",
         new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(100, 10, 0.01)));
+            new GaussianWeightConfig(input_strength, input_strength/10, 0.025)));
+
+    // Intercortical connections
+    // 1 <-> 3
+    connect_columns(
+        column1, column3,
+        "56_pos", "56_pos",
+        0.0, 0.0, 1.0, 1,  // mean, std_dev, fraction, max
+        exc_plastic);
+    connect_columns(
+        column3, column1,
+        "56_pos", "56_pos",
+        0.0, 0.0, 1.0, 1,  // mean, std_dev, fraction, max
+        exc_plastic);
+    /*
+    // TO CENTER
+    // 1 -> 2
+    connect_columns(column1, column2,
+        0.5, 0.05, 0.1, 2,  // mean, std_dev, fraction, max
+        exc_plastic, false);
+    // 3 -> 2
+    connect_columns(column3, column2,
+        0.5, 0.05, 0.1, 2,  // mean, std_dev, fraction, max
+        exc_plastic, false);
+    // FROM CENTER
+    // 2 -> 1
+    connect_columns(column2, column1,
+        0.25, 0.05, 0.1, 2,  // mean, std_dev, fraction, max
+        exc_plastic, false);
+    // 2 -> 3
+    connect_columns(column3, column2,
+        0.25, 0.05, 0.1, 2,  // mean, std_dev, fraction, max
+        exc_plastic, false);
+    */
 
     std::cout << "Symbol test......\n";
     print_model(model);
     Clock clock(true);
-    clock.run(model, 20000, true);
+    clock.run(model, 1000000, true);
     std::cout << "\n";
 
     delete model;
@@ -523,7 +450,6 @@ int main(int argc, char *argv[]) {
     srand(time(nullptr));
 
     try {
-        //working_memory_test();
         //mnist_test();
         //speech_test();
         //second_order_test();

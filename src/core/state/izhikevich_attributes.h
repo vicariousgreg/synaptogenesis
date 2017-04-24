@@ -23,12 +23,11 @@ class IzhikevichAttributes : public Attributes {
         virtual int get_matrix_depth(Connection* conn) {
             /*
              Weight
-             Baseline
              Short term (AMPA/GABAA) conductance trace
              Long term (NMDA/GABAA) conductance trace
              Plasticity trace
             */
-            return 5;
+            return 4;
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
