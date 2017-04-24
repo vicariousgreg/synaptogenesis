@@ -180,15 +180,16 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     int to_start_index = synapse_data.to_start_index; \
+    int connection_index = synapse_data.connection_index; \
     float *short_conductances = nullptr; \
     float *long_conductances = nullptr; \
 \
     float baseline_short_conductance = \
-        att->baseline_conductance.get()[synapse_data.connection_index]; \
+        att->baseline_conductance.get()[connection_index]; \
     float baseline_long_conductance = baseline_short_conductance * 0.01; \
 \
-    float stp_p = att->stp_p.get()[synapse_data.connection_index]; \
-    float stp_tau = att->stp_tau.get()[synapse_data.connection_index]; \
+    float stp_p = att->stp_p.get()[connection_index]; \
+    float stp_tau = att->stp_tau.get()[connection_index]; \
 \
     float short_tau = 0.9; \
     float long_tau = 0.9; \

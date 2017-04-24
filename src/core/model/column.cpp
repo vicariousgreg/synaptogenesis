@@ -58,7 +58,7 @@ void Column::connect(Column *col_a, Column *col_b,
         std::string name_a, std::string name_b) {
     static int intercortical_delay = 2;
     static float mean = 0.05;
-    static float std_dev = 0.0;
+    static float std_dev = 0.01;
     static float fraction = 1.0;
     static float max_weight = 1.0;
     static std::string conductance = "0.01";
@@ -92,14 +92,15 @@ void Column::add_neural_field(std::string field_name) {
         (new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(1, 0.3, 0.1)))
         ->set_property("conductance", conductance)
-        ->set_property("learning rate", learning_rate));
+        ->set_property("learning rate", learning_rate)
+        ->set_property("stp p", "1.5"));
 
     // Inhibitory -> Excitatory Connection
     connect_layers(neg_name, pos_name,
         (new ConnectionConfig(
             inh_plastic, 0, inh_ratio*inh_ratio*4, FULLY_CONNECTED, SUB,
             new GaussianWeightConfig(
-                inh_ratio*inh_ratio*1, inh_ratio*inh_ratio*0.3, 0.1)))
+                0.05, 0.0, 1.0)))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", learning_rate));
 }
@@ -109,7 +110,7 @@ void Column::connect_fields_one_way(std::string src, std::string dest) {
     static std::string learning_rate = "0.1";
 
     float max_weight = spread_ratio;
-    float fraction = 0.05;
+    float fraction = 0.1;
     float mean = 1.0 * spread_ratio / fraction;
     float std_dev = 0.3 * spread_ratio / fraction;
 
@@ -169,12 +170,13 @@ void Column::add_thalamic_nucleus() {
         (new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(1, 0.3, 0.1)))
         ->set_property("conductance", conductance)
-        ->set_property("learning rate", learning_rate));
+        ->set_property("learning rate", learning_rate)
+        ->set_property("stp p", "1.5"));
 
     // Inhibitory -> Excitatory Connection
     connect_layers(thal_neg_name, thal_pos_name,
         (new ConnectionConfig(inh_plastic, 0, 4, FULLY_CONNECTED, SUB,
-            new GaussianWeightConfig(1, 0.3, 0.1)))
+            new GaussianWeightConfig(0.05, 0.0, 1.0)))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", learning_rate));
 }
