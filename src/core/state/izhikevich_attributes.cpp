@@ -305,6 +305,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
+// Ratio of positive to negative weight changes for excitatory connections
+#define NEG_RATIO 0.5
+
 #define UPDATE_EXTRACTIONS \
     float *pl_traces = weights + (3*num_weights); \
     IzhikevichAttributes *att = \
@@ -328,8 +331,8 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         case(ADD): { \
             float delta = (dest_spike) \
                 ? ((max_weight - weight) * src_trace * learning_rate) : 0.0; \
-            delta -= (src_spike) /* use 1/2 learning rate for negative delta */ \
-                ? (weight * dest_trace * learning_rate * 0.5) : 0.0; \
+            delta -= (src_spike) /* use ratio negative delta */ \
+                ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; \
             weights[weight_index] = weight + delta; \
             } \
             break; \
@@ -452,6 +455,7 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
 
         // Connection properties
         for (auto& conn : layer->get_input_connections()) {
+            // Retrieve baseline conductance
             float bc;
             try {
                 bc = std::stof(conn->get_config()->get_property("conductance"));
@@ -464,17 +468,20 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
             }
             baseline_conductance[connection_indices[conn->id]] = bc;
 
-            float lr;
-            try {
-                lr = std::stof(conn->get_config()->get_property("learning rate"));
-            } catch (...) {
-                ErrorManager::get_instance()->log_warning(
-                    "Unspecified learning rate param for conn \""
-                    + conn->from_layer->name + "\" -> \""
-                    + conn->to_layer->name + "\" -- using 0.1.");
-                lr = 0.1;
+            // Retrieve learning rate if plastic
+            if (conn->plastic) {
+                float lr;
+                try {
+                    lr = std::stof(conn->get_config()->get_property("learning rate"));
+                } catch (...) {
+                    ErrorManager::get_instance()->log_warning(
+                        "Unspecified learning rate param for conn \""
+                        + conn->from_layer->name + "\" -> \""
+                        + conn->to_layer->name + "\" -- using 0.1.");
+                    lr = 0.1;
+                }
+                learning_rate[connection_indices[conn->id]] = lr;
             }
-            learning_rate[connection_indices[conn->id]] = lr;
         }
     }
 }

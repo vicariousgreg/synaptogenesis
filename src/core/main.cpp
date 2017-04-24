@@ -205,7 +205,7 @@ void symbol_test() {
 
     // Input layers
     base->add_layer(new LayerConfig("input1", RELAY, 1, 2));
-    base->add_module("input1", "one_hot_cyclic_input", "1 12000");
+    base->add_module("input1", "one_hot_cyclic_input", "1 15000");
     base->add_module("input1", output_name, "");
 
     base->add_layer(new LayerConfig("input2", RELAY, 1, 2));
@@ -223,17 +223,19 @@ void symbol_test() {
     model->add_structure(column2);
 
     // Input connections
-    float input_strength = 25;
+    std::string input_conductance = "0.25";
     Structure::connect(
         base, "input1",
         column1, "4_pos",
-        new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(input_strength, input_strength/10, 0.025)));
+        (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(1, 0.1, 0.025)))
+        ->set_property("conductance", input_conductance));
     Structure::connect(
         base, "input2",
         column2, "4_pos",
-        new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(input_strength, input_strength/10, 0.025)));
+        (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+            new GaussianWeightConfig(1, 0.1, 0.025)))
+        ->set_property("conductance", input_conductance));
 
     // Intercortical connections
     Column::connect(

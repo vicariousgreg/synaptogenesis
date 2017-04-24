@@ -57,7 +57,7 @@ Column::Column(std::string name, int cortex_size)
 void Column::connect(Column *col_a, Column *col_b,
         std::string name_a, std::string name_b) {
     static int intercortical_delay = 2;
-    static float mean = 0.0;
+    static float mean = 0.05;
     static float std_dev = 0.0;
     static float fraction = 1.0;
     static float max_weight = 1.0;
