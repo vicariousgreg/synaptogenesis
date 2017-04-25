@@ -37,7 +37,7 @@ void Clock::engine_loop(int iterations, bool verbose) {
         iteration_timer.wait(time_limit);
 
         // Set the refresh rate if calc_rate is true
-        if (calc_rate and i == 99) {
+        if (calc_rate and i == 999) {
             time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
             refresh_rate = 1.0 / time_limit;
             if (verbose)

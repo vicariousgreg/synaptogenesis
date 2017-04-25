@@ -5,6 +5,8 @@
 
 Column::Column(std::string name, int cortex_size)
         : Structure(name, PARALLEL),
+              conductance(std::to_string(2.5 / (cortex_size * cortex_size))),
+
               cortex_size(cortex_size),
               exc_noise_mean(1.0),
               exc_noise_std_dev(0.1),
@@ -62,7 +64,6 @@ void Column::connect(Column *col_a, Column *col_b,
     static float std_dev = 0.01;
     static float fraction = 1.0;
     static float max_weight = 4.0;
-    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     Structure::connect(
@@ -70,13 +71,12 @@ void Column::connect(Column *col_a, Column *col_b,
         (new ConnectionConfig(
             true, intercortical_delay, max_weight, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction)))
-        ->set_property("conductance", conductance)
+        ->set_property("conductance", col_a->conductance)
         ->set_property("learning rate", learning_rate)
         ->set_property("stp p", "0.7"));
 }
 
 void Column::add_neural_field(std::string field_name) {
-    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     std::string pos_name = field_name + "_" + "pos";
@@ -107,7 +107,6 @@ void Column::add_neural_field(std::string field_name) {
 }
 
 void Column::connect_fields_one_way(std::string src, std::string dest) {
-    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     float max_weight = spread_factor;
@@ -128,7 +127,6 @@ void Column::connect_fields_one_way(std::string src, std::string dest) {
 }
 
 void Column::connect_fields_reentrant(std::string src, std::string dest) {
-    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     float max_weight = spread_factor;
@@ -157,7 +155,6 @@ void Column::connect_fields_reentrant(std::string src, std::string dest) {
 }
 
 void Column::add_thalamic_nucleus() {
-    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     // Thalamic exc-inh pair
@@ -187,7 +184,6 @@ void Column::add_thalamic_nucleus() {
 }
 
 void Column::add_thalamocortical_reentry(std::string src, std::string dest) {
-    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     float base_mean = 1.0;

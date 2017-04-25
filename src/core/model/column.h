@@ -17,6 +17,9 @@ class Column : public Structure {
         void add_thalamic_nucleus();
         void add_thalamocortical_reentry(std::string src, std::string dest);
 
+        // Global variables
+        std::string conductance;
+
         // Excitatory cortex variables
         int cortex_size;
         float exc_noise_mean;
