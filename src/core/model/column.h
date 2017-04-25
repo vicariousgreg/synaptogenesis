@@ -15,7 +15,7 @@ class Column : public Structure {
         void connect_fields_one_way(std::string src, std::string dest);
         void connect_fields_reentrant(std::string src, std::string dest);
         void add_thalamic_nucleus();
-        void add_thalamocortical_reentry(std::string src);
+        void add_thalamocortical_reentry(std::string src, std::string dest);
 
         // Excitatory cortex variables
         int cortex_size;
@@ -30,6 +30,7 @@ class Column : public Structure {
 
         // Intracortical connection variables
         int spread_ratio;
+        int spread_factor;
         int spread;
         int intracortical_delay;
 
