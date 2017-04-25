@@ -11,10 +11,10 @@ Column::Column(std::string name, int cortex_size)
               exc_plastic(true),
 
               inh_ratio(2),
-              inh_size(cortex_size/inh_ratio),
+              inh_size(cortex_size / inh_ratio),
               inh_plastic(true),
 
-              spread_ratio(4),
+              spread_ratio(8),
               spread_factor(spread_ratio * spread_ratio),
               spread(cortex_size / spread_ratio),
               intracortical_delay(2),
@@ -32,7 +32,7 @@ Column::Column(std::string name, int cortex_size)
     add_neural_field("3a");
     add_neural_field("4");
     add_neural_field("56");
-    add_neural_field("6t");
+    //add_neural_field("6t");
 
     /*******************************************/
     /************** INTRACORTICAL **************/
@@ -40,19 +40,19 @@ Column::Column(std::string name, int cortex_size)
     //connect_fields_one_way("2", "3a");
     connect_fields_one_way("4", "3a");
     connect_fields_one_way("4", "56");
-    connect_fields_one_way("3a", "6t");
+    //connect_fields_one_way("3a", "6t");
 
     connect_fields_reentrant("3a", "56");
 
     /*******************************************/
     /***************** THALAMUS ****************/
     /*******************************************/
-    add_thalamic_nucleus();
+    //add_thalamic_nucleus();
 
     /*******************************************/
     /************ THALAMO-CORTICAL *************/
     /*******************************************/
-    add_thalamocortical_reentry("6t", "6t");
+    //add_thalamocortical_reentry("6t", "6t");
 }
 
 void Column::connect(Column *col_a, Column *col_b,
@@ -61,8 +61,8 @@ void Column::connect(Column *col_a, Column *col_b,
     static float mean = 0.05;
     static float std_dev = 0.01;
     static float fraction = 1.0;
-    static float max_weight = 1.0;
-    static std::string conductance = "0.0025";
+    static float max_weight = 4.0;
+    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     Structure::connect(
@@ -71,11 +71,12 @@ void Column::connect(Column *col_a, Column *col_b,
             true, intercortical_delay, max_weight, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction)))
         ->set_property("conductance", conductance)
-        ->set_property("learning rate", learning_rate));
+        ->set_property("learning rate", learning_rate)
+        ->set_property("stp p", "0.7"));
 }
 
 void Column::add_neural_field(std::string field_name) {
-    static std::string conductance = "0.0025";
+    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     std::string pos_name = field_name + "_" + "pos";
@@ -106,7 +107,7 @@ void Column::add_neural_field(std::string field_name) {
 }
 
 void Column::connect_fields_one_way(std::string src, std::string dest) {
-    static std::string conductance = "0.0025";
+    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     float max_weight = spread_factor;
@@ -127,7 +128,7 @@ void Column::connect_fields_one_way(std::string src, std::string dest) {
 }
 
 void Column::connect_fields_reentrant(std::string src, std::string dest) {
-    static std::string conductance = "0.0025";
+    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     float max_weight = spread_factor;
@@ -156,7 +157,7 @@ void Column::connect_fields_reentrant(std::string src, std::string dest) {
 }
 
 void Column::add_thalamic_nucleus() {
-    static std::string conductance = "0.0025";
+    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     // Thalamic exc-inh pair
@@ -186,7 +187,7 @@ void Column::add_thalamic_nucleus() {
 }
 
 void Column::add_thalamocortical_reentry(std::string src, std::string dest) {
-    static std::string conductance = "0.0025";
+    static std::string conductance = "0.0006";
     static std::string learning_rate = "0.1";
 
     float base_mean = 1.0;

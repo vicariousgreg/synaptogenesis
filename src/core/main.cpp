@@ -214,7 +214,7 @@ void symbol_test() {
 
 
     // Intermediate cortical layers
-    int cortex_size = 32;
+    int cortex_size = 64;
     Column *column1 = new Column("col1", cortex_size);
     Column *column2 = new Column("col2", cortex_size);
     column1->add_module_all(output_name, "");
