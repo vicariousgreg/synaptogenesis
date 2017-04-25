@@ -8,13 +8,38 @@
 #include <iostream>
 
 void OneHotCyclicInputModule::cycle() {
-    vals[index] = 0.0;
     index = (index + 1) % this->layer->size;
-    vals[index] = max_value;
     for (int nid = 0 ; nid < this->layer->size; ++nid) {
-        std::cout << vals[nid] << " ";
+        if (nid == index) {
+            std::cout << max_value << " ";
+        } else {
+            std::cout << 0 << " ";
+        }
     }
     std::cout << std::endl;
+}
+
+void OneHotCyclicInputModule::update(Buffer *buffer) {
+    float *input = buffer->get_input(this->layer);
+    for (int nid = 0 ; nid < this->layer->size; ++nid) {
+        float new_val = input[nid];
+        if (nid == index) {
+            new_val += (max_value - new_val) / 10;
+            if (new_val > 0.99 * max_value) new_val = max_value;
+        } else {
+            new_val -= new_val / 10;
+            if (new_val < 0.01) new_val = 0.0;
+        }
+        input[nid] = new_val;
+    }
+    buffer->set_dirty(this->layer);
+}
+
+void OneHotCyclicInputModule::clear(Buffer *buffer) {
+    float *input = buffer->get_input(this->layer);
+    for (int nid = 0 ; nid < this->layer->size; ++nid)
+        input[nid] = 0.0;
+    buffer->set_dirty(this->layer);
 }
 
 OneHotCyclicInputModule::OneHotCyclicInputModule(Layer *layer, std::string params)
@@ -44,30 +69,24 @@ OneHotCyclicInputModule::OneHotCyclicInputModule(Layer *layer, std::string param
     if (this->cycle_rate <= 0)
         ErrorManager::get_instance()->log_error(
             "Invalid cycle rate for cyclic input generator!");
-
-    this->vals = (float*) calloc (layer->size, sizeof(float));
-}
-
-OneHotCyclicInputModule::~OneHotCyclicInputModule() {
-    free(this->vals);
 }
 
 void OneHotCyclicInputModule::feed_input(Buffer *buffer) {
-    if (end == 0 or timesteps < end) {
-        if ((end == 0 or timesteps < end) and timesteps++ % cycle_rate == 0) {
+    if (end == 0 or timesteps <= end) {
+        // Cycle if necessary
+        if (timesteps % cycle_rate == 0) {
             std::cout << "============================ SHUFFLE\n";
             if (end != 0) std::cout << "  *  ";
             this->cycle();
-            float *input = buffer->get_input(this->layer);
-            for (int nid = 0 ; nid < this->layer->size; ++nid)
-                input[nid] = this->vals[nid];
-            buffer->set_dirty(this->layer);
         }
-    } else if (timesteps++ == end) {
-        std::cout << "========================================== CLEAR\n";
-        float *input = buffer->get_input(this->layer);
-        for (int nid = 0 ; nid < this->layer->size; ++nid)
-            input[nid] = 0.0;
-        buffer->set_dirty(this->layer);
+
+        // Clear or update
+        if (end != 0 and timesteps == end) {
+            std::cout << "========================================== CLEAR\n";
+            this->clear(buffer);
+        } else {
+            this->update(buffer);
+        }
+        ++timesteps;
     }
 }

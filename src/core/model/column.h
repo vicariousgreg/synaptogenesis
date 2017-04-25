@@ -19,6 +19,7 @@ class Column : public Structure {
 
         // Global variables
         std::string conductance;
+        std::string learning_rate;
 
         // Excitatory cortex variables
         int cortex_size;
@@ -29,12 +30,16 @@ class Column : public Structure {
         // Inhibitory cortex variables
         int inh_ratio;
         int inh_size;
+        float inh_noise_mean;
+        float inh_noise_std_dev;
+        bool exc_inh_plastic;
         bool inh_plastic;
+        int exc_inh_spread;
+        int inh_exc_spread;
+        std::string exc_inh_conductance;
+        std::string inh_exc_conductance;
 
         // Intracortical connection variables
-        int spread_ratio;
-        int spread_factor;
-        int spread;
         int intracortical_delay;
 
         // Thalamus variables

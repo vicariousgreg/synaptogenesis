@@ -26,9 +26,10 @@ class IzhikevichAttributes : public Attributes {
              Short term (AMPA/GABAA) conductance trace
              Long term (NMDA/GABAA) conductance trace
              Plasticity trace
+             Plasticity time delta
              STP (Short Term Plasticity)
             */
-            return 5;
+            return 6;
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 

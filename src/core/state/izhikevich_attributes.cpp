@@ -112,9 +112,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     // Euler's method for voltage/recovery update
     // If the voltage exceeds the spiking threshold, break
     for (int i = 0 ; i < IZ_TIMESTEP_MS * IZ_EULER_RES && voltage < IZ_SPIKE_THRESH ; ++i) {
-        float current = base_current;
+        float current = -base_current * (voltage + 35);
         current -= ampa_conductance * voltage;
-        float temp = pow((voltage + 80) / 60, 2);
+        float temp = powf((voltage + 80) / 60, 2);
         current -= nmda_conductance * (temp / (1+temp)) * voltage;
         current -= gabaa_conductance * (voltage + 70);
         current -= gabab_conductance * (voltage + 90);
@@ -216,7 +216,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *short_traces = weights + (1*num_weights); \
     float *long_traces  = weights + (2*num_weights); \
     float *pl_traces    = weights + (3*num_weights); \
-    float *stps         = weights + (4*num_weights);
+    float *pl_delta_ts  = weights + (4*num_weights); \
+    float *stps         = weights + (5*num_weights);
 
 // Neuron Pre Operation
 #define INIT_SUM \
@@ -235,7 +236,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         short_traces[weight_index] = trace = (spike \
             ? baseline_short_conductance : (trace * short_tau)); \
         short_sum += trace * weight; \
-    \
+\
         trace = long_traces[weight_index]; \
         long_traces[weight_index] = trace = (spike \
             ? baseline_long_conductance : (trace * long_tau)); \
@@ -246,7 +247,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
             trace = pl_traces[weight_index]; \
             pl_traces[weight_index] = (spike \
-                ? 1.0 : (trace * plastic_tau)); \
+                ? (trace + 1.0) : (trace * plastic_tau)); \
+            pl_delta_ts[weight_index] = (spike \
+                ? 0 : (pl_delta_ts[weight_index] + 1)); \
         } \
     } else { \
         short_sum += spike * weights[weight_index]; \
@@ -319,7 +322,8 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 #define NEG_RATIO 0.5
 
 #define UPDATE_EXTRACTIONS \
-    float *pl_traces = weights + (3*num_weights); \
+    float *pl_traces   = weights + (3*num_weights); \
+    float *pl_delta_ts = weights + (4*num_weights); \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
@@ -330,8 +334,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 
 #define GET_DEST_ACTIVITY(to_index) \
     float dest_trace = to_traces[to_index]; \
-    float to_power; \
-    if (opcode == SUB) to_power = 0.2 * __powf(to_delta_ts[to_index], 1.5); \
+    float to_power = 0.0; \
+    int to_delta_t = to_delta_ts[to_index]; \
+    if (opcode == SUB and to_delta_t < 20) to_power = 0.00000035 * pow(to_delta_t, 10); \
     bool dest_spike = extractor(destination_outputs[to_index], 0);
 
 #define UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike) \
@@ -341,18 +346,24 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     switch(opcode) { \
         case(ADD): { \
             float delta = (dest_spike) \
-                ? ((max_weight - weight) * src_trace * learning_rate) : 0.0; \
+                ? (/* (max_weight - weight) * */ src_trace * learning_rate) : 0.0; \
             delta -= (src_spike) /* use ratio negative delta */ \
-                ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; \
+                ? (/* weight * */ dest_trace * learning_rate * NEG_RATIO) : 0.0; \
             weights[weight_index] = weight + delta; \
             } \
             break; \
         case(SUB): { \
-            float delta = (dest_spike and src_trace > 0.001) \
-                ? ((max_weight - weight) * 0.2 * pow(-__logf(src_trace) * 1.8, 1.5) \
-                    * src_trace * learning_rate) : 0.0; \
-            delta -= (src_spike and dest_trace > 0.001) \
-                ? (weight * to_power * dest_trace * learning_rate) : 0.0; \
+            int pl_delta_t = pl_delta_ts[weight_index]; \
+            float delta = (dest_spike and pl_delta_t < 20) \
+                ? (/* (max_weight - weight) * */ 0.00000035 \
+                    * pow(pl_delta_t, 10) \
+                    * src_trace * learning_rate)  \
+                : 0.0; \
+            delta -= (src_spike and to_delta_t < 20) \
+                ? (/* weight * */ to_power * dest_trace * learning_rate) \
+                : 0.0; \
+            if (delta > 1.0) printf("%f ", delta); \
+            /* assert(delta < 1.0); */ \
             weights[weight_index] = weight + delta; \
             } \
             break; \
@@ -496,7 +507,7 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
             // Retrieve learning rate and STP parameters if plastic
             if (conn->plastic) {
                 learning_rate[connection_indices[conn->id]] =
-                    extract_parameter(conn, "learning_rate", 0.1);
+                    extract_parameter(conn, "learning rate", 0.1);
                 stp_p[connection_indices[conn->id]] =
                     extract_parameter(conn, "stp p", 1.0);
                 stp_tau[connection_indices[conn->id]] =
