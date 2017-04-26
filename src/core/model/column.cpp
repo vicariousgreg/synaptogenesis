@@ -4,65 +4,56 @@
 #define RELAY "relay"
 #define IZ_INIT "init"
 
+/* Global shared variables */
+static std::string learning_rate = "0.01";
+static std::string reentrant_learning_rate = "0.01";
+static float noise_mean = 0.15;
+static float noise_std_dev = 0.01;
+static int inh_ratio = 2;
+static int exc_inh_spread = 3;
+static int inh_exc_spread = 7;
+static int intracortical_delay = 0;
+static int intercortical_delay = 0;
+static int thal_ratio = 2;
+static float thal_noise_mean = 0.025;
+static float thal_noise_std_dev = 0.01;
+static int thalamocortical_delay = 10;
+
 Column::Column(std::string name, int cortex_size)
         : Structure(name, PARALLEL),
               conductance(std::to_string(0.1 / (cortex_size * cortex_size))),
-              learning_rate("0.01"),
-              reentrant_learning_rate("0.01"),
 
               cortex_size(cortex_size),
-              exc_noise_mean(0.15),
-              exc_noise_std_dev(0.01),
-              exc_plastic(false),
+              exc_plastic(true),
 
-              inh_ratio(2),
               inh_size(cortex_size / inh_ratio),
-              inh_noise_mean(0.15),
-              inh_noise_std_dev(0.01),
               exc_inh_plastic(false),
-              exc_inh_spread(3),
-              inh_exc_spread(7),
               exc_inh_conductance(std::to_string(
                   0.5*inh_ratio / (exc_inh_spread * exc_inh_spread))),
               inh_exc_conductance(std::to_string(
                   0.5*inh_ratio / (inh_exc_spread * inh_exc_spread))),
 
-              intracortical_delay(0),
-              intercortical_delay(0),
-
-              thal_ratio(2),
               thal_size(cortex_size / thal_ratio),
-              thal_noise_mean(0.025),
-              thal_noise_std_dev(0.01),
-              thal_conductance(std::to_string(0.1 / (thal_size * thal_size))),
-              thalamocortical_delay(10) {
-    /*******************************************/
-    /***************** CORTEX ******************/
-    /*******************************************/
+              thal_conductance(std::to_string(0.1 / (thal_size * thal_size))) {
+    /* Cortical Layers */
     //add_neural_field("2");
     add_neural_field("3a");
     add_neural_field("4");
     add_neural_field("56");
     add_neural_field("6t");
 
-    /*******************************************/
-    /************** INTRACORTICAL **************/
-    /*******************************************/
+    /* Intracortical Connections */
+    // One-Way
     //connect_fields_one_way("2", "3a");
     connect_fields_one_way("4", "3a");
     connect_fields_one_way("4", "56");
     connect_fields_one_way("3a", "6t");
 
+    // Reentrant
     connect_fields_reentrant("3a", "56");
 
-    /*******************************************/
-    /***************** THALAMUS ****************/
-    /*******************************************/
+    /* Thalamic Nucleus */
     add_thalamic_nucleus();
-
-    /*******************************************/
-    /************ THALAMO-CORTICAL *************/
-    /*******************************************/
     add_thalamocortical_reentry("6t", "3a");
 }
 
@@ -93,11 +84,11 @@ void Column::connect(Column *col_a, Column *col_b,
     Structure::connect(
         col_a, name_a, col_b, name_b,
         (new ConnectionConfig(
-            col_b->exc_plastic, col_b->intercortical_delay,
+            col_b->exc_plastic, intercortical_delay,
             max_weight, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction)))
         ->set_property("conductance", col_b->conductance)
-        ->set_property("learning rate", col_b->reentrant_learning_rate)
+        ->set_property("learning rate", reentrant_learning_rate)
         ->set_property("stp p", "0.7"));
 }
 
@@ -106,11 +97,11 @@ void Column::add_neural_field(std::string field_name) {
     std::string neg_name = field_name + "_" + "neg";
 
     add_layer((new LayerConfig(pos_name,
-        IZHIKEVICH, cortex_size, cortex_size, exc_noise_mean, exc_noise_std_dev))
+        IZHIKEVICH, cortex_size, cortex_size, noise_mean, noise_std_dev))
             //->set_property(IZ_INIT, "random positive"));
             ->set_property(IZ_INIT, "regular"));
     add_layer((new LayerConfig(neg_name,
-        IZHIKEVICH, inh_size, inh_size, inh_noise_mean, inh_noise_std_dev))
+        IZHIKEVICH, inh_size, inh_size, noise_mean, noise_std_dev))
             //->set_property(IZ_INIT, "random negative"));
             ->set_property(IZ_INIT, "fast"));
 

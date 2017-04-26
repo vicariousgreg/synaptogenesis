@@ -237,9 +237,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             ? baseline_long_conductance : (trace * long_tau)); \
         long_sum += trace * weight; \
     \
+        stp *= (spike) ? stp_p : 1; \
+        stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
         if (plastic) { \
-            stp *= (spike) ? stp_p : 1; \
-            stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
             trace = pl_traces[weight_index]; \
             pl_traces[weight_index] = (spike \
                 ? (trace + 1.0) : (trace * PLASTIC_TAU)); \

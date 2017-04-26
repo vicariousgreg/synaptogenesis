@@ -20,40 +20,21 @@ class Column : public Structure {
         void add_thalamic_nucleus();
         void add_thalamocortical_reentry(std::string src, std::string dest);
 
-        // Global variables
         std::string conductance;
-        std::string learning_rate;
-        std::string reentrant_learning_rate;
 
         // Excitatory cortex variables
         int cortex_size;
-        float exc_noise_mean;
-        float exc_noise_std_dev;
         bool exc_plastic;
 
         // Inhibitory cortex variables
-        int inh_ratio;
         int inh_size;
-        float inh_noise_mean;
-        float inh_noise_std_dev;
         bool exc_inh_plastic;
-        int exc_inh_spread;
-        int inh_exc_spread;
         std::string exc_inh_conductance;
         std::string inh_exc_conductance;
 
-        // Intra/inter-cortical connection variables
-        int intracortical_delay;
-        int intercortical_delay;
-
         // Thalamus variables
-        int thal_ratio;
         int thal_size;
-        int thal_spread;
-        float thal_noise_mean;
-        float thal_noise_std_dev;
         std::string thal_conductance;
-        int thalamocortical_delay;
 };
 
 #endif
