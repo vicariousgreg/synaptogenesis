@@ -4,7 +4,7 @@
 REGISTER_ATTRIBUTES(BackpropRateEncodingAttributes, "backprop_rate_encoding")
 
 Kernel<SYNAPSE_ARGS> BackpropRateEncodingAttributes::get_updater(
-        ConnectionType conn_type, bool second_order) {
+        ConnectionType conn_type, DendriticNode *node) {
     return Kernel<SYNAPSE_ARGS>(nullptr, nullptr);
 }
 

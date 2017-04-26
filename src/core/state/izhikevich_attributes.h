@@ -17,9 +17,9 @@ class IzhikevichAttributes : public Attributes {
         IzhikevichAttributes(LayerList &layers);
 
         virtual Kernel<SYNAPSE_ARGS> get_activator(
-            ConnectionType type, bool second_order);
+            Connection *conn, DendriticNode *node);
         virtual Kernel<SYNAPSE_ARGS> get_updater(
-            ConnectionType type, bool second_order);
+            Connection *conn, DendriticNode *node);
         virtual int get_matrix_depth(Connection* conn) {
             /*
              Weight

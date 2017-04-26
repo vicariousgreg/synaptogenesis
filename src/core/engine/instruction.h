@@ -142,8 +142,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
                   inter_device(state->is_inter_device(conn)),
                   d_to_d_event(nullptr),
                   inter_device_stream(nullptr),
-                  activator(state->get_activator(conn,
-                      parent_node->is_second_order())) {
+                  activator(state->get_activator(conn, parent_node)) {
             if (inter_device) {
                 src = state->get_output(conn->from_layer,
                         get_word_index(conn->delay,
@@ -185,8 +184,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
         SynapseUpdateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
-                  updater(state->get_updater(conn,
-                      parent_node->is_second_order())) {
+                  updater(state->get_updater(conn, parent_node)) {
             if (conn->convolutional) {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);

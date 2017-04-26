@@ -209,17 +209,17 @@ EXTRACTOR State::get_extractor(Connection *conn) const {
 }
 
 Kernel<SYNAPSE_ARGS> State::get_activator(
-        Connection *conn, bool second_order) const {
+        Connection *conn, DendriticNode *node) const {
     return attributes[layer_devices.at(conn->to_layer)]
                      .at(conn->to_layer->neural_model)
-                     ->get_activator(conn->type, second_order);
+                     ->get_activator(conn, node);
 }
 
 Kernel<SYNAPSE_ARGS> State::get_updater(
-        Connection *conn, bool second_order) const {
+        Connection *conn, DendriticNode *node) const {
     return attributes[layer_devices.at(conn->to_layer)]
                      .at(conn->to_layer->neural_model)
-                     ->get_updater(conn->type, second_order);
+                     ->get_updater(conn, node);
 }
 
 Pointer<Output> State::get_device_output_buffer(Connection *conn) const {

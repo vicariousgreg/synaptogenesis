@@ -74,6 +74,7 @@ static IzhikevichParameters create_parameters(std::string str) {
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
 
+/* Time dynamics of postsynaptic spikes */
 #define TRACE_TAU 0.833  // 6ms
 
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
@@ -173,6 +174,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define GABAA_TAU       0.857  // tau = 7
 #define NMDA_TAU        0.993  // tau = 150
 #define GABAB_TAU       0.993  // tau = 150
+#define MULT_TAU        0.95   // tau = 20
 #define PLASTIC_TAU     0.444  // tau = 1.8
 
 // Extraction at start of kernel
@@ -181,39 +183,25 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     int to_start_index = synapse_data.to_start_index; \
     int connection_index = synapse_data.connection_index; \
-    float *short_conductances = nullptr; \
-    float *long_conductances = nullptr; \
-\
-    float baseline_short_conductance = \
-        att->baseline_conductance.get()[connection_index]; \
-    float baseline_long_conductance = baseline_short_conductance * 0.01; \
 \
     float stp_p = att->stp_p.get()[connection_index]; \
     float stp_tau = att->stp_tau.get()[connection_index]; \
 \
-    float short_tau = 0.9; \
-    float long_tau = 0.9; \
-    switch(opcode) { \
-        case(ADD): \
-            short_conductances = att->ampa_conductance.get(to_start_index); \
-            long_conductances  = att->nmda_conductance.get(to_start_index); \
-            short_tau   = AMPA_TAU; \
-            long_tau    = NMDA_TAU; \
-            break; \
-        case(SUB): \
-            short_conductances = att->gabaa_conductance.get(to_start_index); \
-            long_conductances  = att->gabab_conductance.get(to_start_index); \
-            short_tau   = GABAA_TAU; \
-            long_tau    = GABAB_TAU; \
-            break; \
-        case(MULT): \
-            short_conductances = att->multiplicative_factor.get(to_start_index); \
-            break; \
-    } \
-    float *short_traces = weights + (1*num_weights); \
-    float *long_traces  = weights + (2*num_weights); \
     float *pl_traces    = weights + (3*num_weights); \
     float *stps         = weights + (4*num_weights);
+
+#define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
+    float *short_conductances = att->SHORT_NAME.get(to_start_index); \
+    float short_tau = SHORT_TAU; \
+    float *short_traces = weights + (1*num_weights); \
+    float baseline_short_conductance = \
+        att->baseline_conductance.get()[connection_index];
+
+#define ACTIV_EXTRACTIONS_LONG(LONG_NAME, LONG_TAU) \
+    float *long_conductances = att->LONG_NAME.get(to_start_index); \
+    float baseline_long_conductance = baseline_short_conductance * 0.01; \
+    float long_tau = LONG_TAU; \
+    float *long_traces  = weights + (2*num_weights); \
 
 // Neuron Pre Operation
 #define INIT_SUM \
@@ -221,69 +209,122 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float long_sum = 0.0;
 
 // Weight Operation
-#define CALC_VAL \
+#define CALC_VAL_PREAMBLE \
     bool spike = extractor(outputs[from_index], delay) > 0.0; \
 \
-    if (opcode == ADD or opcode == SUB) { \
-        float stp = stps[weight_index]; \
-        float weight = weights[weight_index] * stp; \
-\
-        float trace = short_traces[weight_index]; \
-        short_traces[weight_index] = trace = (spike \
-            ? baseline_short_conductance : (trace * short_tau)); \
-        short_sum += trace * weight; \
-\
-        trace = long_traces[weight_index]; \
-        long_traces[weight_index] = trace = (spike \
-            ? baseline_long_conductance : (trace * long_tau)); \
-        long_sum += trace * weight; \
-    \
-        stp *= (spike) ? stp_p : 1; \
-        stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
-        if (plastic) { \
-            trace = pl_traces[weight_index]; \
-            pl_traces[weight_index] = (spike \
-                ? (trace + 1.0) : (trace * PLASTIC_TAU)); \
-        } \
-    } else { \
-        short_sum += spike * weights[weight_index]; \
+    float stp = stps[weight_index]; \
+    float weight = weights[weight_index] * stp;
+
+#define CALC_VAL_SHORT \
+    float short_trace = short_traces[weight_index]; \
+    short_traces[weight_index] = short_trace = (spike \
+        ? baseline_short_conductance : (short_trace * short_tau)); \
+    short_sum += short_trace * weight;
+
+#define CALC_VAL_LONG \
+    float long_trace = long_traces[weight_index]; \
+    long_traces[weight_index] = long_trace = (spike \
+        ? baseline_long_conductance : (long_trace * long_tau)); \
+    long_sum += long_trace * weight; \
+
+#define CALC_VAL_STP \
+    stp *= (spike) ? stp_p : 1; \
+    stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
+    if (plastic) { \
+        float trace = pl_traces[weight_index]; \
+        pl_traces[weight_index] = (spike \
+            ? (trace + 1.0) : (trace * PLASTIC_TAU)); \
     }
 
 // Neuron Post Operation
-#define AGGREGATE \
-    short_conductances[to_index] += short_sum; \
-    if (long_conductances != nullptr) long_conductances[to_index] += long_sum;
+#define AGGREGATE_SHORT \
+    short_conductances[to_index] += short_sum;
+
+#define AGGREGATE_LONG \
+    long_conductances[to_index] += long_sum;
 
 
 /* Trace versions of activator functions */
-CALC_ALL(activate_iz,
-    ACTIV_EXTRACTIONS,
+CALC_ALL(activate_iz_add,
+    ACTIV_EXTRACTIONS
+    ACTIV_EXTRACTIONS_SHORT(
+        ampa_conductance,
+        AMPA_TAU)
+    ACTIV_EXTRACTIONS_LONG(
+        nmda_conductance,
+        NMDA_TAU),
 
     INIT_SUM,
 
-    CALC_VAL,
+    CALC_VAL_PREAMBLE
+    CALC_VAL_SHORT
+    CALC_VAL_LONG
+    CALC_VAL_STP,
 
-    AGGREGATE
+    AGGREGATE_SHORT
+    AGGREGATE_LONG
+);
+
+CALC_ALL(activate_iz_sub,
+    ACTIV_EXTRACTIONS
+    ACTIV_EXTRACTIONS_SHORT(
+        gabaa_conductance,
+        GABAA_TAU)
+    ACTIV_EXTRACTIONS_LONG(
+        gabab_conductance,
+        GABAB_TAU),
+
+    INIT_SUM,
+
+    CALC_VAL_PREAMBLE
+    CALC_VAL_SHORT
+    CALC_VAL_LONG
+    CALC_VAL_STP,
+
+    AGGREGATE_SHORT
+    AGGREGATE_LONG
+);
+
+CALC_ALL(activate_iz_mult,
+    ACTIV_EXTRACTIONS
+    ACTIV_EXTRACTIONS_SHORT(
+        multiplicative_factor,
+        MULT_TAU),
+
+    INIT_SUM,
+
+    CALC_VAL_PREAMBLE
+    CALC_VAL_SHORT
+    CALC_VAL_STP,
+
+    AGGREGATE_SHORT
 );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
-        ConnectionType type, bool second_order) {
-    if (second_order)
+        Connection *conn, DendriticNode *node) {
+    if (node->is_second_order())
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
-    switch (type) {
-        case FULLY_CONNECTED:
-            return get_activate_iz_fully_connected();
-        case ONE_TO_ONE:
-            return get_activate_iz_one_to_one();
-        case CONVERGENT:
-            return get_activate_iz_convergent();
-        case DIVERGENT:
-            return get_activate_iz_divergent();
-        default:
-            ErrorManager::get_instance()->log_error(
-                "Unimplemented connection type!");
+    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
+    funcs[FULLY_CONNECTED][ADD]  = get_activate_iz_add_fully_connected();
+    funcs[FULLY_CONNECTED][SUB]  = get_activate_iz_sub_fully_connected();
+    funcs[FULLY_CONNECTED][MULT] = get_activate_iz_mult_fully_connected();
+    funcs[ONE_TO_ONE][ADD]       = get_activate_iz_add_one_to_one();
+    funcs[ONE_TO_ONE][SUB]       = get_activate_iz_sub_one_to_one();
+    funcs[ONE_TO_ONE][MULT]      = get_activate_iz_mult_one_to_one();
+    funcs[CONVERGENT][ADD]       = get_activate_iz_add_convergent();
+    funcs[CONVERGENT][SUB]       = get_activate_iz_sub_convergent();
+    funcs[CONVERGENT][MULT]      = get_activate_iz_mult_convergent();
+    funcs[DIVERGENT][ADD]        = get_activate_iz_add_divergent();
+    funcs[DIVERGENT][SUB]        = get_activate_iz_sub_divergent();
+    funcs[DIVERGENT][MULT]       = get_activate_iz_mult_divergent();
+
+    try {
+        return funcs.at(conn->type).at(conn->opcode);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unimplemented connection type!");
     }
 }
 
@@ -312,41 +353,35 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     bool src_spike = extractor(outputs[from_index], 0); \
     float src_trace = pl_traces[weight_index]; \
     float weight = weights[weight_index]; \
-    switch(opcode) { \
-        case(ADD): { \
-            float delta = (dest_spike) \
-                ? (/* (max_weight - weight) * */ src_trace * learning_rate) : 0.0; \
-            delta -= (src_spike) /* use ratio negative delta */ \
-                ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; \
-            weights[weight_index] = weight + delta; \
-            } \
-            break; \
-    } \
+    float delta = (dest_spike) \
+        ? (/* (max_weight - weight) * */ src_trace * learning_rate) : 0.0; \
+    delta -= (src_spike) /* use ratio negative delta */ \
+        ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; \
+    weights[weight_index] = weight + delta;
 
-CALC_ALL(update_iz,
+CALC_ALL(update_iz_add,
     UPDATE_EXTRACTIONS,
     GET_DEST_ACTIVITY,
     UPDATE_WEIGHT,
-    ; );
+; );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
-        ConnectionType conn_type, bool second_order) {
-    if (second_order)
+        Connection *conn, DendriticNode *node) {
+    if (node->is_second_order())
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
-    switch (conn_type) {
-        case FULLY_CONNECTED:
-            return get_update_iz_fully_connected();
-        case ONE_TO_ONE:
-            return get_update_iz_one_to_one();
-        case CONVERGENT:
-            return get_update_iz_convergent();
-        case DIVERGENT:
-            return get_update_iz_divergent();
-        default:
-            ErrorManager::get_instance()->log_error(
-                "Unimplemented connection type!");
+    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
+    funcs[FULLY_CONNECTED][ADD]  = get_update_iz_add_fully_connected();
+    funcs[ONE_TO_ONE][ADD]       = get_update_iz_add_one_to_one();
+    funcs[CONVERGENT][ADD]       = get_update_iz_add_convergent();
+    funcs[DIVERGENT][ADD]        = get_update_iz_add_divergent();
+
+    try {
+        return funcs.at(conn->type).at(conn->opcode);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unimplemented connection type!");
     }
 }
 

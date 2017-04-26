@@ -145,23 +145,23 @@ ACTIVATE_ALL(activate_base , , );
 ACTIVATE_ALL_SECOND_ORDER(activate_base_second_order , , );
 
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
-        ConnectionType conn_type, bool second_order) {
-    switch (conn_type) {
+        Connection *conn, DendriticNode *node) {
+    switch (conn->type) {
         case FULLY_CONNECTED:
-            return (second_order)
+            return (node->is_second_order())
                 ? get_activate_base_second_order_fully_connected()
                 : get_activate_base_fully_connected();
         case ONE_TO_ONE:
-            return (second_order)
+            return (node->is_second_order())
                 ? get_activate_base_second_order_one_to_one()
                 : get_activate_base_one_to_one();
         case CONVERGENT:
         case CONVOLUTIONAL:
-            return (second_order)
+            return (node->is_second_order())
                 ? get_activate_base_second_order_convergent()
                 : get_activate_base_convergent();
         case DIVERGENT:
-            return (second_order)
+            return (node->is_second_order())
                 ? get_activate_base_second_order_divergent()
                 : get_activate_base_divergent();
         default:

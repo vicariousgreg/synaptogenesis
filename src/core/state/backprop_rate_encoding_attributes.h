@@ -12,7 +12,7 @@ class BackpropRateEncodingAttributes : public RateEncodingAttributes {
         }
 
         virtual Kernel<SYNAPSE_ARGS> get_updater(
-            ConnectionType type, bool second_order);
+            ConnectionType type, DendriticNode *node);
 
         Pointer<float> error_deltas;
 

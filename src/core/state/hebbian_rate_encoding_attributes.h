@@ -8,7 +8,7 @@ class HebbianRateEncodingAttributes : public RateEncodingAttributes {
         HebbianRateEncodingAttributes(LayerList &layers);
 
         virtual Kernel<SYNAPSE_ARGS> get_updater(
-            ConnectionType type, bool second_order);
+            Connection *conn, DendriticNode *node);
 
     ATTRIBUTE_MEMBERS
 };

@@ -43,9 +43,9 @@ class State {
         Pointer<float> get_matrix(Connection *conn) const;
         EXTRACTOR get_extractor(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_activator(
-            Connection *conn, bool second_order) const;
+            Connection *conn, DendriticNode *node) const;
         Kernel<SYNAPSE_ARGS> get_updater(
-            Connection *conn, bool second_order) const;
+            Connection *conn, DendriticNode *node) const;
         Pointer<Output> get_device_output_buffer(Connection *conn) const;
         bool is_inter_device(Connection *conn) const;
 

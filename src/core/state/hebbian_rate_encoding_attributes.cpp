@@ -42,12 +42,12 @@ CALC_ONE_TO_ONE(update_hebbian_convolutional,
     ; );
 
 Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
-        ConnectionType conn_type, bool second_order) {
-    if (second_order)
+        Connection *conn, DendriticNode *node) {
+    if (node->is_second_order())
         ErrorManager::get_instance()->log_error(
             "Second order plastic connections not supported!");
 
-    switch (conn_type) {
+    switch (conn->type) {
         case FULLY_CONNECTED:
             return get_update_hebbian_fully_connected();
         case ONE_TO_ONE:

@@ -44,13 +44,13 @@ class Attributes {
         /* Learning Rule functions */
         // Activator Kernel
         virtual Kernel<SYNAPSE_ARGS> get_activator(
-                ConnectionType type, bool second_order) {
-            return get_base_activator_kernel(type, second_order);
+                Connection *conn, DendriticNode *node) {
+            return get_base_activator_kernel(conn, node);
         }
 
         // Updater Kernel
         virtual Kernel<SYNAPSE_ARGS> get_updater(
-            ConnectionType type, bool second_order) {
+            Connection *conn, DendriticNode *node) {
             return Kernel<SYNAPSE_ARGS> ();
         }
 

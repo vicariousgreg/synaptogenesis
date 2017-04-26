@@ -2,6 +2,8 @@
 #define kernel_h
 
 #include "engine/kernel/synapse_data.h"
+#include "model/connection.h"
+#include "model/dendritic_node.h"
 #include "util/stream.h"
 #include "util/pointer.h"
 
@@ -18,10 +20,18 @@ class Kernel {
 #ifdef __CUDACC__
             if (not stream->is_host()) {
                 cudaSetDevice(stream->get_device_id());
-                parallel_kernel<<<blocks, threads, 0, stream->get_cuda_stream()>>>(args...);
+                if (parallel_kernel == nullptr)
+                    ErrorManager::get_instance()->log_error(
+                        "Attempted to run nullptr kernel!");
+                else
+                    parallel_kernel<<<blocks, threads, 0, stream->get_cuda_stream()>>>(args...);
             } else
 #endif
-            serial_kernel(args...);
+                if (serial_kernel == nullptr)
+                    ErrorManager::get_instance()->log_error(
+                        "Attempted to run nullptr kernel!");
+                else
+                    serial_kernel(args...);
         }
 
         bool is_null() { return serial_kernel == nullptr; }
@@ -44,6 +54,6 @@ get_calc_internal_second_order();
 
 /* Base activator kernel */
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
-    ConnectionType conn_type, bool second_order);
+    Connection *conn, DendriticNode *node);
 
 #endif
