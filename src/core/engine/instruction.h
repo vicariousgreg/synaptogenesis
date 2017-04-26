@@ -10,7 +10,6 @@
 #include "io/environment.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
-#include "engine/kernel/synapse_kernel.h"
 
 class Instruction {
     public:

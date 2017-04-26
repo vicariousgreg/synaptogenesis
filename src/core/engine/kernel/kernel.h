@@ -1,7 +1,7 @@
 #ifndef kernel_h
 #define kernel_h
 
-#include "engine/kernel/synapse_kernel.h"
+#include "engine/kernel/synapse_data.h"
 #include "util/stream.h"
 #include "util/pointer.h"
 

@@ -1,4 +1,5 @@
 #include "engine/kernel/kernel.h"
+#include "engine/kernel/synapse_kernel.h"
 
 /******************************************************************************/
 /************************* ACTIVATOR TOOL KERNELS *****************************/
@@ -138,37 +139,31 @@ get_calc_internal_second_order() {
 /******************************************************************************/
 
 /* Vanilla versions of activator functions */
-ACTIVATE_FULLY_CONNECTED(activate_fully_connected_base , , );
-ACTIVATE_ONE_TO_ONE(activate_one_to_one_base , , );
-ACTIVATE_CONVERGENT(activate_convergent_base , , );
-ACTIVATE_DIVERGENT(activate_divergent_base , , );
+ACTIVATE_ALL(activate_base , , );
 
 /* Second order */
-ACTIVATE_FULLY_CONNECTED_SECOND_ORDER(activate_fully_connected_base_second_order , , );
-ACTIVATE_ONE_TO_ONE_SECOND_ORDER(activate_one_to_one_base_second_order , , );
-ACTIVATE_CONVERGENT_SECOND_ORDER(activate_convergent_base_second_order , , );
-ACTIVATE_DIVERGENT_SECOND_ORDER(activate_divergent_base_second_order , , );
+ACTIVATE_ALL_SECOND_ORDER(activate_base_second_order , , );
 
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
         ConnectionType conn_type, bool second_order) {
     switch (conn_type) {
         case FULLY_CONNECTED:
             return (second_order)
-                ? get_activate_fully_connected_base_second_order()
-                : get_activate_fully_connected_base();
+                ? get_activate_base_second_order_fully_connected()
+                : get_activate_base_fully_connected();
         case ONE_TO_ONE:
             return (second_order)
-                ? get_activate_one_to_one_base_second_order()
-                : get_activate_one_to_one_base();
+                ? get_activate_base_second_order_one_to_one()
+                : get_activate_base_one_to_one();
         case CONVERGENT:
         case CONVOLUTIONAL:
             return (second_order)
-                ? get_activate_convergent_base_second_order()
-                : get_activate_convergent_base();
+                ? get_activate_base_second_order_convergent()
+                : get_activate_base_convergent();
         case DIVERGENT:
             return (second_order)
-                ?  get_activate_divergent_base_second_order()
-                : get_activate_divergent_base();
+                ? get_activate_base_second_order_divergent()
+                : get_activate_base_divergent();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");

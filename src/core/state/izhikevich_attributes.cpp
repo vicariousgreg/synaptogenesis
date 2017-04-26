@@ -2,6 +2,7 @@
 #include <math.h>
 
 #include "state/izhikevich_attributes.h"
+#include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"
 
 REGISTER_ATTRIBUTES(IzhikevichAttributes, "izhikevich")
@@ -220,7 +221,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float long_sum = 0.0;
 
 // Weight Operation
-#define CALC_VAL(from_index, weight_index) \
+#define CALC_VAL \
     bool spike = extractor(outputs[from_index], delay) > 0.0; \
 \
     if (opcode == ADD or opcode == SUB) { \
@@ -249,58 +250,37 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     }
 
 // Neuron Post Operation
-#define AGGREGATE(to_index) \
+#define AGGREGATE \
     short_conductances[to_index] += short_sum; \
     if (long_conductances != nullptr) long_conductances[to_index] += long_sum;
 
 
 /* Trace versions of activator functions */
-CALC_FULLY_CONNECTED(activate_fully_connected_trace,
+CALC_ALL(activate_iz,
     ACTIV_EXTRACTIONS,
 
     INIT_SUM,
 
-    CALC_VAL(from_index, weight_index),
+    CALC_VAL,
 
-    AGGREGATE(to_index)
-);
-CALC_ONE_TO_ONE(activate_one_to_one_trace,
-    ACTIV_EXTRACTIONS,
-
-    INIT_SUM
-    CALC_VAL(index, index)
-    AGGREGATE(index)
-);
-CALC_CONVERGENT(activate_convergent_trace,
-    ACTIV_EXTRACTIONS,
-
-    INIT_SUM,
-
-    CALC_VAL(from_index, weight_index),
-
-    AGGREGATE(to_index)
-);
-CALC_DIVERGENT(activate_divergent_trace,
-    ACTIV_EXTRACTIONS,
-
-    INIT_SUM,
-
-    CALC_VAL(from_index, weight_index),
-
-    AGGREGATE(to_index)
+    AGGREGATE
 );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         ConnectionType type, bool second_order) {
+    if (second_order)
+        ErrorManager::get_instance()->log_error(
+            "Unimplemented connection type!");
+
     switch (type) {
         case FULLY_CONNECTED:
-            return get_activate_fully_connected_trace();
+            return get_activate_iz_fully_connected();
         case ONE_TO_ONE:
-            return get_activate_one_to_one_trace();
+            return get_activate_iz_one_to_one();
         case CONVERGENT:
-            return get_activate_convergent_trace();
+            return get_activate_iz_convergent();
         case DIVERGENT:
-            return get_activate_divergent_trace();
+            return get_activate_iz_divergent();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");
@@ -323,12 +303,12 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     float learning_rate = \
         att->learning_rate.get()[synapse_data.connection_index];
 
-#define GET_DEST_ACTIVITY(to_index) \
+#define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
     float to_power = 0.0; \
     bool dest_spike = extractor(destination_outputs[to_index], 0);
 
-#define UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike) \
+#define UPDATE_WEIGHT \
     bool src_spike = extractor(outputs[from_index], 0); \
     float src_trace = pl_traces[weight_index]; \
     float weight = weights[weight_index]; \
@@ -343,38 +323,27 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
             break; \
     } \
 
-CALC_FULLY_CONNECTED(update_fully_connected_trace,
-    UPDATE_EXTRACTIONS;,
-    GET_DEST_ACTIVITY(to_index);,
-    UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike),
-    ; );
-CALC_ONE_TO_ONE(update_one_to_one_trace,
-    UPDATE_EXTRACTIONS;,
-    GET_DEST_ACTIVITY(index);
-    UPDATE_WEIGHT(index, index, dest_trace, dest_spike)
-    );
-CALC_CONVERGENT(update_convergent_trace,
-    UPDATE_EXTRACTIONS;,
-    GET_DEST_ACTIVITY(to_index);,
-    UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike),
-    ; );
-CALC_DIVERGENT(update_divergent_trace,
-    UPDATE_EXTRACTIONS;,
-    GET_DEST_ACTIVITY(to_index);,
-    UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike),
+CALC_ALL(update_iz,
+    UPDATE_EXTRACTIONS,
+    GET_DEST_ACTIVITY,
+    UPDATE_WEIGHT,
     ; );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
         ConnectionType conn_type, bool second_order) {
+    if (second_order)
+        ErrorManager::get_instance()->log_error(
+            "Unimplemented connection type!");
+
     switch (conn_type) {
         case FULLY_CONNECTED:
-            return get_update_fully_connected_trace();
+            return get_update_iz_fully_connected();
         case ONE_TO_ONE:
-            return get_update_one_to_one_trace();
+            return get_update_iz_one_to_one();
         case CONVERGENT:
-            return get_update_convergent_trace();
+            return get_update_iz_convergent();
         case DIVERGENT:
-            return get_update_divergent_trace();
+            return get_update_iz_divergent();
         default:
             ErrorManager::get_instance()->log_error(
                 "Unimplemented connection type!");

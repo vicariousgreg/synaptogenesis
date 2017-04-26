@@ -51,4 +51,8 @@ class SynapseData {
         Pointer<float> second_order_inputs;
 };
 
+/* Typedef for kernel functions, which just take SynapseData */
+typedef SynapseData SYNAPSE_ARGS;
+typedef void(*SYNAPSE_KERNEL)(SYNAPSE_ARGS);
+
 #endif

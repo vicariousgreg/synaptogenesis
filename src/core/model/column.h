@@ -5,7 +5,7 @@
 
 class Column : public Structure {
     public:
-        Column::Column(std::string name, int cortex_size);
+        Column(std::string name, int cortex_size);
 
         void add_input(int num_symbols,
             std::string module_name, std::string module_params);

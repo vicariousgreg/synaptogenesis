@@ -19,10 +19,6 @@
 #define MAX std::fmax
 #endif
 
-/* Typedef for kernel functions, which just take SynapseData */
-typedef SynapseData SYNAPSE_ARGS;
-typedef void(*SYNAPSE_KERNEL)(SYNAPSE_ARGS);
-
 /* Synaptic operations
  * |prior| is the current state of the neuron.
  * |input| is the synaptic input accomulated from one connection.
@@ -130,24 +126,32 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 
 
 
-#define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
+#define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    for (int index = 0 ; index < to_size ; ++index) { \
+    for (int weight_index=0, from_index=0, to_index=0 ; \
+         weight_index < to_size ; \
+         ++weight_index, ++to_index, ++from_index) { \
+        NEURON_PRE; \
         WEIGHT_OP; \
+        NEURON_POST; \
     } \
 }
 
-#define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
+#define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    int index = blockIdx.x * blockDim.x + threadIdx.x; \
-    if (index < to_size) { \
+    int weight_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (weight_index < to_size) { \
+        int from_index = weight_index; \
+        int to_index = weight_index; \
+        NEURON_PRE; \
         WEIGHT_OP; \
+        NEURON_POST; \
     } \
 }
 
@@ -370,9 +374,9 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() {\
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
-#define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-ONE_TO_ONE_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, WEIGHT_OP) \
-ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_OP) \
+#define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+ONE_TO_ONE_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
@@ -401,8 +405,8 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
-#define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, WEIGHT_OP) \
-ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_OP) \
+#define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
@@ -421,88 +425,64 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
 
 #endif
 
+
+#define CALC_ALL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+CALC_FULLY_CONNECTED(FUNC_NAME##_fully_connected, \
+    EXTRACTIONS, \
+    NEURON_PRE, \
+    WEIGHT_OP, \
+    NEURON_POST \
+); \
+CALC_ONE_TO_ONE(FUNC_NAME##_one_to_one, \
+    EXTRACTIONS, \
+    NEURON_PRE, \
+    WEIGHT_OP, \
+    NEURON_POST \
+); \
+CALC_CONVERGENT(FUNC_NAME##_convergent, \
+    EXTRACTIONS, \
+    NEURON_PRE, \
+    WEIGHT_OP, \
+    NEURON_POST \
+); \
+CALC_DIVERGENT(FUNC_NAME##_divergent, \
+    EXTRACTIONS, \
+    NEURON_PRE, \
+    WEIGHT_OP, \
+    NEURON_POST \
+);
+
+
 /******************************************************************************/
 /***************** FIRST ORDER CONNECTION ACTIVATOR KERNELS *******************/
 /******************************************************************************/
 
-#define CALC_VAL(from_index, weight_index) \
+#define CALC_VAL \
     float val = extractor(outputs[from_index], delay) * weights[weight_index];
 
-#define AGGREGATE(to_index, sum) \
+#define AGGREGATE \
     inputs[to_index] = calc(opcode, inputs[to_index], sum);
 
-#define ACTIVATE_FULLY_CONNECTED(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_FULLY_CONNECTED(FUNC_NAME, \
+#define ACTIVATE_ALL(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_ALL( \
+    FUNC_NAME, \
+\
     /* EXTRACTIONS */ \
-    UPDATE_EXT;, \
- \
+    UPDATE_EXT, \
+\
     /* NEURON_PRE
      * Initialize sum to 0.0 */ \
     float sum = 0.0;, \
- \
+\
     /* WEIGHT_OP
      * Calculate weight input, add to sum */ \
-    CALC_VAL(from_index, weight_index); \
+    CALC_VAL \
     sum += val; \
-    UPDATE_CALC;, \
- \
+    UPDATE_CALC, \
+\
     /* NEURON_POST
      * Aggregate sum to input */ \
-    AGGREGATE(to_index, sum); \
-)
-
-#define ACTIVATE_ONE_TO_ONE(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_ONE_TO_ONE(FUNC_NAME, \
-    /* EXTRACTIONS */ \
-    UPDATE_EXT;, \
- \
-    /* WEIGHT_OP
-     * Calculate weight input, add to sum
-     * Aggregate weight input to total input */ \
-    CALC_VAL(index, index); \
-    UPDATE_CALC; \
-    AGGREGATE(index, val); \
-)
-
-#define ACTIVATE_CONVERGENT(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_CONVERGENT(FUNC_NAME, \
-    /* EXTRACTIONS */ \
-    UPDATE_EXT;, \
- \
-    /* NEURON_PRE
-     * Initialize sum to 0.0 */ \
-    float sum = 0.0;, \
- \
-    /* WEIGHT_OP
-     * Calculate weight input, add to sum */ \
-    CALC_VAL(from_index, weight_index); \
-    sum += val; \
-    UPDATE_CALC;, \
- \
-    /* NEURON_POST
-     * Aggregate sum to input */ \
-    AGGREGATE(to_index, sum); \
-)
-
-#define ACTIVATE_DIVERGENT(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_DIVERGENT(FUNC_NAME, \
-    /* EXTRACTIONS */ \
-    UPDATE_EXT;, \
- \
-    /* NEURON_PRE
-     * Initialize sum to 0.0 */ \
-    float sum = 0.0;, \
- \
-    /* WEIGHT_OP
-     * Calculate weight input, add to sum */ \
-    CALC_VAL(from_index, weight_index); \
-    sum += val; \
-    UPDATE_CALC;, \
- \
-    /* NEURON_POST
-     * Aggregate sum to input */ \
-    AGGREGATE(to_index, sum); \
-)
+    AGGREGATE) \
 
 /******************************************************************************/
 /*************** SECOND ORDER CONNECTION ACTIVATOR KERNELS ********************/
@@ -511,13 +491,13 @@ CALC_DIVERGENT(FUNC_NAME, \
 #define EXTRACT_SECOND_ORDER \
     float * const second_order_inputs = synapse_data.second_order_inputs.get(); \
 
-#define CALC_VAL_SECOND_ORDER(from_index, weight_index) \
+#define CALC_VAL_SECOND_ORDER \
     float val = extractor(outputs[from_index], delay) * weights[weight_index]; \
     second_order_inputs[weight_index] = \
         calc(opcode, second_order_inputs[weight_index], val); \
 
-#define ACTIVATE_FULLY_CONNECTED_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_FULLY_CONNECTED(FUNC_NAME, \
+#define ACTIVATE_ALL_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
+CALC_ALL(FUNC_NAME, \
     /* EXTRACTIONS */ \
     EXTRACT_SECOND_ORDER; \
     UPDATE_EXT;, \
@@ -527,53 +507,7 @@ CALC_FULLY_CONNECTED(FUNC_NAME, \
  \
     /* WEIGHT_OP
      * Calculate weight input, aggregate to second order buffer */ \
-    CALC_VAL_SECOND_ORDER(from_index, weight_index); \
-    UPDATE_CALC;, \
- \
-    /* NEURON_POST */ \
-)
-
-#define ACTIVATE_ONE_TO_ONE_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_ONE_TO_ONE(FUNC_NAME, \
-    /* EXTRACTIONS */ \
-    EXTRACT_SECOND_ORDER; \
-    UPDATE_EXT;, \
- \
-    /* WEIGHT_OP
-     * Calculate weight input, aggregate to second order buffer */ \
-    CALC_VAL_SECOND_ORDER(index, index); \
-    UPDATE_CALC; \
-)
-
-#define ACTIVATE_CONVERGENT_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_CONVERGENT(FUNC_NAME, \
-    /* EXTRACTIONS */ \
-    EXTRACT_SECOND_ORDER; \
-    UPDATE_EXT;, \
- \
-    /* NEURON_PRE */ \
-    , \
- \
-    /* WEIGHT_OP
-     * Calculate weight input, aggregate to second order buffer */ \
-    CALC_VAL_SECOND_ORDER(from_index, weight_index); \
-    UPDATE_CALC;, \
- \
-    /* NEURON_POST */ \
-)
-
-#define ACTIVATE_DIVERGENT_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
-CALC_DIVERGENT(FUNC_NAME, \
-    /* EXTRACTIONS */ \
-    EXTRACT_SECOND_ORDER; \
-    UPDATE_EXT;, \
- \
-    /* NEURON_PRE */ \
-    , \
- \
-    /* WEIGHT_OP
-     * Calculate weight input, aggregate to second order buffer */ \
-    CALC_VAL_SECOND_ORDER(from_index, weight_index); \
+    CALC_VAL_SECOND_ORDER; \
     UPDATE_CALC;, \
  \
     /* NEURON_POST */ \

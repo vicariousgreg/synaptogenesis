@@ -8,7 +8,7 @@
 #include "model/layer.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/kernel.h"
-#include "engine/kernel/synapse_kernel.h"
+#include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
 #include "util/constants.h"
 #include "util/pointer.h"
