@@ -7,6 +7,9 @@ class Column : public Structure {
     public:
         Column::Column(std::string name, int cortex_size);
 
+        void add_input(int num_symbols,
+            std::string module_name, std::string module_params);
+
         static void connect(Column *col_a, Column *col_b,
             std::string name_a, std::string name_b);
 
@@ -39,8 +42,9 @@ class Column : public Structure {
         std::string exc_inh_conductance;
         std::string inh_exc_conductance;
 
-        // Intracortical connection variables
+        // Intra/inter-cortical connection variables
         int intracortical_delay;
+        int intercortical_delay;
 
         // Thalamus variables
         int thal_ratio;
@@ -48,6 +52,7 @@ class Column : public Structure {
         int thal_spread;
         float thal_noise_mean;
         float thal_noise_std_dev;
+        std::string thal_conductance;
         int thalamocortical_delay;
 };
 
