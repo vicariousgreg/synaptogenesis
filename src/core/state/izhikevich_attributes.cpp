@@ -172,8 +172,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define GABAA_TAU       0.857  // tau = 7
 #define NMDA_TAU        0.993  // tau = 150
 #define GABAB_TAU       0.993  // tau = 150
-#define EXC_PLASTIC_TAU 0.444  // tau = 1.8
-#define INH_PLASTIC_TAU 0.833  // tau = 6
+#define PLASTIC_TAU     0.444  // tau = 1.8
 
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS \
@@ -193,21 +192,18 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 \
     float short_tau = 0.9; \
     float long_tau = 0.9; \
-    float plastic_tau = 0.9; \
     switch(opcode) { \
         case(ADD): \
             short_conductances = att->ampa_conductance.get(to_start_index); \
             long_conductances  = att->nmda_conductance.get(to_start_index); \
             short_tau   = AMPA_TAU; \
             long_tau    = NMDA_TAU; \
-            plastic_tau = EXC_PLASTIC_TAU; \
             break; \
         case(SUB): \
             short_conductances = att->gabaa_conductance.get(to_start_index); \
             long_conductances  = att->gabab_conductance.get(to_start_index); \
             short_tau   = GABAA_TAU; \
             long_tau    = GABAB_TAU; \
-            plastic_tau = INH_PLASTIC_TAU; \
             break; \
         case(MULT): \
             short_conductances = att->multiplicative_factor.get(to_start_index); \
@@ -216,8 +212,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *short_traces = weights + (1*num_weights); \
     float *long_traces  = weights + (2*num_weights); \
     float *pl_traces    = weights + (3*num_weights); \
-    float *pl_delta_ts  = weights + (4*num_weights); \
-    float *stps         = weights + (5*num_weights);
+    float *stps         = weights + (4*num_weights);
 
 // Neuron Pre Operation
 #define INIT_SUM \
@@ -247,9 +242,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
             trace = pl_traces[weight_index]; \
             pl_traces[weight_index] = (spike \
-                ? (trace + 1.0) : (trace * plastic_tau)); \
-            pl_delta_ts[weight_index] = (spike \
-                ? 0 : (pl_delta_ts[weight_index] + 1)); \
+                ? (trace + 1.0) : (trace * PLASTIC_TAU)); \
         } \
     } else { \
         short_sum += spike * weights[weight_index]; \
@@ -323,20 +316,16 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 
 #define UPDATE_EXTRACTIONS \
     float *pl_traces   = weights + (3*num_weights); \
-    float *pl_delta_ts = weights + (4*num_weights); \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     float *to_traces = att->neuron_trace.get(synapse_data.to_start_index); \
-    int *to_delta_ts = att->delta_t.get(synapse_data.to_start_index); \
     float learning_rate = \
         att->learning_rate.get()[synapse_data.connection_index];
 
 #define GET_DEST_ACTIVITY(to_index) \
     float dest_trace = to_traces[to_index]; \
     float to_power = 0.0; \
-    int to_delta_t = to_delta_ts[to_index]; \
-    if (opcode == SUB and to_delta_t < 20) to_power = 0.00000035 * pow(to_delta_t, 10); \
     bool dest_spike = extractor(destination_outputs[to_index], 0);
 
 #define UPDATE_WEIGHT(weight_index, from_index, dest_trace, dest_spike) \
@@ -348,22 +337,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
             float delta = (dest_spike) \
                 ? (/* (max_weight - weight) * */ src_trace * learning_rate) : 0.0; \
             delta -= (src_spike) /* use ratio negative delta */ \
-                ? (/* weight * */ dest_trace * learning_rate * NEG_RATIO) : 0.0; \
-            weights[weight_index] = weight + delta; \
-            } \
-            break; \
-        case(SUB): { \
-            int pl_delta_t = pl_delta_ts[weight_index]; \
-            float delta = (dest_spike and pl_delta_t < 20) \
-                ? (/* (max_weight - weight) * */ 0.00000035 \
-                    * pow(pl_delta_t, 10) \
-                    * src_trace * learning_rate)  \
-                : 0.0; \
-            delta -= (src_spike and to_delta_t < 20) \
-                ? (/* weight * */ to_power * dest_trace * learning_rate) \
-                : 0.0; \
-            if (delta > 1.0) printf("%f ", delta); \
-            /* assert(delta < 1.0); */ \
+                ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; \
             weights[weight_index] = weight + delta; \
             } \
             break; \

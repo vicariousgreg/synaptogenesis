@@ -204,57 +204,57 @@ void symbol_test() {
     std::string output_name = "visualizer_output";
 
     // Input layers
-    base->add_layer(new LayerConfig("input1", RELAY, 1, 5));
-    base->add_module("input1", "one_hot_cyclic_input", "1 10000");
+    int num_symbols = 2;
+    base->add_layer(new LayerConfig("input1", RELAY, 1, num_symbols));
+    base->add_module("input1", "one_hot_cyclic_input", "1 1000000");
     base->add_module("input1", output_name, "");
 
-    //base->add_layer(new LayerConfig("input2", RELAY, 1, 2));
-    //base->add_module("input2", "one_hot_cyclic_input", "1 10000 10000");
-    //base->add_module("input2", output_name, "");
+    base->add_layer(new LayerConfig("input2", RELAY, 1, num_symbols));
+    //base->add_module("input2", "one_hot_cyclic_input", "1 2000 2000");
+    base->add_module("input2", "one_hot_cyclic_input", "1 1000000");
+    base->add_module("input2", output_name, "");
 
 
     // Intermediate cortical layers
     int cortex_size = 32;
     Column *column1 = new Column("col1", cortex_size);
-    //Column *column2 = new Column("col2", cortex_size);
+    Column *column2 = new Column("col2", cortex_size);
     column1->add_module_all(output_name, "");
-    //column2->add_module_all(output_name, "");
+    column2->add_module_all(output_name, "");
     model->add_structure(column1);
-    //model->add_structure(column2);
+    model->add_structure(column2);
 
     // Input connections
-    std::string input_conductance = "0.015"; //"0.02";
+    std::string input_conductance = "0.02";
     float fraction = 1.0;
+    float mean = 1.0;
+    float std_dev = 0.3;
     Structure::connect(
         base, "input1",
         column1, "4_pos",
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.3, fraction)))
+            new GaussianWeightConfig(mean, std_dev, fraction)))
         ->set_property("conductance", input_conductance));
-    /*
     Structure::connect(
         base, "input2",
         column2, "4_pos",
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(1, 0.1, fraction)))
+            new GaussianWeightConfig(mean, std_dev, fraction)))
         ->set_property("conductance", input_conductance));
-    */
 
     // Intercortical connections
-    /*
     Column::connect(
         column1, column2,
         "56_pos", "56_pos");
     Column::connect(
         column2, column1,
         "56_pos", "56_pos");
-    */
 
     std::cout << "Symbol test......\n";
     print_model(model);
     Clock clock(true);
     //Clock clock(10.0f);
-    clock.run(model, 1000000, true);
+    clock.run(model, 10000000, true);
     std::cout << "\n";
 
     delete model;

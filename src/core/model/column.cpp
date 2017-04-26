@@ -5,20 +5,20 @@
 
 Column::Column(std::string name, int cortex_size)
         : Structure(name, PARALLEL),
-              conductance(std::to_string(10.0 / (cortex_size * cortex_size))),
-              learning_rate("0.1"),
+              conductance(std::to_string(0.1 / (cortex_size * cortex_size))),
+              learning_rate("0.01"),
+              reentrant_learning_rate("0.01"),
 
               cortex_size(cortex_size),
-              exc_noise_mean(0.1),
+              exc_noise_mean(0.15),
               exc_noise_std_dev(0.01),
               exc_plastic(true),
 
               inh_ratio(2),
               inh_size(cortex_size / inh_ratio),
-              inh_noise_mean(0.1),
+              inh_noise_mean(0.15),
               inh_noise_std_dev(0.01),
               exc_inh_plastic(false),
-              inh_plastic(false),
               exc_inh_spread(3),
               inh_exc_spread(7),
               exc_inh_conductance(std::to_string(
@@ -39,7 +39,7 @@ Column::Column(std::string name, int cortex_size)
     //add_neural_field("2");
     add_neural_field("3a");
     add_neural_field("4");
-    //add_neural_field("56");
+    add_neural_field("56");
     //add_neural_field("6t");
 
     /*******************************************/
@@ -47,10 +47,10 @@ Column::Column(std::string name, int cortex_size)
     /*******************************************/
     //connect_fields_one_way("2", "3a");
     connect_fields_one_way("4", "3a");
-    //connect_fields_one_way("4", "56");
+    connect_fields_one_way("4", "56");
     //connect_fields_one_way("3a", "6t");
 
-    //connect_fields_reentrant("3a", "56");
+    connect_fields_reentrant("3a", "56");
 
     /*******************************************/
     /***************** THALAMUS ****************/
@@ -67,9 +67,9 @@ void Column::connect(Column *col_a, Column *col_b,
         std::string name_a, std::string name_b) {
     static int intercortical_delay = 2;
     static float mean = 0.05;
-    static float std_dev = 0.01;
+    static float std_dev = 0.0;
     static float fraction = 1.0;
-    static float max_weight = 4.0;
+    static float max_weight = 1.0;
 
     Structure::connect(
         col_a, name_a, col_b, name_b,
@@ -77,7 +77,7 @@ void Column::connect(Column *col_a, Column *col_b,
             true, intercortical_delay, max_weight, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction)))
         ->set_property("conductance", col_b->conductance)
-        ->set_property("learning rate", col_b->learning_rate)
+        ->set_property("learning rate", col_b->reentrant_learning_rate)
         ->set_property("stp p", "0.7"));
 }
 
@@ -107,7 +107,7 @@ void Column::add_neural_field(std::string field_name) {
     // Inhibitory -> Excitatory Connection
     connect_layers(neg_name, pos_name,
         (new ConnectionConfig(
-            inh_plastic, 0, 4, DIVERGENT, SUB,
+            false, 0, 4, DIVERGENT, SUB,
             new GaussianWeightConfig(1.0, 0.0, 1.0),
             new ArborizedConfig(inh_exc_spread, inh_ratio, -inh_exc_spread/2)))
         ->set_property("conductance", inh_exc_conductance)
@@ -115,8 +115,15 @@ void Column::add_neural_field(std::string field_name) {
 }
 
 void Column::connect_fields_one_way(std::string src, std::string dest) {
+    /*
     float mean = 1.0;
-    float std_dev = 0.5;
+    float std_dev = 0.3;
+    float fraction = 1.0;
+    float max_weight = 4.0;
+    */
+
+    float mean = 0.05;
+    float std_dev = 0.0;
     float fraction = 1.0;
     float max_weight = 4.0;
 
@@ -132,7 +139,7 @@ void Column::connect_fields_one_way(std::string src, std::string dest) {
 void Column::connect_fields_reentrant(std::string src, std::string dest) {
     float max_weight = 1.0;
     float mean = 0.05;
-    float std_dev = 0.01;
+    float std_dev = 0.0;
     float fraction = 1.0;
 
     connect_layers(
@@ -141,14 +148,14 @@ void Column::connect_fields_reentrant(std::string src, std::string dest) {
             exc_plastic, intracortical_delay, max_weight, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction)))
         ->set_property("conductance", conductance)
-        ->set_property("learning rate", learning_rate));
+        ->set_property("learning rate", reentrant_learning_rate));
     connect_layers(
         dest + "_pos", src + "_pos",
         (new ConnectionConfig(
             exc_plastic, intracortical_delay, max_weight, FULLY_CONNECTED, ADD,
             new GaussianWeightConfig(mean, std_dev, fraction)))
         ->set_property("conductance", conductance)
-        ->set_property("learning rate", learning_rate));
+        ->set_property("learning rate", reentrant_learning_rate));
 }
 
 void Column::add_thalamic_nucleus() {
@@ -172,7 +179,7 @@ void Column::add_thalamic_nucleus() {
 
     // Inhibitory -> Excitatory Connection
     connect_layers(thal_neg_name, thal_pos_name,
-        (new ConnectionConfig(inh_plastic, 0, 4, FULLY_CONNECTED, SUB,
+        (new ConnectionConfig(false, 0, 4, FULLY_CONNECTED, SUB,
             new GaussianWeightConfig(0.05, 0.0, 1.0)))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", learning_rate));

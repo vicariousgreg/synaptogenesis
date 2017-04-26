@@ -20,6 +20,7 @@ class Column : public Structure {
         // Global variables
         std::string conductance;
         std::string learning_rate;
+        std::string reentrant_learning_rate;
 
         // Excitatory cortex variables
         int cortex_size;
@@ -33,7 +34,6 @@ class Column : public Structure {
         float inh_noise_mean;
         float inh_noise_std_dev;
         bool exc_inh_plastic;
-        bool inh_plastic;
         int exc_inh_spread;
         int inh_exc_spread;
         std::string exc_inh_conductance;
