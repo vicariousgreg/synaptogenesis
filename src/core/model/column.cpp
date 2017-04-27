@@ -5,10 +5,10 @@
 #define IZ_INIT "init"
 
 /* Global shared variables */
-static std::string learning_rate = "0.1";
-static std::string reentrant_learning_rate = "0.1";
-static float noise_mean = 0.11;
-static float noise_std_dev = 0.05;
+static std::string learning_rate = "0.01";
+static std::string reentrant_learning_rate = "0.01";
+static float noise_mean = 0.125;
+static float noise_std_dev = 0.0;
 static int inh_ratio = 2;
 static int exc_inh_spread = 3;
 static int inh_exc_spread = 7;
@@ -19,10 +19,12 @@ static float thal_noise_mean = 0.025;
 static float thal_noise_std_dev = 0.0025;
 static int thalamocortical_delay = 10;
 
-static float mean = 0.005;
-static float std_dev = 0.0001;
-static float reentrant_mean = 0.005;
-static float reentrant_std_dev = 0.0001;
+static float one_way_mean = -2.5;
+static float one_way_std_dev = 1.0;
+static float one_way_fraction = 1.0;
+static float reentrant_mean = 0.0;
+static float reentrant_std_dev = 0.0;
+static float reentrant_fraction = 1.0;
 
 Column::Column(std::string name, int cortex_size, bool plastic)
         : Structure(name, PARALLEL),
@@ -136,20 +138,20 @@ void Column::connect_fields_one_way(std::string src, std::string dest) {
         src + "_pos", dest + "_pos",
         (new ConnectionConfig(
             exc_plastic, intracortical_delay, max_weight, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(mean, std_dev, fraction)))
+            //new GaussianWeightConfig(one_way_mean, one_way_std_dev, one_way_fraction)))
+            new LogNormalWeightConfig(one_way_mean, one_way_std_dev, one_way_fraction)))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", learning_rate));
 }
 
 void Column::connect_fields_reentrant(std::string src, std::string dest) {
     float max_weight = 1.0;
-    float fraction = 1.0;
 
     connect_layers(
         src + "_pos", dest + "_pos",
         (new ConnectionConfig(
             exc_plastic, intracortical_delay, max_weight, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(reentrant_mean, reentrant_std_dev, fraction)))
+            new GaussianWeightConfig(reentrant_mean, reentrant_std_dev, reentrant_fraction)))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", reentrant_learning_rate)
         ->set_property("ltp p", "1.5"));
@@ -157,7 +159,7 @@ void Column::connect_fields_reentrant(std::string src, std::string dest) {
         dest + "_pos", src + "_pos",
         (new ConnectionConfig(
             exc_plastic, intracortical_delay, max_weight, FULLY_CONNECTED, ADD,
-            new GaussianWeightConfig(mean, std_dev, fraction)))
+            new GaussianWeightConfig(reentrant_mean, reentrant_std_dev, reentrant_fraction)))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", reentrant_learning_rate)
         ->set_property("ltp p", "1.5"));

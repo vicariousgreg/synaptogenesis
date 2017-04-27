@@ -113,7 +113,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
     // Euler's method for voltage/recovery update
     // If the voltage exceeds the spiking threshold, break
-    for (int i = 0 ; i < IZ_TIMESTEP_MS * IZ_EULER_RES && voltage < IZ_SPIKE_THRESH ; ++i) {
+    for (int i = 0 ; (i < IZ_TIMESTEP_MS * IZ_EULER_RES)
+            and (voltage == voltage)
+            and (voltage < IZ_SPIKE_THRESH) ; ++i) {
         float current = -base_current * (voltage + 35);
         current -= ampa_conductance * voltage;
         float temp = powf((voltage + 80) / 60, 2);
@@ -128,6 +130,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         recovery += a * ((b * voltage) - recovery) / IZ_EULER_RES;
     }
 
+    voltage = (voltage != voltage) ? IZ_SPIKE_THRESH : voltage;
     assert(voltage == voltage);
 
     ampa_conductances[nid] = 0.0;

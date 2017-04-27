@@ -209,17 +209,19 @@ void symbol_test() {
     column1->add_module_all("heatmap", "");
     model->add_structure(column1);
 
-    Column *column2 = new Column("col2", cortex_size, true);
+    Column *column2 = new Column("col2", cortex_size, false);
     column2->add_input(num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
     column2->add_module_all("visualizer_output", "");
     column2->add_module_all("heatmap", "");
     model->add_structure(column2);
 
+    /*
     Column *column3 = new Column("col3", cortex_size, false);
     column3->add_input(num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
     column3->add_module_all("visualizer_output", "");
     column3->add_module_all("heatmap", "");
     model->add_structure(column3);
+    */
 
     // Intercortical connections
     /*
@@ -233,8 +235,8 @@ void symbol_test() {
 
     std::cout << "Symbol test......\n";
     print_model(model);
-    Clock clock(true);
-    //Clock clock(100.0f);
+    //Clock clock(true);
+    Clock clock(400.0f);
     clock.run(model, 10000000, true);
     std::cout << "\n";
 
