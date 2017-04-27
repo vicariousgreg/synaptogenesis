@@ -37,7 +37,6 @@ void randomize_weights_gaussian(float* arr, int size,
     if (std_dev == 0.0) {
         set_weights(arr, size, mean, fraction);
     } else {
-        std::default_random_engine generator(time(0));
         std::normal_distribution<double> distribution(mean, std_dev);
 
         if (fraction == 1.0) {
@@ -55,7 +54,6 @@ void randomize_weights_lognormal(float* arr, int size,
     if (std_dev == 0.0) {
         set_weights(arr, size, mean, fraction);
     } else {
-        std::default_random_engine generator(time(0));
         std::lognormal_distribution<double> distribution(mean, std_dev);
 
         if (fraction == 1.0) {
