@@ -66,14 +66,16 @@ SequentialCluster::SequentialCluster(Structure *structure,
 
 void SequentialCluster::add_external_dependencies(
         std::map<Layer*, ClusterNode*> all_nodes) {
-    // Crawl through the nodes and add dependencies transfers
+    // Crawl through the nodes and add dependencies for state updates
     // This prevents race conditions from output updates
-    // Ensure that the latest update is available for this timestep
-    // This is the opposite order of the parallel cluster
+    // Ensure that the output is not updated until it's been transferred
     for (auto& node : nodes)
-        for (auto& pair : node->get_synapse_instructions())
+        for (auto& pair : node->get_synapse_instructions()) {
+            all_nodes[pair.first->from_layer]
+                ->get_state_update_instruction()->add_dependency(pair.second);
             pair.second->add_dependency(
                 all_nodes[pair.first->from_layer]->get_state_update_instruction());
+        }
 }
 
 /******************************************************************************/

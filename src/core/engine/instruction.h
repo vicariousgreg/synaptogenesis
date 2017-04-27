@@ -160,6 +160,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
         void activate() {
             Instruction::wait_for_dependencies();
             if (inter_device) {
+                for (auto& dep : dependencies) inter_device_stream->wait(dep);
                 src.copy_to(dst, inter_device_stream);
                 inter_device_stream->record(d_to_d_event);
                 stream->wait(d_to_d_event);
