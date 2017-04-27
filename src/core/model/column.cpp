@@ -41,7 +41,7 @@ static float input_mean = -3.0;
 static float input_std_dev = 1.5;
 
 // One-way variables
-static std::string one_way_learning_rate = "0.1";
+static std::string one_way_learning_rate = "0.01";
 static std::string one_way_stp_p = "1.0";
 static std::string one_way_stp_tau = "100";
 static float one_way_mean = -2.0;
@@ -68,7 +68,7 @@ Column::Column(std::string name, int cortex_size, bool plastic)
               exc_inh_plastic(false),
 
               exc_self_conductance(std::to_string(
-                  0.01 / (exc_self_spread * exc_self_spread))),
+                  0.1 / (exc_self_spread * exc_self_spread))),
               inh_self_conductance(std::to_string(
                   0.01 / (inh_self_spread * inh_self_spread))),
 
