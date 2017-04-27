@@ -375,7 +375,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         ? (dest_trace * learning_rate * NEG_RATIO) : 0.0; \
         /* ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; */ \
     weight += delta; \
-    weights[weight_index] = (weight < 0.0) ? 0.0 : weight;
+    weights[weight_index] = \
+        (weight < 0.0) ? 0.0 \
+            : (weight > max_weight) ? max_weight : weight;
 
 CALC_ALL(update_iz_add,
     UPDATE_EXTRACTIONS,

@@ -5,6 +5,7 @@
 #define IZ_INIT "init"
 
 /* Global shared variables */
+static float base_conductance = 2.5;
 static float noise_mean = 0.125;
 static float noise_std_dev = 0.0;
 static int intracortical_delay = 0;
@@ -17,6 +18,7 @@ static float thal_noise_std_dev = 0.0025;
 static int thalamocortical_delay = 10;
 
 // Self connectivity variables
+static float exc_self_base_conductance = 0.1;
 static std::string exc_self_learning_rate = "0.1";
 static std::string exc_self_stp_p = "0.7";
 static std::string exc_self_stp_tau = "100";
@@ -26,6 +28,7 @@ static float exc_self_mean = -3.0;
 static float exc_self_std_dev = 1.0;
 static float exc_self_fraction = 1.0;
 
+static float inh_self_base_conductance = 0.01;
 static std::string inh_self_stp_p = "1.5";
 static std::string inh_self_stp_tau = "100";
 static int inh_self_spread = 15;
@@ -35,7 +38,8 @@ static float inh_self_std_dev = 0.0;  // Fixed, Gaussian
 static float inh_self_fraction = 1.0; // Fixed, Gaussian
 
 // Input variables
-static std::string input_conductance = "0.1";
+static std::string input_conductance = "0.2";
+static std::string input_learning_rate = "0.01";
 static float input_fraction = 1.0;
 static float input_mean = -3.0;
 static float input_std_dev = 1.5;
@@ -60,7 +64,9 @@ static float reentrant_max_weight = 1.0;
 
 Column::Column(std::string name, int cortex_size, bool plastic)
         : Structure(name, PARALLEL),
-              conductance(std::to_string(10.0 / (cortex_size * cortex_size))),
+              conductance(std::to_string(
+                  base_conductance
+                  / (cortex_size * cortex_size))),
 
               cortex_size(cortex_size),
               exc_plastic(plastic),
@@ -68,9 +74,11 @@ Column::Column(std::string name, int cortex_size, bool plastic)
               exc_inh_plastic(false),
 
               exc_self_conductance(std::to_string(
-                  0.1 / (exc_self_spread * exc_self_spread))),
+                  exc_self_base_conductance
+                  / (exc_self_spread * exc_self_spread))),
               inh_self_conductance(std::to_string(
-                  0.01 / (inh_self_spread * inh_self_spread))),
+                  inh_self_base_conductance
+                  / (inh_self_spread * inh_self_spread))),
 
               thal_size(cortex_size / thal_ratio),
               thal_conductance(std::to_string(0.1 / (thal_size * thal_size))) {
@@ -96,7 +104,7 @@ Column::Column(std::string name, int cortex_size, bool plastic)
     //add_thalamocortical_reentry("6t", "6t");
 }
 
-void Column::add_input(int num_symbols,
+void Column::add_input(bool plastic, int num_symbols,
         std::string module_name, std::string module_params) {
     // Input layer
     this->add_layer(new LayerConfig("input", IZHIKEVICH, 1, num_symbols)
@@ -105,10 +113,11 @@ void Column::add_input(int num_symbols,
 
     // Input connection
     connect_layers("input", "4",
-        (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+        (new ConnectionConfig(plastic, 0, 1, FULLY_CONNECTED, ADD,
             new LogNormalWeightConfig(
                 input_mean, input_std_dev, input_fraction)))
-        ->set_property("conductance", input_conductance));
+        ->set_property("conductance", input_conductance)
+        ->set_property("learning rate", input_learning_rate));
 }
 
 void Column::connect(Column *col_a, Column *col_b,
