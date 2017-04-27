@@ -28,12 +28,13 @@ void print_model(Model *model) {
 
     for (auto structure : model->get_structures()) {
         for (auto layer : structure->get_layers()) {
-            std::cout << layer->structure->name << "->" << layer->name;
-            if (layer->is_input()) std::cout << "\t\tINPUT";
-            if (layer->is_output()) std::cout << "\t\tOUTPUT";
-            if (layer->is_expected()) std::cout << "\t\tOUTPUT";
+            printf("%-20s   ", (layer->structure->name + "->" + layer->name).c_str());
+            std::cout << ((layer->is_input()) ? "I " : "  ");
+            std::cout << ((layer->is_output()) ? "O " : "  ");
+            std::cout << ((layer->is_expected()) ? "E " : "  ");
             std::cout << std::endl;
         }
+        std::cout << std::endl;
     }
 }
 
@@ -209,14 +210,14 @@ void symbol_test() {
     column1->add_module_all("heatmap", "");
     model->add_structure(column1);
 
-    Column *column2 = new Column("col2", cortex_size, false);
+    /*
+    Column *column2 = new Column("col2", cortex_size, true);
     column2->add_input(num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
     column2->add_module_all("visualizer_output", "");
     column2->add_module_all("heatmap", "");
     model->add_structure(column2);
 
-    /*
-    Column *column3 = new Column("col3", cortex_size, false);
+    Column *column3 = new Column("col3", cortex_size, true);
     column3->add_input(num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
     column3->add_module_all("visualizer_output", "");
     column3->add_module_all("heatmap", "");
@@ -227,16 +228,16 @@ void symbol_test() {
     /*
     Column::connect(
         column1, column2,
-        "56_pos", "56_pos");
+        "56", "56");
     Column::connect(
         column2, column1,
-        "56_pos", "56_pos");
+        "56", "56");
     */
 
     std::cout << "Symbol test......\n";
     print_model(model);
-    //Clock clock(true);
-    Clock clock(400.0f);
+    Clock clock(true);
+    //Clock clock(400.0f);
     clock.run(model, 10000000, true);
     std::cout << "\n";
 
@@ -248,7 +249,7 @@ int main(int argc, char *argv[]) {
     srand(time(nullptr));
 
     // Suppress warnings
-    //ErrorManager::get_instance()->suppress_warnings();
+    ErrorManager::get_instance()->suppress_warnings();
 
     try {
         //mnist_test();

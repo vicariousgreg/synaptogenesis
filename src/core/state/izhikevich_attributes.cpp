@@ -114,24 +114,36 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     // Euler's method for voltage/recovery update
     // If the voltage exceeds the spiking threshold, break
     for (int i = 0 ; (i < IZ_TIMESTEP_MS * IZ_EULER_RES)
-            and (voltage == voltage)
             and (voltage < IZ_SPIKE_THRESH) ; ++i) {
-        float current = -base_current * (voltage + 35);
-        current -= ampa_conductance * voltage;
+        // Start with AMPA conductance
+        float current = -ampa_conductance * voltage;
+
+        // NMDA nonlinear voltage dependence
         float temp = powf((voltage + 80) / 60, 2);
         current -= nmda_conductance * (temp / (1+temp)) * voltage;
+
+        // GABA conductances
         current -= gabaa_conductance * (voltage + 70);
         current -= gabab_conductance * (voltage + 90);
-        current *= (1+multiplicative_factor);
 
+        // Multiplicative factor for synaptic currents
+        current *= 1 + multiplicative_factor;
+
+        // Add the leaky current after multiplicative factor
+        current -= base_current * (voltage + 35);
+
+        // Update voltage
         float delta_v = (0.04 * voltage * voltage) +
                         (5*voltage) + 140 - recovery + current;
         voltage += delta_v / IZ_EULER_RES;
+
+        // If the voltage explodes (voltage == NaN -> voltage != voltage),
+        //   set it to threshold before it corrupts the recovery variable
+        voltage = (voltage != voltage) ? IZ_SPIKE_THRESH : voltage;
+
+        // Update recovery variable
         recovery += a * ((b * voltage) - recovery) / IZ_EULER_RES;
     }
-
-    voltage = (voltage != voltage) ? IZ_SPIKE_THRESH : voltage;
-    assert(voltage == voltage);
 
     ampa_conductances[nid] = 0.0;
     nmda_conductances[nid] = 0.0;
@@ -186,24 +198,22 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define ACTIV_EXTRACTIONS \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
-    int to_start_index = synapse_data.to_start_index; \
-    int connection_index = synapse_data.connection_index; \
 \
-    float stp_p = att->stp_p.get()[connection_index]; \
-    float stp_tau = att->stp_tau.get()[connection_index]; \
+    float stp_p = att->stp_p.get()[synapse_data.connection_index]; \
+    float stp_tau = att->stp_tau.get()[synapse_data.connection_index]; \
 \
     float *pl_traces    = weights + (3*num_weights); \
     float *stps         = weights + (4*num_weights);
 
 #define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
-    float *short_conductances = att->SHORT_NAME.get(to_start_index); \
+    float *short_conductances = att->SHORT_NAME.get(synapse_data.to_start_index); \
     float short_tau = SHORT_TAU; \
     float *short_traces = weights + (1*num_weights); \
     float baseline_short_conductance = \
-        att->baseline_conductance.get()[connection_index];
+        att->baseline_conductance.get()[synapse_data.connection_index];
 
 #define ACTIV_EXTRACTIONS_LONG(LONG_NAME, LONG_TAU) \
-    float *long_conductances = att->LONG_NAME.get(to_start_index); \
+    float *long_conductances = att->LONG_NAME.get(synapse_data.to_start_index); \
     float baseline_long_conductance = baseline_short_conductance * 0.01; \
     float long_tau = LONG_TAU; \
     float *long_traces  = weights + (2*num_weights); \
@@ -223,22 +233,22 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define CALC_VAL_SHORT \
     float short_trace = short_traces[weight_index]; \
     short_traces[weight_index] = short_trace = (spike \
-        ? (short_trace + baseline_short_conductance) : (short_trace * short_tau)); \
+        ? (/* short_trace + */ baseline_short_conductance) : (short_trace * short_tau)); \
     short_sum += short_trace * weight;
 
 #define CALC_VAL_LONG \
     float long_trace = long_traces[weight_index]; \
     long_traces[weight_index] = long_trace = (spike \
-        ? (long_trace + baseline_long_conductance) : (long_trace * long_tau)); \
+        ? (/* long_trace + */ baseline_long_conductance) : (long_trace * long_tau)); \
     long_sum += long_trace * weight;
 
 #define CALC_VAL_STP \
     stp *= (spike) ? stp_p : 1; \
     stps[weight_index] = stp + ((1.0 - stp) * stp_tau); \
     if (plastic) { \
-        float trace = pl_traces[weight_index]; \
         pl_traces[weight_index] = (spike \
-            ? (trace + 1.0) : (trace * PLASTIC_TAU)); \
+            ? (pl_traces[weight_index] + 1.0) \
+            : (pl_traces[weight_index] * PLASTIC_TAU)); \
     }
 
 // Neuron Post Operation
@@ -337,9 +347,6 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 /************************** TRACE UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-// Ratio of positive to negative weight changes for excitatory connections
-#define NEG_RATIO 0.5
-
 #define UPDATE_EXTRACTIONS \
     float *pl_traces   = weights + (3*num_weights); \
 \
@@ -352,45 +359,28 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 #define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
     float to_power = 0.0; \
-    bool dest_spike = extractor(destination_outputs[to_index], 0) > 0.0; \
-\
-    /* DEBUG VARIABLES */ \
-    float total_weight = 0.0; \
-    int count = 0; \
-    float max = 0.0;
+    bool dest_spike = extractor(destination_outputs[to_index], 0) > 0.0;
+
+// Ratio of positive to negative weight changes for excitatory connections
+#define NEG_RATIO 0.5
 
 #define UPDATE_WEIGHT \
     bool src_spike = extractor(outputs[from_index], 0); \
     float src_trace = pl_traces[weight_index]; \
     float weight = weights[weight_index]; \
     float delta = (dest_spike) \
-        ? (/* (max_weight - weight) * */ src_trace * learning_rate) : 0.0; \
+        ? (src_trace * learning_rate) : 0.0; \
+        /* ? ((max_weight - weight) * src_trace * learning_rate) : 0.0; */ \
     delta -= (src_spike) /* use ratio negative delta */ \
-        ? (/* weight * */ dest_trace * learning_rate * NEG_RATIO) : 0.0; \
+        ? (dest_trace * learning_rate * NEG_RATIO) : 0.0; \
+        /* ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; */ \
     weight += delta; \
-    weights[weight_index] = (weight < 0.0) ? 0.0 : weight; \
-\
-    /* DEBUG */ \
-    if (dest_spike) { \
-        if (weight > (max_weight * 0.0)) { \
-            ++count; \
-            total_weight += weight; \
-        } \
-        if (weight > max) max = weight; \
-    }
+    weights[weight_index] = (weight < 0.0) ? 0.0 : weight;
 
 CALC_ALL(update_iz_add,
     UPDATE_EXTRACTIONS,
     GET_DEST_ACTIVITY,
     UPDATE_WEIGHT,
-
-    /* DEBUG */
-    /* if (count > 0 and (max > (learning_rate * 1.1) and (learning_rate < 1.1)))
-        printf("(%f, %f) ", total_weight / count, max); */
-    /*
-    if (count > 0 and (learning_rate > 0.11) and (max > (max_weight * 0.5)))
-        printf("(avg %.4f, max %.4f, count %4d, index (%4d:%4d))\n", total_weight / count, max, count, synapse_data.connection_index, to_index);
-    */
 ; );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
@@ -443,6 +433,29 @@ static float extract_parameter(Connection *conn,
     }
 }
 
+static void check_parameters(Layer *layer) {
+    std::set<std::string> valid_params;
+    valid_params.insert("init");
+
+    for (auto pair : layer->get_config()->get_properties())
+        if (valid_params.count(pair.first) == 0)
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized layer parameter: " + pair.first);
+}
+
+static void check_parameters(Connection *conn) {
+    std::set<std::string> valid_params;
+    valid_params.insert("conductance");
+    valid_params.insert("learning rate");
+    valid_params.insert("stp p");
+    valid_params.insert("stp tau");
+
+    for (auto pair : conn->get_config()->get_properties())
+        if (valid_params.count(pair.first) == 0)
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized connection parameter: " + pair.first);
+}
+
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : Attributes(layers, BIT) {
     // Count connections
@@ -493,6 +506,9 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     // Fill in table
     int start_index = 0;
     for (auto& layer : layers) {
+        // Check layer parameters
+        check_parameters(layer);
+
         IzhikevichParameters params = create_parameters(
             extract_parameter(layer, "init", "regular"));
         for (int j = 0 ; j < layer->size ; ++j) {
@@ -506,6 +522,9 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
 
         // Connection properties
         for (auto& conn : layer->get_input_connections()) {
+            // Check connection parameters
+            check_parameters(conn);
+
             // Retrieve baseline conductance
             baseline_conductance[connection_indices[conn->id]] =
                 extract_parameter(conn, "conductance", 0.01);
@@ -514,13 +533,11 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
             stp_p[connection_indices[conn->id]] =
                 extract_parameter(conn, "stp p", 1.0);
             stp_tau[connection_indices[conn->id]] =
-                extract_parameter(conn, "stp tau", 0.01);
+                1.0 / extract_parameter(conn, "stp tau", 100);
 
-            // Retrieve learning rate and STP parameters if plastic
-            if (conn->plastic) {
-                learning_rate[connection_indices[conn->id]] =
-                    extract_parameter(conn, "learning rate", 0.1);
-            }
+            // Retrieve learning rate
+            learning_rate[connection_indices[conn->id]] =
+                extract_parameter(conn, "learning rate", 0.1);
         }
     }
 }
@@ -531,12 +548,12 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     int num_weights = conn->get_num_weights();
 
-    // Clear traces
-    int matrix_depth = this->get_matrix_depth(conn);
-    for (int i = 1 ; i < matrix_depth - 1 ; ++i) {
-        clear_weights(mData + i*num_weights, num_weights);
-    }
-
-    // Set STP
-    set_weights(mData + (matrix_depth-1)*num_weights, num_weights, 1.0);
+    // Short term trace
+    clear_weights(mData + 1*num_weights, num_weights);
+    // Long term trace
+    clear_weights(mData + 2*num_weights, num_weights);
+    // Plasticity trace
+    clear_weights(mData + 3*num_weights, num_weights);
+    // STP
+    set_weights(mData + 4*num_weights, num_weights, 1.0);
 }

@@ -11,7 +11,7 @@ class Column : public Structure {
             std::string module_name, std::string module_params);
 
         static void connect(Column *col_a, Column *col_b,
-            std::string name_a, std::string name_b);
+            std::string name_a, std::string name_b, bool reentrant);
 
     private:
         void add_neural_field(std::string field_name);
@@ -27,10 +27,9 @@ class Column : public Structure {
         bool exc_plastic;
 
         // Inhibitory cortex variables
-        int inh_size;
         bool exc_inh_plastic;
-        std::string exc_inh_conductance;
-        std::string inh_exc_conductance;
+        std::string exc_self_conductance;
+        std::string inh_self_conductance;
 
         // Thalamus variables
         int thal_size;

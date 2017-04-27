@@ -103,11 +103,18 @@ void Heatmap::update(Environment *environment) {
                     max, min, num_spiked, avg, std_dev / avg);
 
             for (int j = 0; j < info->layer->size; ++j) {
-                float val = (spike_count[j]-min) / (max-min);
-                val = (val < 0) ? 0 : 255.0 * val * val;
-                data[j*4 + 0] = val;
-                data[j*4 + 1] = 0.0;
-                data[j*4 + 2] = 255.0 - val;
+                if (spike_count[j] == 0) {
+                    data[j*4 + 0] = 0.0;
+                    data[j*4 + 1] = 0.0;
+                    data[j*4 + 2] = 0.0;
+                } else {
+                    float val = (spike_count[j]-min) / (max-min);
+                    //val = 255.0 * val * val;  // nonlinear heatmap
+                    val = 255.0 * val;
+                    data[j*4 + 0] = val;
+                    data[j*4 + 1] = 0.0;
+                    data[j*4 + 2] = 255.0 - val;
+                }
             }
 
             if (info->layer->rows == 1)

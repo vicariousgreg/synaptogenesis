@@ -35,16 +35,6 @@ ConnectionConfig::~ConnectionConfig() {
     delete arborized_config;
 }
 
-std::string ConnectionConfig::get_property(std::string key) const {
-    return properties.at(key);
-}
-
-ConnectionConfig *ConnectionConfig::set_property(
-        std::string key, std::string value) {
-    properties[key] = value;
-    return this;
-}
-
 int ConnectionConfig::get_expected_rows(int rows) {
     switch (type) {
         case(ONE_TO_ONE):

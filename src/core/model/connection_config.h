@@ -1,9 +1,7 @@
 #ifndef connection_config_h
 #define connection_config_h
 
-#include <map>
-#include <string>
-
+#include "model/property_config.h"
 #include "model/weight_config.h"
 #include "util/constants.h"
 
@@ -22,7 +20,7 @@ class ArborizedConfig {
         const int row_offset, column_offset;
 };
 
-class ConnectionConfig {
+class ConnectionConfig : public PropertyConfig {
     public:
         ConnectionConfig(
             bool plastic,
@@ -35,10 +33,11 @@ class ConnectionConfig {
 
         virtual ~ConnectionConfig();
 
-        /* Getter and setter for generic properties
-         * Setter returns self pointer for convenience */
-        std::string get_property(std::string key) const;
-        ConnectionConfig *set_property(std::string key, std::string value);
+        /* Setter that returns self pointer */
+        ConnectionConfig *set_property(std::string key, std::string value) {
+            set_property_internal(key, value);
+            return this;
+        }
 
         /* Gets the expected row/col size of a destination layer given.
          * This function only returns meaningful values for connection types that
@@ -53,9 +52,6 @@ class ConnectionConfig {
         const Opcode opcode;
         WeightConfig* const weight_config;
         ArborizedConfig* const arborized_config;
-
-    private:
-        std::map<std::string, std::string> properties;
 };
 
 #endif

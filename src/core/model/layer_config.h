@@ -4,9 +4,10 @@
 #include <string>
 #include <map>
 
+#include "model/property_config.h"
 #include "util/constants.h"
 
-class LayerConfig {
+class LayerConfig : public PropertyConfig {
     public:
         LayerConfig(
             std::string name,
@@ -36,20 +37,18 @@ class LayerConfig {
                 : LayerConfig(name, neural_model,
                     0, 0, noise_mean, noise_std_dev, plastic, global) { }
 
-        /* Getter and setter for generic properties
-         * Setter returns self pointer for convenience */
-        std::string get_property(std::string key) const;
-        LayerConfig *set_property(std::string key, std::string value);
-        
+        /* Setter that returns self pointer */
+        LayerConfig *set_property(std::string key, std::string value) {
+            set_property_internal(key, value);
+            return this;
+        }
+
         std::string name;
         std::string neural_model;
         int rows, columns;
         float noise_mean, noise_std_dev;
         bool plastic;
         bool global;
-
-    private:
-        std::map<std::string, std::string> properties;
 };
 
 #endif
