@@ -32,15 +32,39 @@ void randomize_weights(float* arr, int size, float max, float fraction) {
     }
 }
 void randomize_weights_gaussian(float* arr, int size,
-        float mean, float std_dev, float fraction) {
-    std::default_random_engine generator(time(0));
-    std::normal_distribution<double> distribution(mean, std_dev);
-    if (fraction == 1.0) {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = std::max(0.0, distribution(generator));
+        float mean, float std_dev, float max, float fraction) {
+    // If standard deviation is 0.0, just set the weights to the mean
+    if (std_dev == 0.0) {
+        set_weights(arr, size, mean, fraction);
     } else {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = (fRand() < fraction) ? std::max(0.0, distribution(generator)) : 0.0;
+        std::default_random_engine generator(time(0));
+        std::normal_distribution<double> distribution(mean, std_dev);
+
+        if (fraction == 1.0) {
+            for (int i = 0 ; i < size ; ++i)
+                arr[i] = std::min((double)max, std::max(0.0, distribution(generator)));
+        } else {
+            for (int i = 0 ; i < size ; ++i)
+                arr[i] = (fRand() < fraction) ? std::min((double)max, std::max(0.0, distribution(generator))) : 0.0;
+        }
+    }
+}
+void randomize_weights_lognormal(float* arr, int size,
+        float mean, float std_dev, float max, float fraction) {
+    // If standard deviation is 0.0, just set the weights to the mean
+    if (std_dev == 0.0) {
+        set_weights(arr, size, mean, fraction);
+    } else {
+        std::default_random_engine generator(time(0));
+        std::lognormal_distribution<double> distribution(mean, std_dev);
+
+        if (fraction == 1.0) {
+            for (int i = 0 ; i < size ; ++i)
+                arr[i] = std::min((double)max, std::max(0.0, distribution(generator)));
+        } else {
+            for (int i = 0 ; i < size ; ++i)
+                arr[i] = (fRand() < fraction) ? std::min((double)max, std::max(0.0, distribution(generator))) : 0.0;
+        }
     }
 }
 

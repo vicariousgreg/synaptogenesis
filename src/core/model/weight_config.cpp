@@ -54,7 +54,26 @@ GaussianWeightConfig::GaussianWeightConfig(float mean, float std_dev, float frac
 void GaussianWeightConfig::initialize(float* target_matrix,
         Connection* conn, bool is_host) {
     int num_weights = conn->get_num_weights();
-    randomize_weights_gaussian(target_matrix, num_weights, mean, std_dev, fraction);
+    randomize_weights_gaussian(target_matrix, num_weights,
+        mean, std_dev, conn->max_weight, fraction);
+    WeightConfig::initialize(target_matrix, conn, is_host);
+}
+
+LogNormalWeightConfig::LogNormalWeightConfig(float mean, float std_dev, float fraction)
+        : mean(mean), std_dev(std_dev), fraction(fraction) {
+    if (fraction < 0 or fraction > 1.0)
+        ErrorManager::get_instance()->log_error(
+            "LogNormalWeightConfig fraction must be between 0 and 1!");
+    if (std_dev < 0)
+        ErrorManager::get_instance()->log_error(
+            "LogNormalWeightConfig std_dev must be positive!");
+}
+
+void LogNormalWeightConfig::initialize(float* target_matrix,
+        Connection* conn, bool is_host) {
+    int num_weights = conn->get_num_weights();
+    randomize_weights_lognormal(target_matrix, num_weights,
+        mean, std_dev, conn->max_weight, fraction);
     WeightConfig::initialize(target_matrix, conn, is_host);
 }
 

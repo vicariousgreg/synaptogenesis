@@ -11,13 +11,11 @@ class Visualizer : public Frontend {
     public:
         static Visualizer *get_instance(bool init);
 
-        virtual ~Visualizer();
+        virtual bool add_input_layer(Layer *layer, std::string params);
+        virtual bool add_output_layer(Layer *layer, std::string params);
+        virtual void update(Environment *environment);
 
-        bool add_input_layer(Layer *layer, std::string params);
-        bool add_output_layer(Layer *layer, std::string params);
-        void update(Environment *environment);
-
-    private:
+    protected:
         static int instance_id;
         Visualizer();
 

@@ -9,6 +9,7 @@
 #include "io/module/csv_output_module.h"
 #include "io/module/visualizer_input_module.h"
 #include "io/module/visualizer_output_module.h"
+#include "io/module/heatmap_output_module.h"
 #include "io/module/maze_input_module.h"
 #include "io/module/maze_output_module.h"
 #include "io/module/dummy_input_module.h"
@@ -37,6 +38,8 @@ Module* build_module(Layer *layer, std::string type,
         return new VisualizerInputModule(layer, params);
     else if (type == "visualizer_output")
         return new VisualizerOutputModule(layer, params);
+    else if (type == "heatmap")
+        return new HeatmapOutputModule(layer, params);
     else if (type == "maze_input")
         return new MazeInputModule(layer, params);
     else if (type == "maze_output")

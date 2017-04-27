@@ -198,24 +198,31 @@ void maze_game_test() {
 void symbol_test() {
     /* Construct the model */
     Model *model = new Model();
-    std::string output_name = "visualizer_output";
 
     // Intermediate cortical layers
     int cortex_size = 32;
     int num_symbols = 5;
 
-    Column *column1 = new Column("col1", cortex_size);
-    column1->add_input(num_symbols, "one_hot_cyclic_input", "1 10000");
-    column1->add_module_all(output_name, "");
+    Column *column1 = new Column("col1", cortex_size, true);
+    column1->add_input(num_symbols, "one_hot_cyclic_input", "1 10000000");
+    column1->add_module_all("visualizer_output", "");
+    column1->add_module_all("heatmap", "");
     model->add_structure(column1);
 
-    /*
-    Column *column2 = new Column("col2", cortex_size);
-    column2->add_input(num_symbols, "one_hot_cyclic_input", "1 100000");
-    column2->add_module_all(output_name, "");
+    Column *column2 = new Column("col2", cortex_size, true);
+    column2->add_input(num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
+    column2->add_module_all("visualizer_output", "");
+    column2->add_module_all("heatmap", "");
     model->add_structure(column2);
 
+    Column *column3 = new Column("col3", cortex_size, false);
+    column3->add_input(num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
+    column3->add_module_all("visualizer_output", "");
+    column3->add_module_all("heatmap", "");
+    model->add_structure(column3);
+
     // Intercortical connections
+    /*
     Column::connect(
         column1, column2,
         "56_pos", "56_pos");
@@ -227,7 +234,7 @@ void symbol_test() {
     std::cout << "Symbol test......\n";
     print_model(model);
     Clock clock(true);
-    //Clock clock(10.0f);
+    //Clock clock(100.0f);
     clock.run(model, 10000000, true);
     std::cout << "\n";
 

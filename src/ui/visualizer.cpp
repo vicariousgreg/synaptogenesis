@@ -38,8 +38,6 @@ Visualizer::Visualizer() {
     Frontend::set_window(this->visualizer_window);
 }
 
-Visualizer::~Visualizer() { }
-
 bool Visualizer::add_input_layer(Layer *layer, std::string params) {
     LayerInfo* info;
     try {
@@ -76,17 +74,12 @@ void Visualizer::update(Environment *environment) {
             Output *output = buffer->get_output(info->layer);
             OutputType output_type = environment->get_output_type(info->layer);
 
-            //int count = 0;
-
             for (int j = 0; j < info->layer->size; ++j) {
                 float val = convert(output[j], output_type);
                 data[j*4 + 0] = val;
                 data[j*4 + 1] = val;
                 data[j*4 + 2] = val;
-                //if (val > 0.1) ++count;
             }
-
-            //if (output_type == BIT and count > 0) printf("Fired: %d/%d\n", count, info->layer->size);
 
             if (info->layer->rows == 1)
                 for (int j = 1; j < 50; ++j) {
