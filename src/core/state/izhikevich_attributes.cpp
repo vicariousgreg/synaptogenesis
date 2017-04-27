@@ -128,6 +128,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         recovery += a * ((b * voltage) - recovery) / IZ_EULER_RES;
     }
 
+    assert(voltage == voltage);
+
     ampa_conductances[nid] = 0.0;
     nmda_conductances[nid] = 0.0;
     gabaa_conductances[nid] = 0.0;
@@ -362,7 +364,8 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         ? (/* (max_weight - weight) * */ src_trace * learning_rate) : 0.0; \
     delta -= (src_spike) /* use ratio negative delta */ \
         ? (/* weight * */ dest_trace * learning_rate * NEG_RATIO) : 0.0; \
-    weights[weight_index] = weight + delta; \
+    weight += delta; \
+    weights[weight_index] = (weight < 0.0) ? 0.0 : weight; \
 \
     /* DEBUG */ \
     if (dest_spike) { \
@@ -381,8 +384,10 @@ CALC_ALL(update_iz_add,
     /* DEBUG */
     /* if (count > 0 and (max > (learning_rate * 1.1) and (learning_rate < 1.1)))
         printf("(%f, %f) ", total_weight / count, max); */
+    /*
     if (count > 0 and (learning_rate > 0.11) and (max > (max_weight * 0.5)))
         printf("(avg %.4f, max %.4f, count %4d, index (%4d:%4d))\n", total_weight / count, max, count, synapse_data.connection_index, to_index);
+    */
 ; );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(

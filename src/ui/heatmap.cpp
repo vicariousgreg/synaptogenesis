@@ -57,7 +57,7 @@ bool Heatmap::add_output_layer(Layer *layer, std::string params) {
 void Heatmap::update(Environment *environment) {
     ++iterations;
     int reset_iteration = 2500;
-    bool verbose = true;
+    bool verbose = false;
 
     // Copy data over
     for (int i = 0; i < visualizer_window->layers.size(); ++i) {
