@@ -20,13 +20,6 @@ class Connection {
         /* Constant getters */
         int get_num_weights() const;
         const ConnectionConfig* get_config() const;
-        int get_row_field_size() const;
-        int get_column_field_size() const;
-        int get_total_field_size() const;
-        int get_row_stride() const;
-        int get_column_stride() const;
-        int get_row_offset() const;
-        int get_column_offset() const;
 
         // Connection ID
         const int id;
@@ -63,13 +56,6 @@ class Connection {
 
         // Number of weights in connection
         int num_weights;
-
-        // Arborization parameters (extracted from params)
-        // The receptive field size, stride and offset for arborized
-        //   (convergent) connections
-        int row_field_size, column_field_size;
-        int row_stride, column_stride;
-        int row_offset, column_offset;
 
         // Connection config
         const ConnectionConfig* config;

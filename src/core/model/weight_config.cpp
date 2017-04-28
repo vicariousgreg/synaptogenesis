@@ -107,9 +107,9 @@ void SurroundWeightConfig::initialize(float* target_matrix,
     base_config->initialize(target_matrix, conn, is_host);
 
     // Carve out center
-    int row_field_size = conn->get_column_field_size();
-    int col_field_size = conn->get_column_field_size();
-    int kernel_size = conn->get_total_field_size();
+    int row_field_size = conn->get_config()->get_arborized_config()->column_field_size;
+    int col_field_size = conn->get_config()->get_arborized_config()->column_field_size;
+    int kernel_size = conn->get_config()->get_arborized_config()->get_total_field_size();
 
     int row_offset = (row_field_size - rows) / 2;
     int col_offset = (col_field_size - cols) / 2;
@@ -155,8 +155,8 @@ void SpecifiedWeightConfig::initialize(float* target_matrix,
 
     int rows = conn->to_layer->size;
     int cols = conn->from_layer->size;
-    int row_field_size = conn->get_row_field_size();
-    int column_field_size = conn->get_column_field_size();
+    int row_field_size = conn->get_config()->get_arborized_config()->row_field_size;
+    int column_field_size = conn->get_config()->get_arborized_config()->column_field_size;
     switch (conn->type) {
         case CONVOLUTIONAL:
             rows = 1;

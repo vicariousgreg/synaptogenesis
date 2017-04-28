@@ -25,9 +25,8 @@ class SynapseData {
         int connection_index;
         Opcode opcode;
         bool convolutional;
-        int row_stride, column_stride;
-        int row_field_size, column_field_size;
-        int row_offset, column_offset;
+        const FullyConnectedConfig fully_connected_config;
+        const ArborizedConfig arborized_config;
         int delay;
         bool second_order;
 

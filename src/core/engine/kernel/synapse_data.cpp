@@ -11,10 +11,8 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         opcode(conn->opcode),
         plastic(conn->plastic),
         max_weight(conn->max_weight),
-        row_field_size(conn->get_row_field_size()),
-        column_field_size(conn->get_column_field_size()),
-        row_stride(conn->get_row_stride()),
-        column_stride(conn->get_column_stride()),
+        fully_connected_config(conn->get_config()->copy_fully_connected_config()),
+        arborized_config(conn->get_config()->copy_arborized_config()),
         delay(conn->delay),
         second_order(parent_node->is_second_order()),
         from_size(conn->from_layer->size),
@@ -28,17 +26,6 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         num_weights(conn->get_num_weights()),
         output_type(state->get_output_type(conn->from_layer)),
         weights(state->get_matrix(conn)) {
-    // If no offset is specified and the layers are identically
-    //     sized, set the offset to half the field size
-    this->row_offset = conn->get_row_offset();
-    this->row_offset =
-        (to_rows == from_rows and row_offset == 0)
-            ? -row_field_size / 2 : row_offset;
-    this->column_offset = conn->get_column_offset();
-    this->column_offset =
-        (to_columns == from_columns and column_offset == 0)
-            ? -column_field_size / 2 : column_offset;
-
     destination_outputs = state->get_output(conn->to_layer);
     if (state->is_inter_device(conn))
         outputs = state->get_device_output_buffer(conn);

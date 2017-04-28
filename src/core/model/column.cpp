@@ -107,7 +107,7 @@ Column::Column(std::string name, int cortex_size, bool plastic)
 void Column::add_input(bool plastic, int num_symbols,
         std::string module_name, std::string module_params) {
     // Input layer
-    this->add_layer(new LayerConfig("input", IZHIKEVICH, 1, num_symbols)
+    this->add_layer((new LayerConfig("input", IZHIKEVICH, 1, num_symbols))
         ->set_property(IZ_INIT, "regular"));
     this->add_module("input", module_name, module_params);
 
@@ -172,8 +172,9 @@ void Column::add_neural_field(std::string field_name) {
         (new ConnectionConfig(
             exc_plastic, exc_self_delay, 1.0, CONVERGENT, ADD,
             new LogNormalWeightConfig(
-                exc_self_mean, exc_self_std_dev, exc_self_fraction),
-            new ArborizedConfig(exc_self_spread, 1, -exc_self_spread/2)))
+                exc_self_mean, exc_self_std_dev, exc_self_fraction)))
+        ->set_arborized_config(
+            new ArborizedConfig(exc_self_spread, 1, -exc_self_spread/2))
         ->set_property("conductance", exc_self_conductance)
         ->set_property("learning rate", exc_self_learning_rate)
         ->set_property("stp p", exc_self_stp_p)
@@ -184,8 +185,9 @@ void Column::add_neural_field(std::string field_name) {
         (new ConnectionConfig(
             false, 0, 1.0, CONVERGENT, SUB,
             new GaussianWeightConfig(
-                inh_self_mean, inh_self_std_dev, inh_self_fraction),
-            new ArborizedConfig(inh_self_spread, 1, -inh_self_spread/2)))
+                inh_self_mean, inh_self_std_dev, inh_self_fraction)))
+        ->set_arborized_config(
+            new ArborizedConfig(inh_self_spread, 1, -inh_self_spread/2))
         ->set_property("conductance", inh_self_conductance)
         ->set_property("stp p", inh_self_stp_p)
         ->set_property("stp tau", inh_self_stp_tau));

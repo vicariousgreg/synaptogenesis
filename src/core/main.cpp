@@ -67,18 +67,18 @@ void mnist_test() {
             IZHIKEVICH, 28, 28, 0.5))
                 ->set_property(IZ_INIT, "default"));
         structure->connect_layers("input_layer", std::to_string(i),
-            new ConnectionConfig(true, 0, 5, CONVOLUTIONAL, ADD,
-                new RandomWeightConfig(5),
-                new ArborizedConfig(5,1)));
+            (new ConnectionConfig(true, 0, 5, CONVOLUTIONAL, ADD,
+                new RandomWeightConfig(5)))
+            ->set_arborized_config(new ArborizedConfig(5,1)));
 
         structure->connect_layers(std::to_string(i), std::to_string(i),
-            new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
-                new RandomWeightConfig(0.1),
-                new ArborizedConfig(5,1)));
+            (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
+                new RandomWeightConfig(0.1)))
+            ->set_arborized_config(new ArborizedConfig(5,1)));
         structure->connect_layers(std::to_string(i), std::to_string(i),
-            new ConnectionConfig(false, 0, 2, CONVOLUTIONAL, DIV,
-                new RandomWeightConfig(2),
-                new ArborizedConfig(7,1)));
+            (new ConnectionConfig(false, 0, 2, CONVOLUTIONAL, DIV,
+                new RandomWeightConfig(2)))
+            ->set_arborized_config(new ArborizedConfig(7,1)));
     }
 
     for (int i = 0; i < num_hidden; ++i)
@@ -116,15 +116,15 @@ void speech_test() {
     // Convergent layers
     structure->connect_layers_matching("input_layer",
         new LayerConfig("convergent_layer", HEBBIAN_RATE_ENCODING),
-        new ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
-            new FlatWeightConfig(35),
-            new ArborizedConfig(1,1,1,1)));
+        (new ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
+            new FlatWeightConfig(35)))
+        ->set_arborized_config(new ArborizedConfig(1,1,1,1)));
 
     structure->connect_layers_matching("input_layer",
         new LayerConfig("convergent_layer_inhibitory", HEBBIAN_RATE_ENCODING),
-        new ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
-            new FlatWeightConfig(3),
-            new ArborizedConfig(1,10,1,1)));
+        (new ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
+            new FlatWeightConfig(3)))
+        ->set_arborized_config(new ArborizedConfig(1,10,1,1)));
     structure->connect_layers("convergent_layer_inhibitory",
         "convergent_layer",
         new ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,

@@ -16,17 +16,21 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             opcode(config->opcode),
             type(config->type),
             convolutional(type == CONVOLUTIONAL) {
-    this->row_field_size = 0;
-    this->column_field_size = 0;
-    this->row_stride = 0;
-    this->column_stride = 0;
-    this->row_offset = 0;
-    this->column_offset = 0;
-
     switch (type) {
-        case(FULLY_CONNECTED):
-            this->num_weights = from_layer->size * to_layer->size;
+        case(FULLY_CONNECTED): {
+            auto fully_connected_config = config->get_fully_connected_config();
+            if (fully_connected_config == nullptr) {
+                config->set_fully_connected_config(
+                    new FullyConnectedConfig(
+                        0, from_layer->rows,
+                        0, from_layer->columns,
+                        0, to_layer->rows,
+                        0, to_layer->columns));
+                fully_connected_config = config->get_fully_connected_config();
+            }
+            this->num_weights = fully_connected_config->total_size;
             break;
+        }
         case(ONE_TO_ONE):
             if (from_layer->rows == to_layer->rows and from_layer->columns == to_layer->columns)
                 this->num_weights = from_layer->size;
@@ -35,12 +39,10 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     "Cannot connect differently sized layers one-to-one!");
             break;
         default:
-            this->row_field_size = config->arborized_config->row_field_size;
-            this->column_field_size = config->arborized_config->column_field_size;
-            this->row_stride = config->arborized_config->row_stride;
-            this->column_stride = config->arborized_config->column_stride;
-            this->row_offset = config->arborized_config->row_offset;
-            this->column_offset = config->arborized_config->column_offset;
+            auto arborized_config = config->get_arborized_config();
+            if (arborized_config == nullptr)
+                ErrorManager::get_instance()->log_error(
+                    "Convergent/divergent connections require ArborizedConfig!");
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.
@@ -62,16 +64,20 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                 case(CONVERGENT):
                     // Convergent connections use unshared mini weight matrices
                     // Each destination neuron connects to field_size squared neurons
-                    this->num_weights = row_field_size * column_field_size * to_layer->size;
+                    this->num_weights =
+                        arborized_config->row_field_size
+                        * arborized_config->column_field_size
+                        * to_layer->size;
                     break;
                 case(CONVOLUTIONAL):
                     // Convolutional connections use a shared weight kernel
-                    this->num_weights = row_field_size * column_field_size;
+                    this->num_weights = arborized_config->get_total_field_size();
                     break;
                 case(DIVERGENT):
                     // Divergent connections use unshared mini weight matrices
                     // Each source neuron connects to field_size squared neurons
-                    this->num_weights = row_field_size * column_field_size * from_layer->size;
+                    this->num_weights =
+                        arborized_config->get_total_field_size() * from_layer->size;
                     break;
                 default:
                     ErrorManager::get_instance()->log_error(
@@ -89,13 +95,4 @@ Connection::~Connection() {
 }
 
 int Connection::get_num_weights() const { return num_weights; }
-int Connection::get_row_field_size() const { return row_field_size; }
-int Connection::get_column_field_size() const { return column_field_size; }
-int Connection::get_total_field_size() const {
-    return row_field_size * column_field_size;
-}
-int Connection::get_row_stride() const { return row_stride; }
-int Connection::get_column_stride() const { return column_stride; }
-int Connection::get_row_offset() const { return row_offset; }
-int Connection::get_column_offset() const { return column_offset; }
 const ConnectionConfig* Connection::get_config() const { return config; }

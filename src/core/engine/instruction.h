@@ -124,7 +124,15 @@ class SynapseInstruction : public Instruction {
                 : Instruction(conn->to_layer, stream),
                   connection(conn),
                   synapse_data(parent_node, conn, state),
-                  type(conn->type) { }
+                  type(conn->type) {
+            /* A bit hacky, but fully connected kernels can now be subsets,
+             *   which makes the name a bit of a misnomer */
+            if (conn->type == FULLY_CONNECTED) {
+                int kernel_to_size = conn->get_config()->get_fully_connected_config()->to_size;
+                this->threads = calc_threads(kernel_to_size);
+                this->blocks = calc_blocks(kernel_to_size);
+            }
+        }
 
         const ConnectionType type;
         Connection* const connection;

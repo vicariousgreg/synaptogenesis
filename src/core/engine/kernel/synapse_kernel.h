@@ -96,29 +96,61 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
+    const int from_row_start = synapse_data.fully_connected_config.from_row_start; \
+    const int from_row_end = synapse_data.fully_connected_config.from_row_end; \
+    const int from_col_start = synapse_data.fully_connected_config.from_col_start; \
+    const int from_col_end = synapse_data.fully_connected_config.from_col_end; \
+    const int to_row_start = synapse_data.fully_connected_config.to_row_start; \
+    const int to_row_end = synapse_data.fully_connected_config.to_row_end; \
+    const int to_col_start = synapse_data.fully_connected_config.to_col_start; \
+    const int to_col_end = synapse_data.fully_connected_config.to_col_end; \
+    const int from_kernel_size = synapse_data.fully_connected_config.from_size; \
     EXTRACTIONS; \
  \
-    for (int to_index = 0 ; to_index < to_size ; ++to_index) { \
-        NEURON_PRE; \
-        for (int from_index = 0 ; from_index < from_size ; ++from_index) { \
-            int weight_index = to_index * from_size + from_index; \
-            WEIGHT_OP; \
+    for (int to_row = to_row_start ; to_row < to_row_end ; ++to_row) { \
+        for (int to_col = to_col_start ; to_col < to_col_end ; ++to_col) { \
+            int to_index = to_row * to_rows + to_col; \
+            NEURON_PRE; \
+\
+            for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
+                for (int from_col = from_col_start ; from_col < from_col_end ; ++from_col) { \
+                    int from_index = from_row * from_rows + from_col; \
+                    int weight_index = to_index * from_kernel_size + from_index; \
+                    WEIGHT_OP; \
+                } \
+            } \
+            NEURON_POST; \
         } \
-        NEURON_POST; \
     } \
 }
 
 #define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
+    const int from_row_start = synapse_data.fully_connected_config.from_row_start; \
+    const int from_row_end = synapse_data.fully_connected_config.from_row_end; \
+    const int from_col_start = synapse_data.fully_connected_config.from_col_start; \
+    const int from_col_end = synapse_data.fully_connected_config.from_col_end; \
+    const int to_row_start = synapse_data.fully_connected_config.to_row_start; \
+    const int to_row_size = synapse_data.fully_connected_config.to_row_size; \
+    const int to_col_start = synapse_data.fully_connected_config.to_col_start; \
+    const int to_kernel_size = synapse_data.fully_connected_config.to_size; \
     EXTRACTIONS; \
  \
-    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
-    if (to_index < to_size) { \
+    int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (to_kernel_index < to_kernel_size) { \
+        int to_row = (to_kernel_index / to_row_size) + to_row_start; \
+        int to_col = (to_kernel_index % to_row_size) + to_col_start; \
+        int to_index = to_row * to_columns + to_col; \
         NEURON_PRE; \
-        for (int from_index = 0 ; from_index < from_size ; ++from_index) { \
-            int weight_index = from_index * to_size + to_index; \
-            WEIGHT_OP; \
+        int from_kernel_index = 0; \
+        for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
+            for (int from_col = from_col_start ; from_col < from_col_end ; ++from_col) { \
+                int from_index = from_row * from_rows + from_col; \
+                int weight_index = from_kernel_index * to_kernel_size + to_kernel_index; \
+                WEIGHT_OP; \
+                ++from_kernel_index; \
+            } \
         } \
         NEURON_POST; \
     } \
@@ -161,12 +193,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
-    const int row_field_size = synapse_data.row_field_size; \
-    const int column_field_size = synapse_data.column_field_size; \
-    const int row_stride = synapse_data.row_stride; \
-    const int column_stride = synapse_data.column_stride; \
-    const int row_offset = synapse_data.row_offset; \
-    const int column_offset = synapse_data.column_offset; \
+    const int row_field_size = synapse_data.arborized_config.row_field_size; \
+    const int column_field_size = synapse_data.arborized_config.column_field_size; \
+    const int row_stride = synapse_data.arborized_config.row_stride; \
+    const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_offset = synapse_data.arborized_config.row_offset; \
+    const int column_offset = synapse_data.arborized_config.column_offset; \
     EXTRACTIONS; \
  \
     int kernel_size = row_field_size * column_field_size; \
@@ -215,12 +247,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
-    const int row_field_size = synapse_data.row_field_size; \
-    const int column_field_size = synapse_data.column_field_size; \
-    const int row_stride = synapse_data.row_stride; \
-    const int column_stride = synapse_data.column_stride; \
-    const int row_offset = synapse_data.row_offset; \
-    const int column_offset = synapse_data.column_offset; \
+    const int row_field_size = synapse_data.arborized_config.row_field_size; \
+    const int column_field_size = synapse_data.arborized_config.column_field_size; \
+    const int row_stride = synapse_data.arborized_config.row_stride; \
+    const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_offset = synapse_data.arborized_config.row_offset; \
+    const int column_offset = synapse_data.arborized_config.column_offset; \
     EXTRACTIONS; \
  \
     int kernel_size = row_field_size * column_field_size; \
@@ -274,12 +306,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const int row_field_size = synapse_data.row_field_size; \
-    const int column_field_size = synapse_data.column_field_size; \
-    const int row_stride = synapse_data.row_stride; \
-    const int column_stride = synapse_data.column_stride; \
-    const int row_offset = synapse_data.row_offset; \
-    const int column_offset = synapse_data.column_offset; \
+    const int row_field_size = synapse_data.arborized_config.row_field_size; \
+    const int column_field_size = synapse_data.arborized_config.column_field_size; \
+    const int row_stride = synapse_data.arborized_config.row_stride; \
+    const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_offset = synapse_data.arborized_config.row_offset; \
+    const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
     EXTRACTIONS; \
 \
@@ -318,12 +350,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const int row_field_size = synapse_data.row_field_size; \
-    const int column_field_size = synapse_data.column_field_size; \
-    const int row_stride = synapse_data.row_stride; \
-    const int column_stride = synapse_data.column_stride; \
-    const int row_offset = synapse_data.row_offset; \
-    const int column_offset = synapse_data.column_offset; \
+    const int row_field_size = synapse_data.arborized_config.row_field_size; \
+    const int column_field_size = synapse_data.arborized_config.column_field_size; \
+    const int row_stride = synapse_data.arborized_config.row_stride; \
+    const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_offset = synapse_data.arborized_config.row_offset; \
+    const int column_offset = synapse_data.arborized_config.column_offset; \
     EXTRACTIONS; \
 \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
