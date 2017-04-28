@@ -190,11 +190,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                     int k_s_row = s_row + k_row; \
                     int k_s_col = s_col + k_col; \
  \
-                    /* The connection is frayed if the layers are the same size */ \
-                    /* Avoid making connections with non-existent neurons! */ \
-                    if (k_s_row < 0 or k_s_row >= from_rows \
-                        or k_s_col < 0 or k_s_col >= from_columns) \
-                        continue; \
+                    /* Avoid making connections with non-existent neurons!
+                     * Wrap around the layer */ \
+                    k_s_row += (k_s_row < 0) ? from_rows \
+                        : ((k_s_row >= from_rows) ? -from_rows : 0); \
+                    k_s_col += (k_s_col < 0) ? from_columns \
+                        : ((k_s_col >= from_columns) ? -from_columns : 0); \
  \
                     int from_index = k_s_row * from_columns + k_s_col; \
  \
@@ -248,11 +249,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                 int k_s_row = s_row + k_row; \
                 int k_s_col = s_col + k_col; \
 \
-                /* The connection is frayed if the layers are the same size */ \
-                /* Avoid making connections with non-existent neurons! */ \
-                if (k_s_row < 0 or k_s_row >= from_rows \
-                    or k_s_col < 0 or k_s_col >= from_columns) \
-                    continue; \
+                /* Avoid making connections with non-existent neurons!
+                 * Wrap around the layer */ \
+                k_s_row += (k_s_row < 0) ? from_rows \
+                    : ((k_s_row >= from_rows) ? -from_rows : 0); \
+                k_s_col += (k_s_col < 0) ? from_columns \
+                    : ((k_s_col >= from_columns) ? -from_columns : 0); \
 \
                 int from_index = k_s_row * from_columns + k_s_col; \
 \
