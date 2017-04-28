@@ -5,11 +5,11 @@
 #define IZ_INIT "init"
 
 /* Global shared variables */
-static float base_conductance = 2.5;
-static float noise_mean = 0.125;
+static float base_conductance = 5;
+static float noise_mean = 0.025;
 static float noise_std_dev = 0.0;
 static int intracortical_delay = 0;
-static int intercortical_delay = 2;
+static int intercortical_delay = 0;
 
 // Thalamus variables
 static int thal_ratio = 2;
@@ -18,20 +18,20 @@ static float thal_noise_std_dev = 0.0025;
 static int thalamocortical_delay = 10;
 
 // Self connectivity variables
-static float exc_self_base_conductance = 0.1;
-static std::string exc_self_learning_rate = "0.1";
+static float exc_self_base_conductance = 0.5;
+static std::string exc_self_learning_rate = "0.01";
 static std::string exc_self_stp_p = "0.7";
 static std::string exc_self_stp_tau = "100";
 static int exc_self_spread = 5;
 static int exc_self_delay = 0;
 static float exc_self_mean = -3.0;
-static float exc_self_std_dev = 1.0;
+static float exc_self_std_dev = 2.0;
 static float exc_self_fraction = 1.0;
 
 static float inh_self_base_conductance = 0.01;
 static std::string inh_self_stp_p = "1.5";
 static std::string inh_self_stp_tau = "100";
-static int inh_self_spread = 15;
+static int inh_self_spread = 9;
 static int inh_self_delay = 0;
 static float inh_self_mean = 1.0;     // Fixed, Gaussian
 static float inh_self_std_dev = 0.0;  // Fixed, Gaussian
@@ -41,8 +41,8 @@ static float inh_self_fraction = 1.0; // Fixed, Gaussian
 static std::string input_conductance = "0.2";
 static std::string input_learning_rate = "0.01";
 static float input_fraction = 1.0;
-static float input_mean = -3.0;
-static float input_std_dev = 1.5;
+static float input_mean = -1.0;
+static float input_std_dev = 0.5;
 
 // One-way variables
 static std::string one_way_learning_rate = "0.01";

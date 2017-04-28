@@ -372,8 +372,8 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         ? (src_trace * learning_rate) : 0.0; \
         /* ? ((max_weight - weight) * src_trace * learning_rate) : 0.0; */ \
     delta -= (src_spike) /* use ratio negative delta */ \
-        ? (dest_trace * learning_rate * NEG_RATIO) : 0.0; \
-        /* ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; */ \
+        /* ? (dest_trace * learning_rate * NEG_RATIO) : 0.0; */ \
+        ? (weight * dest_trace * learning_rate * NEG_RATIO) : 0.0; \
     weight += delta; \
     weights[weight_index] = \
         (weight < 0.0) ? 0.0 \
