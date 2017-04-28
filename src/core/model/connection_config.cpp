@@ -1,5 +1,7 @@
 #include <sstream>
 
+#include "model/layer.h"
+#include "model/connection.h"
 #include "model/connection_config.h"
 #include "util/error_manager.h"
 
@@ -36,7 +38,24 @@ FullyConnectedConfig::FullyConnectedConfig(
           to_col_end(to_col_end),
           to_col_size(to_col_end - to_col_start),
           to_size(to_row_size * to_col_size),
-          total_size(from_size * to_size) { }
+          total_size(from_size * to_size) {
+        if (from_row_start < 0 or from_col_start < 0
+            or to_row_start < 0 or to_col_start < 0)
+            ErrorManager::get_instance()->log_error(
+                "Fully Connected Config cannot have negative start indices!");
+        if (from_row_start > from_row_end or from_col_start > from_col_end
+            or to_row_start > to_row_end or to_col_start > to_col_end)
+            ErrorManager::get_instance()->log_error(
+                "Fully Connected Config cannot have start indices"
+                " greater than end indices!");
+}
+
+bool FullyConnectedConfig::validate(Connection *conn) {
+    Layer *from_layer = conn->from_layer;
+    Layer *to_layer = conn->to_layer;
+    return from_row_end <= from_layer->rows and from_col_end <= from_layer->columns
+        and to_row_end <= to_layer->rows and to_col_end <= to_layer->columns;
+}
 
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,

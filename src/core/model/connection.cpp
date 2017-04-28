@@ -28,6 +28,9 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                         0, to_layer->columns));
                 fully_connected_config = config->get_fully_connected_config();
             }
+            if (not fully_connected_config->validate(this))
+                ErrorManager::get_instance()->log_error(
+                    "Invalid FullyConnectedConfig for connection!");
             this->num_weights = fully_connected_config->total_size;
             break;
         }

@@ -5,6 +5,8 @@
 #include "model/weight_config.h"
 #include "util/constants.h"
 
+class Connection;
+
 class FullyConnectedConfig {
     public:
         FullyConnectedConfig() : FullyConnectedConfig(0,0,0,0,0,0,0,0) { }
@@ -13,6 +15,8 @@ class FullyConnectedConfig {
             int from_col_start, int from_col_end,
             int to_row_start, int to_row_end,
             int to_col_start, int to_col_end);
+
+        bool validate(Connection *conn);
 
         const int from_row_start, from_row_end;
         const int from_col_start, from_col_end;
