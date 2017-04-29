@@ -7,8 +7,7 @@
 #include <sstream>
 #include <iostream>
 
-void OneHotCyclicInputModule::cycle() {
-    index = (index + 1) % this->layer->size;
+void OneHotCyclicInputModule::print() {
     for (int nid = 0 ; nid < this->layer->size; ++nid) {
         if (nid == index) {
             std::cout << max_value << " ";
@@ -19,20 +18,13 @@ void OneHotCyclicInputModule::cycle() {
     std::cout << std::endl;
 }
 
-void OneHotCyclicInputModule::update(Buffer *buffer) {
+void OneHotCyclicInputModule::cycle(Buffer *buffer) {
     float *input = buffer->get_input(this->layer);
-    for (int nid = 0 ; nid < this->layer->size; ++nid) {
-        float new_val = input[nid];
-        if (nid == index) {
-            new_val += (max_value - new_val) / 10;
-            if (new_val > 0.99 * max_value) new_val = max_value;
-        } else {
-            new_val -= new_val / 10;
-            if (new_val < 0.01) new_val = 0.0;
-        }
-        input[nid] = new_val;
-    }
+    input[index] = 0.0;
+    index = (index + 1) % this->layer->size;
+    input[index] = max_value;
     buffer->set_dirty(this->layer);
+    print();
 }
 
 void OneHotCyclicInputModule::clear(Buffer *buffer) {
@@ -77,15 +69,13 @@ void OneHotCyclicInputModule::feed_input(Buffer *buffer) {
         if (timesteps % cycle_rate == 0) {
             std::cout << "============================ SHUFFLE\n";
             if (end != 0) std::cout << "  *  ";
-            this->cycle();
+            this->cycle(buffer);
         }
 
         // Clear or update
         if (end != 0 and timesteps == end) {
             std::cout << "========================================== CLEAR\n";
             this->clear(buffer);
-        } else {
-            this->update(buffer);
         }
         ++timesteps;
     }

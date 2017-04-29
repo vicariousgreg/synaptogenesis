@@ -11,8 +11,8 @@ class OneHotCyclicInputModule : public Module {
         virtual IOTypeMask get_type() { return INPUT; }
 
     private:
-        void cycle();
-        void update(Buffer *buffer);
+        void print();
+        void cycle(Buffer *buffer);
         void clear(Buffer *buffer);
 
         int timesteps;
