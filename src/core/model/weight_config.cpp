@@ -8,9 +8,12 @@
 
 void WeightConfig::initialize(float* target_matrix,
         Connection* conn, bool is_host) {
-    if (not diagonal and conn->type == FULLY_CONNECTED) {
-        auto fc_config = conn->get_config()->get_fully_connected_config();
-        clear_diagonal(target_matrix, fc_config->from_size, fc_config->to_size);
+    if (not diagonal) {
+        if (conn->type == FULLY_CONNECTED) {
+            auto fc_config = conn->get_config()->get_fully_connected_config();
+            clear_diagonal(target_matrix, fc_config->from_size, fc_config->to_size);
+        } else if (conn->type == CONVERGENT) {
+        }
     }
 }
 

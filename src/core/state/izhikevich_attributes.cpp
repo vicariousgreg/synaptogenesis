@@ -89,7 +89,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *voltages = iz_att->voltage.get(other_start_index);
     float *recoveries = iz_att->recovery.get(other_start_index);
     float *postsyn_traces = iz_att->postsyn_trace.get(other_start_index);
-    int *delta_ts = iz_att->delta_t.get(other_start_index);
     unsigned int *spikes = (unsigned int*)outputs;
     IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
 
@@ -177,7 +176,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
     // Update trace, voltage, recovery
     postsyn_traces[nid] = (spike) ? 1.0 : (postsyn_traces[nid] * TRACE_TAU);
-    delta_ts[nid] = (spike) ? 0 : (delta_ts[nid] + 1);
     voltages[nid] = (spike) ? params[nid].c : voltage;
     recoveries[nid] = recovery + ((spike) ? params[nid].d : 0.0);
 )
@@ -207,9 +205,10 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     float baseline_conductance = \
         att->baseline_conductance.get()[synapse_data.connection_index]; \
+    float *delays = weights + (7*num_weights); \
 \
-    float *stds          = weights + (4*num_weights); \
-    float *stps          = weights + (5*num_weights); \
+    float *stds = weights + (4*num_weights); \
+    float *stps = weights + (5*num_weights); \
 \
     float stp_u = STP_U; \
     float stp_f = STP_F; \
@@ -232,7 +231,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
 // Weight Operation
 #define CALC_VAL_PREAMBLE \
-    bool spike = extractor(outputs[from_index], delay) > 0.0; \
+    bool spike = extractor(outputs[from_index], delays[weight_index]) > 0.0; \
 \
     float std    = stds[weight_index]; \
     float stp    = stps[weight_index]; \
@@ -370,20 +369,22 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     bool dest_spike = extractor(destination_outputs[to_index], 0) > 0.0;
 
 #define UPDATE_WEIGHT \
-    bool src_spike = extractor(outputs[from_index], 0); \
     float weight = weights[weight_index]; \
-    float delta  = deltas[weight_index]; \
-\
-    float src_trace = (src_spike) ? 1.0 : presyn_traces[weight_index]; \
-    presyn_traces[weight_index] = src_trace * PLASTIC_TAU; \
-\
-    delta += (dest_spike) ? (src_trace  * learning_rate) : 0.0; \
-    delta -= (src_spike)  ? (dest_trace * learning_rate) : 0.0; \
-    deltas[weight_index] -= (delta - 0.000001) * 0.00001; \
-    weight += delta; \
-    weights[weight_index] = \
-        (weight < 0.0) ? 0.0 \
-            : (weight > max_weight) ? max_weight : weight;
+    if (weight >= 0.0001) { \
+        bool src_spike = extractor(outputs[from_index], 0); \
+        float delta  = deltas[weight_index]; \
+    \
+        float src_trace = (src_spike) ? 1.0 : presyn_traces[weight_index]; \
+        presyn_traces[weight_index] = src_trace * PLASTIC_TAU; \
+    \
+        delta += (dest_spike) ? (src_trace  * learning_rate) : 0.0; \
+        delta -= (src_spike)  ? (dest_trace * learning_rate) : 0.0; \
+        deltas[weight_index] -= (delta - 0.000001) * 0.0001; \
+        weight += delta; \
+        weights[weight_index] = \
+            (weight < 0.0001) ? 0.0 \
+                : (weight > max_weight) ? max_weight : weight; \
+    }
 
 CALC_ALL(update_iz_add,
     UPDATE_EXTRACTIONS,
@@ -427,16 +428,16 @@ static std::string extract_parameter(Layer *layer,
     }
 }
 
-static float extract_parameter(Connection *conn,
-        std::string key, float default_val) {
+static std::string extract_parameter(Connection *conn,
+        std::string key, std::string default_val) {
     try {
-        return std::stof(conn->get_config()->get_property(key));
+        return conn->get_config()->get_property(key);
     } catch (...) {
         ErrorManager::get_instance()->log_warning(
             "Unspecified parameter: " + key + " for conn \""
             + conn->from_layer->name + "\" -> \""
             + conn->to_layer->name + "\" -- using "
-            + std::to_string(default_val) + ".");
+            + default_val + ".");
         return default_val;
     }
 }
@@ -444,6 +445,7 @@ static float extract_parameter(Connection *conn,
 static void check_parameters(Layer *layer) {
     std::set<std::string> valid_params;
     valid_params.insert("init");
+    valid_params.insert("spacing");
 
     for (auto pair : layer->get_config()->get_properties())
         if (valid_params.count(pair.first) == 0)
@@ -455,6 +457,9 @@ static void check_parameters(Connection *conn) {
     std::set<std::string> valid_params;
     valid_params.insert("conductance");
     valid_params.insert("learning rate");
+    valid_params.insert("myelinated");
+    valid_params.insert("x offset");
+    valid_params.insert("y offset");
 
     for (auto pair : conn->get_config()->get_properties())
         if (valid_params.count(pair.first) == 0)
@@ -493,11 +498,9 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     this->voltage = Pointer<float>(total_neurons);
     this->recovery = Pointer<float>(total_neurons);
     this->postsyn_trace = Pointer<float>(total_neurons);
-    this->delta_t = Pointer<int>(total_neurons);
     Attributes::register_variable(&this->recovery);
     Attributes::register_variable(&this->voltage);
     Attributes::register_variable(&this->postsyn_trace);
-    Attributes::register_variable(&this->delta_t);
 
     // Neuron parameters
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
@@ -514,7 +517,6 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;
             postsyn_trace[start_index+j] = 0.0;
-            delta_t[start_index+j] = 0;
 
             // Run simulation to stable point
             float v = params.c;
@@ -541,11 +543,186 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
 
             // Retrieve baseline conductance
             baseline_conductance[connection_indices[conn->id]] =
-                extract_parameter(conn, "conductance", 1.0);
+                std::stof(extract_parameter(conn, "conductance", "1.0"));
 
             // Retrieve learning rate
             learning_rate[connection_indices[conn->id]] =
-                extract_parameter(conn, "learning rate", 0.004);
+                std::stof(extract_parameter(conn, "learning rate", "0.004"));
+        }
+    }
+}
+
+void IzhikevichAttributes::set_delays(Connection *conn, float* delays) {
+    int base_delay = conn->delay;
+
+    // Myelinated connections use the base delay only
+    if (extract_parameter(conn, "myelinated", "") != "") {
+        for (int i = 0 ; i < conn->get_num_weights() ; ++i)
+            delays[i] = base_delay;
+        return;
+    } else if (base_delay > 0) {
+        ErrorManager::get_instance()->log_error(
+            "Unmyelinated axons cannot have non-zero base delay!");
+    }
+
+    float velocity = 0.15;
+    float from_spacing = std::stof(
+        extract_parameter(conn->from_layer, "spacing", "0.09"));
+    float to_spacing = std::stof(
+        extract_parameter(conn->to_layer, "spacing", "0.09"));
+    float x_offset = std::stof(
+        extract_parameter(conn, "x offset", "0.0"));
+    float y_offset = std::stof(
+        extract_parameter(conn, "x offset", "0.0"));
+
+    switch(conn->type) {
+        case(FULLY_CONNECTED): {
+            auto fcc = conn->get_config()->get_fully_connected_config();
+            int from_columns = conn->from_layer->columns;
+            int weight_index = 0;
+            for (int f_row = fcc->from_row_start; f_row < fcc->from_row_end; ++f_row) {
+                float f_y = f_row * from_spacing;
+
+                for (int f_col = fcc->from_col_start; f_col < fcc->from_col_end; ++f_col) {
+                    float f_x = f_col * from_spacing;
+
+                    for (int t_row = fcc->to_row_start; t_row < fcc->to_row_end; ++t_row) {
+                        float t_y = t_row * to_spacing + y_offset;
+
+                        for (int t_col = fcc->to_col_start; t_col < fcc->to_col_end; ++t_col) {
+                            float t_x = t_col * to_spacing + x_offset;
+
+                            float distance = pow(
+                                pow(t_x - f_x, 2) + pow(t_y - f_y, 2),
+                                0.5);
+                            int delay = base_delay + (distance / velocity);
+                            if (delay > 31)
+                                ErrorManager::get_instance()->log_error(
+                                    "Unmyelinated axons cannot have delays "
+                                    "greater than 31!");
+                            delays[weight_index] = delay;
+                            ++weight_index;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case(ONE_TO_ONE):
+            for (int i = 0 ; i < conn->get_num_weights() ; ++i)
+                delays[i] = base_delay;
+            break;
+        case(CONVERGENT): {
+            auto ac = conn->get_config()->get_arborized_config();
+            int to_size = conn->to_layer->size;
+
+            if (ac->row_stride != ac->column_stride
+                or (int(to_spacing / from_spacing) != ac->row_stride))
+                ErrorManager::get_instance()->log_error(
+                    "Spacing and strides must match up for convergent connection!");
+
+            for (int f_row = 0; f_row < ac->row_field_size; ++f_row) {
+                float f_y = (f_row + ac->row_offset) * to_spacing;
+
+                for (int f_col = 0; f_col < ac->column_field_size; ++f_col) {
+                    float f_x = (f_col + ac->column_offset) * to_spacing;
+
+                    float distance = pow(
+                        pow(f_x, 2) + pow(f_y, 2),
+                        0.5);
+                    int delay = base_delay + (distance / velocity);
+                    if (delay > 31)
+                        ErrorManager::get_instance()->log_error(
+                            "Unmyelinated axons cannot have delays "
+                            "greater than 31!");
+
+                    int f_index = (f_row * ac->column_field_size) + f_col;
+
+                    for (int i = 0 ; i < to_size ; ++i) {
+#ifdef __CUDACC__
+                        delays[f_index + i] = delay;
+#else
+                        delays[(i * to_size) + f_index] = delay;
+#endif
+                    }
+                }
+            }
+            break;
+        }
+        case(DIVERGENT): {
+            auto ac = conn->get_config()->get_arborized_config();
+            int num_weights = conn->get_num_weights();
+            int to_rows = conn->to_layer->rows;
+            int to_columns = conn->to_layer->columns;
+            int to_size = conn->to_layer->size;
+            int from_rows = conn->from_layer->rows;
+            int from_columns = conn->from_layer->columns;
+
+            if (ac->row_stride != ac->column_stride
+                or (int(from_spacing / to_spacing) != ac->row_stride))
+                ErrorManager::get_instance()->log_error(
+                    "Spacing and strides must match up for divergent connection!");
+
+
+            int row_field_size = ac->row_field_size;
+            int column_field_size = ac->column_field_size;
+            int row_stride = ac->row_stride;
+            int column_stride = ac->column_stride;
+            int row_offset = ac->row_offset;
+            int column_offset = ac->column_offset;
+            int kernel_size = row_field_size * column_field_size;
+
+            for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
+                for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
+                    int to_index = d_row*to_columns + d_col;
+                    /* Determine range of source neurons for divergent kernel */
+                    int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride;
+                    int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride;
+                    int end_s_row = (d_row - row_offset) / row_stride;
+                    int end_s_col = (d_col - column_offset) / column_stride;
+
+                    // SERIAL
+                    int weight_offset = to_index * num_weights / to_size;
+                    // PARALLEL
+                    int kernel_row_size = num_weights / to_size;
+
+                    /* Iterate over relevant source neurons... */
+                    int k_index = 0;
+                    for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
+                        for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) {
+                            /* Avoid making connections with non-existent neurons! */
+                            if (s_row < 0 or s_row >= from_rows
+                                or s_col < 0 or s_col >= from_columns)
+                                continue;
+
+                            int from_index = (s_row * from_columns) + s_col;
+
+                            float d_x = abs(
+                                ((d_row + ac->row_offset) * to_spacing)
+                                - (s_row * from_spacing));
+                            float d_y = abs(
+                                ((d_col + ac->column_offset) * to_spacing)
+                                - (s_col * from_spacing));
+
+                            float distance = pow(
+                                pow(d_x, 2) + pow(d_y, 2),
+                                0.5);
+                            int delay = base_delay + (distance / velocity);
+                            if (delay > 31)
+                                ErrorManager::get_instance()->log_error(
+                                    "Unmyelinated axons cannot have delays "
+                                    "greater than 31!");
+#ifdef __CUDACC__
+                            int weight_index = to_index + (k_index * kernel_row_size);
+#else
+                            int weight_index = weight_offset + k_index;
+#endif
+                            delays[weight_index] = delay;
+                        }
+                    }
+                }
+            }
+            break;
         }
     }
 }
@@ -558,17 +735,25 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     // Short term trace
     clear_weights(mData + 1*num_weights, num_weights);
+
     // Long term trace
     clear_weights(mData + 2*num_weights, num_weights);
+
     // Plasticity trace
     clear_weights(mData + 3*num_weights, num_weights);
+
     // Short Term Depression
     set_weights(mData + 4*num_weights, num_weights, 1.0);
+
     // Short Term Potentiation
     if (conn->opcode == ADD)
         set_weights(mData + 5*num_weights, num_weights, U_EXC);
     else if (conn->opcode == SUB)
         set_weights(mData + 5*num_weights, num_weights, U_INH);
+
     // Weight Delta
     set_weights(mData + 6*num_weights, num_weights, 0.000001);
+
+    // Delays
+    set_delays(conn, mData + 7*num_weights);
 }

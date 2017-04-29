@@ -210,9 +210,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int column_stride = synapse_data.arborized_config.column_stride; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
+    const int kernel_size = row_field_size * column_field_size; \
     EXTRACTIONS; \
- \
-    int kernel_size = row_field_size * column_field_size; \
  \
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
         for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
@@ -228,23 +227,22 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
             int weight_offset = (convolutional) ? 0 : to_index * kernel_size; \
  \
             /* Run the kernel */ \
+            int k_index = 0; \
             for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
-                for (int k_col = 0 ; k_col < column_field_size ; ++k_col) { \
+                for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++k_index)) { \
                     int k_s_row = s_row + k_row; \
                     int k_s_col = s_col + k_col; \
  \
-                    /* Avoid making connections with non-existent neurons!
-                     * Wrap around the layer */ \
-                    k_s_row += (k_s_row < 0) ? from_rows \
-                        : ((k_s_row >= from_rows) ? -from_rows : 0); \
-                    k_s_col += (k_s_col < 0) ? from_columns \
-                        : ((k_s_col >= from_columns) ? -from_columns : 0); \
+                    /* The connection is frayed if the layers are the same size */ \
+                    /* Avoid making connections with non-existent neurons! */ \
+                    if (k_s_row < 0 or k_s_row >= from_rows \
+                        or k_s_col < 0 or k_s_col >= from_columns) \
+                        continue; \
  \
                     int from_index = k_s_row * from_columns + k_s_col; \
  \
                     /* Column of matrix is the kernel index */ \
-                    int weight_index = weight_offset + \
-                        (k_row * column_field_size) + k_col; \
+                    int weight_index = weight_offset + k_index; \
  \
                     WEIGHT_OP; \
                 } \
@@ -264,9 +262,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int column_stride = synapse_data.arborized_config.column_stride; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
+    const int kernel_size = row_field_size * column_field_size; \
     EXTRACTIONS; \
- \
-    int kernel_size = row_field_size * column_field_size; \
  \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_index < to_size) { \
@@ -287,23 +284,22 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int kernel_row_size = (convolutional) ? 1 : to_size; \
 \
         /* Run the kernel */ \
+        int k_index = 0; \
         for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
-            for (int k_col = 0 ; k_col < column_field_size ; ++k_col) { \
+            for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++k_index)) { \
                 int k_s_row = s_row + k_row; \
                 int k_s_col = s_col + k_col; \
 \
-                /* Avoid making connections with non-existent neurons!
-                 * Wrap around the layer */ \
-                k_s_row += (k_s_row < 0) ? from_rows \
-                    : ((k_s_row >= from_rows) ? -from_rows : 0); \
-                k_s_col += (k_s_col < 0) ? from_columns \
-                    : ((k_s_col >= from_columns) ? -from_columns : 0); \
+				/* The connection is frayed if the layers are the same size */ \
+				/* Avoid making connections with non-existent neurons! */ \
+				if (k_s_row < 0 or k_s_row >= from_rows \
+					or k_s_col < 0 or k_s_col >= from_columns) \
+					continue; \
 \
                 int from_index = k_s_row * from_columns + k_s_col; \
 \
                 /* Row of matrix is the kernel index * row size (see above) */ \
-                int weight_index = weight_col + \
-                    ((k_row * column_field_size) + k_col) * kernel_row_size; \
+                int weight_index = weight_col + k_index * kernel_row_size; \
 \
                 WEIGHT_OP; \
             } \
@@ -338,19 +334,20 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
             int end_s_row = (d_row - row_offset) / row_stride; \
             int end_s_col = (d_col - column_offset) / column_stride; \
 \
+            int weight_offset = to_index * num_weights / to_size; \
+\
             /* Iterate over relevant source neurons... */ \
             int k_index = 0; \
             for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
-                for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) { \
+                for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
                     /* Avoid making connections with non-existent neurons! */ \
                     if (s_row < 0 or s_row >= from_rows \
                         or s_col < 0 or s_col >= from_columns) \
                         continue; \
 \
                     int from_index = (s_row * from_columns) + s_col; \
-                    int weight_index = (from_index * kernel_size) + k_index; \
+                    int weight_index = weight_offset + k_index; \
                     WEIGHT_OP; \
-                    ++k_index; \
                 } \
             } \
             NEURON_POST; \
@@ -384,12 +381,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         /* Kernels are organized into columns
            One kernel per source neuron */ \
         int kernel_size = row_field_size * column_field_size; \
-        int kernel_row_size = from_rows * from_columns; \
+        int kernel_row_size = num_weights / to_size; \
 \
         /* Iterate over relevant source neurons... */ \
         int k_index = 0; \
         for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
-            for (int s_col = start_s_col ; s_col <= end_s_col ; ++s_col) { \
+            for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
                 /* Avoid making connections with non-existent neurons! */ \
                 if (s_row < 0 or s_row >= from_rows \
                     or s_col < 0 or s_col >= from_columns) \
@@ -401,7 +398,6 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                    Column of matrix is the index of the source neuron */ \
                 int weight_index = to_index + (k_index * kernel_row_size); \
                 WEIGHT_OP; \
-                ++k_index; \
             } \
         } \
         NEURON_POST; \

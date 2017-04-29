@@ -238,7 +238,7 @@ void symbol_test() {
     print_model(model);
     //Clock clock(true);
     Clock clock(100.0f);
-    //Clock clock(1.0f);
+    //Clock clock(10.0f);
     clock.run(model, 10000000, true);
     std::cout << "\n";
 

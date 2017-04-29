@@ -29,8 +29,9 @@ class IzhikevichAttributes : public Attributes {
              Short Term Depression
              Short Term Potentiation
              Weight Delta
+             Delay
             */
-            return 7;
+            return 8;
         }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
@@ -57,11 +58,12 @@ class IzhikevichAttributes : public Attributes {
 
         // Spike trace for learning
         Pointer<float> postsyn_trace;
-        // Time since last spike
-        Pointer<int> delta_t;
 
         // Neuron parameters
         Pointer<IzhikevichParameters> neuron_parameters;
+
+    private:
+        void set_delays(Connection *conn, float *delays);
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

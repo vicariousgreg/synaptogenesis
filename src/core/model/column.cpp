@@ -37,8 +37,9 @@ void Column::add_input(bool plastic, int num_symbols,
     // Input connection
     connect_layers("input", "4_pos",
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-        new FlatWeightConfig(0.5, 0.09)))
-        ->set_property("conductance", conductance));
+        new FlatWeightConfig(0.5, 0.01)))
+        ->set_property("conductance", conductance)
+        ->set_property("myelinated", "true"));
 }
 
 void Column::connect(Column *col_a, Column *col_b,
@@ -59,35 +60,46 @@ void Column::add_neural_field(std::string field_name) {
     add_layer((new LayerConfig(field_name + "_pos",
         IZHIKEVICH, cortex_size, cortex_size))
             //->set_property(IZ_INIT, "random positive"));
-            ->set_property(IZ_INIT, "regular"));
+            ->set_property(IZ_INIT, "regular")
+            ->set_property("spacing", "0.09"));
 
     add_layer((new LayerConfig(field_name + "_neg",
         IZHIKEVICH, inh_size, inh_size))
             //->set_property(IZ_INIT, "random negative"));
-            ->set_property(IZ_INIT, "regular"));
+            ->set_property(IZ_INIT, "regular")
+            ->set_property("spacing", "0.18"));
 
     // Excitatory self connections
+    int self_spread = 18;
     connect_layers(field_name + "_pos", field_name + "_pos",
         (new ConnectionConfig(
-            exc_plastic, 0, 0.5, FULLY_CONNECTED, ADD,
+            exc_plastic, 0, 0.5, CONVERGENT, ADD,
             (new FlatWeightConfig(0.1, 0.09))
                 ->set_diagonal(false)))
+        ->set_arborized_config(
+            new ArborizedConfig(self_spread, 1, -self_spread/2))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", learning_rate));
 
     // Exc -> Inh
+    int exc_inh_spread = 5;
     connect_layers(field_name + "_pos", field_name + "_neg",
         (new ConnectionConfig(
-            false, 0, 0.5, FULLY_CONNECTED, ADD,
+            false, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.09)))
+        ->set_arborized_config(
+            new ArborizedConfig(exc_inh_spread, inh_ratio, -exc_inh_spread/2))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", learning_rate));
 
     // Inh -> Exc
+    int inh_exc_spread = 7;
     connect_layers(field_name + "_neg", field_name + "_pos",
         (new ConnectionConfig(
-            false, 0, 0.5, FULLY_CONNECTED, SUB,
+            false, 0, 0.5, DIVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.09)))
+        ->set_arborized_config(
+            new ArborizedConfig(inh_exc_spread, inh_ratio, -inh_exc_spread/2))
         ->set_property("conductance", conductance)
         ->set_property("learning rate", learning_rate));
 }
