@@ -151,6 +151,10 @@ Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
             return (node->is_second_order())
                 ? get_activate_base_second_order_fully_connected()
                 : get_activate_base_fully_connected();
+        case SUBSET:
+            return (node->is_second_order())
+                ? get_activate_base_second_order_subset()
+                : get_activate_base_subset();
         case ONE_TO_ONE:
             return (node->is_second_order())
                 ? get_activate_base_second_order_one_to_one()

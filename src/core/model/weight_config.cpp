@@ -9,11 +9,17 @@
 void WeightConfig::initialize(float* target_matrix,
         Connection* conn, bool is_host) {
     if (not diagonal) {
-        if (conn->type == FULLY_CONNECTED) {
-            auto fc_config = conn->get_config()->get_fully_connected_config();
-            clear_diagonal(target_matrix, fc_config->from_size, fc_config->to_size);
-        } else if (conn->type == CONVERGENT) {
-            // TODO: Implement me
+        switch(conn->type) {
+            case(FULLY_CONNECTED):
+                clear_diagonal(target_matrix, conn->from_layer->size, conn->to_layer->size);
+                break;
+            case(SUBSET): {
+                auto subset_config = conn->get_config()->get_subset_config();
+                clear_diagonal(target_matrix, subset_config->from_size, subset_config->to_size);
+                break;
+            }
+            case(CONVERGENT):
+                break;
         }
     }
 }

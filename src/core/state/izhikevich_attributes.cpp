@@ -331,6 +331,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     funcs[FULLY_CONNECTED][ADD]  = get_activate_iz_add_fully_connected();
     funcs[FULLY_CONNECTED][SUB]  = get_activate_iz_sub_fully_connected();
     funcs[FULLY_CONNECTED][MULT] = get_activate_iz_mult_fully_connected();
+    funcs[SUBSET][ADD]           = get_activate_iz_add_subset();
+    funcs[SUBSET][SUB]           = get_activate_iz_sub_subset();
+    funcs[SUBSET][MULT]          = get_activate_iz_mult_subset();
     funcs[ONE_TO_ONE][ADD]       = get_activate_iz_add_one_to_one();
     funcs[ONE_TO_ONE][SUB]       = get_activate_iz_sub_one_to_one();
     funcs[ONE_TO_ONE][MULT]      = get_activate_iz_mult_one_to_one();
@@ -400,6 +403,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
 
     std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
     funcs[FULLY_CONNECTED][ADD]  = get_update_iz_add_fully_connected();
+    funcs[SUBSET][ADD]           = get_update_iz_add_subset();
     funcs[ONE_TO_ONE][ADD]       = get_update_iz_add_one_to_one();
     funcs[CONVERGENT][ADD]       = get_update_iz_add_convergent();
     funcs[DIVERGENT][ADD]        = get_update_iz_add_divergent();
@@ -573,20 +577,41 @@ void IzhikevichAttributes::set_delays(Connection *conn, float* delays) {
         extract_parameter(conn, "x offset", "0.0"));
 
     switch(conn->type) {
-        case(FULLY_CONNECTED): {
-            auto fcc = conn->get_config()->get_fully_connected_config();
+        case(FULLY_CONNECTED):
+        case(SUBSET): {
+            int from_row_start, from_col_start, to_row_start, to_col_start;
+            int from_row_end, from_col_end, to_row_end, to_col_end;
+
+            if (conn->type == FULLY_CONNECTED) {
+                from_row_start = from_col_start = to_row_start = to_col_start = 0;
+                from_row_end = conn->from_layer->rows;
+                from_col_end = conn->from_layer->columns;
+                to_row_end = conn->to_layer->rows;
+                to_col_end = conn->to_layer->columns;
+            } else if (conn->type == SUBSET) {
+                auto sc = conn->get_config()->get_subset_config();
+                from_row_start = sc->from_row_start;
+                from_col_start = sc->from_col_start;
+                to_row_start = sc->to_row_start;
+                to_col_start = sc->to_col_start;
+                from_row_end = sc->from_row_end;
+                from_col_end = sc->from_col_end;
+                to_row_end = sc->to_row_end;
+                to_col_end = sc->to_col_end;
+            }
+
             int from_columns = conn->from_layer->columns;
             int weight_index = 0;
-            for (int f_row = fcc->from_row_start; f_row < fcc->from_row_end; ++f_row) {
+            for (int f_row = from_row_start; f_row < from_row_end; ++f_row) {
                 float f_y = f_row * from_spacing;
 
-                for (int f_col = fcc->from_col_start; f_col < fcc->from_col_end; ++f_col) {
+                for (int f_col = from_col_start; f_col < from_col_end; ++f_col) {
                     float f_x = f_col * from_spacing;
 
-                    for (int t_row = fcc->to_row_start; t_row < fcc->to_row_end; ++t_row) {
+                    for (int t_row = to_row_start; t_row < to_row_end; ++t_row) {
                         float t_y = t_row * to_spacing + y_offset;
 
-                        for (int t_col = fcc->to_col_start; t_col < fcc->to_col_end; ++t_col) {
+                        for (int t_col = to_col_start; t_col < to_col_end; ++t_col) {
                             float t_x = t_col * to_spacing + x_offset;
 
                             float distance = pow(

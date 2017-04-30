@@ -84,21 +84,44 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         activate_instructions.push_back(
             new ClearInstruction(curr, state, compute_stream));
 
+    // Keep track of consecutive subset connections
+    // If they come from the same layer, only wrap the first one
+    //   in an inter-device instruction (if necessary)
+    bool in_subset_chain = false;
+    Layer *prev_from_layer = nullptr;
+
     for (auto& child : curr->get_children()) {
         // Create an instruction
         // If internal, recurse first (post-fix DFS)
         if (child->is_leaf()) {
-            auto syn_inst = new SynapseActivateInstruction(
-                curr, child->conn, state, compute_stream);
+            Connection *conn = child->conn;
+
+            Instruction* syn_inst = new SynapseActivateInstruction(
+                curr, conn, state, compute_stream);
+
+            // If inter-device, wrap in InterDeviceInstruction
+            if (not in_subset_chain and state->is_inter_device(conn))
+                syn_inst = new InterDeviceInstruction(
+                    conn, state, syn_inst);
+
+            // Only continue the chain if the from_layer remains the same
+            // If this is a subset connection
+            //     We are in a chain if we weren't before or if the
+            //         previous from_layer has not changed
+            // Otherwise, we are not in a chain
+            in_subset_chain =
+                (conn->type == SUBSET and
+                    (not in_subset_chain or conn->from_layer == prev_from_layer));
+            prev_from_layer = conn->from_layer;
 
             // Create the instruction and add it to the synapse instuction list
-            synapse_instructions[child->conn] = syn_inst;
+            synapse_instructions[conn] = syn_inst;
             activate_instructions.push_back(syn_inst);
 
             // If plastic, create update instruction
-            if (child->conn->plastic) {
+            if (conn->plastic) {
                 auto syn_update_inst = new SynapseUpdateInstruction(
-                    curr, child->conn, state, compute_stream);
+                    curr, conn, state, compute_stream);
                 update_instructions.push_back(syn_update_inst);
             }
         } else {

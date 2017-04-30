@@ -207,8 +207,8 @@ void symbol_test() {
 
     Column *sensory_column = new Column("sensory", cortex_rows, cortex_columns, true);
     sensory_column->add_input(true, num_symbols, "one_hot_cyclic_input", "3.78 100000");
-    sensory_column->add_module_all("visualizer_output", "");
-    sensory_column->add_module_all("heatmap", "");
+    //sensory_column->add_module_all("visualizer_output", "");
+    //sensory_column->add_module_all("heatmap", "");
     model->add_structure(sensory_column);
 
     Column *prev_column = sensory_column;
@@ -216,8 +216,8 @@ void symbol_test() {
     int num_columns = 4;
     for (int i = 0 ; i < num_columns ; ++i) {
         Column *column = new Column("col" + std::to_string(i), cortex_rows, cortex_columns, true);
-        column->add_module_all("visualizer_output", "");
-        column->add_module_all("heatmap", "");
+        //column->add_module_all("visualizer_output", "");
+        //column->add_module_all("heatmap", "");
 
         model->add_structure(column);
         columns.push_back(column);
@@ -238,7 +238,7 @@ void symbol_test() {
     Clock clock(true);
     //Clock clock(100.0f);
     //Clock clock(10.0f);
-    clock.run(model, 100000, true);
+    clock.run(model, 100, true);
     std::cout << "\n";
 
     delete model;

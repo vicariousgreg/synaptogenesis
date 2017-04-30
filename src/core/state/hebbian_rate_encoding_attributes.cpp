@@ -50,6 +50,8 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
     switch (conn->type) {
         case FULLY_CONNECTED:
             return get_update_hebbian_fully_connected();
+        case SUBSET:
+            return get_update_hebbian_subset();
         case ONE_TO_ONE:
             return get_update_hebbian_one_to_one();
         case CONVERGENT:

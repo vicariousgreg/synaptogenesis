@@ -47,10 +47,49 @@ class Instruction {
         Layer* const to_layer;
 
     protected:
+        friend class InterDeviceInstruction;
+
         Stream *stream;
         Event* event;
         std::vector<Event*> dependencies;
         int blocks, threads;
+};
+
+/* Wrapper for inter-device connections */
+class InterDeviceInstruction : public Instruction {
+    public:
+        InterDeviceInstruction(
+            Connection *conn, State *state, Instruction *child)
+                : Instruction(conn->to_layer, nullptr),
+                  child(child) {
+            if (not state->is_inter_device(conn))
+                ErrorManager::get_instance()->log_error(
+                    "InterDeviceInstruction should only be used with"
+                    " inter-device synaptic connections!");
+
+            src = state->get_output(conn->from_layer,
+                    get_word_index(conn->delay,
+                    state->get_output_type(conn->from_layer)));
+            dst = state->get_device_output_buffer(conn);
+
+            DeviceID source_device = state->get_device_id(conn->from_layer);
+            stream = ResourceManager::get_instance()
+                ->get_inter_device_stream(source_device);
+            event = ResourceManager::get_instance()
+                ->create_event(source_device);
+        }
+
+        void activate() {
+            for (auto& dep : child->dependencies) stream->wait(dep);
+            src.copy_to(dst, stream);
+            stream->record(event);
+            child->stream->wait(event);
+            child->activate();
+        }
+
+    protected:
+        Pointer<Output> src, dst;
+        Instruction *child;
 };
 
 /* Instructions that initialize the input without connections */
@@ -87,7 +126,7 @@ class ClearInstruction : public InitializeInstruction {
                 : InitializeInstruction(second_order_node, state, stream) { }
 
         void activate() {
-            Instruction::wait_for_dependencies();
+            wait_for_dependencies();
             get_set_data().run(stream,
                 blocks, threads,
                 0.0, dst, size);
@@ -124,15 +163,7 @@ class SynapseInstruction : public Instruction {
                 : Instruction(conn->to_layer, stream),
                   connection(conn),
                   synapse_data(parent_node, conn, state),
-                  type(conn->type) {
-            /* A bit hacky, but fully connected kernels can now be subsets,
-             *   which makes the name a bit of a misnomer */
-            if (conn->type == FULLY_CONNECTED) {
-                int kernel_to_size = conn->get_config()->get_fully_connected_config()->to_size;
-                this->threads = calc_threads(kernel_to_size);
-                this->blocks = calc_blocks(kernel_to_size);
-            }
-        }
+                  type(conn->type) { }
 
         const ConnectionType type;
         Connection* const connection;
@@ -147,32 +178,11 @@ class SynapseActivateInstruction : public SynapseInstruction {
         SynapseActivateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
-                  inter_device(state->is_inter_device(conn)),
-                  d_to_d_event(nullptr),
-                  inter_device_stream(nullptr),
                   activator(state->get_activator(conn, parent_node)) {
-            if (inter_device) {
-                src = state->get_output(conn->from_layer,
-                        get_word_index(conn->delay,
-                        state->get_output_type(conn->from_layer)));
-                dst = state->get_device_output_buffer(conn);
-
-                DeviceID source_device = state->get_device_id(conn->from_layer);
-                inter_device_stream = ResourceManager::get_instance()
-                    ->get_inter_device_stream(source_device);
-                d_to_d_event = ResourceManager::get_instance()
-                    ->create_event(source_device);
-            }
         }
 
         void activate() {
             Instruction::wait_for_dependencies();
-            if (inter_device) {
-                for (auto& dep : dependencies) inter_device_stream->wait(dep);
-                src.copy_to(dst, inter_device_stream);
-                inter_device_stream->record(d_to_d_event);
-                stream->wait(d_to_d_event);
-            }
             activator.run(stream,
                 blocks, threads,
                 synapse_data);
@@ -181,10 +191,6 @@ class SynapseActivateInstruction : public SynapseInstruction {
 
     protected:
         Kernel<SYNAPSE_ARGS> activator;
-        Pointer<Output> src, dst;
-        bool inter_device;
-        Event *d_to_d_event;
-        Stream *inter_device_stream;
 };
 
 /* Updates synaptic connection */
@@ -198,9 +204,6 @@ class SynapseUpdateInstruction : public SynapseInstruction {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
                 this->blocks = calc_blocks(num_weights);
-            } else {
-                this->threads = calc_threads(to_layer->size);
-                this->blocks = calc_blocks(to_layer->size);
             }
         }
 

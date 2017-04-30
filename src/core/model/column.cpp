@@ -50,10 +50,10 @@ void Column::add_input(bool plastic, int num_symbols,
             printf("    (%4d, %4d)\n", start_to_row, start_to_col);
 
             connect_layers("input", "4_pos",
-                (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+                (new ConnectionConfig(false, 0, 1, SUBSET, ADD,
                 new FlatWeightConfig(0.5, 0.09)))
-                ->set_fully_connected_config(
-                    new FullyConnectedConfig(
+                ->set_subset_config(
+                    new SubsetConfig(
                         0, 1,
                         i, i+1,
                         start_to_row, start_to_row + tether_to_size,
@@ -81,10 +81,10 @@ void Column::connect(Column *col_a, Column *col_b,
             col_a, name_a, col_b, name_b,
             (new ConnectionConfig(
                 col_b->exc_plastic, 0,
-                0.5, FULLY_CONNECTED, ADD,
+                0.5, SUBSET, ADD,
                 new FlatWeightConfig(0.1, 0.09)))
-            ->set_fully_connected_config(
-                new FullyConnectedConfig(
+            ->set_subset_config(
+                new SubsetConfig(
                     start_from_row, start_from_row + tether_from_size,
                     start_from_col, start_from_col + tether_from_size,
                     start_to_row, start_to_row + tether_to_size,

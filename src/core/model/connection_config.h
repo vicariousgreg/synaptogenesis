@@ -7,10 +7,10 @@
 
 class Connection;
 
-class FullyConnectedConfig {
+class SubsetConfig {
     public:
-        FullyConnectedConfig() : FullyConnectedConfig(0,0,0,0,0,0,0,0) { }
-        FullyConnectedConfig(
+        SubsetConfig() : SubsetConfig(0,0,0,0,0,0,0,0) { }
+        SubsetConfig(
             int from_row_start, int from_row_end,
             int from_col_start, int from_col_end,
             int to_row_start, int to_row_end,
@@ -62,22 +62,22 @@ class ConnectionConfig : public PropertyConfig {
         /* Specialized config setters */
         ConnectionConfig *set_arborized_config(ArborizedConfig *config)
             { arborized_config = config; }
-        ConnectionConfig *set_fully_connected_config(FullyConnectedConfig *config)
-            { fully_connected_config = config; }
+        ConnectionConfig *set_subset_config(SubsetConfig *config)
+            { subset_config = config; }
 
         /* Specialized config getters */
         ArborizedConfig *get_arborized_config() const
             { return arborized_config; }
-        FullyConnectedConfig *get_fully_connected_config() const
-            { return fully_connected_config; }
+        SubsetConfig *get_subset_config() const
+            { return subset_config; }
 
         ArborizedConfig copy_arborized_config() const {
             return (arborized_config == nullptr)
                 ? ArborizedConfig() : *arborized_config;
         }
-        FullyConnectedConfig copy_fully_connected_config() const {
-            return (fully_connected_config == nullptr)
-                ? FullyConnectedConfig() : *fully_connected_config;
+        SubsetConfig copy_subset_config() const {
+            return (subset_config == nullptr)
+                ? SubsetConfig() : *subset_config;
         }
 
         /* Setter that returns self pointer */
@@ -101,7 +101,7 @@ class ConnectionConfig : public PropertyConfig {
 
     protected:
         ArborizedConfig* arborized_config;
-        FullyConnectedConfig* fully_connected_config;
+        SubsetConfig* subset_config;
 };
 
 #endif

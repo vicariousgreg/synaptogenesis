@@ -96,15 +96,48 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const int from_row_start = synapse_data.fully_connected_config.from_row_start; \
-    const int from_row_end = synapse_data.fully_connected_config.from_row_end; \
-    const int from_col_start = synapse_data.fully_connected_config.from_col_start; \
-    const int from_col_end = synapse_data.fully_connected_config.from_col_end; \
-    const int to_row_start = synapse_data.fully_connected_config.to_row_start; \
-    const int to_row_end = synapse_data.fully_connected_config.to_row_end; \
-    const int to_col_start = synapse_data.fully_connected_config.to_col_start; \
-    const int to_col_end = synapse_data.fully_connected_config.to_col_end; \
-    const int from_kernel_size = synapse_data.fully_connected_config.from_size; \
+    EXTRACTIONS; \
+ \
+    for (int to_index = 0 ; to_index < to_size ; ++to_index) { \
+        NEURON_PRE; \
+        for (int from_index = 0 ; from_index < from_size ; ++from_index) { \
+            int weight_index = to_index * from_size + from_index; \
+            WEIGHT_OP; \
+        } \
+        NEURON_POST; \
+    } \
+}
+
+#define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    EXTRACTIONS; \
+ \
+    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (to_index < to_size) { \
+        NEURON_PRE; \
+        for (int from_index = 0 ; from_index < from_size ; ++from_index) { \
+            int weight_index = from_index * to_size + to_index; \
+            WEIGHT_OP; \
+        } \
+        NEURON_POST; \
+    } \
+}
+
+
+
+#define SUBSET_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    const int from_row_start = synapse_data.subset_config.from_row_start; \
+    const int from_row_end = synapse_data.subset_config.from_row_end; \
+    const int from_col_start = synapse_data.subset_config.from_col_start; \
+    const int from_col_end = synapse_data.subset_config.from_col_end; \
+    const int to_row_start = synapse_data.subset_config.to_row_start; \
+    const int to_row_end = synapse_data.subset_config.to_row_end; \
+    const int to_col_start = synapse_data.subset_config.to_col_start; \
+    const int to_col_end = synapse_data.subset_config.to_col_end; \
+    const int from_kernel_size = synapse_data.subset_config.from_size; \
     EXTRACTIONS; \
  \
     int to_kernel_index = 0; \
@@ -131,18 +164,18 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     } \
 }
 
-#define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+#define SUBSET_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const int from_row_start = synapse_data.fully_connected_config.from_row_start; \
-    const int from_row_end = synapse_data.fully_connected_config.from_row_end; \
-    const int from_col_start = synapse_data.fully_connected_config.from_col_start; \
-    const int from_col_end = synapse_data.fully_connected_config.from_col_end; \
-    const int to_row_start = synapse_data.fully_connected_config.to_row_start; \
-    const int to_row_size = synapse_data.fully_connected_config.to_row_size; \
-    const int to_col_start = synapse_data.fully_connected_config.to_col_start; \
-    const int to_col_size = synapse_data.fully_connected_config.to_col_size; \
-    const int to_kernel_size = synapse_data.fully_connected_config.to_size; \
+    const int from_row_start = synapse_data.subset_config.from_row_start; \
+    const int from_row_end = synapse_data.subset_config.from_row_end; \
+    const int from_col_start = synapse_data.subset_config.from_col_start; \
+    const int from_col_end = synapse_data.subset_config.from_col_end; \
+    const int to_row_start = synapse_data.subset_config.to_row_start; \
+    const int to_row_size = synapse_data.subset_config.to_row_size; \
+    const int to_col_start = synapse_data.subset_config.to_col_start; \
+    const int to_col_size = synapse_data.subset_config.to_col_size; \
+    const int to_kernel_size = synapse_data.subset_config.to_size; \
     EXTRACTIONS; \
  \
     int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -416,6 +449,13 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() {\
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
+#define CALC_SUBSET(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+SUBSET_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+SUBSET_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() {\
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
+
 #define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 ONE_TO_ONE_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
@@ -447,6 +487,12 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
+#define CALC_SUBSET(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+SUBSET_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
+}
+
 #define CALC_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 ONE_TO_ONE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
@@ -470,6 +516,12 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
 
 #define CALC_ALL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CALC_FULLY_CONNECTED(FUNC_NAME##_fully_connected, \
+    EXTRACTIONS, \
+    NEURON_PRE, \
+    WEIGHT_OP, \
+    NEURON_POST \
+); \
+CALC_SUBSET(FUNC_NAME##_subset, \
     EXTRACTIONS, \
     NEURON_PRE, \
     WEIGHT_OP, \

@@ -64,6 +64,7 @@ typedef unsigned char IOTypeMask;
  */
 typedef enum {
     FULLY_CONNECTED,
+    SUBSET,
     ONE_TO_ONE,
     CONVERGENT,
     CONVOLUTIONAL,

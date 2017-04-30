@@ -18,20 +18,24 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             convolutional(type == CONVOLUTIONAL) {
     switch (type) {
         case(FULLY_CONNECTED): {
-            auto fully_connected_config = config->get_fully_connected_config();
-            if (fully_connected_config == nullptr) {
-                config->set_fully_connected_config(
-                    new FullyConnectedConfig(
+            this->num_weights = from_layer->size * to_layer->size;
+            break;
+        }
+        case(SUBSET): {
+            auto subset_config = config->get_subset_config();
+            if (subset_config == nullptr) {
+                config->set_subset_config(
+                    new SubsetConfig(
                         0, from_layer->rows,
                         0, from_layer->columns,
                         0, to_layer->rows,
                         0, to_layer->columns));
-                fully_connected_config = config->get_fully_connected_config();
+                subset_config = config->get_subset_config();
             }
-            if (not fully_connected_config->validate(this))
+            if (not subset_config->validate(this))
                 ErrorManager::get_instance()->log_error(
-                    "Invalid FullyConnectedConfig for connection!");
-            this->num_weights = fully_connected_config->total_size;
+                    "Invalid SubsetConfig for connection!");
+            this->num_weights = subset_config->total_size;
             break;
         }
         case(ONE_TO_ONE):
