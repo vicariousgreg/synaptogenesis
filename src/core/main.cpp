@@ -205,38 +205,40 @@ void symbol_test() {
     int cortex_columns = 64;
     int num_symbols = 5;
 
-    Column *column1 = new Column("col1", cortex_rows, cortex_columns, true);
-    column1->add_input(true, num_symbols, "one_hot_cyclic_input", "3.78 100000");
-    column1->add_module_all("visualizer_output", "");
-    column1->add_module_all("heatmap", "");
-    model->add_structure(column1);
+    Column *sensory_column = new Column("sensory", cortex_rows, cortex_columns, true);
+    sensory_column->add_input(true, num_symbols, "one_hot_cyclic_input", "3.78 100000");
+    sensory_column->add_module_all("visualizer_output", "");
+    sensory_column->add_module_all("heatmap", "");
+    model->add_structure(sensory_column);
 
-    Column *column2 = new Column("col2", cortex_rows, cortex_columns, true);
-    //column2->add_input(false, num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
-    column2->add_module_all("visualizer_output", "");
-    column2->add_module_all("heatmap", "");
-    model->add_structure(column2);
+    Column *prev_column = sensory_column;
+    std::vector<Column*> columns;
+    int num_columns = 4;
+    for (int i = 0 ; i < num_columns ; ++i) {
+        Column *column = new Column("col" + std::to_string(i), cortex_rows, cortex_columns, true);
+        column->add_module_all("visualizer_output", "");
+        column->add_module_all("heatmap", "");
 
-    /*
-    Column *column3 = new Column("col3", cortex_rows, cortex_columns, true);
-    column3->add_input(true, num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
-    column3->add_module_all("visualizer_output", "");
-    column3->add_module_all("heatmap", "");
-    model->add_structure(column3);
-    */
+        model->add_structure(column);
+        columns.push_back(column);
 
-    // Intercortical connections
-    Column::connect(
-        column1, column2,
-        "4_pos", "4_pos",
-        100, 1, 16);
+        Column::connect(
+            prev_column, column,
+            "4_pos", "4_pos",
+            10, 10, 10);
+        Column::connect(
+            column, prev_column,
+            "4_pos", "4_pos",
+            10, 10, 10);
+        prev_column = column;
+    }
 
     std::cout << "Symbol test......\n";
     print_model(model);
     Clock clock(true);
     //Clock clock(100.0f);
     //Clock clock(10.0f);
-    clock.run(model, 10000000, true);
+    clock.run(model, 100000, true);
     std::cout << "\n";
 
     delete model;

@@ -5,7 +5,7 @@
 #define IZ_INIT "init"
 
 /* Global shared variables */
-static std::string learning_rate = "0.4";
+static std::string learning_rate = "0.004";
 static int intercortical_delay = 0;
 
 static int inh_ratio = 2;
@@ -36,11 +36,31 @@ void Column::add_input(bool plastic, int num_symbols,
         ->set_property(IZ_INIT, "regular"));
     this->add_module("input", module_name, module_params);
 
-    // Input connection
-    connect_layers("input", "4_pos",
-        (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-        new FlatWeightConfig(0.5, 0.01)))
-        ->set_property("myelinated", "true"));
+    int num_tethers = 10;
+    int tether_to_size = 5;
+    int to_row_range = cortex_rows - tether_to_size;
+    int to_col_range = cortex_columns - tether_to_size;
+
+    // Add num_tethers tethers for each symbol
+    for (int i = 0 ; i < num_symbols ; ++i) {
+        printf("Tethers for symbol %d\n", i);
+        for (int j = 0 ; j < num_tethers ; ++j) {
+            int start_to_row = fRand(to_row_range);
+            int start_to_col = fRand(to_col_range);
+            printf("    (%4d, %4d)\n", start_to_row, start_to_col);
+
+            connect_layers("input", "4_pos",
+                (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+                new FlatWeightConfig(0.5, 0.09)))
+                ->set_fully_connected_config(
+                    new FullyConnectedConfig(
+                        0, 1,
+                        i, i+1,
+                        start_to_row, start_to_row + tether_to_size,
+                        start_to_col, start_to_col + tether_to_size))
+                ->set_property("myelinated", "true"));
+        }
+    }
 }
 
 void Column::connect(Column *col_a, Column *col_b,
@@ -68,8 +88,7 @@ void Column::connect(Column *col_a, Column *col_b,
                     start_from_row, start_from_row + tether_from_size,
                     start_from_col, start_from_col + tether_from_size,
                     start_to_row, start_to_row + tether_to_size,
-                    start_to_col, start_to_col + tether_to_size
-                ))
+                    start_to_col, start_to_col + tether_to_size))
             ->set_property("learning rate", learning_rate)
             ->set_property("myelinated", "true"));
     }

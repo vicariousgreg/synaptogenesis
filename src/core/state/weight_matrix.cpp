@@ -7,13 +7,12 @@
 
 /* Sets all values in an array to the given val */
 void set_weights(float* arr, int size, float val, float fraction) {
-    if (fraction == 1.0) {
+    if (fraction == 1.0)
         for (int i = 0 ; i < size ; ++i)
             arr[i] = val;
-    } else {
+    else
         for (int i = 0 ; i < size ; ++i)
             arr[i] = (fRand() < fraction) ? val : 0.0;
-    }
 }
 
 /* Clears an array */
