@@ -27,20 +27,6 @@ ParallelCluster::ParallelCluster(Structure *structure,
     plastic_instructions = sort_instructions(0, 0, true);
 }
 
-void ParallelCluster::add_external_dependencies(
-        std::map<Layer*, ClusterNode*> all_nodes) {
-    // Crawl through the nodes and add dependencies for state updates
-    // This prevents race conditions from output updates
-    // Ensure that the output is not updated until it's been transferred
-    for (auto& node : nodes)
-        for (auto& pair : node->get_synapse_instructions()) {
-            all_nodes[pair.first->from_layer]
-                ->get_state_update_instruction()->add_dependency(pair.second);
-            pair.second->add_dependency(
-                all_nodes[pair.first->from_layer]->get_state_update_instruction());
-        }
-}
-
 InstructionList ParallelCluster::sort_instructions(
         IOTypeMask include, IOTypeMask exclude, bool plastic) {
     std::map<Layer*, std::queue<Instruction*> > schedules;

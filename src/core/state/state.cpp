@@ -36,33 +36,6 @@ State::State(Model *model) : model(model) {
         layer_devices[biggest] = (i % num_devices);
     }
 
-    // Create a buffer for each attributes
-    for (DeviceID i = 0; i < num_devices; ++i) {
-        LayerList input_layers, output_layers, expected_layers;
-
-        // Extract layers assigned to this device
-        for (auto layer : model->get_input_layers()) {
-            if (layer_devices[layer] == i)
-                input_layers.push_back(layer);
-        }
-        for (auto layer : model->get_output_layers()) {
-            if (layer_devices[layer] == i)
-                output_layers.push_back(layer);
-        } for (auto layer : model->get_expected_layers()) {
-            if (layer_devices[layer] == i)
-                expected_layers.push_back(layer);
-        }
-
-        // Identify any inter-device connections and make room for them
-        for (auto layer : model->get_layers())
-            if (layer_devices[layer] == i)
-                for (auto conn : layer->get_input_connections())
-                    if (is_inter_device(conn))
-                        output_layers.push_back(conn->from_layer);
-        buffers.push_back(
-            build_buffer(i, input_layers, output_layers, expected_layers));
-    }
-
     // Validate neural model strings
     for (auto layer : model->get_layers())
         if (Attributes::get_neural_models().count(layer->neural_model) == 0)
@@ -99,6 +72,50 @@ State::State(Model *model) : model(model) {
         }
     }
 
+    // Create buffers
+    for (DeviceID i = 0; i < num_devices; ++i) {
+        // Set up internal buffer
+        LayerList input_layers, output_layers, expected_layers;
+
+        // Extract layers assigned to this device
+        for (auto layer : model->get_input_layers()) {
+            if (layer_devices[layer] == i)
+                input_layers.push_back(layer);
+        }
+        for (auto layer : model->get_output_layers()) {
+            if (layer_devices[layer] == i)
+                output_layers.push_back(layer);
+        } for (auto layer : model->get_expected_layers()) {
+            if (layer_devices[layer] == i)
+                expected_layers.push_back(layer);
+        }
+
+        internal_buffers.push_back(
+            build_buffer(i, input_layers, output_layers, expected_layers));
+
+        // Set up inter-device buffers (one per word index)
+        std::map<int, LayerList> inter_device_layers;
+
+        // Identify any inter-device connections and make room for them
+        for (auto layer : model->get_layers())
+            if (layer_devices[layer] == i)
+                for (auto conn : layer->get_input_connections())
+                    if (is_inter_device(conn)) {
+                        int word_index = get_word_index(
+                            conn->delay, get_output_type(conn->from_layer));
+                        inter_device_layers[word_index].push_back(conn->from_layer);
+                    }
+
+        // Create a map of word indices to buffers
+        std::map<int, Buffer*> buffer_map;
+        for (auto pair : inter_device_layers)
+            buffer_map[pair.first] = build_buffer(
+                i, LayerList(), pair.second, LayerList());
+
+        // Set the inter device buffer
+        inter_device_buffers.push_back(buffer_map);
+    }
+
     // Finally, transfer data
     ResourceManager::get_instance()->transfer();
     for (auto n : Attributes::get_neural_models())
@@ -113,7 +130,10 @@ State::~State() {
             if (attributes[i][neural_model] != nullptr)
                 delete attributes[i][neural_model];
     for (auto matrix : weight_matrices) delete matrix.second;
-    for (auto buffer : buffers) delete buffer;
+    for (auto buffer : internal_buffers) delete buffer;
+    for (auto map : inter_device_buffers)
+        for (auto pair : map)
+            delete pair.second;
 }
 
 bool State::check_compatibility(Structure *structure) {
@@ -149,15 +169,15 @@ Pointer<Output> State::get_output(Layer *layer, int word_index) const {
 }
 
 Pointer<float> State::get_buffer_input(Layer *layer) const {
-    return buffers.at(layer_devices.at(layer))->get_input(layer);
+    return internal_buffers.at(layer_devices.at(layer))->get_input(layer);
 }
 
 Pointer<Output> State::get_buffer_expected(Layer *layer) const {
-    return buffers.at(layer_devices.at(layer))->get_expected(layer);
+    return internal_buffers.at(layer_devices.at(layer))->get_expected(layer);
 }
 
 Pointer<Output> State::get_buffer_output(Layer *layer) const {
-    return buffers.at(layer_devices.at(layer))->get_output(layer);
+    return internal_buffers.at(layer_devices.at(layer))->get_output(layer);
 }
 
 OutputType State::get_output_type(Layer *layer) const {
@@ -222,8 +242,10 @@ Kernel<SYNAPSE_ARGS> State::get_updater(
                      ->get_updater(conn, node);
 }
 
-Pointer<Output> State::get_device_output_buffer(Connection *conn) const {
-    return buffers[layer_devices.at(conn->to_layer)]
+Pointer<Output> State::get_device_output_buffer(
+        Connection *conn, int word_index) const {
+    return inter_device_buffers
+        .at(layer_devices.at(conn->to_layer)).at(word_index)
         ->get_output(conn->from_layer);
 }
 

@@ -64,20 +64,6 @@ SequentialCluster::SequentialCluster(Structure *structure,
             "Sequential cluster failed to process all layers!");
 }
 
-void SequentialCluster::add_external_dependencies(
-        std::map<Layer*, ClusterNode*> all_nodes) {
-    // Crawl through the nodes and add dependencies for state updates
-    // This prevents race conditions from output updates
-    // Ensure that the output is not updated until it's been transferred
-    for (auto& node : nodes)
-        for (auto& pair : node->get_synapse_instructions()) {
-            all_nodes[pair.first->from_layer]
-                ->get_state_update_instruction()->add_dependency(pair.second);
-            pair.second->add_dependency(
-                all_nodes[pair.first->from_layer]->get_state_update_instruction());
-        }
-}
-
 /******************************************************************************/
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/

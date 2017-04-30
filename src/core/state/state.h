@@ -46,14 +46,16 @@ class State {
             Connection *conn, DendriticNode *node) const;
         Kernel<SYNAPSE_ARGS> get_updater(
             Connection *conn, DendriticNode *node) const;
-        Pointer<Output> get_device_output_buffer(Connection *conn) const;
+        Pointer<Output> get_device_output_buffer(
+            Connection *conn, int word_index) const;
         bool is_inter_device(Connection *conn) const;
 
         Model* const model;
 
     private:
         int num_devices;
-        std::vector<Buffer*> buffers;
+        std::vector<Buffer*> internal_buffers;
+        std::vector<std::map<int, Buffer*> > inter_device_buffers;
         std::vector<std::map<std::string, Attributes*> > attributes;
         std::map<Connection*, WeightMatrix*> weight_matrices;
         std::map<Layer*, DeviceID> layer_devices;

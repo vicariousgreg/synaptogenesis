@@ -59,23 +59,18 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
     //   based on the dendritic trees of the layers
     for (auto& layer : layers) {
         layer_sizes[layer->id] = layer->size;
-        int register_count = layer->dendritic_root->get_max_register_index() + 1;
-
-        // Determine max delay for output connections
-        int max_delay_registers = 0;
-        for (auto& conn : layer->get_output_connections()) {
-            int delay_registers = conn->delay / timesteps_per_output;
-            if (delay_registers > max_delay_registers)
-                max_delay_registers = delay_registers;
-        }
-        ++max_delay_registers;
+        int input_register_count = layer->dendritic_root->get_max_register_index() + 1;
+        int output_register_count = 1 +
+            (layer->get_max_delay() / timesteps_per_output);
 
         // Set start indices and update size
         input_start_indices[layer->id] = input_size;
-        input_size += register_count * layer->size;
+        input_size += input_register_count * layer->size;
 
+        // Set start index, shift by layer size multiplied by
+        //   number of registers for connection delays
         output_start_indices[layer->id] = output_size;
-        output_size += max_delay_registers * layer->size;
+        output_size += output_register_count * layer->size;
 
         if (layer->is_expected()) {
             expected_start_indices[layer->id] = expected_size;

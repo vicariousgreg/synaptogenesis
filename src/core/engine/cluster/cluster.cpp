@@ -1,8 +1,9 @@
 #include "engine/cluster/cluster.h"
+#include "engine/cluster/cluster_node.h"
+#include "engine/instruction.h"
 #include "model/structure.h"
 #include "state/state.h"
 #include "io/environment.h"
-#include "engine/cluster/cluster_node.h"
 #include "util/resource_manager.h"
 
 Cluster::Cluster(State *state, Environment *environment)
@@ -12,8 +13,23 @@ Cluster::Cluster(State *state, Environment *environment)
     for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
         io_streams.push_back(res_man->create_stream(i));
 }
+
 Cluster::~Cluster() {
     for (auto& node : nodes) delete node;
+}
+
+void Cluster::add_external_dependencies(
+        std::map<Layer*, ClusterNode*> all_nodes) {
+    // Crawl through the nodes and add dependencies for state updates
+    // This prevents race conditions from output updates
+    // Ensure that the output is not updated until it's been transferred
+    for (auto& node : nodes)
+        for (auto& pair : node->get_synapse_instructions()) {
+            all_nodes[pair.first->from_layer]
+                ->get_state_update_instruction()->add_dependency(pair.second);
+            pair.second->add_dependency(
+                all_nodes[pair.first->from_layer]->get_state_update_instruction());
+        }
 }
 
 void Cluster::launch_input() {

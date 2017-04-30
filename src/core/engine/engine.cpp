@@ -1,4 +1,5 @@
 #include "engine/engine.h"
+#include "engine/instruction.h"
 #include "engine/cluster/cluster.h"
 #include "model/model.h"
 #include "state/state.h"
@@ -28,6 +29,10 @@ Engine::~Engine() {
 }
 
 void Engine::stage_clear() {
+    // Launch inter-device transfers
+    for (auto inst : *InterDeviceInstruction::get_originals())
+        inst->transfer();
+
     // Launch pre-input calculations
     for (auto& cluster : clusters)
         cluster->launch_pre_input_calculations();

@@ -1,4 +1,5 @@
 #include "model/layer.h"
+#include "model/connection.h"
 #include "io/module/module.h"
 #include "util/error_manager.h"
 
@@ -41,6 +42,17 @@ const ConnectionList& Layer::get_input_connections() const {
     return input_connections; }
 const ConnectionList& Layer::get_output_connections() const {
     return output_connections;
+}
+
+int Layer::get_max_delay() const {
+    // Determine max delay for output connections
+    int max_delay = 0;
+    for (auto& conn : get_output_connections()) {
+        int delay = conn->delay;
+        if (delay > max_delay)
+            max_delay = delay;
+    }
+    return max_delay;
 }
 
 void Layer::add_input_connection(Connection* connection) {

@@ -20,8 +20,8 @@ class Cluster {
         Cluster(State *state, Environment *environment);
         virtual ~Cluster();
 
-        virtual void add_external_dependencies(
-            std::map<Layer*, ClusterNode*> all_nodes) = 0;
+        void add_external_dependencies(
+            std::map<Layer*, ClusterNode*> all_nodes);
 
         void launch_input();
         void launch_output();
@@ -48,9 +48,6 @@ class ParallelCluster : public Cluster {
         ParallelCluster(Structure *structure, State *state,
             Environment *environment);
 
-        virtual void add_external_dependencies(
-            std::map<Layer*, ClusterNode*> all_nodes);
-
         virtual void launch_pre_input_calculations();
         virtual void launch_post_input_calculations();
         virtual void launch_state_update();
@@ -69,9 +66,6 @@ class SequentialCluster : public Cluster {
     public:
         SequentialCluster(Structure *structure, State *state,
             Environment *environment);
-
-        virtual void add_external_dependencies(
-            std::map<Layer*, ClusterNode*> all_nodes);
 
         virtual void launch_post_input_calculations();
         virtual void launch_weight_update();

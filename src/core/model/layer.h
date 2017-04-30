@@ -2,6 +2,7 @@
 #define layer_h
 
 #include <vector>
+#include <set>
 #include <string>
 
 #include "model/layer_config.h"
@@ -63,6 +64,9 @@ class Layer {
 
         // Root node of dendritic tree
         DendriticNode* const dendritic_root;
+
+        // Gets the maximum delay for all outgoing connections
+        int get_max_delay() const;
 
     private:
         friend class Structure;

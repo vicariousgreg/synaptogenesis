@@ -85,6 +85,16 @@ class Pointer : public BasePointer {
         DeviceID get_device_id() { return device_id; }
 
 
+        bool operator==(const Pointer<T> &other) const {
+            return ptr == other.ptr
+                and size == other.size
+                and device_id == other.device_id;
+        }
+
+        bool operator!=(const Pointer<T> &other) const { !(*this == other); }
+
+
+
         /*************************/
         /*** Memory management ***/
         /*************************/
