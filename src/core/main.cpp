@@ -201,8 +201,8 @@ void symbol_test() {
     Model *model = new Model();
 
     // Intermediate cortical layers
-    int cortex_rows = 128;
-    int cortex_columns = 128;
+    int cortex_rows = 64;
+    int cortex_columns = 64;
     int num_symbols = 5;
 
     Column *column1 = new Column("col1", cortex_rows, cortex_columns, true);
@@ -211,13 +211,13 @@ void symbol_test() {
     column1->add_module_all("heatmap", "");
     model->add_structure(column1);
 
-    /*
     Column *column2 = new Column("col2", cortex_rows, cortex_columns, true);
-    column2->add_input(false, num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
+    //column2->add_input(false, num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
     column2->add_module_all("visualizer_output", "");
     column2->add_module_all("heatmap", "");
     model->add_structure(column2);
 
+    /*
     Column *column3 = new Column("col3", cortex_rows, cortex_columns, true);
     column3->add_input(true, num_symbols, "one_hot_cyclic_input", "1 10000000 1000000");
     column3->add_module_all("visualizer_output", "");
@@ -226,14 +226,10 @@ void symbol_test() {
     */
 
     // Intercortical connections
-    /*
     Column::connect(
         column1, column2,
-        "56", "56");
-    Column::connect(
-        column2, column1,
-        "56", "56");
-    */
+        "4_pos", "4_pos",
+        100, 1, 16);
 
     std::cout << "Symbol test......\n";
     print_model(model);

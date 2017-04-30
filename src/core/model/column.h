@@ -11,17 +11,17 @@ class Column : public Structure {
             std::string module_name, std::string module_params);
 
         static void connect(Column *col_a, Column *col_b,
-            std::string name_a, std::string name_b);
+            std::string name_a, std::string name_b,
+            int num_tethers, int tether_from_size, int tether_to_size);
 
     private:
         void add_neural_field(std::string field_name);
         void connect_fields_one_way(std::string src, std::string dest);
 
-        std::string conductance;
-
         int cortex_rows, cortex_columns;
         int inh_rows, inh_columns;
         bool exc_plastic;
+        bool exc_inh_plastic;
 };
 
 #endif
