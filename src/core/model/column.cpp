@@ -6,17 +6,19 @@
 
 /* Global shared variables */
 static std::string base_conductance = "1.0";
-static std::string learning_rate = "0.004";
+static std::string learning_rate = "0.4";
 static int intracortical_delay = 0;
 static int intercortical_delay = 0;
 
 static int inh_ratio = 2;
 
-Column::Column(std::string name, int cortex_size, bool plastic)
+Column::Column(std::string name, int rows, int columns, bool plastic)
         : Structure(name, PARALLEL),
               conductance(base_conductance),
-              cortex_size(cortex_size),
-              inh_size(cortex_size / inh_ratio),
+              cortex_rows(rows),
+              cortex_columns(columns),
+              inh_rows(cortex_rows / inh_ratio),
+              inh_columns(cortex_columns / inh_ratio),
               exc_plastic(plastic) {
     /* Cortical Layers */
     //add_neural_field("3a");
@@ -58,22 +60,22 @@ void Column::connect(Column *col_a, Column *col_b,
 
 void Column::add_neural_field(std::string field_name) {
     add_layer((new LayerConfig(field_name + "_pos",
-        IZHIKEVICH, cortex_size, cortex_size))
+        IZHIKEVICH, cortex_rows, cortex_columns))
             //->set_property(IZ_INIT, "random positive"));
             ->set_property(IZ_INIT, "regular")
             ->set_property("spacing", "0.09"));
 
     add_layer((new LayerConfig(field_name + "_neg",
-        IZHIKEVICH, inh_size, inh_size))
+        IZHIKEVICH, inh_rows, inh_columns))
             //->set_property(IZ_INIT, "random negative"));
             ->set_property(IZ_INIT, "regular")
             ->set_property("spacing", "0.18"));
 
     // Excitatory self connections
-    int self_spread = 18;
+    int self_spread = 31;
     connect_layers(field_name + "_pos", field_name + "_pos",
         (new ConnectionConfig(
-            exc_plastic, 0, 0.5, CONVERGENT, ADD,
+            exc_plastic, 1, 0.5, CONVERGENT, ADD,
             (new FlatWeightConfig(0.1, 0.09))
                 ->set_diagonal(false)))
         ->set_arborized_config(
@@ -82,7 +84,7 @@ void Column::add_neural_field(std::string field_name) {
         ->set_property("learning rate", learning_rate));
 
     // Exc -> Inh
-    int exc_inh_spread = 5;
+    int exc_inh_spread = self_spread;
     connect_layers(field_name + "_pos", field_name + "_neg",
         (new ConnectionConfig(
             false, 0, 0.5, CONVERGENT, ADD,
@@ -97,7 +99,7 @@ void Column::add_neural_field(std::string field_name) {
     connect_layers(field_name + "_neg", field_name + "_pos",
         (new ConnectionConfig(
             false, 0, 0.5, DIVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.09)))
+            new FlatWeightConfig(1.0, 0.09)))
         ->set_arborized_config(
             new ArborizedConfig(inh_exc_spread, inh_ratio, -inh_exc_spread/2))
         ->set_property("conductance", conductance)

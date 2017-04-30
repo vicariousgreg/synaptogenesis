@@ -110,13 +110,13 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     int to_kernel_index = 0; \
     for (int to_row = to_row_start ; to_row < to_row_end ; ++to_row) { \
         for (int to_col = to_col_start ; to_col < to_col_end ; ++to_col) { \
-            int to_index = to_row * to_rows + to_col; \
+            int to_index = to_row * to_columns + to_col; \
             NEURON_PRE; \
             int from_kernel_index = 0; \
 \
             for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
                 for (int from_col = from_col_start ; from_col < from_col_end ; ++from_col) { \
-                    int from_index = from_row * from_rows + from_col; \
+                    int from_index = from_row * from_columns + from_col; \
                     int weight_index = to_kernel_index * from_kernel_size + from_kernel_index; \
 \
                     WEIGHT_OP; \
@@ -141,20 +141,21 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int to_row_start = synapse_data.fully_connected_config.to_row_start; \
     const int to_row_size = synapse_data.fully_connected_config.to_row_size; \
     const int to_col_start = synapse_data.fully_connected_config.to_col_start; \
+    const int to_col_size = synapse_data.fully_connected_config.to_col_size; \
     const int to_kernel_size = synapse_data.fully_connected_config.to_size; \
     EXTRACTIONS; \
  \
     int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_kernel_index < to_kernel_size) { \
         int to_row = (to_kernel_index / to_row_size) + to_row_start; \
-        int to_col = (to_kernel_index % to_row_size) + to_col_start; \
+        int to_col = (to_kernel_index % to_col_size) + to_col_start; \
         int to_index = to_row * to_columns + to_col; \
         int from_kernel_index = 0; \
         NEURON_PRE; \
 \
         for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
             for (int from_col = from_col_start ; from_col < from_col_end ; ++from_col) { \
-                int from_index = from_row * from_rows + from_col; \
+                int from_index = from_row * from_columns + from_col; \
                 int weight_index = from_kernel_index * to_kernel_size + to_kernel_index; \
 \
                 WEIGHT_OP; \

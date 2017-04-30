@@ -560,9 +560,6 @@ void IzhikevichAttributes::set_delays(Connection *conn, float* delays) {
         for (int i = 0 ; i < conn->get_num_weights() ; ++i)
             delays[i] = base_delay;
         return;
-    } else if (base_delay > 0) {
-        ErrorManager::get_instance()->log_error(
-            "Unmyelinated axons cannot have non-zero base delay!");
     }
 
     float velocity = 0.15;
@@ -615,6 +612,7 @@ void IzhikevichAttributes::set_delays(Connection *conn, float* delays) {
         case(CONVERGENT): {
             auto ac = conn->get_config()->get_arborized_config();
             int to_size = conn->to_layer->size;
+            int field_size = ac->row_field_size * ac->column_field_size;
 
             if (ac->row_stride != ac->column_stride
                 or (int(to_spacing / from_spacing) != ac->row_stride))
@@ -640,9 +638,9 @@ void IzhikevichAttributes::set_delays(Connection *conn, float* delays) {
 
                     for (int i = 0 ; i < to_size ; ++i) {
 #ifdef __CUDACC__
-                        delays[f_index + i] = delay;
+                        delays[(f_index * to_size) + i] = delay;
 #else
-                        delays[(i * to_size) + f_index] = delay;
+                        delays[(i * field_size) + f_index] = delay;
 #endif
                     }
                 }

@@ -13,6 +13,7 @@ void WeightConfig::initialize(float* target_matrix,
             auto fc_config = conn->get_config()->get_fully_connected_config();
             clear_diagonal(target_matrix, fc_config->from_size, fc_config->to_size);
         } else if (conn->type == CONVERGENT) {
+            // TODO: Implement me
         }
     }
 }
