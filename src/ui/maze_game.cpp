@@ -24,7 +24,8 @@ MazeGame *MazeGame::get_instance(bool init) {
 }
 
 MazeGame::MazeGame() {
-    this->board_dim = 10;
+    this->input_strength = 5.0;
+    this->board_dim = 3;
     this->ui_dirty = true;
     this->maze_window = new MazeGameWindow(this);
     Frontend::set_window(this->maze_window);
@@ -33,6 +34,7 @@ MazeGame::MazeGame() {
 MazeGame::~MazeGame() {
     input_data["player"].free();
     input_data["goal"].free();
+    input_data["reward"].free();
     input_data["wall_left"].free();
     input_data["wall_right"].free();
     input_data["wall_up"].free();
@@ -42,6 +44,7 @@ MazeGame::~MazeGame() {
 void MazeGame::init() {
     input_data["player"] = Pointer<float>(board_dim*board_dim);
     input_data["goal"] = Pointer<float>(board_dim*board_dim);
+    input_data["reward"] = Pointer<float>(1);
     input_data["wall_left"] = Pointer<float>(board_dim*board_dim);
     input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
     input_data["wall_up"] = Pointer<float>(board_dim*board_dim);
@@ -49,6 +52,7 @@ void MazeGame::init() {
 
     dirty["player"] = true;
     dirty["goal"] = true;
+    dirty["reward"] = true;
     dirty["wall_left"] = true;
     dirty["wall_right"] = true;
     dirty["wall_up"] = true;
@@ -59,8 +63,8 @@ void MazeGame::init() {
     goal_col = player_col = fRand(0.0, board_dim);
     while (goal_row == player_row) goal_row = fRand(0.0, board_dim);
     while (goal_col == player_col) goal_col = fRand(0.0, board_dim);
-    input_data["player"][player_row * board_dim + player_col] = 1.0;
-    input_data["goal"][goal_row * board_dim + goal_col] = 1.0;
+    input_data["player"][player_row * board_dim + player_col] = input_strength;
+    input_data["goal"][goal_row * board_dim + goal_col] = input_strength;
 
     add_player();
     maze_window->set_cell_goal(goal_row, goal_col);
@@ -69,24 +73,41 @@ void MazeGame::init() {
 }
 
 bool MazeGame::is_dirty(std::string params) {
-    return dirty.at(params);
+    try {
+        return dirty.at(params);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized params in maze_game " + params);
+    }
 }
 
 Pointer<float> MazeGame::get_input(std::string params) {
-    dirty[params] = false;
-    return input_data.at(params);
+    try {
+        if (params == "reward") {
+            float reward = input_data[params][0] * 0.95;
+            input_data[params][0] = reward;
+            dirty[params] = reward > 0.1;
+        } else {
+            dirty[params] = false;
+        }
+        return input_data.at(params);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized params in maze_game " + params);
+    }
 }
 
 bool MazeGame::add_input_layer(Layer *layer, std::string params) {
     // Check for duplicates
     try {
+        input_data.at(params);
         auto info = layer_map.at(layer);
         return false;
     } catch (...) { }
 
     // Check layer size
     // Should be the size of the board
-    if (layer->size != (board_dim * board_dim)) return false;
+    if (layer->size != input_data[params].get_size()) return false;
 
     LayerInfo* info = new LayerInfo(layer);
     this->add_layer(layer, info);
@@ -119,7 +140,7 @@ void MazeGame::remove_player() {
 }
 
 void MazeGame::add_player() {
-    input_data["player"][player_row * board_dim + player_col] = 1.0;
+    input_data["player"][player_row * board_dim + player_col] = input_strength;
     maze_window->set_cell_player(player_row, player_col);
     dirty["player"] = true;
     ui_dirty = true;
@@ -128,7 +149,10 @@ void MazeGame::add_player() {
     if (player_row == goal_row and player_col == goal_col) {
         while (goal_row == player_row) goal_row = fRand(0.0, board_dim);
         while (goal_col == player_col) goal_col = fRand(0.0, board_dim);
-        input_data["goal"][goal_row * board_dim + goal_col] = 1.0;
+        input_data["goal"][goal_row * board_dim + goal_col] = input_strength;
+        input_data["reward"][0] = input_strength;
+        dirty["goal"] = true;
+        dirty["reward"] = true;
         maze_window->set_cell_goal(goal_row, goal_col);
     }
 }

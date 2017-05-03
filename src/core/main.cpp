@@ -4,6 +4,9 @@
 #include <ctime>
 #include <string>
 
+#include "model/cortical_region.h"
+#include "model/sensory_cortex.h"
+#include "model/motor_cortex.h"
 #include "model/model.h"
 #include "model/column.h"
 #include "model/weight_config.h"
@@ -107,50 +110,37 @@ void mnist_test() {
 void speech_test() {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = new Structure("speech", SEQUENTIAL);
-    model->add_structure(structure);
 
-    // Input layer
-    structure->add_layer(new LayerConfig("input_layer", RELAY, 1, 41));
+    // Intermediate cortical layers
+    int cortex_rows = 128;
+    int cortex_columns = 64;
+    int num_symbols = 41;
 
-    // Convergent layers
-    structure->connect_layers_matching("input_layer",
-        new LayerConfig("convergent_layer", HEBBIAN_RATE_ENCODING),
-        (new ConnectionConfig(false, 2, 100, CONVERGENT, ADD,
-            new FlatWeightConfig(35)))
-        ->set_arborized_config(new ArborizedConfig(1,1,1,1)));
+    Column *sensory_column = new Column("sensory", cortex_rows, cortex_columns, true);
+    sensory_column->add_lined_up_input(
+        false, num_symbols, "csv_input", "./resources/speech.csv 0 1 0.25");
+    sensory_column->add_module_all("visualizer_output", "");
+    sensory_column->add_module_all("heatmap", "");
+    model->add_structure(sensory_column);
 
-    structure->connect_layers_matching("input_layer",
-        new LayerConfig("convergent_layer_inhibitory", HEBBIAN_RATE_ENCODING),
-        (new ConnectionConfig(false, 0, 100, CONVERGENT, ADD,
-            new FlatWeightConfig(3)))
-        ->set_arborized_config(new ArborizedConfig(1,10,1,1)));
-    structure->connect_layers("convergent_layer_inhibitory",
-        "convergent_layer",
-        new ConnectionConfig(false, 0, 100, ONE_TO_ONE, SUB,
-            new FlatWeightConfig(1)));
+    Column *column1 = new Column("column1", cortex_rows, cortex_columns, true);
+    column1->add_module_all("visualizer_output", "");
+    column1->add_module_all("heatmap", "");
+    model->add_structure(column1);
+
+    Column::connect(
+        sensory_column, column1,
+        "4_pos", "4_pos",
+        100, 5, 5,
+        0.09);
 
     // Modules
-    std::string output_name = "visualizer_output";
+    //structure->add_module("convergent_layer", "csv_output");
 
-    //structure->add_module("input_layer", "random_input", "10 500");
-    //structure->add_module("input_layer", "csv_input",
-    //    "./resources/substitute.csv 0 1 1");
-    //structure->add_module("input_layer", "csv_input",
-    //    "./resources/sample.csv 0 1 1");
-    structure->add_module("input_layer", "csv_input",
-        "./resources/speech.csv 0 1 1");
-
-    structure->add_module("input_layer", output_name);
-    structure->add_module("convergent_layer", output_name);
-    structure->add_module("convergent_layer_inhibitory", output_name);
-
-    structure->add_module("convergent_layer", "csv_output");
-
-    std::cout << "Rate encoding speech test......\n";
+    std::cout << "Speech test......\n";
     print_model(model);
-    Clock clock((float)240.0);
-    //Clock clock(true);
+    //Clock clock(60.0f);
+    Clock clock(true);
     clock.run(model, 1000000, true);
     std::cout << "\n";
 
@@ -196,6 +186,29 @@ void maze_game_test() {
     delete model;
 }
 
+static void print_subset_overlap(Structure *structure) {
+    for (auto layer : structure->get_layers()) {
+        int *grid = (int*) calloc (layer->size, sizeof(int));
+        for (auto conn : layer->get_input_connections()) {
+            if (conn->type == SUBSET) {
+                auto sc = conn->get_config()->get_subset_config();
+                for (int row = sc->to_row_start; row < sc->to_row_end; ++row) {
+                    for (int col = sc->to_col_start; col < sc->to_col_end; ++col) {
+                        ++grid[row * layer->columns + col];
+                    }
+                }
+            }
+        }
+        for (int row = 0; row < layer->rows; ++row) {
+            for (int col = 0; col < layer->columns; ++col) {
+                printf("%d ", grid[row * layer->columns + col]);
+            }
+            printf("\n");
+        }
+        free(grid);
+    }
+}
+
 void symbol_test() {
     /* Construct the model */
     Model *model = new Model();
@@ -225,15 +238,66 @@ void symbol_test() {
         Column::connect(
             prev_column, column,
             "4_pos", "4_pos",
-            10, 10, 10);
+            10, 10, 10,
+            0.09);
         Column::connect(
             column, prev_column,
             "4_pos", "4_pos",
-            10, 10, 10);
+            10, 10, 10,
+            0.09);
         prev_column = column;
     }
 
+    for (auto column : columns)
+        print_subset_overlap(column);
+
     std::cout << "Symbol test......\n";
+    print_model(model);
+    Clock clock(true);
+    //Clock clock(100.0f);
+    //Clock clock(10.0f);
+    clock.run(model, 100000, true);
+    std::cout << "\n";
+
+    delete model;
+}
+
+void cortex_test() {
+    /* Construct the model */
+    Model *model = new Model();
+
+    SensoryCortex *sensory =
+        new SensoryCortex(model, true, 9, 32, 32);
+    CorticalRegion *association =
+        new CorticalRegion(model, "association", true, 1, 64, 64);
+    MotorCortex *motor =
+        new MotorCortex(model, true, 4, 32, 32);
+
+    sensory->add_input("player_input", false, 9, "maze_input", "player");
+    sensory->add_input("goal_input", false, 9, "maze_input", "goal");
+    motor->add_output("motor_output", false, 4, "maze_output");
+
+    sensory->add_module_all("visualizer_output");
+    sensory->add_module_all("heatmap");
+    association->add_module_all("visualizer_output");
+    association->add_module_all("heatmap");
+    motor->add_module_all("visualizer_output");
+    motor->add_module_all("heatmap");
+
+    sensory->connect(association,
+        "5_pos", "4_pos",
+        5, 5, 5, 1.0);
+    motor->connect(association,
+        "5_pos", "4_pos",
+        5, 5, 5, 1.0);
+    association->connect(sensory,
+        "5_pos", "4_pos",
+        5, 5, 5, 1.0);
+    association->connect(motor,
+        "5_pos", "4_pos",
+        5, 5, 5, 1.0);
+
+    std::cout << "Cortex test......\n";
     print_model(model);
     Clock clock(true);
     //Clock clock(100.0f);
@@ -255,7 +319,8 @@ int main(int argc, char *argv[]) {
         //mnist_test();
         //speech_test();
         //maze_game_test();
-        symbol_test();
+        //symbol_test();
+        cortex_test();
 
         return 0;
     } catch (const char* msg) {

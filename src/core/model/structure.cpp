@@ -111,7 +111,7 @@ Connection* Structure::connect_layers_internal(
 void Structure::add_layer(LayerConfig *config) {
     if (find_layer(config->name, false) != nullptr)
         ErrorManager::get_instance()->log_error(
-            "Repeated layer name!");
+            "Repeated layer name: " + config->name);
 
     Layer* layer = new Layer(this, config);
     this->layers.push_back(layer);

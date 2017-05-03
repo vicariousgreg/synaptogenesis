@@ -13,6 +13,7 @@ class MazeOutputModule : public Module {
 
     private:
         MazeGame* maze_game;
+        float threshold;
 };
 
 #endif

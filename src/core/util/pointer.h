@@ -6,6 +6,9 @@
 
 class BasePointer {
     public:
+        int get_size() { return size; }
+        DeviceID get_device_id() { return device_id; }
+
         // Frees the encapsulated pointer if this is the owner
         void free();
 
