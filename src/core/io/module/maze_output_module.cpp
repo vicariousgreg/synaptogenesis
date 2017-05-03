@@ -43,10 +43,12 @@ void MazeOutputModule::report_output(Buffer *buffer, OutputType output_type) {
 
     float max = std::max(up, std::max(down, std::max(left, right)));
     if (max >= threshold) {
-        if (up == max) maze_game->move_up();
-        else if (down == max) maze_game->move_down();
-        else if (left == max) maze_game->move_left();
-        else if (right == max) maze_game->move_right();
-        wait = 10;
+        bool success = false;
+        if (up == max) success = maze_game->move_up();
+        else if (down == max) success = maze_game->move_down();
+        else if (left == max) success = maze_game->move_left();
+        else if (right == max) success = maze_game->move_right();
+        //if (success) wait = 10;
+        wait = 25;
     }
 }

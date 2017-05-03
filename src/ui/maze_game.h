@@ -26,10 +26,10 @@ class MazeGame : public Frontend {
         Pointer<float> get_input(std::string params);
         bool is_dirty(std::string params);
 
-        void move_up();
-        void move_down();
-        void move_left();
-        void move_right();
+        bool move_up();
+        bool move_down();
+        bool move_left();
+        bool move_right();
 
         int get_board_dim() { return board_dim; }
 

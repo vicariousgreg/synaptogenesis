@@ -266,7 +266,7 @@ void cortex_test() {
     /* Construct the model */
     Model *model = new Model();
 
-    int board_dim = 3;
+    int board_dim = 4;
     MazeGame::get_instance(true)->set_board_dim(board_dim);
 
     SensoryCortex *sensory =
@@ -290,10 +290,10 @@ void cortex_test() {
     // Feedforward
     sensory->connect(association,
         "5_pos", "4_pos",
-        1, 5, 5, 1.0);
+        5, 5, 5, 0.25);
     association->connect(motor,
         "5_pos", "4_pos",
-        1, 5, 5, 1.0);
+        5, 5, 5, 0.25);
 
     // Feedback
     /*

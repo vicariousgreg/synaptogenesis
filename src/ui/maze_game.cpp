@@ -176,44 +176,51 @@ void MazeGame::add_player() {
     }
 }
 
-void MazeGame::move_up() {
+bool MazeGame::move_up() {
     ++moves_to_reward;
     if (player_row > 0) {
         ++successful_moves;
         remove_player();
         --player_row;
         add_player();
+        return true;
     }
+    return false;
 }
 
-void MazeGame::move_down() {
+bool MazeGame::move_down() {
     ++moves_to_reward;
     if (player_row < board_dim-1) {
         ++successful_moves;
         remove_player();
         ++player_row;
         add_player();
+        return true;
     }
+    return false;
 }
 
-void MazeGame::move_left() {
+bool MazeGame::move_left() {
     ++moves_to_reward;
     if (player_col > 0) {
         ++successful_moves;
         remove_player();
         --player_col;
         add_player();
+        return true;
     }
 }
 
-void MazeGame::move_right() {
+bool MazeGame::move_right() {
     ++moves_to_reward;
     if (player_col < board_dim-1) {
         ++successful_moves;
         remove_player();
         ++player_col;
         add_player();
+        return true;
     }
+    return false;
 }
 
 void MazeGame::update(Environment *environment) {

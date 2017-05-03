@@ -150,7 +150,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     gabaa_conductances[nid] = 0.0;
     gabab_conductances[nid] = 0.0;
     multiplicative_factors[nid] = 0.0;
-    rewards[nid] *= 0.9;
+    rewards[nid] *= 0.995;
 
     // if (nid == 0 and rewards[nid] > 0.1) printf("%f ", rewards[nid]);
 
@@ -192,9 +192,10 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define GABAA_TAU       0.833  // tau = 6
 #define NMDA_TAU        0.993  // tau = 150
 #define GABAB_TAU       0.993  // tau = 150
+
 #define MULT_TAU        0.95   // tau = 20
 #define REWARD_TAU      0.95   // tau = 20
-#define PLASTIC_TAU     0.933  // tau = 15
+#define PLASTIC_TAU     0.95   // tau = 20
 
 #define U_EXC 0.5
 #define F_EXC 0.001       // 1 / 1000
@@ -205,8 +206,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define D_INH 0.00142857  // 1 / 700
 
 #define U_NULL 1.0
-#define F_NULL 1.0        // 1 / 20
-#define D_NULL 1.0  // 1 / 700
+#define F_NULL 1.0
+#define D_NULL 1.0
 
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS(STP_U, STP_F, STD_D) \
@@ -339,8 +340,8 @@ CALC_ALL(activate_iz_reward,
     INIT_SUM,
 
     CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT
-    CALC_VAL_PLASTIC,
+    CALC_VAL_SHORT,
+    //CALC_VAL_PLASTIC,
 
     AGGREGATE_SHORT
 );
@@ -390,7 +391,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
     float *rewards = att->reward.get(synapse_data.to_start_index); \
     float learning_rate = \
-        att->learning_rate.get()[synapse_data.connection_index]; \
+        att->learning_rate.get()[synapse_data.connection_index];
 
 #define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
@@ -398,9 +399,13 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     float to_power = 0.0; \
     bool dest_spike = extractor(destination_outputs[to_index], 0) > 0.0;
 
+#define BASELINE_DELTA 0.000001
+#define DELTA_RATE     0.0001
+#define MIN_WEIGHT     0.0001
+
 #define UPDATE_WEIGHT \
     float weight = weights[weight_index]; \
-    if (weight >= 0.0001) { \
+    if (weight >= MIN_WEIGHT) { \
         bool src_spike = extractor(outputs[from_index], 0); \
         float delta  = deltas[weight_index]; \
     \
@@ -409,11 +414,15 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     \
         delta += (dest_spike) ? (src_trace  * learning_rate) : 0.0; \
         delta -= (src_spike)  ? (dest_trace * learning_rate) : 0.0; \
-        deltas[weight_index] -= (delta - 0.000001) * 0.0001; \
+        deltas[weight_index] -= (delta - BASELINE_DELTA) * DELTA_RATE; \
         weight += (delta * (1+reward)); \
-        weights[weight_index] = \
-            (weight < 0.0001) ? 0.0001 \
+        weights[weight_index] = weight = \
+            (weight < MIN_WEIGHT) ? MIN_WEIGHT \
                 : (weight > max_weight) ? max_weight : weight; \
+        float change = delta * (1+reward); \
+        if ((change > 0.1 or change < -0.1)) \
+            printf("(%8d w=%7.5f delt=%8.5f rew=%7.4f change=%8.5f)\n", \
+                weight_index, weight, delta, reward, change); \
     }
 
 CALC_ALL(update_iz_add,
@@ -806,7 +815,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         set_weights(mData + 5*num_weights, num_weights, U_NULL);
 
     // Weight Delta
-    set_weights(mData + 6*num_weights, num_weights, 0.000001);
+    set_weights(mData + 6*num_weights, num_weights, BASELINE_DELTA);
 
     // Delays
     set_delays(conn, mData + 7*num_weights);

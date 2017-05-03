@@ -5,7 +5,7 @@
 #define IZ_INIT "init"
 
 /* Global shared variables */
-static std::string learning_rate = "0.04";
+static std::string learning_rate = "0.004";
 static int intercortical_delay = 0;
 static int inh_ratio = 2;
 
