@@ -31,7 +31,7 @@ void SensoryCortex::add_input(std::string input_name,
             base_structure, input_name,
             column, "4_pos",
             (new ConnectionConfig(plastic_input, 0, 1, SUBSET, ADD,
-                new FlatWeightConfig(0.5, 0.09)))
+                new FlatWeightConfig(1.0, 0.09)))
             ->set_subset_config(
                 new SubsetConfig(
                     0, 1,

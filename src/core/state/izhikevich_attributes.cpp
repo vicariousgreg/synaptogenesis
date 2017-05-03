@@ -150,7 +150,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     gabaa_conductances[nid] = 0.0;
     gabab_conductances[nid] = 0.0;
     multiplicative_factors[nid] = 0.0;
-    rewards[nid] *= 0.95;
+    rewards[nid] *= 0.9;
 
     // if (nid == 0 and rewards[nid] > 0.1) printf("%f ", rewards[nid]);
 
@@ -412,7 +412,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         deltas[weight_index] -= (delta - 0.000001) * 0.0001; \
         weight += (delta * (1+reward)); \
         weights[weight_index] = \
-            (weight < 0.0001) ? 0.0 \
+            (weight < 0.0001) ? 0.0001 \
                 : (weight > max_weight) ? max_weight : weight; \
     }
 

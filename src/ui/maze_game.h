@@ -18,6 +18,7 @@ class MazeGame : public Frontend {
         virtual ~MazeGame();
 
         void init();
+        void set_board_dim(int size);
         bool add_input_layer(Layer *layer, std::string params);
         bool add_output_layer(Layer *layer, std::string params);
         void update(Environment *environment);

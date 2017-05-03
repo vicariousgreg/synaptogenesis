@@ -4,7 +4,7 @@
 #include "util/error_manager.h"
 
 MazeOutputModule::MazeOutputModule(Layer *layer, std::string params)
-        : Module(layer), threshold(5), wait(0) {
+        : Module(layer), threshold(3), wait(0) {
     maze_game = MazeGame::get_instance(true);
     if (not maze_game->add_output_layer(layer, params))
         ErrorManager::get_instance()->log_error(
@@ -47,6 +47,6 @@ void MazeOutputModule::report_output(Buffer *buffer, OutputType output_type) {
         else if (down == max) maze_game->move_down();
         else if (left == max) maze_game->move_left();
         else if (right == max) maze_game->move_right();
-        wait = 20;
+        wait = 10;
     }
 }

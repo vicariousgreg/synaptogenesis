@@ -11,6 +11,7 @@ class MazeGameWindow : public GuiWindow {
         virtual ~MazeGameWindow();
 
         void add_layer(LayerInfo *layer_info);
+        void init();
         void update();
 
         void set_cell_clear(int row, int col);

@@ -266,15 +266,18 @@ void cortex_test() {
     /* Construct the model */
     Model *model = new Model();
 
+    int board_dim = 3;
+    MazeGame::get_instance(true)->set_board_dim(board_dim);
+
     SensoryCortex *sensory =
-        new SensoryCortex(model, true, 9, 32, 32);
+        new SensoryCortex(model, true, board_dim*board_dim, 32, 32);
     CorticalRegion *association =
         new CorticalRegion(model, "association", true, 1, 64, 64);
     MotorCortex *motor =
-        new MotorCortex(model, true, 4, 32, 32);
+        new MotorCortex(model, true, 4, 16, 16);
 
-    sensory->add_input("player_input", false, 9, "maze_input", "player");
-    sensory->add_input("goal_input", false, 9, "maze_input", "goal");
+    sensory->add_input("player_input", false, board_dim*board_dim, "maze_input", "player");
+    sensory->add_input("goal_input", false, board_dim*board_dim, "maze_input", "goal");
     motor->add_output("motor_output", false, 4, "maze_output");
 
     sensory->add_module_all("visualizer_output");
@@ -287,10 +290,10 @@ void cortex_test() {
     // Feedforward
     sensory->connect(association,
         "5_pos", "4_pos",
-        5, 5, 5, 1.0);
+        1, 5, 5, 1.0);
     association->connect(motor,
         "5_pos", "4_pos",
-        5, 5, 5, 1.0);
+        1, 5, 5, 1.0);
 
     // Feedback
     /*
@@ -312,7 +315,7 @@ void cortex_test() {
     //brainstem->add_module("dopamine", "print_output", "8");
     model->add_structure(brainstem);
 
-    sensory->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
+    //sensory->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
     association->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
     motor->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
 

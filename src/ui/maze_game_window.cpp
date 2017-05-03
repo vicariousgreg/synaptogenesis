@@ -6,6 +6,9 @@ MazeGameWindow::MazeGameWindow(MazeGame* maze_game)
     grid = new Gtk::Grid();
     this->add(*grid);
     cell_size = 20;
+}
+
+void MazeGameWindow::init() {
     board_dim = maze_game->board_dim;
 
     for (int row = 0; row < board_dim; ++row) {

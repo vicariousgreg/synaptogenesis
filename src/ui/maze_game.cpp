@@ -25,17 +25,9 @@ MazeGame *MazeGame::get_instance(bool init) {
 
 MazeGame::MazeGame() {
     this->input_strength = 5.0;
-    this->board_dim = 3;
+    this->set_board_dim(3);
     this->maze_window = new MazeGameWindow(this);
     Frontend::set_window(this->maze_window);
-
-    input_data["player"] = Pointer<float>(board_dim*board_dim);
-    input_data["goal"] = Pointer<float>(board_dim*board_dim);
-    input_data["reward"] = Pointer<float>(1);
-    input_data["wall_left"] = Pointer<float>(board_dim*board_dim);
-    input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
-    input_data["wall_up"] = Pointer<float>(board_dim*board_dim);
-    input_data["wall_down"] = Pointer<float>(board_dim*board_dim);
 }
 
 MazeGame::~MazeGame() {
@@ -48,7 +40,24 @@ MazeGame::~MazeGame() {
     input_data["wall_down"].free();
 }
 
+void MazeGame::set_board_dim(int size) {
+    this->board_dim = size;
+
+    for (auto pair : input_data) pair.second.free();
+    input_data.clear();
+
+    input_data["player"] = Pointer<float>(board_dim*board_dim);
+    input_data["goal"] = Pointer<float>(board_dim*board_dim);
+    input_data["reward"] = Pointer<float>(1);
+    input_data["wall_left"] = Pointer<float>(board_dim*board_dim);
+    input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
+    input_data["wall_up"] = Pointer<float>(board_dim*board_dim);
+    input_data["wall_down"] = Pointer<float>(board_dim*board_dim);
+}
+
 void MazeGame::init() {
+    this->maze_window->init();
+
     this->iterations = 0;
     this->time_to_reward = 0;
     this->moves_to_reward = 0;

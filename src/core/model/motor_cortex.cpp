@@ -31,7 +31,7 @@ void MotorCortex::add_output(std::string output_name,
             column, "5_pos",
             base_structure, output_name,
             (new ConnectionConfig(plastic_output, 0, 1, SUBSET, ADD,
-            new FlatWeightConfig(0.5, 0.09)))
+            new FlatWeightConfig(0.5, 1.0)))
             ->set_subset_config(
                 new SubsetConfig(
                     0, column_rows,
