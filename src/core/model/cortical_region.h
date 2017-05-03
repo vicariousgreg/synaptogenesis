@@ -17,6 +17,8 @@ class CorticalRegion {
             std::string source_layer, std::string dest_layer,
             int num_tethers, int tether_from_size, int tether_to_size,
             float density);
+        void connect_diffuse(Structure *structure,
+            std::string source_layer, Opcode opcode, float weight);
 
     protected:
         const std::string name;

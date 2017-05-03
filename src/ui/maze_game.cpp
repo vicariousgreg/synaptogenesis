@@ -26,9 +26,16 @@ MazeGame *MazeGame::get_instance(bool init) {
 MazeGame::MazeGame() {
     this->input_strength = 5.0;
     this->board_dim = 3;
-    this->ui_dirty = true;
     this->maze_window = new MazeGameWindow(this);
     Frontend::set_window(this->maze_window);
+
+    input_data["player"] = Pointer<float>(board_dim*board_dim);
+    input_data["goal"] = Pointer<float>(board_dim*board_dim);
+    input_data["reward"] = Pointer<float>(1);
+    input_data["wall_left"] = Pointer<float>(board_dim*board_dim);
+    input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
+    input_data["wall_up"] = Pointer<float>(board_dim*board_dim);
+    input_data["wall_down"] = Pointer<float>(board_dim*board_dim);
 }
 
 MazeGame::~MazeGame() {
@@ -42,13 +49,11 @@ MazeGame::~MazeGame() {
 }
 
 void MazeGame::init() {
-    input_data["player"] = Pointer<float>(board_dim*board_dim);
-    input_data["goal"] = Pointer<float>(board_dim*board_dim);
-    input_data["reward"] = Pointer<float>(1);
-    input_data["wall_left"] = Pointer<float>(board_dim*board_dim);
-    input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
-    input_data["wall_up"] = Pointer<float>(board_dim*board_dim);
-    input_data["wall_down"] = Pointer<float>(board_dim*board_dim);
+    this->iterations = 0;
+    this->time_to_reward = 0;
+    this->moves_to_reward = 0;
+    this->successful_moves = 0;
+    this->ui_dirty = true;
 
     dirty["player"] = true;
     dirty["goal"] = true;
@@ -151,6 +156,11 @@ void MazeGame::add_player() {
         while (goal_col == player_col) goal_col = fRand(0.0, board_dim);
         input_data["goal"][goal_row * board_dim + goal_col] = input_strength;
         input_data["reward"][0] = input_strength;
+        printf("Good job!  %6d iterations, %6d / %6d moves successful\n",
+            time_to_reward, successful_moves, moves_to_reward);
+        time_to_reward = 0;
+        moves_to_reward = 0;
+        successful_moves = 0;
         dirty["goal"] = true;
         dirty["reward"] = true;
         maze_window->set_cell_goal(goal_row, goal_col);
@@ -158,7 +168,9 @@ void MazeGame::add_player() {
 }
 
 void MazeGame::move_up() {
+    ++moves_to_reward;
     if (player_row > 0) {
+        ++successful_moves;
         remove_player();
         --player_row;
         add_player();
@@ -166,7 +178,9 @@ void MazeGame::move_up() {
 }
 
 void MazeGame::move_down() {
+    ++moves_to_reward;
     if (player_row < board_dim-1) {
+        ++successful_moves;
         remove_player();
         ++player_row;
         add_player();
@@ -174,7 +188,9 @@ void MazeGame::move_down() {
 }
 
 void MazeGame::move_left() {
+    ++moves_to_reward;
     if (player_col > 0) {
+        ++successful_moves;
         remove_player();
         --player_col;
         add_player();
@@ -182,7 +198,9 @@ void MazeGame::move_left() {
 }
 
 void MazeGame::move_right() {
+    ++moves_to_reward;
     if (player_col < board_dim-1) {
+        ++successful_moves;
         remove_player();
         ++player_col;
         add_player();
@@ -190,6 +208,8 @@ void MazeGame::move_right() {
 }
 
 void MazeGame::update(Environment *environment) {
+    ++iterations;
+    ++time_to_reward;
     if (ui_dirty) {
         ui_dirty = false;
 

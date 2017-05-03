@@ -52,6 +52,9 @@ class IzhikevichAttributes : public Attributes {
         // Multiplicative factor
         Pointer<float> multiplicative_factor;
 
+        // Reward signal
+        Pointer<float> reward;
+
         // Voltage and recovery variables
         Pointer<float> voltage;
         Pointer<float> recovery;

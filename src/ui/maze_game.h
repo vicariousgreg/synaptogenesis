@@ -41,6 +41,11 @@ class MazeGame : public Frontend {
         void add_player();
         void remove_player();
 
+        int iterations;
+        int time_to_reward;
+        int moves_to_reward;
+        int successful_moves;
+
         float input_strength;
         int board_dim;
         int player_row, player_col;

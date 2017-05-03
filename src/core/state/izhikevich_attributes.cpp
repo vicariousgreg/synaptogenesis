@@ -85,6 +85,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *gabaa_conductances = iz_att->gabaa_conductance.get(other_start_index);
     float *gabab_conductances = iz_att->gabab_conductance.get(other_start_index);
     float *multiplicative_factors = iz_att->multiplicative_factor.get(other_start_index);
+    float *rewards = iz_att->reward.get(other_start_index);
 
     float *voltages = iz_att->voltage.get(other_start_index);
     float *recoveries = iz_att->recovery.get(other_start_index);
@@ -149,6 +150,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     gabaa_conductances[nid] = 0.0;
     gabab_conductances[nid] = 0.0;
     multiplicative_factors[nid] = 0.0;
+    rewards[nid] *= 0.95;
+
+    // if (nid == 0 and rewards[nid] > 0.1) printf("%f ", rewards[nid]);
 
     /********************
      *** SPIKE UPDATE ***
@@ -189,6 +193,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define NMDA_TAU        0.993  // tau = 150
 #define GABAB_TAU       0.993  // tau = 150
 #define MULT_TAU        0.95   // tau = 20
+#define REWARD_TAU      0.95   // tau = 20
 #define PLASTIC_TAU     0.933  // tau = 15
 
 #define U_EXC 0.5
@@ -198,6 +203,10 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define U_INH 0.2
 #define F_INH 0.05        // 1 / 20
 #define D_INH 0.00142857  // 1 / 700
+
+#define U_NULL 1.0
+#define F_NULL 1.0        // 1 / 20
+#define D_NULL 1.0  // 1 / 700
 
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS(STP_U, STP_F, STD_D) \
@@ -321,6 +330,21 @@ CALC_ALL(activate_iz_mult,
     AGGREGATE_SHORT
 );
 
+CALC_ALL(activate_iz_reward,
+    ACTIV_EXTRACTIONS(U_NULL, F_NULL, D_NULL)
+    ACTIV_EXTRACTIONS_SHORT(
+        reward,
+        REWARD_TAU),
+
+    INIT_SUM,
+
+    CALC_VAL_PREAMBLE
+    CALC_VAL_SHORT
+    CALC_VAL_PLASTIC,
+
+    AGGREGATE_SHORT
+);
+
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         Connection *conn, DendriticNode *node) {
     if (node->is_second_order())
@@ -328,21 +352,22 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
             "Unimplemented connection type!");
 
     std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
-    funcs[FULLY_CONNECTED][ADD]  = get_activate_iz_add_fully_connected();
-    funcs[FULLY_CONNECTED][SUB]  = get_activate_iz_sub_fully_connected();
-    funcs[FULLY_CONNECTED][MULT] = get_activate_iz_mult_fully_connected();
-    funcs[SUBSET][ADD]           = get_activate_iz_add_subset();
-    funcs[SUBSET][SUB]           = get_activate_iz_sub_subset();
-    funcs[SUBSET][MULT]          = get_activate_iz_mult_subset();
-    funcs[ONE_TO_ONE][ADD]       = get_activate_iz_add_one_to_one();
-    funcs[ONE_TO_ONE][SUB]       = get_activate_iz_sub_one_to_one();
-    funcs[ONE_TO_ONE][MULT]      = get_activate_iz_mult_one_to_one();
-    funcs[CONVERGENT][ADD]       = get_activate_iz_add_convergent();
-    funcs[CONVERGENT][SUB]       = get_activate_iz_sub_convergent();
-    funcs[CONVERGENT][MULT]      = get_activate_iz_mult_convergent();
-    funcs[DIVERGENT][ADD]        = get_activate_iz_add_divergent();
-    funcs[DIVERGENT][SUB]        = get_activate_iz_sub_divergent();
-    funcs[DIVERGENT][MULT]       = get_activate_iz_mult_divergent();
+    funcs[FULLY_CONNECTED][ADD]    = get_activate_iz_add_fully_connected();
+    funcs[FULLY_CONNECTED][SUB]    = get_activate_iz_sub_fully_connected();
+    funcs[FULLY_CONNECTED][MULT]   = get_activate_iz_mult_fully_connected();
+    funcs[FULLY_CONNECTED][REWARD] = get_activate_iz_reward_fully_connected();
+    funcs[SUBSET][ADD]             = get_activate_iz_add_subset();
+    funcs[SUBSET][SUB]             = get_activate_iz_sub_subset();
+    funcs[SUBSET][MULT]            = get_activate_iz_mult_subset();
+    funcs[ONE_TO_ONE][ADD]         = get_activate_iz_add_one_to_one();
+    funcs[ONE_TO_ONE][SUB]         = get_activate_iz_sub_one_to_one();
+    funcs[ONE_TO_ONE][MULT]        = get_activate_iz_mult_one_to_one();
+    funcs[CONVERGENT][ADD]         = get_activate_iz_add_convergent();
+    funcs[CONVERGENT][SUB]         = get_activate_iz_sub_convergent();
+    funcs[CONVERGENT][MULT]        = get_activate_iz_mult_convergent();
+    funcs[DIVERGENT][ADD]          = get_activate_iz_add_divergent();
+    funcs[DIVERGENT][SUB]          = get_activate_iz_sub_divergent();
+    funcs[DIVERGENT][MULT]         = get_activate_iz_mult_divergent();
 
     try {
         return funcs.at(conn->type).at(conn->opcode);
@@ -363,11 +388,13 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
+    float *rewards = att->reward.get(synapse_data.to_start_index); \
     float learning_rate = \
         att->learning_rate.get()[synapse_data.connection_index]; \
 
 #define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
+    float reward = rewards[to_index]; \
     float to_power = 0.0; \
     bool dest_spike = extractor(destination_outputs[to_index], 0) > 0.0;
 
@@ -383,7 +410,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         delta += (dest_spike) ? (src_trace  * learning_rate) : 0.0; \
         delta -= (src_spike)  ? (dest_trace * learning_rate) : 0.0; \
         deltas[weight_index] -= (delta - 0.000001) * 0.0001; \
-        weight += delta; \
+        weight += (delta * (1+reward)); \
         weights[weight_index] = \
             (weight < 0.0001) ? 0.0 \
                 : (weight > max_weight) ? max_weight : weight; \
@@ -492,11 +519,13 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     this->gabaa_conductance = Pointer<float>(total_neurons);
     this->gabab_conductance = Pointer<float>(total_neurons);
     this->multiplicative_factor = Pointer<float>(total_neurons);
+    this->reward = Pointer<float>(total_neurons);
     Attributes::register_variable(&this->ampa_conductance);
     Attributes::register_variable(&this->nmda_conductance);
     Attributes::register_variable(&this->gabaa_conductance);
     Attributes::register_variable(&this->gabab_conductance);
     Attributes::register_variable(&this->multiplicative_factor);
+    Attributes::register_variable(&this->reward);
 
     // Neuron variables
     this->voltage = Pointer<float>(total_neurons);
@@ -773,6 +802,8 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         set_weights(mData + 5*num_weights, num_weights, U_EXC);
     else if (conn->opcode == SUB)
         set_weights(mData + 5*num_weights, num_weights, U_INH);
+    else
+        set_weights(mData + 5*num_weights, num_weights, U_NULL);
 
     // Weight Delta
     set_weights(mData + 6*num_weights, num_weights, 0.000001);

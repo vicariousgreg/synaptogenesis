@@ -33,3 +33,15 @@ void CorticalRegion::connect(CorticalRegion *other,
                 num_tethers, tether_from_size, tether_to_size,
                 density);
 }
+
+void CorticalRegion::connect_diffuse(Structure *structure,
+        std::string source_layer, Opcode opcode, float weight) {
+    for (auto column : columns)
+        for (auto layer : column->get_layers())
+            Structure::connect(
+                structure, source_layer,
+                column, layer->name,
+                (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, opcode,
+                    new FlatWeightConfig(weight, 1.0)))
+                ->set_property("myelinated", "true"));
+}

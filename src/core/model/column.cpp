@@ -21,13 +21,15 @@ Column::Column(std::string name, int rows, int columns, bool plastic)
               exc_inh_plastic(plastic) {
     /* Cortical Layers */
     //add_neural_field("3a");
+    //add_neural_field("3");
     add_neural_field("4");
     add_neural_field("5");
 
     /* Intracortical Connections */
     // One-Way
+    //connect_fields_one_way("3", "4", 9, 0.1);
     connect_fields_one_way("4", "5", 9, 0.1);
-    connect_fields_one_way("5", "4", 9, 0.1);
+    //connect_fields_one_way("5", "4", 9, 0.1);
 }
 
 void Column::add_input(bool plastic, int num_symbols,

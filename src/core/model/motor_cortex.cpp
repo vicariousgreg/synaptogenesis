@@ -21,7 +21,7 @@ void MotorCortex::add_output(std::string output_name,
 
     base_structure->add_layer(
         (new LayerConfig(output_name, IZHIKEVICH, 1, num_symbols))
-        ->set_property(IZ_INIT, "regular"));
+        ->set_property(IZ_INIT, "bursting"));
     base_structure->add_module(output_name, module_name, module_params);
 
     for (int i = 0 ; i < num_symbols ; ++i) {

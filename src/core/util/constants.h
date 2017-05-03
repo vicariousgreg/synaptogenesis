@@ -81,10 +81,7 @@ typedef enum {
     MULT,
     DIV,
     POOL,
-    AMPA,
-    NMDA,
-    GABAA,
-    GABAB
+    REWARD
 } Opcode;
 
 /* Enumeration of cluster types. */

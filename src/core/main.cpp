@@ -284,18 +284,37 @@ void cortex_test() {
     motor->add_module_all("visualizer_output");
     motor->add_module_all("heatmap");
 
+    // Feedforward
     sensory->connect(association,
-        "5_pos", "4_pos",
-        5, 5, 5, 1.0);
-    motor->connect(association,
-        "5_pos", "4_pos",
-        5, 5, 5, 1.0);
-    association->connect(sensory,
         "5_pos", "4_pos",
         5, 5, 5, 1.0);
     association->connect(motor,
         "5_pos", "4_pos",
         5, 5, 5, 1.0);
+
+    // Feedback
+    /*
+    motor->connect(association,
+        "5_pos", "3_pos",
+        5, 5, 5, 1.0);
+    association->connect(sensory,
+        "5_pos", "3_pos",
+        5, 5, 5, 1.0);
+    */
+
+    // Diffuse dopaminergic input
+    Structure *brainstem = new Structure("brainstem", PARALLEL);
+    brainstem->add_layer(
+        (new LayerConfig("dopamine", IZHIKEVICH, 1, 1))
+        ->set_property(IZ_INIT, "regular"));
+    brainstem->add_module("dopamine", "visualizer_output");
+    brainstem->add_module("dopamine", "maze_input", "reward");
+    //brainstem->add_module("dopamine", "print_output", "8");
+    model->add_structure(brainstem);
+
+    sensory->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
+    association->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
+    motor->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
 
     std::cout << "Cortex test......\n";
     print_model(model);
