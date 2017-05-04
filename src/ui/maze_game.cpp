@@ -34,6 +34,7 @@ MazeGame::~MazeGame() {
     input_data["player"].free();
     input_data["goal"].free();
     input_data["reward"].free();
+    input_data["somatosensory"].free();
     input_data["wall_left"].free();
     input_data["wall_right"].free();
     input_data["wall_up"].free();
@@ -49,6 +50,7 @@ void MazeGame::set_board_dim(int size) {
     input_data["player"] = Pointer<float>(board_dim*board_dim);
     input_data["goal"] = Pointer<float>(board_dim*board_dim);
     input_data["reward"] = Pointer<float>(1);
+    input_data["somatosensory"] = Pointer<float>(4);
     input_data["wall_left"] = Pointer<float>(board_dim*board_dim);
     input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
     input_data["wall_up"] = Pointer<float>(board_dim*board_dim);
@@ -67,6 +69,7 @@ void MazeGame::init() {
     dirty["player"] = true;
     dirty["goal"] = true;
     dirty["reward"] = true;
+    dirty["somatosensory"] = true;
     dirty["wall_left"] = true;
     dirty["wall_right"] = true;
     dirty["wall_up"] = true;
@@ -101,6 +104,14 @@ Pointer<float> MazeGame::get_input(std::string params) {
             float reward = input_data[params][0] * 0.95;
             input_data[params][0] = reward;
             dirty[params] = reward > 0.1;
+        } else if (params == "somatosensory") {
+            dirty[params] = false;
+
+            for (int i = 0 ; i < 4 ; ++i) {
+                float val = input_data[params][i];
+                input_data[params][i] = 0.95 * val;
+                if (val > 0.1) dirty[params] = true;
+            }
         } else {
             dirty[params] = false;
         }
@@ -161,15 +172,22 @@ void MazeGame::add_player() {
 
     // The player has reached the goal, so move it
     if (player_row == goal_row and player_col == goal_col) {
+        // Remove goal
+        input_data["goal"][goal_row * board_dim + goal_col] = 0.0;
+
+        // Place new goal
         while (goal_row == player_row) goal_row = fRand(0.0, board_dim);
         while (goal_col == player_col) goal_col = fRand(0.0, board_dim);
         input_data["goal"][goal_row * board_dim + goal_col] = input_strength;
+
+        // Administer reward
         input_data["reward"][0] = input_strength;
         printf("Good job!  %6d iterations, %6d / %6d moves successful\n",
             time_to_reward, successful_moves, moves_to_reward);
         time_to_reward = 0;
         moves_to_reward = 0;
         successful_moves = 0;
+
         dirty["goal"] = true;
         dirty["reward"] = true;
         maze_window->set_cell_goal(goal_row, goal_col);
@@ -183,6 +201,8 @@ bool MazeGame::move_up() {
         remove_player();
         --player_row;
         add_player();
+        input_data["somatosensory"][0] = input_strength;
+        dirty["somatosensory"] = true;
         return true;
     }
     return false;
@@ -195,6 +215,8 @@ bool MazeGame::move_down() {
         remove_player();
         ++player_row;
         add_player();
+        input_data["somatosensory"][1] = input_strength;
+        dirty["somatosensory"] = true;
         return true;
     }
     return false;
@@ -207,6 +229,8 @@ bool MazeGame::move_left() {
         remove_player();
         --player_col;
         add_player();
+        input_data["somatosensory"][2] = input_strength;
+        dirty["somatosensory"] = true;
         return true;
     }
 }
@@ -218,6 +242,8 @@ bool MazeGame::move_right() {
         remove_player();
         ++player_col;
         add_player();
+        input_data["somatosensory"][3] = input_strength;
+        dirty["somatosensory"] = true;
         return true;
     }
     return false;

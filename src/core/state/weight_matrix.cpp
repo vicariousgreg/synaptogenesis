@@ -105,3 +105,182 @@ WeightMatrix::~WeightMatrix() {
 void WeightMatrix::schedule_transfer() {
     this->mData.schedule_transfer(device_id);
 }
+
+void set_delays(Connection *conn, float* delays, float velocity,
+        float from_spacing, float to_spacing, float x_offset, float y_offset) {
+    int base_delay = conn->delay;
+
+    switch(conn->type) {
+        case(FULLY_CONNECTED):
+        case(SUBSET): {
+            int from_row_start, from_col_start, to_row_start, to_col_start;
+            int from_row_end, from_col_end, to_row_end, to_col_end;
+
+            if (conn->type == FULLY_CONNECTED) {
+                from_row_start = from_col_start = to_row_start = to_col_start = 0;
+                from_row_end = conn->from_layer->rows;
+                from_col_end = conn->from_layer->columns;
+                to_row_end = conn->to_layer->rows;
+                to_col_end = conn->to_layer->columns;
+            } else if (conn->type == SUBSET) {
+                auto sc = conn->get_config()->get_subset_config();
+                from_row_start = sc->from_row_start;
+                from_col_start = sc->from_col_start;
+                to_row_start = sc->to_row_start;
+                to_col_start = sc->to_col_start;
+                from_row_end = sc->from_row_end;
+                from_col_end = sc->from_col_end;
+                to_row_end = sc->to_row_end;
+                to_col_end = sc->to_col_end;
+            }
+
+            int from_columns = conn->from_layer->columns;
+            int weight_index = 0;
+            for (int f_row = from_row_start; f_row < from_row_end; ++f_row) {
+                float f_y = f_row * from_spacing;
+
+                for (int f_col = from_col_start; f_col < from_col_end; ++f_col) {
+                    float f_x = f_col * from_spacing;
+
+                    for (int t_row = to_row_start; t_row < to_row_end; ++t_row) {
+                        float t_y = t_row * to_spacing + y_offset;
+
+                        for (int t_col = to_col_start; t_col < to_col_end; ++t_col) {
+                            float t_x = t_col * to_spacing + x_offset;
+
+                            float distance = pow(
+                                pow(t_x - f_x, 2) + pow(t_y - f_y, 2),
+                                0.5);
+                            int delay = base_delay + (distance / velocity);
+                            if (delay > 31)
+                                ErrorManager::get_instance()->log_error(
+                                    "Unmyelinated axons cannot have delays "
+                                    "greater than 31!");
+                            delays[weight_index] = delay;
+                            ++weight_index;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case(ONE_TO_ONE):
+            for (int i = 0 ; i < conn->get_num_weights() ; ++i)
+                delays[i] = base_delay;
+            break;
+        case(CONVERGENT): {
+            auto ac = conn->get_config()->get_arborized_config();
+            int to_size = conn->to_layer->size;
+            int field_size = ac->row_field_size * ac->column_field_size;
+
+            if (ac->row_stride != ac->column_stride
+                or (int(to_spacing / from_spacing) != ac->row_stride))
+                ErrorManager::get_instance()->log_error(
+                    "Spacing and strides must match up for convergent connection!");
+
+            for (int f_row = 0; f_row < ac->row_field_size; ++f_row) {
+                float f_y = (f_row + ac->row_offset) * to_spacing;
+
+                for (int f_col = 0; f_col < ac->column_field_size; ++f_col) {
+                    float f_x = (f_col + ac->column_offset) * to_spacing;
+
+                    float distance = pow(
+                        pow(f_x, 2) + pow(f_y, 2),
+                        0.5);
+                    int delay = base_delay + (distance / velocity);
+                    if (delay > 31)
+                        ErrorManager::get_instance()->log_error(
+                            "Unmyelinated axons cannot have delays "
+                            "greater than 31!");
+
+                    int f_index = (f_row * ac->column_field_size) + f_col;
+
+                    for (int i = 0 ; i < to_size ; ++i) {
+#ifdef __CUDACC__
+                        delays[(f_index * to_size) + i] = delay;
+#else
+                        delays[(i * field_size) + f_index] = delay;
+#endif
+                    }
+                }
+            }
+            break;
+        }
+        case(DIVERGENT): {
+            auto ac = conn->get_config()->get_arborized_config();
+            int num_weights = conn->get_num_weights();
+            int to_rows = conn->to_layer->rows;
+            int to_columns = conn->to_layer->columns;
+            int to_size = conn->to_layer->size;
+            int from_rows = conn->from_layer->rows;
+            int from_columns = conn->from_layer->columns;
+
+            if (ac->row_stride != ac->column_stride
+                or (int(from_spacing / to_spacing) != ac->row_stride))
+                ErrorManager::get_instance()->log_error(
+                    "Spacing and strides must match up for divergent connection!");
+
+
+            int row_field_size = ac->row_field_size;
+            int column_field_size = ac->column_field_size;
+            int row_stride = ac->row_stride;
+            int column_stride = ac->column_stride;
+            int row_offset = ac->row_offset;
+            int column_offset = ac->column_offset;
+            int kernel_size = row_field_size * column_field_size;
+
+            for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
+                for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
+                    int to_index = d_row*to_columns + d_col;
+
+                    /* Determine range of source neurons for divergent kernel */
+                    int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride;
+                    int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride;
+                    int end_s_row = (d_row - row_offset) / row_stride;
+                    int end_s_col = (d_col - column_offset) / column_stride;
+
+                    // SERIAL
+                    int weight_offset = to_index * num_weights / to_size;
+                    // PARALLEL
+                    int kernel_row_size = num_weights / to_size;
+
+                    /* Iterate over relevant source neurons... */
+                    int k_index = 0;
+                    for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
+                        for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) {
+                            /* Avoid making connections with non-existent neurons! */
+                            if (s_row < 0 or s_row >= from_rows
+                                or s_col < 0 or s_col >= from_columns)
+                                continue;
+
+                            int from_index = (s_row * from_columns) + s_col;
+
+                            float d_x = abs(
+                                ((d_row + ac->row_offset) * to_spacing)
+                                - (s_row * from_spacing));
+                            float d_y = abs(
+                                ((d_col + ac->column_offset) * to_spacing)
+                                - (s_col * from_spacing));
+
+                            float distance = pow(
+                                pow(d_x, 2) + pow(d_y, 2),
+                                0.5);
+                            int delay = base_delay + (distance / velocity);
+                            if (delay > 31)
+                                ErrorManager::get_instance()->log_error(
+                                    "Unmyelinated axons cannot have delays "
+                                    "greater than 31!");
+#ifdef __CUDACC__
+                            int weight_index = to_index + (k_index * kernel_row_size);
+#else
+                            int weight_index = weight_offset + k_index;
+#endif
+                            delays[weight_index] = delay;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+    }
+}

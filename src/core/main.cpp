@@ -4,6 +4,7 @@
 #include <ctime>
 #include <string>
 
+#include "model/maze_cortex.h"
 #include "model/cortical_region.h"
 #include "model/sensory_cortex.h"
 #include "model/motor_cortex.h"
@@ -150,36 +151,16 @@ void speech_test() {
 void maze_game_test() {
     /* Construct the model */
     Model *model = new Model();
-    Structure *structure = new Structure("maze_game");
-    model->add_structure(structure);
+    int board_dim = 4;
+    MazeGame::get_instance(true)->set_board_dim(board_dim);
 
-    int board_size = MazeGame::get_instance(true)->get_board_dim();
-
-    structure->add_layer(new LayerConfig("player_layer",
-        RELAY, board_size, board_size));
-    structure->add_layer(new LayerConfig("goal_layer",
-        RELAY, board_size, board_size));
-
-    structure->add_layer(new LayerConfig("movement_layer", RELAY, 1, 4));
-
-    // Modules
-    std::string output_name = "visualizer_output";
-    //std::string output_name = "print_output";
-    //std::string output_name = "dummy_output";
-
-    structure->add_module("player_layer", "maze_input", "player");
-    structure->add_module("goal_layer", "maze_input", "goal");
-    structure->add_module("movement_layer", "one_hot_random_input", "1 1");
-    structure->add_module("movement_layer", "maze_output");
-
-    structure->add_module("player_layer", output_name, "8");
-    structure->add_module("goal_layer", output_name, "8");
-    structure->add_module("movement_layer", output_name, "8");
+    MazeCortex *maze_cortex = new MazeCortex(model, board_dim, 16);
+    maze_cortex->add_module_all("visualizer_output", "");
+    maze_cortex->add_module_all("heatmap", "");
 
     std::cout << "Maze game test......\n";
     print_model(model);
-    Clock clock((float)3.0);
-    //Clock clock(true);
+    Clock clock(true);
     clock.run(model, 1000000, true);
     std::cout << "\n";
 
@@ -269,38 +250,52 @@ void cortex_test() {
     int board_dim = 4;
     MazeGame::get_instance(true)->set_board_dim(board_dim);
 
-    SensoryCortex *sensory =
-        new SensoryCortex(model, true, board_dim*board_dim, 32, 32);
+    SensoryCortex *visual =
+        new SensoryCortex(model, "visual", true, board_dim*board_dim, 16, 16);
+    SensoryCortex *somatosensory =
+        new SensoryCortex(model, "somatosensory", true, 4, 16, 16);
     CorticalRegion *association =
-        new CorticalRegion(model, "association", true, 1, 64, 64);
+        new CorticalRegion(model, "association", true, 1, 32, 32);
     MotorCortex *motor =
-        new MotorCortex(model, true, 4, 16, 16);
+        new MotorCortex(model, "motor", true, 4, 16, 16);
 
-    sensory->add_input("player_input", false, board_dim*board_dim, "maze_input", "player");
-    sensory->add_input("goal_input", false, board_dim*board_dim, "maze_input", "goal");
+    visual->add_input("player_input", false, board_dim*board_dim, "maze_input", "player");
+    visual->add_input("goal_input", false, board_dim*board_dim, "maze_input", "goal");
+    somatosensory->add_input("somatosensory_input", false, 4, "maze_input", "somatosensory");
     motor->add_output("motor_output", false, 4, "maze_output");
 
-    sensory->add_module_all("visualizer_output");
-    sensory->add_module_all("heatmap");
+    visual->add_module_all("visualizer_output");
+    visual->add_module_all("heatmap");
+    somatosensory->add_module_all("visualizer_output");
+    somatosensory->add_module_all("heatmap");
     association->add_module_all("visualizer_output");
     association->add_module_all("heatmap");
     motor->add_module_all("visualizer_output");
     motor->add_module_all("heatmap");
 
     // Feedforward
-    sensory->connect(association,
-        "5_pos", "4_pos",
-        5, 5, 5, 0.25);
+    visual->connect(association,
+        "4_pos", "4_pos",
+        1, 16, 32, 0.1);
+    somatosensory->connect(association,
+        "4_pos", "4_pos",
+        1, 16, 32, 0.1);
     association->connect(motor,
-        "5_pos", "4_pos",
-        5, 5, 5, 0.25);
+        "4_pos", "4_pos",
+        1, 32, 16, 0.1);
+
+    /*
+    association->self_connect(
+        "4_pos", "4_pos",
+        1, 16, 16, 0.05);
+    */
 
     // Feedback
     /*
     motor->connect(association,
         "5_pos", "3_pos",
         5, 5, 5, 1.0);
-    association->connect(sensory,
+    association->connect(visual,
         "5_pos", "3_pos",
         5, 5, 5, 1.0);
     */
@@ -311,13 +306,14 @@ void cortex_test() {
         (new LayerConfig("dopamine", IZHIKEVICH, 1, 1))
         ->set_property(IZ_INIT, "regular"));
     brainstem->add_module("dopamine", "visualizer_output");
+    brainstem->add_module("dopamine", "heatmap");
     brainstem->add_module("dopamine", "maze_input", "reward");
     //brainstem->add_module("dopamine", "print_output", "8");
     model->add_structure(brainstem);
 
-    //sensory->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
-    association->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
-    motor->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
+    //visual->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
+    association->connect_diffuse(brainstem, "dopamine", REWARD, 0.1);
+    motor->connect_diffuse(brainstem, "dopamine", REWARD, 0.1);
 
     std::cout << "Cortex test......\n";
     print_model(model);
@@ -340,9 +336,9 @@ int main(int argc, char *argv[]) {
     try {
         //mnist_test();
         //speech_test();
-        //maze_game_test();
+        maze_game_test();
         //symbol_test();
-        cortex_test();
+        //cortex_test();
 
         return 0;
     } catch (const char* msg) {

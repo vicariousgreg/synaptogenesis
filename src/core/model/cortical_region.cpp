@@ -25,13 +25,31 @@ void CorticalRegion::add_module_all(std::string type, std::string params) {
 void CorticalRegion::connect(CorticalRegion *other,
         std::string source_layer, std::string dest_layer,
         int num_tethers, int tether_from_size, int tether_to_size,
+        float density, bool all_to_all) {
+    for (int i = 0 ; i < columns.size(); ++i) {
+        auto src_column = columns[i];
+        for (int j = 0 ; j < other->columns.size(); ++j) {
+            auto dest_column = other->columns[j];
+            if (all_to_all or i == j)
+                Column::connect(src_column, dest_column,
+                    source_layer, dest_layer,
+                    num_tethers, tether_from_size, tether_to_size,
+                    density);
+        }
+    }
+}
+
+void CorticalRegion::self_connect(
+        std::string source_layer, std::string dest_layer,
+        int num_tethers, int tether_from_size, int tether_to_size,
         float density) {
     for (auto src_column : columns)
-        for (auto dest_column : other->columns)
-            Column::connect(src_column, dest_column,
-                source_layer, dest_layer,
-                num_tethers, tether_from_size, tether_to_size,
-                density);
+        for (auto dest_column : columns)
+            if (src_column != dest_column)
+                Column::connect(src_column, dest_column,
+                    source_layer, dest_layer,
+                    num_tethers, tether_from_size, tether_to_size,
+                    density);
 }
 
 void CorticalRegion::connect_diffuse(Structure *structure,
@@ -42,6 +60,6 @@ void CorticalRegion::connect_diffuse(Structure *structure,
                 structure, source_layer,
                 column, layer->name,
                 (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, opcode,
-                    new FlatWeightConfig(weight, 1.0)))
+                    new GaussianWeightConfig(weight, 0.01, 1.0)))
                 ->set_property("myelinated", "true"));
 }

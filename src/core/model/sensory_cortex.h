@@ -5,7 +5,7 @@
 
 class SensoryCortex : public CorticalRegion {
     public:
-        SensoryCortex(Model *model,
+        SensoryCortex(Model *model, std::string name,
             bool plastic, int num_columns,
             int column_rows, int column_cols);
 

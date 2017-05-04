@@ -5,10 +5,10 @@
 #define RELAY "relay"
 #define IZ_INIT "init"
 
-MotorCortex::MotorCortex(Model *model,
+MotorCortex::MotorCortex(Model *model, std::string name,
     bool plastic, int num_columns,
     int column_rows, int column_cols)
-        : CorticalRegion(model, "motor cortex", plastic,
+        : CorticalRegion(model, name, plastic,
               num_columns, column_rows, column_cols) {
 }
 
@@ -21,17 +21,17 @@ void MotorCortex::add_output(std::string output_name,
 
     base_structure->add_layer(
         (new LayerConfig(output_name, IZHIKEVICH, 1, num_symbols))
-        ->set_property(IZ_INIT, "bursting"));
+        ->set_property(IZ_INIT, "regular"));
     base_structure->add_module(output_name, module_name, module_params);
 
     for (int i = 0 ; i < num_symbols ; ++i) {
         Column *column = columns[i];
 
         Structure::connect(
-            column, "5_pos",
+            column, "4_pos",
             base_structure, output_name,
             (new ConnectionConfig(plastic_output, 0, 1, SUBSET, ADD,
-            new FlatWeightConfig(0.5, 1.0)))
+            new FlatWeightConfig(0.1, 0.1)))
             ->set_subset_config(
                 new SubsetConfig(
                     0, column_rows,

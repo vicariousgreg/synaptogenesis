@@ -5,10 +5,10 @@
 #define RELAY "relay"
 #define IZ_INIT "init"
 
-SensoryCortex::SensoryCortex(Model *model,
+SensoryCortex::SensoryCortex(Model *model, std::string name,
     bool plastic, int num_columns,
     int column_rows, int column_cols)
-        : CorticalRegion(model, "sensory cortex", plastic,
+        : CorticalRegion(model, name, plastic,
               num_columns, column_rows, column_cols) {
 }
 
@@ -31,7 +31,7 @@ void SensoryCortex::add_input(std::string input_name,
             base_structure, input_name,
             column, "4_pos",
             (new ConnectionConfig(plastic_input, 0, 1, SUBSET, ADD,
-                new FlatWeightConfig(1.0, 0.09)))
+                new GaussianWeightConfig(1.0, 0.1, 0.09)))
             ->set_subset_config(
                 new SubsetConfig(
                     0, 1,

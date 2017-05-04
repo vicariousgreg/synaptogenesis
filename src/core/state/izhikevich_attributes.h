@@ -65,9 +65,6 @@ class IzhikevichAttributes : public Attributes {
         // Neuron parameters
         Pointer<IzhikevichParameters> neuron_parameters;
 
-    private:
-        void set_delays(Connection *conn, float *delays);
-
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };

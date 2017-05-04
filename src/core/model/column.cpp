@@ -23,12 +23,12 @@ Column::Column(std::string name, int rows, int columns, bool plastic)
     //add_neural_field("3a");
     //add_neural_field("3");
     add_neural_field("4");
-    add_neural_field("5");
+    //add_neural_field("5");
 
     /* Intracortical Connections */
     // One-Way
     //connect_fields_one_way("3", "4", 9, 0.1);
-    connect_fields_one_way("4", "5", 9, 0.1);
+    //connect_fields_one_way("4", "5", 9, 0.1);
     //connect_fields_one_way("5", "4", 9, 0.1);
 }
 
@@ -147,7 +147,7 @@ void Column::add_neural_field(std::string field_name) {
             ->set_property("spacing", "0.18"));
 
     // Excitatory self connections
-    int self_spread = 29;
+    int self_spread = 15;
     connect_layers(field_name + "_pos", field_name + "_pos",
         (new ConnectionConfig(
             exc_plastic, 1, 0.5, CONVERGENT, ADD,
@@ -172,7 +172,7 @@ void Column::add_neural_field(std::string field_name) {
     connect_layers(field_name + "_neg", field_name + "_pos",
         (new ConnectionConfig(
             false, 0, 0.5, DIVERGENT, SUB,
-            new FlatWeightConfig(1.0, 0.09)))
+            new FlatWeightConfig(1.0, 0.5)))
         ->set_arborized_config(
             new ArborizedConfig(inh_exc_spread, inh_ratio, -inh_exc_spread/2))
         ->set_property("learning rate", learning_rate));

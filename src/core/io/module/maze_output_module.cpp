@@ -4,7 +4,7 @@
 #include "util/error_manager.h"
 
 MazeOutputModule::MazeOutputModule(Layer *layer, std::string params)
-        : Module(layer), threshold(3), wait(0) {
+        : Module(layer), threshold(1), wait(0) {
     maze_game = MazeGame::get_instance(true);
     if (not maze_game->add_output_layer(layer, params))
         ErrorManager::get_instance()->log_error(
@@ -13,7 +13,7 @@ MazeOutputModule::MazeOutputModule(Layer *layer, std::string params)
 
 static float convert_spikes(unsigned int spikes) {
     int count = 0;
-    for (int i = 0; i < 8; ++i)
+    for (int i = 0; i < 31; ++i)
         if (spikes & (1 << (32 - i))) ++count;
     return count;
 }
@@ -48,7 +48,7 @@ void MazeOutputModule::report_output(Buffer *buffer, OutputType output_type) {
         else if (down == max) success = maze_game->move_down();
         else if (left == max) success = maze_game->move_left();
         else if (right == max) success = maze_game->move_right();
-        //if (success) wait = 10;
-        wait = 25;
+        if (success) wait = 10;
+        //wait = 10;
     }
 }

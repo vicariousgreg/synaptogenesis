@@ -5,7 +5,8 @@
 
 class MotorCortex : public CorticalRegion {
     public:
-        MotorCortex(Model *model, bool plastic, int num_columns,
+        MotorCortex(Model *model, std::string name,
+            bool plastic, int num_columns,
             int column_rows, int column_cols);
 
         void add_output(std::string output_name,
