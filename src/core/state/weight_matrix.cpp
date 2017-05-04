@@ -106,8 +106,13 @@ void WeightMatrix::schedule_transfer() {
     this->mData.schedule_transfer(device_id);
 }
 
-void set_delays(Connection *conn, float* delays, float velocity,
-        float from_spacing, float to_spacing, float x_offset, float y_offset) {
+void set_delays(OutputType output_type, Connection *conn,
+        float* delays, float velocity,
+        float from_spacing, float to_spacing,
+        float x_offset, float y_offset) {
+    if (output_type != BIT)
+        ErrorManager::get_instance()->log_error(
+            "Only BIT output connections can have variable delays!");
     int base_delay = conn->delay;
 
     switch(conn->type) {

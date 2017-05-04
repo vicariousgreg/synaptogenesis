@@ -630,7 +630,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         for (int i = 0 ; i < conn->get_num_weights() ; ++i)
             delays[i] = conn->delay;
     else
-        set_delays(conn, delays, 0.15,
+        set_delays(BIT, conn, delays, 0.15,
             std::stof(extract_parameter(conn->from_layer, "spacing", "0.09")),
             std::stof(extract_parameter(conn->to_layer, "spacing", "0.09")),
             std::stof(extract_parameter(conn, "x offset", "0.0")),
