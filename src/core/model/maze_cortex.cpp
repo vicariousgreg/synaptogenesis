@@ -58,10 +58,12 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
                 ->set_property("x offset", std::to_string(offset))
                 ->set_property("y offset", std::to_string(offset))
                 ->set_property("learning rate", learning_rate));
+            /*
             printf("(%d %d, %d %d) => (%d, %d)\n",
                 (i * cortex_size / 2), ((i+1) * cortex_size / 2),
                 (j * cortex_size / 2), ((j+1) * cortex_size / 2),
                 i, j);
+            */
         }
     }
 
@@ -81,6 +83,8 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, REWARD,
             new FlatWeightConfig(1.0, 1.0)))
         ->set_property("myelinated", "true"));
+    /*
+    */
 
     model->add_structure(this);
 }
@@ -99,7 +103,7 @@ void MazeCortex::add_cortical_layer(std::string name) {
             ->set_property("spacing", "0.2"));
 
     // Excitatory self connections
-    int self_spread = 32;
+    int self_spread = 31;
     connect_layers(name + "_pos", name + "_pos",
         (new ConnectionConfig(
             true, 2, 0.5, CONVERGENT, ADD,
@@ -185,16 +189,16 @@ void MazeCortex::add_input_random(std::string layer, std::string input_name,
 
     // Add num_tethers tethers for each symbol
     for (int i = 0 ; i < board_dim*board_dim ; ++i) {
-        printf("Tethers for symbol %d\n", i);
+        //printf("Tethers for symbol %d\n", i);
         for (int j = 0 ; j < num_tethers ; ++j) {
             int start_to_row = fRand(to_row_range);
             int start_to_col = fRand(to_col_range);
-            printf("    (%4d, %4d)\n", start_to_row, start_to_col);
+            //printf("    (%4d, %4d)\n", start_to_row, start_to_col);
 
             connect_layers(input_name, layer,
                 //(new ConnectionConfig(false, 0, 1, SUBSET, ADD,
                 (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-                new FlatWeightConfig(1.0, 0.1)))
+                new FlatWeightConfig(0.5, 0.01)))
                 ->set_subset_config(
                     new SubsetConfig(
                         0, 1,

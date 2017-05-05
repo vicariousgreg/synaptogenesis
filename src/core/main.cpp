@@ -151,7 +151,7 @@ void speech_test() {
 void maze_game_test() {
     /* Construct the model */
     Model *model = new Model();
-    int board_dim = 4;
+    int board_dim = 5;
     MazeGame::get_instance(true)->set_board_dim(board_dim);
 
     MazeCortex *maze_cortex = new MazeCortex(model, board_dim, 16);
@@ -161,7 +161,9 @@ void maze_game_test() {
     std::cout << "Maze game test......\n";
     print_model(model);
     Clock clock(true);
+    //Clock clock(10.0f);
     clock.run(model, 1000000, true);
+    //clock.run(model, 100, true);
     std::cout << "\n";
 
     delete model;
