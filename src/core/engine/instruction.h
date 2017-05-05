@@ -36,12 +36,8 @@ class Instruction {
         void synchronize() { if (event != nullptr) event->synchronize(); }
 
         void add_dependency(Instruction *inst) {
-            Event* other_event = inst->event;
-            if (other_event == nullptr) {
-                inst->add_event();
-                other_event = inst->event;
-            }
-            this->dependencies.push_back(other_event);
+            inst->add_event();
+            this->dependencies.push_back(inst->event);
         }
 
         Layer* const to_layer;
@@ -88,10 +84,12 @@ class InterDeviceInstruction : public Instruction {
         }
 
         void transfer() {
-            // Wait for child's dependencies
+            // Wait for dependencies and child's dependencies
             // Dependencies should be the same for all instructions
             //   with the same src-dst pair
+            wait_for_dependencies();
             for (auto& dep : child->dependencies) stream->wait(dep);
+
             // Perform transfer
             src.copy_to(dst, stream);
             // Record event for children

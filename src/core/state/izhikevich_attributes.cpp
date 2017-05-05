@@ -180,9 +180,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
 
     // Update trace, voltage, recovery
-    postsyn_traces[nid] = (postsyn_traces[nid] * TRACE_TAU) + ((spike) ? 0.1 : 0.0);
+    postsyn_traces[nid] = (postsyn_traces[nid] * TRACE_TAU) + (spike * 0.1);
     voltages[nid] = (spike) ? params[nid].c : voltage;
-    recoveries[nid] = recovery + ((spike) ? params[nid].d : 0.0);
+    recoveries[nid] = recovery + (spike * params[nid].d);
 )
 
 /******************************************************************************/
@@ -242,7 +242,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
 // Weight Operation
 #define CALC_VAL_PREAMBLE \
-    bool spike = extractor(outputs[from_index], delays[weight_index]) > 0.0; \
+    float spike = extractor(outputs[from_index], delays[weight_index]); \
 \
     float std    = stds[weight_index]; \
     float stp    = stps[weight_index]; \
@@ -250,23 +250,23 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
 #define CALC_VAL_SHORT \
     float short_trace = short_traces[weight_index] \
-        + (spike ? (weight * baseline_conductance) : 0); \
+        + (spike * weight * baseline_conductance); \
     short_sum += short_trace; \
     short_traces[weight_index] = short_trace * short_tau;
 
 #define CALC_VAL_LONG \
     float long_trace = long_traces[weight_index] \
-        + (spike ? (weight * baseline_conductance) : 0); \
+        + (spike * weight * baseline_conductance); \
     long_sum += long_trace; \
     long_traces[weight_index] = long_trace * long_tau;
 
 #define CALC_VAL_PLASTIC \
     stds[weight_index] += \
         ((1 - std) * std_d) \
-        - ((spike) ? (std * stp) : 0); \
+        - (spike * std * stp); \
     stps[weight_index] += \
         ((stp_u - stp) * stp_f) \
-        + ((spike) ? (stp_u * (1 - stp)) : 0);
+        + (spike * stp_u * (1 - stp)); \
 
 // Neuron Post Operation
 #define AGGREGATE_SHORT \
@@ -398,7 +398,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     float dest_trace = to_traces[to_index]; \
     float reward = rewards[to_index]; \
     float to_power = 0.0; \
-    bool dest_spike = extractor(destination_outputs[to_index], 0) > 0.0;
+    float dest_spike = extractor(destination_outputs[to_index], 0);
 
 #define MIN_WEIGHT 0.0001
 #define DELTA_TAU 0.999
@@ -406,19 +406,21 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 #define UPDATE_WEIGHT \
     float weight = weights[weight_index]; \
     if (weight >= MIN_WEIGHT) { \
-        bool src_spike = extractor(outputs[from_index], 0); \
+        float src_spike = extractor(outputs[from_index], 0); \
         float delta  = deltas[weight_index]; \
     \
-        float src_trace = (presyn_traces[weight_index] * PLASTIC_TAU) + ((src_spike) ? 0.1 : 0.0); \
+        float src_trace = (presyn_traces[weight_index] * PLASTIC_TAU) + (src_spike * 0.1); \
         presyn_traces[weight_index] = src_trace; \
     \
-        delta += (dest_spike) ? src_trace  : 0.0; \
-        delta -= (src_spike)  ? dest_trace : 0.0; \
+        delta += dest_spike * src_trace; \
+        delta -= src_spike  * dest_trace; \
         deltas[weight_index] -= delta * DELTA_TAU; \
         weight += learning_rate * (delta * (1.0+reward)); \
-        weights[weight_index] = weight = \
+        /* weights[weight_index] = weight = \
             (weight < MIN_WEIGHT) ? MIN_WEIGHT \
-                : (weight > max_weight) ? max_weight : weight; \
+                : (weight > max_weight) ? max_weight : weight; */ \
+        weights[weight_index] = weight = \
+            MAX(MIN_WEIGHT, MIN(max_weight, weight)); \
         /* float change = learning_rate * delta * (1.0+reward); \
         if ((change > 0.1 or change < -0.1)) \
             printf("(%8d w=%7.5f delt=%8.5f rew=%7.4f change=%8.5f)\n", \
@@ -631,8 +633,8 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
             delays[i] = conn->delay;
     else
         set_delays(BIT, conn, delays, 0.15,
-            std::stof(extract_parameter(conn->from_layer, "spacing", "0.09")),
-            std::stof(extract_parameter(conn->to_layer, "spacing", "0.09")),
+            std::stof(extract_parameter(conn->from_layer, "spacing", "0.1")),
+            std::stof(extract_parameter(conn->to_layer, "spacing", "0.1")),
             std::stof(extract_parameter(conn, "x offset", "0.0")),
             std::stof(extract_parameter(conn, "y offset", "0.0")));
 }

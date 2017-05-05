@@ -180,7 +180,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
  \
     int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_kernel_index < to_kernel_size) { \
-        int to_row = (to_kernel_index / to_row_size) + to_row_start; \
+        int to_row = (to_kernel_index / to_col_size) + to_row_start; \
         int to_col = (to_kernel_index % to_col_size) + to_col_start; \
         int to_index = to_row * to_columns + to_col; \
         int from_kernel_index = 0; \
@@ -415,7 +415,6 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         /* Kernels are organized into columns
            One kernel per source neuron */ \
         int kernel_size = row_field_size * column_field_size; \
-        int kernel_row_size = num_weights / to_size; \
 \
         /* Iterate over relevant source neurons... */ \
         int k_index = 0; \
@@ -430,7 +429,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 /* Row of matrix is the kernel index * row size (see above)
                    Column of matrix is the index of the source neuron */ \
-                int weight_index = to_index + (k_index * kernel_row_size); \
+                int weight_index = to_index + (k_index * to_size); \
                 WEIGHT_OP; \
             } \
         } \

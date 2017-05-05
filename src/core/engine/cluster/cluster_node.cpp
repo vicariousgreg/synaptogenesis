@@ -59,10 +59,15 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     dendrite_DFS(to_layer->dendritic_root);
 
     // Add output transfer instruction
-    if (this->is_output)
+    if (this->is_output) {
         this->output_instruction =
             new OutputTransferInstruction(
                 to_layer, state, environment, io_stream);
+
+        // Ensure output and state instructions depend on one another
+        output_instruction->add_dependency(state_update_instruction);
+        state_update_instruction->add_dependency(output_instruction);
+    }
 }
 
 ClusterNode::~ClusterNode() {
