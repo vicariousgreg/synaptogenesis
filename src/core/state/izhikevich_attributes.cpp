@@ -71,12 +71,16 @@ static IzhikevichParameters create_parameters(std::string str) {
 
 /* Euler resolution for voltage update. */
 #define IZ_EULER_RES 10
+#define IZ_EULER_RES_INV 0.1
 
 /* Milliseconds per timestep */
 #define IZ_TIMESTEP_MS 1
 
 /* Time dynamics of postsynaptic spikes */
 #define TRACE_TAU 0.95  // 20
+
+/* Time dynamics of dopamine */
+#define REWARD_TAU 0.95  // 20
 
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
@@ -136,14 +140,14 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         // Update voltage
         float delta_v = (0.04 * voltage * voltage) +
                         (5*voltage) + 140 - recovery + current;
-        voltage += delta_v / IZ_EULER_RES;
+        voltage += delta_v * IZ_EULER_RES_INV;
 
         // If the voltage explodes (voltage == NaN -> voltage != voltage),
         //   set it to threshold before it corrupts the recovery variable
         voltage = (voltage != voltage) ? IZ_SPIKE_THRESH : voltage;
 
         // Update recovery variable
-        recovery += a * ((b * voltage) - recovery) / IZ_EULER_RES;
+        recovery += a * ((b * voltage) - recovery) * IZ_EULER_RES_INV;
     }
 
     ampa_conductances[nid] = 0.0;
@@ -151,7 +155,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     gabaa_conductances[nid] = 0.0;
     gabab_conductances[nid] = 0.0;
     multiplicative_factors[nid] = 0.0;
-    rewards[nid] *= 0.995;
+    rewards[nid] *= REWARD_TAU;
 
     // if (nid == 0 and rewards[nid] > 0.1) printf("%f ", rewards[nid]);
 
@@ -402,6 +406,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 
 #define MIN_WEIGHT 0.0001
 #define DELTA_TAU 0.999
+//#define DELTA_TAU 0.99
 
 #define UPDATE_WEIGHT \
     float weight = weights[weight_index]; \
@@ -414,7 +419,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     \
         delta += dest_spike * src_trace; \
         delta -= src_spike  * dest_trace; \
-        deltas[weight_index] -= delta * DELTA_TAU; \
+        deltas[weight_index] = delta * DELTA_TAU; \
         weight += learning_rate * (delta * (1.0+reward)); \
         /* weights[weight_index] = weight = \
             (weight < MIN_WEIGHT) ? MIN_WEIGHT \
