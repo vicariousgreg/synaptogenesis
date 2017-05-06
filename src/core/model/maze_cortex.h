@@ -16,8 +16,9 @@ class MazeCortex : public Structure {
         int cell_size;
         int cortex_size;
 
-        void add_cortical_layer(std::string name);
-        void connect_one_way(std::string name1, std::string name2);
+        void add_cortical_layer(std::string name, int size_fraction=1);
+        void connect_one_way(std::string name1, std::string name2,
+            int spread, float fraction, int delay=0, int stride=1);
         void add_input_grid(std::string layer, std::string input_name,
             std::string module_name, std::string module_params);
         void add_input_random(std::string layer, std::string input_name,
