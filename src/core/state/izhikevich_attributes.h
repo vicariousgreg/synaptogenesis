@@ -28,7 +28,7 @@ class IzhikevichAttributes : public Attributes {
              Presynaptic trace
              Short Term Depression
              Short Term Potentiation
-             Weight Delta
+             Long term eligibility trace
              Delay
             */
             return 8;
@@ -41,6 +41,9 @@ class IzhikevichAttributes : public Attributes {
 
         // Learning rate
         Pointer<float> learning_rate;
+
+        // Short term plasticity flag
+        Pointer<int> stp_flag;
 
         /* Neuron Attributes */
         // Conductances for different ion channels

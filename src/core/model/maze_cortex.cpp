@@ -8,7 +8,8 @@ const std::string learning_rate = "0.004";
 
 MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
         : Structure("Maze Cortex", PARALLEL),
-          board_dim(board_dim), cortex_size(board_dim*cell_size) {
+          board_dim(board_dim), cell_size(cell_size),
+          cortex_size(board_dim*cell_size) {
     this->add_cortical_layer("3b");
 
     // Layer V projecting
@@ -16,7 +17,7 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
     add_layer((new LayerConfig("5p_pos",
         IZHIKEVICH, 2, 2))
             ->set_property("spacing", std::to_string(v_spacing))
-            ->set_property(IZ_INIT, "regular"));
+            ->set_property(IZ_INIT, "bursting"));
     /*
     add_layer((new LayerConfig("5p_neg",
         IZHIKEVICH, 1, 1))
@@ -75,13 +76,13 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
     // Dopamine
     add_layer(
         (new LayerConfig("dopamine", IZHIKEVICH, 1, 1))
-        ->set_property(IZ_INIT, "regular"));
+        ->set_property(IZ_INIT, "bursting"));
     add_module("dopamine", "maze_input", "reward");
     connect_layers(
         "dopamine",
         "3b_pos",
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, REWARD,
-            new FlatWeightConfig(1.0, 1.0)))
+            new FlatWeightConfig(0.1, 1.0)))
         ->set_property("myelinated", "true"));
     /*
     */
@@ -149,7 +150,7 @@ void MazeCortex::add_input_grid(std::string layer, std::string input_name,
         std::string module_name, std::string module_params) {
     add_layer(
         (new LayerConfig(input_name, IZHIKEVICH, 1, board_dim*board_dim))
-        ->set_property(IZ_INIT, "regular"));
+        ->set_property(IZ_INIT, "bursting"));
     add_module(input_name, module_name, module_params);
 
     int spread = cortex_size / board_dim;
@@ -178,11 +179,11 @@ void MazeCortex::add_input_random(std::string layer, std::string input_name,
     // Input layer
     add_layer(
         (new LayerConfig(input_name, IZHIKEVICH, 1, board_dim*board_dim))
-        ->set_property(IZ_INIT, "regular"));
+        ->set_property(IZ_INIT, "bursting"));
     add_module(input_name, module_name, module_params);
 
-    int num_tethers = 1; // 3;
-    int spread = 32;
+    int num_tethers = 3;
+    int spread = cell_size * 1.5;
 
     int to_row_range = cortex_size - spread;
     int to_col_range = cortex_size - spread;
@@ -196,16 +197,18 @@ void MazeCortex::add_input_random(std::string layer, std::string input_name,
             //printf("    (%4d, %4d)\n", start_to_row, start_to_col);
 
             connect_layers(input_name, layer,
-                //(new ConnectionConfig(false, 0, 1, SUBSET, ADD,
-                (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
-                new FlatWeightConfig(0.5, 0.01)))
+                (new ConnectionConfig(false, 0, 1, SUBSET, ADD,
+                //(new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+                //new FlatWeightConfig(0.5, 0.1)))
+                new GaussianWeightConfig(0.5, 0.05, 0.1)))
                 ->set_subset_config(
                     new SubsetConfig(
                         0, 1,
                         i, i+1,
                         start_to_row, start_to_row + spread,
                         start_to_col, start_to_col + spread))
-                ->set_property("myelinated", "true"));
+                ->set_property("myelinated", "true")
+                ->set_property("short term plasticity", "false"));
         }
     }
 }

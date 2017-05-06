@@ -80,7 +80,10 @@ static IzhikevichParameters create_parameters(std::string str) {
 #define TRACE_TAU 0.95  // 20
 
 /* Time dynamics of dopamine */
-#define REWARD_TAU 0.95  // 20
+#define REWARD_TAU 0.995  // 200
+
+/* STDP A constant */
+#define STDP_A 1.0
 
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
@@ -157,8 +160,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     multiplicative_factors[nid] = 0.0;
     rewards[nid] *= REWARD_TAU;
 
-    // if (nid == 0 and rewards[nid] > 0.1) printf("%f ", rewards[nid]);
-
     /********************
      *** SPIKE UPDATE ***
      ********************/
@@ -184,7 +185,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
 
     // Update trace, voltage, recovery
-    postsyn_traces[nid] = (postsyn_traces[nid] * TRACE_TAU) + (spike * 0.1);
+    postsyn_traces[nid] =
+        (postsyn_traces[nid] * TRACE_TAU)
+        + (spike * STDP_A);
     voltages[nid] = (spike) ? params[nid].c : voltage;
     recoveries[nid] = recovery + (spike * params[nid].d);
 )
@@ -202,32 +205,25 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define REWARD_TAU      0.95   // tau = 20
 #define PLASTIC_TAU     0.95   // tau = 20
 
-#define U_EXC 0.5
-#define F_EXC 0.001       // 1 / 1000
-#define D_EXC 0.00125     // 1 / 800
+#define U_DEPRESS 0.5
+#define F_DEPRESS 0.001       // 1 / 1000
+#define D_DEPRESS 0.00125     // 1 / 800
 
-#define U_INH 0.2
-#define F_INH 0.05        // 1 / 20
-#define D_INH 0.00142857  // 1 / 700
-
-#define U_NULL 1.0
-#define F_NULL 1.0
-#define D_NULL 1.0
+#define U_POTENTIATE 0.2
+#define F_POTENTIATE 0.05     // 1 / 20
+#define D_POTENTIATE 0.001429 // 1 / 700
 
 // Extraction at start of kernel
-#define ACTIV_EXTRACTIONS(STP_U, STP_F, STD_D) \
+#define ACTIV_EXTRACTIONS \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     float baseline_conductance = \
         att->baseline_conductance.get()[synapse_data.connection_index]; \
-    float *delays = weights + (7*num_weights); \
+    bool stp_flag = att->stp_flag.get()[synapse_data.connection_index]; \
 \
-    float *stds = weights + (4*num_weights); \
-    float *stps = weights + (5*num_weights); \
-\
-    float stp_u = STP_U; \
-    float stp_f = STP_F; \
-    float std_d = STD_D;
+    float *stds   = weights + (4*num_weights); \
+    float *stps   = weights + (5*num_weights); \
+    float *delays = weights + (7*num_weights);
 
 #define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
     float *short_conductances = att->SHORT_NAME.get(synapse_data.to_start_index); \
@@ -264,13 +260,15 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     long_sum += long_trace; \
     long_traces[weight_index] = long_trace * long_tau;
 
-#define CALC_VAL_PLASTIC \
-    stds[weight_index] += \
-        ((1 - std) * std_d) \
-        - (spike * std * stp); \
-    stps[weight_index] += \
-        ((stp_u - stp) * stp_f) \
-        + (spike * stp_u * (1 - stp)); \
+#define CALC_VAL_PLASTIC(STP_U, STP_F, STD_D) \
+    if (stp_flag) { \
+        stds[weight_index] += \
+            ((1 - std) * STD_D) \
+            - (spike * std * stp); \
+        stps[weight_index] += \
+            ((STP_U - stp) * STP_F) \
+            + (spike * STP_U * (1 - stp)); \
+    }
 
 // Neuron Post Operation
 #define AGGREGATE_SHORT \
@@ -282,7 +280,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
 /* Trace versions of activator functions */
 CALC_ALL(activate_iz_add,
-    ACTIV_EXTRACTIONS(U_EXC, F_EXC, D_EXC)
+    ACTIV_EXTRACTIONS
     ACTIV_EXTRACTIONS_SHORT(
         ampa_conductance,
         AMPA_TAU)
@@ -295,14 +293,14 @@ CALC_ALL(activate_iz_add,
     CALC_VAL_PREAMBLE
     CALC_VAL_SHORT
     CALC_VAL_LONG
-    CALC_VAL_PLASTIC,
+    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
 
     AGGREGATE_SHORT
     AGGREGATE_LONG
 );
 
 CALC_ALL(activate_iz_sub,
-    ACTIV_EXTRACTIONS(U_INH, F_INH, D_INH)
+    ACTIV_EXTRACTIONS
     ACTIV_EXTRACTIONS_SHORT(
         gabaa_conductance,
         GABAA_TAU)
@@ -315,14 +313,14 @@ CALC_ALL(activate_iz_sub,
     CALC_VAL_PREAMBLE
     CALC_VAL_SHORT
     CALC_VAL_LONG
-    CALC_VAL_PLASTIC,
+    CALC_VAL_PLASTIC(U_POTENTIATE, F_POTENTIATE, D_POTENTIATE),
 
     AGGREGATE_SHORT
     AGGREGATE_LONG
 );
 
 CALC_ALL(activate_iz_mult,
-    ACTIV_EXTRACTIONS(U_EXC, F_EXC, D_EXC)
+    ACTIV_EXTRACTIONS
     ACTIV_EXTRACTIONS_SHORT(
         multiplicative_factor,
         MULT_TAU),
@@ -331,13 +329,13 @@ CALC_ALL(activate_iz_mult,
 
     CALC_VAL_PREAMBLE
     CALC_VAL_SHORT
-    CALC_VAL_PLASTIC,
+    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
 
     AGGREGATE_SHORT
 );
 
 CALC_ALL(activate_iz_reward,
-    ACTIV_EXTRACTIONS(U_NULL, F_NULL, D_NULL)
+    ACTIV_EXTRACTIONS
     ACTIV_EXTRACTIONS_SHORT(
         reward,
         REWARD_TAU),
@@ -345,8 +343,8 @@ CALC_ALL(activate_iz_reward,
     INIT_SUM,
 
     CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT,
-    //CALC_VAL_PLASTIC,
+    CALC_VAL_SHORT
+    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
 
     AGGREGATE_SHORT
 );
@@ -389,7 +387,8 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 
 #define UPDATE_EXTRACTIONS \
     float *presyn_traces = weights + (3*num_weights); \
-    float *deltas        = weights + (6*num_weights); \
+    float *eligibilities = weights + (6*num_weights); \
+    float *delays        = weights + (7*num_weights); \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
@@ -401,35 +400,53 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 #define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
     float reward = rewards[to_index]; \
-    float to_power = 0.0; \
     float dest_spike = extractor(destination_outputs[to_index], 0);
 
+/* Minimum weight */
 #define MIN_WEIGHT 0.0001
-#define DELTA_TAU 0.999
-//#define DELTA_TAU 0.99
+
+/* Time dynamics for long term eligibility trace */
+#define C_TAU 0.999
 
 #define UPDATE_WEIGHT \
     float weight = weights[weight_index]; \
+\
     if (weight >= MIN_WEIGHT) { \
-        float src_spike = extractor(outputs[from_index], 0); \
-        float delta  = deltas[weight_index]; \
+        /* Extract postsynaptic trace */ \
+        float src_spike = extractor(outputs[from_index], delays[weight_index]); \
     \
-        float src_trace = (presyn_traces[weight_index] * PLASTIC_TAU) + (src_spike * 0.1); \
-        presyn_traces[weight_index] = src_trace; \
+        /* Update presynaptic trace */ \
+        float src_trace = \
+            presyn_traces[weight_index] = \
+                (presyn_traces[weight_index] * PLASTIC_TAU) \
+                + (src_spike * STDP_A); \
     \
-        delta += dest_spike * src_trace; \
-        delta -= src_spike  * dest_trace; \
-        deltas[weight_index] = delta * DELTA_TAU; \
-        weight += learning_rate * (delta * (1.0+reward)); \
-        /* weights[weight_index] = weight = \
-            (weight < MIN_WEIGHT) ? MIN_WEIGHT \
-                : (weight > max_weight) ? max_weight : weight; */ \
+        /* Compute delta from short term dynamics */ \
+        float weight_delta = \
+                (dest_spike * src_trace) \
+                - (src_spike  * dest_trace); \
+\
+        /* Update eligibility trace */ \
+        float c = \
+            eligibilities[weight_index] = \
+                (eligibilities[weight_index] * C_TAU) \
+                + weight_delta; \
+\
+        /* Add reward driven long term changes */ \
+        weight_delta += c * reward; \
+\
+        /* Calculate new weight */ \
+        weight += learning_rate * weight_delta; \
+\
+        /* Ensure weight stays within boundaries */ \
         weights[weight_index] = weight = \
             MAX(MIN_WEIGHT, MIN(max_weight, weight)); \
-        /* float change = learning_rate * delta * (1.0+reward); \
-        if ((change > 0.1 or change < -0.1)) \
-            printf("(%8d w=%7.5f delt=%8.5f rew=%7.4f change=%8.5f)\n", \
-                weight_index, weight, delta, reward, change); */ \
+\
+        /*
+        float change = learning_rate * weight_delta; \
+        if (change > 0.05 or change < -0.05) \
+            printf("(%8d w=%7.5f delt=%8.5f c=%9.4f rew=%7.4f change=%8.5f)\n", \
+                weight_index, weight, weight_delta, c, reward, change); */ \
     }
 
 CALC_ALL(update_iz_add,
@@ -507,6 +524,7 @@ static void check_parameters(Connection *conn) {
     valid_params.insert("myelinated");
     valid_params.insert("x offset");
     valid_params.insert("y offset");
+    valid_params.insert("short term plasticity");
 
     for (auto pair : conn->get_config()->get_properties())
         if (valid_params.count(pair.first) == 0)
@@ -528,6 +546,10 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     // Learning rate
     this->learning_rate = Pointer<float>(num_connections);
     Attributes::register_variable(&this->learning_rate);
+
+    // Short term plasticity flag
+    this->stp_flag = Pointer<int>(num_connections);
+    Attributes::register_variable(&this->stp_flag);
 
     // Conductances
     this->ampa_conductance = Pointer<float>(total_neurons);
@@ -597,6 +619,10 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
             // Retrieve learning rate
             learning_rate[connection_indices[conn->id]] =
                 std::stof(extract_parameter(conn, "learning rate", "0.004"));
+
+            // Retrieve short term plasticity flag
+            stp_flag[connection_indices[conn->id]] =
+                extract_parameter(conn, "short term plasticity", "true") == "true";
         }
     }
 }
@@ -620,14 +646,21 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     set_weights(mData + 4*num_weights, num_weights, 1.0);
 
     // Short Term Potentiation
-    if (conn->opcode == ADD)
-        set_weights(mData + 5*num_weights, num_weights, U_EXC);
-    else if (conn->opcode == SUB)
-        set_weights(mData + 5*num_weights, num_weights, U_INH);
+    if (stp_flag[connection_indices[conn->id]])
+        set_weights(mData + 5*num_weights, num_weights, 1.0);
     else
-        set_weights(mData + 5*num_weights, num_weights, U_NULL);
+        switch(conn->opcode) {
+            case(ADD):
+            case(MULT):
+            case(REWARD):
+                set_weights(mData + 5*num_weights, num_weights, U_DEPRESS);
+                break;
+            case(SUB):
+                set_weights(mData + 5*num_weights, num_weights, U_POTENTIATE);
+                break;
+        }
 
-    // Weight Delta
+    // Long term eligibiity trace
     set_weights(mData + 6*num_weights, num_weights, 0.0);
 
     // Delays

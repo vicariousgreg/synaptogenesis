@@ -13,6 +13,7 @@ class MazeCortex : public Structure {
 
     protected:
         int board_dim;
+        int cell_size;
         int cortex_size;
 
         void add_cortical_layer(std::string name);

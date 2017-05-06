@@ -59,11 +59,6 @@ void MazeGame::set_board_dim(int size) {
 
 void MazeGame::init() {
     this->maze_window->init();
-
-    this->iterations = 0;
-    this->time_to_reward = 0;
-    this->moves_to_reward = 0;
-    this->successful_moves = 0;
     this->ui_dirty = true;
 
     dirty["player"] = true;
@@ -78,10 +73,9 @@ void MazeGame::init() {
     // Set up player and goal
     goal_row = player_row = fRand(0.0, board_dim);
     goal_col = player_col = fRand(0.0, board_dim);
-    while (goal_row == player_row) goal_row = fRand(0.0, board_dim);
-    while (goal_col == player_col) goal_col = fRand(0.0, board_dim);
     input_data["player"][player_row * board_dim + player_col] = input_strength;
-    input_data["goal"][goal_row * board_dim + goal_col] = input_strength;
+
+    reset_goal();
 
     add_player();
     maze_window->set_cell_goal(goal_row, goal_col);
@@ -157,6 +151,34 @@ bool MazeGame::add_output_layer(Layer *layer, std::string params) {
     return true;
 }
 
+void MazeGame::reset_goal() {
+    // Remove goal
+    input_data["goal"][goal_row * board_dim + goal_col] = 0.0;
+
+    // Place new goal
+    while (goal_row == player_row) goal_row = fRand(0.0, board_dim);
+    while (goal_col == player_col) goal_col = fRand(0.0, board_dim);
+    input_data["goal"][goal_row * board_dim + goal_col] = input_strength;
+
+    time_to_reward = 0;
+    moves_to_reward = 0;
+    successful_moves = 0;
+    min_moves = abs(goal_row - player_row) + abs(goal_col - player_col);
+
+    ui_dirty = true;
+    dirty["goal"] = true;
+    dirty["reward"] = true;
+    maze_window->set_cell_goal(goal_row, goal_col);
+}
+
+void MazeGame::administer_reward() {
+    input_data["reward"][0] = input_strength;
+    printf("Good job!  %6d iterations, %6d / %6d moves successful"
+           "     Minimum moves: %2d (%6.4f efficiency)\n",
+        time_to_reward, successful_moves, moves_to_reward,
+        min_moves, (float)min_moves / moves_to_reward);
+}
+
 void MazeGame::remove_player() {
     input_data["player"][player_row * board_dim + player_col] = 0.0;
     maze_window->set_cell_clear(player_row, player_col);
@@ -172,25 +194,8 @@ void MazeGame::add_player() {
 
     // The player has reached the goal, so move it
     if (player_row == goal_row and player_col == goal_col) {
-        // Remove goal
-        input_data["goal"][goal_row * board_dim + goal_col] = 0.0;
-
-        // Place new goal
-        while (goal_row == player_row) goal_row = fRand(0.0, board_dim);
-        while (goal_col == player_col) goal_col = fRand(0.0, board_dim);
-        input_data["goal"][goal_row * board_dim + goal_col] = input_strength;
-
-        // Administer reward
-        input_data["reward"][0] = input_strength;
-        printf("Good job!  %6d iterations, %6d / %6d moves successful\n",
-            time_to_reward, successful_moves, moves_to_reward);
-        time_to_reward = 0;
-        moves_to_reward = 0;
-        successful_moves = 0;
-
-        dirty["goal"] = true;
-        dirty["reward"] = true;
-        maze_window->set_cell_goal(goal_row, goal_col);
+        administer_reward();
+        reset_goal();
     }
 }
 
