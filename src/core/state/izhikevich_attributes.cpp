@@ -80,7 +80,10 @@ static IzhikevichParameters create_parameters(std::string str) {
 #define TRACE_TAU 0.95  // 20
 
 /* Time dynamics of dopamine */
-#define REWARD_TAU 0.995  // 200
+#define DOPAMINE_CLEAR_TAU 0.95  // 20
+
+/* Time dynamics of acetylcholine */
+#define ACETYLCHOLINE_CLEAR_TAU 0.95  // 20
 
 /* STDP A constant */
 #define STDP_A 1.0
@@ -93,7 +96,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *gabaa_conductances = iz_att->gabaa_conductance.get(other_start_index);
     float *gabab_conductances = iz_att->gabab_conductance.get(other_start_index);
     float *multiplicative_factors = iz_att->multiplicative_factor.get(other_start_index);
-    float *rewards = iz_att->reward.get(other_start_index);
+    float *dopamines = iz_att->dopamine.get(other_start_index);
+    float *acetylcholines = iz_att->acetylcholine.get(other_start_index);
 
     float *voltages = iz_att->voltage.get(other_start_index);
     float *recoveries = iz_att->recovery.get(other_start_index);
@@ -153,12 +157,18 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         recovery += a * ((b * voltage) - recovery) * IZ_EULER_RES_INV;
     }
 
+    /*
+    if (nid == 0 and (acetylcholines[nid] > 0.1 or dopamines[nid] > 0.1))
+        printf("(%f  %f)\n", acetylcholines[nid], dopamines[nid]);
+    */
+
     ampa_conductances[nid] = 0.0;
     nmda_conductances[nid] = 0.0;
     gabaa_conductances[nid] = 0.0;
     gabab_conductances[nid] = 0.0;
     multiplicative_factors[nid] = 0.0;
-    rewards[nid] *= REWARD_TAU;
+    dopamines[nid] *= DOPAMINE_CLEAR_TAU;
+    acetylcholines[nid] *= ACETYLCHOLINE_CLEAR_TAU;
 
     /********************
      *** SPIKE UPDATE ***
@@ -185,9 +195,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
 
     // Update trace, voltage, recovery
-    postsyn_traces[nid] =
-        (postsyn_traces[nid] * TRACE_TAU)
-        + (spike * STDP_A);
+    postsyn_traces[nid] = (spike) ? STDP_A : (postsyn_traces[nid] * TRACE_TAU);
     voltages[nid] = (spike) ? params[nid].c : voltage;
     recoveries[nid] = recovery + (spike * params[nid].d);
 )
@@ -196,14 +204,15 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 /************************* TRACE ACTIVATOR KERNELS ****************************/
 /******************************************************************************/
 
-#define AMPA_TAU        0.8    // tau = 5
-#define GABAA_TAU       0.833  // tau = 6
-#define NMDA_TAU        0.993  // tau = 150
-#define GABAB_TAU       0.993  // tau = 150
+#define AMPA_TAU          0.8    // tau = 5
+#define GABAA_TAU         0.833  // tau = 6
+#define NMDA_TAU          0.993  // tau = 150
+#define GABAB_TAU         0.993  // tau = 150
 
-#define MULT_TAU        0.95   // tau = 20
-#define REWARD_TAU      0.95   // tau = 20
-#define PLASTIC_TAU     0.95   // tau = 20
+#define MULT_TAU          0.95   // tau = 20
+#define DOPAMINE_TAU      0.95   // tau = 20
+#define ACETYLCHOLINE_TAU 0.95   // tau = 20
+#define PLASTIC_TAU       0.95   // tau = 20
 
 #define U_DEPRESS 0.5
 #define F_DEPRESS 0.001       // 1 / 1000
@@ -337,8 +346,23 @@ CALC_ALL(activate_iz_mult,
 CALC_ALL(activate_iz_reward,
     ACTIV_EXTRACTIONS
     ACTIV_EXTRACTIONS_SHORT(
-        reward,
-        REWARD_TAU),
+        dopamine,
+        DOPAMINE_TAU),
+
+    INIT_SUM,
+
+    CALC_VAL_PREAMBLE
+    CALC_VAL_SHORT
+    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
+
+    AGGREGATE_SHORT
+);
+
+CALC_ALL(activate_iz_modulate,
+    ACTIV_EXTRACTIONS
+    ACTIV_EXTRACTIONS_SHORT(
+        acetylcholine,
+        ACETYLCHOLINE_TAU),
 
     INIT_SUM,
 
@@ -356,22 +380,23 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
             "Unimplemented connection type!");
 
     std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
-    funcs[FULLY_CONNECTED][ADD]    = get_activate_iz_add_fully_connected();
-    funcs[FULLY_CONNECTED][SUB]    = get_activate_iz_sub_fully_connected();
-    funcs[FULLY_CONNECTED][MULT]   = get_activate_iz_mult_fully_connected();
-    funcs[FULLY_CONNECTED][REWARD] = get_activate_iz_reward_fully_connected();
-    funcs[SUBSET][ADD]             = get_activate_iz_add_subset();
-    funcs[SUBSET][SUB]             = get_activate_iz_sub_subset();
-    funcs[SUBSET][MULT]            = get_activate_iz_mult_subset();
-    funcs[ONE_TO_ONE][ADD]         = get_activate_iz_add_one_to_one();
-    funcs[ONE_TO_ONE][SUB]         = get_activate_iz_sub_one_to_one();
-    funcs[ONE_TO_ONE][MULT]        = get_activate_iz_mult_one_to_one();
-    funcs[CONVERGENT][ADD]         = get_activate_iz_add_convergent();
-    funcs[CONVERGENT][SUB]         = get_activate_iz_sub_convergent();
-    funcs[CONVERGENT][MULT]        = get_activate_iz_mult_convergent();
-    funcs[DIVERGENT][ADD]          = get_activate_iz_add_divergent();
-    funcs[DIVERGENT][SUB]          = get_activate_iz_sub_divergent();
-    funcs[DIVERGENT][MULT]         = get_activate_iz_mult_divergent();
+    funcs[FULLY_CONNECTED][ADD]      = get_activate_iz_add_fully_connected();
+    funcs[FULLY_CONNECTED][SUB]      = get_activate_iz_sub_fully_connected();
+    funcs[FULLY_CONNECTED][MULT]     = get_activate_iz_mult_fully_connected();
+    funcs[FULLY_CONNECTED][REWARD]   = get_activate_iz_reward_fully_connected();
+    funcs[FULLY_CONNECTED][MODULATE] = get_activate_iz_modulate_fully_connected();
+    funcs[SUBSET][ADD]               = get_activate_iz_add_subset();
+    funcs[SUBSET][SUB]               = get_activate_iz_sub_subset();
+    funcs[SUBSET][MULT]              = get_activate_iz_mult_subset();
+    funcs[ONE_TO_ONE][ADD]           = get_activate_iz_add_one_to_one();
+    funcs[ONE_TO_ONE][SUB]           = get_activate_iz_sub_one_to_one();
+    funcs[ONE_TO_ONE][MULT]          = get_activate_iz_mult_one_to_one();
+    funcs[CONVERGENT][ADD]           = get_activate_iz_add_convergent();
+    funcs[CONVERGENT][SUB]           = get_activate_iz_sub_convergent();
+    funcs[CONVERGENT][MULT]          = get_activate_iz_mult_convergent();
+    funcs[DIVERGENT][ADD]            = get_activate_iz_add_divergent();
+    funcs[DIVERGENT][SUB]            = get_activate_iz_sub_divergent();
+    funcs[DIVERGENT][MULT]           = get_activate_iz_mult_divergent();
 
     try {
         return funcs.at(conn->type).at(conn->opcode);
@@ -393,20 +418,22 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
     float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
-    float *rewards = att->reward.get(synapse_data.to_start_index); \
+    float *dopamines = att->dopamine.get(synapse_data.to_start_index); \
+    float *acetylcholines = att->acetylcholine.get(synapse_data.to_start_index); \
     float learning_rate = \
         att->learning_rate.get()[synapse_data.connection_index];
 
 #define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
-    float reward = rewards[to_index]; \
+    float dopamine = dopamines[to_index]; \
+    float acetylcholine = acetylcholines[to_index]; \
     float dest_spike = extractor(destination_outputs[to_index], 0);
 
 /* Minimum weight */
 #define MIN_WEIGHT 0.0001
 
 /* Time dynamics for long term eligibility trace */
-#define C_TAU 0.999
+#define C_TAU 0.99
 
 #define UPDATE_WEIGHT \
     float weight = weights[weight_index]; \
@@ -418,8 +445,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         /* Update presynaptic trace */ \
         float src_trace = \
             presyn_traces[weight_index] = \
-                (presyn_traces[weight_index] * PLASTIC_TAU) \
-                + (src_spike * STDP_A); \
+                (src_spike > 0.0) \
+                    ? STDP_A \
+                    : (presyn_traces[weight_index] * PLASTIC_TAU); \
     \
         /* Compute delta from short term dynamics */ \
         float weight_delta = \
@@ -432,8 +460,11 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
                 (eligibilities[weight_index] * C_TAU) \
                 + weight_delta; \
 \
-        /* Add reward driven long term changes */ \
-        weight_delta += c * reward; \
+        /* Add dopamine driven long term changes */ \
+        weight_delta += c * dopamine; \
+\
+        /* Add acetylcholine driven short term changes */ \
+        weight_delta += c * acetylcholine; \
 \
         /* Calculate new weight */ \
         weight += learning_rate * weight_delta; \
@@ -446,7 +477,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
         float change = learning_rate * weight_delta; \
         if (change > 0.05 or change < -0.05) \
             printf("(%8d w=%7.5f delt=%8.5f c=%9.4f rew=%7.4f change=%8.5f)\n", \
-                weight_index, weight, weight_delta, c, reward, change); */ \
+                weight_index, weight, weight_delta, c, dopamine, change); */ \
     }
 
 CALC_ALL(update_iz_add,
@@ -557,13 +588,15 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     this->gabaa_conductance = Pointer<float>(total_neurons);
     this->gabab_conductance = Pointer<float>(total_neurons);
     this->multiplicative_factor = Pointer<float>(total_neurons);
-    this->reward = Pointer<float>(total_neurons);
+    this->dopamine = Pointer<float>(total_neurons);
+    this->acetylcholine = Pointer<float>(total_neurons);
     Attributes::register_variable(&this->ampa_conductance);
     Attributes::register_variable(&this->nmda_conductance);
     Attributes::register_variable(&this->gabaa_conductance);
     Attributes::register_variable(&this->gabab_conductance);
     Attributes::register_variable(&this->multiplicative_factor);
-    Attributes::register_variable(&this->reward);
+    Attributes::register_variable(&this->dopamine);
+    Attributes::register_variable(&this->acetylcholine);
 
     // Neuron variables
     this->voltage = Pointer<float>(total_neurons);
@@ -653,6 +686,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
             case(ADD):
             case(MULT):
             case(REWARD):
+            case(MODULATE):
                 set_weights(mData + 5*num_weights, num_weights, U_DEPRESS);
                 break;
             case(SUB):

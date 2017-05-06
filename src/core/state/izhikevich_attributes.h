@@ -56,7 +56,10 @@ class IzhikevichAttributes : public Attributes {
         Pointer<float> multiplicative_factor;
 
         // Reward signal
-        Pointer<float> reward;
+        Pointer<float> dopamine;
+
+        // Modulation signal
+        Pointer<float> acetylcholine;
 
         // Voltage and recovery variables
         Pointer<float> voltage;

@@ -45,6 +45,9 @@ class MazeGame : public Frontend {
         void administer_reward();
 
         int iterations;
+        int total_successful_moves;
+        int total_moves;
+
         int time_to_reward;
         int moves_to_reward;
         int successful_moves;

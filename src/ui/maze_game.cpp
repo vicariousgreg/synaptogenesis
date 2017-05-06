@@ -34,6 +34,7 @@ MazeGame::~MazeGame() {
     input_data["player"].free();
     input_data["goal"].free();
     input_data["reward"].free();
+    input_data["modulate"].free();
     input_data["somatosensory"].free();
     input_data["wall_left"].free();
     input_data["wall_right"].free();
@@ -50,6 +51,7 @@ void MazeGame::set_board_dim(int size) {
     input_data["player"] = Pointer<float>(board_dim*board_dim);
     input_data["goal"] = Pointer<float>(board_dim*board_dim);
     input_data["reward"] = Pointer<float>(1);
+    input_data["modulate"] = Pointer<float>(1);
     input_data["somatosensory"] = Pointer<float>(4);
     input_data["wall_left"] = Pointer<float>(board_dim*board_dim);
     input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
@@ -64,6 +66,7 @@ void MazeGame::init() {
     dirty["player"] = true;
     dirty["goal"] = true;
     dirty["reward"] = true;
+    dirty["modulate"] = true;
     dirty["somatosensory"] = true;
     dirty["wall_left"] = true;
     dirty["wall_right"] = true;
@@ -98,6 +101,10 @@ Pointer<float> MazeGame::get_input(std::string params) {
             float reward = input_data[params][0] * 0.95;
             input_data[params][0] = reward;
             dirty[params] = reward > 0.1;
+        } else if (params == "modulate") {
+            float modulate = input_data[params][0] * 0.95;
+            input_data[params][0] = modulate;
+            dirty[params] = modulate > 0.1;
         } else if (params == "somatosensory") {
             dirty[params] = false;
 
@@ -173,10 +180,12 @@ void MazeGame::reset_goal() {
 
 void MazeGame::administer_reward() {
     input_data["reward"][0] = input_strength;
-    printf("Good job!  %6d iterations, %6d / %6d moves successful"
-           "     Minimum moves: %2d (%6.4f efficiency)\n",
+    printf("Good job!  %6d iterations, %6d / %6d moves successful (%8.4f%%)"
+           "     Minimum moves: %2d (%8.4f%% efficiency)\n",
         time_to_reward, successful_moves, moves_to_reward,
-        min_moves, (float)min_moves / moves_to_reward);
+        (100.0 * successful_moves / moves_to_reward),
+        min_moves,
+        (100.0 * min_moves / moves_to_reward));
 }
 
 void MazeGame::remove_player() {
@@ -201,13 +210,17 @@ void MazeGame::add_player() {
 
 bool MazeGame::move_up() {
     ++moves_to_reward;
+    ++total_moves;
     if (player_row > 0) {
         ++successful_moves;
+        ++total_successful_moves;
         remove_player();
         --player_row;
         add_player();
         input_data["somatosensory"][0] = input_strength;
         dirty["somatosensory"] = true;
+        input_data["modulate"][0] = input_strength;
+        dirty["modulate"] = true;
         return true;
     }
     return false;
@@ -215,13 +228,17 @@ bool MazeGame::move_up() {
 
 bool MazeGame::move_down() {
     ++moves_to_reward;
+    ++total_moves;
     if (player_row < board_dim-1) {
         ++successful_moves;
+        ++total_successful_moves;
         remove_player();
         ++player_row;
         add_player();
         input_data["somatosensory"][1] = input_strength;
         dirty["somatosensory"] = true;
+        input_data["modulate"][0] = input_strength;
+        dirty["modulate"] = true;
         return true;
     }
     return false;
@@ -229,26 +246,34 @@ bool MazeGame::move_down() {
 
 bool MazeGame::move_left() {
     ++moves_to_reward;
+    ++total_moves;
     if (player_col > 0) {
         ++successful_moves;
+        ++total_successful_moves;
         remove_player();
         --player_col;
         add_player();
         input_data["somatosensory"][2] = input_strength;
         dirty["somatosensory"] = true;
+        input_data["modulate"][0] = input_strength;
+        dirty["modulate"] = true;
         return true;
     }
 }
 
 bool MazeGame::move_right() {
     ++moves_to_reward;
+    ++total_moves;
     if (player_col < board_dim-1) {
         ++successful_moves;
+        ++total_successful_moves;
         remove_player();
         ++player_col;
         add_player();
         input_data["somatosensory"][3] = input_strength;
         dirty["somatosensory"] = true;
+        input_data["modulate"][0] = input_strength;
+        dirty["modulate"] = true;
         return true;
     }
     return false;
@@ -257,6 +282,15 @@ bool MazeGame::move_right() {
 void MazeGame::update(Environment *environment) {
     ++iterations;
     ++time_to_reward;
+
+    if (iterations % 1000 == 0) {
+        printf("    %6d / %6d total moves successful (%8.4f%%)\n",
+            total_successful_moves,
+            total_moves,
+            100.0 * total_successful_moves / total_moves);
+        total_moves = 0;
+        total_successful_moves = 0;
+    }
     if (ui_dirty) {
         ui_dirty = false;
 

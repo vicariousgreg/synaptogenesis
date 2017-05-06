@@ -4,7 +4,7 @@
 #define RELAY "relay"
 #define IZ_INIT "init"
 
-const std::string learning_rate = "0.004";
+const std::string learning_rate = "0.005";
 
 MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
         : Structure("Maze Cortex", PARALLEL),
@@ -49,7 +49,7 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
             connect_layers("3b_pos", "5p_pos",
                 (new ConnectionConfig(
                     true, 0, 0.5, SUBSET, ADD,
-                    (new FlatWeightConfig(0.1, 0.1))))
+                    (new FlatWeightConfig(0.01, 0.25))))
                 ->set_subset_config(
                     new SubsetConfig(
                         (i * cortex_size / 2), ((i+1) * cortex_size / 2),
@@ -80,12 +80,22 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
     add_module("dopamine", "maze_input", "reward");
     connect_layers(
         "dopamine",
-        "3b_pos",
+        "5p_pos",
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, REWARD,
+            new FlatWeightConfig(1.0, 1.0)))
+        ->set_property("myelinated", "true"));
+
+    // Acetylcholine
+    add_layer(
+        (new LayerConfig("acetylcholine", IZHIKEVICH, 1, 1))
+        ->set_property(IZ_INIT, "bursting"));
+    add_module("acetylcholine", "maze_input", "modulate");
+    connect_layers(
+        "acetylcholine",
+        "5p_pos",
+        (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, MODULATE,
             new FlatWeightConfig(0.1, 1.0)))
         ->set_property("myelinated", "true"));
-    /*
-    */
 
     model->add_structure(this);
 }
@@ -182,7 +192,7 @@ void MazeCortex::add_input_random(std::string layer, std::string input_name,
         ->set_property(IZ_INIT, "bursting"));
     add_module(input_name, module_name, module_params);
 
-    int num_tethers = 3;
+    int num_tethers = 1; // 3;
     int spread = cell_size * 1.5;
 
     int to_row_range = cortex_size - spread;
@@ -197,10 +207,10 @@ void MazeCortex::add_input_random(std::string layer, std::string input_name,
             //printf("    (%4d, %4d)\n", start_to_row, start_to_col);
 
             connect_layers(input_name, layer,
-                (new ConnectionConfig(false, 0, 1, SUBSET, ADD,
-                //(new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
+                //(new ConnectionConfig(false, 0, 1, SUBSET, ADD,
+                (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, ADD,
                 //new FlatWeightConfig(0.5, 0.1)))
-                new GaussianWeightConfig(0.5, 0.05, 0.1)))
+                new GaussianWeightConfig(0.5, 0.1, 0.0025)))
                 ->set_subset_config(
                     new SubsetConfig(
                         0, 1,

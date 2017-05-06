@@ -49,7 +49,7 @@ void MazeOutputModule::report_output(Buffer *buffer, OutputType output_type) {
         else if (down == max) success = maze_game->move_down();
         else if (left == max) success = maze_game->move_left();
         else if (right == max) success = maze_game->move_right();
-        //if (success) wait = 10;
-        wait = 10;
+        //if (success) wait = 20;
+        wait = 20;
     }
 }

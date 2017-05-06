@@ -81,7 +81,8 @@ typedef enum {
     MULT,
     DIV,
     POOL,
-    REWARD
+    REWARD,
+    MODULATE
 } Opcode;
 
 /* Enumeration of cluster types. */
