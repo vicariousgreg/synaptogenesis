@@ -36,8 +36,15 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
 
     connect_layers("striatum_pos", "output",
         (new ConnectionConfig(
+            true, 0, 0.5, FULLY_CONNECTED, ADD,
+            (new FlatWeightConfig(0.1, 0.05))))
+        ->set_property("myelinated", "true")
+        ->set_property("learning rate", learning_rate));
+
+    connect_layers("output", "striatum_neg",
+        (new ConnectionConfig(
             false, 0, 0.5, FULLY_CONNECTED, ADD,
-            (new FlatWeightConfig(0.1, 0.1))))
+            (new FlatWeightConfig(0.5, 0.1))))
         ->set_property("myelinated", "true")
         ->set_property("learning rate", learning_rate));
 
