@@ -38,7 +38,7 @@ class Attributes {
         }
 
         // Schedule and conduct transfer to device
-        void schedule_transfer();
+        std::vector<BasePointer*> get_pointers();
         void transfer_to_device();
 
         /* Learning Rule functions */

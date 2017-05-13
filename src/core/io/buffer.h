@@ -1,6 +1,7 @@
 #ifndef buffer_h
 #define buffer_h
 
+#include <vector>
 #include <map>
 
 #include "model/layer.h"
@@ -14,6 +15,8 @@ class Buffer {
         Buffer(LayerList input_layers, LayerList output_layers,
             LayerList expected_layers);
         virtual ~Buffer();
+
+        std::vector<BasePointer*> get_pointers();
 
         /* IO setters */
         void set_input(Layer *layer, Pointer<float> source);

@@ -15,7 +15,6 @@ Attributes *build_attributes(LayerList &layers,
 
     // Copy attributes to device and set the pointer
     attributes->set_device_id(device_id);
-    attributes->schedule_transfer();
     return attributes;
 }
 
@@ -144,22 +143,28 @@ void Attributes::set_device_id(DeviceID device_id) {
 }
 
 void Attributes::transfer_to_device() {
+#ifdef __CUDACC__
     // Copy attributes to device and set the pointer
-    if (not ResourceManager::get_instance()->is_host(device_id))
+    if (not ResourceManager::get_instance()->is_host(device_id)) {
+        // If already transfered, free old copy
+        cudaSetDevice(device_id);
+        if (this->pointer != this) cudaFree(this->pointer);
+
+        // Transfer to device
         this->pointer = (Attributes*)
             ResourceManager::get_instance()->allocate_device(
                 1, object_size, this, device_id);
+    }
+#endif
 }
 
-void Attributes::schedule_transfer() {
-    // Transfer data
-    this->input.schedule_transfer(device_id);
-    this->output.schedule_transfer(device_id);
-    this->expected.schedule_transfer(device_id);
-    this->second_order_input.schedule_transfer(device_id);
-
+std::vector<BasePointer*> Attributes::get_pointers() {
+    std::vector<BasePointer*> pointers = {
+        &input, &output, &expected, &second_order_input
+    };
     for (auto ptr : managed_variables)
-        ptr->schedule_transfer(device_id);
+        pointers.push_back(ptr);
+    return pointers;
 }
 
 void Attributes::register_variable(BasePointer* ptr) {

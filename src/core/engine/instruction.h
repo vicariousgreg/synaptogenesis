@@ -83,6 +83,10 @@ class InterDeviceInstruction : public Instruction {
             }
         }
 
+        virtual ~InterDeviceInstruction() {
+            delete child;
+        }
+
         void transfer() {
             // Wait for dependencies and child's dependencies
             // Dependencies should be the same for all instructions

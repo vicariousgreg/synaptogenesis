@@ -12,9 +12,9 @@ class BasePointer {
         // Frees the encapsulated pointer if this is the owner
         void free();
 
-        // Schedule transfer of data to the device
-        void schedule_transfer(DeviceID device_id);
-        void transfer(DeviceID device_id, void* destination);
+        // Transfer data to a device
+        void transfer(DeviceID new_device, void* destination,
+            bool transfer_ownership);
 
     protected:
         BasePointer(void* ptr, unsigned long size, int unit_size, DeviceID device_id,

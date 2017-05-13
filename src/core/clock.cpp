@@ -78,7 +78,7 @@ void Clock::environment_loop(int iterations, bool verbose) {
     }
 }
 
-void Clock::run(Model *model, int iterations, bool verbose) {
+State* Clock::run(Model *model, int iterations, bool verbose) {
     // Initialize cuda random states
     int max_size = 0;
     for (auto& structure : model->get_structures())
@@ -133,11 +133,12 @@ void Clock::run(Model *model, int iterations, bool verbose) {
     /*** Clean up ***/
     /****************/
     // Free memory for engine and environment
-    delete state;
     delete engine;
     delete environment;
     engine = nullptr;
     environment = nullptr;
 
     free_rand();
+
+    return state;
 }

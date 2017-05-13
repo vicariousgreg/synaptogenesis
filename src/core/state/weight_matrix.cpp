@@ -102,8 +102,8 @@ WeightMatrix::~WeightMatrix() {
     this->mData.free();
 }
 
-void WeightMatrix::schedule_transfer() {
-    this->mData.schedule_transfer(device_id);
+BasePointer* WeightMatrix::get_pointer() {
+    return &this->mData;
 }
 
 void set_delays(OutputType output_type, Connection *conn,

@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <vector>
+#include <map>
 
 #include "util/parallel.h"
 #include "util/constants.h"
@@ -16,6 +17,9 @@ class ResourceManager {
         static ResourceManager *get_instance();
         virtual ~ResourceManager();
 
+        /* Delete all managed pointers */
+        void flush();
+
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }
         DeviceID get_host_id() { return devices.size()-1; }
@@ -25,8 +29,7 @@ class ResourceManager {
         void* allocate_device(unsigned long count, int size,
             void* source_data, DeviceID device_id=0);
 
-        void schedule_transfer(BasePointer* ptr, DeviceID device_id);
-        void transfer();
+        void transfer(DeviceID device_id, std::vector<BasePointer*> ptrs);
 
         Stream *get_default_stream(DeviceID id);
         Stream *get_inter_device_stream(DeviceID id);
@@ -56,9 +59,7 @@ class ResourceManager {
 
         int num_cores;
         std::vector<Device*> devices;
-
-        std::vector<unsigned long> scheduled_transfer_size;
-        std::vector<std::vector<BasePointer*> > scheduled_transfers;
+        std::map<DeviceID, std::vector<void*> > managed_pointers;
 };
 
 #endif

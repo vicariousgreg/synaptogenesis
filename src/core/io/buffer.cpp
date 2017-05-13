@@ -100,17 +100,18 @@ void HostBuffer::init() {
 
 void DeviceBuffer::init() {
     // Allocate buffer memory
-    if (input_size > 0) {
+    if (input_size > 0)
         input = Pointer<float>(input_size, 0.0);
-        input.schedule_transfer(device_id);
-    }
-    if (output_size > 0) {
+    if (output_size > 0)
         output = Pointer<Output>(output_size);
-        output.schedule_transfer(device_id);
-    }
-    if (expected_size > 0) {
+    if (expected_size > 0)
         expected = Pointer<Output>(expected_size);
-        expected.schedule_transfer(device_id);
-    }
     Buffer::init();
+}
+
+std::vector<BasePointer*> Buffer::get_pointers() {
+    std::vector<BasePointer*> pointers = {
+        &input, &output, &expected
+    };
+    return pointers;
 }

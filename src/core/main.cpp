@@ -46,13 +46,13 @@ void print_model(Model *model) {
 void run_simulation(Model *model, int iterations, bool verbose) {
     // Calculate ideal refresh rate, run for iterations
     Clock clock(true);
-    clock.run(model, iterations, verbose);
+    delete clock.run(model, iterations, verbose);
 
     // Benchmark the network
     // Use max refresh rate possible
     // Run for 100 iterations
     //Clock clock(false);  // No refresh rate synchronization
-    //clock.run(model, 100, verbose);
+    //delete clock.run(model, 100, verbose);
 }
 
 void mnist_test() {
@@ -113,7 +113,7 @@ void speech_test() {
     /* Construct the model */
     Model *model = new Model();
 
-    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 2);
+    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 3);
     auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/speech.csv 0 1 0.25");
     auditory_cortex->add_module_all("visualizer_output", "");
     auditory_cortex->add_module_all("heatmap", "");
@@ -125,7 +125,9 @@ void speech_test() {
     print_model(model);
     //Clock clock(60.0f);
     Clock clock(true);
-    clock.run(model, 1000000, true);
+    auto state = clock.run(model, 1000000, true);
+    //state->transfer_to_host();
+    delete state;
     std::cout << "\n";
 
     delete model;
@@ -145,8 +147,8 @@ void maze_game_test() {
     print_model(model);
     Clock clock(true);
     //Clock clock(10.0f);
-    clock.run(model, 1000000, true);
-    //clock.run(model, 100, true);
+    delete clock.run(model, 1000000, true);
+    //delete clock.run(model, 100, true);
     std::cout << "\n";
 
     delete model;
@@ -175,142 +177,6 @@ static void print_subset_overlap(Structure *structure) {
     }
 }
 
-void symbol_test() {
-    /* Construct the model */
-    Model *model = new Model();
-
-    // Intermediate cortical layers
-    int cortex_rows = 64;
-    int cortex_columns = 64;
-    int num_symbols = 5;
-
-    Column *sensory_column = new Column("sensory", cortex_rows, cortex_columns, true);
-    sensory_column->add_input(true, num_symbols, "one_hot_cyclic_input", "3.78 100000");
-    sensory_column->add_module_all("visualizer_output", "");
-    sensory_column->add_module_all("heatmap", "");
-    model->add_structure(sensory_column);
-
-    Column *prev_column = sensory_column;
-    std::vector<Column*> columns;
-    int num_columns = 4;
-    for (int i = 0 ; i < num_columns ; ++i) {
-        Column *column = new Column("col" + std::to_string(i), cortex_rows, cortex_columns, true);
-        column->add_module_all("visualizer_output", "");
-        column->add_module_all("heatmap", "");
-
-        model->add_structure(column);
-        columns.push_back(column);
-
-        Column::connect(
-            prev_column, column,
-            "4_pos", "4_pos",
-            10, 10, 10,
-            0.09);
-        Column::connect(
-            column, prev_column,
-            "4_pos", "4_pos",
-            10, 10, 10,
-            0.09);
-        prev_column = column;
-    }
-
-    for (auto column : columns)
-        print_subset_overlap(column);
-
-    std::cout << "Symbol test......\n";
-    print_model(model);
-    Clock clock(true);
-    //Clock clock(100.0f);
-    //Clock clock(10.0f);
-    clock.run(model, 100000, true);
-    std::cout << "\n";
-
-    delete model;
-}
-
-void cortex_test() {
-    /* Construct the model */
-    Model *model = new Model();
-
-    int board_dim = 4;
-    MazeGame::get_instance(true)->set_board_dim(board_dim);
-
-    SensoryCortex *visual =
-        new SensoryCortex(model, "visual", true, board_dim*board_dim, 16, 16);
-    SensoryCortex *somatosensory =
-        new SensoryCortex(model, "somatosensory", true, 4, 16, 16);
-    CorticalRegion *association =
-        new CorticalRegion(model, "association", true, 1, 32, 32);
-    MotorCortex *motor =
-        new MotorCortex(model, "motor", true, 4, 16, 16);
-
-    visual->add_input("player_input", false, board_dim*board_dim, "maze_input", "player");
-    visual->add_input("goal_input", false, board_dim*board_dim, "maze_input", "goal");
-    somatosensory->add_input("somatosensory_input", false, 4, "maze_input", "somatosensory");
-    motor->add_output("motor_output", false, 4, "maze_output");
-
-    visual->add_module_all("visualizer_output");
-    visual->add_module_all("heatmap");
-    somatosensory->add_module_all("visualizer_output");
-    somatosensory->add_module_all("heatmap");
-    association->add_module_all("visualizer_output");
-    association->add_module_all("heatmap");
-    motor->add_module_all("visualizer_output");
-    motor->add_module_all("heatmap");
-
-    // Feedforward
-    visual->connect(association,
-        "4_pos", "4_pos",
-        1, 16, 32, 0.1);
-    somatosensory->connect(association,
-        "4_pos", "4_pos",
-        1, 16, 32, 0.1);
-    association->connect(motor,
-        "4_pos", "4_pos",
-        1, 32, 16, 0.1);
-
-    /*
-    association->self_connect(
-        "4_pos", "4_pos",
-        1, 16, 16, 0.05);
-    */
-
-    // Feedback
-    /*
-    motor->connect(association,
-        "5_pos", "3_pos",
-        5, 5, 5, 1.0);
-    association->connect(visual,
-        "5_pos", "3_pos",
-        5, 5, 5, 1.0);
-    */
-
-    // Diffuse dopaminergic input
-    Structure *brainstem = new Structure("brainstem", PARALLEL);
-    brainstem->add_layer(
-        (new LayerConfig("dopamine", IZHIKEVICH, 1, 1))
-        ->set_property(IZ_INIT, "regular"));
-    brainstem->add_module("dopamine", "visualizer_output");
-    brainstem->add_module("dopamine", "heatmap");
-    brainstem->add_module("dopamine", "maze_input", "reward");
-    //brainstem->add_module("dopamine", "print_output", "8");
-    model->add_structure(brainstem);
-
-    //visual->connect_diffuse(brainstem, "dopamine", REWARD, 1.0);
-    association->connect_diffuse(brainstem, "dopamine", REWARD, 0.1);
-    motor->connect_diffuse(brainstem, "dopamine", REWARD, 0.1);
-
-    std::cout << "Cortex test......\n";
-    print_model(model);
-    Clock clock(true);
-    //Clock clock(100.0f);
-    //Clock clock(10.0f);
-    clock.run(model, 100000, true);
-    std::cout << "\n";
-
-    delete model;
-}
-
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
@@ -322,8 +188,6 @@ int main(int argc, char *argv[]) {
         //mnist_test();
         speech_test();
         //maze_game_test();
-        //symbol_test();
-        //cortex_test();
 
         return 0;
     } catch (const char* msg) {

@@ -58,6 +58,10 @@ State::State(Model *model) : model(model) {
                 auto att = build_attributes(layers, neural_model, device_id);
                 attributes[device_id][neural_model] = att;
 
+                // Retrieve pointers
+                for (auto ptr : att->get_pointers())
+                    pointers[device_id].push_back(ptr);
+
                 /* Set up weight matrices */
                 for (auto& layer : layers) {
                     for (auto& conn : layer->get_input_connections()) {
@@ -65,7 +69,7 @@ State::State(Model *model) : model(model) {
                             att->get_matrix_depth(conn), device_id);
                         this->weight_matrices[conn] = matrix;
                         att->process_weight_matrix(matrix);
-                        matrix->schedule_transfer();
+                        pointers[device_id].push_back(matrix->get_pointer());
                     }
                 }
             }
@@ -73,32 +77,37 @@ State::State(Model *model) : model(model) {
     }
 
     // Create buffers
-    for (DeviceID i = 0; i < num_devices; ++i) {
+    for (DeviceID device_id = 0; device_id < num_devices; ++device_id) {
         // Set up internal buffer
         LayerList input_layers, output_layers, expected_layers;
 
         // Extract layers assigned to this device
         for (auto layer : model->get_input_layers()) {
-            if (layer_devices[layer] == i)
+            if (layer_devices[layer] == device_id)
                 input_layers.push_back(layer);
         }
         for (auto layer : model->get_output_layers()) {
-            if (layer_devices[layer] == i)
+            if (layer_devices[layer] == device_id)
                 output_layers.push_back(layer);
         } for (auto layer : model->get_expected_layers()) {
-            if (layer_devices[layer] == i)
+            if (layer_devices[layer] == device_id)
                 expected_layers.push_back(layer);
         }
 
-        internal_buffers.push_back(
-            build_buffer(i, input_layers, output_layers, expected_layers));
+        auto buffer =
+            build_buffer(device_id, input_layers, output_layers, expected_layers);
+        internal_buffers.push_back(buffer);
+
+        // Retrieve pointers
+        for (auto ptr : buffer->get_pointers())
+            pointers[device_id].push_back(ptr);
 
         // Set up inter-device buffers (one per word index)
         std::map<int, LayerList> inter_device_layers;
 
         // Identify any inter-device connections and make room for them
         for (auto layer : model->get_layers())
-            if (layer_devices[layer] == i)
+            if (layer_devices[layer] == device_id)
                 for (auto conn : layer->get_input_connections())
                     if (is_inter_device(conn)) {
                         int word_index = get_word_index(
@@ -108,20 +117,21 @@ State::State(Model *model) : model(model) {
 
         // Create a map of word indices to buffers
         std::map<int, Buffer*> buffer_map;
-        for (auto pair : inter_device_layers)
-            buffer_map[pair.first] = build_buffer(
-                i, LayerList(), pair.second, LayerList());
+        for (auto pair : inter_device_layers) {
+            auto buffer = build_buffer(device_id, LayerList(), pair.second, LayerList());
+            buffer_map[pair.first] = buffer;
+
+            // Retrieve pointers
+            for (auto ptr : buffer->get_pointers())
+                pointers[device_id].push_back(ptr);
+        }
 
         // Set the inter device buffer
         inter_device_buffers.push_back(buffer_map);
     }
 
     // Finally, transfer data
-    ResourceManager::get_instance()->transfer();
-    for (auto n : Attributes::get_neural_models())
-        for (int i = 0; i < num_devices; ++i)
-            if (attributes[i][n] != nullptr)
-                attributes[i][n]->transfer_to_device();
+    this->transfer_to_device();
 }
 
 State::~State() {
@@ -134,6 +144,33 @@ State::~State() {
     for (auto map : inter_device_buffers)
         for (auto pair : map)
             delete pair.second;
+}
+
+void State::transfer_to_device() {
+#ifdef __CUDACC__
+    auto res_man = ResourceManager::get_instance();
+    DeviceID host_id = res_man->get_host_id();
+
+    for (auto pair : pointers)
+        if (pair.first != host_id)
+            res_man->transfer(pair.first, pair.second);
+
+    for (auto n : Attributes::get_neural_models())
+        for (int i = 0; i < num_devices; ++i)
+            if (attributes[i][n] != nullptr)
+                attributes[i][n]->transfer_to_device();
+#endif
+}
+
+void State::transfer_to_host() {
+#ifdef __CUDACC__
+    auto res_man = ResourceManager::get_instance();
+    DeviceID host_id = res_man->get_host_id();
+
+    for (auto pair : pointers)
+        if (pair.first != host_id)
+            res_man->transfer(host_id, pair.second);
+#endif
 }
 
 bool State::check_compatibility(Structure *structure) {

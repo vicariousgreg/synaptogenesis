@@ -4,7 +4,7 @@
 #define RELAY "relay"
 #define IZ_INIT "init"
 
-const std::string learning_rate = "0.01";
+const std::string learning_rate = "0.001";
 
 AuditoryCortex::AuditoryCortex(Model *model, int spec_size, int spec_spread)
         : Structure("Auditory Cortex", PARALLEL),

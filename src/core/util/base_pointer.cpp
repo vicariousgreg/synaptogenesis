@@ -21,25 +21,39 @@ void BasePointer::free() {
     }
 }
 
-void BasePointer::schedule_transfer(DeviceID device_id) {
+void BasePointer::transfer(DeviceID new_device, void* destination,
+        bool transfer_ownership) {
 #ifdef __CUDACC__
-    ResourceManager::get_instance()->schedule_transfer(this, device_id);
-#endif
-}
+    bool host_dest = ResourceManager::get_instance()->is_host(new_device);
 
-void BasePointer::transfer(DeviceID device_id, void* destination) {
-#ifdef __CUDACC__
     if (local) {
-        cudaSetDevice(device_id);
+        if (host_dest)
+            ErrorManager::get_instance()->log_error(
+                "Attempted to transfer host pointer to host!");
+
+        cudaSetDevice(new_device);
         cudaMemcpy(destination, this->ptr, this->size * this->unit_size,
             cudaMemcpyHostToDevice);
-        std::free(this->ptr);
+
+        if (this->owner) std::free(this->ptr);
         this->ptr = destination;
         this->local = false;
-        this->device_id = device_id;
+        this->owner = transfer_ownership;
+        this->device_id = new_device;
     } else {
-        ErrorManager::get_instance()->log_error(
-            "Attempted to transfer device pointer to device!");
+        if (not host_dest)
+            ErrorManager::get_instance()->log_error(
+                "Attempted to transfer device pointer to device!");
+
+        cudaSetDevice(this->device_id);
+        cudaMemcpy(destination, this->ptr, this->size * this->unit_size,
+            cudaMemcpyDeviceToHost);
+
+        if (this->owner) cudaFree(this->ptr);
+        this->ptr = destination;
+        this->local = true;
+        this->owner = transfer_ownership;
+        this->device_id = new_device;
     }
 #endif
 }

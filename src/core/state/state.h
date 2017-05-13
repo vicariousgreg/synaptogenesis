@@ -19,6 +19,10 @@ class State {
         State(Model *model);
         virtual ~State();
 
+        /* Transfers all data to device or back to host */
+        void transfer_to_device();
+        void transfer_to_host();
+
         /* Checks if a structure's layers are compatible with its stream type */
         bool check_compatibility(Structure *structure);
 
@@ -59,6 +63,9 @@ class State {
         std::vector<std::map<std::string, Attributes*> > attributes;
         std::map<Connection*, WeightMatrix*> weight_matrices;
         std::map<Layer*, DeviceID> layer_devices;
+
+        // Keep track of all pointers
+        std::map<DeviceID, std::vector<BasePointer*> > pointers;
 };
 
 #endif

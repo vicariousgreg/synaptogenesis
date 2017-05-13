@@ -56,7 +56,7 @@ CSVInputModule::CSVInputModule(Layer *layer, std::string params)
 }
 
 CSVInputModule::~CSVInputModule() {
-    for (auto pointer : data) delete pointer;
+    for (auto pointer : data) pointer.free();
 }
 
 void CSVInputModule::feed_input(Buffer *buffer) {
