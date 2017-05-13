@@ -11,7 +11,6 @@ State::State(Model *model) : model(model) {
     this->num_devices = ResourceManager::get_instance()->get_num_devices();
 #ifdef __CUDACC__
     --this->num_devices;
-    --this->num_devices;
 #endif
 
     // Distribute layers

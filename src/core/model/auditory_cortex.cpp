@@ -12,6 +12,8 @@ AuditoryCortex::AuditoryCortex(Model *model, int spec_size, int spec_spread)
           cortex_rows(spec_size*spec_spread),
           cortex_cols(cortex_rows*2) {
     this->add_cortical_layer("3b", 1);
+    this->add_cortical_layer("5a", 1);
+    this->connect_one_way("3b_pos", "5a_pos", 1, 1.0, 4);
 
     model->add_structure(this);
 }
@@ -39,29 +41,29 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
             ->set_property("spacing", std::to_string(inh_spacing)));
 
     // Excitatory self connections
-    int self_spread = 25;
+    int self_spread = 15;
     connect_layers(name + "_pos", name + "_pos",
         (new ConnectionConfig(
-            true, 2, 0.5, CONVERGENT, ADD,
+            true, 0, 0.5, CONVERGENT, ADD,
             //(new FlatWeightConfig(0.1, 0.1))
-            (new LogNormalWeightConfig(-3.0, 0.5, 1.0))
+            (new LogNormalWeightConfig(-3.0, 1.0, 0.1))
                 ->set_diagonal(false)))
         ->set_arborized_config(
             new ArborizedConfig(self_spread, 1, -self_spread/2))
         ->set_property("learning rate", learning_rate));
 
     // Exc -> Inh
-    int exc_inh_spread = 19;
+    int exc_inh_spread = 15;
     connect_layers(name + "_pos", name + "_neg",
         (new ConnectionConfig(
             true, 0, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
+            new FlatWeightConfig(0.01, 1.0)))
         ->set_arborized_config(
             new ArborizedConfig(exc_inh_spread, 2, -exc_inh_spread/2))
         ->set_property("learning rate", learning_rate));
 
     // Inh -> Exc
-    int inh_exc_spread = 7;
+    int inh_exc_spread = 5;
     connect_layers(name + "_neg", name + "_pos",
         (new ConnectionConfig(
             false, 0, 0.5, DIVERGENT, SUB,
@@ -76,7 +78,8 @@ void AuditoryCortex::connect_one_way(std::string name1, std::string name2,
     connect_layers(name1, name2,
         (new ConnectionConfig(
             true, delay, 0.5, CONVERGENT, ADD,
-            (new FlatWeightConfig(0.1, fraction))))
+            //(new FlatWeightConfig(0.1, fraction))))
+            (new LogNormalWeightConfig(-3.0, 0.5, 1.0))))
         ->set_arborized_config(
             new ArborizedConfig(spread, stride, -spread/2))
         ->set_property("learning rate", learning_rate));
