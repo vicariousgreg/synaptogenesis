@@ -4,6 +4,7 @@
 #include <ctime>
 #include <string>
 
+#include "model/auditory_cortex.h"
 #include "model/maze_cortex.h"
 #include "model/cortical_region.h"
 #include "model/sensory_cortex.h"
@@ -112,28 +113,10 @@ void speech_test() {
     /* Construct the model */
     Model *model = new Model();
 
-    // Intermediate cortical layers
-    int cortex_rows = 128;
-    int cortex_columns = 64;
-    int num_symbols = 41;
-
-    Column *sensory_column = new Column("sensory", cortex_rows, cortex_columns, true);
-    sensory_column->add_lined_up_input(
-        false, num_symbols, "csv_input", "./resources/speech.csv 0 1 0.25");
-    sensory_column->add_module_all("visualizer_output", "");
-    sensory_column->add_module_all("heatmap", "");
-    model->add_structure(sensory_column);
-
-    Column *column1 = new Column("column1", cortex_rows, cortex_columns, true);
-    column1->add_module_all("visualizer_output", "");
-    column1->add_module_all("heatmap", "");
-    model->add_structure(column1);
-
-    Column::connect(
-        sensory_column, column1,
-        "4_pos", "4_pos",
-        100, 5, 5,
-        0.09);
+    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 2);
+    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/speech.csv 0 1 0.25");
+    auditory_cortex->add_module_all("visualizer_output", "");
+    auditory_cortex->add_module_all("heatmap", "");
 
     // Modules
     //structure->add_module("convergent_layer", "csv_output");
@@ -337,8 +320,8 @@ int main(int argc, char *argv[]) {
 
     try {
         //mnist_test();
-        //speech_test();
-        maze_game_test();
+        speech_test();
+        //maze_game_test();
         //symbol_test();
         //cortex_test();
 
