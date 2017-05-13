@@ -6,9 +6,6 @@
 
 #include "model/auditory_cortex.h"
 #include "model/maze_cortex.h"
-#include "model/cortical_region.h"
-#include "model/sensory_cortex.h"
-#include "model/motor_cortex.h"
 #include "model/model.h"
 #include "model/column.h"
 #include "model/weight_config.h"
