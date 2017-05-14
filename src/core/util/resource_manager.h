@@ -17,8 +17,11 @@ class ResourceManager {
         static ResourceManager *get_instance();
         virtual ~ResourceManager();
 
-        /* Delete all managed pointers */
+        /* Delete managed pointers */
         void flush();
+        void flush_device();
+        void flush_host();
+        void flush(DeviceID device_id);
 
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }

@@ -32,17 +32,34 @@ ResourceManager::~ResourceManager() {
 
 void ResourceManager::flush() {
     for (auto pair : managed_pointers)
-        if (is_host(pair.first))
-            for (auto ptr : pair.second)
+        this->flush(pair.first);
+}
+
+void ResourceManager::flush_device() {
+    for (auto pair : managed_pointers)
+        if (not is_host(pair.first))
+            this->flush(pair.first);
+}
+
+void ResourceManager::flush_host() {
+    this->flush(get_host_id());
+}
+
+void ResourceManager::flush(DeviceID device_id) {
+    try {
+        auto pointers = managed_pointers.at(device_id);
+        if (is_host(device_id))
+            for (auto ptr : pointers)
                 std::free(ptr);
 #ifdef __CUDACC__
         else {
-            cudaSetDevice(pair.first);
-            for (auto ptr : pair.second)
+            cudaSetDevice(device_id);
+            for (auto ptr : pointers)
                 cudaFree(ptr);
         }
 #endif
-    managed_pointers.clear();
+        managed_pointers.erase(device_id);
+    } catch (...) { }
 }
 
 void* ResourceManager::allocate_host(unsigned long count, int size) {
