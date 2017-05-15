@@ -5,8 +5,8 @@
 #define IZ_INIT "init"
 
 const std::string learning_rate = "0.004";
-const int layer_spread = 11;
-const int self_spread = 11;
+const int layer_spread = 15;
+const int self_spread = 15;
 const int inh_spread = 5;
 const int spec_spacing = 3;
 
@@ -15,14 +15,14 @@ AuditoryCortex::AuditoryCortex(Model *model, int spec_size, int spec_spread)
           spec_size(spec_size), spec_spread(spec_spread),
           cortex_rows(spec_spacing*spec_size*spec_spread),
           cortex_cols(spec_size*spec_spread) {
-    this->add_cortical_layer("3b", 1);
-    //this->add_cortical_layer("5a", 2);
-    //this->connect_one_way("3b_pos", "5a_pos", layer_spread, 0.1, 4, 2);
+    this->add_cortical_layer("3b", true, 1);
+    this->add_cortical_layer("5a", false, 2);
+    this->connect_one_way("3b_pos", "5a_pos", layer_spread, 0.1, 0, 2);
 
     model->add_structure(this);
 }
 
-void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
+void AuditoryCortex::add_cortical_layer(std::string name, bool shifted, int size_fraction) {
     int inh_ratio = 2;
 
     int exc_rows = cortex_rows / size_fraction;
@@ -30,8 +30,8 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
     int inh_rows = exc_rows / inh_ratio;
     int inh_cols = exc_cols / inh_ratio;
 
-    float exc_spacing = 0.1 * size_fraction;
-    float inh_spacing = 0.1 * inh_ratio *  size_fraction;
+    float exc_spacing = 0.05 * size_fraction;
+    float inh_spacing = 0.05 * inh_ratio * size_fraction;
 
     // Add layers
     add_layer((new LayerConfig(name + "_pos",
@@ -53,7 +53,14 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
             //(new LogNormalWeightConfig(-3.0, 1.0, 0.1))
                 ->set_diagonal(false)))
         ->set_arborized_config(
-            new ArborizedConfig(self_spread, 1, -self_spread/2))
+            new ArborizedConfig(
+                self_spread,
+                self_spread,
+                1,
+                1,
+                -self_spread/2,
+                (shifted) ? (-self_spread - spec_spread) : (-self_spread/2)))
+        ->set_property("short term plasticity", (shifted) ? "false" : "true")
         ->set_property("learning rate", learning_rate));
 
     // Exc -> Inh
@@ -63,7 +70,13 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
             false, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_inh_spread, 2, -exc_inh_spread/2))
+            new ArborizedConfig(
+                exc_inh_spread,
+                exc_inh_spread,
+                2,
+                2,
+                -exc_inh_spread/2,
+                (shifted) ? (-exc_inh_spread - spec_spread) : (-exc_inh_spread/2)))
         ->set_property("learning rate", learning_rate));
 
     // Inh -> Exc
@@ -71,9 +84,15 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
     connect_layers(name + "_neg", name + "_pos",
         (new ConnectionConfig(
             false, 0, 0.5, DIVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.1)))
+            new FlatWeightConfig(1.0, 1.0)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_exc_spread, 2, -inh_exc_spread/2))
+            new ArborizedConfig(
+                inh_exc_spread,
+                inh_exc_spread,
+                2,
+                2,
+                -inh_exc_spread/2,
+                (shifted) ? (-inh_exc_spread - spec_spread) : (-inh_exc_spread/2)))
         ->set_property("learning rate", learning_rate));
 }
 
@@ -97,7 +116,6 @@ void AuditoryCortex::add_input(std::string layer, std::string input_name,
         ->set_property(IZ_INIT, "bursting"));
     add_module(input_name, module_name, module_params);
 
-    int offset = cortex_cols / 2 - (spec_spread/2);
     for (int i = 0 ; i < spec_size; ++i) {
         connect_layers(
             input_name, layer,
@@ -108,7 +126,8 @@ void AuditoryCortex::add_input(std::string layer, std::string input_name,
                     0, 1,
                     i, i+1,
                     spec_spacing * i * spec_spread, (spec_spacing*i+1) * spec_spread,
-                    0 + offset, spec_spread + offset))
-            ->set_property("myelinated", "true"));
+                    0, spec_spread))
+            ->set_property("myelinated", "true")
+            ->set_property("short term plasticity", "false"));
     }
 }

@@ -20,7 +20,7 @@ class AuditoryCortex : public Structure {
         int cortex_rows;
         int cortex_cols;
 
-        void add_cortical_layer(std::string name, int size_fraction=1);
+        void add_cortical_layer(std::string name, bool shifted, int size_fraction=1);
         void connect_one_way(std::string name1, std::string name2,
             int spread, float fraction, int delay=0, int stride=1);
 };
