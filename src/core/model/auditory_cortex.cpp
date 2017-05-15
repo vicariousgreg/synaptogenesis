@@ -5,15 +5,19 @@
 #define IZ_INIT "init"
 
 const std::string learning_rate = "0.004";
+const int layer_spread = 11;
+const int self_spread = 11;
+const int inh_spread = 5;
+const int spec_spacing = 3;
 
 AuditoryCortex::AuditoryCortex(Model *model, int spec_size, int spec_spread)
         : Structure("Auditory Cortex", PARALLEL),
           spec_size(spec_size), spec_spread(spec_spread),
-          cortex_rows(spec_size*spec_spread),
-          cortex_cols(cortex_rows*2) {
+          cortex_rows(spec_spacing*spec_size*spec_spread),
+          cortex_cols(spec_size*spec_spread) {
     this->add_cortical_layer("3b", 1);
-    this->add_cortical_layer("5a", 1);
-    this->connect_one_way("3b_pos", "5a_pos", 9, 0.1, 4);
+    //this->add_cortical_layer("5a", 2);
+    //this->connect_one_way("3b_pos", "5a_pos", layer_spread, 0.1, 4, 2);
 
     model->add_structure(this);
 }
@@ -41,11 +45,11 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
             ->set_property("spacing", std::to_string(inh_spacing)));
 
     // Excitatory self connections
-    int self_spread = 25;
+    //int self_spread = 11;
     connect_layers(name + "_pos", name + "_pos",
         (new ConnectionConfig(
             true, 0, 0.5, CONVERGENT, ADD,
-            (new FlatWeightConfig(0.1, 0.1))
+            (new FlatWeightConfig(0.05, 0.1))
             //(new LogNormalWeightConfig(-3.0, 1.0, 0.1))
                 ->set_diagonal(false)))
         ->set_arborized_config(
@@ -53,7 +57,7 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
         ->set_property("learning rate", learning_rate));
 
     // Exc -> Inh
-    int exc_inh_spread = 25;
+    int exc_inh_spread = self_spread;
     connect_layers(name + "_pos", name + "_neg",
         (new ConnectionConfig(
             false, 0, 0.5, CONVERGENT, ADD,
@@ -63,7 +67,7 @@ void AuditoryCortex::add_cortical_layer(std::string name, int size_fraction) {
         ->set_property("learning rate", learning_rate));
 
     // Inh -> Exc
-    int inh_exc_spread = 11;
+    int inh_exc_spread = inh_spread;
     connect_layers(name + "_neg", name + "_pos",
         (new ConnectionConfig(
             false, 0, 0.5, DIVERGENT, SUB,
@@ -82,6 +86,7 @@ void AuditoryCortex::connect_one_way(std::string name1, std::string name2,
             //(new LogNormalWeightConfig(-3.0, 0.5, 1.0))))
         ->set_arborized_config(
             new ArborizedConfig(spread, stride, -spread/2))
+        //->set_property("myelinated", "true")
         ->set_property("learning rate", learning_rate));
 }
 
@@ -92,7 +97,7 @@ void AuditoryCortex::add_input(std::string layer, std::string input_name,
         ->set_property(IZ_INIT, "bursting"));
     add_module(input_name, module_name, module_params);
 
-    int offset = cortex_rows - (spec_spread/2);
+    int offset = cortex_cols / 2 - (spec_spread/2);
     for (int i = 0 ; i < spec_size; ++i) {
         connect_layers(
             input_name, layer,
@@ -102,7 +107,7 @@ void AuditoryCortex::add_input(std::string layer, std::string input_name,
                 new SubsetConfig(
                     0, 1,
                     i, i+1,
-                    i * spec_spread, (i+1) * spec_spread,
+                    spec_spacing * i * spec_spread, (spec_spacing*i+1) * spec_spread,
                     0 + offset, spec_spread + offset))
             ->set_property("myelinated", "true"));
     }
