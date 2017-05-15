@@ -8,7 +8,7 @@ const std::string learning_rate = "0.004";
 const int layer_spread = 15;
 const int self_spread = 15;
 const int inh_spread = 5;
-const int spec_spacing = 3;
+const int spec_spacing = 2;
 
 AuditoryCortex::AuditoryCortex(Model *model, int spec_size, int spec_spread)
         : Structure("Auditory Cortex", PARALLEL),
@@ -30,8 +30,8 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted, int size
     int inh_rows = exc_rows / inh_ratio;
     int inh_cols = exc_cols / inh_ratio;
 
-    float exc_spacing = 0.05 * size_fraction;
-    float inh_spacing = 0.05 * inh_ratio * size_fraction;
+    float exc_spacing = 0.1 * size_fraction;
+    float inh_spacing = 0.1 * inh_ratio * size_fraction;
 
     // Add layers
     add_layer((new LayerConfig(name + "_pos",
@@ -45,11 +45,10 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted, int size
             ->set_property("spacing", std::to_string(inh_spacing)));
 
     // Excitatory self connections
-    //int self_spread = 11;
     connect_layers(name + "_pos", name + "_pos",
         (new ConnectionConfig(
             true, 0, 0.5, CONVERGENT, ADD,
-            (new FlatWeightConfig(0.05, 0.1))
+            (new FlatWeightConfig(0.01, 0.1))
             //(new LogNormalWeightConfig(-3.0, 1.0, 0.1))
                 ->set_diagonal(false)))
         ->set_arborized_config(
@@ -113,7 +112,7 @@ void AuditoryCortex::add_input(std::string layer, std::string input_name,
         std::string module_name, std::string module_params) {
     add_layer(
         (new LayerConfig(input_name, LEAKY_IZHIKEVICH, 1, spec_size))
-        ->set_property(IZ_INIT, "bursting"));
+        ->set_property(IZ_INIT, "regular"));
     add_module(input_name, module_name, module_params);
 
     for (int i = 0 ; i < spec_size; ++i) {
