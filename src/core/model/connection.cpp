@@ -68,23 +68,18 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                         + std::to_string(expected_columns) + ")!");
 
             switch (type) {
-                case(CONVERGENT):
-                    // Convergent connections use unshared mini weight matrices
-                    // Each destination neuron connects to field_size squared neurons
-                    this->num_weights =
-                        arborized_config->row_field_size
-                        * arborized_config->column_field_size
-                        * to_layer->size;
-                    break;
                 case(CONVOLUTIONAL):
                     // Convolutional connections use a shared weight kernel
                     this->num_weights = arborized_config->get_total_field_size();
                     break;
+                case(CONVERGENT):
+                    // Convergent connections use unshared mini weight matrices
+                    // Each destination neuron connects to field_size squared neurons
                 case(DIVERGENT):
                     // Divergent connections use unshared mini weight matrices
                     // Each source neuron connects to field_size squared neurons
                     this->num_weights =
-                        arborized_config->get_total_field_size() * from_layer->size;
+                        arborized_config->get_total_field_size() * to_layer->size;
                     break;
                 default:
                     ErrorManager::get_instance()->log_error(
