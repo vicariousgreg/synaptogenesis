@@ -158,7 +158,7 @@ Attributes *CLASS_NAME::build(LayerList &layers) { \
 
 // Put this one in .h at bottom of class definition
 #define ATTRIBUTE_MEMBERS \
-    private: \
+    protected: \
         static Attributes *build(LayerList &layers); \
         static int neural_model_id;
 
