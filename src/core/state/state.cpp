@@ -23,7 +23,16 @@ State::State(Model *model) : model(model) {
             num_weights[layer] += conn->get_num_weights();
     }
 
+    std::vector<int> device_weights;
+    for (int i = 0 ; i < num_devices ; ++i)
+        device_weights.push_back(0);
+
     for (int i = 0; num_weights.size() > 0; ++i) {
+        int next_device = 0;
+        for (int i = 1 ; i < device_weights.size(); ++i)
+            if (device_weights[i] < device_weights[next_device])
+                next_device = i;
+
         Layer *biggest;
         int size = -1;
         for (auto pair : num_weights) {
@@ -33,7 +42,8 @@ State::State(Model *model) : model(model) {
             }
         }
         num_weights.erase(biggest);
-        layer_devices[biggest] = (i % num_devices);
+        layer_devices[biggest] = next_device;
+        device_weights[next_device] += size;
     }
 
     // Validate neural model strings

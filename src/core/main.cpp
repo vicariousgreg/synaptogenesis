@@ -110,7 +110,7 @@ void speech_test() {
     /* Construct the model */
     Model *model = new Model();
 
-    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 3);
+    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 4);
     auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/speech.csv 0 1 0.25");
     auditory_cortex->add_module_all("visualizer_output", "");
     auditory_cortex->add_module_all("heatmap", "");
