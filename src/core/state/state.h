@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <string>
 
 #include "state/attributes.h"
 #include "util/constants.h"
@@ -22,6 +23,10 @@ class State {
         /* Transfers all data to device or back to host */
         void transfer_to_device();
         void transfer_to_host();
+
+        /* Save or load state to/from disk */
+        void save(std::string file_name);
+        void load(std::string file_name);
 
         /* Checks if a structure's layers are compatible with its stream type */
         bool check_compatibility(Structure *structure);
@@ -65,7 +70,8 @@ class State {
         std::map<Layer*, DeviceID> layer_devices;
 
         // Keep track of all pointers
-        std::map<DeviceID, std::vector<BasePointer*> > pointers;
+        std::vector<std::vector<BasePointer*> > network_pointers;
+        std::vector<std::vector<BasePointer*> > buffer_pointers;
 };
 
 #endif

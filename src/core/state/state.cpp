@@ -1,4 +1,5 @@
 #include <cstring>
+#include <fstream>
 
 #include "state/state.h"
 #include "state/weight_matrix.h"
@@ -12,6 +13,12 @@ State::State(Model *model) : model(model) {
 #ifdef __CUDACC__
     --this->num_devices;
 #endif
+
+    // Add pointer vectors for each device
+    for (int i = 0 ; i < num_devices ; ++i) {
+        network_pointers.push_back(std::vector<BasePointer*>());
+        buffer_pointers.push_back(std::vector<BasePointer*>());
+    }
 
     // Distribute layers
     // Count up weights, and distribute layers in round robin fashion,
@@ -70,7 +77,7 @@ State::State(Model *model) : model(model) {
 
                 // Retrieve pointers
                 for (auto ptr : att->get_pointers())
-                    pointers[device_id].push_back(ptr);
+                    network_pointers[device_id].push_back(ptr);
 
                 /* Set up weight matrices */
                 for (auto& layer : layers) {
@@ -79,7 +86,7 @@ State::State(Model *model) : model(model) {
                             att->get_matrix_depth(conn), device_id);
                         this->weight_matrices[conn] = matrix;
                         att->process_weight_matrix(matrix);
-                        pointers[device_id].push_back(matrix->get_pointer());
+                        network_pointers[device_id].push_back(matrix->get_pointer());
                     }
                 }
             }
@@ -110,7 +117,7 @@ State::State(Model *model) : model(model) {
 
         // Retrieve pointers
         for (auto ptr : buffer->get_pointers())
-            pointers[device_id].push_back(ptr);
+            buffer_pointers[device_id].push_back(ptr);
 
         // Set up inter-device buffers (one per word index)
         std::map<int, LayerList> inter_device_layers;
@@ -133,7 +140,7 @@ State::State(Model *model) : model(model) {
 
             // Retrieve pointers
             for (auto ptr : buffer->get_pointers())
-                pointers[device_id].push_back(ptr);
+                buffer_pointers[device_id].push_back(ptr);
         }
 
         // Set the inter device buffer
@@ -161,10 +168,17 @@ void State::transfer_to_device() {
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
-    for (auto pair : pointers)
-        if (pair.first != host_id)
-            res_man->transfer(pair.first, pair.second);
+    // Transfer network pointers
+    for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
+        if (device_id != host_id)
+            res_man->transfer(device_id, network_pointers[device_id]);
 
+    // Transfer buffer pointers
+    for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
+        if (device_id != host_id)
+            res_man->transfer(device_id, buffer_pointers[device_id]);
+
+    // Transfer attributes
     for (auto n : Attributes::get_neural_models())
         for (int i = 0; i < num_devices; ++i)
             if (attributes[i][n] != nullptr)
@@ -177,10 +191,83 @@ void State::transfer_to_host() {
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
-    for (auto pair : pointers)
-        if (pair.first != host_id)
-            res_man->transfer(host_id, pair.second);
+    // Transfer network pointers
+    for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
+        if (device_id != host_id)
+            res_man->transfer(host_id, network_pointers[device_id]);
+
+    // Transfer buffer pointers
+    for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
+        if (device_id != host_id)
+            res_man->transfer(host_id, buffer_pointers[device_id]);
 #endif
+}
+
+void State::save(std::string file_name) {
+    // Transfer to host
+    this->transfer_to_host();
+
+
+    // Open file stream
+    std::string path = "./states/" + file_name;
+    std::ofstream output_file(path, std::ofstream::binary);
+    printf("Saving network state to %s ...\n", path.c_str());
+
+    for (auto ptr_list : network_pointers) {
+        for (auto ptr : ptr_list) {
+            const char* data = (const char*)ptr->get();
+            unsigned long size = ptr->get_size();
+            int unit_size = ptr->get_unit_size();
+
+            if (not output_file.write(data, size*unit_size))
+                ErrorManager::get_instance()->log_error(
+                    "Error writing to file!");
+        }
+    }
+
+    // Close file stream
+    output_file.close();
+}
+
+void State::load(std::string file_name) {
+    // Transfer to host
+    this->transfer_to_host();
+
+    // Open file stream
+    std::string path = "./states/" + file_name;
+    std::ifstream input_file(path, std::ifstream::binary);
+    printf("Loading network state from %s ...\n", path.c_str());
+
+    // Determine file length
+    input_file.seekg (0, input_file.end);
+    auto length = input_file.tellg();
+    input_file.seekg (0, input_file.beg);
+
+    unsigned long read = 0;
+
+    for (auto ptr_list : network_pointers) {
+        for (auto ptr : ptr_list) {
+            char* data = (char*)ptr->get();
+            unsigned long size = ptr->get_size();
+            int unit_size = ptr->get_unit_size();
+
+            if (not input_file.read(data, size*unit_size))
+                ErrorManager::get_instance()->log_error(
+                    "Error reading from file!");
+
+            read += size * unit_size;
+        }
+    }
+
+    if (read != length)
+        ErrorManager::get_instance()->log_error(
+            "File size does not match state size!");
+
+    // Close file stream
+    input_file.close();
+
+    // Transfer to device
+    this->transfer_to_device();
 }
 
 bool State::check_compatibility(Structure *structure) {

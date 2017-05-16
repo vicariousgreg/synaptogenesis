@@ -106,7 +106,7 @@ void mnist_test() {
     delete model;
 }
 
-void speech_test() {
+void speech_train() {
     /* Construct the model */
     Model *model = new Model();
 
@@ -120,10 +120,35 @@ void speech_test() {
 
     std::cout << "Speech test......\n";
     print_model(model);
-    //Clock clock(60.0f);
     Clock clock(true);
-    auto state = clock.run(model, 1000000, true);
-    //state->transfer_to_host();
+
+    auto state = clock.run(model, 1000, true);
+    state->save("speech.bin");
+
+    delete state;
+    std::cout << "\n";
+
+    delete model;
+}
+
+void speech_test() {
+    /* Construct the model */
+    Model *model = new Model();
+
+    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 4);
+    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/substitute.csv 0 1 0.25");
+    auditory_cortex->add_module_all("visualizer_output", "");
+    auditory_cortex->add_module_all("heatmap", "");
+
+    // Modules
+    //structure->add_module("convergent_layer", "csv_output");
+
+    std::cout << "Speech test......\n";
+    print_model(model);
+    Clock clock(0.1f);
+
+    auto state = clock.run(model, 1000, true, "speech.bin");
+
     delete state;
     std::cout << "\n";
 
@@ -183,6 +208,7 @@ int main(int argc, char *argv[]) {
 
     try {
         //mnist_test();
+        //speech_train();
         speech_test();
         //maze_game_test();
 

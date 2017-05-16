@@ -2,6 +2,7 @@
 #include <thread>
 #include <mutex>
 #include <climits>
+#include <string>
 
 #include "util/tools.h"
 
@@ -55,7 +56,8 @@ class Clock {
                   environment_rate(environment_rate),
                   calc_rate(false) { }
 
-        State* run(Model *model, int iterations, bool verbose);
+        State* run(Model *model, int iterations, bool verbose,
+            std::string state_file_name="");
 
     private:
         void engine_loop(int iterations, bool verbose);

@@ -78,7 +78,8 @@ void Clock::environment_loop(int iterations, bool verbose) {
     }
 }
 
-State* Clock::run(Model *model, int iterations, bool verbose) {
+State* Clock::run(Model *model, int iterations, bool verbose,
+        std::string state_file_name) {
     // Initialize cuda random states
     int max_size = 0;
     for (auto& structure : model->get_structures())
@@ -96,6 +97,8 @@ State* Clock::run(Model *model, int iterations, bool verbose) {
 
     // Build state
     State *state = new State(model);
+    if (state_file_name != "")
+        state->load(state_file_name);
 
     // Build environment
     environment = new Environment(state);

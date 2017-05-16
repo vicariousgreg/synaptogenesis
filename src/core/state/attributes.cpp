@@ -71,10 +71,9 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
         output_start_indices[layer->id] = output_size;
         output_size += output_register_count * layer->size;
 
-        if (layer->is_expected()) {
-            expected_start_indices[layer->id] = expected_size;
-            expected_size += layer->size;
-        }
+        // Add expected
+        expected_start_indices[layer->id] = expected_size;
+        expected_size += layer->size;
 
         other_start_indices[layer->id] = other_size;
         other_size += layer->size;
