@@ -77,7 +77,7 @@ static IzhikevichParameters create_parameters(std::string str) {
 #define IZ_TIMESTEP_MS 1
 
 /* Time dynamics of postsynaptic spikes */
-#define TRACE_TAU 0.95  // 20
+#define TRACE_TAU 0.933  // 15
 
 /* Time dynamics of dopamine */
 #define DOPAMINE_CLEAR_TAU 0.95  // 20
@@ -86,7 +86,7 @@ static IzhikevichParameters create_parameters(std::string str) {
 #define ACETYLCHOLINE_CLEAR_TAU 0.95  // 20
 
 /* STDP A constant */
-#define STDP_A 1.0
+#define STDP_A 0.004
 
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;

@@ -13,7 +13,7 @@ REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich")
 /******************************************************************************/
 
 /* STDP A constant */
-#define STDP_A 1.0
+#define STDP_A 0.004
 
 #define PLASTIC_TAU       0.95   // tau = 20
 

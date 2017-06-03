@@ -4,26 +4,28 @@
 #define RELAY "relay"
 #define IZ_INIT "init"
 
-const std::string learning_rate = "0.004";
-const int layer_spread = 15;
-const int self_spread = 15;
-const int inh_spread = 9;
-const int spec_spacing = 2;
+const std::string learning_rate = "1.0";
+const int layer_spread = 31;
+const int self_spread = 31;
+const int inh_spread = 11;
+const int spec_spacing = -3;
 
 AuditoryCortex::AuditoryCortex(Model *model, int spec_size, int spec_spread)
         : Structure("Auditory Cortex", PARALLEL),
           spec_size(spec_size), spec_spread(spec_spread),
           cortex_rows((spec_spacing * (spec_size-1)) + (spec_spread * spec_size)),
-          cortex_cols(spec_size*spec_spread) {
+          cortex_cols(3*spec_size) {
     this->add_cortical_layer("3b", false, 1);
     this->add_cortical_layer("5a", false, 2, 1);
-    this->add_cortical_layer("5b", false, 4, 2);
+    //this->add_cortical_layer("5b", false, 4, 2);
 
-    //this->connect_one_way("3b_pos", "5a_pos", layer_spread, 0.1, 0, 2);
+    //  DIFFERENCE BETWEEN MODELS HERE
+    this->connect_one_way("3b_pos", "5a_pos", layer_spread, 0.1, 0, 2);
+    //this->connect_reentrant("3b_pos", "5a_pos", layer_spread, 0.1, 3, 2);
+
     //this->connect_one_way("5a_pos", "5b_pos", layer_spread, 0.1, 0, 2);
-
-    this->connect_reentrant("3b_pos", "5a_pos", layer_spread, 0.1, 2, 2);
-    this->connect_reentrant("5a_pos", "5b_pos", layer_spread, 0.1, 2, 2);
+    //this->connect_reentrant("3b_pos", "5a_pos", layer_spread, 0.1, 3, 2);
+    //this->connect_reentrant("5a_pos", "5b_pos", 5, 0.1, 9, 2);
 
     model->add_structure(this);
 }
@@ -56,7 +58,7 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted,
     connect_layers(name + "_pos", name + "_pos",
         (new ConnectionConfig(
             true, 0, 0.5, CONVERGENT, ADD,
-            (new FlatWeightConfig(0.01, 0.1))
+            (new FlatWeightConfig(0.05, 0.1))
             //(new LogNormalWeightConfig(-3.0, 1.0, 0.1))
                 ->set_diagonal(false)))
         ->set_arborized_config(
@@ -67,15 +69,15 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted,
                 1,
                 -spread/2,
                 (shifted) ? (-spread - spec_spread) : (-spread/2)))
-        //->set_property("short term plasticity", (shifted) ? "false" : "true")
+        ->set_property("short term plasticity", (shifted) ? "false" : "true")
         ->set_property("learning rate", learning_rate));
 
     // Exc -> Inh
     int exc_inh_spread = self_spread / conn_fraction;
     connect_layers(name + "_pos", name + "_neg",
         (new ConnectionConfig(
-            true, 0, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
+            false, 0, 0.5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.05, 0.1)))
         ->set_arborized_config(
             new ArborizedConfig(
                 exc_inh_spread,
@@ -85,6 +87,7 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted,
                 -exc_inh_spread/2,
                 -exc_inh_spread/2))
                 //(shifted) ? (-exc_inh_spread - spec_spread) : (-exc_inh_spread/2)))
+        ->set_property("myelinated", "true")
         ->set_property("learning rate", learning_rate));
 
     // Inh -> Exc
@@ -92,7 +95,7 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted,
     connect_layers(name + "_neg", name + "_pos",
         (new ConnectionConfig(
             false, 0, 0.5, DIVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.1)))
+            new FlatWeightConfig(0.05, 0.1)))
         ->set_arborized_config(
             new ArborizedConfig(
                 inh_exc_spread,
@@ -106,29 +109,30 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted,
 }
 
 void AuditoryCortex::connect_one_way(std::string name1, std::string name2,
-        int spread, float fraction, int delay, int stride) {
+        int spread, float fraction, int delay, int ratio) {
     connect_layers(name1, name2,
         (new ConnectionConfig(
             true, delay, 0.5, CONVERGENT, ADD,
             (new FlatWeightConfig(0.1, fraction))))
             //(new LogNormalWeightConfig(-3.0, 0.5, 1.0))))
         ->set_arborized_config(
-            new ArborizedConfig(spread, stride, -spread/2))
+            new ArborizedConfig(spread, ratio, -spread/2))
         //->set_property("myelinated", "true")
         ->set_property("learning rate", learning_rate));
 }
 
 void AuditoryCortex::connect_reentrant(std::string name1, std::string name2,
-        int spread, float fraction, int delay, int stride) {
-    connect_one_way(name1, name2, spread, fraction,delay, stride);
+        int spread, float fraction, int delay, int ratio) {
+    connect_one_way(name1, name2, spread, fraction,delay, ratio);
 
+    int feedback_spread = spread / ratio;
     connect_layers(name2, name1,
         (new ConnectionConfig(
             true, delay, 0.5, DIVERGENT, ADD,
             (new FlatWeightConfig(0.1, fraction))))
             //(new LogNormalWeightConfig(-3.0, 0.5, 1.0))))
         ->set_arborized_config(
-            new ArborizedConfig(spread, stride, -spread/2))
+            new ArborizedConfig(feedback_spread, ratio, -feedback_spread/2))
         //->set_property("myelinated", "true")
         ->set_property("learning rate", learning_rate));
 }
@@ -147,14 +151,15 @@ void AuditoryCortex::add_input(std::string layer, std::string input_name,
             input_name, layer,
             (new ConnectionConfig(false, 0, 1, SUBSET, ADD,
                 //new FlatWeightConfig(1.0, 1.0)))
-                new GaussianWeightConfig(0.5, 0.15, 1.0)))
+                new GaussianWeightConfig(0.1, 0.25, 0.01)))
             ->set_subset_config(
                 new SubsetConfig(
                     0, 1,
                     i, i+1,
                     i * size,
                     i * size + spec_spread,
-                    offset + 0, offset + spec_spread))
+                    //offset + 0, offset + spec_spread))
+                    0, cortex_cols))
             ->set_property("myelinated", "true")
             ->set_property("short term plasticity", "false"));
     }

@@ -36,6 +36,6 @@ void CSVOutputModule::report_output(Buffer *buffer, OutputType output_type) {
             if (row != 0 or col != 0) std::cout << ",";
             std::cout << value;
         }
-        std::cout << "\n";
     }
+    std::cout << "\n";
 }

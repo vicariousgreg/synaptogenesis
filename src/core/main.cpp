@@ -110,44 +110,42 @@ void speech_train() {
     /* Construct the model */
     Model *model = new Model();
 
-    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 4);
-    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/speech.csv 0 1 0.25");
-    auditory_cortex->add_module_all("visualizer_output", "");
-    auditory_cortex->add_module_all("heatmap", "");
+    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 7);
+    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/hearing.csv 0 1 0.25");
+    //auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/substitute.csv 0 1 0.25");
+    //auditory_cortex->add_module_all("visualizer_output", "");
+    //auditory_cortex->add_module_all("heatmap", "");
 
     // Modules
     //structure->add_module("convergent_layer", "csv_output");
+
+    std::cout << "Speech train......\n";
+    print_model(model);
+    Clock clock(false);
+
+    auto state = clock.run(model, 1635324, true);
+    std::cout << "\n";
+    state->save("hearing-spread-dual.bin");
+
+    delete state;
+    delete model;
+}
+
+void speech_test(std::string filename) {
+    /* Construct the model */
+    Model *model = new Model();
+
+    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 7);
+    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", filename + " 0 1 0.5");
+    //auditory_cortex->add_module_all("visualizer_output", "");
+    //auditory_cortex->add_module_all("heatmap", "");
+    auditory_cortex->add_module("5a_pos", "csv_output", "");
 
     std::cout << "Speech test......\n";
     print_model(model);
     Clock clock(true);
 
-    auto state = clock.run(model, 1000, true);
-    state->save("speech.bin");
-
-    delete state;
-    std::cout << "\n";
-
-    delete model;
-}
-
-void speech_test() {
-    /* Construct the model */
-    Model *model = new Model();
-
-    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 4);
-    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/substitute.csv 0 1 0.25");
-    auditory_cortex->add_module_all("visualizer_output", "");
-    auditory_cortex->add_module_all("heatmap", "");
-
-    // Modules
-    //structure->add_module("convergent_layer", "csv_output");
-
-    std::cout << "Speech test......\n";
-    print_model(model);
-    Clock clock(0.1f);
-
-    auto state = clock.run(model, 1000, true, "speech.bin");
+    auto state = clock.run(model, 717, false, "hearing-spread.bin");
 
     delete state;
     std::cout << "\n";
@@ -209,7 +207,7 @@ int main(int argc, char *argv[]) {
     try {
         //mnist_test();
         //speech_train();
-        speech_test();
+        speech_test(std::string(argv[1]));
         //maze_game_test();
 
         return 0;
