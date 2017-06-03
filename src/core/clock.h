@@ -57,7 +57,7 @@ class Clock {
                   calc_rate(false) { }
 
         State* run(Model *model, int iterations, bool verbose,
-            std::string state_file_name="");
+            State* prev_state=nullptr);
 
     private:
         void engine_loop(int iterations, bool verbose);

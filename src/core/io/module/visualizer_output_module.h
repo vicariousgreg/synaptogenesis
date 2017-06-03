@@ -16,6 +16,8 @@ class VisualizerOutputModule : public Module {
         }
 
         virtual IOTypeMask get_type() { return OUTPUT; }
+
+    MODULE_MEMBERS
 };
 
 #endif

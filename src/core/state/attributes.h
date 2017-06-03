@@ -14,13 +14,15 @@
 #include "util/pointer.h"
 #include "util/error_manager.h"
 
+class Attributes;
+
 /* Typedef for attribute kernel functions */
 typedef AttributeData ATTRIBUTE_ARGS;
 typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
 
 /* Typedef for subclass build method
  * This can't be virtual because it's a class method */
-typedef Attributes* (*BUILD_PTR)(LayerList &layers);
+typedef Attributes* (*ATT_BUILD_PTR)(LayerList &layers);
 
 class Attributes {
     public:
@@ -94,21 +96,21 @@ class Attributes {
         // Get the set of neural model strings
         static const std::set<std::string> get_neural_models();
 
+        static Attributes *build_attributes(LayerList &layers,
+            std::string neural_model, DeviceID device_id);
+
     protected:
         class NeuralModelBank {
             public:
                 // Set of neural model implementations
                 std::set<std::string> neural_models;
-                std::map<std::string, BUILD_PTR> build_pointers;
+                std::map<std::string, ATT_BUILD_PTR> build_pointers;
                 std::map<std::string, int> sizes;
         };
 
-        friend Attributes *build_attributes(LayerList &layers,
-            std::string neural_model, DeviceID device_id);
-
         // Registers a subclass neural model name with the state
         static int register_neural_model(std::string neural_model,
-            int object_size, BUILD_PTR build_ptr);
+            int object_size, ATT_BUILD_PTR build_ptr);
 
         // Set of neural model implementations
         static NeuralModelBank* get_neural_model_bank();
@@ -141,9 +143,6 @@ class Attributes {
         std::map<int, int> second_order_indices;
         std::map<int, int> second_order_sizes;
 };
-
-Attributes *build_attributes(LayerList &layers,
-    std::string neural_model, DeviceID device_id);
 
 /* Macros for Attribute subclass Registry */
 // Put this one in .cpp

@@ -7,6 +7,8 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
+REGISTER_MODULE(PrintRateModule, "print_rate", OUTPUT);
+
 PrintRateModule::PrintRateModule(Layer *layer, std::string params)
         : Module(layer),
           timesteps(0) {

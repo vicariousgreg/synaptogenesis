@@ -130,10 +130,10 @@ void Structure::add_layer_from_image(std::string path, LayerConfig *config) {
 void Structure::add_module(std::string layer_name,
         std::string type, std::string params) {
     Layer *layer = find_layer(layer_name);
-    layer->add_module(build_module(layer, type, params));
+    layer->add_module(type, params);
 }
 
 void Structure::add_module_all(std::string type, std::string params) {
     for (auto layer : layers)
-        layer->add_module(build_module(layer, type, params));
+        layer->add_module(type, params);
 }

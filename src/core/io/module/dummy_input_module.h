@@ -8,6 +8,8 @@ class DummyInputModule : public Module {
         DummyInputModule(Layer *layer, std::string params) : Module(layer) {}
 
         virtual IOTypeMask get_type() { return INPUT; }
+
+    MODULE_MEMBERS
 };
 
 #endif

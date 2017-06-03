@@ -8,6 +8,8 @@
 #define cimg_display 0
 #include "CImg.h"
 
+REGISTER_MODULE(ImageInputModule, "image_input", INPUT);
+
 ImageInputModule::ImageInputModule(Layer *layer, std::string params)
         : Module(layer), transferred(false) {
     try {

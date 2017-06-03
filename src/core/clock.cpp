@@ -5,6 +5,7 @@
 #include "model/model.h"
 #include "state/state.h"
 #include "util/parallel.h"
+#include "frontend.h"
 
 void Clock::engine_loop(int iterations, bool verbose) {
     run_timer.reset();
@@ -78,8 +79,7 @@ void Clock::environment_loop(int iterations, bool verbose) {
     }
 }
 
-State* Clock::run(Model *model, int iterations, bool verbose,
-        std::string state_file_name) {
+State* Clock::run(Model *model, int iterations, bool verbose, State *prev_state) {
     // Initialize cuda random states
     int max_size = 0;
     for (auto& structure : model->get_structures())
@@ -96,9 +96,8 @@ State* Clock::run(Model *model, int iterations, bool verbose,
     run_timer.reset();
 
     // Build state
-    State *state = new State(model);
-    if (state_file_name != "")
-        state->load(state_file_name);
+    State *state = prev_state;
+    if (state == nullptr) state = new State(model);
 
     // Build environment
     environment = new Environment(state);
@@ -142,6 +141,7 @@ State* Clock::run(Model *model, int iterations, bool verbose,
     environment = nullptr;
 
     free_rand();
+    Frontend::cleanup();
 
     return state;
 }

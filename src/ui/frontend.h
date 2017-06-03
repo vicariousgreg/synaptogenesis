@@ -27,16 +27,19 @@ class Frontend {
             std::string params) = 0;
         virtual void update(Environment *environment) = 0;
 
-        static const std::vector<Frontend*> get_instances();
+        virtual std::string get_name() = 0;
+
+        static Frontend* get_instance(std::string name);
         static void init_all();
         static void launch_all();
         static void update_all(Environment *environment);
         static void cleanup();
 
     protected:
+        static std::vector<Frontend*> instances;
+
         GUI *gui;
         GuiWindow *gui_window;
-        static std::vector<Frontend*> instances;
         std::vector<Layer*> layer_list;
         std::map<Layer*, LayerInfo*> layer_map;
 };

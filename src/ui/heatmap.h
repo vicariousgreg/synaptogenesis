@@ -11,10 +11,11 @@ class Heatmap : public Visualizer {
 
         virtual bool add_output_layer(Layer *layer, std::string params);
         virtual void update(Environment *environment);
+        virtual std::string get_name() { return Heatmap::name; }
 
     private:
-        static int instance_id;
         Heatmap();
+        static std::string name;
 
         int iterations;
         std::map<int, float*> spike_count_map;

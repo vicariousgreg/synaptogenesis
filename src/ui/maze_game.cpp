@@ -7,20 +7,16 @@
 #include "io/environment.h"
 #include "util/tools.h"
 
-int MazeGame::instance_id = -1;
+std::string MazeGame::name = "maze_game";
 
 MazeGame *MazeGame::get_instance(bool init) {
-    int id = MazeGame::instance_id;
-    if ((id == -1 or id >= Frontend::instances.size())) {
-        if (init) {
-            new MazeGame();
-            MazeGame::instance_id = Frontend::instances.size()-1;
-        } else {
-            MazeGame::instance_id = -1;
-            return nullptr;
-        }
-    }
-    return (MazeGame*)Frontend::instances[MazeGame::instance_id];
+    auto instance = (MazeGame*)Frontend::get_instance(MazeGame::name);
+    if (instance != nullptr)
+        return instance;
+    else if (init)
+        return new MazeGame();
+    else
+        return nullptr;
 }
 
 MazeGame::MazeGame() {

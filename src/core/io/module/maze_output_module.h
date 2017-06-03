@@ -15,6 +15,8 @@ class MazeOutputModule : public Module {
         MazeGame* maze_game;
         float threshold;
         int wait;
+
+    MODULE_MEMBERS
 };
 
 #endif

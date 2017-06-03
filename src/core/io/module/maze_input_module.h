@@ -14,6 +14,8 @@ class MazeInputModule : public Module {
     private:
         MazeGame* maze_game;
         std::string params;
+
+    MODULE_MEMBERS
 };
 
 #endif

@@ -18,6 +18,8 @@ class PrintOutputModule : public Module {
         unsigned int maximum;
         unsigned int shift;
         OutputType output_type;
+
+    MODULE_MEMBERS
 };
 
 #endif

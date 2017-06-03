@@ -145,7 +145,9 @@ void speech_test(std::string filename) {
     print_model(model);
     Clock clock(true);
 
-    auto state = clock.run(model, 717, false, "hearing-spread.bin");
+    auto state = new State(model);
+    state->load("hearing-spread.bin");
+    state = clock.run(model, 717, false, state);
 
     delete state;
     std::cout << "\n";
@@ -167,7 +169,13 @@ void maze_game_test() {
     print_model(model);
     Clock clock(true);
     //Clock clock(10.0f);
-    delete clock.run(model, 1000000, true);
+
+    auto state = clock.run(model, 10, true);
+
+    MazeGame::get_instance(true)->set_board_dim(board_dim);
+    state = clock.run(model, 10, true, state);
+    delete state;
+
     //delete clock.run(model, 100, true);
     std::cout << "\n";
 
@@ -207,8 +215,8 @@ int main(int argc, char *argv[]) {
     try {
         //mnist_test();
         //speech_train();
-        speech_test(std::string(argv[1]));
-        //maze_game_test();
+        //speech_test(std::string(argv[1]));
+        maze_game_test();
 
         return 0;
     } catch (const char* msg) {

@@ -3,6 +3,8 @@
 #include "io/module/maze_output_module.h"
 #include "util/error_manager.h"
 
+REGISTER_MODULE(MazeOutputModule, "maze_output", OUTPUT);
+
 MazeOutputModule::MazeOutputModule(Layer *layer, std::string params)
         : Module(layer), threshold(1), wait(0) {
     maze_game = MazeGame::get_instance(true);

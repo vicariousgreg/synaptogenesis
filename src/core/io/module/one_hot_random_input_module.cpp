@@ -7,6 +7,8 @@
 #include <sstream>
 #include <iostream>
 
+REGISTER_MODULE(OneHotRandomInputModule, "one_hot_random_input", INPUT);
+
 static void shuffle(float *vals, float max, int size) {
     int random_index = rand() % size;
     for (int nid = 0 ; nid < size; ++nid) {

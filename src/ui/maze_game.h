@@ -22,6 +22,7 @@ class MazeGame : public Frontend {
         bool add_input_layer(Layer *layer, std::string params);
         bool add_output_layer(Layer *layer, std::string params);
         void update(Environment *environment);
+        virtual std::string get_name() { return MazeGame::name; }
 
         Pointer<float> get_input(std::string params);
         bool is_dirty(std::string params);
@@ -36,7 +37,7 @@ class MazeGame : public Frontend {
     private:
         friend class MazeGameWindow;
 
-        static int instance_id;
+        static std::string name;
         MazeGame();
 
         void add_player();

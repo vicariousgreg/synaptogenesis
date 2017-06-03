@@ -14,9 +14,10 @@ class Visualizer : public Frontend {
         virtual bool add_input_layer(Layer *layer, std::string params);
         virtual bool add_output_layer(Layer *layer, std::string params);
         virtual void update(Environment *environment);
+        virtual std::string get_name() { return Visualizer::name; }
 
     protected:
-        static int instance_id;
+        static std::string name;
         Visualizer();
 
         VisualizerWindow *visualizer_window;

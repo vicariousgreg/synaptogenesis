@@ -12,8 +12,7 @@
 class Structure;
 class Connection;
 typedef std::vector<Connection*> ConnectionList;
-class Module;
-typedef std::vector<Module*> ModuleList;
+class ModuleConfig;
 
 /* Represents a two dimensional layer of neurons.
  * Layers can be constructed and connected into networks using the Structure class.
@@ -30,9 +29,7 @@ class Layer {
         bool is_output() const;
         bool is_expected() const;
 
-        Module* get_input_module() const;
-        Module* get_expected_module() const;
-        const ModuleList get_output_modules() const;
+        const std::vector<ModuleConfig*> get_module_configs() const;
 
         const ConnectionList& get_input_connections() const;
         const ConnectionList& get_output_connections() const;
@@ -81,15 +78,13 @@ class Layer {
         void add_input_connection(Connection* connection);
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
-        void add_module(Module *module);
+        void add_module(std::string module_name, std::string params);
 
         // Layer IO type mask
         IOTypeMask type;
 
         // Modules
-        Module* input_module;
-        Module* expected_module;
-        ModuleList output_modules;
+        std::vector<ModuleConfig*> module_configs;
 
         // Input and output connections
         ConnectionList input_connections;

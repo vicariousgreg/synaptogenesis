@@ -22,6 +22,8 @@ class ImageInputModule : public Module {
         int width;
         int height;
         Pointer<float> gray, red, green, blue;
+
+    MODULE_MEMBERS
 };
 
 #endif

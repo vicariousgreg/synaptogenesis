@@ -20,6 +20,8 @@ class OneHotCyclicInputModule : public Module {
         int cycle_rate;
         int index;
         float max_value;
+
+    MODULE_MEMBERS
 };
 
 #endif

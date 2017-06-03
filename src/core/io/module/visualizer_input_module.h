@@ -16,6 +16,8 @@ class VisualizerInputModule : public Module {
         }
 
         virtual IOTypeMask get_type() { return INPUT; }
+
+    MODULE_MEMBERS
 };
 
 #endif

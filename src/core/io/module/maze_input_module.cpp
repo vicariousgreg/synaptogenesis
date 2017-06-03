@@ -1,6 +1,8 @@
 #include "io/module/maze_input_module.h"
 #include "util/error_manager.h"
 
+REGISTER_MODULE(MazeInputModule, "maze_input", INPUT);
+
 MazeInputModule::MazeInputModule(Layer *layer, std::string params)
         : Module(layer), params(params) {
     maze_game = MazeGame::get_instance(true);

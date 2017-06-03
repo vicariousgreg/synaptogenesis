@@ -25,8 +25,11 @@ Frontend::~Frontend() {
     for (auto pair : layer_map) delete pair.second;
 }
 
-const std::vector<Frontend*> Frontend::get_instances() {
-    return Frontend::instances;
+Frontend* Frontend::get_instance(std::string name) {
+    for (auto f : Frontend::instances)
+        if (f->get_name() == name)
+            return f;
+    return nullptr;
 }
 
 void Frontend::init_all() {
@@ -50,5 +53,6 @@ void Frontend::update_all(Environment *environment) {
 
 void Frontend::cleanup() {
     for (auto f : Frontend::instances) delete f;
+    Frontend::instances.clear();
     GUI::delete_instance();
 }

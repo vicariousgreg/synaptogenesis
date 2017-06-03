@@ -6,20 +6,16 @@
 #include "model/layer.h"
 #include "io/environment.h"
 
-int Heatmap::instance_id = -1;
+std::string Heatmap::name = "heatmap";
 
 Heatmap *Heatmap::get_instance(bool init) {
-    int id = Heatmap::instance_id;
-    if ((id == -1 or id >= Frontend::instances.size())) {
-        if (init) {
-            new Heatmap();
-            Heatmap::instance_id = Frontend::instances.size()-1;
-        } else {
-            Heatmap::instance_id = -1;
-            return nullptr;
-        }
-    }
-    return (Heatmap*)Frontend::instances[Heatmap::instance_id];
+    auto instance = (Heatmap*)Frontend::get_instance(Heatmap::name);
+    if (instance != nullptr)
+        return instance;
+    else if (init)
+        return new Heatmap();
+    else
+        return nullptr;
 }
 
 static guint8 convert(Output out, OutputType type) {

@@ -8,6 +8,8 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
+REGISTER_MODULE(CSVOutputModule, "csv_output", OUTPUT);
+
 CSVOutputModule::CSVOutputModule(Layer *layer, std::string params)
         : Module(layer) { }
 

@@ -19,13 +19,12 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           plastic(config->plastic),
           global(config->global),
           type(0),
-          input_module(nullptr),
-          expected_module(nullptr),
           dendritic_root(new DendriticNode(0, this)) { }
 
 Layer::~Layer() {
     delete dendritic_root;
     delete config;
+    for (auto config : module_configs) delete config;
 }
 
 const LayerConfig *Layer::get_config() const { return config; }
@@ -34,15 +33,13 @@ bool Layer::is_input() const { return type & INPUT; }
 bool Layer::is_output() const { return type & OUTPUT; }
 bool Layer::is_expected() const { return type & EXPECTED; }
 
-Module* Layer::get_input_module() const { return input_module; }
-Module* Layer::get_expected_module() const { return expected_module; }
-const ModuleList Layer::get_output_modules() const { return output_modules; }
+const std::vector<ModuleConfig*> Layer::get_module_configs() const
+    { return module_configs; }
 
-const ConnectionList& Layer::get_input_connections() const {
-    return input_connections; }
-const ConnectionList& Layer::get_output_connections() const {
-    return output_connections;
-}
+const ConnectionList& Layer::get_input_connections() const
+    { return input_connections; }
+const ConnectionList& Layer::get_output_connections() const
+    { return output_connections; }
 
 int Layer::get_max_delay() const {
     // Determine max delay for output connections
@@ -67,8 +64,8 @@ void Layer::add_to_root(Connection* connection) {
     this->dendritic_root->add_child(connection);
 }
 
-void Layer::add_module(Module *module) {
-    IOTypeMask model_type = module->get_type();
+void Layer::add_module(std::string module_name, std::string params) {
+    IOTypeMask model_type = Module::get_module_type(module_name);
 
     if ((model_type & INPUT) and (this->type & INPUT))
         ErrorManager::get_instance()->log_error(
@@ -77,9 +74,7 @@ void Layer::add_module(Module *module) {
         ErrorManager::get_instance()->log_error(
             "Layer cannot have more than one expected module!");
 
-    if (model_type & INPUT) this->input_module = module;
-    if (model_type & OUTPUT) this->output_modules.push_back(module);
-    if (model_type & EXPECTED) this->expected_module = module;
+    this->module_configs.push_back(new ModuleConfig(module_name, params));
 
     this->type |= model_type;
 }

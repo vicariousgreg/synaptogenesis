@@ -21,6 +21,8 @@ class CSVExpectedModule : public Module {
 
         std::vector<Pointer<float> > input;
         std::vector<Pointer<Output> > expected;
+
+    MODULE_MEMBERS
 };
 
 #endif

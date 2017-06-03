@@ -6,20 +6,16 @@
 #include "model/layer.h"
 #include "io/environment.h"
 
-int Visualizer::instance_id = -1;
+std::string Visualizer::name = "visualizer";
 
 Visualizer *Visualizer::get_instance(bool init) {
-    int id = Visualizer::instance_id;
-    if ((id == -1 or id >= Frontend::instances.size())) {
-        if (init) {
-            new Visualizer();
-            Visualizer::instance_id = Frontend::instances.size()-1;
-        } else {
-            Visualizer::instance_id = -1;
-            return nullptr;
-        }
-    }
-    return (Visualizer*)Frontend::instances[Visualizer::instance_id];
+    auto instance = (Visualizer*)Frontend::get_instance(Visualizer::name);
+    if (instance != nullptr)
+        return instance;
+    else if (init)
+        return new Visualizer();
+    else
+        return nullptr;
 }
 
 static guint8 convert(Output out, OutputType type) {

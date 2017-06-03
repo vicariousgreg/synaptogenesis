@@ -26,6 +26,7 @@ Engine::Engine(State *state, Environment *environment)
 Engine::~Engine() {
     for (auto& cluster : clusters)
         delete cluster;
+    InterDeviceInstruction::get_originals()->clear();
 }
 
 void Engine::stage_clear() {

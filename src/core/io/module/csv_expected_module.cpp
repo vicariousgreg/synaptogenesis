@@ -8,6 +8,8 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
+REGISTER_MODULE(CSVExpectedModule, "csv_expected", INPUT | EXPECTED);
+
 CSVExpectedModule::CSVExpectedModule(Layer *layer, std::string params)
         : Module(layer) {
     std::string filename;

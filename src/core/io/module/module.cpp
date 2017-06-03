@@ -1,54 +1,36 @@
 #include "io/module/module.h"
-#include "io/module/print_output_module.h"
-#include "io/module/print_rate_module.h"
-#include "io/module/random_input_module.h"
-#include "io/module/one_hot_random_input_module.h"
-#include "io/module/one_hot_cyclic_input_module.h"
-#include "io/module/image_input_module.h"
-#include "io/module/csv_input_module.h"
-#include "io/module/csv_output_module.h"
-#include "io/module/visualizer_input_module.h"
-#include "io/module/visualizer_output_module.h"
-#include "io/module/heatmap_output_module.h"
-#include "io/module/maze_input_module.h"
-#include "io/module/maze_output_module.h"
-#include "io/module/dummy_input_module.h"
-#include "io/module/dummy_output_module.h"
 #include "util/error_manager.h"
 
-Module* build_module(Layer *layer, std::string type,
-        std::string params) {
-    if (type == "random_input")
-        return new RandomInputModule(layer, params);
-    else if (type == "one_hot_random_input")
-        return new OneHotRandomInputModule(layer, params);
-    else if (type == "one_hot_cyclic_input")
-        return new OneHotCyclicInputModule(layer, params);
-    else if (type == "image_input")
-        return new ImageInputModule(layer, params);
-    else if (type == "csv_input")
-        return new CSVInputModule(layer, params);
-    else if (type == "csv_output")
-        return new CSVOutputModule(layer, params);
-    else if (type == "print_output")
-        return new PrintOutputModule(layer, params);
-    else if (type == "print_rate")
-        return new PrintRateModule(layer, params);
-    else if (type == "visualizer_input")
-        return new VisualizerInputModule(layer, params);
-    else if (type == "visualizer_output")
-        return new VisualizerOutputModule(layer, params);
-    else if (type == "heatmap")
-        return new HeatmapOutputModule(layer, params);
-    else if (type == "maze_input")
-        return new MazeInputModule(layer, params);
-    else if (type == "maze_output")
-        return new MazeOutputModule(layer, params);
-    else if (type == "dummy_input")
-        return new DummyInputModule(layer, params);
-    else if (type == "dummy_output")
-        return new DummyOutputModule(layer, params);
-    else
+Module* Module::build_module(Layer *layer, ModuleConfig *config) {
+    auto bank = Module::get_module_bank();
+    if (bank->modules.count(config->name) == 0)
         ErrorManager::get_instance()->log_error(
-            "Unrecognized module!");
+            "Unrecognized module string: " + config->name + "!");
+
+    return bank->build_pointers[config->name](layer, config->params);
+}
+
+Module::ModuleBank* Module::get_module_bank() {
+    static Module::ModuleBank* bank = new ModuleBank();
+    return bank;
+}
+
+// Get the IOType of a module subclass
+IOTypeMask Module::get_module_type(std::string module_name) {
+    return Module::get_module_bank()->types.at(module_name);
+}
+
+
+int Module::register_module(std::string module_name,
+        IOTypeMask type, MODULE_BUILD_PTR build_ptr) {
+    auto bank = Module::get_module_bank();
+    if (bank->modules.count(module_name) == 1)
+        ErrorManager::get_instance()->log_error(
+            "Duplicate module name: " + module_name + "!");
+    bank->modules.insert(module_name);
+    bank->build_pointers[module_name] = build_ptr;
+    bank->types[module_name] = type;
+
+    // Return index as an identifier
+    return bank->modules.size() - 1;
 }

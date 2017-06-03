@@ -8,6 +8,8 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
+REGISTER_MODULE(CSVInputModule, "csv_input", INPUT);
+
 CSVInputModule::CSVInputModule(Layer *layer, std::string params)
         : Module(layer) {
     std::string filename;

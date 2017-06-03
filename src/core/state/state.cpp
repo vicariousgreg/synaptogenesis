@@ -72,7 +72,7 @@ State::State(Model *model) : model(model) {
             if (layers.size() == 0) {
                 attributes[device_id][neural_model] = nullptr;
             } else {
-                auto att = build_attributes(layers, neural_model, device_id);
+                auto att = Attributes::build_attributes(layers, neural_model, device_id);
                 attributes[device_id][neural_model] = att;
 
                 // Retrieve pointers

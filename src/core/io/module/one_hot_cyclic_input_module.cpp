@@ -7,6 +7,8 @@
 #include <sstream>
 #include <iostream>
 
+REGISTER_MODULE(OneHotCyclicInputModule, "one_hot_cyclic_input", INPUT);
+
 void OneHotCyclicInputModule::print() {
     for (int nid = 0 ; nid < this->layer->size; ++nid) {
         if (nid == index) {

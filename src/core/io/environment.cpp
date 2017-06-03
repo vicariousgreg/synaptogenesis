@@ -11,19 +11,13 @@ Environment::Environment(State *state)
               ResourceManager::get_instance()->get_host_id(), state->model)) {
     // Extract modules
     for (auto& layer : state->model->get_layers()) {
-        // Add input module
-        Module *input_module = layer->get_input_module();
-        if (input_module != nullptr)
-            this->input_modules.push_back(input_module);
-
-        // Add expected module
-        Module *expected_module = layer->get_expected_module();
-        if (expected_module != nullptr)
-            this->expected_modules.push_back(expected_module);
-
-        // Add output modules
-        for (auto& output_module : layer->get_output_modules())
-            this->output_modules.push_back(output_module);
+        for (auto config : layer->get_module_configs()) {
+            Module *module = Module::build_module(layer, config);
+            auto type = module->get_type();
+            if (type & INPUT) this->input_modules.push_back(module);
+            if (type & OUTPUT) this->output_modules.push_back(module);
+            if (type & EXPECTED) this->expected_modules.push_back(module);
+        }
     }
 }
 

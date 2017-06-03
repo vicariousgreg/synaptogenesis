@@ -1,7 +1,7 @@
 #include "state/attributes.h"
 #include "state/state.h"
 
-Attributes *build_attributes(LayerList &layers,
+Attributes* Attributes::build_attributes(LayerList &layers,
         std::string neural_model, DeviceID device_id) {
     auto bank = Attributes::get_neural_model_bank();
     if (bank->neural_models.count(neural_model) == 0)
@@ -28,7 +28,7 @@ const std::set<std::string> Attributes::get_neural_models() {
 }
 
 int Attributes::register_neural_model(std::string neural_model,
-        int object_size, BUILD_PTR build_ptr) {
+        int object_size, ATT_BUILD_PTR build_ptr) {
     auto bank = Attributes::get_neural_model_bank();
     if (bank->neural_models.count(neural_model) == 1)
         ErrorManager::get_instance()->log_error(

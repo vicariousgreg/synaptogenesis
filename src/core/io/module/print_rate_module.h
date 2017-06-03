@@ -15,6 +15,8 @@ class PrintRateModule : public Module {
         int rate;
         float *totals;
         int timesteps;
+
+    MODULE_MEMBERS
 };
 
 #endif

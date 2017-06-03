@@ -19,6 +19,8 @@ class CSVInputModule : public Module {
         int curr_row;
 
         std::vector<Pointer<float> > data;
+
+    MODULE_MEMBERS
 };
 
 #endif

@@ -16,6 +16,8 @@ class RandomInputModule : public Module {
         int shuffle_rate;
         float max_value;
         float *random_values;
+
+    MODULE_MEMBERS
 };
 
 #endif

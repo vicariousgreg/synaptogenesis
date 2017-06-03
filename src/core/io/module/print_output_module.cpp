@@ -7,6 +7,8 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
+REGISTER_MODULE(PrintOutputModule, "print_output", OUTPUT);
+
 PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)
         : Module(layer),
           counter(0) {
