@@ -9,6 +9,7 @@
 #include "model/model.h"
 #include "model/column.h"
 #include "model/weight_config.h"
+#include "io/module/module.h"
 #include "state/state.h"
 #include "util/tools.h"
 #include "clock.h"
@@ -50,6 +51,191 @@ void run_simulation(Model *model, int iterations, bool verbose) {
     // Run for 100 iterations
     //Clock clock(false);  // No refresh rate synchronization
     //delete clock.run(model, 100, verbose);
+}
+
+void old_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = new Structure("old");
+    model->add_structure(structure);
+
+    std::string model_name = "leaky_izhikevich";
+
+    int resolution = 128;
+    structure->add_layer((new LayerConfig(
+        "input_layer", model_name, 1, 10))
+			->set_property(IZ_INIT, "default"));
+    structure->add_layer((new LayerConfig(
+        "exc_thalamus", model_name, resolution, resolution))
+			->set_property(IZ_INIT, "thalamo_cortical"));
+    structure->add_layer((new LayerConfig(
+        "inh_thalamus", model_name, resolution, resolution))
+			->set_property(IZ_INIT, "random negative"));
+    structure->add_layer((new LayerConfig(
+        "exc_cortex", model_name, resolution, resolution))
+            ->set_property(IZ_INIT, "random positive"));
+    structure->add_layer((new LayerConfig(
+        "inh_cortex", model_name, resolution, resolution))
+            ->set_property(IZ_INIT, "random negative"));
+
+    /* Forward excitatory pathway */
+    structure->connect_layers("input_layer", "exc_thalamus",
+        (new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+            new RandomWeightConfig(1, 0.01)))
+        ->set_property("myelinated", "true"));
+    structure->connect_layers("exc_thalamus", "exc_cortex",
+        (new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
+            new RandomWeightConfig(1, 0.1)))
+        ->set_property("myelinated", "")
+        ->set_arborized_config(new ArborizedConfig(15, 1, -7)));
+    structure->connect_layers("exc_cortex", "exc_cortex",
+        (new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
+            new RandomWeightConfig(1, 0.1)))
+        ->set_property("myelinated", "")
+        ->set_arborized_config(new ArborizedConfig(31, 1, -15)));
+
+    /* Cortical inhibitory loop */
+    structure->connect_layers("exc_cortex", "inh_cortex",
+        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+            new RandomWeightConfig(0.1)))
+        ->set_property("myelinated", "")
+        ->set_arborized_config(new ArborizedConfig(31, 1, -15)));
+    structure->connect_layers("inh_cortex", "exc_cortex",
+        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
+            new RandomWeightConfig(1)))
+        ->set_property("myelinated", "")
+        ->set_arborized_config(new ArborizedConfig(5, 1, -2)));
+
+    /* Cortico-thalamic inhibitory loop */
+    structure->connect_layers("exc_cortex", "inh_thalamus",
+        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+            new RandomWeightConfig(0.1)))
+        ->set_property("myelinated", "")
+        ->set_arborized_config(new ArborizedConfig(7, 1, -3)));
+    structure->connect_layers("inh_thalamus", "exc_thalamus",
+        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
+            new FlatWeightConfig(1)))
+        ->set_property("myelinated", "")
+        ->set_arborized_config(new ArborizedConfig(5, 1, -2)));
+
+
+    // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
+    structure->add_module("input_layer",
+        new ModuleConfig("random_input", "5 1000000"));
+    structure->add_module("exc_thalamus",
+        new ModuleConfig(output_name));
+    structure->add_module("exc_cortex",
+        new ModuleConfig(output_name));
+    structure->add_module("exc_thalamus",
+        new ModuleConfig("heatmap"));
+    structure->add_module("exc_cortex",
+        new ModuleConfig("heatmap"));
+    //structure->add_module("inh_cortex", output_name, "8");
+    //structure->add_module("inh_thalamus", output_name, "8");
+
+    print_model(model);
+    Clock clock(true);
+    delete clock.run(model, 1000000, true);
+    delete model;
+}
+
+void simple_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = new Structure("simple");
+    model->add_structure(structure);
+
+    std::string model_name = "leaky_izhikevich";
+
+    int exc_field = 25;
+    int inh_field = 15;
+
+    int resolution = 96;
+    structure->add_layer((new LayerConfig(
+        "input_layer", model_name, 1, 10))
+			->set_property(IZ_INIT, "regular"));
+    structure->add_layer((new LayerConfig(
+        "hid_1", model_name, resolution, resolution))
+			->set_property(IZ_INIT, "regular"));
+    structure->add_layer((new LayerConfig(
+        "hid_2", model_name, resolution, resolution))
+			->set_property(IZ_INIT, "regular"));
+
+    /* Forward excitatory pathway */
+    structure->connect_layers("input_layer", "hid_1",
+        (new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+            new RandomWeightConfig(1, 0.05)))
+        ->set_property("myelinated", "true"));
+
+    structure->connect_layers("hid_1", "hid_2",
+        (new ConnectionConfig(true, 10, 5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+    /*
+    structure->connect_layers("hid_1", "hid_2",
+        (new ConnectionConfig(false, 10, 5, CONVERGENT, SUB,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+    */
+
+    /* Recurrent self connectivity */
+    structure->connect_layers("hid_1", "hid_1",
+        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+    structure->connect_layers("hid_1", "hid_1",
+        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+
+    structure->connect_layers("hid_2", "hid_2",
+        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+    structure->connect_layers("hid_2", "hid_2",
+        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+
+    /* Feedback connectivity */
+    structure->connect_layers("hid_2", "hid_1",
+        (new ConnectionConfig(true, 10, 5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+    /*
+    structure->connect_layers("hid_2", "hid_1",
+        (new ConnectionConfig(false, 10, 5, CONVERGENT, SUB,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+    */
+
+    // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
+    structure->add_module("input_layer",
+        new ModuleConfig("one_hot_random_input", "4 1000000"));
+    structure->add_module("input_layer",
+        new ModuleConfig(output_name));
+    structure->add_module("hid_1",
+        new ModuleConfig(output_name));
+    structure->add_module("hid_2",
+        new ModuleConfig(output_name));
+
+    structure->add_module("input_layer",
+        new ModuleConfig("heatmap"));
+    structure->add_module("hid_1",
+        new ModuleConfig("heatmap"));
+    structure->add_module("hid_2",
+        new ModuleConfig("heatmap"));
+
+    print_model(model);
+    Clock clock(true);
+    delete clock.run(model, 1000000, true);
+    delete model;
 }
 
 void mnist_test() {
@@ -220,7 +406,9 @@ int main(int argc, char *argv[]) {
         //mnist_test();
         //speech_train();
         //speech_test(std::string(argv[1]));
-        maze_game_test();
+        //maze_game_test();
+        //old_test();
+        simple_test();
 
         return 0;
     } catch (const char* msg) {
