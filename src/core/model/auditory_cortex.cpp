@@ -138,11 +138,11 @@ void AuditoryCortex::connect_reentrant(std::string name1, std::string name2,
 }
 
 void AuditoryCortex::add_input(std::string layer, std::string input_name,
-        std::string module_name, std::string module_params) {
+        ModuleConfig *config) {
     add_layer(
         (new LayerConfig(input_name, LEAKY_IZHIKEVICH, 1, spec_size))
         ->set_property(IZ_INIT, "regular"));
-    add_module(input_name, module_name, module_params);
+    add_module(input_name, config);
 
     int size = spec_spacing + spec_spread;
     int offset = (cortex_cols / 2) - (size / 2);

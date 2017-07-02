@@ -10,10 +10,11 @@
 
 REGISTER_MODULE(ImageInputModule, "image_input", INPUT);
 
-ImageInputModule::ImageInputModule(Layer *layer, std::string params)
+ImageInputModule::ImageInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer), transferred(false) {
+    std::string filename = config->get_property("params");
     try {
-        cimg_library::CImg<unsigned char> img(params.c_str());
+        cimg_library::CImg<unsigned char> img(filename.c_str());
         width = img.width();
         height = img.height();
 
@@ -52,7 +53,7 @@ ImageInputModule::ImageInputModule(Layer *layer, std::string params)
             }
         }
     } catch (cimg_library::CImgIOException e) {
-        printf("Image %s could not be opened!\n", params.c_str());
+        printf("Image %s could not be opened!\n", filename.c_str());
         ErrorManager::get_instance()->log_error(
             "Could not construct image input driver!");
     }

@@ -18,9 +18,9 @@ static void shuffle(float *vals, float max, int size) {
     std::cout << std::endl;
 }
 
-RandomInputModule::RandomInputModule(Layer *layer, std::string params)
+RandomInputModule::RandomInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer), timesteps(0) {
-    std::stringstream stream(params);
+    std::stringstream stream(config->get_property("params"));
     if (!stream.eof()) {
         stream >> this->max_value;
 

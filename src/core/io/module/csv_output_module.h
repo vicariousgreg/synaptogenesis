@@ -6,7 +6,7 @@
 
 class CSVOutputModule : public Module {
     public:
-        CSVOutputModule(Layer *layer, std::string params);
+        CSVOutputModule(Layer *layer, ModuleConfig *config);
         virtual ~CSVOutputModule();
 
         void report_output(Buffer *buffer, OutputType output_type);

@@ -7,7 +7,7 @@
 
 class CSVExpectedModule : public Module {
     public:
-        CSVExpectedModule(Layer *layer, std::string params);
+        CSVExpectedModule(Layer *layer, ModuleConfig *config);
         virtual ~CSVExpectedModule();
 
         void feed_input(Buffer *buffer);

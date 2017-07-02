@@ -6,7 +6,7 @@
 
 class ImageInputModule : public Module {
     public:
-        ImageInputModule(Layer *layer, std::string params);
+        ImageInputModule(Layer *layer, ModuleConfig *config);
         virtual ~ImageInputModule() {
             this->gray.free();
             this->red.free();

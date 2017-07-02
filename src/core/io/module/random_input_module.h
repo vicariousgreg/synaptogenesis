@@ -5,7 +5,7 @@
 
 class RandomInputModule : public Module {
     public:
-        RandomInputModule(Layer *layer, std::string params);
+        RandomInputModule(Layer *layer, ModuleConfig *config);
         virtual ~RandomInputModule();
 
         void feed_input(Buffer *buffer);

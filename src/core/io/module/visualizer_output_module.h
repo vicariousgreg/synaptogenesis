@@ -7,10 +7,10 @@
 
 class VisualizerOutputModule : public Module {
     public:
-        VisualizerOutputModule(Layer *layer, std::string params)
+        VisualizerOutputModule(Layer *layer, ModuleConfig *config)
             : Module(layer) {
             if (not Visualizer::get_instance(true)
-                    ->add_output_layer(layer, params))
+                    ->add_output_layer(layer, config->get_property("params")))
                 ErrorManager::get_instance()->log_error(
                     "Failed to add layer to Visualizer!");
         }

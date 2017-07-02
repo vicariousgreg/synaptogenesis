@@ -5,7 +5,7 @@
 
 class DummyInputModule : public Module {
     public:
-        DummyInputModule(Layer *layer, std::string params) : Module(layer) {}
+        DummyInputModule(Layer *layer, ModuleConfig *config) : Module(layer) {}
 
         virtual IOTypeMask get_type() { return INPUT; }
 

@@ -7,11 +7,8 @@ class Column : public Structure {
     public:
         Column(std::string name, int rows, int columns, bool plastic);
 
-        void add_input(bool plastic, int num_symbols,
-            std::string module_name, std::string module_params);
-
-        void add_lined_up_input(bool plastic, int num_symbols,
-            std::string module_name, std::string module_params);
+        void add_input(bool plastic, int num_symbols, ModuleConfig *config);
+        void add_lined_up_input(bool plastic, int num_symbols, ModuleConfig *config);
 
         static void connect(Column *col_a, Column *col_b,
             std::string name_a, std::string name_b,

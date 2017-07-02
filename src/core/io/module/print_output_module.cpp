@@ -9,10 +9,10 @@
 
 REGISTER_MODULE(PrintOutputModule, "print_output", OUTPUT);
 
-PrintOutputModule::PrintOutputModule(Layer *layer, std::string params)
+PrintOutputModule::PrintOutputModule(Layer *layer, ModuleConfig *config)
         : Module(layer),
           counter(0) {
-    std::stringstream stream(params);
+    std::stringstream stream(config->get_property("params"));
     if (!stream.eof()) {
         stream >> this->history_length;
         if (this->history_length <= 0 or this->history_length > 8 * sizeof(Output))

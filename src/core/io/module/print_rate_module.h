@@ -6,7 +6,7 @@
 class PrintRateModule : public Module {
     public:
         PrintRateModule(Layer *layer,
-            std::string params);
+            ModuleConfig *config);
 
         void report_output(Buffer *buffer, OutputType output_type);
         virtual IOTypeMask get_type() { return OUTPUT; }

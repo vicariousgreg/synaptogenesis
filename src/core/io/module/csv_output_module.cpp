@@ -10,7 +10,7 @@
 
 REGISTER_MODULE(CSVOutputModule, "csv_output", OUTPUT);
 
-CSVOutputModule::CSVOutputModule(Layer *layer, std::string params)
+CSVOutputModule::CSVOutputModule(Layer *layer, ModuleConfig *config)
         : Module(layer) { }
 
 CSVOutputModule::~CSVOutputModule() { }

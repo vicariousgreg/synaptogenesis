@@ -64,8 +64,8 @@ void Layer::add_to_root(Connection* connection) {
     this->dendritic_root->add_child(connection);
 }
 
-void Layer::add_module(std::string module_name, std::string params) {
-    IOTypeMask model_type = Module::get_module_type(module_name);
+void Layer::add_module(ModuleConfig *config) {
+    IOTypeMask model_type = Module::get_module_type(config->get_property("name"));
 
     if ((model_type & INPUT) and (this->type & INPUT))
         ErrorManager::get_instance()->log_error(
@@ -74,7 +74,7 @@ void Layer::add_module(std::string module_name, std::string params) {
         ErrorManager::get_instance()->log_error(
             "Layer cannot have more than one expected module!");
 
-    this->module_configs.push_back(new ModuleConfig(module_name, params));
+    this->module_configs.push_back(config);
 
     this->type |= model_type;
 }

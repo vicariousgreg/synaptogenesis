@@ -5,18 +5,25 @@
 #include <vector>
 
 #include "model/layer.h"
+#include "model/property_config.h"
 #include "io/buffer.h"
 
 class Module;
-typedef Module* (*MODULE_BUILD_PTR)(Layer *layer, std::string params);
+class ModuleConfig;
+typedef Module* (*MODULE_BUILD_PTR)(Layer *layer, ModuleConfig *config);
 
-class ModuleConfig {
+class ModuleConfig : public PropertyConfig {
     public:
-        ModuleConfig(std::string name, std::string params)
-            : name(name), params(params) { }
+        ModuleConfig(std::string name, std::string params="") {
+            this->set_property("name", name);
+            this->set_property("params", params);
+        }
 
-    const std::string name;
-    const std::string params;
+        /* Setter that returns self pointer */
+        ModuleConfig *set_property(std::string key, std::string value) {
+            set_property_internal(key, value);
+            return this;
+        }
 };
 
 class Module {
@@ -65,14 +72,14 @@ int CLASS_NAME::module_id = \
     Module::register_module(STRING, \
         TYPE, CLASS_NAME::build); \
 \
-Module *CLASS_NAME::build(Layer *layer, std::string params) { \
-    return new CLASS_NAME(layer, params); \
+Module *CLASS_NAME::build(Layer *layer, ModuleConfig *config) { \
+    return new CLASS_NAME(layer, config); \
 }
 
 // Put this one in .h at bottom of class definition
 #define MODULE_MEMBERS \
     protected: \
-        static Module *build(Layer *layer, std::string params); \
+        static Module *build(Layer *layer, ModuleConfig *config); \
         static int module_id;
 
 typedef std::vector<Module*> ModuleList;

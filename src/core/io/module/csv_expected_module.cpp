@@ -10,10 +10,10 @@
 
 REGISTER_MODULE(CSVExpectedModule, "csv_expected", INPUT | EXPECTED);
 
-CSVExpectedModule::CSVExpectedModule(Layer *layer, std::string params)
+CSVExpectedModule::CSVExpectedModule(Layer *layer, ModuleConfig *config)
         : Module(layer) {
     std::string filename;
-    std::stringstream stream(params);
+    std::stringstream stream(config->get_property("params"));
     stream >> filename;
 
     // Check if file exists

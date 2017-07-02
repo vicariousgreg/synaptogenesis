@@ -5,7 +5,7 @@
 
 class OneHotCyclicInputModule : public Module {
     public:
-        OneHotCyclicInputModule(Layer *layer, std::string params);
+        OneHotCyclicInputModule(Layer *layer, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
         virtual IOTypeMask get_type() { return INPUT; }

@@ -9,10 +9,10 @@
 
 REGISTER_MODULE(PrintRateModule, "print_rate", OUTPUT);
 
-PrintRateModule::PrintRateModule(Layer *layer, std::string params)
+PrintRateModule::PrintRateModule(Layer *layer, ModuleConfig *config)
         : Module(layer),
           timesteps(0) {
-    std::stringstream stream(params);
+    std::stringstream stream(config->get_property("params"));
     if (!stream.eof()) {
         stream >> this->rate;
     } else {

@@ -20,9 +20,9 @@ class MazeCortex : public Structure {
         void connect_one_way(std::string name1, std::string name2,
             int spread, float fraction, int delay=0, int stride=1);
         void add_input_grid(std::string layer, std::string input_name,
-            std::string module_name, std::string module_params);
+            ModuleConfig *config);
         void add_input_random(std::string layer, std::string input_name,
-            std::string module_name, std::string module_params);
+            ModuleConfig *config);
 };
 
 #endif

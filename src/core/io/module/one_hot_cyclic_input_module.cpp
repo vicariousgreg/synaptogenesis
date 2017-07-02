@@ -36,9 +36,9 @@ void OneHotCyclicInputModule::clear(Buffer *buffer) {
     buffer->set_dirty(this->layer);
 }
 
-OneHotCyclicInputModule::OneHotCyclicInputModule(Layer *layer, std::string params)
+OneHotCyclicInputModule::OneHotCyclicInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer), timesteps(0), index(layer->size-1) {
-    std::stringstream stream(params);
+    std::stringstream stream(config->get_property("params"));
     if (!stream.eof()) {
         stream >> this->max_value;
 

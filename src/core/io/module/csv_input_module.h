@@ -7,7 +7,7 @@
 
 class CSVInputModule : public Module {
     public:
-        CSVInputModule(Layer *layer, std::string params);
+        CSVInputModule(Layer *layer, ModuleConfig *config);
         virtual ~CSVInputModule();
 
         void feed_input(Buffer *buffer);

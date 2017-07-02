@@ -3,11 +3,11 @@
 
 Module* Module::build_module(Layer *layer, ModuleConfig *config) {
     auto bank = Module::get_module_bank();
-    if (bank->modules.count(config->name) == 0)
+    if (bank->modules.count(config->get_property("name")) == 0)
         ErrorManager::get_instance()->log_error(
-            "Unrecognized module string: " + config->name + "!");
+            "Unrecognized module: " + config->get_property("name") + "!");
 
-    return bank->build_pointers[config->name](layer, config->params);
+    return bank->build_pointers[config->get_property("name")](layer, config);
 }
 
 Module::ModuleBank* Module::get_module_bank() {

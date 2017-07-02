@@ -6,7 +6,7 @@
 
 class MazeInputModule : public Module {
     public:
-        MazeInputModule(Layer *layer, std::string params);
+        MazeInputModule(Layer *layer, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
         virtual IOTypeMask get_type() { return INPUT; }

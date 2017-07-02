@@ -5,10 +5,10 @@
 
 REGISTER_MODULE(MazeOutputModule, "maze_output", OUTPUT);
 
-MazeOutputModule::MazeOutputModule(Layer *layer, std::string params)
+MazeOutputModule::MazeOutputModule(Layer *layer, ModuleConfig *config)
         : Module(layer), threshold(1), wait(0) {
     maze_game = MazeGame::get_instance(true);
-    if (not maze_game->add_output_layer(layer, params))
+    if (not maze_game->add_output_layer(layer, config->get_property("params")))
         ErrorManager::get_instance()->log_error(
             "Failed to add layer to Maze Game!");
 }

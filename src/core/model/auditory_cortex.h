@@ -12,7 +12,7 @@ class AuditoryCortex : public Structure {
         AuditoryCortex(Model *model, int spec_size, int spec_spread);
 
         void add_input(std::string layer, std::string input_name,
-            std::string module_name, std::string module_params);
+            ModuleConfig *config);
 
     protected:
         int spec_size;

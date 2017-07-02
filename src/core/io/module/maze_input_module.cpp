@@ -3,8 +3,8 @@
 
 REGISTER_MODULE(MazeInputModule, "maze_input", INPUT);
 
-MazeInputModule::MazeInputModule(Layer *layer, std::string params)
-        : Module(layer), params(params) {
+MazeInputModule::MazeInputModule(Layer *layer, ModuleConfig *config)
+        : Module(layer), params(config->get_property("params")) {
     maze_game = MazeGame::get_instance(true);
     if (not maze_game->add_input_layer(layer, params))
         ErrorManager::get_instance()->log_error(

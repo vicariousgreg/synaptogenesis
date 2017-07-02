@@ -10,10 +10,10 @@
 
 REGISTER_MODULE(CSVInputModule, "csv_input", INPUT);
 
-CSVInputModule::CSVInputModule(Layer *layer, std::string params)
+CSVInputModule::CSVInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer) {
     std::string filename;
-    std::stringstream stream(params);
+    std::stringstream stream(config->get_property("params"));
     stream >> filename;
 
     // Check if file exists

@@ -78,7 +78,7 @@ class Layer {
         void add_input_connection(Connection* connection);
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
-        void add_module(std::string module_name, std::string params);
+        void add_module(ModuleConfig *config);
 
         // Layer IO type mask
         IOTypeMask type;

@@ -7,10 +7,10 @@
 
 class VisualizerInputModule : public Module {
     public:
-        VisualizerInputModule(Layer *layer, std::string params)
+        VisualizerInputModule(Layer *layer, ModuleConfig *config)
             : Module(layer) {
             if (not Visualizer::get_instance(true)
-                    ->add_input_layer(layer, params))
+                    ->add_input_layer(layer, config->get_property("params")))
                 ErrorManager::get_instance()->log_error(
                     "Failed to add layer to Visualizer!");
         }

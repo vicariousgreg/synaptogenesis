@@ -93,10 +93,11 @@ void mnist_test() {
     // Modules
     std::string output_name = "visualizer_output";
 
-    structure->add_module("input_layer", "csv_input", "/HDD/datasets/mnist/mnist_test.csv 1 5000 25");
-    structure->add_module("input_layer", output_name);
+    structure->add_module("input_layer",
+        new ModuleConfig("csv_input", "/HDD/datasets/mnist/mnist_test.csv 1 5000 25"));
+    structure->add_module("input_layer", new ModuleConfig(output_name));
     for (int i = 0; i < num_hidden; ++i)
-        structure->add_module(std::to_string(i), output_name);
+        structure->add_module(std::to_string(i), new ModuleConfig(output_name));
 
     std::cout << "CSV test......\n";
     print_model(model);
@@ -111,13 +112,15 @@ void speech_train() {
     Model *model = new Model();
 
     AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 7);
-    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/hearing.csv 0 1 0.25");
-    //auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", "./resources/substitute.csv 0 1 0.25");
-    //auditory_cortex->add_module_all("visualizer_output", "");
-    //auditory_cortex->add_module_all("heatmap", "");
+    auditory_cortex->add_input("3b_pos", "speech_input",
+        new ModuleConfig("csv_input", "./resources/hearing.csv 0 1 0.25"));
+    //auditory_cortex->add_input("3b_pos", "speech_input",
+    //    new ModuleConfig("csv_input", "./resources/substitute.csv 0 1 0.25"));
+    //auditory_cortex->add_module_all(new ModuleConfig("visualizer_output"));
+    //auditory_cortex->add_module_all(new ModuleConfig("heatmap"));
 
     // Modules
-    //structure->add_module("convergent_layer", "csv_output");
+    //structure->add_module("convergent_layer", new ModuleConfig("csv_output"));
 
     std::cout << "Speech train......\n";
     print_model(model);
@@ -136,10 +139,11 @@ void speech_test(std::string filename) {
     Model *model = new Model();
 
     AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 7);
-    auditory_cortex->add_input("3b_pos", "speech_input", "csv_input", filename + " 0 1 0.5");
-    //auditory_cortex->add_module_all("visualizer_output", "");
-    //auditory_cortex->add_module_all("heatmap", "");
-    auditory_cortex->add_module("5a_pos", "csv_output", "");
+    auditory_cortex->add_input("3b_pos", "speech_input",
+        new ModuleConfig("csv_input", filename + " 0 1 0.5"));
+    //auditory_cortex->add_module_all(new ModuleConfig("visualizer_output"));
+    //auditory_cortex->add_module_all(new ModuleConfig("heatmap"));
+    auditory_cortex->add_module("5a_pos", new ModuleConfig("csv_output"));
 
     std::cout << "Speech test......\n";
     print_model(model);
@@ -162,8 +166,8 @@ void maze_game_test() {
     MazeGame::get_instance(true)->set_board_dim(board_dim);
 
     MazeCortex *maze_cortex = new MazeCortex(model, board_dim, 16);
-    maze_cortex->add_module_all("visualizer_output", "");
-    maze_cortex->add_module_all("heatmap", "");
+    maze_cortex->add_module_all(new ModuleConfig("visualizer_output"));
+    maze_cortex->add_module_all(new ModuleConfig("heatmap"));
 
     std::cout << "Maze game test......\n";
     print_model(model);

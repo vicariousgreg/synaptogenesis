@@ -48,16 +48,18 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
         ->set_property("myelinated", "true")
         ->set_property("learning rate", learning_rate));
 
-    add_module("output", "maze_output");
+    add_module("output", new ModuleConfig("maze_output"));
 
-    this->add_input_random("3b_pos", "player_input", "maze_input", "player");
-    this->add_input_random("3b_pos", "goal_input", "maze_input", "goal");
+    this->add_input_random("3b_pos", "player_input",
+        new ModuleConfig("maze_input", "player"));
+    this->add_input_random("3b_pos", "goal_input",
+        new ModuleConfig("maze_input", "goal"));
 
     // Dopamine
     add_layer(
         (new LayerConfig("dopamine", IZHIKEVICH, 1, 1))
         ->set_property(IZ_INIT, "bursting"));
-    add_module("dopamine", "maze_input", "reward");
+    add_module("dopamine", new ModuleConfig("maze_input", "reward"));
     connect_layers(
         "dopamine",
         "striatum_pos",
@@ -69,7 +71,7 @@ MazeCortex::MazeCortex(Model *model, int board_dim, int cell_size)
     add_layer(
         (new LayerConfig("acetylcholine", IZHIKEVICH, 1, 1))
         ->set_property(IZ_INIT, "bursting"));
-    add_module("acetylcholine", "maze_input", "modulate");
+    add_module("acetylcholine", new ModuleConfig("maze_input", "modulate"));
     connect_layers(
         "acetylcholine",
         "output",
@@ -156,11 +158,11 @@ void MazeCortex::connect_one_way(std::string name1, std::string name2,
 }
 
 void MazeCortex::add_input_grid(std::string layer, std::string input_name,
-        std::string module_name, std::string module_params) {
+        ModuleConfig *config) {
     add_layer(
         (new LayerConfig(input_name, IZHIKEVICH, 1, board_dim*board_dim))
         ->set_property(IZ_INIT, "bursting"));
-    add_module(input_name, module_name, module_params);
+    add_module(input_name, config);
 
     int spread = cortex_size / board_dim;
 
@@ -184,12 +186,12 @@ void MazeCortex::add_input_grid(std::string layer, std::string input_name,
 }
 
 void MazeCortex::add_input_random(std::string layer, std::string input_name,
-        std::string module_name, std::string module_params) {
+        ModuleConfig *config) {
     // Input layer
     add_layer(
         (new LayerConfig(input_name, IZHIKEVICH, 1, board_dim*board_dim))
         ->set_property(IZ_INIT, "bursting"));
-    add_module(input_name, module_name, module_params);
+    add_module(input_name, config);
 
     int num_tethers = 1; // 3;
     int spread = cell_size * 1.5;

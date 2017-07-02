@@ -6,7 +6,7 @@
 
 class MazeOutputModule : public Module {
     public:
-        MazeOutputModule(Layer *layer, std::string params);
+        MazeOutputModule(Layer *layer, ModuleConfig *config);
 
         void report_output(Buffer *buffer, OutputType output_type);
         virtual IOTypeMask get_type() { return OUTPUT; }

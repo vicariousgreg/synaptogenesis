@@ -32,12 +32,11 @@ Column::Column(std::string name, int rows, int columns, bool plastic)
     //connect_fields_one_way("5", "4", 9, 0.1);
 }
 
-void Column::add_input(bool plastic, int num_symbols,
-        std::string module_name, std::string module_params) {
+void Column::add_input(bool plastic, int num_symbols, ModuleConfig *config) {
     // Input layer
     this->add_layer((new LayerConfig("input", IZHIKEVICH, 1, num_symbols))
         ->set_property(IZ_INIT, "regular"));
-    this->add_module("input", module_name, module_params);
+    this->add_module("input", config);
 
     int num_tethers = 10;
     int tether_to_size = 5;
@@ -66,12 +65,11 @@ void Column::add_input(bool plastic, int num_symbols,
     }
 }
 
-void Column::add_lined_up_input(bool plastic, int num_symbols,
-        std::string module_name, std::string module_params) {
+void Column::add_lined_up_input(bool plastic, int num_symbols, ModuleConfig *config) {
     // Input layer
     this->add_layer((new LayerConfig("input", IZHIKEVICH, 1, num_symbols))
         ->set_property(IZ_INIT, "regular"));
-    this->add_module("input", module_name, module_params);
+    this->add_module("input", config);
 
     int num_tethers = 1;
     int tether_to_size = 3;
