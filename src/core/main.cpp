@@ -173,43 +173,51 @@ void simple_test() {
     structure->connect_layers("hid_1", "hid_2",
         (new ConnectionConfig(true, 10, 5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(exc_field, 1, -exc_field/2)));
     /*
     structure->connect_layers("hid_1", "hid_2",
         (new ConnectionConfig(false, 10, 5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(inh_field, 1, -inh_field/2)));
     */
 
     /* Recurrent self connectivity */
     structure->connect_layers("hid_1", "hid_1",
         (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(exc_field, 1, -exc_field/2)));
     structure->connect_layers("hid_1", "hid_1",
         (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(inh_field, 1, -inh_field/2)));
 
     structure->connect_layers("hid_2", "hid_2",
         (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(exc_field, 1, -exc_field/2)));
     structure->connect_layers("hid_2", "hid_2",
         (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(inh_field, 1, -inh_field/2)));
 
     /* Feedback connectivity */
     structure->connect_layers("hid_2", "hid_1",
         (new ConnectionConfig(true, 10, 5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(exc_field, 1, -exc_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(exc_field, 1, -exc_field/2)));
     /*
     structure->connect_layers("hid_2", "hid_1",
         (new ConnectionConfig(false, 10, 5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(inh_field, 1, -inh_field/2)));
+        ->set_arborized_config(
+            new ArborizedConfig(inh_field, 1, -inh_field/2)));
     */
 
     // Modules
@@ -217,7 +225,9 @@ void simple_test() {
     std::string output_name = "visualizer_output";
 
     structure->add_module("input_layer",
-        new ModuleConfig("one_hot_random_input", "4 1000000"));
+        (new ModuleConfig("one_hot_random_input"))
+            ->set_property("max", "4")
+            ->set_property("rate", "1000000"));
     structure->add_module("input_layer",
         new ModuleConfig(output_name));
     structure->add_module("hid_1",
@@ -238,6 +248,64 @@ void simple_test() {
     delete model;
 }
 
+void single_field_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = new Structure("single field");
+    model->add_structure(structure);
+
+    std::string model_name = "leaky_izhikevich";
+
+    structure->add_layer((new LayerConfig(
+        "exc_field", model_name, 40, 40))
+			->set_property(IZ_INIT, "random positive"));
+    structure->add_layer((new LayerConfig(
+        "inh_field", model_name, 10, 40))
+			->set_property(IZ_INIT, "random negative"));
+
+    structure->connect_layers("exc_field", "exc_field",
+        (new ConnectionConfig(true, 0, 10, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(.6, 0.1)))
+        ->set_property("random delay", "20"));
+    structure->connect_layers("exc_field", "inh_field",
+        (new ConnectionConfig(true, 0, 10, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(.6, 0.1)))
+        ->set_property("random delay", "20"));
+
+    structure->connect_layers("inh_field", "inh_field",
+        (new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, SUB,
+            new FlatWeightConfig(.5, 0.1)))
+        ->set_property("myelinated", "true"));
+    structure->connect_layers("inh_field", "exc_field",
+        (new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, SUB,
+            new FlatWeightConfig(.5, 0.1)))
+        ->set_property("myelinated", "true"));
+
+    // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
+    structure->add_module("exc_field",
+        (new ModuleConfig("one_hot_random_input"))
+            ->set_property("max", "20")
+            ->set_property("rate", "1")
+            ->set_property("verbose", "false"));
+    structure->add_module("exc_field",
+        new ModuleConfig(output_name));
+    structure->add_module("inh_field",
+        new ModuleConfig(output_name));
+
+    structure->add_module("exc_field",
+        new ModuleConfig("heatmap"));
+    structure->add_module("inh_field",
+        new ModuleConfig("heatmap"));
+
+    print_model(model);
+    Clock clock(true);
+    delete clock.run(model, 1000000, true);
+    delete model;
+}
+
 void mnist_test() {
     /* Construct the model */
     Model *model = new Model();
@@ -247,43 +315,44 @@ void mnist_test() {
     int resolution = 1024;
     structure->add_layer((new LayerConfig("input_layer",
         IZHIKEVICH, 28, 28))
-            ->set_property(IZ_INIT, "default"));
+            ->set_property(IZ_INIT, "regular"));
 
     int num_hidden = 10;
     for (int i = 0; i < num_hidden; ++i) {
         structure->add_layer((new LayerConfig(std::to_string(i),
-            IZHIKEVICH, 28, 28, 0.5))
-                ->set_property(IZ_INIT, "default"));
+            "leaky_izhikevich", 28, 28, 0.5))
+                ->set_property(IZ_INIT, "regular"));
         structure->connect_layers("input_layer", std::to_string(i),
-            (new ConnectionConfig(true, 0, 5, CONVOLUTIONAL, ADD,
-                new RandomWeightConfig(5)))
-            ->set_arborized_config(new ArborizedConfig(5,1)));
+            (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
+                new FlatWeightConfig(0.1, 0.1)))
+            ->set_arborized_config(new ArborizedConfig(9,1,-4)));
 
         structure->connect_layers(std::to_string(i), std::to_string(i),
-            (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
-                new RandomWeightConfig(0.1)))
-            ->set_arborized_config(new ArborizedConfig(5,1)));
+            (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
+                new RandomWeightConfig(0.1, 0.1)))
+            ->set_arborized_config(new ArborizedConfig(9,1,-4)));
         structure->connect_layers(std::to_string(i), std::to_string(i),
-            (new ConnectionConfig(false, 0, 2, CONVOLUTIONAL, DIV,
-                new RandomWeightConfig(2)))
-            ->set_arborized_config(new ArborizedConfig(7,1)));
+            (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
+                new FlatWeightConfig(0.5, 0.1)))
+            ->set_arborized_config(new ArborizedConfig(11,1,-5)));
     }
 
     for (int i = 0; i < num_hidden; ++i)
         for (int j = 0; j < num_hidden; ++j)
             if (i != j)
                 structure->connect_layers(std::to_string(i), std::to_string(j),
-                    new ConnectionConfig(false, 0, 5, ONE_TO_ONE, DIV,
-                        new RandomWeightConfig(1)));
+                    new ConnectionConfig(false, 0, 1, ONE_TO_ONE, SUB,
+                        new FlatWeightConfig(0.5)));
 
     // Modules
-    std::string output_name = "visualizer_output";
-
     structure->add_module("input_layer",
         new ModuleConfig("csv_input", "/HDD/datasets/mnist/mnist_test.csv 1 5000 25"));
-    structure->add_module("input_layer", new ModuleConfig(output_name));
-    for (int i = 0; i < num_hidden; ++i)
-        structure->add_module(std::to_string(i), new ModuleConfig(output_name));
+    structure->add_module("input_layer", new ModuleConfig("visualizer_output"));
+    structure->add_module("input_layer", new ModuleConfig("heatmap"));
+    for (int i = 0; i < num_hidden; ++i) {
+        structure->add_module(std::to_string(i), new ModuleConfig("visualizer_output"));
+        structure->add_module(std::to_string(i), new ModuleConfig("heatmap"));
+    }
 
     std::cout << "CSV test......\n";
     print_model(model);
@@ -408,7 +477,8 @@ int main(int argc, char *argv[]) {
         //speech_test(std::string(argv[1]));
         //maze_game_test();
         //old_test();
-        simple_test();
+        //simple_test();
+        single_field_test();
 
         return 0;
     } catch (const char* msg) {

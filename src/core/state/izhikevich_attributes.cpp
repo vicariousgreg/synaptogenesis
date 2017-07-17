@@ -553,6 +553,7 @@ static void check_parameters(Connection *conn) {
     valid_params.insert("conductance");
     valid_params.insert("learning rate");
     valid_params.insert("myelinated");
+    valid_params.insert("random delay");
     valid_params.insert("x offset");
     valid_params.insert("y offset");
     valid_params.insert("short term plasticity");
@@ -700,13 +701,19 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     // Delays
     // Myelinated connections use the base delay only
     float *delays = mData + 7*num_weights;
-    if (extract_parameter(conn, "myelinated", "") != "")
+    if (extract_parameter(conn, "myelinated", "") != "") {
         for (int i = 0 ; i < conn->get_num_weights() ; ++i)
             delays[i] = conn->delay;
-    else
+    } else if (extract_parameter(conn, "random delay", "") != "") {
+        int max_delay = std::stoi(
+            extract_parameter(conn, "random delay", "0"));
+        for (int i = 0 ; i < conn->get_num_weights() ; ++i)
+            delays[i] = iRand(max_delay);
+    } else {
         set_delays(BIT, conn, delays, 0.15,
             std::stof(extract_parameter(conn->from_layer, "spacing", "0.1")),
             std::stof(extract_parameter(conn->to_layer, "spacing", "0.1")),
             std::stof(extract_parameter(conn, "x offset", "0.0")),
             std::stof(extract_parameter(conn, "y offset", "0.0")));
+    }
 }

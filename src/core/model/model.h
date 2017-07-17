@@ -30,11 +30,11 @@ class Model {
         const LayerList get_output_layers() const;
         const LayerList get_expected_layers() const;
 
-        // Sum calculators
         int get_num_neurons() const;
         int get_num_layers() const;
         int get_num_connections() const;
         int get_num_weights() const;
+        int get_max_layer_size() const;
 
     private:
         // Structures

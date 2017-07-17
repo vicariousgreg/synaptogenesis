@@ -12,6 +12,7 @@ class OneHotRandomInputModule : public Module {
         virtual IOTypeMask get_type() { return INPUT; }
 
     private:
+        bool verbose;
         int timesteps;
         int end;
         int shuffle_rate;

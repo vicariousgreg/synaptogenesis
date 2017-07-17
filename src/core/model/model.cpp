@@ -84,3 +84,11 @@ int Model::get_num_weights() const {
             num_weights += conn->get_num_weights();
     return num_weights;
 }
+
+int Model::get_max_layer_size() const {
+    int max_size = 0;
+    for (auto& structure : this->get_structures()) 
+        for (auto& layer : structure->get_layers())
+            if (layer->size > max_size) max_size = layer->size;  
+    return max_size;
+}

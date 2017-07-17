@@ -17,7 +17,12 @@ Module::ModuleBank* Module::get_module_bank() {
 
 // Get the IOType of a module subclass
 IOTypeMask Module::get_module_type(std::string module_name) {
-    return Module::get_module_bank()->types.at(module_name);
+    try {
+        return Module::get_module_bank()->types.at(module_name);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized module: " + module_name + "!");
+    }
 }
 
 

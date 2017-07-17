@@ -16,7 +16,7 @@ void Clock::engine_loop(int iterations, bool verbose) {
         engine->stage_clear();
 
         // Read sensory input
-        sensory_lock.wait(DRIVER);
+        sensory_lock.wait(ENGINE);
         engine->stage_input();
         sensory_lock.pass(ENVIRONMENT);
 
@@ -24,14 +24,11 @@ void Clock::engine_loop(int iterations, bool verbose) {
         engine->stage_calc();
 
         // Write motor output
-        motor_lock.wait(DRIVER);
+        motor_lock.wait(ENGINE);
         // Use (i+1) because the locks belong to the Environment
         //   during the first iteration (Environment uses blank data
         //   on first iteration before the Engine sends any data)
-        if ((i+1) % environment_rate == 0) {
-            //if (verbose) printf("Sending output... %d\n", i);
-            engine->stage_output();
-        }
+        if ((i+1) % environment_rate == 0) engine->stage_output();
         motor_lock.pass(ENVIRONMENT);
 
         // Synchronize with the clock
@@ -65,38 +62,34 @@ void Clock::environment_loop(int iterations, bool verbose) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT);
         environment->step_input();
-        sensory_lock.pass(DRIVER);
+        sensory_lock.pass(ENGINE);
 
         // Read motor buffer
         motor_lock.wait(ENVIRONMENT);
         if (i % environment_rate == 0) {
             // Stream output and update UI
-            //if (verbose) printf("Updating UI... %d\n", i);
             environment->step_output();
             environment->ui_update();
         }
-        motor_lock.pass(DRIVER);
+        motor_lock.pass(ENGINE);
     }
 }
 
-State* Clock::run(Model *model, int iterations, bool verbose, State *prev_state) {
-    // Initialize cuda random states
-    int max_size = 0;
-    for (auto& structure : model->get_structures())
-        for (auto& layer : structure->get_layers())
-            if (layer->size > max_size) max_size = layer->size;
-    init_rand(max_size);
-
+State* Clock::run(Model *model, int iterations, bool verbose, State *state) {
     /**********************/
     /*** Initialization ***/
     /**********************/
-    sensory_lock.set_owner(ENVIRONMENT);
-    motor_lock.set_owner(DRIVER);
+    // Initialize cuda random states
+    init_rand(model->get_max_layer_size());
 
+    // Set locks
+    sensory_lock.set_owner(ENVIRONMENT);
+    motor_lock.set_owner(ENGINE);
+
+    // Start timer
     run_timer.reset();
 
     // Build state
-    State *state = prev_state;
     if (state == nullptr) state = new State(model);
 
     // Build environment
@@ -124,7 +117,7 @@ State* Clock::run(Model *model, int iterations, bool verbose, State *prev_state)
     std::thread environment_thread(
         &Clock::environment_loop, this, iterations, verbose);
 
-    // Launch UI
+    // Launch UI on main thread
     environment->ui_launch();
 
     // Wait for threads

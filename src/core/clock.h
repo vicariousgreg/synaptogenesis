@@ -12,16 +12,14 @@ class Environment;
 class Engine;
 
 enum Thread_ID {
-    CLOCK,
-    DRIVER,
+    ENGINE,
     ENVIRONMENT
 };
 
 class Lock {
     public:
-        void set_owner(Thread_ID new_owner) {
-            owner = new_owner;
-        }
+        void set_owner(Thread_ID new_owner)
+            { owner = new_owner; }
 
         void wait(Thread_ID me) {
             while (true) {
@@ -57,7 +55,7 @@ class Clock {
                   calc_rate(false) { }
 
         State* run(Model *model, int iterations, bool verbose,
-            State* prev_state=nullptr);
+            State* state=nullptr);
 
     private:
         void engine_loop(int iterations, bool verbose);

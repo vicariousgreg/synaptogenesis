@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <ctime>
+#include <climits>
 #include <chrono>
 #include <random>
 
@@ -15,19 +16,30 @@ using std::chrono::milliseconds;
 using std::chrono::duration_cast;
 
 static std::default_random_engine generator(time(0));
-static std::uniform_real_distribution<double> distribution(0.0, 1.0);
+static std::uniform_real_distribution<double> f_distribution(0.0, 1.0);
+static std::uniform_int_distribution<int> i_distribution(0,9);
 
 /* Random float functions */
 inline float fRand() {
-    return distribution(generator);
+    return f_distribution(generator);
 }
 inline float fRand(float fMax) {
-    return distribution(generator) * fMax;
+    return f_distribution(generator) * fMax;
 }
 inline float fRand(float fMin, float fMax) {
-    return fMin + (distribution(generator) * (fMax - fMin));
+    return fMin + (f_distribution(generator) * (fMax - fMin));
 }
 
+/* Random int functions */
+inline int iRand() {
+    return std::uniform_int_distribution<int>(0,INT_MAX)(generator);
+}
+inline int iRand(int iMax) {
+    return std::uniform_int_distribution<int>(0,iMax)(generator);
+}
+inline int iRand(int iMin, int iMax) {
+    return std::uniform_int_distribution<int>(iMin,iMax)(generator);
+}
 
 
 static float get_diff(Time_point a, Time_point b) {

@@ -10,6 +10,10 @@ class PropertyConfig {
             { return properties; }
         std::string get_property(std::string key) const
             { return properties.at(key); }
+        std::string get_property(std::string key, std::string def_val) const {
+            try { return properties.at(key); }
+            catch (...) { return def_val; }
+        }
         void set_property_internal(std::string key, std::string value)
             { properties[key] = value; }
 
