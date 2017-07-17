@@ -9,6 +9,7 @@ class State;
 class Environment;
 class Cluster;
 class ClusterNode;
+class InterDeviceTransferInstruction;
 
 class Engine {
     public:
@@ -27,6 +28,7 @@ class Engine {
         State *state;
         Environment *environment;
         std::vector<Cluster*> clusters;
+        std::vector<InterDeviceTransferInstruction*> inter_device_transfers;
         std::map<Layer*, ClusterNode*> cluster_nodes;
         bool learning_flag;
 };

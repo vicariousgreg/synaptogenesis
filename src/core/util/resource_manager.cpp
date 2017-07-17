@@ -63,6 +63,8 @@ void ResourceManager::flush(DeviceID device_id) {
 }
 
 void* ResourceManager::allocate_host(unsigned long count, int size) {
+    if (count == 0) return nullptr;
+
     void* ptr = calloc(count, size);
     if (ptr == nullptr)
         ErrorManager::get_instance()->log_error(
@@ -72,6 +74,8 @@ void* ResourceManager::allocate_host(unsigned long count, int size) {
 
 void* ResourceManager::allocate_device(unsigned long count, int size,
         void* source_data, DeviceID device_id) {
+    if (count == 0) return nullptr;
+
     if (device_id >= get_num_devices())
         ErrorManager::get_instance()->log_error(
             "Attempted to allocate memory on non-existent device.");

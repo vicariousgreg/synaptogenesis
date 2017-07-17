@@ -98,11 +98,6 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
             Instruction* syn_inst = new SynapseActivateInstruction(
                 curr, conn, state, compute_stream);
 
-            // If inter-device, wrap in InterDeviceInstruction
-            if (state->is_inter_device(conn))
-                syn_inst = new InterDeviceInstruction(
-                    conn, state, syn_inst);
-
             // Create the instruction and add it to the synapse instuction list
             synapse_instructions[conn] = syn_inst;
             activate_instructions.push_back(syn_inst);

@@ -40,27 +40,29 @@ class Instruction {
             this->dependencies.push_back(inst->event);
         }
 
+        void copy_dependencies(Instruction *inst) {
+            for (auto dep : inst->dependencies)
+                this->dependencies.push_back(dep);
+        }
+
         Layer* const to_layer;
 
     protected:
-        friend class InterDeviceInstruction;
-
         Stream *stream;
         Event* event;
         std::vector<Event*> dependencies;
         int blocks, threads;
 };
 
-/* Wrapper for inter-device connections */
-class InterDeviceInstruction : public Instruction {
+/* Inter-device connections transfer instruction */
+class InterDeviceTransferInstruction : public Instruction {
     public:
-        InterDeviceInstruction(
-            Connection *conn, State *state, Instruction *child)
-                : Instruction(conn->to_layer, nullptr),
-                  child(child) {
+        InterDeviceTransferInstruction(
+            Connection *conn, State *state)
+                : Instruction(conn->to_layer, nullptr) {
             if (not state->is_inter_device(conn))
                 ErrorManager::get_instance()->log_error(
-                    "InterDeviceInstruction should only be used with"
+                    "InterDeviceTransferInstruction should only be used with"
                     " inter-device synaptic connections!");
 
             int word_index = get_word_index(
@@ -68,74 +70,30 @@ class InterDeviceInstruction : public Instruction {
             src = state->get_output(conn->from_layer, word_index);
             dst = state->get_device_output_buffer(conn, word_index);
 
-            // If this is an original transfer, set it up
-            // Otherwise, retrieve stream and event from original
-            auto original = get_original(this);
-            if (original == nullptr) {
-                DeviceID source_device = state->get_device_id(conn->from_layer);
-                stream = ResourceManager::get_instance()
-                    ->get_inter_device_stream(source_device);
-                event = ResourceManager::get_instance()
-                    ->create_event(source_device);
-            } else {
-                stream = original->stream;
-                event = original->event;
-            }
-        }
-
-        virtual ~InterDeviceInstruction() {
-            delete child;
-        }
-
-        void transfer() {
-            // Wait for dependencies and child's dependencies
-            // Dependencies should be the same for all instructions
-            //   with the same src-dst pair
-            wait_for_dependencies();
-            for (auto& dep : child->dependencies) stream->wait(dep);
-
-            // Perform transfer
-            src.copy_to(dst, stream);
-            // Record event for children
-            stream->record(event);
+            DeviceID source_device = state->get_device_id(conn->from_layer);
+            stream = ResourceManager::get_instance()
+                ->get_inter_device_stream(source_device);
+            event = ResourceManager::get_instance()
+                ->create_event(source_device);
         }
 
         void activate() {
-            // Wait for the event, of which there is only one per unique
-            //   instruction (and is copied to non-unique instructions)
-            child->stream->wait(event);
-            child->activate();
+            Instruction::wait_for_dependencies();
+            src.copy_to(dst, stream);
+            Instruction::record_event();
         }
 
-        /* Static list of original transfers
-         * Add only InterDeviceInstructions that are unique to this list
-         * An instruction is unique if its src-dst pair is unique */
-        static std::vector<InterDeviceInstruction*>* get_originals() {
-            static std::vector<InterDeviceInstruction*> originals;
-            return &originals;
-        }
+        bool matches(Connection *conn, State *state) {
+            int word_index = get_word_index(
+                conn->delay, state->get_output_type(conn->from_layer));
+            auto other_src = state->get_output(conn->from_layer, word_index);
+            auto other_dst = state->get_device_output_buffer(conn, word_index);
 
-        /* Retrieve the original version of the new instruction
-         * If there is no original, the new instructions becomes the original
-         * This allows the class to keep track of unique instructions */
-        static InterDeviceInstruction *get_original(InterDeviceInstruction *new_inst) {
-            auto originals = get_originals();
-
-            // If an identical original exists, return that
-            for (auto inst : *originals) {
-                if (inst->src == new_inst->src
-                    and inst->dst == new_inst->dst)
-                    return inst;
-            }
-            // Otherwise, new_inst is an original, so add it to the list and
-            //   return nullptr
-            originals->push_back(new_inst);
-            return nullptr;
+            return this->src == other_src and this->dst == other_dst;
         }
 
     protected:
         Pointer<Output> src, dst;
-        Instruction *child;
 };
 
 /* Instructions that initialize the input without connections */
