@@ -4,5 +4,6 @@
 *.gch
 *.pyc
 .*.swp
+.*.swo
 test
 parallel_test
