@@ -7,12 +7,7 @@
 
 /* Sets all values in an array to the given val */
 void set_weights(float* arr, int size, float val, float fraction) {
-    if (fraction == 1.0)
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = val;
-    else
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = (fRand() < fraction) ? val : 0.0;
+    fSet(arr, size, val, fraction);
 }
 
 /* Clears an array */
@@ -22,13 +17,7 @@ void clear_weights(float* arr, int size) {
 
 /* Randomizes an array */
 void randomize_weights(float* arr, int size, float max, float fraction) {
-    if (fraction == 1.0) {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = fRand(max);
-    } else {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = (fRand() < fraction) ? fRand(max) : 0.0;
-    }
+    fRand(arr, size, 0, max, fraction);
 }
 void randomize_weights_gaussian(float* arr, int size,
         float mean, float std_dev, float max, float fraction) {
@@ -36,14 +25,17 @@ void randomize_weights_gaussian(float* arr, int size,
     if (std_dev == 0.0) {
         set_weights(arr, size, mean, fraction);
     } else {
-        std::normal_distribution<double> distribution(mean, std_dev);
+        std::normal_distribution<double> dist(mean, std_dev);
 
         if (fraction == 1.0) {
             for (int i = 0 ; i < size ; ++i)
-                arr[i] = std::min((double)max, std::max(0.0, distribution(generator)));
+                arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
         } else {
+            std::uniform_real_distribution<double> f_dist(0.0, 1.0);
             for (int i = 0 ; i < size ; ++i)
-                arr[i] = (fRand() < fraction) ? std::min((double)max, std::max(0.0, distribution(generator))) : 0.0;
+                arr[i] = (f_dist(generator) < fraction)
+                    ? std::min((double)max, std::max(0.0, dist(generator)))
+                    : 0.0;
         }
     }
 }
@@ -53,14 +45,17 @@ void randomize_weights_lognormal(float* arr, int size,
     if (std_dev == 0.0) {
         set_weights(arr, size, mean, fraction);
     } else {
-        std::lognormal_distribution<double> distribution(mean, std_dev);
+        std::lognormal_distribution<double> dist(mean, std_dev);
 
         if (fraction == 1.0) {
             for (int i = 0 ; i < size ; ++i)
-                arr[i] = std::min((double)max, std::max(0.0, distribution(generator)));
+                arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
         } else {
+            std::uniform_real_distribution<double> f_dist(0.0, 1.0);
             for (int i = 0 ; i < size ; ++i)
-                arr[i] = (fRand() < fraction) ? std::min((double)max, std::max(0.0, distribution(generator))) : 0.0;
+                arr[i] = (f_dist(generator) < fraction)
+                    ? std::min((double)max, std::max(0.0, dist(generator)))
+                    : 0.0;
         }
     }
 }

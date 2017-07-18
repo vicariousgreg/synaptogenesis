@@ -16,18 +16,36 @@ using std::chrono::milliseconds;
 using std::chrono::duration_cast;
 
 static std::default_random_engine generator(time(0));
-static std::uniform_real_distribution<double> f_distribution(0.0, 1.0);
-static std::uniform_int_distribution<int> i_distribution(0,9);
+
+/* Static float function */
+inline float fSet(float* arr, int size, float val, float fraction=1.0) {
+    if (fraction == 1.0) {
+        for (int i = 0 ; i < size ; ++i) arr[i] = val;
+    } else {
+        auto dist = std::uniform_real_distribution<double>(0.0, 1.0);
+        for (int i = 0 ; i < size ; ++i)
+            if (dist(generator) < fraction) arr[i] = val;
+    }
+}
 
 /* Random float functions */
 inline float fRand() {
-    return f_distribution(generator);
+    return std::uniform_real_distribution<double>(0.0, 1.0)(generator);
 }
 inline float fRand(float fMax) {
-    return f_distribution(generator) * fMax;
+    return std::uniform_real_distribution<double>(0.0, fMax)(generator);
 }
 inline float fRand(float fMin, float fMax) {
-    return fMin + (f_distribution(generator) * (fMax - fMin));
+    return std::uniform_real_distribution<double>(fMin, fMax)(generator);
+}
+inline void fRand(float* arr, int size, float fMin, float fMax, float fraction=1.0) {
+    auto dist = std::uniform_real_distribution<double>(fMin, fMax);
+    if (fraction == 1.0)
+        for (int i = 0 ; i < size ; ++i) arr[i] = dist(generator);
+    else
+        for (int i = 0 ; i < size ; ++i)
+            if (dist(generator) < fraction)
+                arr[i] = dist(generator);
 }
 
 /* Random int functions */
@@ -39,6 +57,17 @@ inline int iRand(int iMax) {
 }
 inline int iRand(int iMin, int iMax) {
     return std::uniform_int_distribution<int>(iMin,iMax)(generator);
+}
+inline void iRand(int* arr, int size, int iMin, int iMax, float fraction=1.0) {
+    auto dist = std::uniform_int_distribution<int>(iMin,iMax);
+    if (fraction == 1.0)
+        for (int i = 0 ; i < size ; ++i) arr[i] = dist(generator);
+    else {
+        auto f_dist = std::uniform_real_distribution<double>(0.0, 1.0);
+        for (int i = 0 ; i < size ; ++i)
+            if (f_dist(generator) < fraction)
+                arr[i] = dist(generator);
+    }
 }
 
 

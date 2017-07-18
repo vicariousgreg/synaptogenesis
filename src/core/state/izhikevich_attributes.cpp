@@ -31,18 +31,18 @@ static IzhikevichParameters create_parameters(std::string str) {
         float a = 0.02;
         float b = 0.2; // increase for higher frequency oscillations
 
-        float rand = fRand(0, 1);
+        float rand = fRand();
         float c = -65.0 + (15.0 * rand * rand);
 
-        rand = fRand(0, 1);
+        rand = fRand();
         float d = 8.0 - (6.0 * (rand * rand));
         return IzhikevichParameters(a,b,c,d);
     } else if (str == "random negative") {
         //(ai; bi) = (0:02; 0:25) + (0:08;-0:05)ri and (ci; di)=(-65; 2).
-        float rand = fRand(0, 1);
+        float rand = fRand();
         float a = 0.02 + (0.08 * rand);
 
-        rand = fRand(0, 1);
+        rand = fRand();
         float b = 0.25 - (0.05 * rand);
 
         float c = -65.0;
