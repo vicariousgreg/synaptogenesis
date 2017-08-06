@@ -87,36 +87,36 @@ void old_test() {
         (new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(1, 0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(15, 1, -7)));
+        ->set_arborized_config(new ArborizedConfig(15)));
     structure->connect_layers("exc_cortex", "exc_cortex",
         (new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
             new RandomWeightConfig(1, 0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(31, 1, -15)));
+        ->set_arborized_config(new ArborizedConfig(31)));
 
     /* Cortical inhibitory loop */
     structure->connect_layers("exc_cortex", "inh_cortex",
         (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(31, 1, -15)));
+        ->set_arborized_config(new ArborizedConfig(31)));
     structure->connect_layers("inh_cortex", "exc_cortex",
         (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
             new RandomWeightConfig(1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(5, 1, -2)));
+        ->set_arborized_config(new ArborizedConfig(5)));
 
     /* Cortico-thalamic inhibitory loop */
     structure->connect_layers("exc_cortex", "inh_thalamus",
         (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(7, 1, -3)));
+        ->set_arborized_config(new ArborizedConfig(7)));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
         (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
             new FlatWeightConfig(1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(5, 1, -2)));
+        ->set_arborized_config(new ArborizedConfig(5)));
 
 
     // Modules
@@ -166,58 +166,58 @@ void simple_test() {
 
     /* Forward excitatory pathway */
     structure->connect_layers("input_layer", "hid_1",
-        (new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+        (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(1, 0.05)))
         ->set_property("myelinated", "true"));
 
     structure->connect_layers("hid_1", "hid_2",
-        (new ConnectionConfig(true, 10, 5, CONVERGENT, ADD,
+        (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field, 1, -exc_field/2)));
+            new ArborizedConfig(exc_field)));
     /*
     structure->connect_layers("hid_1", "hid_2",
-        (new ConnectionConfig(false, 10, 5, CONVERGENT, SUB,
+        (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field, 1, -inh_field/2)));
+            new ArborizedConfig(inh_field)));
     */
 
     /* Recurrent self connectivity */
     structure->connect_layers("hid_1", "hid_1",
-        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field, 1, -exc_field/2)));
+            new ArborizedConfig(exc_field)));
     structure->connect_layers("hid_1", "hid_1",
-        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
+        (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field, 1, -inh_field/2)));
+            new ArborizedConfig(inh_field)));
 
     structure->connect_layers("hid_2", "hid_2",
-        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
+        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field, 1, -exc_field/2)));
+            new ArborizedConfig(exc_field)));
     structure->connect_layers("hid_2", "hid_2",
-        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
+        (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field, 1, -inh_field/2)));
+            new ArborizedConfig(inh_field)));
 
     /* Feedback connectivity */
     structure->connect_layers("hid_2", "hid_1",
-        (new ConnectionConfig(true, 10, 5, CONVERGENT, ADD,
+        (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field, 1, -exc_field/2)));
+            new ArborizedConfig(exc_field)));
     /*
     structure->connect_layers("hid_2", "hid_1",
-        (new ConnectionConfig(false, 10, 5, CONVERGENT, SUB,
+        (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field, 1, -inh_field/2)));
+            new ArborizedConfig(inh_field)));
     */
 
     // Modules
@@ -228,24 +228,37 @@ void simple_test() {
         (new ModuleConfig("one_hot_random_input"))
             ->set_property("max", "4")
             ->set_property("rate", "1000000"));
-    structure->add_module("input_layer",
-        new ModuleConfig(output_name));
-    structure->add_module("hid_1",
-        new ModuleConfig(output_name));
-    structure->add_module("hid_2",
-        new ModuleConfig(output_name));
 
-    structure->add_module("input_layer",
-        new ModuleConfig("heatmap"));
-    structure->add_module("hid_1",
-        new ModuleConfig("heatmap"));
-    structure->add_module("hid_2",
-        new ModuleConfig("heatmap"));
-
-    print_model(model);
     Clock clock(true);
-    delete clock.run(model, 1000000, true);
-    delete model;
+    std::string filename = "simple.bin";
+
+    if (State::exists(filename)) {
+        structure->add_module("input_layer",
+            new ModuleConfig(output_name));
+        structure->add_module("hid_1",
+            new ModuleConfig(output_name));
+        structure->add_module("hid_2",
+            new ModuleConfig(output_name));
+
+        structure->add_module("input_layer",
+            new ModuleConfig("heatmap"));
+        structure->add_module("hid_1",
+            new ModuleConfig("heatmap"));
+        structure->add_module("hid_2",
+            new ModuleConfig("heatmap"));
+
+        print_model(model);
+        auto state = new State(model);
+        state->load("simple.bin");
+        state = clock.run(model, 1000000, true, state);
+        delete state;
+    } else {
+        print_model(model);
+        auto state = new State(model);
+        state = clock.run(model, 500000, true, state);
+        state->save("simple.bin");
+        delete state;
+    }
 }
 
 void single_field_test() {
@@ -325,16 +338,16 @@ void mnist_test() {
         structure->connect_layers("input_layer", std::to_string(i),
             (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
                 new FlatWeightConfig(0.1, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(9,1,-4)));
+            ->set_arborized_config(new ArborizedConfig(9)));
 
         structure->connect_layers(std::to_string(i), std::to_string(i),
             (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
                 new RandomWeightConfig(0.1, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(9,1,-4)));
+            ->set_arborized_config(new ArborizedConfig(9)));
         structure->connect_layers(std::to_string(i), std::to_string(i),
             (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
                 new FlatWeightConfig(0.5, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(11,1,-5)));
+            ->set_arborized_config(new ArborizedConfig(11)));
     }
 
     for (int i = 0; i < num_hidden; ++i)
@@ -477,8 +490,8 @@ int main(int argc, char *argv[]) {
         //speech_test(std::string(argv[1]));
         //maze_game_test();
         //old_test();
-        //simple_test();
-        single_field_test();
+        simple_test();
+        //single_field_test();
 
         return 0;
     } catch (const char* msg) {

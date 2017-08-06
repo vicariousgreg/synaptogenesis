@@ -1,5 +1,6 @@
 #include <cstring>
 #include <fstream>
+#include <sys/stat.h>
 
 #include "state/state.h"
 #include "state/weight_matrix.h"
@@ -201,6 +202,11 @@ void State::transfer_to_host() {
         if (device_id != host_id)
             res_man->transfer(host_id, buffer_pointers[device_id]);
 #endif
+}
+
+bool State::exists(std::string file_name) {
+    std::ifstream f(("./states/" + file_name).c_str());
+    return f.good();
 }
 
 void State::save(std::string file_name) {

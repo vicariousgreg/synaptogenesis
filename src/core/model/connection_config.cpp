@@ -7,6 +7,16 @@
 
 ArborizedConfig::ArborizedConfig(
     int row_field_size, int column_field_size,
+    int row_stride, int column_stride)
+        : row_field_size(row_field_size),
+          column_field_size(column_field_size),
+          row_stride(row_stride),
+          column_stride(column_stride),
+          row_offset(-row_field_size/2),
+          column_offset(-column_field_size/2) { }
+
+ArborizedConfig::ArborizedConfig(
+    int row_field_size, int column_field_size,
     int row_stride, int column_stride,
     int row_offset, int column_offset)
         : row_field_size(row_field_size),
@@ -16,8 +26,15 @@ ArborizedConfig::ArborizedConfig(
           row_offset(row_offset),
           column_offset(column_offset) { }
 
+ArborizedConfig::ArborizedConfig(int field_size, int stride)
+    : ArborizedConfig(field_size, field_size,
+                      stride, stride,
+                      -field_size/2, -field_size/2) { }
+
 ArborizedConfig::ArborizedConfig(int field_size, int stride, int offset)
-    : ArborizedConfig(field_size, field_size, stride, stride, offset, offset) { }
+    : ArborizedConfig(field_size, field_size,
+                      stride, stride,
+                      offset, offset) { }
 
 SubsetConfig::SubsetConfig(
     int from_row_start, int from_row_end,

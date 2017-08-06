@@ -25,6 +25,7 @@ class State {
         void transfer_to_host();
 
         /* Save or load state to/from disk */
+        static bool exists(std::string file_name);
         void save(std::string file_name);
         void load(std::string file_name);
 

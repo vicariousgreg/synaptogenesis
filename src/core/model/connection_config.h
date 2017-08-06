@@ -32,12 +32,17 @@ class SubsetConfig {
 class ArborizedConfig {
     public:
         ArborizedConfig() : ArborizedConfig(0,0,0,0,0,0) { }
+
+        ArborizedConfig(
+            int row_field_size, int column_field_size,
+            int row_stride, int column_stride);
         ArborizedConfig(
             int row_field_size, int column_field_size,
             int row_stride, int column_stride,
-            int row_offset=0, int column_offset=0);
+            int row_offset, int column_offset);
 
-        ArborizedConfig(int field_size, int stride, int offset=0);
+        ArborizedConfig(int field_size, int stride=1);
+        ArborizedConfig(int field_size, int stride, int offset);
 
         int get_total_field_size() const
             { return row_field_size * column_field_size; }

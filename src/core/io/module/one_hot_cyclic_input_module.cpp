@@ -38,24 +38,9 @@ void OneHotCyclicInputModule::clear(Buffer *buffer) {
 
 OneHotCyclicInputModule::OneHotCyclicInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer), timesteps(0), index(layer->size-1) {
-    std::stringstream stream(config->get_property("params"));
-    if (!stream.eof()) {
-        stream >> this->max_value;
-
-        if (!stream.eof()) {
-            stream >> this->cycle_rate;
-            if (!stream.eof()) {
-                stream >> this->end;
-            } else {
-                this->end = 0;
-            }
-        } else {
-            this->cycle_rate = 100;
-        }
-    } else {
-        this->max_value = 1.0;
-        this->cycle_rate = 100;
-    }
+    this->max_value = std::stof(config->get_property("max", "1.0"));
+    this->cycle_rate = std::stoi(config->get_property("rate", "100"));
+    this->end = std::stoi(config->get_property("end", "0"));
 
     if (this->max_value <= 0.0)
         ErrorManager::get_instance()->log_error(
