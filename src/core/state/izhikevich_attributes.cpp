@@ -232,7 +232,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 \
     float *stds   = weights + (4*num_weights); \
     float *stps   = weights + (5*num_weights); \
-    float *delays = weights + (7*num_weights);
+    int   *delays = (int*)weights + (7*num_weights);
 
 #define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
     float *short_conductances = att->SHORT_NAME.get(synapse_data.to_start_index); \
@@ -413,7 +413,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 #define UPDATE_EXTRACTIONS \
     float *presyn_traces = weights + (3*num_weights); \
     float *eligibilities = weights + (6*num_weights); \
-    float *delays        = weights + (7*num_weights); \
+    int   *delays        = (int*)weights + (7*num_weights); \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.to_attributes; \
@@ -700,15 +700,18 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     // Delays
     // Myelinated connections use the base delay only
-    float *delays = mData + 7*num_weights;
+    int *delays = (int*)(mData + 7*num_weights);
     if (extract_parameter(conn, "myelinated", "") != "") {
-        for (int i = 0 ; i < conn->get_num_weights() ; ++i)
-            delays[i] = conn->delay;
+        int delay = conn->delay;
+        for (int i = 0 ; i < num_weights ; ++i)
+            delays[i] = delay;
     } else if (extract_parameter(conn, "random delay", "") != "") {
         int max_delay = std::stoi(
             extract_parameter(conn, "random delay", "0"));
-        for (int i = 0 ; i < conn->get_num_weights() ; ++i)
-            delays[i] = iRand(max_delay);
+        if (max_delay > 31)
+            ErrorManager::get_instance()->log_error(
+                "Randomized axons cannot have delays greater than 31!");
+        iRand(delays, num_weights, 0, max_delay);
     } else {
         set_delays(BIT, conn, delays, 0.15,
             std::stof(extract_parameter(conn->from_layer, "spacing", "0.1")),

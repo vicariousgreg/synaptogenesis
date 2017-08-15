@@ -102,7 +102,7 @@ BasePointer* WeightMatrix::get_pointer() {
 }
 
 void set_delays(OutputType output_type, Connection *conn,
-        float* delays, float velocity,
+        int* delays, float velocity,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset) {
     if (output_type != BIT)

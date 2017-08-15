@@ -20,7 +20,7 @@ REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich")
 #define UPDATE_EXTRACTIONS \
     float *presyn_traces = weights + (3*num_weights); \
     float *eligibilities = weights + (6*num_weights); \
-    float *delays        = weights + (7*num_weights); \
+    int   *delays        = (int*)weights + (7*num_weights); \
 \
     LeakyIzhikevichAttributes *att = \
         (LeakyIzhikevichAttributes*)synapse_data.to_attributes; \
