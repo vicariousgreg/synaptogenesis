@@ -245,6 +245,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
+    const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
  \
     for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
@@ -267,11 +268,22 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                     int k_s_row = s_row + k_row; \
                     int k_s_col = s_col + k_col; \
  \
-                    /* The connection is frayed if the layers are the same size */ \
-                    /* Avoid making connections with non-existent neurons! */ \
-                    if (k_s_row < 0 or k_s_row >= from_rows \
-                        or k_s_col < 0 or k_s_col >= from_columns) \
+                    /* If wrapping, adjust out of bounds indices accordingly */ \
+                    if (wrap) { \
+                        k_s_row = (k_s_row < 0) \
+                            ? k_s_row + from_rows \
+                            : (k_s_row >= from_rows) \
+                                ? k_s_row - from_rows : k_s_row; \
+    \
+                        k_s_col = (k_s_col < 0) \
+                            ? k_s_col + from_columns \
+                            : (k_s_col >= from_columns) \
+                                ? k_s_col - from_columns : k_s_col; \
+                    /* Avoid making connections with non-existent neurons */ \
+                    } else if (k_s_row < 0 or k_s_row >= from_rows \
+                        or k_s_col < 0 or k_s_col >= from_columns) { \
                         continue; \
+                    } \
  \
                     int from_index = k_s_row * from_columns + k_s_col; \
  \
@@ -297,6 +309,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
+    const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
  \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -324,11 +337,22 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                 int k_s_row = s_row + k_row; \
                 int k_s_col = s_col + k_col; \
 \
-				/* The connection is frayed if the layers are the same size */ \
-				/* Avoid making connections with non-existent neurons! */ \
-				if (k_s_row < 0 or k_s_row >= from_rows \
-					or k_s_col < 0 or k_s_col >= from_columns) \
-					continue; \
+                /* If wrapping, adjust out of bounds indices accordingly */ \
+                if (wrap) { \
+                    k_s_row = (k_s_row < 0) \
+                        ? k_s_row + from_rows \
+                        : (k_s_row >= from_rows) \
+                            ? k_s_row - from_rows : k_s_row; \
+\
+                    k_s_col = (k_s_col < 0) \
+                        ? k_s_col + from_columns \
+                        : (k_s_col >= from_columns) \
+                            ? k_s_col - from_columns : k_s_col; \
+                /* Avoid making connections with non-existent neurons */ \
+                } else if (k_s_row < 0 or k_s_row >= from_rows \
+                    or k_s_col < 0 or k_s_col >= from_columns) { \
+                    continue; \
+                } \
 \
                 int from_index = k_s_row * from_columns + k_s_col; \
 \
@@ -354,6 +378,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
+    const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
 \
     /* Iterate over destination neurons */ \
@@ -374,10 +399,22 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
             int k_index = 0; \
             for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
                 for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
-                    /* Avoid making connections with non-existent neurons! */ \
-                    if (s_row < 0 or s_row >= from_rows \
-                        or s_col < 0 or s_col >= from_columns) \
+                    /* If wrapping, adjust out of bounds indices accordingly */ \
+                    if (wrap) { \
+                        s_row = (s_row < 0) \
+                            ? s_row + from_rows \
+                            : (s_row >= from_rows) \
+                                ? s_row - from_rows : s_row; \
+    \
+                        s_col = (s_col < 0) \
+                            ? s_col + from_columns \
+                            : (s_col >= from_columns) \
+                                ? s_col - from_columns : s_col; \
+                    /* Avoid making connections with non-existent neurons */ \
+                    } else if (s_row < 0 or s_row >= from_rows \
+                        or s_col < 0 or s_col >= from_columns) { \
                         continue; \
+                    } \
 \
                     int from_index = (s_row * from_columns) + s_col; \
                     int weight_index = weight_offset + k_index; \
@@ -398,6 +435,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int column_stride = synapse_data.arborized_config.column_stride; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
+    const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
 \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
@@ -420,10 +458,22 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int k_index = 0; \
         for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
             for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
-                /* Avoid making connections with non-existent neurons! */ \
-                if (s_row < 0 or s_row >= from_rows \
-                    or s_col < 0 or s_col >= from_columns) \
+                /* If wrapping, adjust out of bounds indices accordingly */ \
+                if (wrap) { \
+                    s_row = (s_row < 0) \
+                        ? s_row + from_rows \
+                        : (s_row >= from_rows) \
+                            ? s_row - from_rows : s_row; \
+\
+                    s_col = (s_col < 0) \
+                        ? s_col + from_columns \
+                        : (s_col >= from_columns) \
+                            ? s_col - from_columns : s_col; \
+                /* Avoid making connections with non-existent neurons */ \
+                } else if (s_row < 0 or s_row >= from_rows \
+                    or s_col < 0 or s_col >= from_columns) { \
                     continue; \
+                } \
 \
                 int from_index = (s_row * from_columns) + s_col; \
 \

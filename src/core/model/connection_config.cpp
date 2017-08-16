@@ -7,34 +7,38 @@
 
 ArborizedConfig::ArborizedConfig(
     int row_field_size, int column_field_size,
-    int row_stride, int column_stride)
-        : row_field_size(row_field_size),
-          column_field_size(column_field_size),
-          row_stride(row_stride),
-          column_stride(column_stride),
-          row_offset(-row_field_size/2),
-          column_offset(-column_field_size/2) { }
+    int row_stride, int column_stride,
+    bool wrap)
+        : ArborizedConfig(row_field_size, column_field_size,
+                          row_stride, column_stride,
+                          -row_field_size/2, -column_field_size/2,
+                          wrap) { }
 
 ArborizedConfig::ArborizedConfig(
     int row_field_size, int column_field_size,
     int row_stride, int column_stride,
-    int row_offset, int column_offset)
+    int row_offset, int column_offset,
+    bool wrap)
         : row_field_size(row_field_size),
           column_field_size(column_field_size),
           row_stride(row_stride),
           column_stride(column_stride),
           row_offset(row_offset),
-          column_offset(column_offset) { }
+          column_offset(column_offset),
+          wrap(wrap) { }
 
-ArborizedConfig::ArborizedConfig(int field_size, int stride)
+ArborizedConfig::ArborizedConfig(int field_size, int stride, bool wrap)
     : ArborizedConfig(field_size, field_size,
                       stride, stride,
-                      -field_size/2, -field_size/2) { }
+                      -field_size/2, -field_size/2,
+                      wrap) { }
 
-ArborizedConfig::ArborizedConfig(int field_size, int stride, int offset)
+ArborizedConfig::ArborizedConfig(int field_size,
+        int stride, int offset, bool wrap)
     : ArborizedConfig(field_size, field_size,
                       stride, stride,
-                      offset, offset) { }
+                      offset, offset,
+                      wrap) { }
 
 SubsetConfig::SubsetConfig(
     int from_row_start, int from_row_end,

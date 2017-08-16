@@ -35,14 +35,16 @@ class ArborizedConfig {
 
         ArborizedConfig(
             int row_field_size, int column_field_size,
-            int row_stride, int column_stride);
+            int row_stride, int column_stride,
+            bool wrap=false);
         ArborizedConfig(
             int row_field_size, int column_field_size,
             int row_stride, int column_stride,
-            int row_offset, int column_offset);
+            int row_offset, int column_offset,
+            bool wrap=false);
 
-        ArborizedConfig(int field_size, int stride=1);
-        ArborizedConfig(int field_size, int stride, int offset);
+        ArborizedConfig(int field_size, int stride=1, bool wrap=false);
+        ArborizedConfig(int field_size, int stride, int offset, bool wrap=false);
 
         int get_total_field_size() const
             { return row_field_size * column_field_size; }
@@ -56,6 +58,7 @@ class ArborizedConfig {
         const int row_field_size, column_field_size;
         const int row_stride, column_stride;
         const int row_offset, column_offset;
+        const bool wrap;
 };
 
 class ConnectionConfig : public PropertyConfig {

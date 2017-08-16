@@ -87,36 +87,36 @@ void old_test() {
         (new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
             new RandomWeightConfig(1, 0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(15)));
+        ->set_arborized_config(new ArborizedConfig(15,1,true)));
     structure->connect_layers("exc_cortex", "exc_cortex",
         (new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
             new RandomWeightConfig(1, 0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(31)));
+        ->set_arborized_config(new ArborizedConfig(31,1,true)));
 
     /* Cortical inhibitory loop */
     structure->connect_layers("exc_cortex", "inh_cortex",
         (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(31)));
+        ->set_arborized_config(new ArborizedConfig(31,1,true)));
     structure->connect_layers("inh_cortex", "exc_cortex",
         (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
             new RandomWeightConfig(1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(5)));
+        ->set_arborized_config(new ArborizedConfig(5,1,true)));
 
     /* Cortico-thalamic inhibitory loop */
     structure->connect_layers("exc_cortex", "inh_thalamus",
         (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
             new RandomWeightConfig(0.1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(7)));
+        ->set_arborized_config(new ArborizedConfig(7,1,true)));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
         (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
             new FlatWeightConfig(1)))
         ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(5)));
+        ->set_arborized_config(new ArborizedConfig(5,1,true)));
 
 
     // Modules
@@ -177,13 +177,13 @@ void simple_test() {
         (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field)));
+            new ArborizedConfig(exc_field,1,true)));
     /*
     structure->connect_layers("hid_1", "hid_2",
         (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field)));
+            new ArborizedConfig(inh_field,1,true)));
     */
 
     /* Recurrent self connectivity */
@@ -191,36 +191,36 @@ void simple_test() {
         (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field)));
+            new ArborizedConfig(exc_field,1,true)));
     structure->connect_layers("hid_1", "hid_1",
         (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field)));
+            new ArborizedConfig(inh_field,1,true)));
 
     structure->connect_layers("hid_2", "hid_2",
         (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field)));
+            new ArborizedConfig(exc_field,1,true)));
     structure->connect_layers("hid_2", "hid_2",
         (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field)));
+            new ArborizedConfig(inh_field,1,true)));
 
     /* Feedback connectivity */
     structure->connect_layers("hid_2", "hid_1",
         (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field)));
+            new ArborizedConfig(exc_field,1,true)));
     /*
     structure->connect_layers("hid_2", "hid_1",
         (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field)));
+            new ArborizedConfig(inh_field,1,true)));
     */
 
     // Modules
@@ -341,16 +341,16 @@ void mnist_test() {
         structure->connect_layers("input_layer", std::to_string(i),
             (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
                 new FlatWeightConfig(0.1, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(9)));
+            ->set_arborized_config(new ArborizedConfig(9,1,true)));
 
         structure->connect_layers(std::to_string(i), std::to_string(i),
             (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
                 new RandomWeightConfig(0.1, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(9)));
+            ->set_arborized_config(new ArborizedConfig(9,1,true)));
         structure->connect_layers(std::to_string(i), std::to_string(i),
             (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
                 new FlatWeightConfig(0.5, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(11)));
+            ->set_arborized_config(new ArborizedConfig(11,1,true)));
     }
 
     for (int i = 0; i < num_hidden; ++i)
@@ -469,6 +469,7 @@ void game_of_life_test() {
     // R7,C0,M1,S113..225, B113..225,NM
 
     // Game parameters
+    bool wrap = true;
     int board_dim = 256;
     int neighborhood_size = 15;
     int survival_min = 113;
@@ -492,7 +493,7 @@ void game_of_life_test() {
         (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, ADD,
             new SurroundWeightConfig(1,1, new FlatWeightConfig(1))))
         ->set_arborized_config(
-            new ArborizedConfig(neighborhood_size)));
+            new ArborizedConfig(neighborhood_size, 1, wrap)));
 
     // Modules
     //std::string output_name = "dummy_output";
@@ -561,10 +562,10 @@ int main(int argc, char *argv[]) {
         //speech_train();
         //speech_test(std::string(argv[1]));
         //maze_game_test();
-        //old_test();
+        old_test();
         //simple_test();
         //single_field_test();
-        game_of_life_test();
+        //game_of_life_test();
 
         return 0;
     } catch (const char* msg) {
