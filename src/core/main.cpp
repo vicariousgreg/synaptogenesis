@@ -462,38 +462,60 @@ void game_of_life_test() {
     Model *model = new Model();
     Structure *structure = new Structure("game_of_life");
     model->add_structure(structure);
-
     std::string model_name = "game_of_life";
 
+    // Contour rules
+    // R4,C0,M1,S41..81, B41..81,NM
+    // R7,C0,M1,S113..225, B113..225,NM
+
+    // Game parameters
     int board_dim = 256;
-    structure->add_layer(new LayerConfig(
-        "board", model_name, board_dim, board_dim));
+    int neighborhood_size = 15;
+    int survival_min = 113;
+    int survival_max = 225;
+    int birth_min = 113;
+    int birth_max = 225;
+
+    // Input parameters
+    bool one_step = false;
+    float one_step_fraction = 0.5;
+    float random_fraction = 0.5;
+    float rate = 1000;
+
+    structure->add_layer((new LayerConfig(
+        "board", model_name, board_dim, board_dim))
+			->set_property("survival_min", std::to_string(survival_min))
+			->set_property("survival_max", std::to_string(survival_max))
+			->set_property("birth_min", std::to_string(birth_min))
+			->set_property("birth_max", std::to_string(birth_max)));
     structure->connect_layers("board", "board",
         (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, ADD,
             new SurroundWeightConfig(1,1, new FlatWeightConfig(1))))
         ->set_arborized_config(
-            new ArborizedConfig(3)));
+            new ArborizedConfig(neighborhood_size)));
 
     // Modules
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    /* Single Initial State
-    structure->add_module("board",
-        (new ModuleConfig("one_step_input"))
-            ->set_property("max", "3")
-            ->set_property("uniform", "true")
-            ->set_property("fraction", "0.25"));
-    */
-
-    // Refresh state
-    structure->add_module("board",
-        (new ModuleConfig("random_input"))
-            ->set_property("max", "3")
-            ->set_property("rate", "1000")
-            ->set_property("uniform", "true")
-            ->set_property("clear", "true")
-            ->set_property("fraction", "0.05"));
+    if (one_step)
+        // Single Initial State
+        structure->add_module("board",
+            (new ModuleConfig("one_step_input"))
+                ->set_property("max", std::to_string(birth_min))
+                ->set_property("uniform", "true")
+                ->set_property("verbose", "false")
+                ->set_property("fraction", std::to_string(one_step_fraction)));
+    else
+        // Refresh state
+        structure->add_module("board",
+            (new ModuleConfig("random_input"))
+                ->set_property("max", std::to_string(birth_min))
+                ->set_property("rate", std::to_string(rate))
+                ->set_property("uniform", "true")
+                ->set_property("clear", "true")
+                ->set_property("verbose", "false")
+                ->set_property("fraction", std::to_string(random_fraction)));
 
     structure->add_module("board",
         new ModuleConfig(output_name));
@@ -540,9 +562,9 @@ int main(int argc, char *argv[]) {
         //speech_test(std::string(argv[1]));
         //maze_game_test();
         //old_test();
-        simple_test();
+        //simple_test();
         //single_field_test();
-        //game_of_life_test();
+        game_of_life_test();
 
         return 0;
     } catch (const char* msg) {

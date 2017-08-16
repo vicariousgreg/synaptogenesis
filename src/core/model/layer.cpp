@@ -33,6 +33,18 @@ bool Layer::is_input() const { return type & INPUT; }
 bool Layer::is_output() const { return type & OUTPUT; }
 bool Layer::is_expected() const { return type & EXPECTED; }
 
+std::string Layer::get_parameter(std::string key,
+        std::string default_val) const {
+    try {
+        return this->get_config()->get_property(key);
+    } catch (...) {
+        ErrorManager::get_instance()->log_warning(
+            "Unspecified parameter: " + key + " for layer \""
+            + this->name + "\" -- using " + default_val + ".");
+        return default_val;
+    }
+}
+
 const std::vector<ModuleConfig*> Layer::get_module_configs() const
     { return module_configs; }
 

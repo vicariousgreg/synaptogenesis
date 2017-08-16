@@ -6,6 +6,7 @@ AttributeData::AttributeData(Layer *layer, State *state) :
         attributes(state->get_attributes_pointer(layer)),
         input(state->get_input(layer)),
         output(state->get_output(layer)),
+        layer_index(state->get_layer_index(layer)),
         other_start_index(state->get_other_start_index(layer)),
         size(layer->size),
         plastic(layer->plastic) {

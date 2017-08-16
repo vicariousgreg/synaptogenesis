@@ -29,6 +29,8 @@ class Layer {
         bool is_output() const;
         bool is_expected() const;
 
+        std::string get_parameter(
+            std::string key, std::string default_val) const;
         const std::vector<ModuleConfig*> get_module_configs() const;
 
         const ConnectionList& get_input_connections() const;

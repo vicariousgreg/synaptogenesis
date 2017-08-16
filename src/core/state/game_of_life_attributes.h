@@ -7,10 +7,10 @@ class GameOfLifeAttributes : public Attributes {
     public:
         GameOfLifeAttributes(LayerList &layers);
 
-        virtual int get_matrix_depth(Connection* conn) {
-            /* Weight */
-            return 1;
-        }
+    Pointer<int> survival_mins;
+    Pointer<int> survival_maxs;
+    Pointer<int> birth_mins;
+    Pointer<int> birth_maxs;
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

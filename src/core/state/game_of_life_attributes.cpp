@@ -13,13 +13,21 @@ REGISTER_ATTRIBUTES(GameOfLifeAttributes, "game_of_life")
 /******************************************************************************/
 
 BUILD_ATTRIBUTE_KERNEL(GameOfLifeAttributes, gol_attribute_kernel,
+    GameOfLifeAttributes *gol_att = (GameOfLifeAttributes*)att;
+    int layer_index = attribute_data.layer_index;
+    int survival_min = *gol_att->survival_mins.get(layer_index);
+    int survival_max = *gol_att->survival_maxs.get(layer_index);
+    int birth_min = *gol_att->birth_mins.get(layer_index);
+    int birth_max = *gol_att->birth_maxs.get(layer_index);
 
     ,
 
     int input = (int)inputs[nid];
     unsigned int *lives = (unsigned int*)outputs;
     bool prev_live = lives[nid] & 1;
-    bool live = (input == 3) or (prev_live and (input == 2));
+    bool live = (prev_live)
+        ? (input >= survival_min and input <= survival_max)
+        : (input >= birth_min and input <= birth_max);
 
     /********************
      *** LIFE UPDATE ***
@@ -48,4 +56,26 @@ BUILD_ATTRIBUTE_KERNEL(GameOfLifeAttributes, gol_attribute_kernel,
 /******************************************************************************/
 
 GameOfLifeAttributes::GameOfLifeAttributes(LayerList &layers)
-        : Attributes(layers, BIT) { }
+        : Attributes(layers, BIT) {
+    this->survival_mins = Pointer<int>(layers.size());
+    this->survival_maxs = Pointer<int>(layers.size());
+    this->birth_mins = Pointer<int>(layers.size());
+    this->birth_maxs = Pointer<int>(layers.size());
+    Attributes::register_variable(&this->survival_mins);
+    Attributes::register_variable(&this->survival_maxs);
+    Attributes::register_variable(&this->birth_mins);
+    Attributes::register_variable(&this->birth_maxs);
+
+    for (auto& layer : layers) {
+        int layer_id = layer_indices[layer->id];
+
+        survival_mins[layer_id] =
+            std::stoi(layer->get_parameter("survival_min", "2"));
+        survival_maxs[layer_id] =
+            std::stoi(layer->get_parameter("survival_max", "3"));
+        birth_mins[layer_id] =
+            std::stoi(layer->get_parameter("birth_min", "3"));
+        birth_maxs[layer_id] =
+            std::stoi(layer->get_parameter("birth_max", "3"));
+    }
+}

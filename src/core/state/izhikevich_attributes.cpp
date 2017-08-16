@@ -511,32 +511,6 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-static std::string extract_parameter(Layer *layer,
-        std::string key, std::string default_val) {
-    try {
-        return layer->get_config()->get_property(key);
-    } catch (...) {
-        ErrorManager::get_instance()->log_warning(
-            "Unspecified parameter: " + key + " for layer \""
-            + layer->name + "\" -- using " + default_val + ".");
-        return default_val;
-    }
-}
-
-static std::string extract_parameter(Connection *conn,
-        std::string key, std::string default_val) {
-    try {
-        return conn->get_config()->get_property(key);
-    } catch (...) {
-        ErrorManager::get_instance()->log_warning(
-            "Unspecified parameter: " + key + " for conn \""
-            + conn->from_layer->name + "\" -> \""
-            + conn->to_layer->name + "\" -- using "
-            + default_val + ".");
-        return default_val;
-    }
-}
-
 static void check_parameters(Layer *layer) {
     std::set<std::string> valid_params;
     valid_params.insert("init");
@@ -618,7 +592,7 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         check_parameters(layer);
 
         IzhikevichParameters params = create_parameters(
-            extract_parameter(layer, "init", "regular"));
+            layer->get_parameter("init", "regular"));
         for (int j = 0 ; j < layer->size ; ++j) {
             neuron_parameters[start_index+j] = params;
             postsyn_trace[start_index+j] = 0.0;
@@ -648,15 +622,15 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
 
             // Retrieve baseline conductance
             baseline_conductance[connection_indices[conn->id]] =
-                std::stof(extract_parameter(conn, "conductance", "1.0"));
+                std::stof(conn->get_parameter("conductance", "1.0"));
 
             // Retrieve learning rate
             learning_rate[connection_indices[conn->id]] =
-                std::stof(extract_parameter(conn, "learning rate", "0.004"));
+                std::stof(conn->get_parameter("learning rate", "0.004"));
 
             // Retrieve short term plasticity flag
             stp_flag[connection_indices[conn->id]] =
-                extract_parameter(conn, "short term plasticity", "true") == "true";
+                conn->get_parameter("short term plasticity", "true") == "true";
         }
     }
 }
@@ -701,22 +675,22 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     // Delays
     // Myelinated connections use the base delay only
     int *delays = (int*)(mData + 7*num_weights);
-    if (extract_parameter(conn, "myelinated", "") != "") {
+    if (conn->get_parameter("myelinated", "") != "") {
         int delay = conn->delay;
         for (int i = 0 ; i < num_weights ; ++i)
             delays[i] = delay;
-    } else if (extract_parameter(conn, "random delay", "") != "") {
+    } else if (conn->get_parameter("random delay", "") != "") {
         int max_delay = std::stoi(
-            extract_parameter(conn, "random delay", "0"));
+            conn->get_parameter("random delay", "0"));
         if (max_delay > 31)
             ErrorManager::get_instance()->log_error(
                 "Randomized axons cannot have delays greater than 31!");
         iRand(delays, num_weights, 0, max_delay);
     } else {
         set_delays(BIT, conn, delays, 0.15,
-            std::stof(extract_parameter(conn->from_layer, "spacing", "0.1")),
-            std::stof(extract_parameter(conn->to_layer, "spacing", "0.1")),
-            std::stof(extract_parameter(conn, "x offset", "0.0")),
-            std::stof(extract_parameter(conn, "y offset", "0.0")));
+            std::stof(conn->from_layer->get_parameter("spacing", "0.1")),
+            std::stof(conn->to_layer->get_parameter("spacing", "0.1")),
+            std::stof(conn->get_parameter("x offset", "0.0")),
+            std::stof(conn->get_parameter("y offset", "0.0")));
     }
 }

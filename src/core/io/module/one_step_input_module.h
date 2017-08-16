@@ -15,6 +15,7 @@ class OneStepInputModule : public Module {
         float *random_values;
         bool active;
         bool cleared;
+        bool verbose;
 
     MODULE_MEMBERS
 };

@@ -15,6 +15,7 @@ class AttributeData {
         const Attributes *attributes;
         Pointer<float> input;
         Pointer<Output> output;
+        const int layer_index;
         const int other_start_index;
         const int size;
         int history_size;

@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <iostream>
 
 #include "io/module/one_step_input_module.h"
 #include "util/tools.h"
@@ -14,6 +15,7 @@ OneStepInputModule::OneStepInputModule(Layer *layer, ModuleConfig *config)
     float max_value = std::stof(config->get_property("max", "1.0"));
     float fraction = std::stof(config->get_property("fraction", "1.0"));
     bool uniform = config->get_property("uniform", "false") == "true";
+    this->verbose = config->get_property("verbose", "false") == "true";
 
     if (max_value <= 0.0)
         ErrorManager::get_instance()->log_error(
@@ -39,6 +41,11 @@ void OneStepInputModule::feed_input(Buffer *buffer) {
         float *input = buffer->get_input(this->layer);
         for (int nid = 0 ; nid < this->layer->size; ++nid)
             input[nid] = this->random_values[nid];
+        if (verbose) {
+            for (int nid = 0 ; nid < this->layer->size; ++nid)
+                std::cout << this->random_values[nid];
+            std::cout << std::endl;
+        }
         buffer->set_dirty(this->layer);
         active = false;
     } else if (not cleared) {

@@ -96,5 +96,19 @@ Connection::~Connection() {
     delete config;
 }
 
+std::string Connection::get_parameter(std::string key,
+        std::string default_val) const {
+    try {
+        return this->get_config()->get_property(key);
+    } catch (...) {
+        ErrorManager::get_instance()->log_warning(
+            "Unspecified parameter: " + key + " for conn \""
+            + this->from_layer->name + "\" -> \""
+            + this->to_layer->name + "\" -- using "
+            + default_val + ".");
+        return default_val;
+    }
+}
+
 int Connection::get_num_weights() const { return num_weights; }
 const ConnectionConfig* Connection::get_config() const { return config; }
