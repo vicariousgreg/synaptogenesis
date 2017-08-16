@@ -58,9 +58,8 @@ void AuditoryCortex::add_cortical_layer(std::string name, bool shifted,
     connect_layers(name + "_pos", name + "_pos",
         (new ConnectionConfig(
             true, 0, 0.5, CONVERGENT, ADD,
-            (new FlatWeightConfig(0.05, 0.1))
+            new SurroundWeightConfig(1,1, new FlatWeightConfig(0.05, 0.1))))
             //(new LogNormalWeightConfig(-3.0, 1.0, 0.1))
-                ->set_diagonal(false)))
         ->set_arborized_config(
             new ArborizedConfig(
                 spread,

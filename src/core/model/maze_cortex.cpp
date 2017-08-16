@@ -119,8 +119,7 @@ void MazeCortex::add_cortical_layer(std::string name, int size_fraction) {
     connect_layers(name + "_pos", name + "_pos",
         (new ConnectionConfig(
             true, 2, 0.5, CONVERGENT, ADD,
-            (new FlatWeightConfig(0.1, 0.1))
-                ->set_diagonal(false)))
+            new SurroundWeightConfig(1,1, new FlatWeightConfig(0.1, 0.1))))
         ->set_arborized_config(
             new ArborizedConfig(self_spread, 1, -self_spread/2))
         ->set_property("learning rate", learning_rate));

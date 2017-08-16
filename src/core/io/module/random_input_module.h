@@ -15,7 +15,11 @@ class RandomInputModule : public Module {
         int timesteps;
         int shuffle_rate;
         float max_value;
+        float fraction;
         float *random_values;
+        bool verbose;
+        bool clear;
+        bool uniform;
 
     MODULE_MEMBERS
 };

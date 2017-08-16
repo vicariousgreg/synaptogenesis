@@ -124,7 +124,10 @@ void old_test() {
     std::string output_name = "visualizer_output";
 
     structure->add_module("input_layer",
-        new ModuleConfig("random_input", "5 1000000"));
+        (new ModuleConfig("random_input"))
+        ->set_property("max", "5")
+        ->set_property("rate", "1000000")
+        ->set_property("verbose", "true"));
     structure->add_module("exc_thalamus",
         new ModuleConfig(output_name));
     structure->add_module("exc_cortex",
@@ -454,6 +457,53 @@ void maze_game_test() {
     delete model;
 }
 
+void game_of_life_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = new Structure("game_of_life");
+    model->add_structure(structure);
+
+    std::string model_name = "game_of_life";
+
+    int board_dim = 256;
+    structure->add_layer(new LayerConfig(
+        "board", model_name, board_dim, board_dim));
+    structure->connect_layers("board", "board",
+        (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, ADD,
+            new SurroundWeightConfig(1,1, new FlatWeightConfig(1))))
+        ->set_arborized_config(
+            new ArborizedConfig(3)));
+
+    // Modules
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
+    /* Single Initial State
+    structure->add_module("board",
+        (new ModuleConfig("one_step_input"))
+            ->set_property("max", "3")
+            ->set_property("uniform", "true")
+            ->set_property("fraction", "0.25"));
+    */
+
+    // Refresh state
+    structure->add_module("board",
+        (new ModuleConfig("random_input"))
+            ->set_property("max", "3")
+            ->set_property("rate", "1000")
+            ->set_property("uniform", "true")
+            ->set_property("clear", "true")
+            ->set_property("fraction", "0.05"));
+
+    structure->add_module("board",
+        new ModuleConfig(output_name));
+
+    Clock clock(true);
+    //Clock clock(1.0f);
+    print_model(model);
+    delete clock.run(model, 500000, true);
+}
+
 static void print_subset_overlap(Structure *structure) {
     for (auto layer : structure->get_layers()) {
         int *grid = (int*) calloc (layer->size, sizeof(int));
@@ -492,6 +542,7 @@ int main(int argc, char *argv[]) {
         //old_test();
         simple_test();
         //single_field_test();
+        //game_of_life_test();
 
         return 0;
     } catch (const char* msg) {

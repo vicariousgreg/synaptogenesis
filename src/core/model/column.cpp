@@ -149,8 +149,7 @@ void Column::add_neural_field(std::string field_name) {
     connect_layers(field_name + "_pos", field_name + "_pos",
         (new ConnectionConfig(
             exc_plastic, 1, 0.5, CONVERGENT, ADD,
-            (new FlatWeightConfig(0.1, 0.09))
-                ->set_diagonal(false)))
+            new SurroundWeightConfig(1,1, new FlatWeightConfig(0.1, 0.09))))
         ->set_arborized_config(
             new ArborizedConfig(self_spread, 1, -self_spread/2))
         ->set_property("learning rate", learning_rate));

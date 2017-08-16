@@ -107,6 +107,7 @@ void SurroundWeightConfig::initialize(float* target_matrix,
         Connection* conn, bool is_host) {
     switch (conn->type) {
         case(CONVERGENT):
+        case(CONVOLUTIONAL):
         case(DIVERGENT):
             break;
         default:
@@ -127,10 +128,13 @@ void SurroundWeightConfig::initialize(float* target_matrix,
 
     // Divergent connections are unique in that there is a kernel per source
     //   neuron.  All other connection types organize based on the
-    //   destination layer.
-    int size = (conn->type == DIVERGENT)
-        ? conn->from_layer->size
-        : conn->to_layer->size;
+    //   destination layer.  Convolutional connections have only one kernel.
+    int size;
+    switch (conn->type) {
+        case(DIVERGENT): size = conn->from_layer->size; break;
+        case(CONVERGENT): size = conn->to_layer->size; break;
+        case(CONVOLUTIONAL): size = 1; break;
+    }
 
     if (is_host) {
         for (int index = 0 ; index < size ; ++index) {
