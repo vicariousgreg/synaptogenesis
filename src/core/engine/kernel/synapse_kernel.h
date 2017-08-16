@@ -399,24 +399,27 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
             int k_index = 0; \
             for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
                 for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
+                    int k_s_row = s_row; \
+                    int k_s_col = s_col; \
+\
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        s_row = (s_row < 0) \
-                            ? s_row + from_rows \
-                            : (s_row >= from_rows) \
-                                ? s_row - from_rows : s_row; \
+                        k_s_row = (k_s_row < 0) \
+                            ? k_s_row + from_rows \
+                            : (k_s_row >= from_rows) \
+                                ? k_s_row - from_rows : k_s_row; \
     \
-                        s_col = (s_col < 0) \
-                            ? s_col + from_columns \
-                            : (s_col >= from_columns) \
-                                ? s_col - from_columns : s_col; \
+                        k_s_col = (k_s_col < 0) \
+                            ? k_s_col + from_columns \
+                            : (k_s_col >= from_columns) \
+                                ? k_s_col - from_columns : k_s_col; \
                     /* Avoid making connections with non-existent neurons */ \
-                    } else if (s_row < 0 or s_row >= from_rows \
-                        or s_col < 0 or s_col >= from_columns) { \
+                    } else if (k_s_row < 0 or k_s_row >= from_rows \
+                        or k_s_col < 0 or k_s_col >= from_columns) { \
                         continue; \
                     } \
 \
-                    int from_index = (s_row * from_columns) + s_col; \
+                    int from_index = (k_s_row * from_columns) + k_s_col; \
                     int weight_index = weight_offset + k_index; \
                     WEIGHT_OP; \
                 } \
@@ -458,24 +461,27 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int k_index = 0; \
         for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
             for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
+                int k_s_row = s_row; \
+                int k_s_col = s_col; \
+\
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    s_row = (s_row < 0) \
-                        ? s_row + from_rows \
-                        : (s_row >= from_rows) \
-                            ? s_row - from_rows : s_row; \
+                    k_s_row = (k_s_row < 0) \
+                        ? k_s_row + from_rows \
+                        : (k_s_row >= from_rows) \
+                            ? k_s_row - from_rows : k_s_row; \
 \
-                    s_col = (s_col < 0) \
-                        ? s_col + from_columns \
-                        : (s_col >= from_columns) \
-                            ? s_col - from_columns : s_col; \
+                    k_s_col = (k_s_col < 0) \
+                        ? k_s_col + from_columns \
+                        : (k_s_col >= from_columns) \
+                            ? k_s_col - from_columns : k_s_col; \
                 /* Avoid making connections with non-existent neurons */ \
-                } else if (s_row < 0 or s_row >= from_rows \
-                    or s_col < 0 or s_col >= from_columns) { \
+                } else if (k_s_row < 0 or k_s_row >= from_rows \
+                    or k_s_col < 0 or k_s_col >= from_columns) { \
                     continue; \
                 } \
 \
-                int from_index = (s_row * from_columns) + s_col; \
+                int from_index = (k_s_row * from_columns) + k_s_col; \
 \
                 /* Row of matrix is the kernel index * row size (see above)
                    Column of matrix is the index of the source neuron */ \
