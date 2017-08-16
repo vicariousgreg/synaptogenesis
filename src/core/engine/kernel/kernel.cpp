@@ -28,11 +28,11 @@ Kernel<float, Pointer<float>, int> get_set_data() {
         set_data_SERIAL, set_data_PARALLEL);
 }
 
-/* Randomizes input data */
-void randomize_data_SERIAL(Pointer<float> ptr,
+/* Randomizes input data using Normal Distribution */
+void randomize_data_normal_SERIAL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool init) {
     std::default_random_engine generator(time(0));
-    std::normal_distribution<double> distribution(mean, std_dev);
+    std::normal_distribution<float> distribution(mean, std_dev);
     float* data = ptr.get();
 
     if (init)
@@ -43,7 +43,7 @@ void randomize_data_SERIAL(Pointer<float> ptr,
             data[nid] += distribution(generator);
 }
 #ifdef __CUDACC__
-GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr,
+GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool init) {
     float* data = ptr.get();
 
@@ -55,12 +55,52 @@ GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr,
     }
 }
 #else
-GLOBAL void randomize_data_PARALLEL(Pointer<float> ptr,
+GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool init) { }
 #endif
-Kernel<Pointer<float>, int, float, float, bool> get_randomize_data() {
+Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_normal() {
     return Kernel<Pointer<float>, int, float, float, bool>(
-        randomize_data_SERIAL, randomize_data_PARALLEL);
+        randomize_data_normal_SERIAL, randomize_data_normal_PARALLEL);
+}
+
+/* Randomizes input data using Poisson Point Process */
+void randomize_data_poisson_SERIAL(Pointer<float> ptr,
+        int count, float val, float rate, bool init) {
+    std::default_random_engine generator(time(0));
+    std::uniform_real_distribution<float> distribution(0.0, 1.0);
+    float* data = ptr.get();
+
+    if (init)
+        for (int nid = 0; nid < count; ++nid)
+            data[nid] = (distribution(generator) < rate) ? val : 0.0;
+    else
+        for (int nid = 0; nid < count; ++nid)
+            if (distribution(generator) < rate)
+                data[nid] += val;
+}
+#ifdef __CUDACC__
+GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr,
+        int count, float val, float rate, bool init) {
+    float* data = ptr.get();
+
+
+    int nid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (nid < count) {
+        if (init)
+            data[nid] =
+                (curand_uniform(&cuda_rand_states[nid]) < rate)
+                ? val : 0.0;
+        else if (curand_uniform(&cuda_rand_states[nid]) < rate)
+            data[nid] += val;
+    }
+}
+#else
+GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr,
+        int count, float val, float rate, bool init) { }
+#endif
+Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_poisson() {
+    return Kernel<Pointer<float>, int, float, float, bool>(
+        randomize_data_poisson_SERIAL, randomize_data_poisson_PARALLEL);
 }
 
 /* Dendritic tree internal computation */

@@ -51,10 +51,6 @@ class Layer {
         // Layer rows, columns, and total size
         const int rows, columns, size;
 
-        // Noise parameters
-        const float noise_mean;
-        const float noise_std_dev;
-
         // Plasticity flag
         const bool plastic;
 

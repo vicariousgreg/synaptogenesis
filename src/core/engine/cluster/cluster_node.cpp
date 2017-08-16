@@ -34,9 +34,20 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
                 to_layer, state, environment, compute_stream);
 
     // Add noise / clear instruction
-    if (to_layer->noise_mean != 0.0)
-        activate_instructions.push_back(
-            new NoiseInstruction(to_layer, state, compute_stream));
+    auto noise_config = to_layer->get_config()->noise_config;
+    if (noise_config != nullptr)
+        switch (noise_config->type) {
+            case (NORMAL):
+                activate_instructions.push_back(
+                    new NormalNoiseInstruction(
+                        to_layer, state, compute_stream));
+                break;
+            case (POISSON):
+                activate_instructions.push_back(
+                    new PoissonNoiseInstruction(
+                        to_layer, state, compute_stream));
+                break;
+        }
     else if (not this->is_input)
         activate_instructions.push_back(
             new ClearInstruction(to_layer, state, compute_stream));

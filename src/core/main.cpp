@@ -160,18 +160,24 @@ void simple_test() {
     structure->add_layer((new LayerConfig(
         "input_layer", model_name, 1, 10))
 			->set_property(IZ_INIT, "regular"));
-    structure->add_layer((new LayerConfig(
-        "hid_1", model_name, resolution, resolution))
-			->set_property(IZ_INIT, "regular"));
+    structure->add_layer(
+        (new LayerConfig(
+            "hid_1", model_name, resolution, resolution,
+            (new NoiseConfig(POISSON))
+                ->set_property("val", "20")
+                ->set_property("rate", "1")))
+            ->set_property(IZ_INIT, "regular"));
     structure->add_layer((new LayerConfig(
         "hid_2", model_name, resolution, resolution))
 			->set_property(IZ_INIT, "regular"));
 
     /* Forward excitatory pathway */
+    /*
     structure->connect_layers("input_layer", "hid_1",
         (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(1, 0.05)))
         ->set_property("myelinated", "true"));
+    */
 
     structure->connect_layers("hid_1", "hid_2",
         (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
@@ -335,8 +341,12 @@ void mnist_test() {
 
     int num_hidden = 10;
     for (int i = 0; i < num_hidden; ++i) {
-        structure->add_layer((new LayerConfig(std::to_string(i),
-            "leaky_izhikevich", 28, 28, 0.5))
+        structure->add_layer(
+            (new LayerConfig(std::to_string(i),
+                "leaky_izhikevich", 28, 28,
+                (new NoiseConfig(NORMAL))
+                    ->set_property("mean", "0.5")
+                    ->set_property("std_dev", "0.1")))
                 ->set_property(IZ_INIT, "regular"));
         structure->connect_layers("input_layer", std::to_string(i),
             (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,

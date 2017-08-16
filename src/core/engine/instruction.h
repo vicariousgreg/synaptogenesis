@@ -139,23 +139,55 @@ class ClearInstruction : public InitializeInstruction {
 };
 
 /* Adds noise to the input */
-class NoiseInstruction : public InitializeInstruction {
+class NormalNoiseInstruction : public InitializeInstruction {
     public:
-        NoiseInstruction(Layer *layer, State *state, Stream *stream)
+        NormalNoiseInstruction(Layer *layer, State *state, Stream *stream)
                 : InitializeInstruction(layer, state, stream),
-                  init(not layer->is_input()) { }
+                  init(not layer->is_input()),
+                  mean(std::stof(layer->get_config()->noise_config
+                      ->get_property("mean", "1.0"))),
+                  std_dev(std::stof(layer->get_config()->noise_config
+                      ->get_property("std_dev", "0.1"))) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_randomize_data().run(stream,
+            get_randomize_data_normal().run(stream,
                 blocks, threads,
                 dst, size,
-                to_layer->noise_mean, to_layer->noise_std_dev,
+                mean, std_dev,
                 init);
             Instruction::record_event();
         }
 
     protected:
+        float mean;
+        float std_dev;
+        bool init;
+};
+
+class PoissonNoiseInstruction : public InitializeInstruction {
+    public:
+        PoissonNoiseInstruction(Layer *layer, State *state, Stream *stream)
+                : InitializeInstruction(layer, state, stream),
+                  init(not layer->is_input()),
+                  val(std::stof(layer->get_config()->noise_config
+                      ->get_property("val", "20"))),
+                  rate(0.001 * std::stof(layer->get_config()->noise_config
+                      ->get_property("rate", "1"))) { }
+
+        void activate() {
+            Instruction::wait_for_dependencies();
+            get_randomize_data_poisson().run(stream,
+                blocks, threads,
+                dst, size,
+                val, rate,
+                init);
+            Instruction::record_event();
+        }
+
+    protected:
+        float val;
+        float rate;
         bool init;
 };
 

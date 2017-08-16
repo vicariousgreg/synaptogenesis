@@ -14,8 +14,6 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           rows(config->rows),
           columns(config->columns),
           size(rows * columns),
-          noise_mean(config->noise_mean),
-          noise_std_dev(config->noise_std_dev),
           plastic(config->plastic),
           global(config->global),
           type(0),
