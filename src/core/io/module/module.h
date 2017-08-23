@@ -46,6 +46,7 @@ class Module {
 
         // Get the IOType of a module subclass
         static IOTypeMask get_module_type(std::string module_name);
+        static IOTypeMask get_module_type(ModuleConfig *config);
 
         static Module* build_module(Layer *layer, ModuleConfig *config);
 

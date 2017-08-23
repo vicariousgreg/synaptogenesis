@@ -25,6 +25,9 @@ IOTypeMask Module::get_module_type(std::string module_name) {
     }
 }
 
+IOTypeMask Module::get_module_type(ModuleConfig *config) {
+    return Module::get_module_type(config->get_property("name"));
+}
 
 int Module::register_module(std::string module_name,
         IOTypeMask type, MODULE_BUILD_PTR build_ptr) {

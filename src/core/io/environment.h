@@ -10,7 +10,7 @@ class State;
 
 class Environment {
     public:
-        Environment(State *state);
+        Environment(State *state, bool suppress_output=false);
         virtual ~Environment();
 
         void step_input();

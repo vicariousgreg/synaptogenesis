@@ -5,18 +5,21 @@
 #include "state/state.h"
 #include "frontend.h"
 
-Environment::Environment(State *state)
+Environment::Environment(State *state, bool suppress_output)
         : state(state),
           buffer(build_buffer(
               ResourceManager::get_instance()->get_host_id(), state->model)) {
     // Extract modules
     for (auto& layer : state->model->get_layers()) {
         for (auto config : layer->get_module_configs()) {
-            Module *module = Module::build_module(layer, config);
-            auto type = module->get_type();
-            if (type & INPUT) this->input_modules.push_back(module);
-            if (type & OUTPUT) this->output_modules.push_back(module);
-            if (type & EXPECTED) this->expected_modules.push_back(module);
+            if ((not suppress_output)
+                    or (not Module::get_module_type(config) & OUTPUT)) {
+                Module *module = Module::build_module(layer, config);
+                auto type = module->get_type();
+                if (type & INPUT) this->input_modules.push_back(module);
+                if (type & OUTPUT) this->output_modules.push_back(module);
+                if (type & EXPECTED) this->expected_modules.push_back(module);
+            }
         }
     }
 }

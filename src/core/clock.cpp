@@ -75,7 +75,8 @@ void Clock::environment_loop(int iterations, bool verbose) {
     }
 }
 
-State* Clock::run(Model *model, int iterations, bool verbose, State *state) {
+State* Clock::run(Model *model, int iterations, bool verbose,
+        State *state, bool suppress_output) {
     /**********************/
     /*** Initialization ***/
     /**********************/
@@ -93,7 +94,7 @@ State* Clock::run(Model *model, int iterations, bool verbose, State *state) {
     if (state == nullptr) state = new State(model);
 
     // Build environment
-    environment = new Environment(state);
+    environment = new Environment(state, suppress_output);
 
     // Build engine
     engine = new Engine(state, environment);
