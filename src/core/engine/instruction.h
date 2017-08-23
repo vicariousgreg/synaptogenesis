@@ -171,7 +171,7 @@ class PoissonNoiseInstruction : public InitializeInstruction {
                 : InitializeInstruction(layer, state, stream),
                   init(not layer->is_input()),
                   val(std::stof(layer->get_config()->noise_config
-                      ->get_property("val", "20"))),
+                      ->get_property("value", "20"))),
                   rate(0.001 * std::stof(layer->get_config()->noise_config
                       ->get_property("rate", "1"))) { }
 

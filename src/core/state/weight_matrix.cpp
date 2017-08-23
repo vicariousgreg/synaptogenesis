@@ -110,6 +110,10 @@ void set_delays(OutputType output_type, Connection *conn,
             "Only BIT output connections can have variable delays!");
     int base_delay = conn->delay;
 
+    ErrorManager::get_instance()->log_debug(
+        conn->from_layer->name + " -> " +
+        conn->to_layer->name + "delay initialization...\n");
+
     switch(conn->type) {
         case(FULLY_CONNECTED):
         case(SUBSET): {

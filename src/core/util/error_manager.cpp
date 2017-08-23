@@ -15,6 +15,11 @@ void ErrorManager::log_error(std::string error) {
     std::terminate();
 }
 
+void ErrorManager::log_debug(std::string error) {
+    if (debug)
+        std::cout << "DEBUG: \n" << error << "\n";
+}
+
 ErrorManager* ErrorManager::get_instance() {
     if (ErrorManager::instance == nullptr)
         ErrorManager::instance = new ErrorManager();

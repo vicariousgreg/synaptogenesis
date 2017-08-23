@@ -62,72 +62,78 @@ void old_test() {
     std::string model_name = "leaky_izhikevich";
 
     int resolution = 128;
-    structure->add_layer((new LayerConfig(
-        "input_layer", model_name, 1, 10))
-			->set_property(IZ_INIT, "default"));
-    structure->add_layer((new LayerConfig(
-        "exc_thalamus", model_name, resolution, resolution))
-			->set_property(IZ_INIT, "thalamo_cortical"));
-    structure->add_layer((new LayerConfig(
-        "inh_thalamus", model_name, resolution, resolution))
-			->set_property(IZ_INIT, "random negative"));
+    // structure->add_layer((new LayerConfig(
+    //     "input_layer", model_name, 1, 10))
+    //        ->set_property(IZ_INIT, "default"));
+    structure->add_layer(
+        (new LayerConfig(
+            "exc_thalamus", model_name, resolution, resolution,
+            (new NoiseConfig(POISSON))))
+        ->set_property(IZ_INIT, "thalamo_cortical"));
+    // structure->add_layer((new LayerConfig(
+    //     "inh_thalamus", model_name, resolution/2, resolution/2))
+    //         ->set_property("spacing", "0.2")
+    //         ->set_property(IZ_INIT, "random negative"));
     structure->add_layer((new LayerConfig(
         "exc_cortex", model_name, resolution, resolution))
             ->set_property(IZ_INIT, "random positive"));
     structure->add_layer((new LayerConfig(
-        "inh_cortex", model_name, resolution, resolution))
+        "inh_cortex", model_name, resolution/2, resolution/2))
+            ->set_property("spacing", "0.2")
             ->set_property(IZ_INIT, "random negative"));
 
     /* Forward excitatory pathway */
-    structure->connect_layers("input_layer", "exc_thalamus",
-        (new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
-            new RandomWeightConfig(1, 0.01)))
-        ->set_property("myelinated", "true"));
+    // structure->connect_layers("input_layer", "exc_thalamus",
+    //     (new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
+    //         new RandomWeightConfig(1, 0.01)))
+    //     ->set_property("myelinated", "true"));
     structure->connect_layers("exc_thalamus", "exc_cortex",
-        (new ConnectionConfig(true, 0, 10, CONVERGENT, ADD,
-            new RandomWeightConfig(1, 0.1)))
-        ->set_property("myelinated", "")
+        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_property("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(15,1,true)));
     structure->connect_layers("exc_cortex", "exc_cortex",
         (new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
-            new RandomWeightConfig(1, 0.1)))
-        ->set_property("myelinated", "")
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_property("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(31,1,true)));
 
     /* Cortical inhibitory loop */
     structure->connect_layers("exc_cortex", "inh_cortex",
-        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
-            new RandomWeightConfig(0.1)))
-        ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(31,1,true)));
+        (new ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_property("myelinated", "false")
+        ->set_arborized_config(new ArborizedConfig(31,2,true)));
     structure->connect_layers("inh_cortex", "exc_cortex",
-        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
-            new RandomWeightConfig(1)))
-        ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(5,1,true)));
+        (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_property("myelinated", "false")
+        ->set_arborized_config(new ArborizedConfig(5,2,true)));
 
     /* Cortico-thalamic inhibitory loop */
+    /*
     structure->connect_layers("exc_cortex", "inh_thalamus",
-        (new ConnectionConfig(true, 0, 5, CONVERGENT, ADD,
-            new RandomWeightConfig(0.1)))
-        ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(7,1,true)));
+        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_property("myelinated", "false")
+        ->set_arborized_config(new ArborizedConfig(7,2,true)));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
-        (new ConnectionConfig(false, 0, 5, CONVERGENT, SUB,
-            new FlatWeightConfig(1)))
-        ->set_property("myelinated", "")
-        ->set_arborized_config(new ArborizedConfig(5,1,true)));
+        (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
+            new FlatWeightConfig(0.5, 0.1)))
+        ->set_property("myelinated", "false")
+        ->set_arborized_config(new ArborizedConfig(5,2,true)));
+    */
 
 
     // Modules
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    structure->add_module("input_layer",
-        (new ModuleConfig("random_input"))
-        ->set_property("max", "5")
-        ->set_property("rate", "1000000")
-        ->set_property("verbose", "true"));
+    // structure->add_module("input_layer",
+    //     (new ModuleConfig("random_input"))
+    //     ->set_property("max", "5")
+    //     ->set_property("rate", "1000000")
+    //     ->set_property("verbose", "true"));
     structure->add_module("exc_thalamus",
         new ModuleConfig(output_name));
     structure->add_module("exc_cortex",
@@ -136,8 +142,15 @@ void old_test() {
         new ModuleConfig("heatmap"));
     structure->add_module("exc_cortex",
         new ModuleConfig("heatmap"));
-    //structure->add_module("inh_cortex", output_name, "8");
-    //structure->add_module("inh_thalamus", output_name, "8");
+
+    // structure->add_module("inh_thalamus",
+    //     new ModuleConfig(output_name));
+    structure->add_module("inh_cortex",
+        new ModuleConfig(output_name));
+    // structure->add_module("inh_thalamus",
+    //     new ModuleConfig("heatmap"));
+    structure->add_module("inh_cortex",
+        new ModuleConfig("heatmap"));
 
     print_model(model);
     Clock clock(true);
@@ -159,17 +172,17 @@ void simple_test() {
     int resolution = 96;
     structure->add_layer((new LayerConfig(
         "input_layer", model_name, 1, 10))
-			->set_property(IZ_INIT, "regular"));
+            ->set_property(IZ_INIT, "regular"));
     structure->add_layer(
         (new LayerConfig(
             "hid_1", model_name, resolution, resolution,
             (new NoiseConfig(POISSON))
-                ->set_property("val", "20")
+                ->set_property("value", "20")
                 ->set_property("rate", "1")))
             ->set_property(IZ_INIT, "regular"));
     structure->add_layer((new LayerConfig(
         "hid_2", model_name, resolution, resolution))
-			->set_property(IZ_INIT, "regular"));
+            ->set_property(IZ_INIT, "regular"));
 
     /* Forward excitatory pathway */
     /*
@@ -262,6 +275,20 @@ void simple_test() {
         state = clock.run(model, 1000000, true, state);
         delete state;
     } else {
+        structure->add_module("input_layer",
+            new ModuleConfig(output_name));
+        structure->add_module("hid_1",
+            new ModuleConfig(output_name));
+        structure->add_module("hid_2",
+            new ModuleConfig(output_name));
+
+        structure->add_module("input_layer",
+            new ModuleConfig("heatmap"));
+        structure->add_module("hid_1",
+            new ModuleConfig("heatmap"));
+        structure->add_module("hid_2",
+            new ModuleConfig("heatmap"));
+
         print_model(model);
         auto state = new State(model);
         state = clock.run(model, 500000, true, state);
@@ -280,10 +307,10 @@ void single_field_test() {
 
     structure->add_layer((new LayerConfig(
         "exc_field", model_name, 40, 40))
-			->set_property(IZ_INIT, "random positive"));
+            ->set_property(IZ_INIT, "random positive"));
     structure->add_layer((new LayerConfig(
         "inh_field", model_name, 10, 40))
-			->set_property(IZ_INIT, "random negative"));
+            ->set_property(IZ_INIT, "random negative"));
 
     structure->connect_layers("exc_field", "exc_field",
         (new ConnectionConfig(true, 0, 10, FULLY_CONNECTED, ADD,
@@ -480,12 +507,12 @@ void game_of_life_test() {
 
     // Game parameters
     bool wrap = true;
-    int board_dim = 256;
-    int neighborhood_size = 15;
-    int survival_min = 113;
-    int survival_max = 225;
-    int birth_min = 113;
-    int birth_max = 225;
+    int board_dim = 1024;
+    int neighborhood_size = 5; 15;
+    int survival_min = 2; 113;
+    int survival_max = 3; 225;
+    int birth_min = 3; 113;
+    int birth_max = 4; 225;
 
     // Input parameters
     bool one_step = false;
@@ -494,21 +521,31 @@ void game_of_life_test() {
     float rate = 1000;
 
     structure->add_layer((new LayerConfig(
-        "board", model_name, board_dim, board_dim))
-			->set_property("survival_min", std::to_string(survival_min))
-			->set_property("survival_max", std::to_string(survival_max))
-			->set_property("birth_min", std::to_string(birth_min))
-			->set_property("birth_max", std::to_string(birth_max)));
+        "board", model_name, board_dim, board_dim,
+        (new NoiseConfig(POISSON))
+        ->set_property("value", std::to_string(birth_min))
+        ->set_property("rate", "0.5")))
+            ->set_property("survival_min", std::to_string(survival_min))
+            ->set_property("survival_max", std::to_string(survival_max))
+            ->set_property("birth_min", std::to_string(birth_min))
+            ->set_property("birth_max", std::to_string(birth_max)));
     structure->connect_layers("board", "board",
         (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, ADD,
             new SurroundWeightConfig(1,1, new FlatWeightConfig(1))))
         ->set_arborized_config(
-            new ArborizedConfig(neighborhood_size, 1, wrap)));
+            new ArborizedConfig(neighborhood_size, 1, -neighborhood_size/2, wrap)));
+    structure->connect_layers("board", "board",
+        (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, SUB,
+            new SurroundWeightConfig(neighborhood_size,neighborhood_size,
+                new FlatWeightConfig(1))))
+        ->set_arborized_config(
+            new ArborizedConfig(neighborhood_size+2, 1, (-neighborhood_size+1)/2, wrap)));
 
     // Modules
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
+    /*
     if (one_step)
         // Single Initial State
         structure->add_module("board",
@@ -527,6 +564,7 @@ void game_of_life_test() {
                 ->set_property("clear", "true")
                 ->set_property("verbose", "false")
                 ->set_property("fraction", std::to_string(random_fraction)));
+    */
 
     structure->add_module("board",
         new ModuleConfig(output_name));
@@ -536,6 +574,182 @@ void game_of_life_test() {
     print_model(model);
     delete clock.run(model, 500000, true);
 }
+
+void working_memory_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *main_structure = new Structure("working memory", PARALLEL);
+    model->add_structure(main_structure);
+
+    bool wrap = true;
+    int num_cortical_regions = 1;
+
+    int thal_ratio = 1;
+    int cortex_size = 128;
+    int thal_size = cortex_size / thal_ratio;
+
+    float cortex_noise = 1.0;
+    float cortex_noise_stdev = 0.3;
+
+    bool exc_plastic = true;
+    int exc_delay = 0;
+    int inh_delay = 3;
+
+    int sensory_center = 15;
+    int sensory_surround = 15;
+    int inter_cortex_center = 15;
+    int inter_cortex_surround = 25;
+    int gamma_center = 15;
+    int gamma_surround = 25;
+
+    //std::string output_name = "dummy_output";
+    std::string output_name = "visualizer_output";
+
+    // Feedforward circuit
+    main_structure->add_layer(
+        (new LayerConfig("feedforward",
+            IZHIKEVICH, cortex_size, cortex_size,
+            new NoiseConfig(POISSON)))
+        ->set_property(IZ_INIT, "regular"));
+
+    // Thalamic relay
+    main_structure->add_layer(
+        (new LayerConfig("tl1_thalamus",
+            IZHIKEVICH, 1, 1))
+        ->set_property(IZ_INIT, "thalamo_cortical"));
+
+    std::vector<Structure*> sub_structures;
+    for (int i = 0 ; i < num_cortical_regions ; ++i) {
+        Structure *sub_structure = new Structure(std::to_string(i), PARALLEL);
+
+        // Thalamic gamma nucleus
+        sub_structure->add_layer(
+            (new LayerConfig("gamma_thalamus",
+                IZHIKEVICH, thal_size, thal_size))
+            ->set_property(IZ_INIT, "thalamo_cortical"));
+
+        // Cortical layers
+        sub_structure->add_layer(
+            (new LayerConfig("3_cortex",
+                IZHIKEVICH, cortex_size, cortex_size,
+                (new NoiseConfig(NORMAL))
+                ->set_property("mean", std::to_string(cortex_noise))
+                ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
+            ->set_property(IZ_INIT, "random positive"));
+        sub_structure->add_layer(
+            (new LayerConfig("6_cortex",
+                IZHIKEVICH, cortex_size, cortex_size,
+                (new NoiseConfig(NORMAL))
+                ->set_property("mean", std::to_string(cortex_noise))
+                ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
+            ->set_property(IZ_INIT, "regular"));
+
+        // Cortico-cortical connectivity
+        sub_structure->connect_layers("3_cortex", "6_cortex",
+            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
+                new FlatWeightConfig(0.1, 0.1)))
+            ->set_arborized_config(new ArborizedConfig(inter_cortex_center,1,wrap)));
+
+        sub_structure->connect_layers("6_cortex", "3_cortex",
+            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
+                new FlatWeightConfig(0.1, 0.1)))
+            ->set_arborized_config(new ArborizedConfig(inter_cortex_center,1,wrap)));
+
+        sub_structure->connect_layers("3_cortex", "6_cortex",
+            (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
+                new SurroundWeightConfig(inter_cortex_center,
+                    new FlatWeightConfig(0.1, 0.1))))
+            ->set_arborized_config(new ArborizedConfig(inter_cortex_surround,1,wrap)));
+        sub_structure->connect_layers("6_cortex", "3_cortex",
+            (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
+                new SurroundWeightConfig(inter_cortex_center,
+                    new FlatWeightConfig(0.1, 0.1))))
+            ->set_arborized_config(new ArborizedConfig(inter_cortex_surround,1,wrap)));
+
+        // Gamma connectivity
+        sub_structure->connect_layers("gamma_thalamus", "6_cortex",
+            (new ConnectionConfig(exc_plastic, 10 + exc_delay, 0.5, CONVERGENT, ADD,
+                new FlatWeightConfig(0.1*thal_ratio, 0.1)))
+            ->set_arborized_config(new ArborizedConfig(gamma_center,1,wrap)));
+        sub_structure->connect_layers("6_cortex", "gamma_thalamus",
+            (new ConnectionConfig(exc_plastic, 10 + exc_delay, 0.5, CONVERGENT, ADD,
+                new FlatWeightConfig(0.1*thal_ratio, 0.1)))
+            ->set_arborized_config(new ArborizedConfig(gamma_center,1,wrap)));
+
+        sub_structure->connect_layers("gamma_thalamus", "6_cortex",
+            (new ConnectionConfig(false, 10 + inh_delay, 0.5, CONVERGENT, SUB,
+                new SurroundWeightConfig(gamma_center,
+                    new FlatWeightConfig(0.1*thal_ratio, 0.1))))
+            ->set_arborized_config(new ArborizedConfig(gamma_surround,1,wrap)));
+        sub_structure->connect_layers("6_cortex", "gamma_thalamus",
+            (new ConnectionConfig(false, 10 + inh_delay, 0.5, CONVERGENT, SUB,
+                new SurroundWeightConfig(gamma_center,
+                    new FlatWeightConfig(0.1*thal_ratio, 0.1))))
+            ->set_arborized_config(new ArborizedConfig(gamma_surround,1,wrap)));
+
+        // Feedforward pathway
+        if (i > 0) {
+            Structure::connect(sub_structures[i-1], "3_cortex",
+                sub_structure, "3_cortex",
+                (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
+                    new FlatWeightConfig(0.1*thal_ratio, 0.1)))
+                ->set_arborized_config(new ArborizedConfig(sensory_center,1,wrap)));
+            Structure::connect(sub_structures[i-1], "3_cortex",
+                sub_structure, "3_cortex",
+                (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
+                    new SurroundWeightConfig(sensory_center,
+                        new FlatWeightConfig(0.1*thal_ratio, 0.1))))
+                ->set_arborized_config(new ArborizedConfig(sensory_surround,1,wrap)));
+        }
+
+        // Thalamocortical control connectivity
+        Structure::connect(main_structure, "tl1_thalamus",
+            sub_structure, "3_cortex",
+            (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
+                new FlatWeightConfig(0.1*thal_ratio)))
+            ->set_property("myelinated", "true"));
+        Structure::connect(main_structure, "tl1_thalamus",
+            sub_structure, "6_cortex",
+            (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
+                new FlatWeightConfig(0.1*thal_ratio)))
+            ->set_property("myelinated", "true"));
+
+        sub_structure->add_module("3_cortex", new ModuleConfig(output_name));
+        sub_structure->add_module("6_cortex", new ModuleConfig(output_name));
+        sub_structure->add_module("gamma_thalamus", new ModuleConfig(output_name));
+
+        model->add_structure(sub_structure);
+        sub_structures.push_back(sub_structure);
+    }
+
+    // Sensory relay to cortex
+    Structure::connect(main_structure, "feedforward",
+        sub_structures[0], "3_cortex",
+        (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1*thal_ratio, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(sensory_center,1,wrap)));
+    Structure::connect(main_structure, "feedforward",
+        sub_structures[0], "3_cortex",
+        (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
+            new SurroundWeightConfig(sensory_center,
+                new FlatWeightConfig(0.1*thal_ratio, 0.1))))
+        ->set_arborized_config(new ArborizedConfig(sensory_surround,1,wrap)));
+
+    // Modules
+    main_structure->add_module("tl1_thalamus",
+        (new ModuleConfig("random_input"))
+        ->set_property("max", "10")
+        ->set_property("rate", "500")
+        ->set_property("verbose", "true"));
+    main_structure->add_module("feedforward",
+        new ModuleConfig(output_name));
+
+    Clock clock(true);
+    //Clock clock(1.0f);
+    print_model(model);
+    delete clock.run(model, 500000, true);
+}
+
 
 static void print_subset_overlap(Structure *structure) {
     for (auto layer : structure->get_layers()) {
@@ -565,17 +779,18 @@ int main(int argc, char *argv[]) {
     srand(time(nullptr));
 
     // Suppress warnings
-    ErrorManager::get_instance()->suppress_warnings();
+    ErrorManager::get_instance()->set_warnings(false);
 
     try {
         //mnist_test();
         //speech_train();
         //speech_test(std::string(argv[1]));
         //maze_game_test();
-        old_test();
+        //old_test();
         //simple_test();
         //single_field_test();
         //game_of_life_test();
+        working_memory_test();
 
         return 0;
     } catch (const char* msg) {
