@@ -1,0 +1,70 @@
+{
+  "structures" : [
+    {
+      "name" : "game_of_life",
+      "cluster type" : "parallel",
+      "layers" : [
+        {
+          "name" : "board",
+          "neural model" : "game_of_life",
+          "rows" : "256",
+          "columns" : "256",
+
+          "survival_min" : "113",
+          "survival_max" : "225",
+          "birth_min" : "113",
+          "birth_max" : "225",
+
+          "modules" : [
+            {
+              "type" : "visualizer_output"
+            },
+            {
+              "type" : "one_step_input",
+              "max" :"113",
+              "uniform" : "true",
+              "verbose" : "false",
+              "fraction" : "0.5"
+            },
+            {
+              "skip" : "true",
+              "type" : "random_input",
+              "max" : "113",
+              "rate" : "1000",
+              "uniform" : "true",
+              "clear" : "true",
+              "verbose" : "false",
+              "fraction" : "0.5"
+            }
+          ]
+        }
+      ],
+      "connections" : [
+        {
+          "from layer" : "board",
+          "to layer" : "board",
+          "type" : "convolutional",
+          "opcode" : "add",
+          "plastic" : "false",
+          "delay" : "0",
+
+          "weight config" : {
+            "type" : "surround",
+            "rows" : "1",
+            "columns" : "1",
+            "child" : {
+              "type" : "flat",
+              "value" : "1"
+            }
+          },
+
+          "arborized config" : {
+            "field size" : "15",
+            "stride" : "1",
+            "wrap" : "true"
+          }
+        }
+      ]
+    }
+  ]
+}

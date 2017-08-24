@@ -40,6 +40,7 @@ OBJECTS_LIBS    := $(patsubst $(LIBSPATH)/%,$(BUILDDIR_LIBS)/%,$(SOURCES_LIBS:.$
 libs: directories $(OBJECTS_LIBS)
 
 $(BUILDDIR_LIBS)/%.$(OBJEXT): $(LIBSPATH)/%.$(SRCEXT)
+	@mkdir -p $(dir $@)
 	$(CC) $(CCFLAGS) -c -o $@ $<
 
 #---------------------------------------------------------------------------------

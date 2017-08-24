@@ -3,11 +3,13 @@
 
 #include <string>
 
+#include "model/property_config.h"
+
 class Connection;
 
-class WeightConfig {
+class WeightConfig : public PropertyConfig {
     public:
-        WeightConfig() : diagonal(true) { }
+        WeightConfig(std::string type) : type(type), diagonal(true) { }
         virtual void initialize(float* target_matrix,
             Connection* conn, bool is_host);
 
@@ -15,6 +17,15 @@ class WeightConfig {
             diagonal = diag;
             return this;
         }
+
+        WeightConfig *set_property(std::string key, std::string value) {
+            set_property_internal(key, value);
+            return this;
+        }
+
+        virtual WeightConfig *get_child() { return nullptr; }
+
+    const std::string type;
 
     protected:
         bool diagonal;
@@ -70,22 +81,24 @@ class LogNormalWeightConfig : public WeightConfig {
 
 class SurroundWeightConfig : public WeightConfig {
     public:
-        SurroundWeightConfig(int rows, int cols, WeightConfig* base_config);
-        SurroundWeightConfig(int size, WeightConfig* base_config);
+        SurroundWeightConfig(int rows, int cols, WeightConfig* child_config);
+        SurroundWeightConfig(int size, WeightConfig* child_config);
         virtual ~SurroundWeightConfig();
 
         virtual void initialize(float* target_matrix,
             Connection* conn, bool is_host);
 
+        virtual WeightConfig *get_child() { return child_config; }
+
     private:
         int rows, cols;
-        WeightConfig *base_config;
+        WeightConfig *child_config;
 };
 
 class SpecifiedWeightConfig : public WeightConfig {
     public:
         SpecifiedWeightConfig(std::string weight_string)
-            : weight_string(weight_string) { }
+            : WeightConfig("specified"), weight_string(weight_string) { }
 
         virtual void initialize(float* target_matrix,
             Connection* conn, bool is_host);

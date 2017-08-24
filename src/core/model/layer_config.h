@@ -7,15 +7,11 @@
 #include "model/property_config.h"
 #include "util/constants.h"
 
-typedef enum NoiseType {
-    NORMAL,
-    POISSON
-} NoiseType;
-
 class NoiseConfig : public PropertyConfig {
     public:
-        NoiseConfig(NoiseType type) : type(type) { }
-        NoiseType type;
+        NoiseConfig(std::string type) {
+            this->set_property("type", type);
+        }
 
         /* Setter that returns self pointer */
         NoiseConfig *set_property(std::string key, std::string value) {

@@ -35,22 +35,23 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
 
     // Add noise / clear instruction
     auto noise_config = to_layer->get_config()->noise_config;
-    if (noise_config != nullptr)
-        switch (noise_config->type) {
-            case (NORMAL):
-                activate_instructions.push_back(
-                    new NormalNoiseInstruction(
-                        to_layer, state, compute_stream));
-                break;
-            case (POISSON):
-                activate_instructions.push_back(
-                    new PoissonNoiseInstruction(
-                        to_layer, state, compute_stream));
-                break;
-        }
-    else if (not this->is_input)
+    if (noise_config != nullptr) {
+        auto type = noise_config->get_property("type");
+        if (type == "normal")
+            activate_instructions.push_back(
+                new NormalNoiseInstruction(
+                    to_layer, state, compute_stream));
+        else if (type == "poisson")
+            activate_instructions.push_back(
+                new PoissonNoiseInstruction(
+                    to_layer, state, compute_stream));
+        else
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized noise type: " + type);
+    } else if (not this->is_input) {
         activate_instructions.push_back(
             new ClearInstruction(to_layer, state, compute_stream));
+    }
 
     // Add state instructions
     this->state_update_instruction =

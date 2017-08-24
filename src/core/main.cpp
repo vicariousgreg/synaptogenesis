@@ -68,7 +68,7 @@ void old_test() {
     structure->add_layer(
         (new LayerConfig(
             "exc_thalamus", model_name, resolution, resolution,
-            (new NoiseConfig(POISSON))))
+            (new NoiseConfig("poisson"))))
         ->set_property(IZ_INIT, "thalamo_cortical"));
     // structure->add_layer((new LayerConfig(
     //     "inh_thalamus", model_name, resolution/2, resolution/2))
@@ -176,7 +176,7 @@ void simple_test() {
     structure->add_layer(
         (new LayerConfig(
             "hid_1", model_name, resolution, resolution,
-            (new NoiseConfig(POISSON))
+            (new NoiseConfig("poisson"))
                 ->set_property("value", "20")
                 ->set_property("rate", "1")))
             ->set_property(IZ_INIT, "regular"));
@@ -358,7 +358,7 @@ void mnist_test() {
         structure->add_layer(
             (new LayerConfig(std::to_string(i),
                 "leaky_izhikevich", 28, 28,
-                (new NoiseConfig(NORMAL))
+                (new NoiseConfig("normal"))
                     ->set_property("mean", "0.5")
                     ->set_property("std_dev", "0.1")))
                 ->set_property(IZ_INIT, "regular"));
@@ -509,7 +509,7 @@ void game_of_life_test() {
 
     structure->add_layer((new LayerConfig(
         "board", model_name, board_dim, board_dim,
-        (new NoiseConfig(POISSON))
+        (new NoiseConfig("poisson"))
         ->set_property("value", std::to_string(birth_min))
         ->set_property("rate", "0.5")))
             ->set_property("survival_min", std::to_string(survival_min))
@@ -598,7 +598,7 @@ void working_memory_test() {
     main_structure->add_layer(
         (new LayerConfig("feedforward",
             IZHIKEVICH, cortex_size, cortex_size,
-            new NoiseConfig(POISSON)))
+            new NoiseConfig("poisson")))
         ->set_property(IZ_INIT, "regular"));
 
     // Thalamic relay
@@ -621,14 +621,14 @@ void working_memory_test() {
         sub_structure->add_layer(
             (new LayerConfig("3_cortex",
                 IZHIKEVICH, cortex_size, cortex_size,
-                (new NoiseConfig(NORMAL))
+                (new NoiseConfig("normal"))
                 ->set_property("mean", std::to_string(cortex_noise))
                 ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
             ->set_property(IZ_INIT, "random positive"));
         sub_structure->add_layer(
             (new LayerConfig("6_cortex",
                 IZHIKEVICH, cortex_size, cortex_size,
-                (new NoiseConfig(NORMAL))
+                (new NoiseConfig("normal"))
                 ->set_property("mean", std::to_string(cortex_noise))
                 ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
             ->set_property(IZ_INIT, "regular"));

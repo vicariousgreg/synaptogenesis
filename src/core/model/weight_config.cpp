@@ -25,7 +25,9 @@ void WeightConfig::initialize(float* target_matrix,
 }
 
 FlatWeightConfig::FlatWeightConfig(float weight, float fraction)
-        : weight(weight), fraction(fraction) {
+        : WeightConfig("flat"), weight(weight), fraction(fraction) {
+    this->set_property("weight", std::to_string(weight));
+    this->set_property("fraction", std::to_string(fraction));
     if (fraction < 0 or fraction > 1.0)
         ErrorManager::get_instance()->log_error(
             "FlatWeightConfig fraction must be between 0 and 1!");
@@ -39,7 +41,10 @@ void FlatWeightConfig::initialize(float* target_matrix,
 }
 
 RandomWeightConfig::RandomWeightConfig(float max_weight, float fraction)
-        : max_weight(max_weight), fraction(fraction) {
+        : WeightConfig("random"), max_weight(max_weight), fraction(fraction) {
+    this->set_property("max weight", std::to_string(max_weight));
+    this->set_property("fraction", std::to_string(fraction));
+
     if (fraction < 0 or fraction > 1.0)
         ErrorManager::get_instance()->log_error(
             "RandomWeightConfig fraction must be between 0 and 1!");
@@ -53,7 +58,11 @@ void RandomWeightConfig::initialize(float* target_matrix,
 }
 
 GaussianWeightConfig::GaussianWeightConfig(float mean, float std_dev, float fraction)
-        : mean(mean), std_dev(std_dev), fraction(fraction) {
+        : WeightConfig("gaussian"), mean(mean), std_dev(std_dev), fraction(fraction) {
+    this->set_property("mean", std::to_string(mean));
+    this->set_property("std dev", std::to_string(std_dev));
+    this->set_property("fraction", std::to_string(fraction));
+
     if (fraction < 0 or fraction > 1.0)
         ErrorManager::get_instance()->log_error(
             "GaussianWeightConfig fraction must be between 0 and 1!");
@@ -71,7 +80,11 @@ void GaussianWeightConfig::initialize(float* target_matrix,
 }
 
 LogNormalWeightConfig::LogNormalWeightConfig(float mean, float std_dev, float fraction)
-        : mean(mean), std_dev(std_dev), fraction(fraction) {
+        : WeightConfig("log normal"), mean(mean), std_dev(std_dev), fraction(fraction) {
+    this->set_property("mean", std::to_string(mean));
+    this->set_property("std dev", std::to_string(std_dev));
+    this->set_property("fraction", std::to_string(fraction));
+
     if (fraction < 0 or fraction > 1.0)
         ErrorManager::get_instance()->log_error(
             "LogNormalWeightConfig fraction must be between 0 and 1!");
@@ -89,18 +102,21 @@ void LogNormalWeightConfig::initialize(float* target_matrix,
 }
 
 SurroundWeightConfig::SurroundWeightConfig(
-        int rows, int cols, WeightConfig *base_config)
-        : rows(rows), cols(cols), base_config(base_config) {
+        int rows, int cols, WeightConfig *child_config)
+        : WeightConfig("surround"), rows(rows), cols(cols), child_config(child_config) {
+    this->set_property("rows", std::to_string(rows));
+    this->set_property("columns", std::to_string(cols));
+
     if (rows < 0 or cols < 0)
         ErrorManager::get_instance()->log_error(
             "SurroundWeightConfig rows/cols must be positive!");
 }
 SurroundWeightConfig::SurroundWeightConfig(
-        int size, WeightConfig *base_config)
-        : SurroundWeightConfig(size, size, base_config) { }
+        int size, WeightConfig *child_config)
+        : SurroundWeightConfig(size, size, child_config) { }
 
 SurroundWeightConfig::~SurroundWeightConfig() {
-    delete base_config;
+    delete child_config;
 }
 
 void SurroundWeightConfig::initialize(float* target_matrix,
@@ -115,8 +131,8 @@ void SurroundWeightConfig::initialize(float* target_matrix,
                 "SurroundWeightConfig can only be used on arborized connections!");
     }
 
-    // Initialize with base config
-    base_config->initialize(target_matrix, conn, is_host);
+    // Initialize with child config
+    child_config->initialize(target_matrix, conn, is_host);
 
     // Carve out center
     int row_field_size = conn->get_config()->get_arborized_config()->column_field_size;
