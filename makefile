@@ -1,3 +1,5 @@
+MAKEFLAGS += --jobs=10
+
 #Compiler and Linker
 CC            := g++
 NVCC          := nvcc

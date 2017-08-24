@@ -7,6 +7,7 @@
 #include "model/auditory_cortex.h"
 #include "model/maze_cortex.h"
 #include "model/model.h"
+#include "model/model_builder.h"
 #include "model/column.h"
 #include "model/weight_config.h"
 #include "io/module/module.h"
@@ -469,11 +470,8 @@ void maze_game_test() {
     Clock clock(true);
     //Clock clock(10.0f);
 
-    auto state = clock.run(model, 10, true);
-
     MazeGame::get_instance(true)->set_board_dim(board_dim);
-    state = clock.run(model, 10, true, state);
-    delete state;
+    delete clock.run(model, 1000000, true);
 
     //delete clock.run(model, 100, true);
     std::cout << "\n";
@@ -582,14 +580,14 @@ void working_memory_test() {
     int exc_delay = 0;
     int inh_delay = 3;
 
-    int ff_center = 9;
-    int ff_surround = 15;
-    int intra_cortex_center = 9;
-    int intra_cortex_surround = 15;
+    int ff_center = 15;
+    int ff_surround = 19;
+    int intra_cortex_center = 15;
+    int intra_cortex_surround = 19;
     int gamma_center = 9;
     int gamma_surround = 15;
 
-    float fraction = 0.25;
+    float fraction = 0.1;
 
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
@@ -612,10 +610,12 @@ void working_memory_test() {
         Structure *sub_structure = new Structure(std::to_string(i), PARALLEL);
 
         // Thalamic gamma nucleus
+        /*
         sub_structure->add_layer(
             (new LayerConfig("gamma_thalamus",
                 IZHIKEVICH, thal_size, thal_size))
             ->set_property(IZ_INIT, "thalamo_cortical"));
+        */
 
         // Cortical layers
         sub_structure->add_layer(
@@ -625,6 +625,7 @@ void working_memory_test() {
                 ->set_property("mean", std::to_string(cortex_noise))
                 ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
             ->set_property(IZ_INIT, "random positive"));
+        /*
         sub_structure->add_layer(
             (new LayerConfig("6_cortex",
                 IZHIKEVICH, cortex_size, cortex_size,
@@ -632,20 +633,45 @@ void working_memory_test() {
                 ->set_property("mean", std::to_string(cortex_noise))
                 ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
             ->set_property(IZ_INIT, "regular"));
+        */
 
         // Cortico-cortical connectivity
+        /*
         sub_structure->connect_layers("3_cortex", "6_cortex",
             (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1, fraction)))
             ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
-
+        */
+        sub_structure->connect_layers("3_cortex", "3_cortex",
+            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
+                new FlatWeightConfig(0.1, fraction)))
+            ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
+        /*
+        sub_structure->connect_layers("6_cortex", "6_cortex",
+            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
+                new FlatWeightConfig(0.1, fraction)))
+            ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
         sub_structure->connect_layers("6_cortex", "3_cortex",
             (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1, fraction)))
             ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
+        */
 
         if (intra_cortex_surround > intra_cortex_center) {
+            /*
             sub_structure->connect_layers("3_cortex", "6_cortex",
+                (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
+                    new SurroundWeightConfig(intra_cortex_center,
+                        new FlatWeightConfig(0.1, fraction))))
+                ->set_arborized_config(new ArborizedConfig(intra_cortex_surround,1,wrap)));
+            */
+            sub_structure->connect_layers("3_cortex", "3_cortex",
+                (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
+                    new SurroundWeightConfig(intra_cortex_center,
+                        new FlatWeightConfig(0.1, fraction))))
+                ->set_arborized_config(new ArborizedConfig(intra_cortex_surround,1,wrap)));
+            /*
+            sub_structure->connect_layers("6_cortex", "6_cortex",
                 (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
                     new SurroundWeightConfig(intra_cortex_center,
                         new FlatWeightConfig(0.1, fraction))))
@@ -655,9 +681,11 @@ void working_memory_test() {
                     new SurroundWeightConfig(intra_cortex_center,
                         new FlatWeightConfig(0.1, fraction))))
                 ->set_arborized_config(new ArborizedConfig(intra_cortex_surround,1,wrap)));
+            */
         }
 
         // Gamma connectivity
+        /*
         sub_structure->connect_layers("gamma_thalamus", "6_cortex",
             (new ConnectionConfig(exc_plastic, 10 + exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1*thal_ratio, fraction)))
@@ -679,6 +707,7 @@ void working_memory_test() {
                         new FlatWeightConfig(0.1*thal_ratio, fraction))))
                 ->set_arborized_config(new ArborizedConfig(gamma_surround,1,wrap)));
         }
+        */
 
         // Feedforward pathway
         if (i > 0) {
@@ -687,13 +716,25 @@ void working_memory_test() {
                 (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
                     new FlatWeightConfig(0.1*thal_ratio, fraction)))
                 ->set_arborized_config(new ArborizedConfig(ff_center,1,wrap)));
-            if (ff_center > ff_surround)
+            Structure::connect(sub_structure, "3_cortex",
+                sub_structures[i-1], "3_cortex",
+                (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
+                    new FlatWeightConfig(0.1*thal_ratio, fraction)))
+                ->set_arborized_config(new ArborizedConfig(ff_center,1,wrap)));
+            if (ff_center > ff_surround) {
                 Structure::connect(sub_structures[i-1], "3_cortex",
                     sub_structure, "3_cortex",
                     (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
                         new SurroundWeightConfig(ff_center,
                             new FlatWeightConfig(0.1*thal_ratio, fraction))))
                     ->set_arborized_config(new ArborizedConfig(ff_surround,1,wrap)));
+                Structure::connect(sub_structure, "3_cortex",
+                    sub_structures[i-1], "3_cortex",
+                    (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
+                        new SurroundWeightConfig(ff_center,
+                            new FlatWeightConfig(0.1*thal_ratio, fraction))))
+                    ->set_arborized_config(new ArborizedConfig(ff_surround,1,wrap)));
+            }
         }
 
         // Thalamocortical control connectivity
@@ -702,11 +743,13 @@ void working_memory_test() {
             (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
                 new FlatWeightConfig(0.1*thal_ratio)))
             ->set_property("myelinated", "true"));
+        /*
         Structure::connect(main_structure, "tl1_thalamus",
             sub_structure, "6_cortex",
             (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
                 new FlatWeightConfig(0.1*thal_ratio)))
             ->set_property("myelinated", "true"));
+        */
 
         sub_structure->add_module("3_cortex", new ModuleConfig(output_name));
         //sub_structure->add_module("6_cortex", new ModuleConfig(output_name));
@@ -732,11 +775,15 @@ void working_memory_test() {
     // Modules
     main_structure->add_module("tl1_thalamus",
         (new ModuleConfig("random_input"))
-        ->set_property("max", "10")
+        ->set_property("max", "3")
         ->set_property("rate", "500")
         ->set_property("verbose", "true"));
     main_structure->add_module("feedforward",
         new ModuleConfig(output_name));
+
+    save_model(model, "working_memory.json");
+    delete model;
+    model = load_model("working_memory.json");
 
     Clock clock(true);
     //Clock clock(1.0f);

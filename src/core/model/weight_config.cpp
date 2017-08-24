@@ -6,120 +6,52 @@
 #include "state/weight_matrix.h"
 #include "util/error_manager.h"
 
-void WeightConfig::initialize(float* target_matrix,
+void WeightConfig::flat_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    if (not diagonal) {
-        switch(conn->type) {
-            case(FULLY_CONNECTED):
-                clear_diagonal(target_matrix, conn->from_layer->size, conn->to_layer->size);
-                break;
-            case(SUBSET): {
-                auto subset_config = conn->get_config()->get_subset_config();
-                clear_diagonal(target_matrix, subset_config->from_size, subset_config->to_size);
-                break;
-            }
-            case(CONVERGENT):
-                break;
-        }
-    }
+    float weight = std::stof(this->get_property("weight", "1.0"));
+    float fraction = std::stof(this->get_property("fraction", "1.0"));
+
+    set_weights(target_matrix, conn->get_num_weights(), weight, fraction);
 }
 
-FlatWeightConfig::FlatWeightConfig(float weight, float fraction)
-        : WeightConfig("flat"), weight(weight), fraction(fraction) {
-    this->set_property("weight", std::to_string(weight));
-    this->set_property("fraction", std::to_string(fraction));
-    if (fraction < 0 or fraction > 1.0)
-        ErrorManager::get_instance()->log_error(
-            "FlatWeightConfig fraction must be between 0 and 1!");
-}
-
-void FlatWeightConfig::initialize(float* target_matrix,
+void WeightConfig::random_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    int num_weights = conn->get_num_weights();
-    set_weights(target_matrix, num_weights, weight, fraction);
-    WeightConfig::initialize(target_matrix, conn, is_host);
+    float max_weight = std::stof(this->get_property("max weight", "1.0"));
+    float fraction = std::stof(this->get_property("fraction", "1.0"));
+
+    randomize_weights(target_matrix, conn->get_num_weights(),
+        max_weight, fraction);
 }
 
-RandomWeightConfig::RandomWeightConfig(float max_weight, float fraction)
-        : WeightConfig("random"), max_weight(max_weight), fraction(fraction) {
-    this->set_property("max weight", std::to_string(max_weight));
-    this->set_property("fraction", std::to_string(fraction));
-
-    if (fraction < 0 or fraction > 1.0)
-        ErrorManager::get_instance()->log_error(
-            "RandomWeightConfig fraction must be between 0 and 1!");
-}
-
-void RandomWeightConfig::initialize(float* target_matrix,
+void WeightConfig::gaussian_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    int num_weights = conn->get_num_weights();
-    randomize_weights(target_matrix, num_weights, max_weight, fraction);
-    WeightConfig::initialize(target_matrix, conn, is_host);
-}
+    float mean = std::stof(this->get_property("mean", "1.0"));
+    float std_dev = std::stof(this->get_property("std dev", "0.3"));
+    float fraction = std::stof(this->get_property("fraction", "1.0"));
 
-GaussianWeightConfig::GaussianWeightConfig(float mean, float std_dev, float fraction)
-        : WeightConfig("gaussian"), mean(mean), std_dev(std_dev), fraction(fraction) {
-    this->set_property("mean", std::to_string(mean));
-    this->set_property("std dev", std::to_string(std_dev));
-    this->set_property("fraction", std::to_string(fraction));
-
-    if (fraction < 0 or fraction > 1.0)
-        ErrorManager::get_instance()->log_error(
-            "GaussianWeightConfig fraction must be between 0 and 1!");
-    if (mean < 0 or std_dev < 0)
-        ErrorManager::get_instance()->log_error(
-            "GaussianWeightConfig mean and std_dev must be positive!");
-}
-
-void GaussianWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) {
-    int num_weights = conn->get_num_weights();
-    randomize_weights_gaussian(target_matrix, num_weights,
-        mean, std_dev, conn->max_weight, fraction);
-    WeightConfig::initialize(target_matrix, conn, is_host);
-}
-
-LogNormalWeightConfig::LogNormalWeightConfig(float mean, float std_dev, float fraction)
-        : WeightConfig("log normal"), mean(mean), std_dev(std_dev), fraction(fraction) {
-    this->set_property("mean", std::to_string(mean));
-    this->set_property("std dev", std::to_string(std_dev));
-    this->set_property("fraction", std::to_string(fraction));
-
-    if (fraction < 0 or fraction > 1.0)
-        ErrorManager::get_instance()->log_error(
-            "LogNormalWeightConfig fraction must be between 0 and 1!");
     if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
-            "LogNormalWeightConfig std_dev must be positive!");
-}
+            "Gaussian weight config std_dev must be positive!");
 
-void LogNormalWeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) {
-    int num_weights = conn->get_num_weights();
-    randomize_weights_lognormal(target_matrix, num_weights,
+    randomize_weights_gaussian(target_matrix, conn->get_num_weights(),
         mean, std_dev, conn->max_weight, fraction);
-    WeightConfig::initialize(target_matrix, conn, is_host);
 }
 
-SurroundWeightConfig::SurroundWeightConfig(
-        int rows, int cols, WeightConfig *child_config)
-        : WeightConfig("surround"), rows(rows), cols(cols), child_config(child_config) {
-    this->set_property("rows", std::to_string(rows));
-    this->set_property("columns", std::to_string(cols));
+void WeightConfig::log_normal_config(float* target_matrix,
+        Connection* conn, bool is_host) {
+    float mean = std::stof(this->get_property("mean", "1.0"));
+    float std_dev = std::stof(this->get_property("std dev", "0.3"));
+    float fraction = std::stof(this->get_property("fraction", "1.0"));
 
-    if (rows < 0 or cols < 0)
+    if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
-            "SurroundWeightConfig rows/cols must be positive!");
-}
-SurroundWeightConfig::SurroundWeightConfig(
-        int size, WeightConfig *child_config)
-        : SurroundWeightConfig(size, size, child_config) { }
+            "Log normal weight config std_dev must be positive!");
 
-SurroundWeightConfig::~SurroundWeightConfig() {
-    delete child_config;
+    randomize_weights_lognormal(target_matrix, conn->get_num_weights(),
+        mean, std_dev, conn->max_weight, fraction);
 }
 
-void SurroundWeightConfig::initialize(float* target_matrix,
+void WeightConfig::surround_config(float* target_matrix,
         Connection* conn, bool is_host) {
     switch (conn->type) {
         case(CONVERGENT):
@@ -128,16 +60,34 @@ void SurroundWeightConfig::initialize(float* target_matrix,
             break;
         default:
             ErrorManager::get_instance()->log_error(
-                "SurroundWeightConfig can only be used on arborized connections!");
+                "SurroundWeightConfig can only be used "
+                "on arborized connections!");
     }
 
+    int rows = std::stoi(this->get_property("rows", "0"));
+    int cols = std::stoi(this->get_property("columns", "0"));
+    int size_param = std::stoi(this->get_property("size", "-1"));
+
+    if (size_param >= 0)
+        rows = cols = size_param;
+    if (rows < 0 or cols < 0)
+        ErrorManager::get_instance()->log_error(
+            "Surround weight config rows/cols must be positive!");
+
     // Initialize with child config
+    auto child_config = this->get_child();
+    if (child_config == nullptr)
+        ErrorManager::get_instance()->log_error(
+            "Missing child weight config for surround weight config!");
     child_config->initialize(target_matrix, conn, is_host);
 
     // Carve out center
-    int row_field_size = conn->get_config()->get_arborized_config()->column_field_size;
-    int col_field_size = conn->get_config()->get_arborized_config()->column_field_size;
-    int kernel_size = conn->get_config()->get_arborized_config()->get_total_field_size();
+    int row_field_size =
+        conn->get_config()->get_arborized_config()->column_field_size;
+    int col_field_size =
+        conn->get_config()->get_arborized_config()->column_field_size;
+    int kernel_size =
+        conn->get_config()->get_arborized_config()->get_total_field_size();
 
     int row_offset = (row_field_size - rows) / 2;
     int col_offset = (col_field_size - cols) / 2;
@@ -154,11 +104,14 @@ void SurroundWeightConfig::initialize(float* target_matrix,
 
     if (is_host) {
         for (int index = 0 ; index < size ; ++index) {
-            int weight_offset = (conn->convolutional) ? 0 : (index * kernel_size);
+            int weight_offset = (conn->convolutional)
+                ? 0 : (index * kernel_size);
 
             for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
-                for (int k_col = col_offset ; k_col < col_offset + cols ; ++k_col) {
-                    int weight_index = weight_offset + (k_row * col_field_size) + k_col;
+                for (int k_col = col_offset ;
+                        k_col < col_offset + cols ; ++k_col) {
+                    int weight_index = weight_offset +
+                        (k_row * col_field_size) + k_col;
                     target_matrix[weight_index] = 0.0;
                 }
             }
@@ -169,7 +122,8 @@ void SurroundWeightConfig::initialize(float* target_matrix,
             int kernel_row_size = (conn->convolutional) ? 1 : size;
 
             for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
-                for (int k_col = col_offset ; k_col < col_offset + cols ; ++k_col) {
+                for (int k_col = col_offset ;
+                        k_col < col_offset + cols ; ++k_col) {
                     int weight_index = weight_col +
                         ((k_row * col_field_size) + k_col) * kernel_row_size;
                     target_matrix[weight_index] = 0.0;
@@ -179,15 +133,22 @@ void SurroundWeightConfig::initialize(float* target_matrix,
     }
 }
 
-void SpecifiedWeightConfig::initialize(float* target_matrix,
+void WeightConfig::specified_config(float* target_matrix,
         Connection* conn, bool is_host) {
+    std::string weight_string = this->get_property("weight string", "");
+    if (weight_string == "")
+        ErrorManager::get_instance()->log_error(
+            "Missing weight string for specified weight config!");
+
     std::stringstream stream(weight_string);
     int num_weights = conn->get_num_weights();
 
     int rows = conn->to_layer->size;
     int cols = conn->from_layer->size;
-    int row_field_size = conn->get_config()->get_arborized_config()->row_field_size;
-    int column_field_size = conn->get_config()->get_arborized_config()->column_field_size;
+    int row_field_size =
+        conn->get_config()->get_arborized_config()->row_field_size;
+    int column_field_size =
+        conn->get_config()->get_arborized_config()->column_field_size;
     switch (conn->type) {
         case CONVOLUTIONAL:
             rows = 1;
@@ -221,6 +182,49 @@ void SpecifiedWeightConfig::initialize(float* target_matrix,
             else         target_matrix[col * rows + row] = value;
         }
     }
+}
 
-    WeightConfig::initialize(target_matrix, conn, is_host);
+void WeightConfig::initialize(float* target_matrix,
+        Connection* conn, bool is_host) {
+    if (this->has_property("fraction")) {
+        float fraction = std::stof(this->get_property("fraction", "1.0"));
+        if (fraction < 0 or fraction > 1.0)
+            ErrorManager::get_instance()->log_error(
+                "Weight config fraction must be between 0 and 1!");
+    }
+
+    auto type = this->get_property("type");
+
+    if (type == "flat")
+        flat_config(target_matrix, conn, is_host);
+    else if (type == "random")
+        random_config(target_matrix, conn, is_host);
+    else if (type == "gaussian")
+        gaussian_config(target_matrix, conn, is_host);
+    else if (type == "log normal")
+        log_normal_config(target_matrix, conn, is_host);
+    else if (type == "surround")
+        surround_config(target_matrix, conn, is_host);
+    else if (type == "specified")
+        specified_config(target_matrix, conn, is_host);
+    else
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized weight config type: " + type);
+
+    if (this->get_property("diagonal", "true") != "true") {
+        switch(conn->type) {
+            case(FULLY_CONNECTED):
+                clear_diagonal(target_matrix,
+                    conn->from_layer->size, conn->to_layer->size);
+                break;
+            case(SUBSET): {
+                auto subset_config = conn->get_config()->get_subset_config();
+                clear_diagonal(target_matrix,
+                    subset_config->from_size, subset_config->to_size);
+                break;
+            }
+            case(CONVERGENT):
+                break;
+        }
+    }
 }

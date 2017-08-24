@@ -8,10 +8,15 @@ class PropertyConfig {
     public:
         const std::map<std::string, std::string> get_properties() const
             { return properties; }
+
+        bool has_property(std::string key) const
+            { return properties.count(key) > 0; }
+
         std::string get_property(std::string key) const
             { return properties.at(key); }
+
         std::string get_property(std::string key, std::string def_val) const {
-            try { return properties.at(key); }
+            try {         return properties.at(key); }
             catch (...) { return def_val; }
         }
         void set_property_internal(std::string key, std::string value)

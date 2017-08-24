@@ -53,7 +53,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "3_cortex",
@@ -76,7 +76,7 @@
 						"row field size": "19",
 						"row offset": "-9",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "3",
 					"from layer": "3_cortex",
@@ -91,8 +91,7 @@
 							"type": "flat",
 							"weight": "0.100000" 
 						},
-						"columns": "15",
-						"rows": "15",
+						"size": "15",
 						"type": "surround" 
 					} 
 				},
@@ -121,7 +120,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "3_cortex",
@@ -146,7 +145,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "feedforward",
@@ -171,7 +170,7 @@
 						"row field size": "19",
 						"row offset": "-9",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "feedforward",
@@ -188,8 +187,7 @@
 							"type": "flat",
 							"weight": "0.100000" 
 						},
-						"columns": "15",
-						"rows": "15",
+						"size": "15",
 						"type": "surround" 
 					} 
 				} 
@@ -229,7 +227,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "3_cortex",
@@ -252,7 +250,7 @@
 						"row field size": "19",
 						"row offset": "-9",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "3",
 					"from layer": "3_cortex",
@@ -267,8 +265,7 @@
 							"type": "flat",
 							"weight": "0.100000" 
 						},
-						"columns": "15",
-						"rows": "15",
+						"size": "15",
 						"type": "surround" 
 					} 
 				},
@@ -280,7 +277,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "3_cortex",
@@ -322,7 +319,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "3_cortex",
@@ -375,7 +372,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "3_cortex",
@@ -398,7 +395,7 @@
 						"row field size": "19",
 						"row offset": "-9",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "3",
 					"from layer": "3_cortex",
@@ -413,8 +410,7 @@
 							"type": "flat",
 							"weight": "0.100000" 
 						},
-						"columns": "15",
-						"rows": "15",
+						"size": "15",
 						"type": "surround" 
 					} 
 				},
@@ -426,7 +422,7 @@
 						"row field size": "15",
 						"row offset": "-7",
 						"row stride": "1",
-						"wrap": "1" 
+						"wrap": "true" 
 					},
 					"delay": "0",
 					"from layer": "3_cortex",

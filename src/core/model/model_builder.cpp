@@ -24,7 +24,9 @@ static WeightConfig *parse_weight_config(Object wo);
 static ArborizedConfig *parse_arborized_config(Object wo);
 static SubsetConfig *parse_subset_config(Object wo);
 
-static std::string get_string(Object o, std::string key, std::string def_val)
+static bool has_string(Object o, std::string key)
+    { return o.has<String>(key); }
+static std::string get_string(Object o, std::string key, std::string def_val="")
     { return (o.has<String>(key)) ? o.get<String>(key) : def_val; }
 
 
@@ -51,7 +53,8 @@ Model* load_model(std::string path) {
             auto so = structure->get<Object>();
             if (so.has<Array>("connections"))
                 for (auto connection : so.get<Array>("connections").values())
-                    parse_connection(model, so.get<String>("name"), connection->get<Object>());
+                    parse_connection(model, so.get<String>("name"),
+                        connection->get<Object>());
         }
     }
 
@@ -72,16 +75,13 @@ static void parse_structure(Model *model, Object so) {
 
     // Convert string to ClusterType
     ClusterType cluster_type;
-    if (cluster_type_string == "parallel")
-        cluster_type = PARALLEL;
-    else if (cluster_type_string == "sequential")
-        cluster_type = SEQUENTIAL;
-    else if (cluster_type_string == "feedforward")
-        cluster_type = FEEDFORWARD;
-    else
+    try {
+        cluster_type = ClusterTypes[cluster_type_string];
+    } catch (...) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized cluster type for structure " + name
             + ": " + cluster_type_string);
+    }
 
     Structure *structure = new Structure(name, cluster_type);
 
@@ -270,38 +270,30 @@ static WeightConfig *parse_weight_config(Object wo) {
     // Get type string, or use normal as default
     std::string type_string = get_string(wo, "type", "flat");
 
-    auto weight = std::stof(get_string(wo, "weight", "1.0"));
-    auto max_weight = std::stof(get_string(wo, "max weight", "1.0"));
-    auto fraction = std::stof(get_string(wo, "fraction", "1.0"));
-    auto mean = std::stof(get_string(wo, "mean", "1.0"));
-    auto std_dev = std::stof(get_string(wo, "std dev", "0.3"));
-    auto rows = std::stoi(get_string(wo, "rows", "0"));
-    auto columns = std::stoi(get_string(wo, "columns", "0"));
-    auto weight_string = get_string(wo, "weight string", "");
+    WeightConfig *weight_config = new WeightConfig(type_string);
 
-    Object child;
-    if (wo.has<Object>("child")) child = wo.get<Object>("child");
+    if (has_string(wo, "weight"))
+        weight_config->set_property("weight", get_string(wo, "weight"));
+    if (has_string(wo, "max weight"))
+        weight_config->set_property("max weight", get_string(wo, "max weight"));
+    if (has_string(wo, "fraction"))
+        weight_config->set_property("fraction", get_string(wo, "fraction"));
+    if (has_string(wo, "mean"))
+        weight_config->set_property("mean", get_string(wo, "mean"));
+    if (has_string(wo, "std dev"))
+        weight_config->set_property("std dev", get_string(wo, "std dev"));
+    if (has_string(wo, "rows"))
+        weight_config->set_property("rows", get_string(wo, "rows"));
+    if (has_string(wo, "columns"))
+        weight_config->set_property("columns", get_string(wo, "columns"));
+    if (has_string(wo, "size"))
+        weight_config->set_property("size", get_string(wo, "size"));
+    if (has_string(wo, "weight string"))
+        weight_config->set_property("weight string",
+            get_string(wo, "weight string"));
 
-    WeightConfig *weight_config;
-
-    // Convert string to type
-    if (type_string == "flat") {
-        weight_config = new FlatWeightConfig(weight, fraction);
-    } else if (type_string == "random") {
-        weight_config = new RandomWeightConfig(max_weight, fraction);
-    } else if (type_string == "gaussian") {
-        weight_config = new GaussianWeightConfig(mean, std_dev, fraction);
-    } else if (type_string == "log normal") {
-        weight_config = new LogNormalWeightConfig(mean, std_dev, fraction);
-    } else if (type_string == "surround") {
-        weight_config =
-            new SurroundWeightConfig(rows, columns, parse_weight_config(child));
-    } else if (type_string == "specified") {
-        weight_config = new SpecifiedWeightConfig(weight_string);
-    } else {
-        ErrorManager::get_instance()->log_error(
-            "Unrecognized noise type: " + type_string);
-    }
+    if (wo.has<Object>("child"))
+        weight_config->set_child(parse_weight_config(wo.get<Object>("child")));
 
     return weight_config;
 }
@@ -471,10 +463,10 @@ static Object write_layer(Layer *layer) {
     o << "rows" << std::to_string(layer->rows);
     o << "columns" << std::to_string(layer->columns);
 
-    if (layer->plastic) o << "plastic" << "true";
-    else                o << "plastic" << "false";
-    if (layer->global)  o << "global" << "true";
-    else                o << "global" << "false";
+    (layer->plastic)
+        ? (o << "plastic" << "true") : (o << "plastic" << "false");
+    (layer->global)
+        ? (o << "global" << "true") : (o << "global" << "false");
 
     for (auto pair : layer->get_config()->get_properties())
         o << pair.first << pair.second;
@@ -513,11 +505,12 @@ static Object write_connection(Connection *connection) {
         o << "to structure" << connection->to_layer->structure->name;
     }
 
-    if (connection->plastic) o << "plastic" << "true";
-    else                     o << "plastic" << "false";
+    (connection->plastic)
+        ? (o << "plastic" << "true") : (o << "plastic" << "false");
 
     auto connection_config = connection->get_config();
-    o << "weight config" << write_weight_config(connection_config->weight_config);
+    o << "weight config"
+        << write_weight_config(connection_config->weight_config);
 
     auto arborized_config = connection_config->get_arborized_config();
     if (arborized_config != nullptr)
@@ -526,8 +519,7 @@ static Object write_connection(Connection *connection) {
 
     auto subset_config = connection_config->get_subset_config();
     if (subset_config != nullptr)
-        o << "subset config"
-            << write_subset_config(subset_config);
+        o << "subset config" << write_subset_config(subset_config);
 
     for (auto pair : connection_config->get_properties())
         o << pair.first << pair.second;
@@ -566,7 +558,10 @@ static Object write_arborized_config(ArborizedConfig *arborized_config) {
     o << "column stride" << std::to_string(arborized_config->column_stride);
     o << "row offset" << std::to_string(arborized_config->row_offset);
     o << "column offset" << std::to_string(arborized_config->column_offset);
-    o << "wrap" << std::to_string(arborized_config->wrap);
+
+    (arborized_config->wrap)
+        ? (o << "wrap" << "true") : (o << "wrap" << "false");
+
     return o;
 }
 
