@@ -18,6 +18,17 @@ void Model::add_structure(Structure *structure) {
     this->structures.push_back(structure);
 }
 
+Structure* Model::get_structure(std::string name) {
+    Structure *structure = nullptr;
+    for (auto s : this->structures)
+        if (s->name == name)
+            structure = s;
+    if (structure == nullptr)
+        ErrorManager::get_instance()->log_error(
+            "Could not find structure \"" + name + "\"!");
+    return structure;
+}
+
 const LayerList Model::get_layers() const {
     LayerList layers;
     for (auto& structure : structures)

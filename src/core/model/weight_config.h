@@ -9,7 +9,9 @@ class Connection;
 
 class WeightConfig : public PropertyConfig {
     public:
-        WeightConfig(std::string type) : type(type), diagonal(true) { }
+        WeightConfig(std::string type) : diagonal(true) {
+            this->set_property("type", type);
+        }
         virtual void initialize(float* target_matrix,
             Connection* conn, bool is_host);
 
@@ -24,8 +26,6 @@ class WeightConfig : public PropertyConfig {
         }
 
         virtual WeightConfig *get_child() { return nullptr; }
-
-    const std::string type;
 
     protected:
         bool diagonal;

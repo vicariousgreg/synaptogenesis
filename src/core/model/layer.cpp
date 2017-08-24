@@ -75,7 +75,7 @@ void Layer::add_to_root(Connection* connection) {
 }
 
 void Layer::add_module(ModuleConfig *config) {
-    IOTypeMask model_type = Module::get_module_type(config->get_property("name"));
+    IOTypeMask model_type = Module::get_module_type(config);
 
     if ((model_type & INPUT) and (this->type & INPUT))
         ErrorManager::get_instance()->log_error(

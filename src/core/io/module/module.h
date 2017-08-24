@@ -14,8 +14,8 @@ typedef Module* (*MODULE_BUILD_PTR)(Layer *layer, ModuleConfig *config);
 
 class ModuleConfig : public PropertyConfig {
     public:
-        ModuleConfig(std::string name, std::string params="") {
-            this->set_property("name", name);
+        ModuleConfig(std::string type, std::string params="") {
+            this->set_property("type", type);
             this->set_property("params", params);
         }
 
@@ -45,7 +45,7 @@ class Module {
         Layer* const layer;
 
         // Get the IOType of a module subclass
-        static IOTypeMask get_module_type(std::string module_name);
+        static IOTypeMask get_module_type(std::string module_type);
         static IOTypeMask get_module_type(ModuleConfig *config);
 
         static Module* build_module(Layer *layer, ModuleConfig *config);
@@ -56,10 +56,10 @@ class Module {
                 // Set of module implementations
                 std::set<std::string> modules;
                 std::map<std::string, MODULE_BUILD_PTR> build_pointers;
-                std::map<std::string, IOTypeMask> types;
+                std::map<std::string, IOTypeMask> io_types;
         };
 
-        static int register_module(std::string module_name,
+        static int register_module(std::string module_type,
             IOTypeMask type, MODULE_BUILD_PTR build_ptr);
         static ModuleBank* get_module_bank();
 

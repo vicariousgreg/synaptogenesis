@@ -48,8 +48,8 @@ class Structure {
         /************ LAYERS ***********/
         /*******************************/
         const LayerList& get_layers() const { return layers; }
-        void add_layer(LayerConfig *config);
-        void add_layer_from_image(std::string path, LayerConfig *config);
+        Layer* add_layer(LayerConfig *config);
+        Layer* add_layer_from_image(std::string path, LayerConfig *config);
 
         /*******************************/
         /********* CONNECTIONS *********/
@@ -63,6 +63,9 @@ class Structure {
             ConnectionConfig *config);
 
         Connection* connect_layers(std::string from_layer_name,
+            std::string to_layer_name, ConnectionConfig *config);
+
+        Connection* connect_layers_external(std::string from_layer_name,
             std::string to_layer_name, ConnectionConfig *config);
 
         Connection* connect_layers_expected(

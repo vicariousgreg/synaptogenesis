@@ -22,6 +22,13 @@ class Model {
         static Model* load(std::string path);
 
         void add_structure(Structure *structure);
+        Structure* get_structure(std::string name);
+
+        /* Connects layers in two different structures */
+        static Connection* connect(
+            Structure *from_structure, std::string from_layer_name,
+            Structure *to_structure, std::string to_layer_name,
+            ConnectionConfig *config);
 
         const StructureList& get_structures() const { return structures; }
         const LayerList get_layers() const;

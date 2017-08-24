@@ -1,6 +1,8 @@
 #ifndef constants_h
 #define constants_h
 
+#include <map>
+
 /* Output type enumeration.
  * Different engines may use different output formats.
  * This enumeration is used to keep track of this information.
@@ -71,6 +73,24 @@ typedef enum {
     DIVERGENT
 } ConnectionType;
 
+static std::map<ConnectionType, std::string> ConnectionTypeStrings = {
+    {FULLY_CONNECTED, "fully connected"},
+    {SUBSET, "subset"},
+    {ONE_TO_ONE, "one to one"},
+    {CONVERGENT, "convergent"},
+    {CONVOLUTIONAL, "convolutional"},
+    {DIVERGENT, "divergent"}
+};
+
+static std::map<std::string, ConnectionType> ConnectionTypes {
+    {"fully connected", FULLY_CONNECTED},
+    {"subset", SUBSET},
+    {"one to one", ONE_TO_ONE},
+    {"convergent", CONVERGENT},
+    {"convolutional", CONVOLUTIONAL},
+    {"divergent", DIVERGENT},
+};
+
 /* Synaptic operation opcode.
  * Defines how activity across a connection interacts with the current state.
  * This allows for more complex synaptic functions.
@@ -85,12 +105,44 @@ typedef enum {
     MODULATE
 } Opcode;
 
+static std::map<Opcode, std::string> OpcodeStrings = {
+    {ADD, "add"},
+    {SUB, "sub"},
+    {MULT, "mult"},
+    {DIV, "div"},
+    {POOL, "pool"},
+    {REWARD, "reward"},
+    {MODULATE, "modulate"}
+};
+
+static std::map<std::string, Opcode> Opcodes = {
+    {"add", ADD},
+    {"sub", SUB},
+    {"mult", MULT},
+    {"div", DIV},
+    {"pool", POOL},
+    {"reward", REWARD},
+    {"modulate", MODULATE}
+};
+
 /* Enumeration of cluster types. */
 typedef enum {
     PARALLEL,
     SEQUENTIAL,
     FEEDFORWARD
 } ClusterType;
+
+static std::map<ClusterType, std::string> ClusterTypeStrings = {
+    {PARALLEL, "parallel"},
+    {SEQUENTIAL, "sequential"},
+    {FEEDFORWARD, "feedforward"}
+};
+
+static std::map<std::string, ClusterType> ClusterTypes = {
+    {"parallel", PARALLEL},
+    {"sequential", SEQUENTIAL},
+    {"feedforward", FEEDFORWARD},
+};
 
 /* Typedef for Device Identifier */
 typedef unsigned int DeviceID;

@@ -108,7 +108,7 @@ Connection* Structure::connect_layers_internal(
     return conn;
 }
 
-void Structure::add_layer(LayerConfig *config) {
+Layer* Structure::add_layer(LayerConfig *config) {
     if (find_layer(config->name, false) != nullptr)
         ErrorManager::get_instance()->log_error(
             "Repeated layer name: " + config->name);
@@ -118,13 +118,14 @@ void Structure::add_layer(LayerConfig *config) {
     this->layers_by_name[config->name] = layer;
     this->total_neurons += layer->size;
     this->neural_model_flags.insert(config->neural_model);
+    return layer;
 }
 
-void Structure::add_layer_from_image(std::string path, LayerConfig *config) {
+Layer* Structure::add_layer_from_image(std::string path, LayerConfig *config) {
     cimg_library::CImg<unsigned char> img(path.c_str());
     config->rows = img.height();
     config->columns = img.width();
-    this->add_layer(config);
+    return this->add_layer(config);
 }
 
 void Structure::add_module(std::string layer_name, ModuleConfig *config) {

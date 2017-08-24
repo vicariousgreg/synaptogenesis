@@ -17,19 +17,15 @@ using namespace jsonxx;
 
 static void parse_structure(Model *model, Object so);
 static void parse_layer(Structure *structure, Object lo);
-static void parse_connection(Structure *structure, Object co);
+static void parse_connection(Model *model, std::string structure_name, Object co);
 static ModuleConfig* parse_module(Object mo);
 static NoiseConfig *parse_noise_config(Object nco);
 static WeightConfig *parse_weight_config(Object wo);
 static ArborizedConfig *parse_arborized_config(Object wo);
 static SubsetConfig *parse_subset_config(Object wo);
 
-static std::string get_string(Object o, std::string key,
-        std::string default_value) {
-    if (o.has<String>(key))
-        return o.get<String>(key);
-    else return default_value;
-}
+static std::string get_string(Object o, std::string key, std::string def_val)
+    { return (o.has<String>(key)) ? o.get<String>(key) : def_val; }
 
 
 
@@ -47,9 +43,17 @@ Model* load_model(std::string path) {
 
     Object o;
     o.parse(str);
-    if (o.has<Array>("structures"))
+    if (o.has<Array>("structures")) {
         for (auto structure : o.get<Array>("structures").values())
             parse_structure(model, structure->get<Object>());
+
+        for (auto structure : o.get<Array>("structures").values()) {
+            auto so = structure->get<Object>();
+            if (so.has<Array>("connections"))
+                for (auto connection : so.get<Array>("connections").values())
+                    parse_connection(model, so.get<String>("name"), connection->get<Object>());
+        }
+    }
 
     return model;
 }
@@ -84,9 +88,6 @@ static void parse_structure(Model *model, Object so) {
     if (so.has<Array>("layers"))
         for (auto layer : so.get<Array>("layers").values())
             parse_layer(structure, layer->get<Object>());
-    if (so.has<Array>("connections"))
-        for (auto connection : so.get<Array>("connections").values())
-            parse_connection(structure, connection->get<Object>());
 
     model->add_structure(structure);
 }
@@ -146,7 +147,7 @@ static void parse_layer(Structure *structure, Object lo) {
  *     -> parse_arborized_config
  *     -> parse_subset_config
  */
-static void parse_connection(Structure *structure, Object co) {
+static void parse_connection(Model *model, std::string structure_name, Object co) {
     std::string from_layer = "";
     std::string to_layer = "";
     std::string type_string = "fully connected";
@@ -159,11 +160,20 @@ static void parse_connection(Structure *structure, Object co) {
     WeightConfig *weight_config = nullptr;
     SubsetConfig *subset_config = nullptr;
 
+    std::string from_structure = structure_name;
+    std::string to_structure = structure_name;
+
+    std::map<std::string, std::string> properties;
+
     for (auto pair : co.kv_map()) {
         if (pair.first == "from layer")
             from_layer = pair.second->get<String>();
         else if (pair.first == "to layer")
             to_layer = pair.second->get<String>();
+        else if (pair.first == "from structure")
+            from_structure = pair.second->get<String>();
+        else if (pair.first == "to structure")
+            to_structure = pair.second->get<String>();
         else if (pair.first == "type")
             type_string = pair.second->get<String>();
         else if (pair.first == "opcode")
@@ -181,32 +191,24 @@ static void parse_connection(Structure *structure, Object co) {
         else if (pair.first == "subset config")
             subset_config = parse_subset_config(pair.second->get<Object>());
         else
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized connection property: " + pair.first);
+            properties[pair.first] = pair.second->get<String>();
     }
 
     ConnectionType type;
-    if (type_string == "fully connected")    type = FULLY_CONNECTED;
-    else if (type_string == "subset")        type = SUBSET;
-    else if (type_string == "one to one")    type = ONE_TO_ONE;
-    else if (type_string == "convergent")    type = CONVERGENT;
-    else if (type_string == "convolutional") type = CONVOLUTIONAL;
-    else if (type_string == "divergent")     type = DIVERGENT;
-    else
+    try {
+        type = ConnectionTypes[type_string];
+    } catch (...) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized connection type: " + type_string);
+    }
 
     Opcode opcode;
-    if (opcode_string == "add")           opcode = ADD;
-    else if (opcode_string == "sub")      opcode = SUB;
-    else if (opcode_string == "mult")     opcode = MULT;
-    else if (opcode_string == "div")      opcode = DIV;
-    else if (opcode_string == "pool")     opcode = POOL;
-    else if (opcode_string == "reward")   opcode = REWARD;
-    else if (opcode_string == "modulate") opcode = MODULATE;
-    else
+    try {
+        opcode = Opcodes[opcode_string];
+    } catch (...) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized opcode: " + opcode_string);
+    }
 
     auto connection_config =
         new ConnectionConfig(plastic, delay, max_weight,
@@ -217,7 +219,15 @@ static void parse_connection(Structure *structure, Object co) {
     if (subset_config != nullptr)
         connection_config->set_subset_config(subset_config);
 
-    structure->connect_layers(from_layer, to_layer, connection_config);
+    for (auto pair : properties)
+        connection_config->set_property(pair.first, pair.second);
+
+    Structure::connect(
+        model->get_structure(from_structure),
+        from_layer,
+        model->get_structure(to_structure),
+        to_layer,
+        connection_config);
 }
 
 /* Parses a module list */
@@ -401,8 +411,7 @@ static SubsetConfig *parse_subset_config(Object wo) {
 static Object write_structure(Structure *structure);
 static Object write_layer(Layer *layer);
 static Object write_connection(Connection *connection);
-static Object write_module(ModuleConfig *module_config);
-static Object write_noise_config(NoiseConfig *noise_config);
+static Object write_properties(PropertyConfig *config);
 static Object write_weight_config(WeightConfig *weight_config);
 static Object write_arborized_config(ArborizedConfig *arborized_config);
 static Object write_subset_config(SubsetConfig *subset_config);
@@ -416,9 +425,10 @@ void save_model(Model *model, std::string path) {
     std::ofstream file("models/" + path);
 
 	Object o;
-	Array structures;
+	Array a;
 	for (auto structure : model->get_structures())
-	    o << "structures" << write_structure(structure);
+	    a << write_structure(structure);
+	o << "structures" << a;
 
 	file << o.json() << std::endl;
 	file.close();
@@ -430,28 +440,20 @@ void save_model(Model *model, std::string path) {
  */
 static Object write_structure(Structure *structure) {
     Object o;
-
     o << "name" << structure->name;
-
-    switch (structure->cluster_type) {
-        case (PARALLEL): o << "cluster type" << "parallel"; break;
-        case (SEQUENTIAL): o << "cluster type" << "sequential"; break;
-        case (FEEDFORWARD): o << "cluster type" << "feedforward"; break;
-    }
+    o << "cluster type" << ClusterTypeStrings[structure->cluster_type];
 
     if (structure->get_layers().size() > 0) {
         Array a;
-        for (auto layer : structure->get_layers()) {
+        for (auto layer : structure->get_layers())
             a << write_layer(layer);
-        }
         o << "layers" << a;
     }
 
     if (structure->get_connections().size() > 0) {
         Array a;
-        for (auto connection : structure->get_connections()) {
+        for (auto connection : structure->get_connections())
             a << write_connection(connection);
-        }
         o << "connections" << a;
     }
 
@@ -468,26 +470,23 @@ static Object write_layer(Layer *layer) {
     o << "neural model" << layer->neural_model;
     o << "rows" << std::to_string(layer->rows);
     o << "columns" << std::to_string(layer->columns);
-    if (layer->plastic)
-        o << "plastic" << "true";
-    else
-        o << "plastic" << "false";
-    if (layer->global)
-        o << "global" << "true";
-    else
-        o << "global" << "false";
+
+    if (layer->plastic) o << "plastic" << "true";
+    else                o << "plastic" << "false";
+    if (layer->global)  o << "global" << "true";
+    else                o << "global" << "false";
 
     for (auto pair : layer->get_config()->get_properties())
         o << pair.first << pair.second;
 
     auto noise_config = layer->get_config()->noise_config;
     if (noise_config != nullptr)
-        o << "noise" << write_noise_config(noise_config);
+        o << "noise" << write_properties(noise_config);
 
     if (layer->get_module_configs().size() > 0) {
         Array a;
         for (auto module : layer->get_module_configs())
-            a << write_module(module);
+            a << write_properties(module);
         o << "modules" << a;
     }
 
@@ -501,34 +500,21 @@ static Object write_layer(Layer *layer) {
  */
 static Object write_connection(Connection *connection) {
     Object o;
+
     o << "from layer" << connection->from_layer->name;
     o << "to layer" << connection->to_layer->name;
-
-    switch (connection->type) {
-        case (FULLY_CONNECTED): o << "type" << "fully connected"; break;
-        case (SUBSET):          o << "type" << "subset"; break;
-        case (ONE_TO_ONE):      o << "type" << "one to one"; break;
-        case (CONVERGENT):      o << "type" << "convergent"; break;
-        case (CONVOLUTIONAL):   o << "type" << "convolutional"; break;
-        case (DIVERGENT):       o << "type" << "divergent"; break;
-    }
-
-    switch (connection->opcode) {
-        case (ADD):      o << "opcode" << "add"; break;
-        case (SUB):      o << "opcode" << "sub"; break;
-        case (MULT):     o << "opcode" << "mult"; break;
-        case (DIV):      o << "opcode" << "div"; break;
-        case (POOL):     o << "opcode" << "pool"; break;
-        case (REWARD):   o << "opcode" << "reward"; break;
-        case (MODULATE): o << "opcode" << "modulate"; break;
-    }
-
+    o << "type" << ConnectionTypeStrings[connection->type];
+    o << "opcode" << OpcodeStrings[connection->opcode];
     o << "max weight" << std::to_string(connection->max_weight);
-    if (connection->plastic)
-        o << "plastic" << "true";
-    else
-        o << "plastic" << "false";
     o << "delay" << std::to_string(connection->delay);
+
+    if (connection->from_layer->structure != connection->to_layer->structure) {
+        o << "from structure" << connection->from_layer->structure->name;
+        o << "to structure" << connection->to_layer->structure->name;
+    }
+
+    if (connection->plastic) o << "plastic" << "true";
+    else                     o << "plastic" << "false";
 
     auto connection_config = connection->get_config();
     o << "weight config" << write_weight_config(connection_config->weight_config);
@@ -543,25 +529,17 @@ static Object write_connection(Connection *connection) {
         o << "subset config"
             << write_subset_config(subset_config);
 
-    return o;
-}
-
-/* Writes a module list */
-static Object write_module(ModuleConfig *module_config) {
-    Object o;
-    for (auto pair : module_config->get_properties())
+    for (auto pair : connection_config->get_properties())
         o << pair.first << pair.second;
 
     return o;
 }
 
-/* Writes a noise configuration */
-static Object write_noise_config(NoiseConfig *noise_config) {
+/* Writes a PropertyConfig to an object */
+static Object write_properties(PropertyConfig *config) {
     Object o;
-
-    for (auto pair : noise_config->get_properties())
+    for (auto pair : config->get_properties())
         o << pair.first << pair.second;
-
     return o;
 }
 
@@ -582,22 +560,19 @@ static Object write_weight_config(WeightConfig *weight_config) {
 /* Writes an arborized connection configuration */
 static Object write_arborized_config(ArborizedConfig *arborized_config) {
     Object o;
-
-    o << "row field size" << arborized_config->row_field_size;
-    o << "column field size" << arborized_config->column_field_size;
-    o << "row stride" << arborized_config->row_stride;
-    o << "column stride" << arborized_config->column_stride;
-    o << "row offset" << arborized_config->row_offset;
-    o << "column offset" << arborized_config->column_offset;
-    o << "wrap" << arborized_config->wrap;
-
+    o << "row field size" << std::to_string(arborized_config->row_field_size);
+    o << "column field size" << std::to_string(arborized_config->column_field_size);
+    o << "row stride" << std::to_string(arborized_config->row_stride);
+    o << "column stride" << std::to_string(arborized_config->column_stride);
+    o << "row offset" << std::to_string(arborized_config->row_offset);
+    o << "column offset" << std::to_string(arborized_config->column_offset);
+    o << "wrap" << std::to_string(arborized_config->wrap);
     return o;
 }
 
 /* Writes a subset connection configuration */
 static Object write_subset_config(SubsetConfig *subset_config) {
     Object o;
-
     o << "from row start" << subset_config->from_row_start;
     o << "from row end" << subset_config->from_row_end;
     o << "from column start" << subset_config->from_col_start;
@@ -606,6 +581,5 @@ static Object write_subset_config(SubsetConfig *subset_config) {
     o << "to row end" << subset_config->to_row_end;
     o << "to column start" << subset_config->to_col_start;
     o << "to column end" << subset_config->to_col_end;
-
     return o;
 }
