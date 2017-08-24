@@ -781,10 +781,6 @@ void working_memory_test() {
     main_structure->add_module("feedforward",
         new ModuleConfig(output_name));
 
-    save_model(model, "working_memory.json");
-    delete model;
-    model = load_model("working_memory.json");
-
     Clock clock(true);
     //Clock clock(1.0f);
     print_model(model);
