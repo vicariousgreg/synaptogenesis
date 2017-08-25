@@ -63,7 +63,7 @@ State::State(Model *model) : model(model) {
         if (Attributes::get_neural_models().count(layer->neural_model) == 0)
             ErrorManager::get_instance()->log_error(
                 "Unrecognized neural model \"" + layer->neural_model +
-                "\" in layer \"" + layer->name + "\"!");
+                "\" in " + layer->str());
 
     // Create attributes and weight matrices
     for (DeviceID device_id = 0 ; device_id < num_devices ; ++device_id) {
@@ -231,7 +231,7 @@ void State::save(std::string file_name) {
 
             if (not output_file.write(data, size*unit_size))
                 ErrorManager::get_instance()->log_error(
-                    "Error writing to file!");
+                    "Error writing state to file!");
         }
     }
 
@@ -263,7 +263,7 @@ void State::load(std::string file_name) {
 
             if (not input_file.read(data, size*unit_size))
                 ErrorManager::get_instance()->log_error(
-                    "Error reading from file!");
+                    "Error reading state from file!");
 
             read += size * unit_size;
         }
@@ -271,7 +271,7 @@ void State::load(std::string file_name) {
 
     if (read != length)
         ErrorManager::get_instance()->log_error(
-            "File size does not match state size!");
+            "State file size does not match state size!");
 
     // Close file stream
     input_file.close();

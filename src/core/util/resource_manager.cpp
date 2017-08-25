@@ -59,7 +59,7 @@ void ResourceManager::flush(DeviceID device_id) {
         }
 #endif
         managed_pointers.erase(device_id);
-    } catch (...) { }
+    } catch (std::out_of_range) { }
 }
 
 void* ResourceManager::allocate_host(unsigned long count, int size) {

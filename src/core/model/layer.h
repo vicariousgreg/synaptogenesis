@@ -63,6 +63,8 @@ class Layer {
         // Gets the maximum delay for all outgoing connections
         int get_max_delay() const;
 
+        std::string str() const;
+
     private:
         friend class Structure;
         friend class Connection;

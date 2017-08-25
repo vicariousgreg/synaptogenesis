@@ -400,7 +400,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
 
     try {
         return funcs.at(conn->type).at(conn->opcode);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
     }
@@ -501,7 +501,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
 
     try {
         return funcs.at(conn->type).at(conn->opcode);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
     }
@@ -658,13 +658,13 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         set_weights(mData + 5*num_weights, num_weights, 1.0);
     else
         switch(conn->opcode) {
-            case(ADD):
-            case(MULT):
-            case(REWARD):
-            case(MODULATE):
+            case ADD:
+            case MULT:
+            case REWARD:
+            case MODULATE:
                 set_weights(mData + 5*num_weights, num_weights, U_DEPRESS);
                 break;
-            case(SUB):
+            case SUB:
                 set_weights(mData + 5*num_weights, num_weights, U_POTENTIATE);
                 break;
         }

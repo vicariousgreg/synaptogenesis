@@ -55,18 +55,20 @@ Cluster *build_cluster(Structure *structure,
         State *state, Environment *environment) {
     if (not state->check_compatibility(structure))
         ErrorManager::get_instance()->log_error(
-            "Cluster compatibility conflict detected!");
+            "Error building cluster for " + structure->str() + ":\n"
+            "  Cluster compatibility conflict detected!");
 
     switch (structure->cluster_type) {
-        case(PARALLEL):
+        case PARALLEL:
             return new ParallelCluster(structure, state, environment);
-        case(SEQUENTIAL):
+        case SEQUENTIAL:
             return new SequentialCluster(structure, state, environment);
-        case(FEEDFORWARD):
+        case FEEDFORWARD:
             return new FeedforwardCluster(structure, state, environment);
         default:
             ErrorManager::get_instance()->log_error(
-                "Unrecognized stream cluster type!");
+                "Error building cluster for " + structure->str() + ":\n"
+                "  Unrecognized stream cluster type!");
     }
     return nullptr;
 }

@@ -29,13 +29,13 @@ void MazeOutputModule::report_output(Buffer *buffer, OutputType output_type) {
 
     float up, down, left, right;
     switch(output_type) {
-        case(BIT):
+        case BIT:
             up = convert_spikes(output[0].i);
             down = convert_spikes(output[1].i);
             left = convert_spikes(output[2].i);
             right = convert_spikes(output[3].i);
             break;
-        case(FLOAT):
+        case FLOAT:
             up = output[0].f;
             down = output[1].f;
             left = output[2].f;

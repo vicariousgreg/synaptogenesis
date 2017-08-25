@@ -31,7 +31,8 @@ void WeightConfig::gaussian_config(float* target_matrix,
 
     if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
-            "Gaussian weight config std_dev must be positive!");
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Gaussian weight config std_dev must be positive!");
 
     randomize_weights_gaussian(target_matrix, conn->get_num_weights(),
         mean, std_dev, conn->max_weight, fraction);
@@ -45,7 +46,8 @@ void WeightConfig::log_normal_config(float* target_matrix,
 
     if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
-            "Log normal weight config std_dev must be positive!");
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Log normal weight config std_dev must be positive!");
 
     randomize_weights_lognormal(target_matrix, conn->get_num_weights(),
         mean, std_dev, conn->max_weight, fraction);
@@ -54,13 +56,14 @@ void WeightConfig::log_normal_config(float* target_matrix,
 void WeightConfig::surround_config(float* target_matrix,
         Connection* conn, bool is_host) {
     switch (conn->type) {
-        case(CONVERGENT):
-        case(CONVOLUTIONAL):
-        case(DIVERGENT):
+        case CONVERGENT:
+        case CONVOLUTIONAL:
+        case DIVERGENT:
             break;
         default:
             ErrorManager::get_instance()->log_error(
-                "SurroundWeightConfig can only be used "
+                "Error in weight config for " + conn->str() + ":\n"
+                "  SurroundWeightConfig can only be used "
                 "on arborized connections!");
     }
 
@@ -72,13 +75,15 @@ void WeightConfig::surround_config(float* target_matrix,
         rows = cols = size_param;
     if (rows < 0 or cols < 0)
         ErrorManager::get_instance()->log_error(
-            "Surround weight config rows/cols must be positive!");
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Surround weight config rows/cols must be positive!");
 
     // Initialize with child config
     auto child_config = this->get_child();
     if (child_config == nullptr)
         ErrorManager::get_instance()->log_error(
-            "Missing child weight config for surround weight config!");
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Missing child weight config for surround weight config!");
     child_config->initialize(target_matrix, conn, is_host);
 
     // Carve out center
@@ -97,9 +102,9 @@ void WeightConfig::surround_config(float* target_matrix,
     //   destination layer.  Convolutional connections have only one kernel.
     int size;
     switch (conn->type) {
-        case(DIVERGENT): size = conn->from_layer->size; break;
-        case(CONVERGENT): size = conn->to_layer->size; break;
-        case(CONVOLUTIONAL): size = 1; break;
+        case DIVERGENT: size = conn->from_layer->size; break;
+        case CONVERGENT: size = conn->to_layer->size; break;
+        case CONVOLUTIONAL: size = 1; break;
     }
 
     if (is_host) {
@@ -138,7 +143,8 @@ void WeightConfig::specified_config(float* target_matrix,
     std::string weight_string = this->get_property("weight string", "");
     if (weight_string == "")
         ErrorManager::get_instance()->log_error(
-            "Missing weight string for specified weight config!");
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Missing weight string for specified weight config!");
 
     std::stringstream stream(weight_string);
     int num_weights = conn->get_num_weights();
@@ -172,7 +178,8 @@ void WeightConfig::specified_config(float* target_matrix,
         for (int col = 0 ; col < cols ; ++col) {
             if (row != rows-1 and col != cols-1 and stream.eof())
                 ErrorManager::get_instance()->log_error(
-                    "Insufficient number of weights specified!");
+                    "Error in weight config for " + conn->str() + ":\n"
+                    "  Insufficient number of weights specified!");
             else stream >> value;
 
             // If parallel, transpose the input (rows <-> cols)
@@ -190,7 +197,8 @@ void WeightConfig::initialize(float* target_matrix,
         float fraction = std::stof(this->get_property("fraction", "1.0"));
         if (fraction < 0 or fraction > 1.0)
             ErrorManager::get_instance()->log_error(
-                "Weight config fraction must be between 0 and 1!");
+                "Error in weight config for " + conn->str() + ":\n"
+                "  Weight config fraction must be between 0 and 1!");
     }
 
     auto type = this->get_property("type");
@@ -209,21 +217,22 @@ void WeightConfig::initialize(float* target_matrix,
         specified_config(target_matrix, conn, is_host);
     else
         ErrorManager::get_instance()->log_error(
-            "Unrecognized weight config type: " + type);
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Unrecognized weight config type: " + type);
 
     if (this->get_property("diagonal", "true") != "true") {
         switch(conn->type) {
-            case(FULLY_CONNECTED):
+            case FULLY_CONNECTED:
                 clear_diagonal(target_matrix,
                     conn->from_layer->size, conn->to_layer->size);
                 break;
-            case(SUBSET): {
+            case SUBSET: {
                 auto subset_config = conn->get_config()->get_subset_config();
                 clear_diagonal(target_matrix,
                     subset_config->from_size, subset_config->to_size);
                 break;
             }
-            case(CONVERGENT):
+            case CONVERGENT:
                 break;
         }
     }

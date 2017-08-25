@@ -1,5 +1,6 @@
 #include "model/connection.h"
 #include "model/layer.h"
+#include "model/structure.h"
 #include "util/error_manager.h"
 
 int Connection::count = 0;
@@ -17,39 +18,40 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             type(config->type),
             convolutional(type == CONVOLUTIONAL) {
     switch (type) {
-        case(FULLY_CONNECTED): {
+        case FULLY_CONNECTED: {
             this->num_weights = from_layer->size * to_layer->size;
             break;
         }
-        case(SUBSET): {
+        case SUBSET: {
             auto subset_config = config->get_subset_config();
-            if (subset_config == nullptr) {
-                config->set_subset_config(
-                    new SubsetConfig(
-                        0, from_layer->rows,
-                        0, from_layer->columns,
-                        0, to_layer->rows,
-                        0, to_layer->columns));
-                subset_config = config->get_subset_config();
-            }
+            if (subset_config == nullptr)
+                ErrorManager::get_instance()->log_error(
+                    "Error in " + this->str() + ":\n"
+                    "  Unspecified config for subset connection!");
             if (not subset_config->validate(this))
                 ErrorManager::get_instance()->log_error(
-                    "Invalid SubsetConfig for connection!");
+                    "Error in " + this->str() + ":\n"
+                    "  Invalid config for subset connection!");
+
             this->num_weights = subset_config->total_size;
             break;
         }
-        case(ONE_TO_ONE):
-            if (from_layer->rows == to_layer->rows and from_layer->columns == to_layer->columns)
+        case ONE_TO_ONE:
+            if (from_layer->rows == to_layer->rows
+                    and from_layer->columns == to_layer->columns)
                 this->num_weights = from_layer->size;
             else
                 ErrorManager::get_instance()->log_error(
-                    "Cannot connect differently sized layers one-to-one!");
+                    "Error in " + this->str() + ":\n"
+                    "  Cannot connect differently sized layers one-to-one!");
             break;
         default:
             auto arborized_config = config->get_arborized_config();
             if (arborized_config == nullptr)
                 ErrorManager::get_instance()->log_error(
-                    "Convergent/divergent connections require ArborizedConfig!");
+                    "Error in " + this->str() + ":\n"
+                    "  Convergent/divergent connections "
+                    "require ArborizedConfig!");
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.
@@ -60,22 +62,22 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                 (to_layer->columns != from_layer->columns
                     and to_layer->columns != expected_columns))
                 ErrorManager::get_instance()->log_warning(
+                    "Error in " + this->str() + ":\n"
                     "Unexpected destination layer size for arborized connection"
-                    " from " + from_layer->name + " to " + to_layer->name +
                     " (" + std::to_string(to_layer->rows)
                         + ", " + std::to_string(to_layer->columns) + ") vs (" +
                     std::to_string(expected_rows) + ", "
                         + std::to_string(expected_columns) + ")!");
 
             switch (type) {
-                case(CONVOLUTIONAL):
+                case CONVOLUTIONAL:
                     // Convolutional connections use a shared weight kernel
                     this->num_weights = arborized_config->get_total_field_size();
                     break;
-                case(CONVERGENT):
+                case CONVERGENT:
                     // Convergent connections use unshared mini weight matrices
                     // Each destination neuron connects to field_size squared neurons
-                case(DIVERGENT):
+                case DIVERGENT:
                     // Divergent connections use unshared mini weight matrices
                     // Each source neuron connects to field_size squared neurons
                     this->num_weights =
@@ -83,7 +85,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     break;
                 default:
                     ErrorManager::get_instance()->log_error(
-                        "Unknown layer connection type!");
+                        "Error in " + this->str() + ":\n"
+                        "  Unknown layer connection type!");
             }
     }
 
@@ -100,15 +103,22 @@ std::string Connection::get_parameter(std::string key,
         std::string default_val) const {
     try {
         return this->get_config()->get_property(key);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_warning(
-            "Unspecified parameter: " + key + " for conn \""
-            + this->from_layer->name + "\" -> \""
-            + this->to_layer->name + "\" -- using "
-            + default_val + ".");
+            "Error in " + this->str() + ":\n"
+            "  Unspecified parameter: " + key
+            + " -- using " + default_val + ".");
         return default_val;
     }
 }
 
 int Connection::get_num_weights() const { return num_weights; }
 const ConnectionConfig* Connection::get_config() const { return config; }
+
+std::string Connection::str() const {
+    return "[Connection: "
+        + from_layer->name
+        + " (" + from_layer->structure->name + ") -> "
+        + to_layer->name
+        + " (" + to_layer->structure->name + ")]";
+}

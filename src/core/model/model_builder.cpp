@@ -46,9 +46,11 @@ Model* load_model(std::string path) {
     Object o;
     o.parse(str);
     if (o.has<Array>("structures")) {
+        // Parse structures
         for (auto structure : o.get<Array>("structures").values())
             parse_structure(model, structure->get<Object>());
 
+        // Parse connections after because of inter-structure connections
         for (auto structure : o.get<Array>("structures").values()) {
             auto so = structure->get<Object>();
             if (so.has<Array>("connections"))
@@ -69,21 +71,26 @@ static void parse_structure(Model *model, Object so) {
     std::string name = get_string(so, "name",
         std::to_string(model->get_structures().size()));
 
-    // Get cluster type string, or use parallel as default
-    std::string cluster_type_string
-        = get_string(so, "cluster type", "parallel");
+    Structure *structure;
 
-    // Convert string to ClusterType
-    ClusterType cluster_type;
-    try {
-        cluster_type = ClusterTypes[cluster_type_string];
-    } catch (...) {
-        ErrorManager::get_instance()->log_error(
-            "Unrecognized cluster type for structure " + name
-            + ": " + cluster_type_string);
+    // Get cluster type string if it exists
+    if (has_string(so, "cluster type")) {
+        std::string cluster_type_string
+            = get_string(so, "cluster type", "parallel");
+
+        // Convert string to ClusterType
+        ClusterType cluster_type;
+        try {
+            cluster_type = ClusterTypes[cluster_type_string];
+        } catch (std::out_of_range) {
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized cluster type for structure " + name
+                + ": " + cluster_type_string);
+        }
+        structure = new Structure(name, cluster_type);
+    } else {
+        structure = new Structure(name);
     }
-
-    Structure *structure = new Structure(name, cluster_type);
 
     if (so.has<Array>("layers"))
         for (auto layer : so.get<Array>("layers").values())
@@ -197,7 +204,7 @@ static void parse_connection(Model *model, std::string structure_name, Object co
     ConnectionType type;
     try {
         type = ConnectionTypes[type_string];
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized connection type: " + type_string);
     }
@@ -205,7 +212,7 @@ static void parse_connection(Model *model, std::string structure_name, Object co
     Opcode opcode;
     try {
         opcode = Opcodes[opcode_string];
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized opcode: " + opcode_string);
     }
@@ -232,15 +239,13 @@ static void parse_connection(Model *model, std::string structure_name, Object co
 
 /* Parses a module list */
 static ModuleConfig* parse_module(Object mo) {
-    // Get type string, or use normal as default
-    std::string type = get_string(mo, "type", "");
-    if (type == "")
+    if (get_string(mo, "skip", "false") == "true") return nullptr;
+
+    if (not has_string(mo, "type"))
         ErrorManager::get_instance()->log_error(
             "No module type specified!");
 
-    if (get_string(mo, "skip", "false") == "true") return nullptr;
-
-    auto module_config = new ModuleConfig(type);
+    auto module_config = new ModuleConfig(get_string(mo, "type"));
 
     // Get properties
     for (auto pair : mo.kv_map())
@@ -252,10 +257,12 @@ static ModuleConfig* parse_module(Object mo) {
 
 /* Parses a noise configuration */
 static NoiseConfig *parse_noise_config(Object nco) {
-    NoiseConfig *noise_config;
+    if (not has_string(nco, "type"))
+        ErrorManager::get_instance()->log_error(
+            "No noise config type specified!");
 
     // Get type string, or use normal as default
-    noise_config = new NoiseConfig(get_string(nco, "type", "normal"));
+    NoiseConfig *noise_config = new NoiseConfig(get_string(nco, "type"));
 
     // Get properties
     for (auto pair : nco.kv_map())
@@ -267,10 +274,13 @@ static NoiseConfig *parse_noise_config(Object nco) {
 
 /* Parses a weight configuration */
 static WeightConfig *parse_weight_config(Object wo) {
-    // Get type string, or use normal as default
-    std::string type_string = get_string(wo, "type", "flat");
+    if (not has_string(wo, "type"))
+        ErrorManager::get_instance()->log_error(
+            "No weight config type specified!");
 
-    WeightConfig *weight_config = new WeightConfig(type_string);
+    // Get type string, or use normal as default
+
+    WeightConfig *weight_config = new WeightConfig(get_string(wo, "type"));
 
     if (has_string(wo, "weight"))
         weight_config->set_property("weight", get_string(wo, "weight"));

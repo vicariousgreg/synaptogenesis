@@ -21,16 +21,16 @@ DEVICE EXTRACTOR x_bit = extract_bit;
 void get_extractor(EXTRACTOR *dest, OutputType output_type, DeviceID device_id) {
     if (ResourceManager::get_instance()->is_host(device_id))
         switch (output_type) {
-            case FLOAT:  *dest = extract_float;  break;
-            case INT:    *dest = extract_int;    break;
-            case BIT:    *dest = extract_bit;    break;
+            case FLOAT: *dest = extract_float;  break;
+            case INT:   *dest = extract_int;    break;
+            case BIT:   *dest = extract_bit;    break;
         }
     else
 #ifdef __CUDACC__
         switch (output_type) {
-            case FLOAT:  cudaMemcpyFromSymbol(dest, x_float, sizeof(void *)); break;
-            case INT:    cudaMemcpyFromSymbol(dest, x_int, sizeof(void *));   break;
-            case BIT:    cudaMemcpyFromSymbol(dest, x_bit, sizeof(void *));   break;
+            case FLOAT: cudaMemcpyFromSymbol(dest, x_float, sizeof(void *)); break;
+            case INT:   cudaMemcpyFromSymbol(dest, x_int, sizeof(void *));   break;
+            case BIT:   cudaMemcpyFromSymbol(dest, x_bit, sizeof(void *));   break;
         }
 #else
         ErrorManager::get_instance()->log_error(

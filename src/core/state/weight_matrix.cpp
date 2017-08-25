@@ -115,8 +115,8 @@ void set_delays(OutputType output_type, Connection *conn,
         conn->to_layer->name + "delay initialization...\n");
 
     switch(conn->type) {
-        case(FULLY_CONNECTED):
-        case(SUBSET): {
+        case FULLY_CONNECTED:
+        case SUBSET: {
             int from_row_start, from_col_start, to_row_start, to_col_start;
             int from_row_end, from_col_end, to_row_end, to_col_end;
 
@@ -158,7 +158,9 @@ void set_delays(OutputType output_type, Connection *conn,
                             int delay = base_delay + (distance / velocity);
                             if (delay > 31)
                                 ErrorManager::get_instance()->log_error(
-                                    "Unmyelinated axons cannot have delays "
+                                    "Error initializing delays for "
+                                    + conn->str() + "\n"
+                                    "  Unmyelinated axons cannot have delays "
                                     "greater than 31!");
                             delays[weight_index] = delay;
                             ++weight_index;
@@ -168,11 +170,11 @@ void set_delays(OutputType output_type, Connection *conn,
             }
             break;
         }
-        case(ONE_TO_ONE):
+        case ONE_TO_ONE:
             for (int i = 0 ; i < conn->get_num_weights() ; ++i)
                 delays[i] = base_delay;
             break;
-        case(CONVERGENT): {
+        case CONVERGENT: {
             auto ac = conn->get_config()->get_arborized_config();
             int to_size = conn->to_layer->size;
             int field_size = ac->row_field_size * ac->column_field_size;
@@ -180,7 +182,9 @@ void set_delays(OutputType output_type, Connection *conn,
             if (ac->row_stride != ac->column_stride
                 or (int(to_spacing / from_spacing) != ac->row_stride))
                 ErrorManager::get_instance()->log_error(
-                    "Spacing and strides must match up for convergent connection!");
+                    "Error initializing delays for " + conn->str() + "\n"
+                    "  Spacing and strides must match up for "
+                    "convergent connection!");
 
             for (int f_row = 0; f_row < ac->row_field_size; ++f_row) {
                 float f_y = (f_row + ac->row_offset) * to_spacing;
@@ -194,7 +198,8 @@ void set_delays(OutputType output_type, Connection *conn,
                     int delay = base_delay + (distance / velocity);
                     if (delay > 31)
                         ErrorManager::get_instance()->log_error(
-                            "Unmyelinated axons cannot have delays "
+                            "Error initializing delays for " + conn->str() + "\n"
+                            "  Unmyelinated axons cannot have delays "
                             "greater than 31!");
 
                     int f_index = (f_row * ac->column_field_size) + f_col;
@@ -210,7 +215,7 @@ void set_delays(OutputType output_type, Connection *conn,
             }
             break;
         }
-        case(DIVERGENT): {
+        case DIVERGENT: {
             auto ac = conn->get_config()->get_arborized_config();
             int num_weights = conn->get_num_weights();
             int to_rows = conn->to_layer->rows;
@@ -222,7 +227,9 @@ void set_delays(OutputType output_type, Connection *conn,
             if (ac->row_stride != ac->column_stride
                 or (int(from_spacing / to_spacing) != ac->row_stride))
                 ErrorManager::get_instance()->log_error(
-                    "Spacing and strides must match up for divergent connection!");
+                    "Error initializing delays for " + conn->str() + "\n"
+                    "  Spacing and strides must match up for "
+                    "divergent connection!");
 
 
             int row_field_size = ac->row_field_size;
@@ -272,7 +279,9 @@ void set_delays(OutputType output_type, Connection *conn,
                             int delay = base_delay + (distance / velocity);
                             if (delay > 31)
                                 ErrorManager::get_instance()->log_error(
-                                    "Unmyelinated axons cannot have delays "
+                                    "Error initializing delays for "
+                                    + conn->str() + "\n"
+                                    "  Unmyelinated axons cannot have delays "
                                     "greater than 31!");
 #ifdef __CUDACC__
                             int weight_index = to_index + (k_index * kernel_row_size);

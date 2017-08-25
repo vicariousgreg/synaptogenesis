@@ -1,7 +1,7 @@
 #ifndef connection_config_h
 #define connection_config_h
 
-#include "model/property_config.h"
+#include "util/property_config.h"
 #include "model/weight_config.h"
 #include "util/constants.h"
 
@@ -72,6 +72,8 @@ class ConnectionConfig : public PropertyConfig {
             WeightConfig* weight_config);
 
         virtual ~ConnectionConfig();
+
+        bool validate();
 
         /* Specialized config setters */
         ConnectionConfig *set_arborized_config(ArborizedConfig *config)

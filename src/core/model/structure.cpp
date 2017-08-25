@@ -15,10 +15,11 @@ Structure::~Structure() {
 Layer* Structure::find_layer(std::string name, bool log_error) {
     try {
         return layers_by_name.at(name);
-    } catch (...) {
+    } catch (std::out_of_range) {
         if (log_error)
             ErrorManager::get_instance()->log_error(
-                "Could not find layer \"" + name + "\"!");
+                "Error in " + this->str() + ":\n"
+                "  Could not find layer \"" + name + "\"");
         else return nullptr;
     }
 }
@@ -36,6 +37,12 @@ Connection* Structure::connect(
 Connection* Structure::connect_layers(
         Layer *from_layer, Layer *to_layer,
         ConnectionConfig *config) {
+    if (not config->validate())
+        ErrorManager::get_instance()->log_error(
+            "Error in " + this->str() + ":\n"
+            "  Invalid connection config for connection from "
+            + from_layer->str() + " to " + to_layer->str());
+
     Connection *conn = new Connection(
         from_layer, to_layer, config);
     to_layer->add_to_root(conn);
@@ -57,6 +64,12 @@ Connection* Structure::connect_layers_expected(
         ConnectionConfig *conn_config) {
     Layer *from_layer = find_layer(from_layer_name);
 
+    if (not conn_config->validate())
+        ErrorManager::get_instance()->log_error(
+            "Error in " + this->str() + ":\n"
+            "  Invalid connection config for connection from "
+            + from_layer->str() + " to " + layer_config->name);
+
     // Determine new layer size and create
     layer_config->rows =
         conn_config->get_expected_rows(from_layer->rows);
@@ -66,9 +79,7 @@ Connection* Structure::connect_layers_expected(
     Layer *to_layer = find_layer(layer_config->name);
 
     // Connect new layer to given layer
-    Connection *conn = connect_layers(
-        from_layer, to_layer, conn_config);
-    return conn;
+    return connect_layers(from_layer, to_layer, conn_config);
 }
 
 Connection* Structure::connect_layers_matching(
@@ -83,9 +94,7 @@ Connection* Structure::connect_layers_matching(
     Layer *to_layer = find_layer(layer_config->name);
 
     // Connect new layer to given layer
-    Connection *conn = connect_layers(
-        from_layer, to_layer, conn_config);
-    return conn;
+    return connect_layers(from_layer, to_layer, conn_config);
 }
 
 DendriticNode *Structure::get_dendritic_root(std::string to_layer_name) {
@@ -96,22 +105,11 @@ DendriticNode *Structure::spawn_dendritic_node(std::string to_layer_name) {
     return find_layer(to_layer_name)->dendritic_root->add_child();
 }
 
-Connection* Structure::connect_layers_internal(
-        DendriticNode *node, std::string from_layer_name,
-        ConnectionConfig *config) {
-    Layer *from_layer = find_layer(from_layer_name);
-    Layer *to_layer = node->to_layer;
-
-    Connection *conn = new Connection(from_layer, to_layer, config);
-    node->add_child(conn);
-    this->connections.push_back(conn);
-    return conn;
-}
-
 Layer* Structure::add_layer(LayerConfig *config) {
     if (find_layer(config->name, false) != nullptr)
         ErrorManager::get_instance()->log_error(
-            "Repeated layer name: " + config->name);
+            "Error in " + this->str() + ":\n"
+            "  Repeated layer name : \"" + config->name + "\"");
 
     Layer* layer = new Layer(this, config);
     this->layers.push_back(layer);
@@ -129,11 +127,9 @@ Layer* Structure::add_layer_from_image(std::string path, LayerConfig *config) {
 }
 
 void Structure::add_module(std::string layer_name, ModuleConfig *config) {
-    Layer *layer = find_layer(layer_name);
-    layer->add_module(config);
+    find_layer(layer_name)->add_module(config);
 }
 
 void Structure::add_module_all(ModuleConfig *config) {
-    for (auto layer : layers)
-        layer->add_module(config);
+    for (auto layer : layers) layer->add_module(config);
 }

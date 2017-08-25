@@ -830,8 +830,7 @@ int main(int argc, char *argv[]) {
         working_memory_test();
 
         return 0;
-    } catch (const char* msg) {
-        printf("\n\nEXPECTED: %s\n", msg);
+    } catch (std::runtime_error e) {
         printf("Fatal error -- exiting...\n");
         return 1;
     }

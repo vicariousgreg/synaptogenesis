@@ -48,6 +48,8 @@ class Connection {
         // Maximum for weights
         const float max_weight;
 
+        std::string str() const;
+
     private:
         friend class Structure;
 

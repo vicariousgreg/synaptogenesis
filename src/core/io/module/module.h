@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "model/layer.h"
-#include "model/property_config.h"
+#include "util/property_config.h"
 #include "io/buffer.h"
 
 class Module;

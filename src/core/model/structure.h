@@ -9,7 +9,7 @@
 #include "util/constants.h"
 #include "model/layer.h"
 #include "model/connection.h"
-#include "model/property_config.h"
+#include "util/property_config.h"
 #include "io/module/module.h"
 
 /* Represents a neural structure in a network model.
@@ -62,30 +62,26 @@ class Structure {
             Structure *to_structure, std::string to_layer_name,
             ConnectionConfig *config);
 
-        Connection* connect_layers(std::string from_layer_name,
-            std::string to_layer_name, ConnectionConfig *config);
-
-        Connection* connect_layers_external(std::string from_layer_name,
-            std::string to_layer_name, ConnectionConfig *config);
+        Connection* connect_layers(
+            std::string from_layer_name,
+            std::string to_layer_name,
+            ConnectionConfig *config);
 
         Connection* connect_layers_expected(
             std::string from_layer_name,
-            LayerConfig *layer_config, ConnectionConfig *conn_config);
+            LayerConfig *layer_config,
+            ConnectionConfig *conn_config);
 
         Connection* connect_layers_matching(
             std::string from_layer_name,
-            LayerConfig *layer_config, ConnectionConfig *conn_config);
+            LayerConfig *layer_config,
+            ConnectionConfig *conn_config);
 
         /*****************************/
         /********* DENDRITES *********/
         /*****************************/
         DendriticNode *get_dendritic_root(std::string to_layer_name);
         DendriticNode *spawn_dendritic_node(std::string to_layer_name);
-
-        Connection* connect_layers_internal(
-            DendriticNode *node, std::string from_layer_name,
-            ConnectionConfig *config);
-
 
         /* Adds a module of the given |config| for the given |layer| */
         void add_module(std::string layer_name, ModuleConfig *config);
@@ -96,6 +92,8 @@ class Structure {
 
         // Stream type for iteration computation order
         const ClusterType cluster_type;
+
+        std::string str() const { return "[Structure: " + name + "]"; }
 
     private:
         /* Internal layer connection functions */

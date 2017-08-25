@@ -39,7 +39,7 @@ bool Visualizer::add_input_layer(Layer *layer, std::string params) {
     try {
         info = layer_map.at(layer);
         return false;
-    } catch (...) {
+    } catch (std::out_of_range) {
         info = new LayerInfo(layer);
         this->add_layer(layer, info);
     }
@@ -52,7 +52,7 @@ bool Visualizer::add_output_layer(Layer *layer, std::string params) {
     try {
         info = layer_map.at(layer);
         return false;
-    } catch (...) {
+    } catch (std::out_of_range) {
         info = new LayerInfo(layer);
         this->add_layer(layer, info);
     }

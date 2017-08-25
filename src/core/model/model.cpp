@@ -10,11 +10,15 @@ Model* Model::load(std::string path) {
     return load_model(path);
 }
 
+void Model::save(std::string path) {
+    save_model(this, path);
+}
+
 void Model::add_structure(Structure *structure) {
     for (auto& st : this->structures)
         if (st->name == structure->name)
             ErrorManager::get_instance()->log_error(
-                "Repeated structure name!");
+                "Repeated structure name: " + st->name);
     this->structures.push_back(structure);
 }
 
@@ -25,7 +29,7 @@ Structure* Model::get_structure(std::string name) {
             structure = s;
     if (structure == nullptr)
         ErrorManager::get_instance()->log_error(
-            "Could not find structure \"" + name + "\"!");
+            "Could not find structure: " + name);
     return structure;
 }
 

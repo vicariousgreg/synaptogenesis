@@ -85,7 +85,7 @@ void MazeGame::init() {
 bool MazeGame::is_dirty(std::string params) {
     try {
         return dirty.at(params);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized params in maze_game " + params);
     }
@@ -113,7 +113,7 @@ Pointer<float> MazeGame::get_input(std::string params) {
             dirty[params] = false;
         }
         return input_data.at(params);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized params in maze_game " + params);
     }
@@ -125,7 +125,7 @@ bool MazeGame::add_input_layer(Layer *layer, std::string params) {
         input_data.at(params);
         auto info = layer_map.at(layer);
         return false;
-    } catch (...) { }
+    } catch (std::out_of_range) { }
 
     // Check layer size
     // Should be the size of the board
@@ -142,7 +142,7 @@ bool MazeGame::add_output_layer(Layer *layer, std::string params) {
     try {
         auto info = layer_map.at(layer);
         return false;
-    } catch (...) { }
+    } catch (std::out_of_range) { }
 
     // Check layer size
     // Should be 4 for output layer

@@ -1,22 +1,25 @@
 #include "util/error_manager.h"
 
 #include <iostream>
+#include <stdexcept>
 
 ErrorManager *ErrorManager::instance = 0;
 
 void ErrorManager::log_warning(std::string error) {
-    if (warnings)
+    if (warnings and not suppress_output)
         std::cout << "WARNING: \n" << error << "\n";
 }
 
 void ErrorManager::log_error(std::string error) {
-    std::cout << "FATAL ERROR: \n" << error << "\n";
-    std::cout << "Exiting...\n";
-    std::terminate();
+    if (not suppress_output)
+        std::cout << "FATAL ERROR: \n" << error << "\n";
+
+    if (debug) throw DebugError();
+    else       throw std::runtime_error(error);
 }
 
 void ErrorManager::log_debug(std::string error) {
-    if (debug)
+    if (debug and not suppress_output)
         std::cout << "DEBUG: \n" << error << "\n";
 }
 

@@ -1,4 +1,5 @@
 #include "model/layer.h"
+#include "model/structure.h"
 #include "model/connection.h"
 #include "io/module/module.h"
 #include "util/error_manager.h"
@@ -35,10 +36,11 @@ std::string Layer::get_parameter(std::string key,
         std::string default_val) const {
     try {
         return this->get_config()->get_property(key);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_warning(
-            "Unspecified parameter: " + key + " for layer \""
-            + this->name + "\" -- using " + default_val + ".");
+            "Error in " + this->str() + ":\n"
+            "  Unspecified parameter: " + key
+            + " -- using " + default_val + ".");
         return default_val;
     }
 }
@@ -79,12 +81,17 @@ void Layer::add_module(ModuleConfig *config) {
 
     if ((model_type & INPUT) and (this->type & INPUT))
         ErrorManager::get_instance()->log_error(
-            "Layer cannot have more than one input module!");
+            "Error in " + this->str() + ":\n"
+            "  Layer cannot have more than one input module!");
     if ((model_type & EXPECTED) and (this->type & EXPECTED))
         ErrorManager::get_instance()->log_error(
-            "Layer cannot have more than one expected module!");
+            "Error in " + this->str() + ":\n"
+            "  Layer cannot have more than one expected module!");
 
     this->module_configs.push_back(config);
-
     this->type |= model_type;
+}
+
+std::string Layer::str() const {
+    return "[Layer: " + name + " (" + structure->name + ")]";
 }

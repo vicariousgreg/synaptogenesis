@@ -24,7 +24,9 @@ class Kernel {
                     ErrorManager::get_instance()->log_error(
                         "Attempted to run nullptr kernel!");
                 else
-                    parallel_kernel<<<blocks, threads, 0, stream->get_cuda_stream()>>>(args...);
+                    parallel_kernel
+                    <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+                        (args...);
             } else
 #endif
                 if (serial_kernel == nullptr)

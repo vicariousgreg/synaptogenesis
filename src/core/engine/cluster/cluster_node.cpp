@@ -47,7 +47,8 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
                     to_layer, state, compute_stream));
         else
             ErrorManager::get_instance()->log_error(
-                "Unrecognized noise type: " + type);
+                "Error building cluster node for " + layer->str() + ":\n"
+                "  Unrecognized noise type: " + type);
     } else if (not this->is_input) {
         activate_instructions.push_back(
             new ClearInstruction(to_layer, state, compute_stream));

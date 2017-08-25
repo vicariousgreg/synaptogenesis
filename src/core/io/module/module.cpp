@@ -19,7 +19,7 @@ Module::ModuleBank* Module::get_module_bank() {
 IOTypeMask Module::get_module_type(std::string module_type) {
     try {
         return Module::get_module_bank()->io_types.at(module_type);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unrecognized module: " + module_type + "!");
     }

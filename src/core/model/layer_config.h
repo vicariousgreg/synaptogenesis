@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 
-#include "model/property_config.h"
+#include "util/property_config.h"
 #include "util/constants.h"
 
 class NoiseConfig : public PropertyConfig {

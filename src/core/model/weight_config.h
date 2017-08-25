@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "model/property_config.h"
+#include "util/property_config.h"
 
 class Connection;
 

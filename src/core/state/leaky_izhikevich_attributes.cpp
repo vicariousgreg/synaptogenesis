@@ -100,7 +100,7 @@ Kernel<SYNAPSE_ARGS> LeakyIzhikevichAttributes::get_updater(
 
     try {
         return funcs.at(conn->type).at(conn->opcode);
-    } catch (...) {
+    } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
     }
