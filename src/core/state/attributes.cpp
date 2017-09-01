@@ -184,10 +184,6 @@ std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
         pointers[PointerKey(
             pair.first, "expected",
             layer_sizes[pair.first], pair.second)] = &expected;
-    for (auto pair : second_order_indices)
-        pointers[PointerKey(
-            pair.first, "second order",
-            layer_sizes[pair.first], pair.second)] = &second_order_input;
     for (auto var_pair : neuron_variables)
         for (auto l_pair : other_start_indices)
             pointers[PointerKey(
