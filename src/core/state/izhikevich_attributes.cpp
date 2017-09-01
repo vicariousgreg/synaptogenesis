@@ -547,15 +547,15 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
 
     // Baseline conductances
     this->baseline_conductance = Pointer<float>(num_connections);
-    Attributes::register_variable(&this->baseline_conductance);
+    Attributes::register_connection_variable("baseline conductance", &this->baseline_conductance);
 
     // Learning rate
     this->learning_rate = Pointer<float>(num_connections);
-    Attributes::register_variable(&this->learning_rate);
+    Attributes::register_connection_variable("learning rate", &this->learning_rate);
 
     // Short term plasticity flag
     this->stp_flag = Pointer<int>(num_connections);
-    Attributes::register_variable(&this->stp_flag);
+    Attributes::register_connection_variable("stp flag", &this->stp_flag);
 
     // Conductances
     this->ampa_conductance = Pointer<float>(total_neurons);
@@ -565,25 +565,25 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     this->multiplicative_factor = Pointer<float>(total_neurons);
     this->dopamine = Pointer<float>(total_neurons);
     this->acetylcholine = Pointer<float>(total_neurons);
-    Attributes::register_variable(&this->ampa_conductance);
-    Attributes::register_variable(&this->nmda_conductance);
-    Attributes::register_variable(&this->gabaa_conductance);
-    Attributes::register_variable(&this->gabab_conductance);
-    Attributes::register_variable(&this->multiplicative_factor);
-    Attributes::register_variable(&this->dopamine);
-    Attributes::register_variable(&this->acetylcholine);
+    Attributes::register_neuron_variable("ampa", &this->ampa_conductance);
+    Attributes::register_neuron_variable("nmda", &this->nmda_conductance);
+    Attributes::register_neuron_variable("gabaa", &this->gabaa_conductance);
+    Attributes::register_neuron_variable("gabab", &this->gabab_conductance);
+    Attributes::register_neuron_variable("mult", &this->multiplicative_factor);
+    Attributes::register_neuron_variable("dopamine", &this->dopamine);
+    Attributes::register_neuron_variable("acetylcholine", &this->acetylcholine);
 
     // Neuron variables
     this->voltage = Pointer<float>(total_neurons);
     this->recovery = Pointer<float>(total_neurons);
     this->postsyn_trace = Pointer<float>(total_neurons);
-    Attributes::register_variable(&this->recovery);
-    Attributes::register_variable(&this->voltage);
-    Attributes::register_variable(&this->postsyn_trace);
+    Attributes::register_neuron_variable("recorvery", &this->recovery);
+    Attributes::register_neuron_variable("voltage", &this->voltage);
+    Attributes::register_neuron_variable("post trace", &this->postsyn_trace);
 
     // Neuron parameters
     this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
-    Attributes::register_variable(&this->neuron_parameters);
+    Attributes::register_neuron_variable("params", &this->neuron_parameters);
 
     // Fill in table
     int start_index = 0;

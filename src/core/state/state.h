@@ -73,6 +73,8 @@ class State {
         // Keep track of all pointers
         std::vector<std::vector<BasePointer*> > network_pointers;
         std::vector<std::vector<BasePointer*> > buffer_pointers;
+
+        std::map<PointerKey, BasePointer*> pointer_map;
 };
 
 #endif

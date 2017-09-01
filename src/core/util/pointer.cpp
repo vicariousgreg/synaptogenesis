@@ -24,7 +24,7 @@ Pointer<T>::Pointer()
           false) { }
 
 template<typename T>
-Pointer<T>::Pointer(unsigned long size)
+Pointer<T>::Pointer(size_t size)
     : BasePointer(
           ResourceManager::get_instance()->allocate_host(size, sizeof(T)),
           size,
@@ -35,13 +35,13 @@ Pointer<T>::Pointer(unsigned long size)
           true) { }
 
 template<typename T>
-Pointer<T>::Pointer(unsigned long size, T val)
+Pointer<T>::Pointer(size_t size, T val)
         : Pointer<T>(size) {
     this->set(val, false);
 }
 
 template<typename T>
-Pointer<T>::Pointer(T* ptr, unsigned long size, bool local, DeviceID device_id)
+Pointer<T>::Pointer(T* ptr, size_t size, bool local, DeviceID device_id)
     : BasePointer(
           ptr,
           size,
@@ -58,12 +58,12 @@ Pointer<S> Pointer<T>::cast() const {
 }
 
 template<typename T>
-Pointer<T> Pointer<T>::slice(int offset, int new_size) const {
+Pointer<T> Pointer<T>::slice(size_t offset, size_t new_size) const {
     return Pointer<T>(((T*)ptr) + offset, new_size, local, device_id);
 }
 
 template<typename T>
-Pointer<T> Pointer<T>::pinned_pointer(unsigned long size) {
+Pointer<T> Pointer<T>::pinned_pointer(size_t size) {
 #ifdef __CUDACC__
     T* ptr;
     cudaMallocHost((void**) &ptr, size * sizeof(T));
@@ -78,14 +78,14 @@ Pointer<T> Pointer<T>::pinned_pointer(unsigned long size) {
 }
 
 template<typename T>
-Pointer<T> Pointer<T>::pinned_pointer(unsigned long size, T val) {
+Pointer<T> Pointer<T>::pinned_pointer(size_t size, T val) {
     auto pointer = Pointer<T>::pinned_pointer(size);
     pointer.set(val, false);
     return pointer;
 }
 
 template<typename T>
-HOST DEVICE T* Pointer<T>::get(int offset) const {
+HOST DEVICE T* Pointer<T>::get(size_t offset) const {
 #ifdef __CUDA_ARCH__
     if (local) assert(false);
     return ((T*)ptr) + offset;
@@ -143,7 +143,7 @@ template<typename T>
 void Pointer<T>::set(T val, bool async) {
     T* t_ptr = (T*)ptr;
     if (local) {
-        for (int i = 0 ; i < size ; ++i) t_ptr[i] = val;
+        for (size_t i = 0 ; i < size ; ++i) t_ptr[i] = val;
 #ifdef __CUDACC__
     } else if (sizeof(T) == 1) {
         if (async) cudaMemsetAsync(ptr,val,size);

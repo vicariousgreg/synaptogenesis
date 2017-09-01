@@ -46,7 +46,7 @@ BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
 RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
         : Attributes(layers, FLOAT) {
     this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
-    Attributes::register_variable(&this->neuron_parameters);
+    Attributes::register_neuron_variable("params", &this->neuron_parameters);
 
     // Fill in table
     int start_index = 0;

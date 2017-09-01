@@ -24,7 +24,7 @@ class Connection {
             std::string key, std::string default_val) const;
 
         // Connection ID
-        const int id;
+        const size_t id;
 
         // Matrix type
         const ConnectionType type;
@@ -52,9 +52,6 @@ class Connection {
 
     private:
         friend class Structure;
-
-        // Global counter for ID assignment
-        static int count;
 
         Connection(Layer *from_layer, Layer *to_layer, ConnectionConfig *config);
 

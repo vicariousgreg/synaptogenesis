@@ -4,12 +4,10 @@
 #include "io/module/module.h"
 #include "util/error_manager.h"
 
-int Layer::count = 0;
-
 Layer::Layer(Structure *structure, LayerConfig *config)
         : config(config),
           name(config->name),
-          id(Layer::count++),
+          id(std::hash<std::string>()(structure->name + "/" + name)),
           neural_model(config->neural_model),
           structure(structure),
           rows(config->rows),

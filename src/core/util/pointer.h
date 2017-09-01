@@ -4,11 +4,32 @@
 #include "util/parallel.h"
 #include "util/stream.h"
 
+class PointerKey {
+    public:
+        PointerKey(size_t hash, size_t type, size_t bytes, size_t offset)
+            : hash(hash), type(type), bytes(bytes), offset(offset) { }
+        PointerKey(size_t hash, std::string type, size_t bytes, size_t offset)
+            : PointerKey(hash, std::hash<std::string>()(type), bytes, offset) { }
+        const size_t hash;
+        const size_t type;
+        const size_t bytes;
+        const size_t offset;
+
+        bool operator <(const PointerKey& other) const {
+            if (hash == other.hash) return type < other.type;
+            else return hash < other.hash;
+        }
+        bool operator ==(const PointerKey& other) const {
+            return hash == other.hash and type == other.type;
+        }
+};
+
 class BasePointer {
     public:
-        void* get() { return ptr; }
-        unsigned long get_size() { return size; }
-        int get_unit_size() { return unit_size; }
+        void* get(size_t offset=0) { return ptr + (offset * unit_size); }
+        size_t get_size() { return size; }
+        size_t get_unit_size() { return unit_size; }
+        size_t get_bytes() { return size * unit_size; }
         DeviceID get_device_id() { return device_id; }
 
         // Frees the encapsulated pointer if this is the owner
@@ -19,7 +40,7 @@ class BasePointer {
             bool transfer_ownership);
 
     protected:
-        BasePointer(void* ptr, unsigned long size, int unit_size, DeviceID device_id,
+        BasePointer(void* ptr, size_t size, size_t unit_size, DeviceID device_id,
             bool local, bool pinned, bool owner)
                 : ptr(ptr),
                   size(size),
@@ -32,8 +53,8 @@ class BasePointer {
         friend class ResourceManager;
 
         void* ptr;
-        unsigned long size;
-        int unit_size;
+        size_t size;
+        size_t unit_size;
         DeviceID device_id;
         bool local;
         bool pinned;
@@ -52,12 +73,12 @@ class Pointer : public BasePointer {
         // Allocator constructor
         // Allocates space and claims ownership of pointer
         // Second version takes an initialization value
-        Pointer(unsigned long size);
-        Pointer(unsigned long size, T val);
+        Pointer(size_t size);
+        Pointer(size_t size, T val);
 
         // Container constructor
         // Encapsulates the pointer but does not claim ownership
-        Pointer(T* ptr, unsigned long size, bool local, DeviceID device_id);
+        Pointer(T* ptr, size_t size, bool local, DeviceID device_id);
 
 
         /*****************************/
@@ -68,12 +89,12 @@ class Pointer : public BasePointer {
 
         // Slice the pointer, creating a new pointer that represents
         //   a piece of the old pointer with a new size
-        Pointer<T> slice(int offset, int new_size) const;
+        Pointer<T> slice(size_t offset, size_t new_size) const;
 
         // Creates a pinned pointer, which is only supported if CUDA is enabled
         // Comes with a version for initializing
-        static Pointer<T> pinned_pointer(unsigned long size);
-        static Pointer<T> pinned_pointer(unsigned long size, T val);
+        static Pointer<T> pinned_pointer(size_t size);
+        static Pointer<T> pinned_pointer(size_t size, T val);
 
 
         /*****************/
@@ -84,7 +105,7 @@ class Pointer : public BasePointer {
         // Get the encapsulated pointer
         // This method has host/device protections to ensure that pointers
         //   are only accessed from locations where they are relevant
-        HOST DEVICE T* get(int offset=0) const;
+        HOST DEVICE T* get(size_t offset=0) const;
 
         // Retrieve containing device ID
         DeviceID get_device_id() { return device_id; }

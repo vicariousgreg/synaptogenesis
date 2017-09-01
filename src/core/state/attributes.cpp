@@ -108,7 +108,9 @@ Attributes::~Attributes() {
     this->output.free();
     this->expected.free();
     this->second_order_input.free();
-    for (auto ptr : managed_variables) ptr->free();
+    for (auto pair : neuron_variables) pair.second->free();
+    for (auto pair : connection_variables) pair.second->free();
+    for (auto pair : layer_variables) pair.second->free();
 
 #ifdef __CUDACC__
     cudaFree(this->pointer);
@@ -161,43 +163,88 @@ std::vector<BasePointer*> Attributes::get_pointers() {
     std::vector<BasePointer*> pointers = {
         &input, &output, &expected, &second_order_input
     };
-    for (auto ptr : managed_variables)
-        pointers.push_back(ptr);
+    for (auto pair : neuron_variables) pointers.push_back(pair.second);
+    for (auto pair : connection_variables) pointers.push_back(pair.second);
+    for (auto pair : layer_variables) pointers.push_back(pair.second);
     return pointers;
 }
 
-void Attributes::register_variable(BasePointer* ptr) {
-    this->managed_variables.push_back(ptr);
+std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
+    std::map<PointerKey, BasePointer*> pointers;
+
+    for (auto pair : input_start_indices)
+        pointers[PointerKey(
+            pair.first, "input",
+            layer_sizes[pair.first], pair.second)] = &input;
+    for (auto pair : output_start_indices)
+        pointers[PointerKey(
+            pair.first, "output",
+            layer_sizes[pair.first], pair.second)] = &output;
+    for (auto pair : expected_start_indices)
+        pointers[PointerKey(
+            pair.first, "expected",
+            layer_sizes[pair.first], pair.second)] = &expected;
+    for (auto pair : second_order_indices)
+        pointers[PointerKey(
+            pair.first, "second order",
+            layer_sizes[pair.first], pair.second)] = &second_order_input;
+    for (auto var_pair : neuron_variables)
+        for (auto l_pair : other_start_indices)
+            pointers[PointerKey(
+                l_pair.first, var_pair.first,
+                layer_sizes[l_pair.first], l_pair.second)] = var_pair.second;
+    return pointers;
 }
 
-int Attributes::get_layer_index(int id) const {
+void Attributes::register_neuron_variable(std::string key, BasePointer* ptr) {
+    if (this->neuron_variables.count(key) > 0)
+        ErrorManager::get_instance()->log_error(
+            "Repeated neuron variable key: " + key);
+    this->neuron_variables[key] = ptr;
+}
+
+void Attributes::register_connection_variable(std::string key, BasePointer* ptr) {
+    if (this->connection_variables.count(key) > 0)
+        ErrorManager::get_instance()->log_error(
+            "Repeated connection variable key: " + key);
+    this->connection_variables[key] = ptr;
+}
+
+void Attributes::register_layer_variable(std::string key, BasePointer* ptr) {
+    if (this->layer_variables.count(key) > 0)
+        ErrorManager::get_instance()->log_error(
+            "Repeated layer variable key: " + key);
+    this->layer_variables[key] = ptr;
+}
+
+int Attributes::get_layer_index(size_t id) const {
     return layer_indices.at(id);
 }
 
-int Attributes::get_other_start_index(int id) const {
+int Attributes::get_other_start_index(size_t id) const {
     return other_start_indices.at(id);
 }
 
-Pointer<float> Attributes::get_input(int id, int register_index) const {
+Pointer<float> Attributes::get_input(size_t id, int register_index) const {
     int size = layer_sizes.at(id);
     return input.slice(input_start_indices.at(id) + (register_index * size), size);
 }
 
-Pointer<float> Attributes::get_second_order_input(int id) const {
+Pointer<float> Attributes::get_second_order_input(size_t id) const {
     int size = second_order_sizes.at(id);
     return second_order_input.slice(second_order_indices.at(id), size);
 }
 
-Pointer<Output> Attributes::get_expected(int id) const {
+Pointer<Output> Attributes::get_expected(size_t id) const {
     int size = layer_sizes.at(id);
     return expected.slice(expected_start_indices.at(id), size);
 }
 
-Pointer<Output> Attributes::get_output(int id, int word_index) const {
+Pointer<Output> Attributes::get_output(size_t id, int word_index) const {
     int size = layer_sizes.at(id);
     return output.slice(output_start_indices.at(id) + (word_index * size), size);
 }
 
-int Attributes::get_connection_index(int id) const {
+int Attributes::get_connection_index(size_t id) const {
     return connection_indices.at(id);
 }

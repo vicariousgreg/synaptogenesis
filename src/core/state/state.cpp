@@ -83,6 +83,8 @@ State::State(Model *model) : model(model) {
                 // Retrieve pointers
                 for (auto ptr : att->get_pointers())
                     network_pointers[device_id].push_back(ptr);
+                for (auto pair : att->get_pointer_map())
+                    pointer_map[pair.first] = pair.second;
 
                 /* Set up weight matrices */
                 for (auto& layer : layers) {
@@ -91,7 +93,10 @@ State::State(Model *model) : model(model) {
                             att->get_matrix_depth(conn), device_id);
                         this->weight_matrices[conn] = matrix;
                         att->process_weight_matrix(matrix);
-                        network_pointers[device_id].push_back(matrix->get_pointer());
+                        auto ptr = matrix->get_pointer();
+                        network_pointers[device_id].push_back(ptr);
+                        pointer_map[PointerKey(
+                            conn->id, "matrix", ptr->get_bytes(), 0)] = ptr;
                     }
                 }
             }
@@ -217,22 +222,22 @@ void State::save(std::string file_name) {
     // Transfer to host
     this->transfer_to_host();
 
-
     // Open file stream
     std::string path = "./states/" + file_name;
     std::ofstream output_file(path, std::ofstream::binary);
     printf("Saving network state to %s ...\n", path.c_str());
 
-    for (auto ptr_list : network_pointers) {
-        for (auto ptr : ptr_list) {
-            const char* data = (const char*)ptr->get();
-            unsigned long size = ptr->get_size();
-            int unit_size = ptr->get_unit_size();
+    for (auto pair : pointer_map) {
+        size_t bytes = pair.first.bytes;
+        size_t offset = pair.first.offset;
+        const char* data = (const char*)pair.second->get(offset);
 
-            if (not output_file.write(data, size*unit_size))
-                ErrorManager::get_instance()->log_error(
-                    "Error writing state to file!");
-        }
+        if (not output_file.write((const char*)&pair.first, sizeof(PointerKey)))
+            ErrorManager::get_instance()->log_error(
+                "Error writing state to file!");
+        if (not output_file.write(data, bytes))
+            ErrorManager::get_instance()->log_error(
+                "Error writing state to file!");
     }
 
     // Close file stream
@@ -255,23 +260,27 @@ void State::load(std::string file_name) {
 
     unsigned long read = 0;
 
-    for (auto ptr_list : network_pointers) {
-        for (auto ptr : ptr_list) {
-            char* data = (char*)ptr->get();
-            unsigned long size = ptr->get_size();
-            int unit_size = ptr->get_unit_size();
+    while (read < length) {
+        PointerKey key(0,0,0,0);
+        if (not input_file.read((char*)&key, sizeof(PointerKey)))
+            ErrorManager::get_instance()->log_error(
+                "Error reading pointer key from file!");
 
-            if (not input_file.read(data, size*unit_size))
-                ErrorManager::get_instance()->log_error(
-                    "Error reading state from file!");
-
-            read += size * unit_size;
+        char* ptr;
+        try {
+            ptr = (char*) pointer_map.at(key)->get(key.offset);
+        } catch (...) {
+            ErrorManager::get_instance()->log_warning(
+                "Error retrieving pointer -- continuing...");
+            continue;
         }
-    }
 
-    if (read != length)
-        ErrorManager::get_instance()->log_error(
-            "State file size does not match state size!");
+        if (not input_file.read(ptr, key.bytes))
+            ErrorManager::get_instance()->log_error(
+                "Error reading data from file!");
+
+        read += sizeof(PointerKey) + key.bytes;
+    }
 
     // Close file stream
     input_file.close();

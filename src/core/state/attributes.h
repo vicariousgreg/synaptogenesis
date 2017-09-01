@@ -41,6 +41,7 @@ class Attributes {
 
         // Schedule and conduct transfer to device
         std::vector<BasePointer*> get_pointers();
+        std::map<PointerKey, BasePointer*> get_pointer_map();
         void transfer_to_device();
 
         /* Learning Rule functions */
@@ -63,15 +64,15 @@ class Attributes {
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
 
         // Layer data retrieval
-        int get_layer_index(int id) const;
-        int get_other_start_index(int id) const;
-        Pointer<float> get_input(int id, int register_index = 0) const;
-        Pointer<float> get_second_order_input(int id) const;
-        Pointer<Output> get_output(int id, int word_index = 0) const;
-        Pointer<Output> get_expected(int id) const;
+        int get_layer_index(size_t id) const;
+        int get_other_start_index(size_t id) const;
+        Pointer<float> get_input(size_t id, int register_index = 0) const;
+        Pointer<float> get_second_order_input(size_t id) const;
+        Pointer<Output> get_output(size_t id, int word_index = 0) const;
+        Pointer<Output> get_expected(size_t id) const;
 
         // Connection data retrieval
-        int get_connection_index(int id) const;
+        int get_connection_index(size_t id) const;
 
         // Neuron IO data
         EXTRACTOR extractor;
@@ -116,7 +117,9 @@ class Attributes {
         static NeuralModelBank* get_neural_model_bank();
 
         // Registers a variable to be handled by the superclass
-        void register_variable(BasePointer *pointer);
+        void register_neuron_variable(std::string key, BasePointer *pointer);
+        void register_connection_variable(std::string key, BasePointer *pointer);
+        void register_layer_variable(std::string key, BasePointer *pointer);
 
         // Traverse the dendritic tree and find second order nodes
         int dendrite_DFS(DendriticNode *curr, int second_order_size);
@@ -129,19 +132,21 @@ class Attributes {
         int object_size;
 
         // Managed pointers
-        std::vector<BasePointer*> managed_variables;
+        std::map<std::string, BasePointer*> neuron_variables;
+        std::map<std::string, BasePointer*> connection_variables;
+        std::map<std::string, BasePointer*> layer_variables;
 
-        std::map<int, int> layer_indices;
-        std::map<int, int> other_start_indices;
-        std::map<int, int> input_start_indices;
-        std::map<int, int> output_start_indices;
-        std::map<int, int> expected_start_indices;
-        std::map<int, int> layer_sizes;
+        std::map<size_t, int> layer_indices;
+        std::map<size_t, int> other_start_indices;
+        std::map<size_t, int> input_start_indices;
+        std::map<size_t, int> output_start_indices;
+        std::map<size_t, int> expected_start_indices;
+        std::map<size_t, int> layer_sizes;
 
-        std::map<int, int> connection_indices;
+        std::map<size_t, int> connection_indices;
 
-        std::map<int, int> second_order_indices;
-        std::map<int, int> second_order_sizes;
+        std::map<size_t, int> second_order_indices;
+        std::map<size_t, int> second_order_sizes;
 };
 
 /* Macros for Attribute subclass Registry */

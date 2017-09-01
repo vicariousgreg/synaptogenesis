@@ -62,7 +62,7 @@ void ResourceManager::flush(DeviceID device_id) {
     } catch (std::out_of_range) { }
 }
 
-void* ResourceManager::allocate_host(unsigned long count, int size) {
+void* ResourceManager::allocate_host(size_t count, size_t size) {
     if (count == 0) return nullptr;
 
     void* ptr = calloc(count, size);
@@ -72,7 +72,7 @@ void* ResourceManager::allocate_host(unsigned long count, int size) {
     return ptr;
 }
 
-void* ResourceManager::allocate_device(unsigned long count, int size,
+void* ResourceManager::allocate_device(size_t count, size_t size,
         void* source_data, DeviceID device_id) {
     if (count == 0) return nullptr;
 
@@ -83,7 +83,7 @@ void* ResourceManager::allocate_device(unsigned long count, int size,
 }
 
 void ResourceManager::transfer(DeviceID device_id, std::vector<BasePointer*> ptrs) {
-    unsigned long size = 0;
+    size_t size = 0;
     for (auto ptr : ptrs)
         size += ptr->size * ptr->unit_size;
 

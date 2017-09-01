@@ -54,8 +54,8 @@ void device_check_memory() {
     cudaSetDevice(prev_device);
 }
 
-void* cuda_allocate_device(int device_id, unsigned long count,
-        int size, void* source_data) {
+void* cuda_allocate_device(int device_id, size_t count,
+        size_t size, void* source_data) {
     int prev_device;
     cudaGetDevice(&prev_device);
     cudaSetDevice(device_id);

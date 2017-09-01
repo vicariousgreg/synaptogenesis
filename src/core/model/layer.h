@@ -40,7 +40,7 @@ class Layer {
         const std::string name;
 
         // Layer ID
-        const int id;
+        const size_t id;
 
         // Neural model
         const std::string neural_model;
@@ -68,9 +68,6 @@ class Layer {
     private:
         friend class Structure;
         friend class Connection;
-
-        // Global counter for ID assignment
-        static int count;
 
         Layer(Structure *structure, LayerConfig *config);
 

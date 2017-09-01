@@ -28,8 +28,8 @@ class ResourceManager {
         DeviceID get_host_id() { return devices.size()-1; }
         bool is_host(DeviceID device_id) { return device_id == get_host_id(); }
 
-        void* allocate_host(unsigned long count, int size);
-        void* allocate_device(unsigned long count, int size,
+        void* allocate_host(size_t count, size_t size);
+        void* allocate_device(size_t count, size_t size,
             void* source_data, DeviceID device_id=0);
 
         void transfer(DeviceID device_id, std::vector<BasePointer*> ptrs);

@@ -61,13 +61,13 @@ GameOfLifeAttributes::GameOfLifeAttributes(LayerList &layers)
     this->survival_maxs = Pointer<int>(layers.size());
     this->birth_mins = Pointer<int>(layers.size());
     this->birth_maxs = Pointer<int>(layers.size());
-    Attributes::register_variable(&this->survival_mins);
-    Attributes::register_variable(&this->survival_maxs);
-    Attributes::register_variable(&this->birth_mins);
-    Attributes::register_variable(&this->birth_maxs);
+    Attributes::register_layer_variable("survival mins", &this->survival_mins);
+    Attributes::register_layer_variable("survival maxs", &this->survival_maxs);
+    Attributes::register_layer_variable("birth mins", &this->birth_mins);
+    Attributes::register_layer_variable("birth maxs", &this->birth_maxs);
 
     for (auto& layer : layers) {
-        int layer_id = layer_indices[layer->id];
+        size_t layer_id = layer_indices[layer->id];
 
         survival_mins[layer_id] =
             std::stoi(layer->get_parameter("survival_min", "2"));
