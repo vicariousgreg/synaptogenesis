@@ -6,18 +6,14 @@ static const int num_rows = 8;
 static const int num_cols = 18;
 static const int cell_cols = 32;
 static const int cell_rows = 1+2*cell_cols;
-static const int spacing = 1;
-static const int spacer_rows = 1;
-static const int spacer_cols = 1;
+static const int spacing = cell_cols/4;
 
 DSSTWindow::DSSTWindow(DSST* dsst) : dsst(dsst), curr_prompt(0) {
-    grid = new Gtk::Grid();
-    grid->set_row_homogeneous(false);
-    grid->set_row_spacing(spacing);
-    grid->set_column_homogeneous(false);
-    grid->set_column_spacing(spacing);
-    grid->override_background_color(Gdk::RGBA("DarkSlateGray"));
-    this->add(*grid);
+    table = new Gtk::Table(num_rows + 2, num_cols, false);
+    table->set_row_spacings(spacing);
+    table->set_col_spacings(spacing);
+    this->override_background_color(Gdk::RGBA("Black"));
+    this->add(*table);
 
     // Load images
     for (int i = 1 ; i < 10 ; ++i)
@@ -93,91 +89,29 @@ DSSTWindow::DSSTWindow(DSST* dsst) : dsst(dsst), curr_prompt(0) {
 }
 
 void DSSTWindow::init() {
-    std::vector<Gtk::Image*> blank_cells;
-
-    // Create blank cells for key row
-    for (int col = 0; col < (num_cols/2)-1; ++col) {
-        auto pix = Gdk::Pixbuf::create(
-                Gdk::Colorspace::COLORSPACE_RGB,
-                true, 8, cell_cols, cell_rows);
-        guint8* data = pix->get_pixels();
-        for (int i = 0; i < cell_cols*cell_rows; ++i) {
-            data[i*4 + 0] = 0;
-            data[i*4 + 1] = 0;
-            data[i*4 + 2] = 0;
-            data[i*4 + 3] = 0;
-        }
-        blank_cells.push_back(new Gtk::Image(pix));
-    }
-
     // Create key
-    for (int col = 0; col < num_cols/2; ++col) {
-        auto image = key_images[col];
+    for (int col = 0; col < num_cols/2; ++col)
+        this->table->attach(
+            *key_images[col], col*2, col*2+1, 0, 1);
 
-        if (col == 0) {
-            this->grid->attach_next_to(
-                *image,
-                Gtk::PositionType::POS_RIGHT,
-                cell_cols, cell_rows);
-        } else {
-            this->grid->attach_next_to(
-                *image, *blank_cells[col - 1],
-                Gtk::PositionType::POS_RIGHT,
-                cell_cols, cell_rows);
-        }
-
-        if (col != (num_cols/2)-1)
-            this->grid->attach_next_to(
-                *blank_cells[col], *key_images[col],
-                Gtk::PositionType::POS_RIGHT,
-                cell_cols, cell_rows);
-    }
-
-    // Create spacing bar between key and prompts
-    auto pix = Gdk::Pixbuf::create(
+    // Spacer
+    auto spacer_pix = Gdk::Pixbuf::create(
             Gdk::Colorspace::COLORSPACE_RGB,
-            true, 8, spacer_cols, spacer_rows);
-    auto data = pix->get_pixels();
-    for (int i = 0; i < spacer_rows*spacer_cols; ++i) {
-        data[i*4 + 0] = 0;
-        data[i*4 + 1] = 0;
-        data[i*4 + 2] = 0;
-        data[i*4 + 3] = 0;
-    }
-    auto spacer_image = new Gtk::Image(pix);
-    this->grid->attach_next_to(
-        *spacer_image, *key_images[0],
-        Gtk::PositionType::POS_BOTTOM,
-        spacer_cols, spacer_rows);
+            true, 8, cell_cols, cell_rows);
+    auto spacer = new Gtk::Image(spacer_pix);
+    this->table->attach(*spacer, 0, num_cols, 1, 2);
 
     // Create prompt grid
-    for (int row = 0; row < num_rows; ++row) {
-        for (int col = 0; col < num_cols; ++col) {
-            auto image = prompt_images[row*num_cols + col];
-
-            if (row == 0 and col == 0) {
-                this->grid->attach_next_to(
-                    *image, *spacer_image,
-                    Gtk::PositionType::POS_BOTTOM,
-                    cell_cols, cell_rows);
-            } else if (col == 0) {
-                this->grid->attach_next_to(
-                    *image, *prompt_images[(row-1)*num_cols],
-                    Gtk::PositionType::POS_BOTTOM,
-                    cell_cols, cell_rows);
-            } else {
-                this->grid->attach_next_to(
-                    *image, *prompt_images[(row)*num_cols + col - 1],
-                    Gtk::PositionType::POS_RIGHT,
-                    cell_cols, cell_rows);
-            }
-        }
-    }
-    this->grid->show_all();
+    for (int row = 0; row < num_rows; ++row)
+        for (int col = 0; col < num_cols; ++col)
+            this->table->attach(
+                *prompt_images[row*num_cols + col],
+                col, col+1, row+2, row+3);
+    this->table->show_all();
 }
 
 DSSTWindow::~DSSTWindow() {
-    delete this->grid;
+    delete this->table;
 }
 
 void DSSTWindow::add_layer(LayerInfo* layer_info) {
@@ -192,7 +126,7 @@ void DSSTWindow::update() {
 }
 
 int DSSTWindow::get_input_rows() {
-    return cell_rows + spacing + spacer_rows + (num_rows * (cell_rows+spacing));
+    return (num_rows + 2) * (cell_rows + spacing) - spacing;
 }
 
 int DSSTWindow::get_input_columns() {
@@ -217,7 +151,7 @@ void DSSTWindow::update_input(Pointer<float> input_data) {
                     float(pix[4*(pix_row*cell_cols + pix_col)]) / 255.0;
     }
 
-    int prompt_offset = cell_rows + spacing + spacer_rows + spacing;
+    int prompt_offset = 2 * (cell_rows + spacing);
 
     // Copy over prompts
     for (int prompt_row = 0; prompt_row < num_rows; ++prompt_row) {

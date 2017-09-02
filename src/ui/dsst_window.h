@@ -40,7 +40,7 @@ class DSSTWindow : public GuiWindow {
         int curr_prompt;
 
         DSST* dsst;
-        Gtk::Grid *grid;
+        Gtk::Table *table;
 };
 
 #endif
