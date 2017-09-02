@@ -23,7 +23,7 @@ DSST::DSST() {
     this->dsst_window = new DSSTWindow(this);
     Frontend::set_window(this->dsst_window);
     input_data = Pointer<float>(dsst_window->get_input_size());
-    dsst_window->update_input(input_data);
+    dsst_window->update_input();
 }
 
 DSST::~DSST() {
@@ -90,7 +90,5 @@ int DSST::get_input_columns() {
 
 void DSST::input_symbol(int index) {
     dsst_window->input_symbol(index);
-    dsst_window->update_input(input_data);
     ui_dirty = true;
-    input_dirty = true;
 }

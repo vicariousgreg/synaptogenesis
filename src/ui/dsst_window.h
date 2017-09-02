@@ -19,8 +19,10 @@ class DSSTWindow : public GuiWindow {
         int get_input_columns();
         int get_input_size();
 
-        void update_input(Pointer<float> input_data);
+        void update_input();
         void input_symbol(int index);
+
+        virtual bool on_button_press_event(GdkEventButton* button_event);
 
     private:
         std::vector<Gtk::Image*> key_images;

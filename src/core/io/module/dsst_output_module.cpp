@@ -29,8 +29,8 @@ void DSSTOutputModule::report_output(Buffer *buffer, OutputType output_type) {
     } while (true);
     std::cout << "Index " << std::to_string(index) << " entered..." << std::endl;
     dsst->input_symbol(index);
-    */
 
     if (fRand() < 0.1)
         dsst->input_symbol(iRand(1,9));
+    */
 }

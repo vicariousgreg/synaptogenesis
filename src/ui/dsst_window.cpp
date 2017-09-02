@@ -137,7 +137,8 @@ int DSSTWindow::get_input_size() {
     return get_input_rows() * get_input_columns();
 }
 
-void DSSTWindow::update_input(Pointer<float> input_data) {
+void DSSTWindow::update_input() {
+    float* input = dsst->input_data;
     int input_cols = get_input_columns();
 
     // Copy over keys
@@ -147,7 +148,7 @@ void DSSTWindow::update_input(Pointer<float> input_data) {
 
         for (int pix_row = 0 ; pix_row < cell_rows ; ++pix_row)
             for (int pix_col = 0 ; pix_col < cell_cols ; ++pix_col)
-                input_data[pix_row*input_cols + col_offset + pix_col] =
+                input[pix_row*input_cols + col_offset + pix_col] =
                     float(pix[4*(pix_row*cell_cols + pix_col)]) / 255.0;
     }
 
@@ -162,10 +163,12 @@ void DSSTWindow::update_input(Pointer<float> input_data) {
 
             for (int pix_row = 0 ; pix_row < cell_rows ; ++pix_row)
                 for (int pix_col = 0 ; pix_col < cell_cols ; ++pix_col)
-                    input_data[(row_offset+pix_row)*input_cols + col_offset + pix_col] =
+                    input[(row_offset+pix_row)*input_cols + col_offset + pix_col] =
                         float(pix[4*(pix_row*cell_cols + pix_col)]) / 255.0;
         }
     }
+
+    dsst->input_dirty = true;
 }
 
 void DSSTWindow::add_digit(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
@@ -206,6 +209,7 @@ void DSSTWindow::input_symbol(int index) {
         add_symbol(index, prompt_pixbufs[curr_prompt]);
         prompt_responses.push_back(index);
         dirty[curr_prompt++] = true;
+        update_input();
     } else if (curr_prompt == prompt_pixbufs.size()) {
         ++curr_prompt;
         int correct = 0;
@@ -213,4 +217,17 @@ void DSSTWindow::input_symbol(int index) {
             correct += prompt_responses[i] == prompt_answers[i];
         printf("Correct: %d / %d\n", correct, prompt_responses.size());
     }
+}
+
+bool DSSTWindow::on_button_press_event(GdkEventButton* button_event) {
+    if (button_event->type == GDK_BUTTON_PRESS) {
+        int row = int(button_event->y) / cell_rows;
+        int col = int(button_event->x) / (cell_cols + spacing);
+
+        if (row == 0 and not (col % 2))
+            input_symbol(1 + (col / 2));
+
+        return true;
+    }
+    return false;
 }
