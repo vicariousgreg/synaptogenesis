@@ -15,6 +15,7 @@
 #include "util/tools.h"
 #include "clock.h"
 #include "maze_game.h"
+#include "dsst.h"
 
 #define IZHIKEVICH "izhikevich"
 #define HEBBIAN_RATE_ENCODING "hebbian_rate_encoding"
@@ -283,6 +284,7 @@ void simple_test() {
         state->save("simple.bin");
         delete state;
     }
+    delete model;
 }
 
 void single_field_test() {
@@ -558,6 +560,7 @@ void game_of_life_test() {
     //Clock clock(1.0f);
     print_model(model);
     delete clock.run(model, 500000, true);
+    delete model;
 }
 
 void working_memory_test() {
@@ -785,6 +788,34 @@ void working_memory_test() {
     //Clock clock(1.0f);
     print_model(model);
     delete clock.run(model, 500000, true, nullptr, false);
+    delete model;
+}
+
+void dsst_test() {
+    int rows = DSST::get_instance(true)->get_input_rows();
+    int cols = DSST::get_instance(true)->get_input_columns();
+
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = new Structure("dsst", PARALLEL);
+    model->add_structure(structure);
+
+    structure->add_layer(
+        (new LayerConfig("input_layer",
+            "relay", rows, cols))
+        ->set_property(IZ_INIT, "regular"));
+
+    structure->add_module("input_layer",
+        new ModuleConfig("dsst_input"));
+    structure->add_module("input_layer",
+        new ModuleConfig("visualizer_output"));
+
+    std::cout << "DSST test......\n";
+    print_model(model);
+    Clock clock(true);
+
+    delete clock.run(model, 1000000, true);
+    delete model;
 }
 
 
@@ -827,7 +858,8 @@ int main(int argc, char *argv[]) {
         //simple_test();
         //single_field_test();
         //game_of_life_test();
-        working_memory_test();
+        //working_memory_test();
+        dsst_test();
 
         return 0;
     } catch (std::runtime_error e) {
