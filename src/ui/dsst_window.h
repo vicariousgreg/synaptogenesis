@@ -20,6 +20,7 @@ class DSSTWindow : public GuiWindow {
         int get_input_size();
 
         void update_input(Pointer<float> input_data);
+        void input_symbol(int index);
 
     private:
         std::vector<Gtk::Image*> key_images;
@@ -30,9 +31,13 @@ class DSSTWindow : public GuiWindow {
         std::vector<Glib::RefPtr<Gdk::Pixbuf> > digit_pixbufs;
         std::vector<Glib::RefPtr<Gdk::Pixbuf> > symbol_pixbufs;
         std::vector<int> prompt_answers;
+        std::vector<int> prompt_responses;
+        std::vector<bool> dirty;
 
         void add_digit(int index, Glib::RefPtr<Gdk::Pixbuf> pix);
         void add_symbol(int index, Glib::RefPtr<Gdk::Pixbuf> pix);
+
+        int curr_prompt;
 
         DSST* dsst;
         Gtk::Grid *grid;

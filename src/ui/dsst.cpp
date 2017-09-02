@@ -59,6 +59,16 @@ bool DSST::add_input_layer(Layer *layer, std::string params) {
 }
 
 bool DSST::add_output_layer(Layer *layer, std::string params) {
+    // Check for duplicates
+    try {
+        auto info = layer_map.at(layer);
+        return false;
+    } catch (std::out_of_range) { }
+
+    LayerInfo* info = new LayerInfo(layer);
+    this->add_layer(layer, info);
+    info->set_output();
+    return true;
 }
 
 void DSST::update(Environment *environment) {
@@ -78,3 +88,9 @@ int DSST::get_input_columns() {
     return dsst_window->get_input_columns();
 }
 
+void DSST::input_symbol(int index) {
+    dsst_window->input_symbol(index);
+    dsst_window->update_input(input_data);
+    ui_dirty = true;
+    input_dirty = true;
+}

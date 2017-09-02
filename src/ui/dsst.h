@@ -29,6 +29,8 @@ class DSST : public Frontend {
         int get_input_rows();
         int get_input_columns();
 
+        void input_symbol(int index);
+
     private:
         friend class DSSTWindow;
 

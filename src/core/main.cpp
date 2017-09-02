@@ -805,8 +805,15 @@ void dsst_test() {
             "relay", rows, cols))
         ->set_property(IZ_INIT, "regular"));
 
+    structure->add_layer(
+        (new LayerConfig("output_layer",
+            "relay", 1, 1))
+        ->set_property(IZ_INIT, "regular"));
+
     structure->add_module("input_layer",
         new ModuleConfig("dsst_input"));
+    structure->add_module("output_layer",
+        new ModuleConfig("dsst_output"));
     structure->add_module("input_layer",
         new ModuleConfig("visualizer_output"));
 

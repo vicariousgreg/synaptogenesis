@@ -1,54 +1,35 @@
 #include "dsst_window.h"
 #include "dsst.h"
+#include "util/tools.h"
 
 static const int num_rows = 8;
 static const int num_cols = 18;
-static const int cell_cols = 8;
+static const int cell_cols = 32;
 static const int cell_rows = 1+2*cell_cols;
 static const int spacing = 1;
-static const int spacer_rows = cell_rows;
+static const int spacer_rows = 1;
 static const int spacer_cols = 1;
 
-void DSSTWindow::add_digit(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
-    auto digit_data = digit_pixbufs[index]->get_pixels();
-    auto box_data = pix->get_pixels();
-
-    int offset = cell_cols * (1+cell_cols);
-
-    for (int index = 0; index < cell_cols*cell_cols; ++index) {
-        box_data[4*(offset+index) + 0] = digit_data[4*index + 0];
-        box_data[4*(offset+index) + 1] = digit_data[4*index + 1];
-        box_data[4*(offset+index) + 2] = digit_data[4*index + 2];
-    }
-}
-
-void DSSTWindow::add_symbol(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
-    auto symbol_data = symbol_pixbufs[index]->get_pixels();
-    auto box_data = pix->get_pixels();
-
-    for (int index = 0; index < cell_cols*cell_cols; ++index) {
-        box_data[4*index + 0] = symbol_data[4*index + 0];
-        box_data[4*index + 1] = symbol_data[4*index + 1];
-        box_data[4*index + 2] = symbol_data[4*index + 2];
-    }
-}
-
-DSSTWindow::DSSTWindow(DSST* dsst) : dsst(dsst) {
+DSSTWindow::DSSTWindow(DSST* dsst) : dsst(dsst), curr_prompt(0) {
     grid = new Gtk::Grid();
-    grid->set_row_spacing(spacing);
     grid->set_row_homogeneous(false);
-    grid->set_column_spacing(spacing);
+    grid->set_row_spacing(spacing);
     grid->set_column_homogeneous(false);
+    grid->set_column_spacing(spacing);
     grid->override_background_color(Gdk::RGBA("DarkSlateGray"));
     this->add(*grid);
 
     // Load images
-    for (int i = 1 ; i < 10 ; ++i) {
-        auto pix = Gdk::Pixbuf::create_from_file(
-            "./resources/dsst/" + std::to_string(i)
-            + "_" + std::to_string(cell_cols) + ".png");
-        digit_pixbufs.push_back(pix);
-    }
+    for (int i = 1 ; i < 10 ; ++i)
+        digit_pixbufs.push_back(
+            Gdk::Pixbuf::create_from_file(
+                "./resources/dsst/" + std::to_string(i)
+                + "_" + std::to_string(cell_cols) + ".png"));
+    for (int i = 1 ; i < 10 ; ++i)
+        symbol_pixbufs.push_back(
+            Gdk::Pixbuf::create_from_file(
+                "./resources/dsst/sym" + std::to_string(i)
+                + "_" + std::to_string(cell_cols) + ".png"));
 
     // Create key boxes
     for (int col = 0; col < num_cols/2; ++col) {
@@ -74,7 +55,8 @@ DSSTWindow::DSSTWindow(DSST* dsst) : dsst(dsst) {
 
         this->key_pixbufs.push_back(pix);
         this->key_images.push_back(new Gtk::Image(pix));
-        add_digit(col, pix);
+        add_digit(col+1, pix);
+        add_symbol(col+1, pix);
     }
 
     // Create prompt boxes
@@ -101,6 +83,11 @@ DSSTWindow::DSSTWindow(DSST* dsst) : dsst(dsst) {
             }
             this->prompt_pixbufs.push_back(pix);
             this->prompt_images.push_back(new Gtk::Image(pix));
+
+            int index = iRand(1,9);
+            add_digit(index, pix);
+            prompt_answers.push_back(index);
+            dirty.push_back(false);
         }
     }
 }
@@ -197,6 +184,11 @@ void DSSTWindow::add_layer(LayerInfo* layer_info) {
 }
 
 void DSSTWindow::update() {
+    for (int i = 0; i < dirty.size(); ++i)
+        if (dirty[i]) {
+            prompt_images[i]->set(prompt_pixbufs[i]);
+            dirty[i] = false;
+        }
 }
 
 int DSSTWindow::get_input_rows() {
@@ -239,5 +231,52 @@ void DSSTWindow::update_input(Pointer<float> input_data) {
                     input_data[(row_offset+pix_row)*input_cols + col_offset + pix_col] =
                         float(pix[4*(pix_row*cell_cols + pix_col)]) / 255.0;
         }
+    }
+}
+
+void DSSTWindow::add_digit(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
+    if (index < 1 or index > 9)
+        ErrorManager::get_instance()->log_error(
+            "Attempted to add out of bounds digit to DSST!");
+
+    auto digit_data = digit_pixbufs[index-1]->get_pixels();
+    auto box_data = pix->get_pixels();
+    int pix_size = digit_pixbufs[index-1]->get_has_alpha() ? 4 : 3;
+
+    for (int index = 0; index < cell_cols*cell_cols; ++index) {
+        box_data[4*index + 0] = digit_data[pix_size*index + 0];
+        box_data[4*index + 1] = digit_data[pix_size*index + 1];
+        box_data[4*index + 2] = digit_data[pix_size*index + 2];
+    }
+}
+
+void DSSTWindow::add_symbol(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
+    if (index < 1 or index > 9)
+        ErrorManager::get_instance()->log_error(
+            "Attempted to add out of bounds symbol to DSST!");
+
+    auto symbol_data = symbol_pixbufs[index-1]->get_pixels();
+    auto box_data = pix->get_pixels();
+    int offset = cell_cols * (1+cell_cols);
+    int pix_size = symbol_pixbufs[index-1]->get_has_alpha() ? 4 : 3;
+
+    for (int index = 0; index < cell_cols*cell_cols; ++index) {
+        box_data[4*(offset+index) + 0] = symbol_data[pix_size*index + 0];
+        box_data[4*(offset+index) + 1] = symbol_data[pix_size*index + 1];
+        box_data[4*(offset+index) + 2] = symbol_data[pix_size*index + 2];
+    }
+}
+
+void DSSTWindow::input_symbol(int index) {
+    if (curr_prompt < prompt_pixbufs.size()) {
+        add_symbol(index, prompt_pixbufs[curr_prompt]);
+        prompt_responses.push_back(index);
+        dirty[curr_prompt++] = true;
+    } else if (curr_prompt == prompt_pixbufs.size()) {
+        ++curr_prompt;
+        int correct = 0;
+        for (int i = 0 ; i < prompt_responses.size() ; ++i)
+            correct += prompt_responses[i] == prompt_answers[i];
+        printf("Correct: %d / %d\n", correct, prompt_responses.size());
     }
 }
