@@ -39,7 +39,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
         case ONE_TO_ONE:
             if (from_layer->rows == to_layer->rows
                     and from_layer->columns == to_layer->columns)
-                this->num_weights = from_layer->size;
+                this->num_weights = to_layer->size;
             else
                 ErrorManager::get_instance()->log_error(
                     "Error in " + this->str() + ":\n"

@@ -75,7 +75,16 @@ DendriticNode* DendriticNode::add_child(Connection *conn) {
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Dendritic node cannot have children if it has a connection!");
 
-    // If this is not the first child, ensure sizes match
+    // Second order nodes don't support subset connections because they don't
+    //   specify weights for all destination neurons
+    // TODO: Add support for this at some point
+    if (is_second_order() and conn->type == SUBSET)
+        ErrorManager::get_instance()->log_error(
+            "Error in dendritic node of " + this->to_layer->str() + "\n"
+            "  Second order subset connections are not supported!");
+
+    // If adding a connection to a second order node that already has a child,
+    //   ensure the number of connections match
     if (is_second_order() and children.size() > 0
         and conn->get_num_weights() != children[0]->conn->get_num_weights())
         ErrorManager::get_instance()->log_error(

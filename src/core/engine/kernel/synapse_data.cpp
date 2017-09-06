@@ -34,7 +34,7 @@ SynapseData::SynapseData(DendriticNode *parent_node,
     else
         outputs = state->get_output(conn->from_layer,
             get_word_index(conn->delay, output_type));
-    inputs = state->get_input(conn->to_layer);
+    inputs = state->get_input(conn->to_layer, parent_node->register_index);
 
     if (second_order)
         second_order_inputs = state->get_second_order_input(parent_node);

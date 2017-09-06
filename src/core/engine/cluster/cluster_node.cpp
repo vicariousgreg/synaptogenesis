@@ -20,8 +20,6 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
           compute_stream(compute_stream),
           state(state),
           environment(environment) {
-    auto res_man = ResourceManager::get_instance();
-
     // Add input transfer instruction
     if (this->is_input)
         this->input_instruction =
@@ -95,8 +93,6 @@ ClusterNode::~ClusterNode() {
 }
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
-    auto res_man = ResourceManager::get_instance();
-
     // Second order connections need their own clear instruction
     if (curr->is_second_order())
         activate_instructions.push_back(

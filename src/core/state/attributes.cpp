@@ -118,8 +118,6 @@ Attributes::~Attributes() {
 }
 
 int Attributes::dendrite_DFS(DendriticNode *curr, int second_order_size) {
-    auto res_man = ResourceManager::get_instance();
-
     if (curr->is_second_order()) {
         second_order_indices[curr->id] = second_order_size;
         int size = curr->get_second_order_size();

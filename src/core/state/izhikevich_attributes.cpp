@@ -600,8 +600,8 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
             // Run simulation to stable point
             float v = params.c;
             float r = params.b * params.c;
-            float delta_v = 1.0;
-            float delta_r = 1.0;
+            float delta_v;
+            float delta_r;
             do {
                 delta_v = (0.04 * v * v) + (5*v) + 140 - r;
                 v += delta_v;
