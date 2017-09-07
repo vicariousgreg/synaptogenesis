@@ -31,8 +31,10 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
     switch (opcode) {
         case ADD:  return prior + input;
         case SUB:  return prior - input;
-        case MULT: return prior * (1+input);
-        case DIV:  return prior / (1+input);
+        // case MULT: return prior * (1+input);
+        // case DIV:  return prior / (1+input);
+        case MULT: return prior * input;
+        case DIV:  return prior / input;
         case POOL: return MAX(prior, (1+input));
         default: assert(false);
     }
@@ -643,7 +645,7 @@ CALC_ALL( \
 #define CALC_VAL_SECOND_ORDER \
     float val = extractor(outputs[from_index], delay) * weights[weight_index]; \
     second_order_inputs[weight_index] = \
-        calc(opcode, second_order_inputs[weight_index], val); \
+        calc(opcode, second_order_inputs[weight_index], val);
 
 #define ACTIVATE_ALL_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
 CALC_ALL(FUNC_NAME, \

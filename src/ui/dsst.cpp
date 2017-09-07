@@ -88,6 +88,22 @@ int DSST::get_input_columns() {
     return dsst_window->get_input_columns();
 }
 
+int DSST::get_input_size() {
+    return dsst_window->get_input_size();
+}
+
+int DSST::get_cell_rows() {
+    return dsst_window->get_cell_rows();
+}
+
+int DSST::get_cell_columns() {
+    return dsst_window->get_cell_columns();
+}
+
+int DSST::get_cell_size() {
+    return dsst_window->get_cell_size();
+}
+
 void DSST::input_symbol(int index) {
     dsst_window->input_symbol(index);
     ui_dirty = true;

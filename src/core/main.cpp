@@ -795,14 +795,30 @@ void dsst_test() {
     int rows = DSST::get_instance(true)->get_input_rows();
     int cols = DSST::get_instance(true)->get_input_columns();
 
+    int cell_rows = DSST::get_instance(true)->get_cell_rows();
+    int cell_cols = DSST::get_instance(true)->get_cell_columns();
+
+    int focus_rows = rows - cell_rows;
+    int focus_cols = cols - cell_cols;
+
     /* Construct the model */
     Model *model = new Model();
     Structure *structure = new Structure("dsst", PARALLEL);
     model->add_structure(structure);
 
     structure->add_layer(
-        (new LayerConfig("input_layer",
+        (new LayerConfig("vision",
             "relay", rows, cols))
+        ->set_property(IZ_INIT, "regular"));
+
+    structure->add_layer(
+        (new LayerConfig("what",
+            "relay", cell_rows, cell_cols))
+        ->set_property(IZ_INIT, "regular"));
+
+    structure->add_layer(
+        (new LayerConfig("focus",
+            "relay", focus_rows, focus_cols))
         ->set_property(IZ_INIT, "regular"));
 
     structure->add_layer(
@@ -810,12 +826,35 @@ void dsst_test() {
             "relay", 1, 1))
         ->set_property(IZ_INIT, "regular"));
 
-    structure->add_module("input_layer",
+    // Connect vision to what
+    auto node = structure->get_dendritic_root("what");
+    node->set_second_order();
+    structure->connect_layers("vision", "what",
+        (new ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            focus_rows,focus_cols,1,1,0,0)));
+    structure->connect_layers("focus", "what",
+        (new ConnectionConfig(false, 0, 1, CONVERGENT, MULT,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            focus_rows,focus_cols,0,0,0,0)));
+
+    structure->add_module("vision",
         new ModuleConfig("dsst_input"));
     structure->add_module("output_layer",
         new ModuleConfig("dsst_output"));
-    structure->add_module("input_layer",
+    structure->add_module("vision",
         new ModuleConfig("visualizer_output"));
+    structure->add_module("what",
+        new ModuleConfig("visualizer_output"));
+    structure->add_module("focus",
+        new ModuleConfig("visualizer_output"));
+    structure->add_module("focus",
+        (new ModuleConfig("one_hot_random_input"))
+            ->set_property("max", "1")
+            ->set_property("verbose", "false")
+            ->set_property("rate", "10"));
 
     std::cout << "DSST test......\n";
     print_model(model);

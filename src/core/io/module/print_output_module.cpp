@@ -12,15 +12,12 @@ REGISTER_MODULE(PrintOutputModule, "print_output", OUTPUT);
 PrintOutputModule::PrintOutputModule(Layer *layer, ModuleConfig *config)
         : Module(layer),
           counter(0) {
-    std::stringstream stream(config->get_property("params"));
-    if (!stream.eof()) {
-        stream >> this->history_length;
-        if (this->history_length <= 0 or this->history_length > 8 * sizeof(Output))
-            ErrorManager::get_instance()->log_error(
-                "Bad history length parameter for PrintOutputModule!");
-    } else {
-        this->history_length= 1;
-    }
+    this->history_length = std::stoi(config->get_property("history_length", "1"));
+
+    if (this->history_length <= 0 or this->history_length > 8 * sizeof(Output))
+        ErrorManager::get_instance()->log_error(
+            "Bad history length parameter for PrintOutputModule!");
+
     this->maximum = (1 << this->history_length) - 1;
     this->shift = (8 * sizeof(int)) - this->history_length;
 }

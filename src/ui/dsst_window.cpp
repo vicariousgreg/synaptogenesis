@@ -4,7 +4,7 @@
 
 static const int num_rows = 8;
 static const int num_cols = 18;
-static const int cell_cols = 32;
+static const int cell_cols = 8;
 static const int cell_rows = 1+2*cell_cols;
 static const int spacing = cell_cols/4;
 
@@ -98,6 +98,13 @@ void DSSTWindow::init() {
     auto spacer_pix = Gdk::Pixbuf::create(
             Gdk::Colorspace::COLORSPACE_RGB,
             true, 8, cell_cols, cell_rows);
+    guint8* data = spacer_pix->get_pixels();
+    for (int i = 0; i < cell_cols*cell_rows; ++i) {
+        data[i*4 + 0] = 0;
+        data[i*4 + 1] = 0;
+        data[i*4 + 2] = 0;
+        data[i*4 + 3] = 255;
+    }
     auto spacer = new Gtk::Image(spacer_pix);
     this->table->attach(*spacer, 0, num_cols, 1, 2);
 
@@ -135,6 +142,18 @@ int DSSTWindow::get_input_columns() {
 
 int DSSTWindow::get_input_size() {
     return get_input_rows() * get_input_columns();
+}
+
+int DSSTWindow::get_cell_rows() {
+    return cell_rows;
+}
+
+int DSSTWindow::get_cell_columns() {
+    return cell_cols;
+}
+
+int DSSTWindow::get_cell_size() {
+    return get_cell_rows() * get_cell_columns();
 }
 
 void DSSTWindow::update_input() {

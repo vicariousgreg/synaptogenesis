@@ -19,6 +19,10 @@ class DSSTWindow : public GuiWindow {
         int get_input_columns();
         int get_input_size();
 
+        int get_cell_rows();
+        int get_cell_columns();
+        int get_cell_size();
+
         void update_input();
         void input_symbol(int index);
 
