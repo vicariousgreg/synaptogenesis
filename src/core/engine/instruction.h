@@ -211,6 +211,13 @@ class SynapseActivateInstruction : public SynapseInstruction {
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
                   activator(state->get_activator(conn)) {
+            // Convolutional activate instructions iterate over weights
+            // This is because of special conditions (see connection.cpp)
+            if (conn->second_order_slave and conn->type == CONVOLUTIONAL) {
+                int num_weights = connection->get_num_weights();
+                this->threads = calc_threads(num_weights);
+                this->blocks = calc_blocks(num_weights);
+            }
         }
 
         void activate() {
@@ -232,6 +239,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
                   updater(state->get_updater(conn)) {
+            // Convolutional update instructions iterate over weights
             if (conn->type == CONVOLUTIONAL) {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
