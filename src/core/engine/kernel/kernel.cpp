@@ -137,43 +137,6 @@ Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal() {
         calc_internal_SERIAL, calc_internal_PARALLEL);
 }
 
-/* Dendritic tree second order internal computation */
-void calc_internal_second_order_SERIAL(int from_size, int to_size,
-        Pointer<float> src_ptr, Pointer<float> dst_ptr) {
-    float* src = src_ptr.get();
-    float* dst = dst_ptr.get();
-
-    for (int to_index = 0 ; to_index < to_size ; ++to_index) {
-        float sum = 0.0;
-        for (int from_index = 0 ; from_index < from_size ; ++from_index)
-            sum += src[to_index * from_size + from_index];
-        dst[to_index] = sum;
-    }
-}
-#ifdef __CUDACC__
-GLOBAL void calc_internal_second_order_PARALLEL(int from_size, int to_size,
-        Pointer<float> src_ptr, Pointer<float> dst_ptr) {
-    float* src = src_ptr.get();
-    float* dst = dst_ptr.get();
-    int to_index = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (to_index < to_size) {
-        float sum = 0.0;
-        for (int from_index = 0 ; from_index < from_size ; ++from_index)
-            sum += src[from_index * to_size + to_index];
-        dst[to_index] = sum;
-    }
-}
-#else
-GLOBAL void calc_internal_second_order_PARALLEL(int from_size, int to_size,
-        Pointer<float> src_ptr, Pointer<float> dst_ptr) { }
-#endif
-Kernel<int, int, Pointer<float>, Pointer<float> >
-get_calc_internal_second_order() {
-    return Kernel<int, int, Pointer<float>, Pointer<float> >(
-        calc_internal_second_order_SERIAL, calc_internal_second_order_PARALLEL);
-}
-
 /******************************************************************************/
 /********************** CONNECTION ACTIVATOR KERNELS **************************/
 /******************************************************************************/
@@ -184,28 +147,30 @@ ACTIVATE_ALL(activate_base , , );
 /* Second order */
 ACTIVATE_ALL_SECOND_ORDER(activate_base_second_order , , );
 
-Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
-        Connection *conn, DendriticNode *node) {
+Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn) {
     switch (conn->type) {
         case FULLY_CONNECTED:
-            return (node->is_second_order())
+            return (conn->second_order_slave)
                 ? get_activate_base_second_order_fully_connected()
                 : get_activate_base_fully_connected();
         case SUBSET:
-            return (node->is_second_order())
+            return (conn->second_order_slave)
                 ? get_activate_base_second_order_subset()
                 : get_activate_base_subset();
         case ONE_TO_ONE:
-            return (node->is_second_order())
+            return (conn->second_order_slave)
                 ? get_activate_base_second_order_one_to_one()
                 : get_activate_base_one_to_one();
         case CONVERGENT:
-        case CONVOLUTIONAL:
-            return (node->is_second_order())
+            return (conn->second_order_slave)
                 ? get_activate_base_second_order_convergent()
                 : get_activate_base_convergent();
+        case CONVOLUTIONAL:
+            return (conn->second_order_slave)
+                ? get_activate_base_second_order_convolutional()
+                : get_activate_base_convergent();
         case DIVERGENT:
-            return (node->is_second_order())
+            return (conn->second_order_slave)
                 ? get_activate_base_second_order_divergent()
                 : get_activate_base_divergent();
         default:

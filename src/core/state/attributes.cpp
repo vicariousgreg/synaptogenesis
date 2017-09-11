@@ -98,7 +98,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
     this->expected = Pointer<Output>(expected_size);
-    this->second_order_input = Pointer<float>(second_order_size, 0.0);
+    this->second_order_weights = Pointer<float>(second_order_size, 0.0);
     this->total_neurons = other_size;
     this->total_layers = layers.size();;
 }
@@ -107,7 +107,7 @@ Attributes::~Attributes() {
     this->input.free();
     this->output.free();
     this->expected.free();
-    this->second_order_input.free();
+    this->second_order_weights.free();
     for (auto pair : neuron_variables) pair.second->free();
     for (auto pair : connection_variables) pair.second->free();
     for (auto pair : layer_variables) pair.second->free();
@@ -159,7 +159,7 @@ void Attributes::transfer_to_device() {
 
 std::vector<BasePointer*> Attributes::get_pointers() {
     std::vector<BasePointer*> pointers = {
-        &input, &output, &expected, &second_order_input
+        &input, &output, &expected, &second_order_weights
     };
     for (auto pair : neuron_variables) pointers.push_back(pair.second);
     for (auto pair : connection_variables) pointers.push_back(pair.second);
@@ -224,9 +224,9 @@ Pointer<float> Attributes::get_input(size_t id, int register_index) const {
     return input.slice(input_start_indices.at(id) + (register_index * size), size);
 }
 
-Pointer<float> Attributes::get_second_order_input(size_t id) const {
+Pointer<float> Attributes::get_second_order_weights(size_t id) const {
     int size = second_order_sizes.at(id);
-    return second_order_input.slice(second_order_indices.at(id), size);
+    return second_order_weights.slice(second_order_indices.at(id), size);
 }
 
 Pointer<Output> Attributes::get_expected(size_t id) const {

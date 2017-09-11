@@ -373,9 +373,12 @@ CALC_ALL(activate_iz_modulate,
     AGGREGATE_SHORT
 );
 
-Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(
-        Connection *conn, DendriticNode *node) {
-    if (node->is_second_order())
+Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
+    // These are not supported because of the change of weight matrix pointer
+    // Second order host connections require their weight matrices to be copied
+    // Currently, this only copies the first matrix in the stack, and this
+    //   attribute set uses auxiliary data
+    if (conn->second_order)
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
@@ -486,9 +489,8 @@ CALC_ALL(update_iz_add,
     UPDATE_WEIGHT,
 ; );
 
-Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(
-        Connection *conn, DendriticNode *node) {
-    if (node->is_second_order())
+Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
+    if (conn->second_order)
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 

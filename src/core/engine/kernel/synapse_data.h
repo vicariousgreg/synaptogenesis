@@ -28,10 +28,10 @@ class SynapseData {
         const SubsetConfig subset_config;
         const ArborizedConfig arborized_config;
         int delay;
-        bool second_order;
 
         /* Weight attributes */
         Pointer<float> weights;
+        Pointer<float> second_order_weights;
         int num_weights;
         bool plastic;
         float max_weight;
@@ -47,7 +47,6 @@ class SynapseData {
         Pointer<Output> outputs;
         Pointer<Output> destination_outputs;
         Pointer<float> inputs;
-        Pointer<float> second_order_inputs;
 };
 
 /* Typedef for kernel functions, which just take SynapseData */

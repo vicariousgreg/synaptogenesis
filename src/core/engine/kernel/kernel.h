@@ -56,7 +56,6 @@ Kernel<int, int, Pointer<float>, Pointer<float> >
 get_calc_internal_second_order();
 
 /* Base activator kernel */
-Kernel<SYNAPSE_ARGS> get_base_activator_kernel(
-    Connection *conn, DendriticNode *node);
+Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn);
 
 #endif

@@ -93,10 +93,11 @@ ClusterNode::~ClusterNode() {
 }
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
-    // Second order connections need their own clear instruction
+    // Second order connections need a transfer to copy the host weights
     if (curr->is_second_order())
         activate_instructions.push_back(
-            new ClearInstruction(curr, state, compute_stream));
+            new SecondOrderWeightTransferInstruction(
+                curr, state, compute_stream));
 
     for (auto& child : curr->get_children()) {
         // Create an instruction
@@ -120,19 +121,43 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         } else {
             this->dendrite_DFS(child);
 
+            // If the registers do not match, add a transfer instruction
             // Second order connections won't reach here
             //   because they can't have internal children
-            activate_instructions.push_back(
-                new DendriticInstruction(
-                    curr, child, state, compute_stream));
+            if (curr->register_index != child->register_index)
+                activate_instructions.push_back(
+                    new DendriticInstruction(
+                        curr, child, state, compute_stream));
         }
     }
 
-    // Add second order aggregator if applicable
-    if (curr->is_second_order())
-        activate_instructions.push_back(
-            new SecondOrderDendriticInstruction(
-                curr, state, compute_stream));
+    // Add second order host connection if applicable
+    // The host connection is deferred to the end because other non-host
+    //   connections operate on a copy of its weight matrix
+    // The host connection will use this copy during its synaptic
+    //   computations (see synapse_data.cpp)
+    if (curr->is_second_order()) {
+        Connection *conn = curr->get_second_order_connection();
+
+        if (conn == nullptr)
+            ErrorManager::get_instance()->log_error(
+                "Error building cluster node for " + curr->to_layer->str() + ":\n"
+                "  Missing host connection for second order node!");
+
+        Instruction* syn_inst = new SynapseActivateInstruction(
+            curr, conn, state, compute_stream);
+
+        // Create the instruction and add it to the synapse instuction list
+        synapse_instructions[conn] = syn_inst;
+        activate_instructions.push_back(syn_inst);
+
+        // If plastic, create update instruction
+        if (conn->plastic) {
+            auto syn_update_inst = new SynapseUpdateInstruction(
+                curr, conn, state, compute_stream);
+            update_instructions.push_back(syn_update_inst);
+        }
+    }
 }
 
 void ClusterNode::activate_input() {

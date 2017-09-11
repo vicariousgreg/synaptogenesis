@@ -306,9 +306,9 @@ Pointer<float> State::get_input(Layer *layer, int register_index) const {
         ->get_input(layer->id, register_index);
 }
 
-Pointer<float> State::get_second_order_input(DendriticNode *node) const {
+Pointer<float> State::get_second_order_weights(DendriticNode *node) const {
     return attributes[layer_devices.at(node->to_layer)]
-        .at(node->to_layer->neural_model)->get_second_order_input(node->id);
+        .at(node->to_layer->neural_model)->get_second_order_weights(node->id);
 }
 
 Pointer<Output> State::get_expected(Layer *layer) const {
@@ -381,18 +381,16 @@ EXTRACTOR State::get_extractor(Connection *conn) const {
                      .at(conn->from_layer->neural_model)->extractor;
 }
 
-Kernel<SYNAPSE_ARGS> State::get_activator(
-        Connection *conn, DendriticNode *node) const {
+Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
     return attributes[layer_devices.at(conn->to_layer)]
                      .at(conn->to_layer->neural_model)
-                     ->get_activator(conn, node);
+                     ->get_activator(conn);
 }
 
-Kernel<SYNAPSE_ARGS> State::get_updater(
-        Connection *conn, DendriticNode *node) const {
+Kernel<SYNAPSE_ARGS> State::get_updater(Connection *conn) const {
     return attributes[layer_devices.at(conn->to_layer)]
                      .at(conn->to_layer->neural_model)
-                     ->get_updater(conn, node);
+                     ->get_updater(conn);
 }
 
 Pointer<Output> State::get_device_output_buffer(

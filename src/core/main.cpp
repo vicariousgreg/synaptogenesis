@@ -830,12 +830,12 @@ void dsst_test() {
     auto node = structure->get_dendritic_root("what");
     node->set_second_order();
     structure->connect_layers("vision", "what",
-        (new ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
+        (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
         ->set_arborized_config(new ArborizedConfig(
             focus_rows,focus_cols,1,1,0,0)));
     structure->connect_layers("focus", "what",
-        (new ConnectionConfig(false, 0, 1, CONVERGENT, MULT,
+        (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, MULT,
             new FlatWeightConfig(1.0)))
         ->set_arborized_config(new ArborizedConfig(
             focus_rows,focus_cols,0,0,0,0)));

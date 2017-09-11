@@ -58,7 +58,6 @@ void WeightConfig::surround_config(float* target_matrix,
     switch (conn->type) {
         case CONVERGENT:
         case CONVOLUTIONAL:
-        case DIVERGENT:
             break;
         default:
             ErrorManager::get_instance()->log_error(
@@ -97,12 +96,10 @@ void WeightConfig::surround_config(float* target_matrix,
     int row_offset = (row_field_size - rows) / 2;
     int col_offset = (col_field_size - cols) / 2;
 
-    // Divergent connections are unique in that there is a kernel per source
-    //   neuron.  All other connection types organize based on the
-    //   destination layer.  Convolutional connections have only one kernel.
+    // Convoltuional connections are unique in that there is only one kernel.
+    //   All other connection types organize based on the
     int size;
     switch (conn->type) {
-        case DIVERGENT: size = conn->from_layer->size; break;
         case CONVERGENT: size = conn->to_layer->size; break;
         case CONVOLUTIONAL: size = 1; break;
     }

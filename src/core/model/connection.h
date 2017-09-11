@@ -8,6 +8,7 @@
 #include "util/constants.h"
 
 class Layer;
+class DendriticNode;
 
 /* Represents a connection between two neural layers.
  * Connections bridge Layers and are constructed in the Model class.
@@ -32,6 +33,11 @@ class Connection {
         // Convolutional boolean (extracted from type)
         const bool convolutional;
 
+        // Second order flag
+        const bool second_order;
+        const bool second_order_host;
+        const bool second_order_slave;
+
         // Connected layers
         Layer* const from_layer;
         Layer* const to_layer;
@@ -53,7 +59,8 @@ class Connection {
     private:
         friend class Structure;
 
-        Connection(Layer *from_layer, Layer *to_layer, ConnectionConfig *config);
+        Connection(Layer *from_layer, Layer *to_layer,
+            ConnectionConfig *config, DendriticNode *node);
 
         // Number of weights in connection
         int num_weights;

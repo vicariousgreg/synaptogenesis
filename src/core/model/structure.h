@@ -60,22 +60,26 @@ class Structure {
         static Connection* connect(
             Structure *from_structure, std::string from_layer_name,
             Structure *to_structure, std::string to_layer_name,
-            ConnectionConfig *config);
+            ConnectionConfig *config,
+            DendriticNode* node=nullptr);
 
         Connection* connect_layers(
             std::string from_layer_name,
             std::string to_layer_name,
-            ConnectionConfig *config);
+            ConnectionConfig *config,
+            DendriticNode* node=nullptr);
 
         Connection* connect_layers_expected(
             std::string from_layer_name,
             LayerConfig *layer_config,
-            ConnectionConfig *conn_config);
+            ConnectionConfig *conn_config,
+            DendriticNode* node=nullptr);
 
         Connection* connect_layers_matching(
             std::string from_layer_name,
             LayerConfig *layer_config,
-            ConnectionConfig *conn_config);
+            ConnectionConfig *conn_config,
+            DendriticNode* node=nullptr);
 
         /*****************************/
         /********* DENDRITES *********/
@@ -99,7 +103,8 @@ class Structure {
         /* Internal layer connection functions */
         Connection* connect_layers(
                 Layer *from_layer, Layer *to_layer,
-                ConnectionConfig *config);
+                ConnectionConfig *config,
+                DendriticNode* node=nullptr);
 
         /* Find a layer
          * If not found, logs an error or returns nullptr */

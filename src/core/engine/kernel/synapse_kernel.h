@@ -211,7 +211,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     EXTRACTIONS; \
  \
     for (int weight_index=0, from_index=0, to_index=0 ; \
-         weight_index < to_size ; \
+         weight_index < from_size ; \
          ++weight_index, ++to_index, ++from_index) { \
         NEURON_PRE; \
         WEIGHT_OP; \
@@ -225,7 +225,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     EXTRACTIONS; \
  \
     int weight_index = blockIdx.x * blockDim.x + threadIdx.x; \
-    if (weight_index < to_size) { \
+    if (weight_index < from_size) { \
         int from_index = weight_index; \
         int to_index = weight_index; \
         NEURON_PRE; \
@@ -640,12 +640,12 @@ CALC_ALL( \
 /******************************************************************************/
 
 #define EXTRACT_SECOND_ORDER \
-    float * const second_order_inputs = synapse_data.second_order_inputs.get(); \
+    float * const second_order_weights = synapse_data.second_order_weights.get(); \
 
 #define CALC_VAL_SECOND_ORDER \
     float val = extractor(outputs[from_index], delay) * weights[weight_index]; \
-    second_order_inputs[weight_index] = \
-        calc(opcode, second_order_inputs[weight_index], val);
+    second_order_weights[weight_index] = \
+        calc(opcode, second_order_weights[weight_index], val);
 
 #define ACTIVATE_ALL_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
 CALC_ALL(FUNC_NAME, \
@@ -662,6 +662,21 @@ CALC_ALL(FUNC_NAME, \
     UPDATE_CALC;, \
  \
     /* NEURON_POST */ \
-)
+) \
+CALC_ONE_TO_ONE(FUNC_NAME##_convolutional, \
+    /* EXTRACTIONS */ \
+    EXTRACT_SECOND_ORDER; \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE */ \
+    , \
+ \
+    /* WEIGHT_OP
+     * Calculate weight input, aggregate to second order buffer */ \
+    CALC_VAL_SECOND_ORDER; \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST */ \
+); \
 
 #endif

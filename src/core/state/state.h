@@ -37,7 +37,7 @@ class State {
         int get_layer_index(Layer *layer) const;
         int get_other_start_index(Layer *layer) const;
         Pointer<float> get_input(Layer *layer, int register_index = 0) const;
-        Pointer<float> get_second_order_input(DendriticNode *node) const;
+        Pointer<float> get_second_order_weights(DendriticNode *node) const;
         Pointer<Output> get_expected(Layer *layer) const;
         Pointer<Output> get_output(Layer *layer, int word_index = 0) const;
         Pointer<float> get_buffer_input(Layer *layer) const;
@@ -52,10 +52,8 @@ class State {
         int get_connection_index(Connection *conn) const;
         Pointer<float> get_matrix(Connection *conn) const;
         EXTRACTOR get_extractor(Connection *conn) const;
-        Kernel<SYNAPSE_ARGS> get_activator(
-            Connection *conn, DendriticNode *node) const;
-        Kernel<SYNAPSE_ARGS> get_updater(
-            Connection *conn, DendriticNode *node) const;
+        Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) const;
+        Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) const;
         Pointer<Output> get_device_output_buffer(
             Connection *conn, int word_index) const;
         bool is_inter_device(Connection *conn) const;

@@ -45,6 +45,9 @@ class DendriticNode {
         /* Returns the size of the second order input buffer */
         int get_second_order_size() const;
 
+        /* Returns the host connection for second order nodes */
+        Connection* get_second_order_connection() const;
+
         /* Add a child internal node */
         DendriticNode *add_child();
 
@@ -52,7 +55,8 @@ class DendriticNode {
         DendriticNode *add_child(Connection *conn);
 
         /* Returns whether this node is a leaf node */
-        bool is_leaf() const { return conn != nullptr; }
+        bool is_leaf() const
+            { return not is_second_order() and conn != nullptr; }
 
         /* Constant getters */
         int get_max_register_index() const;
@@ -67,6 +71,7 @@ class DendriticNode {
         // Global counter for ID assignment
         static int count;
 
+        Connection* second_order_conn;
         DendriticNodeList children;
         bool second_order;
 };

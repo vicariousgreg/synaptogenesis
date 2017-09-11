@@ -14,7 +14,6 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         subset_config(conn->get_config()->copy_subset_config()),
         arborized_config(conn->get_config()->copy_arborized_config()),
         delay(conn->delay),
-        second_order(parent_node->is_second_order()),
         from_size(conn->from_layer->size),
         from_rows(conn->from_layer->rows),
         from_columns(conn->from_layer->columns),
@@ -36,6 +35,13 @@ SynapseData::SynapseData(DendriticNode *parent_node,
             get_word_index(conn->delay, output_type));
     inputs = state->get_input(conn->to_layer, parent_node->register_index);
 
-    if (second_order)
-        second_order_inputs = state->get_second_order_input(parent_node);
+    // Second order non-host connections operate on copies of the
+    //   host connection's weight matrix
+    if (conn->second_order)
+        second_order_weights = state->get_second_order_weights(parent_node);
+
+    // The second order host uses the operated upon copy as its source matrix
+    // TODO: Figure out a better way to deal with this for stacked matrices
+    if (conn->second_order_host)
+        weights = second_order_weights;
 }

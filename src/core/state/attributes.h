@@ -46,14 +46,12 @@ class Attributes {
 
         /* Learning Rule functions */
         // Activator Kernel
-        virtual Kernel<SYNAPSE_ARGS> get_activator(
-                Connection *conn, DendriticNode *node) {
-            return get_base_activator_kernel(conn, node);
+        virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) {
+            return get_base_activator_kernel(conn);
         }
 
         // Updater Kernel
-        virtual Kernel<SYNAPSE_ARGS> get_updater(
-            Connection *conn, DendriticNode *node) {
+        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) {
             return Kernel<SYNAPSE_ARGS> ();
         }
 
@@ -67,7 +65,7 @@ class Attributes {
         int get_layer_index(size_t id) const;
         int get_other_start_index(size_t id) const;
         Pointer<float> get_input(size_t id, int register_index = 0) const;
-        Pointer<float> get_second_order_input(size_t id) const;
+        Pointer<float> get_second_order_weights(size_t id) const;
         Pointer<Output> get_output(size_t id, int word_index = 0) const;
         Pointer<Output> get_expected(size_t id) const;
 
@@ -80,7 +78,7 @@ class Attributes {
         Pointer<Output> output;
         Pointer<Output> expected;
         Pointer<float> input;
-        Pointer<float> second_order_input;
+        Pointer<float> second_order_weights;
 
         // Pointer to this object
         // If parallel, this will point to the device copy

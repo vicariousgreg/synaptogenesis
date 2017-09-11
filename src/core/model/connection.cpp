@@ -1,10 +1,11 @@
 #include "model/connection.h"
 #include "model/layer.h"
+#include "model/dendritic_node.h"
 #include "model/structure.h"
 #include "util/error_manager.h"
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,
-        ConnectionConfig *config) :
+        ConnectionConfig *config, DendriticNode* node) :
             id(std::hash<std::string>()(
                 from_layer->structure->name + "/" + from_layer->name + "-" +
                 to_layer->structure->name + "/" + to_layer->name)),
@@ -16,7 +17,17 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             max_weight(config->max_weight),
             opcode(config->opcode),
             type(config->type),
-            convolutional(type == CONVOLUTIONAL) {
+            convolutional(type == CONVOLUTIONAL),
+            second_order(node->is_second_order()),
+            second_order_host(second_order and
+                node->get_second_order_connection() == nullptr),
+            second_order_slave(second_order and not second_order_host) {
+    // Check for plastic second order connection
+    if (second_order and plastic)
+        ErrorManager::get_instance()->log_error(
+            "Error in " + this->str() + ":\n"
+            "  Plastic second order connections are not supported!");
+
     switch (type) {
         case FULLY_CONNECTED: {
             this->num_weights = from_layer->size * to_layer->size;
@@ -90,9 +101,37 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             }
     }
 
+    // If this is a non-host second order connection, match it to the weights
+    //   of the host, not the size of the to_layer
+    if (second_order_slave) {
+        auto second_order_conn = node->get_second_order_connection();
+        if (this->type != second_order_conn->type or
+            this->num_weights != second_order_conn->get_num_weights())
+            ErrorManager::get_instance()->log_error(
+                "Error in " + this->str() + ":\n"
+                "  Second order connection does not match host connection!");
+
+        // Special case: Convolutional second order connections
+        // Because these connections operate on the weights of the host
+        //   connection, they are handled differently from first order
+        //   convolutional connections.
+        // Ensure that each convolution uses the same source set, since these
+        //   connections are computed like one-to-one connections.
+        auto arborized_config = config->get_arborized_config();
+        if (this->type == CONVOLUTIONAL and
+            (arborized_config->get_total_field_size() != from_layer->size
+                or arborized_config->row_stride != 0
+                or arborized_config->column_stride != 0))
+            ErrorManager::get_instance()->log_error(
+                "Error in " + this->str() + ":\n"
+                "  Second order convolutional connections must have fields"
+                " that are the size of the input layer, and must have 0 stride!");
+    }
+
     // Assuming all went well, connect the layers
     from_layer->add_output_connection(this);
     to_layer->add_input_connection(this);
+    node->add_child(this);
 }
 
 Connection::~Connection() {

@@ -110,7 +110,7 @@ class InitializeInstruction : public Instruction {
         InitializeInstruction(DendriticNode *second_order_node,
             State *state, Stream *stream)
                 : Instruction(second_order_node->to_layer, stream),
-                  dst(state->get_second_order_input(second_order_node)),
+                  dst(state->get_second_order_weights(second_order_node)),
                   size(second_order_node->get_second_order_size()) { }
 
     protected:
@@ -124,11 +124,6 @@ class ClearInstruction : public InitializeInstruction {
         // Clear layer buffers
         ClearInstruction(Layer *layer, State *state, Stream *stream)
                 : InitializeInstruction(layer, state, stream) { }
-
-        // Clear second order buffers
-        ClearInstruction(DendriticNode *second_order_node,
-            State *state, Stream *stream)
-                : InitializeInstruction(second_order_node, state, stream) { }
 
         void activate() {
             wait_for_dependencies();
@@ -215,7 +210,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
         SynapseActivateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
-                  activator(state->get_activator(conn, parent_node)) {
+                  activator(state->get_activator(conn)) {
         }
 
         void activate() {
@@ -236,8 +231,8 @@ class SynapseUpdateInstruction : public SynapseInstruction {
         SynapseUpdateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream),
-                  updater(state->get_updater(conn, parent_node)) {
-            if (conn->convolutional) {
+                  updater(state->get_updater(conn)) {
+            if (conn->type == CONVOLUTIONAL) {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
                 this->blocks = calc_blocks(num_weights);
@@ -249,6 +244,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
                 blocks, threads,
                 synapse_data);
         }
+
     protected:
         Kernel<SYNAPSE_ARGS> updater;
 };
@@ -274,29 +270,6 @@ class DendriticInstruction : public Instruction {
     protected:
         Pointer<float> src, dst;
         bool init;
-};
-
-/* Computes second order dendritic node connection */
-class SecondOrderDendriticInstruction : public Instruction {
-    public:
-        SecondOrderDendriticInstruction(DendriticNode *parent,
-            State *state, Stream *stream)
-                : Instruction(parent->to_layer, stream),
-                  from_size(parent->get_second_order_size() / to_layer->size),
-                  src(state->get_second_order_input(parent)),
-                  dst(state->get_input(to_layer, parent->register_index)) { }
-
-        void activate() {
-            Instruction::wait_for_dependencies();
-            get_calc_internal_second_order().run(
-                stream, blocks, threads,
-                from_size, to_layer->size, src, dst);
-            Instruction::record_event();
-        }
-
-    protected:
-        Pointer<float> src, dst;
-        int from_size;
 };
 
 /* Transfers data */
@@ -349,6 +322,18 @@ class BufferedTransferInstruction : public Instruction {
         Pointer<T> src, inter, dst;
         Buffer* buffer;
         bool check_dirty;
+};
+
+/* Transfers weights intradevice for second order connections */
+class SecondOrderWeightTransferInstruction : public TransferInstruction<float> {
+    public:
+        SecondOrderWeightTransferInstruction(DendriticNode *node,
+            State *state, Stream *stream)
+                : TransferInstruction(
+                      node->get_second_order_connection()->to_layer,
+                      stream,
+                      state->get_matrix(node->get_second_order_connection()),
+                      state->get_second_order_weights(node)) { }
 };
 
 /* Transfers input data */

@@ -8,8 +8,7 @@ class LeakyIzhikevichAttributes : public IzhikevichAttributes {
         LeakyIzhikevichAttributes(LayerList &layers)
             : IzhikevichAttributes(layers) { }
 
-        virtual Kernel<SYNAPSE_ARGS> get_updater(
-            Connection *conn, DendriticNode *node);
+        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
 
     ATTRIBUTE_MEMBERS
 };

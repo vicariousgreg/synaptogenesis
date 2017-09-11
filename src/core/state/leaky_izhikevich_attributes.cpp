@@ -85,9 +85,8 @@ CALC_ALL(update_liz_add,
     UPDATE_WEIGHT,
 ; );
 
-Kernel<SYNAPSE_ARGS> LeakyIzhikevichAttributes::get_updater(
-        Connection *conn, DendriticNode *node) {
-    if (node->is_second_order())
+Kernel<SYNAPSE_ARGS> LeakyIzhikevichAttributes::get_updater(Connection *conn) {
+    if (conn->second_order)
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
