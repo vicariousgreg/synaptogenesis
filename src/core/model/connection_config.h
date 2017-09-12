@@ -69,7 +69,7 @@ class ConnectionConfig : public PropertyConfig {
             float max_weight,
             ConnectionType type,
             Opcode opcode,
-            WeightConfig* weight_config);
+            WeightConfig* weight_config=nullptr);
 
         virtual ~ConnectionConfig();
 

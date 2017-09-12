@@ -10,36 +10,48 @@ REGISTER_ATTRIBUTES(HebbianRateEncodingAttributes, "hebbian_rate_encoding")
 
 #define LEARNING_RATE 0.1
 
-#define EXTRACT_OUT \
+#define EXTRACT_DEST_OUT \
     float dest_out = extractor(destination_outputs[to_index], 0);
 
-#define UPDATE_WEIGHT \
+#define EXTRACT_SOURCE_OUT \
     float source_out = extractor(outputs[from_index], delay); \
+
+#define UPDATE_WEIGHT \
+    EXTRACT_SOURCE_OUT \
     float old_weight = weights[weight_index]; \
     weights[weight_index] = old_weight + \
         (LEARNING_RATE * source_out * \
             (dest_out - (source_out*old_weight))); \
 
-#define UPDATE_WEIGHT_CONVOLUTIONAL \
-    float weight_delta = 0.0; \
-    float old_weight = weights[weight_index]; \
-    for (int i = 0 ; i < to_size ; ++i) { \
-        float source_out = extractor(outputs[from_index], delay); \
-        weight_delta += source_out * \
-            (dest_out - (source_out*old_weight)); \
-    } \
-    weights[weight_index] = old_weight + (LEARNING_RATE * weight_delta);
 
 CALC_ALL(update_hebbian,
     ; ,
-    EXTRACT_OUT;,
+    EXTRACT_DEST_OUT;,
     UPDATE_WEIGHT;,
     ; );
-CALC_ONE_TO_ONE(update_hebbian_convolutional,
+
+#define INIT_WEIGHT_DELTA \
+    float weight_delta = 0.0; \
+    float old_weight = weights[weight_index];
+
+#define UPDATE_WEIGHT_DELTA \
+    EXTRACT_DEST_OUT \
+    EXTRACT_SOURCE_OUT \
+    weight_delta += source_out * \
+        (dest_out - (source_out*old_weight));
+
+#define UPDATE_WEIGHT_CONVOLUTIONAL \
+    weights[weight_index] = old_weight + (LEARNING_RATE * weight_delta);
+
+CALC_CONVOLUTIONAL_BY_WEIGHT(update_hebbian_convolutional,
     ; ,
-    EXTRACT_OUT;, \
-    UPDATE_WEIGHT_CONVOLUTIONAL;,
-    ; );
+
+    INIT_WEIGHT_DELTA;,
+
+    UPDATE_WEIGHT_DELTA;,
+
+    UPDATE_WEIGHT_CONVOLUTIONAL;
+);
 
 Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
         Connection *conn) {

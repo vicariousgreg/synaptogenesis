@@ -88,11 +88,22 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                 case CONVERGENT:
                     // Convergent connections use unshared mini weight matrices
                     // Each destination neuron connects to field_size squared neurons
+                    this->num_weights =
+                        arborized_config->get_total_field_size() * to_layer->size;
+                    break;
                 case DIVERGENT:
                     // Divergent connections use unshared mini weight matrices
                     // Each source neuron connects to field_size squared neurons
                     this->num_weights =
                         arborized_config->get_total_field_size() * to_layer->size;
+
+                    // Arithmetic operations for the divergent kernel constrain
+                    //   the stride to non-zero values (division)
+                    if (arborized_config->row_stride == 0 or
+                        arborized_config->column_stride == 0)
+                        ErrorManager::get_instance()->log_error(
+                            "Error in " + this->str() + ":\n"
+                            "  Divergent connections cannot have zero stride!");
                     break;
                 default:
                     ErrorManager::get_instance()->log_error(

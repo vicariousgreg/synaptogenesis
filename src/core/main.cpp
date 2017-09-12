@@ -864,6 +864,127 @@ void dsst_test() {
     delete model;
 }
 
+void debug_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = new Structure("debug", PARALLEL);
+    model->add_structure(structure);
+
+    int rows = 10;
+    int cols = 20;
+
+    structure->add_layer(
+        new LayerConfig("source",
+            "debug", rows, cols));
+
+    structure->add_layer(
+        new LayerConfig("dest",
+            "debug", rows, cols));
+
+    // Check first order plastic connections
+    structure->connect_layers("source", "dest",
+        new ConnectionConfig(true, 0, 1, FULLY_CONNECTED, ADD));
+
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, SUBSET, ADD))
+        ->set_subset_config(new SubsetConfig(
+            rows / 4, 3 * rows / 4,
+            cols / 4, 3 * cols / 4,
+            rows / 4, 3 * rows / 4,
+            cols / 4, 3 * cols / 4)));
+
+    structure->connect_layers("source", "dest",
+        new ConnectionConfig(true, 0, 1, ONE_TO_ONE, ADD));
+
+    // Non-wrapping standard arborized
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1)));
+
+    // Non-wrapping unshifted arborized
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,0,0)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,0,0)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,0,0)));
+
+    // Wrapping standard arborized
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,true)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,true)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,true)));
+
+    // Wrapping unshifted arborized
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,0,0,true)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,0,0,true)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            3,3,1,1,0,0,true)));
+
+    // Zero stride full size arborized
+    // No divergent -- cannot have 0 stride
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            rows,cols,0,0,0,0)));
+    structure->connect_layers("source", "dest",
+        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
+            new FlatWeightConfig(1.0)))
+        ->set_arborized_config(new ArborizedConfig(
+            rows,cols,0,0,0,0)));
+
+    std::cout << "Debug test......\n";
+    print_model(model);
+    Clock clock(true);
+
+    delete clock.run(model, 1, true);
+    delete model;
+}
+
 
 static void print_subset_overlap(Structure *structure) {
     for (auto layer : structure->get_layers()) {
@@ -906,6 +1027,7 @@ int main(int argc, char *argv[]) {
         //game_of_life_test();
         //working_memory_test();
         dsst_test();
+        //debug_test();
 
         return 0;
     } catch (std::runtime_error e) {

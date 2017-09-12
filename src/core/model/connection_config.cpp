@@ -91,7 +91,10 @@ ConnectionConfig::ConnectionConfig(
           max_weight(max_weight),
           type(type),
           opcode(opcode),
-          weight_config(weight_config),
+          weight_config(
+              (weight_config==nullptr)
+                  ? new FlatWeightConfig(1.0)
+                  : weight_config),
           arborized_config(nullptr),
           subset_config(nullptr) { }
 
