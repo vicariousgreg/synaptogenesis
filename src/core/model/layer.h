@@ -60,6 +60,13 @@ class Layer {
         // Root node of dendritic tree
         DendriticNode* const dendritic_root;
 
+        // Get a list of the dendritic nodes
+        DendriticNodeList get_dendritic_nodes() const;
+
+        // Get dendritic node by name
+        DendriticNode* get_dendritic_node(std::string name,
+            bool log_error=false) const;
+
         // Gets the maximum delay for all outgoing connections
         int get_max_delay() const;
 
@@ -68,6 +75,7 @@ class Layer {
     private:
         friend class Structure;
         friend class Connection;
+        friend class DendriticNode;
 
         Layer(Structure *structure, LayerConfig *config);
 

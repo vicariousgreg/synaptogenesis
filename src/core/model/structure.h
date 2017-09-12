@@ -61,31 +61,36 @@ class Structure {
             Structure *from_structure, std::string from_layer_name,
             Structure *to_structure, std::string to_layer_name,
             ConnectionConfig *config,
-            DendriticNode* node=nullptr);
+            std::string node="root");
 
         Connection* connect_layers(
             std::string from_layer_name,
             std::string to_layer_name,
             ConnectionConfig *config,
-            DendriticNode* node=nullptr);
+            std::string node="root");
 
         Connection* connect_layers_expected(
             std::string from_layer_name,
             LayerConfig *layer_config,
             ConnectionConfig *conn_config,
-            DendriticNode* node=nullptr);
+            std::string node="root");
 
         Connection* connect_layers_matching(
             std::string from_layer_name,
             LayerConfig *layer_config,
             ConnectionConfig *conn_config,
-            DendriticNode* node=nullptr);
+            std::string node="root");
 
         /*****************************/
         /********* DENDRITES *********/
         /*****************************/
-        DendriticNode *get_dendritic_root(std::string to_layer_name);
-        DendriticNode *spawn_dendritic_node(std::string to_layer_name);
+        void set_second_order(std::string to_layer_name,
+            std::string dendrite_name);
+
+        void create_dendritic_node(std::string to_layer_name,
+            std::string parent_node_name, std::string child_node_name);
+
+        std::string get_parent_node_name(Connection *conn) const;
 
         /* Adds a module of the given |config| for the given |layer| */
         void add_module(std::string layer_name, ModuleConfig *config);
@@ -104,7 +109,7 @@ class Structure {
         Connection* connect_layers(
                 Layer *from_layer, Layer *to_layer,
                 ConnectionConfig *config,
-                DendriticNode* node=nullptr);
+                std::string node="root");
 
         /* Find a layer
          * If not found, logs an error or returns nullptr */

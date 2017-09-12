@@ -1,26 +1,46 @@
 #include "model/dendritic_node.h"
 #include "model/layer.h"
+#include "model/structure.h"
 
-int DendriticNode::count = 0;
-
-/* Constructor for an internal node */
-DendriticNode::DendriticNode(int register_index, Layer *to_layer)
-        : register_index(register_index),
+/* Constructor for a root node */
+DendriticNode::DendriticNode(Layer *to_layer)
+        : parent(nullptr),
           to_layer(to_layer),
-          id(count++),
+          id(std::hash<std::string>()(
+              to_layer->structure->name + "/" + to_layer->name + "-0")),
+          register_index(0),
           conn(nullptr),
           second_order_conn(nullptr),
-          second_order(false) { }
+          second_order(false),
+          name("root") { }
+
+/* Constructor for an internal node */
+DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
+    int register_index, std::string name)
+        : parent(parent),
+          to_layer(to_layer),
+          id(std::hash<std::string>()(
+              to_layer->structure->name + "/" + to_layer->name + "-"
+              + std::to_string(to_layer->get_dendritic_nodes().size()))),
+          register_index(register_index),
+          conn(nullptr),
+          second_order_conn(nullptr),
+          second_order(false),
+          name(name) { }
 
 /* Constructor for a leaf node */
-DendriticNode::DendriticNode(int register_index,
-    Layer *to_layer, Connection *conn)
-        : register_index(register_index),
+DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
+    int register_index, Connection *conn)
+        : parent(parent),
           to_layer(to_layer),
-          id(count++),
+          id(std::hash<std::string>()(
+              to_layer->structure->name + "/" + to_layer->name + "-"
+              + std::to_string(to_layer->get_dendritic_nodes().size()))),
+          register_index(register_index),
           conn(conn),
           second_order_conn(nullptr),
-          second_order(false) { }
+          second_order(false),
+          name("Leaf dendrite: " + conn->str()) { }
 
 DendriticNode::~DendriticNode() {
     for (auto& child : children) delete child;
@@ -63,7 +83,7 @@ Connection* DendriticNode::get_second_order_connection() const {
         return second_order_conn;
 }
 
-DendriticNode* DendriticNode::add_child() {
+DendriticNode* DendriticNode::add_child(std::string name) {
     if (is_leaf())
         ErrorManager::get_instance()->log_error(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
@@ -73,9 +93,15 @@ DendriticNode* DendriticNode::add_child() {
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Second order dendritic nodes cannot have internal children!");
 
+    // Ensure name is not a duplicate
+    if (this->to_layer->get_dendritic_node(name, false) != nullptr)
+        ErrorManager::get_instance()->log_error(
+            "Error in dendritic node of " + this->to_layer->str() + "\n"
+            "  Duplicate dendritic node name: " + name + "!");
+
     int child_register = this->register_index;
     if (children.size() > 0) ++child_register;
-    auto child = new DendriticNode(child_register, this->to_layer);
+    auto child = new DendriticNode(this, to_layer, child_register, name);
     children.push_back(child);
     return child;
 }
@@ -100,11 +126,13 @@ DendriticNode* DendriticNode::add_child(Connection *conn) {
                 "Error in dendritic node of " + this->to_layer->str() + "\n"
                 "  Second order connections must have identical sizes!");
         } else {
-            child = new DendriticNode(this->register_index, this->to_layer, conn);
+            child =
+                new DendriticNode(this, to_layer, register_index, conn);
             children.push_back(child);
         }
     } else {
-        child = new DendriticNode(this->register_index, this->to_layer, conn);
+        child =
+            new DendriticNode(this, to_layer, register_index, conn);
         children.push_back(child);
     }
     return child;

@@ -28,7 +28,7 @@ Connection* Structure::connect(
         Structure *from_structure, std::string from_layer_name,
         Structure *to_structure, std::string to_layer_name,
         ConnectionConfig *config,
-        DendriticNode* node) {
+        std::string node) {
     return to_structure->connect_layers(
         from_structure->find_layer(from_layer_name),
         to_structure->find_layer(to_layer_name),
@@ -38,17 +38,15 @@ Connection* Structure::connect(
 Connection* Structure::connect_layers(
         Layer *from_layer, Layer *to_layer,
         ConnectionConfig *config,
-        DendriticNode* node) {
+        std::string node) {
     if (not config->validate())
         ErrorManager::get_instance()->log_error(
             "Error in " + this->str() + ":\n"
             "  Invalid connection config for connection from "
             + from_layer->str() + " to " + to_layer->str());
 
-    if (node == nullptr) node = to_layer->dendritic_root;
-
     Connection *conn = new Connection(
-        from_layer, to_layer, config, node);
+        from_layer, to_layer, config, to_layer->get_dendritic_node(node));
     this->connections.push_back(conn);
     return conn;
 }
@@ -56,7 +54,7 @@ Connection* Structure::connect_layers(
 Connection* Structure::connect_layers(
         std::string from_layer_name, std::string to_layer_name,
         ConnectionConfig *config,
-        DendriticNode* node) {
+        std::string node) {
     return connect_layers(
         find_layer(from_layer_name),
         find_layer(to_layer_name),
@@ -66,7 +64,7 @@ Connection* Structure::connect_layers(
 Connection* Structure::connect_layers_expected(
         std::string from_layer_name, LayerConfig *layer_config,
         ConnectionConfig *conn_config,
-        DendriticNode* node) {
+        std::string node) {
     Layer *from_layer = find_layer(from_layer_name);
 
     if (not conn_config->validate())
@@ -90,7 +88,7 @@ Connection* Structure::connect_layers_expected(
 Connection* Structure::connect_layers_matching(
         std::string from_layer_name,
         LayerConfig *layer_config, ConnectionConfig *conn_config,
-        DendriticNode* node) {
+        std::string node) {
     Layer *from_layer = find_layer(from_layer_name);
 
     // Determine new layer size and create
@@ -103,12 +101,30 @@ Connection* Structure::connect_layers_matching(
     return connect_layers(from_layer, to_layer, conn_config, node);
 }
 
-DendriticNode *Structure::get_dendritic_root(std::string to_layer_name) {
-    return find_layer(to_layer_name)->dendritic_root;
+void Structure::set_second_order(std::string to_layer_name,
+        std::string node_name) {
+    find_layer(to_layer_name)
+        ->get_dendritic_node(node_name)
+        ->set_second_order();
+}
+void Structure::create_dendritic_node(std::string to_layer_name,
+        std::string parent_node_name, std::string child_node_name) {
+    find_layer(to_layer_name)
+        ->get_dendritic_node(parent_node_name)
+        ->add_child(child_node_name);
 }
 
-DendriticNode *Structure::spawn_dendritic_node(std::string to_layer_name) {
-    return find_layer(to_layer_name)->dendritic_root->add_child();
+std::string Structure::get_parent_node_name(Connection *conn) const {
+    for (auto node : conn->to_layer->get_dendritic_nodes())
+        if (node->is_leaf() and conn == node->conn)
+            return node->parent->name;
+        else if (node->is_second_order()
+                and conn == node->get_second_order_connection())
+            return node->name;
+
+    ErrorManager::get_instance()->log_error(
+        "Error in " + this->str() + ":\n"
+        "  Could not find parent node for connection: " + conn->str());
 }
 
 Layer* Structure::add_layer(LayerConfig *config) {

@@ -17,6 +17,8 @@ using namespace jsonxx;
 
 static void parse_structure(Model *model, Object so);
 static void parse_layer(Structure *structure, Object lo);
+static void parse_dendrite(Structure *structure, std::string layer,
+    std::string node, Object dobj);
 static void parse_connection(Model *model, std::string structure_name, Object co);
 static ModuleConfig* parse_module(Object mo);
 static NoiseConfig *parse_noise_config(Object nco);
@@ -24,15 +26,17 @@ static WeightConfig *parse_weight_config(Object wo);
 static ArborizedConfig *parse_arborized_config(Object wo);
 static SubsetConfig *parse_subset_config(Object wo);
 
-static bool has_string(Object o, std::string key)
-    { return o.has<String>(key); }
+static bool has_string(Object o, std::string key) { return o.has<String>(key); }
 static std::string get_string(Object o, std::string key, std::string def_val="")
     { return (o.has<String>(key)) ? o.get<String>(key) : def_val; }
 
+static bool has_object(Object o, std::string key) { return o.has<Object>(key); }
+static bool has_array(Object o, std::string key) { return o.has<Array>(key); }
 
 
 /* Top level model parser
  *     -> parse_structure
+ *     -> parse_connection
  */
 Model* load_model(std::string path) {
     std::ifstream file("models/" + path);
@@ -65,7 +69,6 @@ Model* load_model(std::string path) {
 
 /* Parses a structure
  *     -> parse_layer
- *     -> parse_connection
  */
 static void parse_structure(Model *model, Object so) {
     std::string name = get_string(so, "name",
@@ -102,6 +105,7 @@ static void parse_structure(Model *model, Object so) {
 /* Parses a layer
  *     -> parse_noise_config
  *     -> parse_module
+ *     -> parse_dendritic_node
  */
 static void parse_layer(Structure *structure, Object lo) {
     std::string name = std::to_string(structure->get_layers().size());
@@ -133,7 +137,7 @@ static void parse_layer(Structure *structure, Object lo) {
         else if (pair.first == "modules")
             for (auto val : pair.second->get<Array>().values())
                 modules.push_back(parse_module(val->get<Object>()));
-        else
+        else if (pair.first != "dendrites") // Skip these till end
             properties[pair.first] = pair.second->get<String>();
     }
 
@@ -147,6 +151,33 @@ static void parse_layer(Structure *structure, Object lo) {
     for (auto module : modules)
         if (module != nullptr)
             structure->add_module(name, module);
+
+    if (has_object(lo, "dendrites"))
+        parse_dendrite(structure, name, "root", lo.get<Object>("dendrites"));
+}
+
+/* Parses a dendritic node
+ *     -> parse_dendritic_node (recursive)
+ */
+static void parse_dendrite(Structure *structure, std::string layer,
+        std::string node, Object dobj) {
+    if (get_string(dobj, "second order", "false") == "true")
+        structure->set_second_order(layer, node);
+
+    if (has_array(dobj, "children")) {
+        for (auto child : dobj.get<Array>("children").values()) {
+            auto child_obj = child->get<Object>();
+
+            if (not has_string(child_obj, "name"))
+                ErrorManager::get_instance()->log_error(
+                    "Unspecifed name for dendritic node in layer: " + layer);
+
+            auto child_name = get_string(child_obj, "name");
+
+            structure->create_dendritic_node(layer, node, child_name);
+            parse_dendrite(structure, layer, child_name, child_obj);
+        }
+    }
 }
 
 /* Parses a connection
@@ -162,6 +193,7 @@ static void parse_connection(Model *model, std::string structure_name, Object co
     float max_weight = 0.0;
     bool plastic = true;
     int delay = 0;
+    std::string dendrite = "root";
 
     ArborizedConfig *arborized_config = nullptr;
     WeightConfig *weight_config = nullptr;
@@ -197,6 +229,8 @@ static void parse_connection(Model *model, std::string structure_name, Object co
             arborized_config = parse_arborized_config(pair.second->get<Object>());
         else if (pair.first == "subset config")
             subset_config = parse_subset_config(pair.second->get<Object>());
+        else if (pair.first == "dendrite")
+            dendrite = pair.second->get<String>();
         else
             properties[pair.first] = pair.second->get<String>();
     }
@@ -234,7 +268,8 @@ static void parse_connection(Model *model, std::string structure_name, Object co
         from_layer,
         model->get_structure(to_structure),
         to_layer,
-        connection_config);
+        connection_config,
+        dendrite);
 }
 
 /* Parses a module list */
@@ -412,6 +447,7 @@ static SubsetConfig *parse_subset_config(Object wo) {
 
 static Object write_structure(Structure *structure);
 static Object write_layer(Layer *layer);
+static Object write_dendrite(DendriticNode *node);
 static Object write_connection(Connection *connection);
 static Object write_properties(PropertyConfig *config);
 static Object write_weight_config(WeightConfig *weight_config);
@@ -465,6 +501,7 @@ static Object write_structure(Structure *structure) {
 /* Writes a layer
  *     -> write_noise_config
  *     -> write_module
+ *     -> write_dendrite
  */
 static Object write_layer(Layer *layer) {
     Object o;
@@ -491,6 +528,26 @@ static Object write_layer(Layer *layer) {
             a << write_properties(module);
         o << "modules" << a;
     }
+
+    o << "dendrites" << write_dendrite(layer->dendritic_root);
+
+    return o;
+}
+
+/* Writes a dendrite */
+static Object write_dendrite(DendriticNode *node) {
+    Object o;
+    o << "name" << node->name;
+    if (node->is_second_order())
+        o << "second order" << "true";
+    else
+        o << "second order" << "false";
+
+    Array a;
+    for (auto child : node->get_children())
+        if (not child->is_leaf())
+            a << write_dendrite(child);
+    if (a.size() > 0) o << "children" << a;
 
     return o;
 }
@@ -534,6 +591,9 @@ static Object write_connection(Connection *connection) {
     for (auto pair : connection_config->get_properties())
         o << pair.first << pair.second;
 
+    o << "dendrite"
+        << connection->to_layer->structure->get_parent_node_name(connection);
+
     return o;
 }
 
@@ -541,7 +601,8 @@ static Object write_connection(Connection *connection) {
 static Object write_properties(PropertyConfig *config) {
     Object o;
     for (auto pair : config->get_properties())
-        o << pair.first << pair.second;
+        if (pair.second != "")
+            o << pair.first << pair.second;
     return o;
 }
 

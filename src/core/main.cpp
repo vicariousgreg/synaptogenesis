@@ -827,8 +827,7 @@ void dsst_test() {
         ->set_property(IZ_INIT, "regular"));
 
     // Connect vision to what
-    auto node = structure->get_dendritic_root("what");
-    node->set_second_order();
+    structure->set_second_order("what", "root");
     structure->connect_layers("vision", "what",
         (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))

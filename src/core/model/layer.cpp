@@ -1,3 +1,5 @@
+#include <queue>
+
 #include "model/layer.h"
 #include "model/structure.h"
 #include "model/connection.h"
@@ -16,7 +18,7 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           plastic(config->plastic),
           global(config->global),
           type(0),
-          dendritic_root(new DendriticNode(0, this)) { }
+          dendritic_root(new DendriticNode(this)) { }
 
 Layer::~Layer() {
     delete dendritic_root;
@@ -50,6 +52,35 @@ const ConnectionList& Layer::get_input_connections() const
     { return input_connections; }
 const ConnectionList& Layer::get_output_connections() const
     { return output_connections; }
+
+DendriticNodeList Layer::get_dendritic_nodes() const {
+    DendriticNodeList nodes;
+    std::queue<DendriticNode*> q;
+    q.push(this->dendritic_root);
+
+    while (not q.empty()) {
+        auto curr = q.front();
+        q.pop();
+        nodes.push_back(curr);
+        for (auto child : curr->get_children())
+            q.push(child);
+    }
+
+    return nodes;
+}
+
+DendriticNode* Layer::get_dendritic_node(std::string name,
+        bool log_error) const {
+    for (auto node: get_dendritic_nodes())
+        if (node->name == name) return node;
+
+    if (log_error)
+        ErrorManager::get_instance()->log_error(
+            "Error in " + this->str() + ":\n"
+            "  Cannot find Dendritic Node " + name + "!");
+
+    return nullptr;
+}
 
 int Layer::get_max_delay() const {
     // Determine max delay for output connections

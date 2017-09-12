@@ -2,6 +2,7 @@
 #define dendritic_node_h
 
 #include <vector>
+#include <string>
 
 #include "model/connection.h"
 #include "util/constants.h"
@@ -23,12 +24,6 @@ typedef std::vector<DendriticNode*> DendriticNodeList;
  */
 class DendriticNode {
     public:
-        /* Constructor for an internal node */
-        DendriticNode(int register_index, Layer *to_layer);
-
-        /* Constructor for a leaf node */
-        DendriticNode(int register_index, Layer *to_layer, Connection *conn);
-
         virtual ~DendriticNode();
 
         /* Sets this node as a second order node.
@@ -49,7 +44,7 @@ class DendriticNode {
         Connection* get_second_order_connection() const;
 
         /* Add a child internal node */
-        DendriticNode *add_child();
+        DendriticNode *add_child(std::string name);
 
         /* Add a child leaf node */
         DendriticNode *add_child(Connection *conn);
@@ -62,14 +57,26 @@ class DendriticNode {
         int get_max_register_index() const;
         const DendriticNodeList get_children() const;
 
+        DendriticNode* const parent;
         Connection* const conn;
         Layer* const to_layer;
         const int register_index;
         const int id;
+        const std::string name;
 
     private:
-        // Global counter for ID assignment
-        static int count;
+        friend class Layer;
+
+        /* Constructor for a root node */
+        DendriticNode(Layer *to_layer);
+
+        /* Constructor for an internal node */
+        DendriticNode(DendriticNode *parent, Layer *to_layer,
+            int register_index, std::string name);
+
+        /* Constructor for a leaf node */
+        DendriticNode(DendriticNode *parent, Layer *to_layer,
+            int register_index, Connection *conn);
 
         Connection* second_order_conn;
         DendriticNodeList children;
