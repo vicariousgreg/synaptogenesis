@@ -4,7 +4,7 @@
 
 SynapseData::SynapseData(DendriticNode *parent_node,
     Connection *conn, State *state) :
-        to_attributes(state->get_attributes_pointer(conn->to_layer)),
+        attributes(state->get_attributes_pointer(conn->to_layer)),
         extractor(state->get_extractor(conn)),
         convolutional(conn->convolutional),
         connection_index(state->get_connection_index(conn)),

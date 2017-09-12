@@ -26,11 +26,11 @@ class PointerKey {
 
 class BasePointer {
     public:
-        void* get(size_t offset=0) { return ptr + (offset * unit_size); }
-        size_t get_size() { return size; }
-        size_t get_unit_size() { return unit_size; }
-        size_t get_bytes() { return size * unit_size; }
-        DeviceID get_device_id() { return device_id; }
+        HOST DEVICE void* get(size_t offset=0) { return ptr + (offset * unit_size); }
+        HOST DEVICE size_t get_size() { return size; }
+        HOST DEVICE size_t get_unit_size() { return unit_size; }
+        HOST DEVICE size_t get_bytes() { return size * unit_size; }
+        HOST DEVICE DeviceID get_device_id() { return device_id; }
 
         // Frees the encapsulated pointer if this is the owner
         void free();

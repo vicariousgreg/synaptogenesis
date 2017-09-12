@@ -93,4 +93,11 @@ class Layer {
 
 typedef std::vector<Layer*> LayerList;
 
+/* Counts the number of connections in a layer list */
+inline int get_num_connections(LayerList& layers) {
+    int num_connections = 0;
+    for (auto& layer : layers)
+        num_connections += layer->get_input_connections().size();
+}
+
 #endif

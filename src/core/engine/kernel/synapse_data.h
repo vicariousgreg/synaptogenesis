@@ -15,8 +15,8 @@ class SynapseData {
     public:
         SynapseData(DendriticNode *parent_node, Connection *conn, State *state);
 
-        /* Attributes pointer */
-        const Attributes *to_attributes;
+        /* Attributes pointer for to_layer */
+        const Attributes *attributes;
 
         /* Output extractor */
         const EXTRACTOR extractor;

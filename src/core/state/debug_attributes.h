@@ -10,6 +10,10 @@ class DebugAttributes : public Attributes {
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
 
+        Pointer<float> connection_variable;
+        Pointer<float> layer_variable;
+        Pointer<float> neuron_variable;
+
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };

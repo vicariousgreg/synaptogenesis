@@ -23,7 +23,7 @@ REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich")
     int   *delays        = (int*)weights + (7*num_weights); \
 \
     LeakyIzhikevichAttributes *att = \
-        (LeakyIzhikevichAttributes*)synapse_data.to_attributes; \
+        (LeakyIzhikevichAttributes*)synapse_data.attributes; \
     float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
     float learning_rate = \
         att->learning_rate.get()[synapse_data.connection_index];

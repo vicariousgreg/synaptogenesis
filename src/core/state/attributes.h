@@ -181,6 +181,7 @@ Attributes *CLASS_NAME::build(LayerList &layers) { \
     const Attributes *att = attribute_data.attributes; \
     float *inputs = attribute_data.input.get(); \
     Output *outputs = attribute_data.output.get(); \
+    int layer_index = attribute_data.layer_index; \
     int other_start_index = attribute_data.other_start_index; \
     int size = attribute_data.size; \
     int history_size = attribute_data.history_size; \

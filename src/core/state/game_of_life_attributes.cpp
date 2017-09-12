@@ -14,7 +14,6 @@ REGISTER_ATTRIBUTES(GameOfLifeAttributes, "game_of_life")
 
 BUILD_ATTRIBUTE_KERNEL(GameOfLifeAttributes, gol_attribute_kernel,
     GameOfLifeAttributes *gol_att = (GameOfLifeAttributes*)att;
-    int layer_index = attribute_data.layer_index;
     int survival_min = *gol_att->survival_mins.get(layer_index);
     int survival_max = *gol_att->survival_maxs.get(layer_index);
     int birth_min = *gol_att->birth_mins.get(layer_index);

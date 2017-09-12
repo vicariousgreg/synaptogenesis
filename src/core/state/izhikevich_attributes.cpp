@@ -225,7 +225,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS \
     IzhikevichAttributes *att = \
-        (IzhikevichAttributes*)synapse_data.to_attributes; \
+        (IzhikevichAttributes*)synapse_data.attributes; \
     float baseline_conductance = \
         att->baseline_conductance.get()[synapse_data.connection_index]; \
     bool stp_flag = att->stp_flag.get()[synapse_data.connection_index]; \
@@ -419,7 +419,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     int   *delays        = (int*)weights + (7*num_weights); \
 \
     IzhikevichAttributes *att = \
-        (IzhikevichAttributes*)synapse_data.to_attributes; \
+        (IzhikevichAttributes*)synapse_data.attributes; \
     float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
     float *dopamines = att->dopamine.get(synapse_data.to_start_index); \
     float *acetylcholines = att->acetylcholine.get(synapse_data.to_start_index); \
@@ -542,10 +542,7 @@ static void check_parameters(Connection *conn) {
 
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : Attributes(layers, BIT) {
-    // Count connections
-    int num_connections = 0;
-    for (auto& layer : layers)
-        num_connections += layer->get_input_connections().size();
+    int num_connections = get_num_connections(layers);
 
     // Baseline conductances
     this->baseline_conductance = Pointer<float>(num_connections);
