@@ -512,11 +512,9 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
  \
-    int k_index = 0; \
+    int weight_index = 0; \
     for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
-        for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++k_index)) { \
-            /* Column of matrix is the kernel index */ \
-            int weight_index = k_index; \
+        for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++weight_index)) { \
             WEIGHT_PRE; \
  \
             for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
@@ -571,10 +569,11 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
  \
-    int k_index = blockIdx.x * blockDim.x + threadIdx.x; \
-    if (k_index < (row_field_size * column_field_size)) { \
-        int k_row = k_index / column_field_size; \
-        int k_col = k_index % column_field_size; \
+    int weight_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (weight_index < (row_field_size * column_field_size)) { \
+        int k_row = weight_index / column_field_size; \
+        int k_col = weight_index % column_field_size; \
+\
         WEIGHT_PRE; \
  \
         for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
@@ -606,9 +605,6 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                 } \
 \
                 int from_index = k_s_row * from_columns + k_s_col; \
-\
-                /* Row of matrix is the kernel index * row size (see above) */ \
-                int weight_index = k_index; \
 \
                 NEURON_OP; \
             } \
