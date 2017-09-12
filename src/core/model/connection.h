@@ -20,6 +20,7 @@ class Connection {
 
         /* Constant getters */
         int get_num_weights() const;
+        int get_compute_weights() const;
         const ConnectionConfig* get_config() const;
         std::string get_parameter(
             std::string key, std::string default_val) const;

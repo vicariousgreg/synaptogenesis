@@ -152,6 +152,12 @@ std::string Connection::get_parameter(std::string key,
 }
 
 int Connection::get_num_weights() const { return num_weights; }
+int Connection::get_compute_weights() const {
+    if (type == CONVOLUTIONAL)
+        if (second_order_host) return num_weights;
+        else return num_weights * to_layer->size;
+    else return num_weights;
+}
 const ConnectionConfig* Connection::get_config() const { return config; }
 
 std::string Connection::str() const {

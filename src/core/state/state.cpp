@@ -27,7 +27,7 @@ State::State(Model *model) : model(model) {
     for (auto layer : model->get_layers()) {
         num_weights[layer] = 0;
         for (auto& conn : layer->get_input_connections())
-            num_weights[layer] += conn->get_num_weights();
+            num_weights[layer] += conn->get_compute_weights();
     }
 
     // Keep track of weight distribution to devices

@@ -9,7 +9,7 @@ class Connection;
 
 class WeightConfig : public PropertyConfig {
     public:
-        WeightConfig(std::string type) {
+        WeightConfig(std::string type) : child_config(nullptr) {
             this->set_property("type", type);
         }
 
