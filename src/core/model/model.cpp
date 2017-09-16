@@ -107,3 +107,8 @@ int Model::get_max_layer_size() const {
             if (layer->size > max_size) max_size = layer->size;  
     return max_size;
 }
+
+void Model::remove_modules() {
+    for (auto layer : get_layers())
+        layer->remove_modules();
+}

@@ -12,7 +12,6 @@ REGISTER_ATTRIBUTES(PerceptronAttributes, "perceptron")
 
 BUILD_ATTRIBUTE_KERNEL(PerceptronAttributes, perceptron_attribute_kernel,
     float *f_outputs = (float*)outputs;
-    float *expecteds = (float*)attribute_data.expected.get();
     int num_weights = attribute_data.num_weights / size;
 
     ,

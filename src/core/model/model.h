@@ -40,6 +40,9 @@ class Model {
         int get_num_weights() const;
         int get_max_layer_size() const;
 
+        /* Remove all modules */
+        void remove_modules();
+
     private:
         StructureList structures;
 };

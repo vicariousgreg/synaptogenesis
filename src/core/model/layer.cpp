@@ -128,6 +128,13 @@ void Layer::add_module(ModuleConfig *config) {
     this->type |= model_type;
 }
 
+void Layer::remove_modules() {
+    for (auto config : module_configs)
+        delete config;
+    module_configs.clear();
+    this->type = 0;
+}
+
 std::string Layer::str() const {
     return "[Layer: " + name + " (" + structure->name + ")]";
 }

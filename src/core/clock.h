@@ -55,7 +55,8 @@ class Clock {
                   calc_rate(false) { }
 
         State* run(Model *model, int iterations, bool verbose,
-            State* state=nullptr, bool suppress_output=false);
+            State* state=nullptr, bool learning_flag=true,
+            bool suppress_output=false);
 
     private:
         void engine_loop(int iterations, bool verbose);

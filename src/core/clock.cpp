@@ -76,7 +76,7 @@ void Clock::environment_loop(int iterations, bool verbose) {
 }
 
 State* Clock::run(Model *model, int iterations, bool verbose,
-        State *state, bool suppress_output) {
+        State *state, bool learning_flag, bool suppress_output) {
     /**********************/
     /*** Initialization ***/
     /**********************/
@@ -98,7 +98,7 @@ State* Clock::run(Model *model, int iterations, bool verbose,
 
     // Build engine
     engine = new Engine(state, environment);
-    //engine->set_learning_flag(false);  // disable learning
+    engine->set_learning_flag(learning_flag);
 
     if (verbose) run_timer.query("Initialization");
 

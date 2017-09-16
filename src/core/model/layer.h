@@ -76,6 +76,7 @@ class Layer {
         std::string str() const;
 
     private:
+        friend class Model;
         friend class Structure;
         friend class Connection;
         friend class DendriticNode;
@@ -87,6 +88,7 @@ class Layer {
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
         void add_module(ModuleConfig *config);
+        void remove_modules();
 
         // Layer IO type mask
         IOTypeMask type;

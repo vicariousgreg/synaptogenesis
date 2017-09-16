@@ -280,7 +280,7 @@ void simple_test() {
     } else {
         print_model(model);
         auto state = new State(model);
-        state = clock.run(model, 500000, true, state, true);
+        state = clock.run(model, 500000, true, state, true, true);
         state->save("simple.bin");
         delete state;
     }
@@ -486,9 +486,7 @@ void mnist_perceptron_test() {
         new ConnectionConfig(true, 0, 1, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(0)));
 
-    // Modules
-    // std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
-    // std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
+    // Modules for training
     std::string input_file = "/HDD/datasets/mnist/processed/mnist_train_input.csv";
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_train_output.csv";
     structure->add_module("input_layer",
@@ -503,25 +501,38 @@ void mnist_perceptron_test() {
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "1"));
-    /*
-    structure->add_module("input_layer", new ModuleConfig("visualizer_output"));
-    structure->add_module("input_layer", new ModuleConfig("heatmap"));
-    structure->add_module("output_layer", new ModuleConfig("visualizer_output"));
-    structure->add_module("output_layer", new ModuleConfig("heatmap"));
-    structure->add_module("output_layer", new ModuleConfig("csv_output"));
-    */
     structure->add_module("bias_layer",
         (new ModuleConfig("random_input"))
         ->set_property("uniform", "true"));
 
-    // print_model(model);
-
-    //Clock clock(1.0f);
+    // Run training
     Clock clock(false);
     auto state = new State(model);
-    // state->load("mnist.bin");
-    clock.run(model, 600000, false, state);
-    state->save("mnist.bin");
+    clock.run(model, 60000, false, state);
+
+    // Remove modules and replace for testing
+    model->remove_modules();
+
+    input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
+    output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
+    structure->add_module("input_layer",
+        (new ModuleConfig("csv_input"))
+        ->set_property("filename", input_file)
+        ->set_property("offset", "0")
+        ->set_property("exposure", "1")
+        ->set_property("normalization", "255"));
+    structure->add_module("output_layer",
+        (new ModuleConfig("csv_evaluator"))
+        ->set_property("filename", output_file)
+        ->set_property("offset", "0")
+        ->set_property("exposure", "1")
+        ->set_property("normalization", "1"));
+    structure->add_module("bias_layer",
+        (new ModuleConfig("random_input"))
+        ->set_property("uniform", "true"));
+
+    // Run testing (disable learning)
+    clock.run(model, 10000, false, state, false);
 
     delete state;
     delete model;
@@ -909,7 +920,7 @@ void working_memory_test() {
     Clock clock(true);
     //Clock clock(1.0f);
     print_model(model);
-    delete clock.run(model, 500000, true, nullptr, false);
+    delete clock.run(model, 500000, true, nullptr, true, false);
     delete model;
 }
 
