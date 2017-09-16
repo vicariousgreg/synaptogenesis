@@ -12,30 +12,24 @@ REGISTER_MODULE(CSVInputModule, "csv_input", INPUT);
 
 CSVInputModule::CSVInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer) {
-    std::string filename;
-    std::stringstream stream(config->get_property("params"));
-    stream >> filename;
+    std::string filename = config->get_property("filename", "");
+    int offset = std::stoi(config->get_property("offset", "0"));
+    float normalization = std::stof(config->get_property("normalization", "1"));
+    this->exposure = std::stoi(config->get_property("exposure", "1"));
+    this->age = this->exposure;
 
     // Check if file exists
-    if (not std::ifstream(filename.c_str()).good())
+    if (filename == "" or not std::ifstream(filename.c_str()).good())
         ErrorManager::get_instance()->log_error(
             "Could not open CSV file!");
 
-    // Pull offset
-    int offset = 0;
-    if (not stream.eof())
-        stream >> offset;
+    if (offset < 0)
+        ErrorManager::get_instance()->log_error(
+            "Bad offset in CSV input module!");
 
-    // Pull exposure
-    if (not stream.eof())
-        stream >> this->exposure;
-    else this->exposure = 1;
-    this->age = this->exposure;
-
-    // Pull normalization constant
-    float normalization = 1;
-    if (not stream.eof())
-        stream >> normalization;
+    if (exposure < 1)
+        ErrorManager::get_instance()->log_error(
+            "Bad exposure length in CSV input module!");
 
     CsvParser *csvparser = CsvParser_new(filename.c_str(), ",", 0);
     CsvRow *row;

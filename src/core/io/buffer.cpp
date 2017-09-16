@@ -54,7 +54,7 @@ void Buffer::init() {
         output_index += layer->size;
     }
     for (auto& layer : expected_layers) {
-        expected_map[layer] = output_index;
+        expected_map[layer] = expected_index;
         expected_index += layer->size;
     }
 }

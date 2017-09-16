@@ -13,7 +13,7 @@ Environment::Environment(State *state, bool suppress_output)
     for (auto& layer : state->model->get_layers()) {
         for (auto config : layer->get_module_configs()) {
             if ((not suppress_output)
-                    or (not Module::get_module_type(config) & OUTPUT)) {
+                    or not (Module::get_module_type(config) & OUTPUT)) {
                 Module *module = Module::build_module(layer, config);
                 auto type = module->get_type();
                 if (type & INPUT) this->input_modules.push_back(module);

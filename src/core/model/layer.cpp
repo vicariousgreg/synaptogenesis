@@ -93,6 +93,13 @@ int Layer::get_max_delay() const {
     return max_delay;
 }
 
+int Layer::get_num_weights() const {
+    int num_weights = 0;
+    for (auto& conn : get_input_connections())
+        num_weights += conn->get_num_weights();
+    return num_weights;
+}
+
 void Layer::add_input_connection(Connection* connection) {
     this->input_connections.push_back(connection);
 }

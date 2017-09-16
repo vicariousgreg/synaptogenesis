@@ -70,6 +70,9 @@ class Layer {
         // Gets the maximum delay for all outgoing connections
         int get_max_delay() const;
 
+        // Gets the total number of incoming weights
+        int get_num_weights() const;
+
         std::string str() const;
 
     private:

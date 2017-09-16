@@ -351,57 +351,177 @@ void mnist_test() {
     Structure *structure = new Structure("mnist");
     model->add_structure(structure);
 
-    int resolution = 1024;
     structure->add_layer((new LayerConfig("input_layer",
         IZHIKEVICH, 28, 28))
             ->set_property(IZ_INIT, "regular"));
 
-    int num_hidden = 10;
-    for (int i = 0; i < num_hidden; ++i) {
-        structure->add_layer(
-            (new LayerConfig(std::to_string(i),
-                "leaky_izhikevich", 28, 28,
-                (new NoiseConfig("normal"))
-                    ->set_property("mean", "0.5")
-                    ->set_property("std_dev", "0.1")))
-                ->set_property(IZ_INIT, "regular"));
-        structure->connect_layers("input_layer", std::to_string(i),
-            (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
-                new FlatWeightConfig(0.1, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(9,1,true)));
+    // Hidden distributed layer
+    structure->add_layer(
+        (new LayerConfig("hidden",
+            "leaky_izhikevich", 28*3, 28*3))
+            ->set_property(IZ_INIT, "regular"));
+    structure->connect_layers("input_layer", "hidden",
+        (new ConnectionConfig(true, 0, 0.5, DIVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(21,3,false))
+        ->set_property("myelinated", "false"));
+    /*
+    structure->connect_layers("hidden", "input_layer",
+        (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(9,1,true))
+        ->set_property("myelinated", "true"));
+    */
 
-        structure->connect_layers(std::to_string(i), std::to_string(i),
-            (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
-                new RandomWeightConfig(0.1, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(9,1,true)));
-        structure->connect_layers(std::to_string(i), std::to_string(i),
-            (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
-                new FlatWeightConfig(0.5, 0.1)))
-            ->set_arborized_config(new ArborizedConfig(11,1,true)));
+    structure->connect_layers("hidden", "hidden",
+        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(25,1,false)));
+    structure->connect_layers("hidden", "hidden",
+        (new ConnectionConfig(false, 0, 1, CONVERGENT, SUB,
+            new SurroundWeightConfig(25, 25, new FlatWeightConfig(0.1, 0.1))))
+        ->set_arborized_config(new ArborizedConfig(31,1,false)));
+
+    // Topological separation layer
+    /* ////////
+    structure->add_layer(
+        (new LayerConfig("separation",
+            "leaky_izhikevich", 10, 100))
+            ->set_property(IZ_INIT, "regular"));
+    structure->connect_layers("hidden", "separation",
+        (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(0.01, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(9,1,true))
+        ->set_property("myelinated", "true"));
+    structure->connect_layers("separation", "hidden",
+        (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(0.01, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(9,1,true))
+        ->set_property("myelinated", "true"));
+
+    / *
+    structure->connect_layers("separation", "separation",
+        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
+            new FlatWeightConfig(0.1, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(9,1,true)));
+    * /
+    structure->connect_layers("separation", "separation",
+        (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
+            new FlatWeightConfig(0.01, 0.1)))
+        ->set_arborized_config(new ArborizedConfig(11,1,true))
+        ->set_property("myelinated", "true"));
+    */ /////////////
+
+    // Discrete output layer
+    structure->add_layer((new LayerConfig("output_layer",
+        IZHIKEVICH, 1, 10))
+            ->set_property(IZ_INIT, "regular"));
+
+    /* //////////
+    for (int i = 0 ; i < 10 ; ++i) {
+        structure->connect_layers("output_layer", "separation",
+            (new ConnectionConfig(false, 0, 0.5, SUBSET, ADD,
+                new RandomWeightConfig(2)))
+            ->set_property("myelinated", "true")
+            ->set_subset_config(
+                new SubsetConfig(
+                    0,1,
+                    i,i+1,
+                    0,10,
+                    10*i, 10*(i+1))));
     }
-
-    for (int i = 0; i < num_hidden; ++i)
-        for (int j = 0; j < num_hidden; ++j)
-            if (i != j)
-                structure->connect_layers(std::to_string(i), std::to_string(j),
-                    new ConnectionConfig(false, 0, 1, ONE_TO_ONE, SUB,
-                        new FlatWeightConfig(0.5)));
+    */ ///////////
 
     // Modules
+    std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
+    std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
     structure->add_module("input_layer",
-        new ModuleConfig("csv_input", "/HDD/datasets/mnist/mnist_test.csv 1 5000 25"));
+        (new ModuleConfig("csv_input"))
+        ->set_property("filename", input_file)
+        ->set_property("offset", "0")
+        ->set_property("exposure", "5000")
+        ->set_property("normalization", "25"));
+    structure->add_module("output_layer",
+        (new ModuleConfig("csv_input"))
+        ->set_property("filename", output_file)
+        ->set_property("offset", "0")
+        ->set_property("exposure", "5000")
+        ->set_property("normalization", "0.2"));
     structure->add_module("input_layer", new ModuleConfig("visualizer_output"));
     structure->add_module("input_layer", new ModuleConfig("heatmap"));
-    for (int i = 0; i < num_hidden; ++i) {
-        structure->add_module(std::to_string(i), new ModuleConfig("visualizer_output"));
-        structure->add_module(std::to_string(i), new ModuleConfig("heatmap"));
-    }
+    structure->add_module("hidden", new ModuleConfig("visualizer_output"));
+    structure->add_module("hidden", new ModuleConfig("heatmap"));
+    //structure->add_module("separation", new ModuleConfig("visualizer_output"));
+    //structure->add_module("separation", new ModuleConfig("heatmap"));
+    structure->add_module("output_layer", new ModuleConfig("visualizer_output"));
+    structure->add_module("output_layer", new ModuleConfig("heatmap"));
 
-    std::cout << "CSV test......\n";
+    std::cout << "MNIST test......\n";
     print_model(model);
-    run_simulation(model, 100000, true);
+
+    Clock clock(true);
+    auto state = clock.run(model, 1000000, true);
+    state->save("mnist.bin");
+
+    delete state;
     std::cout << "\n";
 
+    delete model;
+}
+
+void mnist_perceptron_test() {
+    /* Construct the model */
+    Model *model = new Model();
+    Structure *structure = new Structure("mnist", FEEDFORWARD);
+    model->add_structure(structure);
+
+    structure->add_layer(new LayerConfig("input_layer", "relay", 28, 28));
+    structure->add_layer(new LayerConfig("output_layer", "perceptron", 1, 10));
+    structure->add_layer(new LayerConfig("bias_layer", "relay", 1, 1));
+
+    structure->connect_layers("input_layer", "output_layer",
+        new ConnectionConfig(true, 0, 1, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(0)));
+    structure->connect_layers("bias_layer", "output_layer",
+        new ConnectionConfig(true, 0, 1, FULLY_CONNECTED, ADD,
+            new FlatWeightConfig(0)));
+
+    // Modules
+    std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
+    std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
+    structure->add_module("input_layer",
+        (new ModuleConfig("csv_input"))
+        ->set_property("filename", input_file)
+        ->set_property("offset", "0")
+        ->set_property("exposure", "1")
+        ->set_property("normalization", "255"));
+    structure->add_module("output_layer",
+        (new ModuleConfig("csv_expected"))
+        ->set_property("filename", output_file)
+        ->set_property("offset", "0")
+        ->set_property("exposure", "1")
+        ->set_property("normalization", "1"));
+    /*
+    structure->add_module("input_layer", new ModuleConfig("visualizer_output"));
+    structure->add_module("input_layer", new ModuleConfig("heatmap"));
+    structure->add_module("output_layer", new ModuleConfig("visualizer_output"));
+    structure->add_module("output_layer", new ModuleConfig("heatmap"));
+    */
+    structure->add_module("output_layer", new ModuleConfig("csv_output"));
+    structure->add_module("bias_layer",
+        (new ModuleConfig("random_input"))
+        ->set_property("uniform", "true"));
+
+    // print_model(model);
+
+    //Clock clock(1.0f);
+    Clock clock(false);
+    auto state = new State(model);
+    // state->load("mnist.bin");
+    clock.run(model, 600000, false, state);
+    state->save("mnist.bin");
+
+    delete state;
     delete model;
 }
 
@@ -1017,6 +1137,7 @@ int main(int argc, char *argv[]) {
 
     try {
         //mnist_test();
+        mnist_perceptron_test();
         //speech_train();
         //speech_test(std::string(argv[1]));
         //maze_game_test();
@@ -1025,7 +1146,7 @@ int main(int argc, char *argv[]) {
         //single_field_test();
         //game_of_life_test();
         //working_memory_test();
-        dsst_test();
+        //dsst_test();
         //debug_test();
 
         return 0;

@@ -138,7 +138,6 @@ class Attributes {
         std::map<size_t, int> other_start_indices;
         std::map<size_t, int> input_start_indices;
         std::map<size_t, int> output_start_indices;
-        std::map<size_t, int> expected_start_indices;
         std::map<size_t, int> layer_sizes;
 
         std::map<size_t, int> connection_indices;

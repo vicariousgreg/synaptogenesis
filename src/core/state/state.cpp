@@ -218,14 +218,15 @@ bool State::exists(std::string file_name) {
     return f.good();
 }
 
-void State::save(std::string file_name) {
+void State::save(std::string file_name, bool verbose) {
     // Transfer to host
     this->transfer_to_host();
 
     // Open file stream
     std::string path = "./states/" + file_name;
     std::ofstream output_file(path, std::ofstream::binary);
-    printf("Saving network state to %s ...\n", path.c_str());
+    if (verbose)
+        printf("Saving network state to %s ...\n", path.c_str());
 
     for (auto pair : pointer_map) {
         size_t bytes = pair.first.bytes;
@@ -244,14 +245,15 @@ void State::save(std::string file_name) {
     output_file.close();
 }
 
-void State::load(std::string file_name) {
+void State::load(std::string file_name, bool verbose) {
     // Transfer to host
     this->transfer_to_host();
 
     // Open file stream
     std::string path = "./states/" + file_name;
     std::ifstream input_file(path, std::ifstream::binary);
-    printf("Loading network state from %s ...\n", path.c_str());
+    if (verbose)
+        printf("Loading network state from %s ...\n", path.c_str());
 
     // Determine file length
     input_file.seekg (0, input_file.end);

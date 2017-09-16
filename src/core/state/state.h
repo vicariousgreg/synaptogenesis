@@ -26,8 +26,8 @@ class State {
 
         /* Save or load state to/from disk */
         static bool exists(std::string file_name);
-        void save(std::string file_name);
-        void load(std::string file_name);
+        void save(std::string file_name, bool verbose=false);
+        void load(std::string file_name, bool verbose=false);
 
         /* Checks if a structure's layers are compatible with its stream type */
         bool check_compatibility(Structure *structure);

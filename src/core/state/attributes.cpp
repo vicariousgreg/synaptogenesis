@@ -48,7 +48,6 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
     // Keep track of register sizes
     int input_size = 0;
     int output_size = 0;
-    int expected_size = 0;
     int other_size = 0;
     int second_order_size = 0;
 
@@ -71,10 +70,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
         output_start_indices[layer->id] = output_size;
         output_size += output_register_count * layer->size;
 
-        // Add expected
-        expected_start_indices[layer->id] = expected_size;
-        expected_size += layer->size;
-
+        // Add other (expected uses this too)
         other_start_indices[layer->id] = other_size;
         other_size += layer->size;
 
@@ -97,7 +93,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
     // Allocate space for input and output
     this->input = Pointer<float>(input_size, 0.0);
     this->output = Pointer<Output>(output_size);
-    this->expected = Pointer<Output>(expected_size);
+    this->expected = Pointer<Output>(other_size);
     this->second_order_weights = Pointer<float>(second_order_size, 0.0);
     this->total_neurons = other_size;
     this->total_layers = layers.size();;
@@ -178,7 +174,7 @@ std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
         pointers[PointerKey(
             pair.first, "output",
             layer_sizes[pair.first], pair.second)] = &output;
-    for (auto pair : expected_start_indices)
+    for (auto pair : other_start_indices)
         pointers[PointerKey(
             pair.first, "expected",
             layer_sizes[pair.first], pair.second)] = &expected;
@@ -231,7 +227,7 @@ Pointer<float> Attributes::get_second_order_weights(size_t id) const {
 
 Pointer<Output> Attributes::get_expected(size_t id) const {
     int size = layer_sizes.at(id);
-    return expected.slice(expected_start_indices.at(id), size);
+    return expected.slice(other_start_indices.at(id), size);
 }
 
 Pointer<Output> Attributes::get_output(size_t id, int word_index) const {
