@@ -1,6 +1,6 @@
 #include <string>
 
-#include "state/rate_encoding_attributes.h"
+#include "state/impl/rate_encoding_attributes.h"
 #include "util/error_manager.h"
 
 /******************************************************************************/

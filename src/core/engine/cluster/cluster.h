@@ -77,8 +77,6 @@ class FeedforwardCluster : public SequentialCluster {
     public:
         FeedforwardCluster(Structure *structure, State *state,
             Environment *environment);
-
-        virtual void launch_weight_update();
 };
 
 Cluster *build_cluster(Structure *structure,

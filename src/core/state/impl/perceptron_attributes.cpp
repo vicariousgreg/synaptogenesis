@@ -1,6 +1,6 @@
 #include <string>
 
-#include "state/perceptron_attributes.h"
+#include "state/impl/perceptron_attributes.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "util/error_manager.h"
 

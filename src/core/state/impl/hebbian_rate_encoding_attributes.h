@@ -1,7 +1,7 @@
 #ifndef hebbian_rate_encoding_attributes_h
 #define hebbian_rate_encoding_attributes_h
 
-#include "state/rate_encoding_attributes.h"
+#include "state/impl/rate_encoding_attributes.h"
 
 class HebbianRateEncodingAttributes : public RateEncodingAttributes {
     public:

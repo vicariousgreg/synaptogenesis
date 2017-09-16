@@ -1,6 +1,6 @@
 #include <string>
 
-#include "state/relay_attributes.h"
+#include "state/impl/relay_attributes.h"
 #include "util/error_manager.h"
 
 REGISTER_ATTRIBUTES(RelayAttributes, "relay")

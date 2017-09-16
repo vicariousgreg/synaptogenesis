@@ -1,7 +1,7 @@
 #include <string>
 #include <math.h>
 
-#include "state/debug_attributes.h"
+#include "state/impl/debug_attributes.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"

@@ -109,7 +109,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
                 curr, conn, state, compute_stream);
 
             // Create the instruction and add it to the synapse instuction list
-            synapse_instructions[conn] = syn_inst;
+            synapse_activate_instructions[conn] = syn_inst;
             activate_instructions.push_back(syn_inst);
 
             // If plastic, create update instruction
@@ -117,6 +117,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
                 auto syn_update_inst = new SynapseUpdateInstruction(
                     curr, conn, state, compute_stream);
                 update_instructions.push_back(syn_update_inst);
+                synapse_update_instructions[conn] = syn_update_inst;
             }
         } else {
             this->dendrite_DFS(child);
@@ -148,7 +149,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
             curr, conn, state, compute_stream);
 
         // Create the instruction and add it to the synapse instuction list
-        synapse_instructions[conn] = syn_inst;
+        synapse_activate_instructions[conn] = syn_inst;
         activate_instructions.push_back(syn_inst);
 
         // If plastic, create update instruction
@@ -156,6 +157,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
             auto syn_update_inst = new SynapseUpdateInstruction(
                 curr, conn, state, compute_stream);
             update_instructions.push_back(syn_update_inst);
+            synapse_update_instructions[conn] = syn_update_inst;
         }
     }
 }
@@ -203,6 +205,11 @@ Instruction* ClusterNode::get_output_instruction() const {
 }
 
 const std::map<Connection*, Instruction*>
-        ClusterNode::get_synapse_instructions() const {
-    return synapse_instructions;
+        ClusterNode::get_synapse_activate_instructions() const {
+    return synapse_activate_instructions;
+}
+
+const std::map<Connection*, Instruction*>
+        ClusterNode::get_synapse_update_instructions() const {
+    return synapse_update_instructions;
 }

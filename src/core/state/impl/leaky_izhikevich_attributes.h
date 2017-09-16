@@ -1,7 +1,7 @@
 #ifndef leaky_izhikevich_attributes_h
 #define leaky_izhikevich_attributes_h
 
-#include "state/izhikevich_attributes.h"
+#include "state/impl/izhikevich_attributes.h"
 
 class LeakyIzhikevichAttributes : public IzhikevichAttributes {
     public:

@@ -1,4 +1,4 @@
-#include "state/hebbian_rate_encoding_attributes.h"
+#include "state/impl/hebbian_rate_encoding_attributes.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "util/error_manager.h"
 

@@ -25,7 +25,7 @@ Engine::Engine(State *state, Environment *environment)
     // Process inter-device instructions
     for (auto& cluster : clusters) {
         for (auto& node : cluster->get_nodes()) {
-            for (auto& pair : node->get_synapse_instructions()) {
+            for (auto& pair : node->get_synapse_activate_instructions()) {
                 auto conn = pair.first;
                 auto syn_inst = pair.second;
 
@@ -58,8 +58,7 @@ Engine::Engine(State *state, Environment *environment)
 }
 
 Engine::~Engine() {
-    for (auto& cluster : clusters)
-        delete cluster;
+    for (auto& cluster : clusters) delete cluster;
     for (auto& inst : inter_device_transfers) delete inst;
 }
 

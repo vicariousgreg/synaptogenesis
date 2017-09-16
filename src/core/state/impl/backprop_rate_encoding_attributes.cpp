@@ -1,4 +1,4 @@
-#include "state/backprop_rate_encoding_attributes.h"
+#include "state/impl/backprop_rate_encoding_attributes.h"
 #include "util/error_manager.h"
 
 REGISTER_ATTRIBUTES(BackpropRateEncodingAttributes, "backprop_rate_encoding")

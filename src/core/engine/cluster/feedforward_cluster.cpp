@@ -34,14 +34,3 @@ FeedforwardCluster::FeedforwardCluster(Structure *structure,
             ErrorManager::get_instance()->log_error(
                 "Feedforward engine requires a structure with no cycles!");
 }
-
-/******************************************************************************/
-/****************************** LAUNCHERS *************************************/
-/******************************************************************************/
-
-void FeedforwardCluster::launch_weight_update() {
-    // Perform learning in reverse
-    for (auto it = nodes.rbegin() ; it != nodes.rend() ; ++it)
-        for (auto& inst : (*it)->get_update_instructions())
-            inst->activate();
-}

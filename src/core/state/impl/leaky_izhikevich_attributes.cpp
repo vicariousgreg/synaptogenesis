@@ -1,7 +1,7 @@
 #include <string>
 #include <math.h>
 
-#include "state/leaky_izhikevich_attributes.h"
+#include "state/impl/leaky_izhikevich_attributes.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"

@@ -1,7 +1,7 @@
 #ifndef backprop_rate_encoding_attributes_h
 #define backprop_rate_encoding_attributes_h
 
-#include "state/rate_encoding_attributes.h"
+#include "state/impl/rate_encoding_attributes.h"
 
 class BackpropRateEncodingAttributes : public RateEncodingAttributes {
     public:
