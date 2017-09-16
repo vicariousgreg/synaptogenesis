@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "io/module/image_input_module.h"
+#include "io/module/impl/image_input_module.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 

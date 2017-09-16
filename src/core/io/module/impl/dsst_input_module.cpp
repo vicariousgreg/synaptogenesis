@@ -1,4 +1,4 @@
-#include "io/module/dsst_input_module.h"
+#include "io/module/impl/dsst_input_module.h"
 #include "util/error_manager.h"
 
 REGISTER_MODULE(DSSTInputModule, "dsst_input", INPUT);

@@ -487,8 +487,10 @@ void mnist_perceptron_test() {
             new FlatWeightConfig(0)));
 
     // Modules
-    std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
-    std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
+    // std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
+    // std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
+    std::string input_file = "/HDD/datasets/mnist/processed/mnist_train_input.csv";
+    std::string output_file = "/HDD/datasets/mnist/processed/mnist_train_output.csv";
     structure->add_module("input_layer",
         (new ModuleConfig("csv_input"))
         ->set_property("filename", input_file)
@@ -496,7 +498,7 @@ void mnist_perceptron_test() {
         ->set_property("exposure", "1")
         ->set_property("normalization", "255"));
     structure->add_module("output_layer",
-        (new ModuleConfig("csv_expected"))
+        (new ModuleConfig("csv_evaluator"))
         ->set_property("filename", output_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
@@ -506,8 +508,8 @@ void mnist_perceptron_test() {
     structure->add_module("input_layer", new ModuleConfig("heatmap"));
     structure->add_module("output_layer", new ModuleConfig("visualizer_output"));
     structure->add_module("output_layer", new ModuleConfig("heatmap"));
-    */
     structure->add_module("output_layer", new ModuleConfig("csv_output"));
+    */
     structure->add_module("bias_layer",
         (new ModuleConfig("random_input"))
         ->set_property("uniform", "true"));

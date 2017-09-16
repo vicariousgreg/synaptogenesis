@@ -1,6 +1,6 @@
 #include <cstdlib>
 
-#include "io/module/one_hot_cyclic_input_module.h"
+#include "io/module/impl/one_hot_cyclic_input_module.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 

@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 
-#include "io/module/csv_output_module.h"
+#include "io/module/impl/csv_output_module.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 

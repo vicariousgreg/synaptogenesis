@@ -4,13 +4,13 @@
 #include <fstream>
 #include <string>
 
-#include "io/module/csv_expected_module.h"
+#include "io/module/impl/csv_input_module.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 
-REGISTER_MODULE(CSVExpectedModule, "csv_expected", EXPECTED);
+REGISTER_MODULE(CSVInputModule, "csv_input", INPUT);
 
-CSVExpectedModule::CSVExpectedModule(Layer *layer, ModuleConfig *config)
+CSVInputModule::CSVInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer) {
     std::string filename = config->get_property("filename", "");
     int offset = std::stoi(config->get_property("offset", "0"));
@@ -35,12 +35,12 @@ CSVExpectedModule::CSVExpectedModule(Layer *layer, ModuleConfig *config)
     CsvRow *row;
 
     while ((row = CsvParser_getRow(csvparser)) ) {
-        data.push_back(Pointer<Output>(layer->size));
+        data.push_back(Pointer<float>(layer->size));
         const char **rowFields = CsvParser_getFields(row);
         if (layer->size > CsvParser_getNumFields(row) - offset)
             ErrorManager::get_instance()->log_error("Bad CSV file!");
 
-        float *ptr = (float*)data[data.size()-1].get();
+        float *ptr = data[data.size()-1].get();
         for (int i = 0 ; i < layer->size ; i++) {
             std::stringstream(rowFields[i+offset]) >> ptr[i];
             ptr[i] /= normalization;
@@ -51,14 +51,14 @@ CSVExpectedModule::CSVExpectedModule(Layer *layer, ModuleConfig *config)
     curr_row = 0;
 }
 
-CSVExpectedModule::~CSVExpectedModule() {
+CSVInputModule::~CSVInputModule() {
     for (auto pointer : data) pointer.free();
 }
 
-void CSVExpectedModule::feed_expected(Buffer *buffer) {
+void CSVInputModule::feed_input(Buffer *buffer) {
     if (curr_row >= this->data.size()) curr_row = 0;
     if (++age >= exposure) {
-        buffer->set_expected(this->layer, this->data[curr_row++]);
+        buffer->set_input(this->layer, this->data[curr_row++]);
         this->age = 0;
     }
 }

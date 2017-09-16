@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include "io/module/dsst_output_module.h"
+#include "io/module/impl/dsst_output_module.h"
 #include "util/error_manager.h"
 #include "util/tools.h"
 

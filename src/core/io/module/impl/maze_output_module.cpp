@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "io/module/maze_output_module.h"
+#include "io/module/impl/maze_output_module.h"
 #include "util/error_manager.h"
 
 REGISTER_MODULE(MazeOutputModule, "maze_output", OUTPUT);

@@ -13,7 +13,7 @@ class CSVExpectedModule : public Module {
         void feed_expected(Buffer *buffer);
         virtual IOTypeMask get_type() { return EXPECTED; }
 
-    private:
+    protected:
         int age;
         int exposure;
         int curr_row;

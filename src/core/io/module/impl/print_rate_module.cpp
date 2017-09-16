@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "io/module/print_rate_module.h"
+#include "io/module/impl/print_rate_module.h"
 #include "util/tools.h"
 #include "util/error_manager.h"
 

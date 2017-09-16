@@ -1,4 +1,4 @@
-#include "io/module/maze_input_module.h"
+#include "io/module/impl/maze_input_module.h"
 #include "util/error_manager.h"
 
 REGISTER_MODULE(MazeInputModule, "maze_input", INPUT);
