@@ -61,9 +61,10 @@ void CSVEvaluatorModule::report_output(Buffer *buffer, OutputType output_type) {
 
     // If we hit the end of the CSV file, print stats and reset
     if (this->curr_row >= this->data.size()) {
-        printf("Correct: %d / %d [%f%%]    SSE: %f\n",
+        printf("Correct: %9d / %9d [ %9.6f%% ]    SSE: %f\n",
             correct, this->data.size(),
-            float(correct) / this->data.size(), total_SSE);
+            100.0 * float(correct) / this->data.size(),
+            total_SSE);
         this->correct = 0;
         this->total_SSE = 0;
     }
