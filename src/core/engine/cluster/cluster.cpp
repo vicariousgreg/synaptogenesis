@@ -24,11 +24,12 @@ void Cluster::add_external_dependencies(
     // This prevents race conditions from output updates
     // Ensure that the output is not updated until it's been transferred
     for (auto& node : nodes) {
-        for (auto& pair : node->get_synapse_activate_instructions()) {
-            all_nodes[pair.first->from_layer]
-                ->get_state_update_instruction()->add_dependency(pair.second);
-            pair.second->add_dependency(
-                all_nodes[pair.first->from_layer]->get_state_update_instruction());
+        for (auto& syn_inst : node->get_synapse_activate_instructions()) {
+            auto conn = syn_inst->connection;
+            all_nodes[conn->from_layer]
+                ->get_state_update_instruction()->add_dependency(syn_inst);
+            syn_inst->add_dependency(
+                all_nodes[conn->from_layer]->get_state_update_instruction());
         }
     }
 }

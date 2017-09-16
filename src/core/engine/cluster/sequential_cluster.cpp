@@ -64,6 +64,27 @@ SequentialCluster::SequentialCluster(Structure *structure,
             "Sequential cluster failed to process all layers!");
 }
 
+/* Because the SequentialCluster computes nodes and synapses in order,
+ *   this function simply adds the transfer instruction as a child for
+ *   the first synapse instruction it showed up with, which should be
+ *   passed in with |new_transfer| == true.  This synapse instruction
+ *   will be executed before all others, so it's the only one that needs
+ *   to be concerned about the transfer. */
+void SequentialCluster::add_inter_device_instruction(
+        Instruction *synapse_instruction,
+        Instruction *inter_device_instruction,
+        bool new_transfer) {
+    if (new_transfer) {
+        // Add as child to synapse_instruction
+        synapse_instruction->add_child(inter_device_instruction);
+    } else {
+        // Set the synapse instruction to depend on transfer
+        // If the InterDevice instruction is created, this
+        //   happens automatically in add_child()
+        synapse_instruction->add_dependency(inter_device_instruction);
+    }
+}
+
 /******************************************************************************/
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/

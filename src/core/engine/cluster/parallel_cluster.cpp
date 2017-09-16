@@ -61,11 +61,31 @@ InstructionList ParallelCluster::sort_instructions(
     return destination;
 }
 
+/* The parallel cluster activates inter device transfers at the beginning
+ *   of the cycle.  If it's a new instruction, copy over the dependencies
+ *   from the synapse instruction and add it to the list.  Regardless of
+ *   whether it's new, make the synapse instruction depend on it. */
+void ParallelCluster::add_inter_device_instruction(
+        Instruction *synapse_instruction,
+        Instruction *inter_device_instruction,
+        bool new_transfer) {
+    // Add new transfers to the list to be executed
+    // Copy the synapse instructions dependencies over
+    if (new_transfer) {
+        inter_device_instruction->copy_dependencies(synapse_instruction);
+        inter_device_instructions.push_back(inter_device_instruction);
+    }
+    // Regardless of whether it's new, make the synapse instruction
+    //   depend on the transfer instruction
+    synapse_instruction->add_dependency(inter_device_instruction);
+}
+
 /******************************************************************************/
 /****************************** LAUNCHERS *************************************/
 /******************************************************************************/
 
 void ParallelCluster::launch_pre_input_calculations() {
+    for (auto& inst : this->inter_device_instructions) inst->activate();
     for (auto& inst : this->pre_input_instructions) inst->activate();
 }
 

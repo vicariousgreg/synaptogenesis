@@ -25,9 +25,8 @@ Engine::Engine(State *state, Environment *environment)
     // Process inter-device instructions
     for (auto& cluster : clusters) {
         for (auto& node : cluster->get_nodes()) {
-            for (auto& pair : node->get_synapse_activate_instructions()) {
-                auto conn = pair.first;
-                auto syn_inst = pair.second;
+            for (auto& syn_inst : node->get_synapse_activate_instructions()) {
+                auto conn = syn_inst->connection;
 
                 // If inter-device, find or create corresponding transfer instruction
                 if (state->is_inter_device(conn)) {
@@ -42,15 +41,20 @@ Engine::Engine(State *state, Environment *environment)
                     }
 
                     // Create if doesn't exist
-                    // Add synapse instruction's dependencies
+                    // Clusters are responsible for handling these transfers,
+                    //   since different types handle them differently
+                    // The first cluster to contain a synapse instruction that
+                    //   requires the transfer will be given the transfer
+                    //   instruction.  All clusters will be notified, and the
+                    //   flag parameter can be used to distinguish new transfers
+                    //   from repeats.
                     if (inst == nullptr) {
                         inst = new InterDeviceTransferInstruction(conn, state);
                         this->inter_device_transfers.push_back(inst);
-                        inst->copy_dependencies(syn_inst);
+                        cluster->add_inter_device_instruction(syn_inst, inst, true);
+                    } else {
+                        cluster->add_inter_device_instruction(syn_inst, inst, false);
                     }
-
-                    // Set the synapse instruction to depend on transfer
-                    syn_inst->add_dependency(inst);
                 }
             }
         }
@@ -63,10 +67,6 @@ Engine::~Engine() {
 }
 
 void Engine::stage_clear() {
-    // Launch inter-device transfers
-    for (auto inst : this->inter_device_transfers)
-        inst->activate();
-
     // Launch pre-input calculations
     for (auto& cluster : clusters)
         cluster->launch_pre_input_calculations();

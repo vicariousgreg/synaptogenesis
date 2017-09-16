@@ -18,12 +18,15 @@ class Instruction {
                   threads(calc_threads(layer->size)),
                   blocks(calc_blocks(layer->size)),
                   stream(stream),
-                  event(nullptr) { }
+                  event(nullptr),
+                  child(nullptr) { }
         virtual ~Instruction() { }
 
         virtual void activate() = 0;
 
         void wait_for_dependencies() {
+            // If this instruction has a child, activate it first
+            if (child != nullptr) child->activate();
             for (auto& dep : dependencies) stream->wait(dep);
         }
 
@@ -45,6 +48,16 @@ class Instruction {
                 this->dependencies.push_back(dep);
         }
 
+        /* Adds a child instruction which will be completed before this
+         *   instruction is activated.  Dependencies are transferred to
+         *   the child, and replaced with the child. */
+        void add_child(Instruction *inst) {
+            this->child = inst;
+            inst->copy_dependencies(this);
+            this->dependencies.clear();
+            this->add_dependency(inst);
+        }
+
         Layer* const to_layer;
 
     protected:
@@ -52,6 +65,7 @@ class Instruction {
         Event* event;
         std::vector<Event*> dependencies;
         int blocks, threads;
+        Instruction *child;
 };
 
 /* Inter-device connections transfer instruction */
@@ -418,5 +432,6 @@ class StateLearningInstruction : public StateInstruction {
 };
 
 typedef std::vector<Instruction*> InstructionList;
+typedef std::vector<SynapseInstruction*> SynapseInstructionList;
 
 #endif

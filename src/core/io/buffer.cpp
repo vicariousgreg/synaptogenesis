@@ -14,21 +14,15 @@ Buffer *build_buffer(DeviceID device_id, Model *model) {
 
 Buffer *build_buffer(DeviceID device_id, LayerList input_layers,
         LayerList output_layers, LayerList expected_layers) {
-    if (ResourceManager::get_instance()->is_host(device_id))
-        return new HostBuffer(
-            input_layers,
-            output_layers,
-            expected_layers);
-    else
-        return new DeviceBuffer(
-            input_layers,
-            output_layers,
-            expected_layers,
-            device_id);
+    return new Buffer(
+        input_layers,
+        output_layers,
+        expected_layers,
+        device_id);
 }
 
 Buffer::Buffer(LayerList input_layers, LayerList output_layers,
-        LayerList expected_layers) {
+        LayerList expected_layers, DeviceID device_id) : device_id(device_id) {
     this->input_layers = input_layers;
     this->output_layers = output_layers;
     this->expected_layers = expected_layers;
@@ -38,9 +32,25 @@ Buffer::Buffer(LayerList input_layers, LayerList output_layers,
     for (auto layer : input_layers) input_size += layer->size;
     for (auto layer : output_layers) output_size += layer->size;
     for (auto layer : expected_layers) expected_size += layer->size;
-}
 
-void Buffer::init() {
+    // Create pointers
+    // Use pinned pointers for host
+    if (ResourceManager::get_instance()->is_host(device_id)) {
+        if (input_size > 0)
+            input = Pointer<float>::pinned_pointer(input_size, 0.0);
+        if (output_size > 0)
+            output = Pointer<Output>::pinned_pointer(output_size);
+        if (expected_size > 0)
+            expected = Pointer<Output>::pinned_pointer(expected_size);
+    } else {
+        if (input_size > 0)
+            input = Pointer<float>(input_size, 0.0);
+        if (output_size > 0)
+            output = Pointer<Output>(output_size);
+        if (expected_size > 0)
+            expected = Pointer<Output>(expected_size);
+    }
+
     // Set up maps
     int input_index = 0;
     int output_index = 0;
@@ -88,25 +98,6 @@ Pointer<Output> Buffer::get_output(Layer *layer) {
 
 Pointer<Output> Buffer::get_expected(Layer *layer) {
     return expected.slice(expected_map[layer], layer->size);
-}
-
-void HostBuffer::init() {
-    // Allocate buffer memory
-    if (input_size > 0) input = Pointer<float>::pinned_pointer(input_size, 0.0);
-    if (output_size > 0) output = Pointer<Output>::pinned_pointer(output_size);
-    if (expected_size > 0) expected = Pointer<Output>::pinned_pointer(expected_size);
-    Buffer::init();
-}
-
-void DeviceBuffer::init() {
-    // Allocate buffer memory
-    if (input_size > 0)
-        input = Pointer<float>(input_size, 0.0);
-    if (output_size > 0)
-        output = Pointer<Output>(output_size);
-    if (expected_size > 0)
-        expected = Pointer<Output>(expected_size);
-    Buffer::init();
 }
 
 std::vector<BasePointer*> Buffer::get_pointers() {

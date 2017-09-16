@@ -106,23 +106,17 @@ State::State(Model *model) : model(model) {
     // Create buffers
     for (DeviceID device_id = 0; device_id < num_devices; ++device_id) {
         // Set up internal buffer
-        LayerList input_layers, output_layers, expected_layers;
+        LayerList device_layers;
 
         // Extract layers assigned to this device
-        for (auto layer : model->get_input_layers()) {
+        for (auto layer : model->get_layers())
             if (layer_devices[layer] == device_id)
-                input_layers.push_back(layer);
-        }
-        for (auto layer : model->get_output_layers()) {
-            if (layer_devices[layer] == device_id)
-                output_layers.push_back(layer);
-        } for (auto layer : model->get_expected_layers()) {
-            if (layer_devices[layer] == device_id)
-                expected_layers.push_back(layer);
-        }
+                device_layers.push_back(layer);
 
+        // Set up input/expected buffer for device layers
+        // No need for output, which is streamed straight off device
         auto buffer =
-            build_buffer(device_id, input_layers, output_layers, expected_layers);
+            build_buffer(device_id, device_layers, LayerList(), device_layers);
         internal_buffers.push_back(buffer);
 
         // Retrieve pointers
@@ -329,10 +323,6 @@ Pointer<float> State::get_buffer_input(Layer *layer) const {
 
 Pointer<Output> State::get_buffer_expected(Layer *layer) const {
     return internal_buffers.at(layer_devices.at(layer))->get_expected(layer);
-}
-
-Pointer<Output> State::get_buffer_output(Layer *layer) const {
-    return internal_buffers.at(layer_devices.at(layer))->get_output(layer);
 }
 
 OutputType State::get_output_type(Layer *layer) const {

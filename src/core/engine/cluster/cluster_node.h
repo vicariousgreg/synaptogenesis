@@ -12,7 +12,9 @@ class Connection;
 class State;
 class Environment;
 class Instruction;
+class SynapseInstruction;
 typedef std::vector<Instruction*> InstructionList;
+typedef std::vector<SynapseInstruction*> SynapseInstructionList;
 
 class ClusterNode {
     public:
@@ -27,18 +29,14 @@ class ClusterNode {
         void synchronize_input();
         void synchronize_output();
 
-        const InstructionList get_activate_instructions() const;
-        const InstructionList get_update_instructions() const;
+        const InstructionList& get_activate_instructions() const;
+        const InstructionList& get_update_instructions() const;
         Instruction* get_input_instruction() const;
         Instruction* get_state_update_instruction() const;
         Instruction* get_state_learning_instruction() const;
         Instruction* get_output_instruction() const;
-        const std::map<Connection*, Instruction*>
-            get_synapse_activate_instructions() const;
-        const std::map<Connection*, Instruction*>
-            get_synapse_update_instructions() const;
-        const std::map<Connection*, Instruction*>
-            get_external_transfer_instructions();
+        const SynapseInstructionList& get_synapse_activate_instructions() const;
+        const SynapseInstructionList& get_synapse_update_instructions() const;
 
         Layer* const to_layer;
         const DeviceID device_id;
@@ -51,8 +49,8 @@ class ClusterNode {
     private:
         void dendrite_DFS(DendriticNode *curr);
 
-        std::map<Connection*, Instruction*> synapse_activate_instructions;
-        std::map<Connection*, Instruction*> synapse_update_instructions;
+        SynapseInstructionList synapse_activate_instructions;
+        SynapseInstructionList synapse_update_instructions;
 
         InstructionList activate_instructions;
         InstructionList update_instructions;

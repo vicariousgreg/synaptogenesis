@@ -22,6 +22,10 @@ class Cluster {
 
         void add_external_dependencies(
             std::map<Layer*, ClusterNode*> all_nodes);
+        virtual void add_inter_device_instruction(
+            Instruction *synapse_instruction,
+            Instruction *inter_device_instruction,
+            bool new_transfer) = 0;
 
         void launch_input();
         void launch_output();
@@ -48,6 +52,11 @@ class ParallelCluster : public Cluster {
         ParallelCluster(Structure *structure, State *state,
             Environment *environment);
 
+        virtual void add_inter_device_instruction(
+            Instruction *synapse_instruction,
+            Instruction *inter_device_instruction,
+            bool new_transfer);
+
         virtual void launch_pre_input_calculations();
         virtual void launch_post_input_calculations();
         virtual void launch_state_update();
@@ -57,6 +66,7 @@ class ParallelCluster : public Cluster {
         InstructionList sort_instructions(
             IOTypeMask include, IOTypeMask exclude, bool plastic);
 
+        InstructionList inter_device_instructions;
         InstructionList pre_input_instructions;
         InstructionList post_input_instructions;
         InstructionList plastic_instructions;
@@ -66,6 +76,11 @@ class SequentialCluster : public Cluster {
     public:
         SequentialCluster(Structure *structure, State *state,
             Environment *environment);
+
+        virtual void add_inter_device_instruction(
+            Instruction *synapse_instruction,
+            Instruction *inter_device_instruction,
+            bool new_transfer);
 
         virtual void launch_post_input_calculations();
         virtual void launch_weight_update();

@@ -43,18 +43,6 @@ void print_model(Model *model) {
     }
 }
 
-void run_simulation(Model *model, int iterations, bool verbose) {
-    // Calculate ideal refresh rate, run for iterations
-    Clock clock(true);
-    delete clock.run(model, iterations, verbose);
-
-    // Benchmark the network
-    // Use max refresh rate possible
-    // Run for 100 iterations
-    //Clock clock(false);  // No refresh rate synchronization
-    //delete clock.run(model, 100, verbose);
-}
-
 void old_test() {
     /* Construct the model */
     Model *model = new Model();
@@ -535,82 +523,6 @@ void mnist_perceptron_test() {
     clock.run(model, 10000, false, state, false);
 
     delete state;
-    delete model;
-}
-
-void speech_train() {
-    /* Construct the model */
-    Model *model = new Model();
-
-    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 7);
-    auditory_cortex->add_input("3b_pos", "speech_input",
-        new ModuleConfig("csv_input", "./resources/hearing.csv 0 1 0.25"));
-    //auditory_cortex->add_input("3b_pos", "speech_input",
-    //    new ModuleConfig("csv_input", "./resources/substitute.csv 0 1 0.25"));
-    //auditory_cortex->add_module_all(new ModuleConfig("visualizer_output"));
-    //auditory_cortex->add_module_all(new ModuleConfig("heatmap"));
-
-    // Modules
-    //structure->add_module("convergent_layer", new ModuleConfig("csv_output"));
-
-    std::cout << "Speech train......\n";
-    print_model(model);
-    Clock clock(false);
-
-    auto state = clock.run(model, 1635324, true);
-    std::cout << "\n";
-    state->save("hearing-spread-dual.bin");
-
-    delete state;
-    delete model;
-}
-
-void speech_test(std::string filename) {
-    /* Construct the model */
-    Model *model = new Model();
-
-    AuditoryCortex *auditory_cortex = new AuditoryCortex(model, 41, 7);
-    auditory_cortex->add_input("3b_pos", "speech_input",
-        new ModuleConfig("csv_input", filename + " 0 1 0.5"));
-    //auditory_cortex->add_module_all(new ModuleConfig("visualizer_output"));
-    //auditory_cortex->add_module_all(new ModuleConfig("heatmap"));
-    auditory_cortex->add_module("5a_pos", new ModuleConfig("csv_output"));
-
-    std::cout << "Speech test......\n";
-    print_model(model);
-    Clock clock(true);
-
-    auto state = new State(model);
-    state->load("hearing-spread.bin");
-    state = clock.run(model, 717, false, state);
-
-    delete state;
-    std::cout << "\n";
-
-    delete model;
-}
-
-void maze_game_test() {
-    /* Construct the model */
-    Model *model = new Model();
-    int board_dim = 5;
-    MazeGame::get_instance(true)->set_board_dim(board_dim);
-
-    MazeCortex *maze_cortex = new MazeCortex(model, board_dim, 16);
-    maze_cortex->add_module_all(new ModuleConfig("visualizer_output"));
-    maze_cortex->add_module_all(new ModuleConfig("heatmap"));
-
-    std::cout << "Maze game test......\n";
-    print_model(model);
-    Clock clock(true);
-    //Clock clock(10.0f);
-
-    MazeGame::get_instance(true)->set_board_dim(board_dim);
-    delete clock.run(model, 1000000, true);
-
-    //delete clock.run(model, 100, true);
-    std::cout << "\n";
-
     delete model;
 }
 
@@ -1118,29 +1030,6 @@ void debug_test() {
 }
 
 
-static void print_subset_overlap(Structure *structure) {
-    for (auto layer : structure->get_layers()) {
-        int *grid = (int*) calloc (layer->size, sizeof(int));
-        for (auto conn : layer->get_input_connections()) {
-            if (conn->type == SUBSET) {
-                auto sc = conn->get_config()->get_subset_config();
-                for (int row = sc->to_row_start; row < sc->to_row_end; ++row) {
-                    for (int col = sc->to_col_start; col < sc->to_col_end; ++col) {
-                        ++grid[row * layer->columns + col];
-                    }
-                }
-            }
-        }
-        for (int row = 0; row < layer->rows; ++row) {
-            for (int col = 0; col < layer->columns; ++col) {
-                printf("%d ", grid[row * layer->columns + col]);
-            }
-            printf("\n");
-        }
-        free(grid);
-    }
-}
-
 int main(int argc, char *argv[]) {
     // Seed random number generator
     srand(time(nullptr));
@@ -1151,9 +1040,6 @@ int main(int argc, char *argv[]) {
     try {
         //mnist_test();
         mnist_perceptron_test();
-        //speech_train();
-        //speech_test(std::string(argv[1]));
-        //maze_game_test();
         //old_test();
         //simple_test();
         //single_field_test();
