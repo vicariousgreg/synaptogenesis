@@ -57,3 +57,16 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
     }
 #endif
 }
+
+void BasePointer::copy_to(BasePointer* other) {
+    if (other->size != this->size or other->unit_size != this->unit_size)
+        ErrorManager::get_instance()->log_error(
+            "Attempted to copy memory between pointers of different sizes!");
+
+    if (this->local and other->local)
+        memcpy(other->ptr, this->ptr, this->size * this->unit_size);
+    else
+        ErrorManager::get_instance()->log_error(
+            "Attempted to copy memory between base pointers "
+            "that aren't on the host!");
+}

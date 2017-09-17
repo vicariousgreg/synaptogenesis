@@ -39,6 +39,10 @@ class BasePointer {
         void transfer(DeviceID new_device, void* destination,
             bool transfer_ownership);
 
+        // Copy data between base pointers
+        // Used for IO, can only be called from the host
+        void copy_to(BasePointer* other);
+
     protected:
         BasePointer(void* ptr, size_t size, size_t unit_size, DeviceID device_id,
             bool local, bool pinned, bool owner)

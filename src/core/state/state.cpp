@@ -8,7 +8,7 @@
 #include "io/buffer.h"
 #include "util/tools.h"
 
-State::State(Model *model) : model(model) {
+State::State(Model *model) : model(model), on_host(true) {
     // Determine number of non-host devices
     // Subtract one if cuda is enabled to avoid distribution to the host
     this->num_devices = ResourceManager::get_instance()->get_num_devices();
@@ -171,6 +171,8 @@ State::~State() {
 
 void State::transfer_to_device() {
 #ifdef __CUDACC__
+    if (not on_host) return;
+
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
@@ -189,11 +191,15 @@ void State::transfer_to_device() {
         for (int i = 0; i < num_devices; ++i)
             if (attributes[i][n] != nullptr)
                 attributes[i][n]->transfer_to_device();
+
+    on_host = true;
 #endif
 }
 
 void State::transfer_to_host() {
 #ifdef __CUDACC__
+    if (on_host) return;
+
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
@@ -206,7 +212,32 @@ void State::transfer_to_host() {
     for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
         if (device_id != host_id)
             res_man->transfer(host_id, buffer_pointers[device_id]);
+
+    on_host = true;
 #endif
+}
+
+void State::copy_to(State* other) {
+    // Transfer states to the host temporarily if necessary
+    bool this_on_host = this->on_host;
+    if (not this_on_host) this->transfer_to_host();
+
+    bool other_on_host = other->on_host;
+    if (not other_on_host) other->transfer_to_host();
+
+    // Copy over any matching pointers
+    for (auto pair : this->pointer_map) {
+        if (other->pointer_map.count(pair.first) > 0) {
+            auto this_ptr = this->pointer_map.at(pair.first);
+            auto other_ptr = other->pointer_map.at(pair.first);
+            if (this_ptr->get_bytes() == other_ptr->get_bytes())
+                this_ptr->copy_to(other_ptr);
+        }
+    }
+
+    // Transfer back to device if necessary
+    if (not this_on_host) this->transfer_to_device();
+    if (not other_on_host) other->transfer_to_device();
 }
 
 bool State::exists(std::string file_name) {

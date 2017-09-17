@@ -24,6 +24,9 @@ class State {
         void transfer_to_device();
         void transfer_to_host();
 
+        /* Copy data over to another state */
+        void copy_to(State* other);
+
         /* Save or load state to/from disk */
         static bool exists(std::string file_name);
         void save(std::string file_name, bool verbose=false);
@@ -60,6 +63,7 @@ class State {
 
     private:
         int num_devices;
+        bool on_host;
         std::vector<Buffer*> internal_buffers;
         std::vector<std::map<int, Buffer*> > inter_device_buffers;
         std::vector<std::map<std::string, Attributes*> > attributes;
