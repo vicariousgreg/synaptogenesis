@@ -1,3 +1,6 @@
+#ifndef clock_h
+#define clock_h
+
 #include <iostream>
 #include <thread>
 #include <mutex>
@@ -5,6 +8,7 @@
 #include <string>
 
 #include "util/tools.h"
+#include "context.h"
 
 class Model;
 class State;
@@ -54,9 +58,7 @@ class Clock {
                   environment_rate(environment_rate),
                   calc_rate(false) { }
 
-        State* run(Model *model, int iterations, bool verbose,
-            State* state=nullptr, bool learning_flag=true,
-            bool suppress_output=false);
+        Context* run(Context *context, int iterations, bool verbose);
 
     private:
         void engine_loop(int iterations, bool verbose);
@@ -74,3 +76,5 @@ class Clock {
         Lock sensory_lock;
         Lock motor_lock;
 };
+
+#endif

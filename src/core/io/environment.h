@@ -10,7 +10,7 @@ class State;
 
 class Environment {
     public:
-        Environment(State *state, bool suppress_output=false);
+        Environment(State *state);
         virtual ~Environment();
 
         void step_input();
@@ -20,6 +20,7 @@ class Environment {
         void ui_update();
 
         OutputType get_output_type(Layer *layer);
+        void set_suppress_output(bool status) { suppress_output = status; };
 
         Buffer* const buffer;
         State* const state;
@@ -29,6 +30,7 @@ class Environment {
         ModuleList input_modules;
         ModuleList expected_modules;
         ModuleList output_modules;
+        bool suppress_output;
 };
 
 #endif

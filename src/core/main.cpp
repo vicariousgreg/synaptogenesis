@@ -11,9 +11,12 @@
 #include "model/column.h"
 #include "model/weight_config.h"
 #include "io/module/module.h"
+#include "io/environment.h"
+#include "engine/engine.h"
 #include "state/state.h"
 #include "util/tools.h"
 #include "clock.h"
+#include "context.h"
 #include "maze_game.h"
 #include "dsst.h"
 
@@ -144,8 +147,7 @@ void old_test() {
 
     print_model(model);
     Clock clock(true);
-    delete clock.run(model, 1000000, true);
-    delete model;
+    delete clock.run(new Context(model), 1000000, true);
 }
 
 void simple_test() {
@@ -261,18 +263,18 @@ void simple_test() {
 
     if (State::exists(filename)) {
         print_model(model);
-        auto state = new State(model);
-        state->load("simple.bin");
-        state = clock.run(model, 1000000, true, state);
-        delete state;
+        auto context = new Context(model);
+        context->state->load("simple.bin");
+        delete clock.run(context, 1000000, true);
     } else {
         print_model(model);
-        auto state = new State(model);
-        state = clock.run(model, 500000, true, state, true, true);
-        state->save("simple.bin");
-        delete state;
+        Context *context = new Context(model);
+        context->environment->set_suppress_output(true);
+        context->engine->set_learning_flag(true);
+        clock.run(context, 500000, true);
+        context->state->save("simple.bin");
+        delete context;
     }
-    delete model;
 }
 
 void single_field_test() {
@@ -329,8 +331,7 @@ void single_field_test() {
 
     print_model(model);
     Clock clock(true);
-    delete clock.run(model, 1000000, true);
-    delete model;
+    delete clock.run(new Context(model), 1000000, true);
 }
 
 void mnist_test() {
@@ -448,13 +449,11 @@ void mnist_test() {
     print_model(model);
 
     Clock clock(true);
-    auto state = clock.run(model, 1000000, true);
-    state->save("mnist.bin");
+    auto context = clock.run(new Context(model), 1000000, true);
+    context->state->save("mnist.bin");
 
-    delete state;
+    delete context;
     std::cout << "\n";
-
-    delete model;
 }
 
 void mnist_perceptron_test() {
@@ -495,8 +494,8 @@ void mnist_perceptron_test() {
 
     // Run training
     Clock clock(false);
-    auto state = new State(model);
-    clock.run(model, 60000, false, state);
+    Context *context = new Context(model);
+    clock.run(context, 60000, false);
 
     // Remove modules and replace for testing
     model->remove_modules();
@@ -520,10 +519,10 @@ void mnist_perceptron_test() {
         ->set_property("uniform", "true"));
 
     // Run testing (disable learning)
-    clock.run(model, 10000, false, state, false);
+    context->engine->set_learning_flag(false);
+    clock.run(context, 10000, false);
 
-    delete state;
-    delete model;
+    delete context;
 }
 
 void game_of_life_test() {
@@ -604,8 +603,7 @@ void game_of_life_test() {
     Clock clock(true);
     //Clock clock(1.0f);
     print_model(model);
-    delete clock.run(model, 500000, true);
-    delete model;
+    delete clock.run(new Context(model), 500000, true);
 }
 
 void working_memory_test() {
@@ -832,8 +830,7 @@ void working_memory_test() {
     Clock clock(true);
     //Clock clock(1.0f);
     print_model(model);
-    delete clock.run(model, 500000, true, nullptr, true, false);
-    delete model;
+    delete clock.run(new Context(model), 500000, true);
 }
 
 void dsst_test() {
@@ -904,7 +901,7 @@ void dsst_test() {
     print_model(model);
     Clock clock(true);
 
-    delete clock.run(model, 1000000, true);
+    delete clock.run(new Context(model), 1000000, true);
     delete model;
 }
 
@@ -1025,8 +1022,7 @@ void debug_test() {
     print_model(model);
     Clock clock(true);
 
-    delete clock.run(model, 1, true);
-    delete model;
+    delete clock.run(new Context(model), 1, true);
 }
 
 

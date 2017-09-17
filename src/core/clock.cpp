@@ -75,13 +75,14 @@ void Clock::environment_loop(int iterations, bool verbose) {
     }
 }
 
-State* Clock::run(Model *model, int iterations, bool verbose,
-        State *state, bool learning_flag, bool suppress_output) {
+Context* Clock::run(Context *context, int iterations, bool verbose) {
+    this->environment = context->environment;
+    this->engine = context->engine;
     /**********************/
     /*** Initialization ***/
     /**********************/
     // Initialize cuda random states
-    init_rand(model->get_max_layer_size());
+    init_rand(context->model->get_max_layer_size());
 
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT);
@@ -90,22 +91,12 @@ State* Clock::run(Model *model, int iterations, bool verbose,
     // Start timer
     run_timer.reset();
 
-    // Build state
-    if (state == nullptr) state = new State(model);
-
-    // Build environment
-    environment = new Environment(state, suppress_output);
-
-    // Build engine
-    engine = new Engine(state, environment);
-    engine->set_learning_flag(learning_flag);
-
     if (verbose) run_timer.query("Initialization");
 
     // Ensure device is synchronized without errors
     device_synchronize();
     device_check_error("Clock device synchronization failed!");
-    device_check_memory();
+    if (verbose) device_check_memory();
 
     // Initialize UI
     environment->ui_init();
@@ -128,14 +119,11 @@ State* Clock::run(Model *model, int iterations, bool verbose,
     /****************/
     /*** Clean up ***/
     /****************/
-    // Free memory for engine and environment
-    delete engine;
-    delete environment;
     engine = nullptr;
     environment = nullptr;
 
     free_rand();
     Frontend::cleanup();
 
-    return state;
+    return context;
 }

@@ -5,21 +5,19 @@
 #include "state/state.h"
 #include "frontend.h"
 
-Environment::Environment(State *state, bool suppress_output)
+Environment::Environment(State *state)
         : state(state),
+          suppress_output(false),
           buffer(build_buffer(
               ResourceManager::get_instance()->get_host_id(), state->model)) {
     // Extract modules
     for (auto& layer : state->model->get_layers()) {
         for (auto config : layer->get_module_configs()) {
-            if ((not suppress_output)
-                    or not (Module::get_module_type(config) & OUTPUT)) {
-                Module *module = Module::build_module(layer, config);
-                auto type = module->get_type();
-                if (type & INPUT) this->input_modules.push_back(module);
-                if (type & OUTPUT) this->output_modules.push_back(module);
-                if (type & EXPECTED) this->expected_modules.push_back(module);
-            }
+            Module *module = Module::build_module(layer, config);
+            auto type = module->get_type();
+            if (type & INPUT) this->input_modules.push_back(module);
+            if (type & OUTPUT) this->output_modules.push_back(module);
+            if (type & EXPECTED) this->expected_modules.push_back(module);
         }
     }
 }
@@ -43,8 +41,9 @@ void Environment::step_input() {
 }
 
 void Environment::step_output() {
-    for (auto& module : this->output_modules)
-        module->report_output(buffer, state->get_output_type(module->layer));
+    if (not suppress_output)
+        for (auto& module : this->output_modules)
+            module->report_output(buffer, state->get_output_type(module->layer));
 }
 
 void Environment::ui_init() {
