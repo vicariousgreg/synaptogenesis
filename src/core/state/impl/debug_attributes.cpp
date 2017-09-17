@@ -8,7 +8,7 @@
 
 #define DUMMY_VAL 1.0
 
-REGISTER_ATTRIBUTES(DebugAttributes, "debug")
+REGISTER_ATTRIBUTES(DebugAttributes, "debug", FLOAT)
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/

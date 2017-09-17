@@ -76,13 +76,19 @@ void Clock::environment_loop(int iterations, bool verbose) {
 }
 
 Context* Clock::run(Context *context, int iterations, bool verbose) {
-    this->environment = context->environment;
-    this->engine = context->engine;
+    this->environment =
+        new Environment(
+            context->get_environment_model(),
+            context->get_model(),
+            suppress_output);
+    this->engine = new Engine(context->get_state(), environment);
+    this->engine->set_learning_flag(learning_flag);
+
     /**********************/
     /*** Initialization ***/
     /**********************/
     // Initialize cuda random states
-    init_rand(context->model->get_max_layer_size());
+    init_rand(context->get_model()->get_max_layer_size());
 
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT);
@@ -119,6 +125,8 @@ Context* Clock::run(Context *context, int iterations, bool verbose) {
     /****************/
     /*** Clean up ***/
     /****************/
+    delete engine;
+    delete environment;
     engine = nullptr;
     environment = nullptr;
 

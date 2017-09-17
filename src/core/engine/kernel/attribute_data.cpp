@@ -13,7 +13,7 @@ AttributeData::AttributeData(Layer *layer, State *state) :
         num_weights(layer->get_num_weights()),
         plastic(layer->plastic) {
     // Calculate history size
-    auto output_type = state->get_output_type(layer);
+    auto output_type = Attributes::get_output_type(layer);
     int max_delay_registers = 0;
     for (auto& conn : layer->get_output_connections()) {
         int delay_registers = get_word_index(conn->delay, output_type);

@@ -17,6 +17,7 @@ class Engine {
         virtual ~Engine();
 
         void set_learning_flag(bool status) { learning_flag = status; }
+        bool get_learning_flag() { return learning_flag; }
 
         // Main hooks
         void stage_clear();

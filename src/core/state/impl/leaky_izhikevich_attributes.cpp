@@ -6,7 +6,7 @@
 #include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"
 
-REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich")
+REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich", BIT)
 
 /******************************************************************************/
 /************************** TRACE UPDATER KERNELS *****************************/

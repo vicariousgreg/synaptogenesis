@@ -10,7 +10,6 @@
 #include "model/layer.h"
 #include "model/connection.h"
 #include "util/property_config.h"
-#include "io/module/module.h"
 
 /* Represents a neural structure in a network model.
  * Contains network graph data and parameters for layers/connections.
@@ -25,9 +24,6 @@
  *     constructed.
  *
  * Layers and connections can be created using a variety of functions.
- * In addition, input and output modules can be attached to layers using
- *    add_module(). These modules contain hooks for driving input to a layer
- *    and extracting and using output of a layer.
  */
 class Structure {
     public:
@@ -92,10 +88,6 @@ class Structure {
 
         std::string get_parent_node_name(Connection *conn) const;
 
-        /* Adds a module of the given |config| for the given |layer| */
-        void add_module(std::string layer_name, ModuleConfig *config);
-        void add_module_all(ModuleConfig *config);
-
         // Structure name
         const std::string name;
 
@@ -104,16 +96,16 @@ class Structure {
 
         std::string str() const { return "[Structure: " + name + "]"; }
 
+        /* Find a layer
+         * If not found, logs an error or returns nullptr */
+        Layer* get_layer(std::string name, bool log_error=true);
+
     private:
         /* Internal layer connection functions */
         Connection* connect_layers(
                 Layer *from_layer, Layer *to_layer,
                 ConnectionConfig *config,
                 std::string node="root");
-
-        /* Find a layer
-         * If not found, logs an error or returns nullptr */
-        Layer* find_layer(std::string name, bool log_error=true);
 
         // Layers
         LayerList layers;

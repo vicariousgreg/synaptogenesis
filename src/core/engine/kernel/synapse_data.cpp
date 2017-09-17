@@ -23,7 +23,7 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         to_start_index(state->get_other_start_index(conn->to_layer)),
         to_layer_index(state->get_layer_index(conn->to_layer)),
         num_weights(conn->get_num_weights()),
-        output_type(state->get_output_type(conn->from_layer)),
+        output_type(Attributes::get_output_type(conn->from_layer)),
         weights(state->get_matrix(conn)) {
     destination_outputs = state->get_output(conn->to_layer);
 

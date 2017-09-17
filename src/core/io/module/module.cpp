@@ -1,13 +1,21 @@
 #include "io/module/module.h"
+#include "model/model.h"
+#include "model/layer.h"
 #include "util/error_manager.h"
 
-Module* Module::build_module(Layer *layer, ModuleConfig *config) {
+Module* Module::build_module(Model *model, ModuleConfig *config) {
+    // Check type
+    auto type = config->get_type();
     auto bank = Module::get_module_bank();
-    if (bank->modules.count(config->get_property("type")) == 0)
+    if (bank->modules.count(type) == 0)
         ErrorManager::get_instance()->log_error(
-            "Unrecognized module: " + config->get_property("type") + "!");
+            "Unrecognized module: " + type + "!");
 
-    return bank->build_pointers[config->get_property("type")](layer, config);
+    // Build using structure and layer name
+    return bank->build_pointers[type](
+        model->get_structure(config->get_structure())
+            ->get_layer(config->get_layer()),
+        config);
 }
 
 Module::ModuleBank* Module::get_module_bank() {
@@ -16,7 +24,7 @@ Module::ModuleBank* Module::get_module_bank() {
 }
 
 // Get the IOType of a module subclass
-IOTypeMask Module::get_module_type(std::string module_type) {
+IOTypeMask Module::get_type(std::string module_type) {
     try {
         return Module::get_module_bank()->io_types.at(module_type);
     } catch (std::out_of_range) {
@@ -25,8 +33,8 @@ IOTypeMask Module::get_module_type(std::string module_type) {
     }
 }
 
-IOTypeMask Module::get_module_type(ModuleConfig *config) {
-    return Module::get_module_type(config->get_property("type"));
+IOTypeMask Module::get_type(ModuleConfig *config) {
+    return Module::get_type(config->get_property("type"));
 }
 
 int Module::register_module(std::string module_type,

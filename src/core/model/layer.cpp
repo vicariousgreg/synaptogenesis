@@ -3,7 +3,6 @@
 #include "model/layer.h"
 #include "model/structure.h"
 #include "model/connection.h"
-#include "io/module/module.h"
 #include "util/error_manager.h"
 
 Layer::Layer(Structure *structure, LayerConfig *config)
@@ -17,20 +16,14 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           size(rows * columns),
           plastic(config->plastic),
           global(config->global),
-          type(0),
           dendritic_root(new DendriticNode(this)) { }
 
 Layer::~Layer() {
     delete dendritic_root;
     delete config;
-    for (auto config : module_configs) delete config;
 }
 
 const LayerConfig *Layer::get_config() const { return config; }
-IOTypeMask Layer::get_type() const { return type; }
-bool Layer::is_input() const { return type & INPUT; }
-bool Layer::is_output() const { return type & OUTPUT; }
-bool Layer::is_expected() const { return type & EXPECTED; }
 
 std::string Layer::get_parameter(std::string key,
         std::string default_val) const {
@@ -44,9 +37,6 @@ std::string Layer::get_parameter(std::string key,
         return default_val;
     }
 }
-
-const std::vector<ModuleConfig*> Layer::get_module_configs() const
-    { return module_configs; }
 
 const ConnectionList& Layer::get_input_connections() const
     { return input_connections; }
@@ -110,29 +100,6 @@ void Layer::add_output_connection(Connection* connection) {
 
 void Layer::add_to_root(Connection* connection) {
     this->dendritic_root->add_child(connection);
-}
-
-void Layer::add_module(ModuleConfig *config) {
-    IOTypeMask model_type = Module::get_module_type(config);
-
-    if ((model_type & INPUT) and (this->type & INPUT))
-        ErrorManager::get_instance()->log_error(
-            "Error in " + this->str() + ":\n"
-            "  Layer cannot have more than one input module!");
-    if ((model_type & EXPECTED) and (this->type & EXPECTED))
-        ErrorManager::get_instance()->log_error(
-            "Error in " + this->str() + ":\n"
-            "  Layer cannot have more than one expected module!");
-
-    this->module_configs.push_back(config);
-    this->type |= model_type;
-}
-
-void Layer::remove_modules() {
-    for (auto config : module_configs)
-        delete config;
-    module_configs.clear();
-    this->type = 0;
 }
 
 std::string Layer::str() const {

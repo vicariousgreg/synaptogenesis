@@ -15,7 +15,6 @@ class VisualizerInputModule : public Module {
                     "Failed to add layer to Visualizer!");
         }
 
-        virtual IOTypeMask get_type() { return INPUT; }
 
     MODULE_MEMBERS
 };

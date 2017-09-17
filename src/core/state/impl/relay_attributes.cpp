@@ -3,7 +3,7 @@
 #include "state/impl/relay_attributes.h"
 #include "util/error_manager.h"
 
-REGISTER_ATTRIBUTES(RelayAttributes, "relay")
+REGISTER_ATTRIBUTES(RelayAttributes, "relay", FLOAT)
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/

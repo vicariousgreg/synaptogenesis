@@ -8,9 +8,9 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         Stream *io_stream, Stream *compute_stream)
         : to_layer(layer),
           device_id(state->get_device_id(layer)),
-          is_input(layer->is_input()),
-          is_expected(layer->is_expected()),
-          is_output(layer->is_output()),
+          is_input(environment->is_input(layer)),
+          is_expected(environment->is_expected(layer)),
+          is_output(environment->is_output(layer)),
           input_instruction(nullptr),
           expected_instruction(nullptr),
           output_instruction(nullptr),
@@ -38,11 +38,13 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
         if (type == "normal")
             activate_instructions.push_back(
                 new NormalNoiseInstruction(
-                    to_layer, state, compute_stream));
+                    to_layer, state, compute_stream,
+                    not environment->is_input(to_layer)));
         else if (type == "poisson")
             activate_instructions.push_back(
                 new PoissonNoiseInstruction(
-                    to_layer, state, compute_stream));
+                    to_layer, state, compute_stream,
+                    not environment->is_input(to_layer)));
         else
             ErrorManager::get_instance()->log_error(
                 "Error building cluster node for " + layer->str() + ":\n"

@@ -95,6 +95,11 @@ class Attributes {
         // Get the set of neural model strings
         static const std::set<std::string> get_neural_models();
 
+        // Gets the output type of a layer based on its neural model
+        OutputType get_output_type();
+        static OutputType get_output_type(std::string neural_model);
+        static OutputType get_output_type(Layer *layer);
+
         static Attributes *build_attributes(LayerList &layers,
             std::string neural_model, DeviceID device_id);
 
@@ -105,14 +110,18 @@ class Attributes {
                 std::set<std::string> neural_models;
                 std::map<std::string, ATT_BUILD_PTR> build_pointers;
                 std::map<std::string, int> sizes;
+                std::map<std::string, OutputType> output_types;
         };
 
         // Registers a subclass neural model name with the state
         static int register_neural_model(std::string neural_model,
-            int object_size, ATT_BUILD_PTR build_ptr);
+            int object_size, OutputType output_type, ATT_BUILD_PTR build_ptr);
 
         // Set of neural model implementations
         static NeuralModelBank* get_neural_model_bank();
+
+        // Gets the name of the neural model
+        virtual std::string get_neural_model() = 0;
 
         // Registers a variable to be handled by the superclass
         void register_neuron_variable(std::string key, BasePointer *pointer);
@@ -148,10 +157,11 @@ class Attributes {
 
 /* Macros for Attribute subclass Registry */
 // Put this one in .cpp
-#define REGISTER_ATTRIBUTES(CLASS_NAME, STRING) \
+#define REGISTER_ATTRIBUTES(CLASS_NAME, STRING, OUTPUT_TYPE) \
 int CLASS_NAME::neural_model_id = \
     Attributes::register_neural_model(STRING, \
-        sizeof(CLASS_NAME), CLASS_NAME::build); \
+        sizeof(CLASS_NAME), OUTPUT_TYPE, CLASS_NAME::build); \
+std::string CLASS_NAME::neural_model = STRING; \
 \
 Attributes *CLASS_NAME::build(LayerList &layers) { \
     return new CLASS_NAME(layers); \
@@ -161,7 +171,9 @@ Attributes *CLASS_NAME::build(LayerList &layers) { \
 #define ATTRIBUTE_MEMBERS \
     protected: \
         static Attributes *build(LayerList &layers); \
-        static int neural_model_id;
+        static int neural_model_id; \
+        static std::string neural_model; \
+        virtual std::string get_neural_model() { return neural_model; }
 
 // Put this one in .h if the class implements the attribute kernel
 #define GET_KERNEL_DEF \

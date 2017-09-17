@@ -27,8 +27,22 @@ const std::set<std::string> Attributes::get_neural_models() {
     return Attributes::get_neural_model_bank()->neural_models;
 }
 
+OutputType Attributes::get_output_type() {
+    return Attributes::get_neural_model_bank()
+        ->output_types[get_neural_model()];
+}
+
+OutputType Attributes::get_output_type(std::string neural_model) {
+    return Attributes::get_neural_model_bank()
+        ->output_types[neural_model];
+}
+
+OutputType Attributes::get_output_type(Layer *layer) {
+    return Attributes::get_output_type(layer->neural_model);
+}
+
 int Attributes::register_neural_model(std::string neural_model,
-        int object_size, ATT_BUILD_PTR build_ptr) {
+        int object_size, OutputType output_type, ATT_BUILD_PTR build_ptr) {
     auto bank = Attributes::get_neural_model_bank();
     if (bank->neural_models.count(neural_model) == 1)
         ErrorManager::get_instance()->log_error(
@@ -36,6 +50,7 @@ int Attributes::register_neural_model(std::string neural_model,
     bank->neural_models.insert(neural_model);
     bank->build_pointers[neural_model] = build_ptr;
     bank->sizes[neural_model] = object_size;
+    bank->output_types[neural_model] = output_type;
 
     // Return index as an identifier
     return bank->neural_models.size() - 1;
@@ -134,7 +149,7 @@ void Attributes::set_device_id(DeviceID device_id) {
 
     // Retrieve extractor
     // This has to wait until device_id is set
-    get_extractor(&this->extractor, output_type, device_id);
+    get_extractor(&this->extractor, get_output_type(), device_id);
 }
 
 void Attributes::transfer_to_device() {

@@ -9,7 +9,6 @@ class DSSTInputModule : public Module {
         DSSTInputModule(Layer *layer, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
-        virtual IOTypeMask get_type() { return INPUT; }
 
     private:
         DSST* dsst;

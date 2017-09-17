@@ -23,7 +23,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
     //   to another structure
     std::queue<Layer*> queue;
     for (auto& layer : structure->get_layers())
-        if (layer->is_output()) queue.push(layer);
+        if (environment->is_output(layer)) queue.push(layer);
         else
             for (auto& conn : layer->get_output_connections())
                 if (conn->to_layer->structure != structure)

@@ -4,6 +4,7 @@
 #include "visualizer_window.h"
 #include "gui.h"
 #include "model/layer.h"
+#include "state/attributes.h"
 #include "io/environment.h"
 
 std::string Visualizer::name = "visualizer";
@@ -66,9 +67,9 @@ void Visualizer::update(Environment *environment) {
         LayerInfo *info = visualizer_window->layers[i];
         if (info->get_output()) {
             guint8* data = visualizer_window->pixbufs[i]->get_pixels();
-            Buffer *buffer = environment->buffer;
+            Buffer *buffer = environment->get_buffer();
             Output *output = buffer->get_output(info->layer);
-            OutputType output_type = environment->get_output_type(info->layer);
+            OutputType output_type = Attributes::get_output_type(info->layer);
 
             for (int j = 0; j < info->layer->size; ++j) {
                 float val = convert(output[j], output_type);

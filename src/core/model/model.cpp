@@ -50,27 +50,6 @@ const LayerList Model::get_layers(std::string neural_model) const {
     return layers;
 }
 
-const LayerList Model::get_input_layers() const {
-    LayerList layers;
-    for (auto layer : this->get_layers())
-        if (layer->is_input()) layers.push_back(layer);
-    return layers;
-}
-
-const LayerList Model::get_output_layers() const {
-    LayerList layers;
-    for (auto layer : this->get_layers())
-        if (layer->is_output()) layers.push_back(layer);
-    return layers;
-}
-
-const LayerList Model::get_expected_layers() const {
-    LayerList layers;
-    for (auto layer : this->get_layers())
-        if (layer->is_expected()) layers.push_back(layer);
-    return layers;
-}
-
 int Model::get_num_neurons() const {
     int num_neurons = 0;
     for (auto structure : structures)
@@ -106,9 +85,4 @@ int Model::get_max_layer_size() const {
         for (auto& layer : structure->get_layers())
             if (layer->size > max_size) max_size = layer->size;  
     return max_size;
-}
-
-void Model::remove_modules() {
-    for (auto layer : get_layers())
-        layer->remove_modules();
 }

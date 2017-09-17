@@ -41,10 +41,6 @@ class Buffer {
         Pointer<Output> output;
         Pointer<Output> expected;
 
-        LayerList input_layers;
-        LayerList output_layers;
-        LayerList expected_layers;
-
         int input_size;
         int output_size;
         int expected_size;
@@ -55,7 +51,6 @@ class Buffer {
         std::map<Layer*, int> expected_map;
 };
 
-Buffer *build_buffer(DeviceID device_id, Model *model);
 Buffer *build_buffer(DeviceID device_id,
     LayerList input_layers, LayerList output_layers, LayerList expected_layers);
 

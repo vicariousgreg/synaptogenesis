@@ -63,7 +63,7 @@ class ParallelCluster : public Cluster {
         virtual void launch_weight_update();
 
     protected:
-        InstructionList sort_instructions(
+        InstructionList sort_instructions(Environment *env,
             IOTypeMask include, IOTypeMask exclude, bool plastic);
 
         InstructionList inter_device_instructions;

@@ -31,17 +31,11 @@ class Model {
         const StructureList& get_structures() const { return structures; }
         const LayerList get_layers() const;
         const LayerList get_layers(std::string neural_model) const;
-        const LayerList get_input_layers() const;
-        const LayerList get_output_layers() const;
-        const LayerList get_expected_layers() const;
         int get_num_neurons() const;
         int get_num_layers() const;
         int get_num_connections() const;
         int get_num_weights() const;
         int get_max_layer_size() const;
-
-        /* Remove all modules */
-        void remove_modules();
 
     private:
         StructureList structures;

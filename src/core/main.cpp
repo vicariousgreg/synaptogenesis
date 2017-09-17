@@ -4,11 +4,8 @@
 #include <ctime>
 #include <string>
 
-#include "model/auditory_cortex.h"
-#include "model/maze_cortex.h"
 #include "model/model.h"
 #include "model/model_builder.h"
-#include "model/column.h"
 #include "model/weight_config.h"
 #include "io/module/module.h"
 #include "io/environment.h"
@@ -27,7 +24,7 @@
 
 #define IZ_INIT "init"
 
-void print_model(Model *model) {
+void print_model(Model *model, EnvironmentModel *env=nullptr) {
     printf("Built model.\n");
     printf("  - neurons     : %10d\n", model->get_num_neurons());
     printf("  - layers      : %10d\n", model->get_num_layers());
@@ -37,9 +34,12 @@ void print_model(Model *model) {
     for (auto structure : model->get_structures()) {
         for (auto layer : structure->get_layers()) {
             printf("%-20s   ", (layer->structure->name + "->" + layer->name).c_str());
-            std::cout << ((layer->is_input()) ? "I " : "  ");
-            std::cout << ((layer->is_output()) ? "O " : "  ");
-            std::cout << ((layer->is_expected()) ? "E " : "  ");
+            if (env != nullptr) {
+                auto type = env->get_type(structure->name, layer->name);
+                std::cout << ((type & INPUT) ? "I " : "  ");
+                std::cout << ((type & OUTPUT) ? "O " : "  ");
+                std::cout << ((type & EXPECTED) ? "E " : "  ");
+            }
             std::cout << std::endl;
         }
         std::cout << std::endl;
@@ -122,32 +122,34 @@ void old_test() {
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    // structure->add_module("input_layer",
-    //     (new ModuleConfig("random_input"))
+    auto env = new EnvironmentModel();
+
+    // env->add_module(
+    //     (new ModuleConfig("old", "input_layer", "random_input"))
     //     ->set_property("max", "5")
     //     ->set_property("rate", "1000000")
     //     ->set_property("verbose", "true"));
-    structure->add_module("exc_thalamus",
-        new ModuleConfig(output_name));
-    structure->add_module("exc_cortex",
-        new ModuleConfig(output_name));
-    structure->add_module("exc_thalamus",
-        new ModuleConfig("heatmap"));
-    structure->add_module("exc_cortex",
-        new ModuleConfig("heatmap"));
+    env->add_module(
+        new ModuleConfig("old", "exc_thalamus", output_name));
+    env->add_module(
+        new ModuleConfig("old", "exc_cortex", output_name));
+    env->add_module(
+        new ModuleConfig("old", "exc_thalamus", "heatmap"));
+    env->add_module(
+        new ModuleConfig("old", "exc_cortex", "heatmap"));
 
-    // structure->add_module("inh_thalamus",
-    //     new ModuleConfig(output_name));
-    structure->add_module("inh_cortex",
-        new ModuleConfig(output_name));
-    // structure->add_module("inh_thalamus",
-    //     new ModuleConfig("heatmap"));
-    structure->add_module("inh_cortex",
-        new ModuleConfig("heatmap"));
+    // env->add_module(
+    //     new ModuleConfig("old", "inh_thalamus", output_name));
+    env->add_module(
+        new ModuleConfig("old", "inh_cortex", output_name));
+    // env->add_module(
+    //     new ModuleConfig("old", "inh_thalamus", "heatmap"));
+    env->add_module(
+        new ModuleConfig("old", "inh_cortex", "heatmap"));
 
-    print_model(model);
+    print_model(model, env);
     Clock clock(true);
-    delete clock.run(new Context(model), 1000000, true);
+    delete clock.run(new Context(model, env), 1000000, true);
 }
 
 void simple_test() {
@@ -238,42 +240,42 @@ void simple_test() {
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    structure->add_module("input_layer",
-        (new ModuleConfig("one_hot_random_input"))
+    auto env = new EnvironmentModel();
+    env->add_module(
+        (new ModuleConfig("simple", "input_layer", "one_hot_random_input"))
             ->set_property("max", "4")
             ->set_property("rate", "1000000"));
 
-    structure->add_module("input_layer",
-        new ModuleConfig(output_name));
-    structure->add_module("hid_1",
-        new ModuleConfig(output_name));
-    structure->add_module("hid_2",
-        new ModuleConfig(output_name));
+    env->add_module(
+        new ModuleConfig("simple", "input_layer", output_name));
+    env->add_module(
+        new ModuleConfig("simple", "hid_1", output_name));
+    env->add_module(
+        new ModuleConfig("simple", "hid_2", output_name));
 
-    structure->add_module("input_layer",
-        new ModuleConfig("heatmap"));
-    structure->add_module("hid_1",
-        new ModuleConfig("heatmap"));
-    structure->add_module("hid_2",
-        new ModuleConfig("heatmap"));
+    env->add_module(
+        new ModuleConfig("simple", "input_layer", "heatmap"));
+    env->add_module(
+        new ModuleConfig("simple", "hid_1", "heatmap"));
+    env->add_module(
+        new ModuleConfig("simple", "hid_2", "heatmap"));
 
+    auto c = new Context(model, env);
 
     Clock clock(true);
     std::string filename = "simple.bin";
 
     if (State::exists(filename)) {
-        print_model(model);
-        auto context = new Context(model);
-        context->state->load("simple.bin");
-        delete clock.run(context, 1000000, true);
+        print_model(model, env);
+        c->get_state()->load("simple.bin");
+        delete clock.run(c, 1000000, true);
     } else {
-        print_model(model);
-        Context *context = new Context(model);
-        context->environment->set_suppress_output(true);
-        context->engine->set_learning_flag(true);
-        clock.run(context, 500000, true);
-        context->state->save("simple.bin");
-        delete context;
+        print_model(model, env);
+        clock.set_suppress_output(true);
+        clock.set_learning_flag(true);
+        clock.run(c, 500000, true);
+        c->get_state()->save("simple.bin");
+        delete c;
     }
 }
 
@@ -314,24 +316,27 @@ void single_field_test() {
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    structure->add_module("exc_field",
-        (new ModuleConfig("one_hot_random_input"))
+    auto env = new EnvironmentModel();
+    env->add_module(
+        (new ModuleConfig("single field", "exc_field", "one_hot_random_input"))
             ->set_property("max", "20")
             ->set_property("rate", "1")
             ->set_property("verbose", "false"));
-    structure->add_module("exc_field",
-        new ModuleConfig(output_name));
-    structure->add_module("inh_field",
-        new ModuleConfig(output_name));
+    env->add_module(
+        new ModuleConfig("single field", "exc_field", output_name));
+    env->add_module(
+        new ModuleConfig("single field", "inh_field", output_name));
 
-    structure->add_module("exc_field",
-        new ModuleConfig("heatmap"));
-    structure->add_module("inh_field",
-        new ModuleConfig("heatmap"));
+    env->add_module(
+        new ModuleConfig("single field", "exc_field", "heatmap"));
+    env->add_module(
+        new ModuleConfig("single field", "inh_field", "heatmap"));
 
-    print_model(model);
+    auto c = new Context(model, env);
+
+    print_model(model, env);
     Clock clock(true);
-    delete clock.run(new Context(model), 1000000, true);
+    delete clock.run(c, 1000000, true);
 }
 
 void mnist_test() {
@@ -424,33 +429,43 @@ void mnist_test() {
     // Modules
     std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
-    structure->add_module("input_layer",
-        (new ModuleConfig("csv_input"))
+    auto env = new EnvironmentModel();
+    env->add_module(
+        (new ModuleConfig("mnist", "input_layer", "csv_input"))
         ->set_property("filename", input_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "5000")
         ->set_property("normalization", "25"));
-    structure->add_module("output_layer",
-        (new ModuleConfig("csv_input"))
+    env->add_module(
+        (new ModuleConfig("mnist", "output_layer", "csv_input"))
         ->set_property("filename", output_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "5000")
         ->set_property("normalization", "0.2"));
-    structure->add_module("input_layer", new ModuleConfig("visualizer_output"));
-    structure->add_module("input_layer", new ModuleConfig("heatmap"));
-    structure->add_module("hidden", new ModuleConfig("visualizer_output"));
-    structure->add_module("hidden", new ModuleConfig("heatmap"));
-    //structure->add_module("separation", new ModuleConfig("visualizer_output"));
-    //structure->add_module("separation", new ModuleConfig("heatmap"));
-    structure->add_module("output_layer", new ModuleConfig("visualizer_output"));
-    structure->add_module("output_layer", new ModuleConfig("heatmap"));
+    env->add_module(
+        new ModuleConfig("mnist", "input_layer", "visualizer_output"));
+    env->add_module(
+        new ModuleConfig("mnist", "input_layer", "heatmap"));
+    env->add_module(
+        new ModuleConfig("mnist", "hidden", "visualizer_output"));
+    env->add_module(
+        new ModuleConfig("mnist", "hidden", "heatmap"));
+    //env->add_module(
+    //    new ModuleConfig("mnist", "separation", "visualizer_output"));
+    //env->add_module(
+    //    new ModuleConfig("mnist", "separation", "heatmap"));
+    env->add_module(
+        new ModuleConfig("mnist", "output_layer", "visualizer_output"));
+    env->add_module(
+        new ModuleConfig("mnist", "output_layer", "heatmap"));
 
     std::cout << "MNIST test......\n";
-    print_model(model);
+    print_model(model, env);
 
     Clock clock(true);
-    auto context = clock.run(new Context(model), 1000000, true);
-    context->state->save("mnist.bin");
+    auto c = new Context(model, env);
+    auto context = clock.run(c, 1000000, true);
+    context->get_state()->save("mnist.bin");
 
     delete context;
     std::cout << "\n";
@@ -476,53 +491,54 @@ void mnist_perceptron_test() {
     // Modules for training
     std::string input_file = "/HDD/datasets/mnist/processed/mnist_train_input.csv";
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_train_output.csv";
-    structure->add_module("input_layer",
-        (new ModuleConfig("csv_input"))
+    auto env = new EnvironmentModel();
+    env->add_module(
+        (new ModuleConfig("mnist", "input_layer", "csv_input"))
         ->set_property("filename", input_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "255"));
-    structure->add_module("output_layer",
-        (new ModuleConfig("csv_evaluator"))
+    env->add_module(
+        (new ModuleConfig("mnist", "output_layer", "csv_evaluator"))
         ->set_property("filename", output_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "1"));
-    structure->add_module("bias_layer",
-        (new ModuleConfig("random_input"))
+    env->add_module(
+        (new ModuleConfig("mnist", "bias_layer", "random_input"))
         ->set_property("uniform", "true"));
 
     // Run training
     Clock clock(false);
-    Context *context = new Context(model);
-    clock.run(context, 60000, false);
+    auto c = new Context(model, env);
+    clock.run(c, 60000, false);
 
     // Remove modules and replace for testing
-    model->remove_modules();
+    env->remove_modules();
 
     input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
     output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
-    structure->add_module("input_layer",
-        (new ModuleConfig("csv_input"))
+    env->add_module(
+        (new ModuleConfig("mnist", "input_layer", "csv_input"))
         ->set_property("filename", input_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "255"));
-    structure->add_module("output_layer",
-        (new ModuleConfig("csv_evaluator"))
+    env->add_module(
+        (new ModuleConfig("mnist", "output_layer", "csv_evaluator"))
         ->set_property("filename", output_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "1"));
-    structure->add_module("bias_layer",
-        (new ModuleConfig("random_input"))
+    env->add_module(
+        (new ModuleConfig("mnist", "bias_layer", "random_input"))
         ->set_property("uniform", "true"));
 
     // Run testing (disable learning)
-    context->engine->set_learning_flag(false);
-    clock.run(context, 10000, false);
+    clock.set_learning_flag(false);
+    clock.run(c, 10000, false);
 
-    delete context;
+    delete c;
 }
 
 void game_of_life_test() {
@@ -538,7 +554,7 @@ void game_of_life_test() {
 
     // Game parameters
     bool wrap = true;
-    int board_dim = 1024;
+    int board_dim = 256;
     int neighborhood_size = 5; 15;
     int survival_min = 2; 113;
     int survival_max = 3; 225;
@@ -575,20 +591,21 @@ void game_of_life_test() {
     // Modules
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
+    auto env = new EnvironmentModel();
 
     /*
     if (one_step)
         // Single Initial State
-        structure->add_module("board",
-            (new ModuleConfig("one_step_input"))
+        env->add_module(
+            (new ModuleConfig("game_of_life", "board", "one_step_input"))
                 ->set_property("max", std::to_string(birth_min))
                 ->set_property("uniform", "true")
                 ->set_property("verbose", "false")
                 ->set_property("fraction", std::to_string(one_step_fraction)));
     else
         // Refresh state
-        structure->add_module("board",
-            (new ModuleConfig("random_input"))
+        env->add_module(
+            (new ModuleConfig("game_of_life", "board", "random_input"))
                 ->set_property("max", std::to_string(birth_min))
                 ->set_property("rate", std::to_string(rate))
                 ->set_property("uniform", "true")
@@ -597,13 +614,14 @@ void game_of_life_test() {
                 ->set_property("fraction", std::to_string(random_fraction)));
     */
 
-    structure->add_module("board",
-        new ModuleConfig(output_name));
+    env->add_module(
+        new ModuleConfig("game_of_life", "board", output_name));
 
     Clock clock(true);
+    auto c = new Context(model, env);
     //Clock clock(1.0f);
-    print_model(model);
-    delete clock.run(new Context(model), 500000, true);
+    print_model(model, env);
+    delete clock.run(c, 500000, true);
 }
 
 void working_memory_test() {
@@ -797,9 +815,6 @@ void working_memory_test() {
             ->set_property("myelinated", "true"));
         */
 
-        sub_structure->add_module("3_cortex", new ModuleConfig(output_name));
-        //sub_structure->add_module("6_cortex", new ModuleConfig(output_name));
-        //sub_structure->add_module("gamma_thalamus", new ModuleConfig(output_name));
 
         model->add_structure(sub_structure);
         sub_structures.push_back(sub_structure);
@@ -819,18 +834,30 @@ void working_memory_test() {
         ->set_arborized_config(new ArborizedConfig(ff_surround,1,wrap)));
 
     // Modules
-    main_structure->add_module("tl1_thalamus",
-        (new ModuleConfig("random_input"))
+    auto env = new EnvironmentModel();
+    for (int i = 0 ; i < num_cortical_regions ; ++i) {
+        env->add_module(
+            new ModuleConfig(std::to_string(i), "3_cortex", output_name));
+        /*
+        env->add_module(
+            new ModuleConfig(std::to_string(i), "6_cortex", output_name));
+        env->add_module(
+            new ModuleConfig(std::to_string(i), "gamma_thalamus", output_name));
+        */
+    }
+    env->add_module(
+        (new ModuleConfig("working memory", "tl1_thalamus", "random_input"))
         ->set_property("max", "3")
         ->set_property("rate", "500")
         ->set_property("verbose", "true"));
-    main_structure->add_module("feedforward",
-        new ModuleConfig(output_name));
+    env->add_module(
+        new ModuleConfig("working memory", "feedforward", output_name));
 
     Clock clock(true);
+    auto c = new Context(model, env);
     //Clock clock(1.0f);
-    print_model(model);
-    delete clock.run(new Context(model), 500000, true);
+    print_model(model, env);
+    delete clock.run(c, 500000, true);
 }
 
 void dsst_test() {
@@ -881,27 +908,29 @@ void dsst_test() {
         ->set_arborized_config(new ArborizedConfig(
             focus_rows,focus_cols,0,0,0,0)));
 
-    structure->add_module("vision",
-        new ModuleConfig("dsst_input"));
-    structure->add_module("output_layer",
-        new ModuleConfig("dsst_output"));
-    structure->add_module("vision",
-        new ModuleConfig("visualizer_output"));
-    structure->add_module("what",
-        new ModuleConfig("visualizer_output"));
-    structure->add_module("focus",
-        new ModuleConfig("visualizer_output"));
-    structure->add_module("focus",
-        (new ModuleConfig("one_hot_random_input"))
+    auto env = new EnvironmentModel();
+    env->add_module(
+        new ModuleConfig("dsst", "vision", "dsst_input"));
+    env->add_module(
+        new ModuleConfig("dsst", "output_layer", "dsst_output"));
+    env->add_module(
+        new ModuleConfig("dsst", "vision", "visualizer_output"));
+    env->add_module(
+        new ModuleConfig("dsst", "what", "visualizer_output"));
+    env->add_module(
+        new ModuleConfig("dsst", "focus", "visualizer_output"));
+    env->add_module(
+        (new ModuleConfig("dsst", "focus", "one_hot_random_input"))
             ->set_property("max", "1")
             ->set_property("verbose", "false")
             ->set_property("rate", "10"));
 
     std::cout << "DSST test......\n";
-    print_model(model);
+    print_model(model, env);
     Clock clock(true);
+    auto c = new Context(model, env);
 
-    delete clock.run(new Context(model), 1000000, true);
+    delete clock.run(c, 1000000, true);
     delete model;
 }
 

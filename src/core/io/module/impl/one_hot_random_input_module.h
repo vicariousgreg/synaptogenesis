@@ -9,7 +9,6 @@ class OneHotRandomInputModule : public Module {
         virtual ~OneHotRandomInputModule();
 
         void feed_input(Buffer *buffer);
-        virtual IOTypeMask get_type() { return INPUT; }
 
     private:
         bool verbose;

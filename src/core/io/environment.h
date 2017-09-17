@@ -1,16 +1,19 @@
 #ifndef environment_h
 #define environment_h
 
+#include <map>
+
 #include "model/structure.h"
+#include "io/environment_model.h"
 #include "io/module/module.h"
 #include "io/buffer.h"
 
-class Visualizer;
-class State;
+class Model;
 
 class Environment {
     public:
-        Environment(State *state);
+        Environment(EnvironmentModel *env_model, Model* net_model,
+            bool suppress_output=false);
         virtual ~Environment();
 
         void step_input();
@@ -19,18 +22,16 @@ class Environment {
         void ui_launch();
         void ui_update();
 
-        OutputType get_output_type(Layer *layer);
-        void set_suppress_output(bool status) { suppress_output = status; };
-
-        Buffer* const buffer;
-        State* const state;
+        Buffer* get_buffer() { return buffer; }
+        IOTypeMask get_io_type(Layer *layer) { return io_types[layer]; }
+        bool is_input(Layer *layer) { return get_io_type(layer) & INPUT; }
+        bool is_output(Layer *layer) { return get_io_type(layer) & OUTPUT; }
+        bool is_expected(Layer *layer) { return get_io_type(layer) & EXPECTED; }
 
     private:
-        Visualizer *visualizer;
-        ModuleList input_modules;
-        ModuleList expected_modules;
-        ModuleList output_modules;
-        bool suppress_output;
+        std::map<Layer*, IOTypeMask> io_types;
+        ModuleList all_modules, input_modules, expected_modules, output_modules;
+        Buffer* buffer;
 };
 
 #endif

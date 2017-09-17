@@ -9,7 +9,6 @@ class MazeInputModule : public Module {
         MazeInputModule(Layer *layer, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
-        virtual IOTypeMask get_type() { return INPUT; }
 
     private:
         MazeGame* maze_game;

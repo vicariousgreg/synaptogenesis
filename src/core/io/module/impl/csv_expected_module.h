@@ -11,7 +11,6 @@ class CSVExpectedModule : public Module {
         virtual ~CSVExpectedModule();
 
         void feed_expected(Buffer *buffer);
-        virtual IOTypeMask get_type() { return EXPECTED; }
 
     protected:
         int age;

@@ -4,20 +4,27 @@
 #include <string>
 #include <vector>
 
-#include "model/layer.h"
 #include "util/property_config.h"
 #include "io/buffer.h"
 
+class Model;
+class Layer;
 class Module;
 class ModuleConfig;
 typedef Module* (*MODULE_BUILD_PTR)(Layer *layer, ModuleConfig *config);
 
 class ModuleConfig : public PropertyConfig {
     public:
-        ModuleConfig(std::string type, std::string params="") {
+        ModuleConfig(std::string structure, std::string layer, std::string type) {
             this->set_property("type", type);
-            this->set_property("params", params);
+            this->set_property("structure", structure);
+            this->set_property("layer", layer);
+            this->set_property("params", "");
         }
+
+        std::string get_type() { return get_property("type"); }
+        std::string get_structure() { return get_property("structure"); }
+        std::string get_layer() { return get_property("layer"); }
 
         /* Setter that returns self pointer */
         ModuleConfig *set_property(std::string key, std::string value) {
@@ -45,10 +52,10 @@ class Module {
         Layer* const layer;
 
         // Get the IOType of a module subclass
-        static IOTypeMask get_module_type(std::string module_type);
-        static IOTypeMask get_module_type(ModuleConfig *config);
+        static IOTypeMask get_type(std::string module_type);
+        static IOTypeMask get_type(ModuleConfig *config);
 
-        static Module* build_module(Layer *layer, ModuleConfig *config);
+        static Module* build_module(Model *model, ModuleConfig *config);
 
     protected:
         class ModuleBank {
@@ -72,6 +79,7 @@ class Module {
 int CLASS_NAME::module_id = \
     Module::register_module(STRING, \
         TYPE, CLASS_NAME::build); \
+IOTypeMask CLASS_NAME::io_type = TYPE; \
 \
 Module *CLASS_NAME::build(Layer *layer, ModuleConfig *config) { \
     return new CLASS_NAME(layer, config); \
@@ -81,7 +89,10 @@ Module *CLASS_NAME::build(Layer *layer, ModuleConfig *config) { \
 #define MODULE_MEMBERS \
     protected: \
         static Module *build(Layer *layer, ModuleConfig *config); \
-        static int module_id;
+        static int module_id; \
+        static IOTypeMask io_type; \
+        virtual IOTypeMask get_type() { return io_type; }
+
 
 typedef std::vector<Module*> ModuleList;
 

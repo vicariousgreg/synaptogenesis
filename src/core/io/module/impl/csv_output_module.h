@@ -10,7 +10,6 @@ class CSVOutputModule : public Module {
         virtual ~CSVOutputModule();
 
         void report_output(Buffer *buffer, OutputType output_type);
-        virtual IOTypeMask get_type() { return OUTPUT; }
 
     MODULE_MEMBERS
 };

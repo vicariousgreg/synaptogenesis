@@ -11,7 +11,6 @@ class CSVInputModule : public Module {
         virtual ~CSVInputModule();
 
         void feed_input(Buffer *buffer);
-        virtual IOTypeMask get_type() { return INPUT; }
 
     private:
         int age;

@@ -4,7 +4,7 @@
 #include "engine/kernel/synapse_kernel.h"
 #include "util/error_manager.h"
 
-REGISTER_ATTRIBUTES(PerceptronAttributes, "perceptron")
+REGISTER_ATTRIBUTES(PerceptronAttributes, "perceptron", FLOAT)
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/

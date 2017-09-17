@@ -7,7 +7,6 @@ class DummyOutputModule : public Module {
     public:
         DummyOutputModule(Layer *layer, ModuleConfig *config) : Module(layer) {}
 
-        virtual IOTypeMask get_type() { return OUTPUT; }
 
     MODULE_MEMBERS
 };

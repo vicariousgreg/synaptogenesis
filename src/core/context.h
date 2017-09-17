@@ -1,33 +1,26 @@
 #ifndef context_h
 #define context_h
 
-#include "model/model.h"
-#include "state/state.h"
-#include "io/environment.h"
-#include "engine/engine.h"
+class Model;
+class State;
+class EnvironmentModel;
 
 class Context {
     public:
         Context(Model *model,
-            State *st=nullptr,
-            Environment *env=nullptr,
-            Engine *eng=nullptr)
-            : model(model),
-              state(st==nullptr ? new State(model) : st),
-              environment(env==nullptr ? new Environment(state) : env),
-              engine(eng==nullptr ? new Engine(state, environment) : eng) { }
+            EnvironmentModel *env = nullptr,
+            State *st = nullptr);
 
-        virtual ~Context() {
-            delete engine;
-            delete environment;
-            delete state;
-            delete model;
-        }
+        virtual ~Context();
 
-        Model * const model;
-        State * const state;
-        Environment * const environment;
-        Engine * const engine;
+        Model *get_model() { return model; }
+        EnvironmentModel *get_environment_model() { return environment_model; }
+        State *get_state() { return state; }
+
+    private:
+        Model* model;
+        EnvironmentModel* environment_model;
+        State* state;
 };
 
 #endif

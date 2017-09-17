@@ -9,7 +9,6 @@ class OneStepInputModule : public Module {
         virtual ~OneStepInputModule();
 
         void feed_input(Buffer *buffer);
-        virtual IOTypeMask get_type() { return INPUT; }
 
     private:
         float *random_values;

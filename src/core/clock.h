@@ -50,13 +50,20 @@ class Clock {
                 : refresh_rate(INT_MAX),
                   time_limit(1.0 / refresh_rate),
                   environment_rate(environment_rate),
-                  calc_rate(calc_rate) { }
+                  calc_rate(calc_rate),
+                  suppress_output(false),
+                  learning_flag(true) { }
 
         Clock(float refresh_rate, int environment_rate = 1)
                 : refresh_rate(refresh_rate),
                   time_limit(1.0 / refresh_rate),
                   environment_rate(environment_rate),
-                  calc_rate(false) { }
+                  calc_rate(false),
+                  suppress_output(false),
+                  learning_flag(true) { }
+
+        bool set_suppress_output(bool status) { suppress_output = status; }
+        bool set_learning_flag(bool status) { learning_flag = status; }
 
         Context* run(Context *context, int iterations, bool verbose);
 
@@ -72,6 +79,8 @@ class Clock {
         Timer iteration_timer;
         float refresh_rate, time_limit;
         bool calc_rate;
+        bool suppress_output;
+        bool learning_flag;
 
         Lock sensory_lock;
         Lock motor_lock;

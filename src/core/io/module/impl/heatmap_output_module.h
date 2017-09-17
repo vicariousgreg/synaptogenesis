@@ -15,7 +15,6 @@ class HeatmapOutputModule : public Module {
                     "Failed to add layer to Heatmap!");
         }
 
-        virtual IOTypeMask get_type() { return OUTPUT; }
 
     MODULE_MEMBERS
 };

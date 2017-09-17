@@ -20,22 +20,24 @@ ParallelCluster::ParallelCluster(Structure *structure,
 
     /* Schedule instructions */
     // Find all instructions with INPUT flag
-    pre_input_instructions = sort_instructions(0, INPUT | EXPECTED, false);
+    pre_input_instructions =
+        sort_instructions(environment, 0, INPUT | EXPECTED, false);
     // Find all instructions without INPUT flag
-    post_input_instructions = sort_instructions(INPUT | EXPECTED, 0, false);
+    post_input_instructions =
+        sort_instructions(environment, INPUT | EXPECTED, 0, false);
     // Find all plastic instructions
-    plastic_instructions = sort_instructions(0, 0, true);
+    plastic_instructions = sort_instructions(environment, 0, 0, true);
 }
 
-InstructionList ParallelCluster::sort_instructions(
+InstructionList ParallelCluster::sort_instructions(Environment *env,
         IOTypeMask include, IOTypeMask exclude, bool plastic) {
     std::map<Layer*, std::queue<Instruction*> > schedules;
     InstructionList destination;
 
     // Extract instructions
     for (auto& node : nodes) {
-        if ((include == 0 or (node->to_layer->get_type() & include)) and
-                not (node->to_layer->get_type() & exclude)) {
+        if ((include == 0 or (env->get_io_type(node->to_layer) & include)) and
+                not (env->get_io_type(node->to_layer) & exclude)) {
             // Add to schedule map for round robin
             if (plastic) {
                 for (auto& inst : node->get_update_instructions())

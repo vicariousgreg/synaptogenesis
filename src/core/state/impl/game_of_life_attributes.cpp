@@ -6,7 +6,7 @@
 #include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"
 
-REGISTER_ATTRIBUTES(GameOfLifeAttributes, "game_of_life")
+REGISTER_ATTRIBUTES(GameOfLifeAttributes, "game_of_life", BIT)
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/

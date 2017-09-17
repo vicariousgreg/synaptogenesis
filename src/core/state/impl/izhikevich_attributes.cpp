@@ -6,7 +6,7 @@
 #include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"
 
-REGISTER_ATTRIBUTES(IzhikevichAttributes, "izhikevich")
+REGISTER_ATTRIBUTES(IzhikevichAttributes, "izhikevich", BIT)
 
 /******************************************************************************/
 /******************************** PARAMS **************************************/

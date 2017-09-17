@@ -10,7 +10,6 @@ class CSVEvaluatorModule : public CSVExpectedModule {
         CSVEvaluatorModule(Layer *layer, ModuleConfig *config);
 
         void report_output(Buffer *buffer, OutputType output_type);
-        virtual IOTypeMask get_type() { return EXPECTED | OUTPUT; }
 
     private:
         int correct;

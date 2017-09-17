@@ -5,6 +5,7 @@
 #include "state/state.h"
 #include "state/weight_matrix.h"
 #include "model/model.h"
+#include "io/buffer.h"
 #include "util/tools.h"
 
 State::State(Model *model) : model(model) {
@@ -131,8 +132,9 @@ State::State(Model *model) : model(model) {
             if (layer_devices[layer] == device_id)
                 for (auto conn : layer->get_input_connections())
                     if (is_inter_device(conn)) {
-                        int word_index = get_word_index(
-                            conn->delay, get_output_type(conn->from_layer));
+                        int word_index =
+                            get_word_index(conn->delay,
+                                Attributes::get_output_type(conn->from_layer));
                         inter_device_layers[word_index].push_back(conn->from_layer);
                     }
 
@@ -323,11 +325,6 @@ Pointer<float> State::get_buffer_input(Layer *layer) const {
 
 Pointer<Output> State::get_buffer_expected(Layer *layer) const {
     return internal_buffers.at(layer_devices.at(layer))->get_expected(layer);
-}
-
-OutputType State::get_output_type(Layer *layer) const {
-    return attributes[layer_devices.at(layer)]
-                     .at(layer->neural_model)->output_type;
 }
 
 DeviceID State::get_device_id(Layer *layer) const {

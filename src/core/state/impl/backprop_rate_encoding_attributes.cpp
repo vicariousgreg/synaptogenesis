@@ -1,7 +1,7 @@
 #include "state/impl/backprop_rate_encoding_attributes.h"
 #include "util/error_manager.h"
 
-REGISTER_ATTRIBUTES(BackpropRateEncodingAttributes, "backprop_rate_encoding")
+REGISTER_ATTRIBUTES(BackpropRateEncodingAttributes, "backprop_rate_encoding", FLOAT)
 
 Kernel<SYNAPSE_ARGS> BackpropRateEncodingAttributes::get_updater(
         ConnectionType conn_type, DendriticNode *node) {

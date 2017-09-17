@@ -7,7 +7,7 @@
 #include "model/model_builder.h"
 #include "model/layer_config.h"
 #include "model/connection_config.h"
-#include "io/module/module.h"
+//#include "io/module/module.h"
 
 using namespace jsonxx;
 
@@ -20,7 +20,7 @@ static void parse_layer(Structure *structure, Object lo);
 static void parse_dendrite(Structure *structure, std::string layer,
     std::string node, Object dobj);
 static void parse_connection(Model *model, std::string structure_name, Object co);
-static ModuleConfig* parse_module(Object mo);
+//static ModuleConfig* parse_module(Object mo);
 static NoiseConfig *parse_noise_config(Object nco);
 static WeightConfig *parse_weight_config(Object wo);
 static ArborizedConfig *parse_arborized_config(Object wo);
@@ -117,7 +117,7 @@ static void parse_layer(Structure *structure, Object lo) {
     bool global = false;
 
     std::map<std::string, std::string> properties;
-    std::vector<ModuleConfig*> modules;
+    // std::vector<ModuleConfig*> modules;
 
     for (auto pair : lo.kv_map()) {
         if (pair.first == "name")
@@ -134,9 +134,11 @@ static void parse_layer(Structure *structure, Object lo) {
             global = pair.second->get<String>() == "true";
         else if (pair.first == "noise")
             noise_config = parse_noise_config(pair.second->get<Object>());
+        /*
         else if (pair.first == "modules")
             for (auto val : pair.second->get<Array>().values())
                 modules.push_back(parse_module(val->get<Object>()));
+        */
         else if (pair.first != "dendrites") // Skip these till end
             properties[pair.first] = pair.second->get<String>();
     }
@@ -148,9 +150,11 @@ static void parse_layer(Structure *structure, Object lo) {
         layer_config->set_property(pair.first, pair.second);
 
     structure->add_layer(layer_config);
+    /*
     for (auto module : modules)
         if (module != nullptr)
             structure->add_module(name, module);
+    */
 
     if (has_object(lo, "dendrites"))
         parse_dendrite(structure, name, "root", lo.get<Object>("dendrites"));
@@ -273,6 +277,7 @@ static void parse_connection(Model *model, std::string structure_name, Object co
 }
 
 /* Parses a module list */
+/*
 static ModuleConfig* parse_module(Object mo) {
     if (get_string(mo, "skip", "false") == "true") return nullptr;
 
@@ -289,6 +294,7 @@ static ModuleConfig* parse_module(Object mo) {
 
     return module_config;
 }
+*/
 
 /* Parses a noise configuration */
 static NoiseConfig *parse_noise_config(Object nco) {
@@ -522,12 +528,14 @@ static Object write_layer(Layer *layer) {
     if (noise_config != nullptr)
         o << "noise" << write_properties(noise_config);
 
+    /*
     if (layer->get_module_configs().size() > 0) {
         Array a;
         for (auto module : layer->get_module_configs())
             a << write_properties(module);
         o << "modules" << a;
     }
+    */
 
     o << "dendrites" << write_dendrite(layer->dendritic_root);
 

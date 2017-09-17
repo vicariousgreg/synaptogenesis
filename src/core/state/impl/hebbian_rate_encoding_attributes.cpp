@@ -2,7 +2,7 @@
 #include "engine/kernel/synapse_kernel.h"
 #include "util/error_manager.h"
 
-REGISTER_ATTRIBUTES(HebbianRateEncodingAttributes, "hebbian_rate_encoding")
+REGISTER_ATTRIBUTES(HebbianRateEncodingAttributes, "hebbian_rate_encoding", FLOAT)
 
 /******************************************************************************/
 /**************************** HEBBIAN LEARNING ********************************/

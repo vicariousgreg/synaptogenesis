@@ -5,13 +5,6 @@
 #include "model/model.h"
 #include "model/structure.h"
 
-Buffer *build_buffer(DeviceID device_id, Model *model) {
-    return build_buffer(device_id,
-        model->get_input_layers(),
-        model->get_output_layers(),
-        model->get_expected_layers());
-}
-
 Buffer *build_buffer(DeviceID device_id, LayerList input_layers,
         LayerList output_layers, LayerList expected_layers) {
     return new Buffer(
@@ -21,17 +14,20 @@ Buffer *build_buffer(DeviceID device_id, LayerList input_layers,
         device_id);
 }
 
-Buffer::Buffer(LayerList input_layers, LayerList output_layers,
-        LayerList expected_layers, DeviceID device_id) : device_id(device_id) {
-    this->input_layers = input_layers;
-    this->output_layers = output_layers;
-    this->expected_layers = expected_layers;
-    for (auto layer : input_layers) dirty_map[layer] = false;
-
+Buffer::Buffer(LayerList input_layers, LayerList output_layers, LayerList expected_layers,
+        DeviceID device_id) : device_id(device_id) {
     input_size = output_size = expected_size = 0;
-    for (auto layer : input_layers) input_size += layer->size;
-    for (auto layer : output_layers) output_size += layer->size;
-    for (auto layer : expected_layers) expected_size += layer->size;
+    for (auto layer : input_layers) {
+        input_size += layer->size;
+        dirty_map[layer] = false;
+    }
+    for (auto layer : expected_layers) {
+        expected_size += layer->size;
+        dirty_map[layer] = false;
+    }
+    for (auto layer : output_layers)
+        output_size += layer->size;
+
 
     // Create pointers
     // Use pinned pointers for host

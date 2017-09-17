@@ -81,7 +81,7 @@ class InterDeviceTransferInstruction : public Instruction {
                     " inter-device synaptic connections!");
 
             int word_index = get_word_index(
-                conn->delay, state->get_output_type(conn->from_layer));
+                conn->delay, Attributes::get_output_type(conn->from_layer));
             src = state->get_output(conn->from_layer, word_index);
             dst = state->get_device_output_buffer(conn, word_index);
 
@@ -100,7 +100,7 @@ class InterDeviceTransferInstruction : public Instruction {
 
         bool matches(Connection *conn, State *state) {
             int word_index = get_word_index(
-                conn->delay, state->get_output_type(conn->from_layer));
+                conn->delay, Attributes::get_output_type(conn->from_layer));
             auto other_src = state->get_output(conn->from_layer, word_index);
             auto other_dst = state->get_device_output_buffer(conn, word_index);
 
@@ -151,9 +151,10 @@ class ClearInstruction : public InitializeInstruction {
 /* Adds noise to the input */
 class NormalNoiseInstruction : public InitializeInstruction {
     public:
-        NormalNoiseInstruction(Layer *layer, State *state, Stream *stream)
+        NormalNoiseInstruction(Layer *layer, State *state,
+            Stream *stream, bool init)
                 : InitializeInstruction(layer, state, stream),
-                  init(not layer->is_input()),
+                  init(init),
                   mean(std::stof(layer->get_config()->noise_config
                       ->get_property("mean", "1.0"))),
                   std_dev(std::stof(layer->get_config()->noise_config
@@ -177,9 +178,10 @@ class NormalNoiseInstruction : public InitializeInstruction {
 
 class PoissonNoiseInstruction : public InitializeInstruction {
     public:
-        PoissonNoiseInstruction(Layer *layer, State *state, Stream *stream)
+        PoissonNoiseInstruction(Layer *layer, State *state,
+            Stream *stream, bool init)
                 : InitializeInstruction(layer, state, stream),
-                  init(not layer->is_input()),
+                  init(init),
                   val(std::stof(layer->get_config()->noise_config
                       ->get_property("value", "20"))),
                   rate(0.001 * std::stof(layer->get_config()->noise_config
@@ -365,10 +367,10 @@ class InputTransferInstruction : public BufferedTransferInstruction<float> {
         InputTransferInstruction(Layer *layer, State *state,
             Environment *environment, Stream *stream)
                 : BufferedTransferInstruction(layer, stream,
-                      environment->buffer->get_input(layer),
+                      environment->get_buffer()->get_input(layer),
                       state->get_buffer_input(layer),
                       state->get_input(layer),
-                      environment->buffer) { }
+                      environment->get_buffer()) { }
 };
 
 /* Transfers expected data */
@@ -377,10 +379,10 @@ class ExpectedTransferInstruction : public BufferedTransferInstruction<Output> {
         ExpectedTransferInstruction(Layer *layer, State *state,
             Environment *environment, Stream *stream)
                 : BufferedTransferInstruction(layer, stream,
-                      environment->buffer->get_expected(layer),
+                      environment->get_buffer()->get_expected(layer),
                       state->get_buffer_expected(layer),
                       state->get_expected(layer),
-                      environment->buffer) { }
+                      environment->get_buffer()) { }
 };
 
 /* Transfers output data */
@@ -390,7 +392,7 @@ class OutputTransferInstruction : public TransferInstruction<Output> {
             Environment *environment, Stream *stream)
                 : TransferInstruction(layer, stream,
                       state->get_output(layer),
-                      environment->buffer->get_output(layer)) { }
+                      environment->get_buffer()->get_output(layer)) { }
 };
 
 /* Operates on neuron state */

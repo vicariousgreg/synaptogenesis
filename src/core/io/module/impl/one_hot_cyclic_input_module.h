@@ -8,7 +8,6 @@ class OneHotCyclicInputModule : public Module {
         OneHotCyclicInputModule(Layer *layer, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
-        virtual IOTypeMask get_type() { return INPUT; }
 
     private:
         void print();

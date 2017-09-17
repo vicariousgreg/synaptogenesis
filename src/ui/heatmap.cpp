@@ -4,6 +4,7 @@
 #include "visualizer_window.h"
 #include "gui.h"
 #include "model/layer.h"
+#include "state/attributes.h"
 #include "io/environment.h"
 
 std::string Heatmap::name = "heatmap";
@@ -60,9 +61,9 @@ void Heatmap::update(Environment *environment) {
         LayerInfo *info = visualizer_window->layers[i];
         if (info->get_output()) {
             guint8* data = visualizer_window->pixbufs[i]->get_pixels();
-            Buffer *buffer = environment->buffer;
+            Buffer *buffer = environment->get_buffer();
             Output *output = buffer->get_output(info->layer);
-            OutputType output_type = environment->get_output_type(info->layer);
+            OutputType output_type = Attributes::get_output_type(info->layer);
 
             float* spike_count = spike_count_map[info->layer->id];
             int max = 0;
