@@ -1,6 +1,6 @@
-#include "model/dendritic_node.h"
-#include "model/layer.h"
-#include "model/structure.h"
+#include "network/dendritic_node.h"
+#include "network/layer.h"
+#include "network/structure.h"
 
 /* Constructor for a root node */
 DendriticNode::DendriticNode(Layer *to_layer)

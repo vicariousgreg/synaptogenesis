@@ -1,8 +1,8 @@
 #include <algorithm>
 
 #include "state/weight_matrix.h"
-#include "model/layer.h"
-#include "model/connection.h"
+#include "network/layer.h"
+#include "network/connection.h"
 #include "util/error_manager.h"
 
 /* Sets all values in an array to the given val */

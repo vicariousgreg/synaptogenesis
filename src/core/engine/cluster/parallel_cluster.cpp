@@ -2,18 +2,18 @@
 
 #include "engine/cluster/cluster.h"
 #include "engine/instruction.h"
-#include "model/structure.h"
+#include "network/structure.h"
 #include "state/state.h"
 #include "util/resource_manager.h"
 
 ParallelCluster::ParallelCluster(Structure *structure,
-        State *state, Environment *environment)
-        : Cluster(state, environment) {
+        State *state, Engine *engine)
+        : Cluster(state, engine) {
     // Build instructions
     for (auto& layer : structure->get_layers()) {
         auto device_id = state->get_device_id(layer);
         auto node = new ClusterNode(
-            layer, state, environment, io_streams[device_id],
+            layer, state, engine, io_streams[device_id],
             ResourceManager::get_instance()->create_stream(device_id));
         nodes.push_back(node);
     }
@@ -21,23 +21,23 @@ ParallelCluster::ParallelCluster(Structure *structure,
     /* Schedule instructions */
     // Find all instructions with INPUT flag
     pre_input_instructions =
-        sort_instructions(environment, 0, INPUT | EXPECTED, false);
+        sort_instructions(engine, 0, INPUT | EXPECTED, false);
     // Find all instructions without INPUT flag
     post_input_instructions =
-        sort_instructions(environment, INPUT | EXPECTED, 0, false);
+        sort_instructions(engine, INPUT | EXPECTED, 0, false);
     // Find all plastic instructions
-    plastic_instructions = sort_instructions(environment, 0, 0, true);
+    plastic_instructions = sort_instructions(engine, 0, 0, true);
 }
 
-InstructionList ParallelCluster::sort_instructions(Environment *env,
+InstructionList ParallelCluster::sort_instructions(Engine *engine,
         IOTypeMask include, IOTypeMask exclude, bool plastic) {
     std::map<Layer*, std::queue<Instruction*> > schedules;
     InstructionList destination;
 
     // Extract instructions
     for (auto& node : nodes) {
-        if ((include == 0 or (env->get_io_type(node->to_layer) & include)) and
-                not (env->get_io_type(node->to_layer) & exclude)) {
+        if ((include == 0 or (engine->get_io_type(node->to_layer) & include)) and
+                not (engine->get_io_type(node->to_layer) & exclude)) {
             // Add to schedule map for round robin
             if (plastic) {
                 for (auto& inst : node->get_update_instructions())

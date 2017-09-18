@@ -1,7 +1,7 @@
 #ifndef layer_info_h
 #define layer_info_h
 
-#include "model/layer.h"
+#include "network/layer.h"
 
 class Structure;
 

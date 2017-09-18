@@ -3,9 +3,9 @@
 #include "visualizer.h"
 #include "visualizer_window.h"
 #include "gui.h"
-#include "model/layer.h"
+#include "network/layer.h"
 #include "state/attributes.h"
-#include "io/environment.h"
+#include "io/buffer.h"
 
 std::string Visualizer::name = "visualizer";
 
@@ -61,13 +61,12 @@ bool Visualizer::add_output_layer(Layer *layer, std::string params) {
     return true;
 }
 
-void Visualizer::update(Environment *environment) {
+void Visualizer::update(Buffer *buffer) {
     // Copy data over
     for (int i = 0; i < visualizer_window->layers.size(); ++i) {
         LayerInfo *info = visualizer_window->layers[i];
         if (info->get_output()) {
             guint8* data = visualizer_window->pixbufs[i]->get_pixels();
-            Buffer *buffer = environment->get_buffer();
             Output *output = buffer->get_output(info->layer);
             OutputType output_type = Attributes::get_output_type(info->layer);
 

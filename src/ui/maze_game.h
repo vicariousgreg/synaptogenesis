@@ -9,7 +9,7 @@
 
 class MazeGameWindow;
 class Layer;
-class Environment;
+class Buffer;
 
 class MazeGame : public Frontend {
     public:
@@ -21,7 +21,7 @@ class MazeGame : public Frontend {
         void set_board_dim(int size);
         bool add_input_layer(Layer *layer, std::string params);
         bool add_output_layer(Layer *layer, std::string params);
-        void update(Environment *environment);
+        void update(Buffer *buffer);
         virtual std::string get_name() { return MazeGame::name; }
 
         Pointer<float> get_input(std::string params);

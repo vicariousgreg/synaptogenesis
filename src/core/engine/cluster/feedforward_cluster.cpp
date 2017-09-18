@@ -2,7 +2,7 @@
 
 #include "engine/cluster/cluster.h"
 #include "engine/instruction.h"
-#include "model/structure.h"
+#include "network/structure.h"
 #include "state/state.h"
 #include "util/resource_manager.h"
 
@@ -24,13 +24,13 @@ static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
 }
 
 FeedforwardCluster::FeedforwardCluster(Structure *structure,
-        State *state, Environment *environment)
-        : SequentialCluster(structure, state, environment) {
+        State *state, Engine *engine)
+        : SequentialCluster(structure, state, engine) {
     // Determine if there are any cycles
     // Perform DFS on all input layers
     std::set<Layer*> visited;
     for (auto& layer : structure->get_layers())
-        if (environment->is_input(layer) and not DFS(layer, visited))
+        if (engine->is_input(layer) and not DFS(layer, visited))
             ErrorManager::get_instance()->log_error(
                 "Feedforward engine requires a structure with no cycles!");
 }

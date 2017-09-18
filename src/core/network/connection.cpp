@@ -1,7 +1,7 @@
-#include "model/connection.h"
-#include "model/layer.h"
-#include "model/dendritic_node.h"
-#include "model/structure.h"
+#include "network/connection.h"
+#include "network/layer.h"
+#include "network/dendritic_node.h"
+#include "network/structure.h"
 #include "util/error_manager.h"
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,

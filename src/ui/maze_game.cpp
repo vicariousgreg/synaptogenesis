@@ -3,8 +3,8 @@
 #include "maze_game.h"
 #include "maze_game_window.h"
 #include "gui.h"
-#include "model/layer.h"
-#include "io/environment.h"
+#include "network/layer.h"
+#include "io/buffer.h"
 #include "util/tools.h"
 
 std::string MazeGame::name = "maze_game";
@@ -275,7 +275,7 @@ bool MazeGame::move_right() {
     return false;
 }
 
-void MazeGame::update(Environment *environment) {
+void MazeGame::update(Buffer *buffer) {
     ++iterations;
     ++time_to_reward;
 

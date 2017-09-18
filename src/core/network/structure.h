@@ -7,8 +7,8 @@
 #include <string>
 
 #include "util/constants.h"
-#include "model/layer.h"
-#include "model/connection.h"
+#include "network/layer.h"
+#include "network/connection.h"
 #include "util/property_config.h"
 
 /* Represents a neural structure in a network model.

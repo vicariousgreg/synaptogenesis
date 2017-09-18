@@ -4,16 +4,15 @@
 #include <ctime>
 #include <string>
 
-#include "model/model.h"
-#include "model/model_builder.h"
-#include "model/weight_config.h"
+#include "network/network.h"
+#include "network/network_builder.h"
+#include "network/weight_config.h"
 #include "io/module/module.h"
 #include "io/environment.h"
 #include "engine/engine.h"
 #include "state/state.h"
 #include "util/tools.h"
-#include "clock.h"
-#include "context.h"
+#include "engine/context.h"
 #include "maze_game.h"
 #include "dsst.h"
 
@@ -24,14 +23,14 @@
 
 #define IZ_INIT "init"
 
-void print_model(Model *model, EnvironmentModel *env=nullptr) {
-    printf("Built model.\n");
-    printf("  - neurons     : %10d\n", model->get_num_neurons());
-    printf("  - layers      : %10d\n", model->get_num_layers());
-    printf("  - connections : %10d\n", model->get_num_connections());
-    printf("  - weights     : %10d\n", model->get_num_weights());
+void print_network(Network *network, Environment *env=nullptr) {
+    printf("Built network.\n");
+    printf("  - neurons     : %10d\n", network->get_num_neurons());
+    printf("  - layers      : %10d\n", network->get_num_layers());
+    printf("  - connections : %10d\n", network->get_num_connections());
+    printf("  - weights     : %10d\n", network->get_num_weights());
 
-    for (auto structure : model->get_structures()) {
+    for (auto structure : network->get_structures()) {
         for (auto layer : structure->get_layers()) {
             printf("%-20s   ", (layer->structure->name + "->" + layer->name).c_str());
             if (env != nullptr) {
@@ -47,10 +46,10 @@ void print_model(Model *model, EnvironmentModel *env=nullptr) {
 }
 
 void old_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("old");
-    model->add_structure(structure);
+    network->add_structure(structure);
 
     std::string model_name = "leaky_izhikevich";
 
@@ -122,7 +121,7 @@ void old_test() {
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
 
     // env->add_module(
     //     (new ModuleConfig("old", "input_layer", "random_input"))
@@ -147,16 +146,16 @@ void old_test() {
     env->add_module(
         new ModuleConfig("old", "inh_cortex", "heatmap"));
 
-    print_model(model, env);
-    Clock clock(true);
-    delete clock.run(new Context(model, env), 1000000, true);
+    print_network(network, env);
+    Engine engine(new Context(network, env));
+    delete engine.run(1000000, true);
 }
 
 void simple_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("simple");
-    model->add_structure(structure);
+    network->add_structure(structure);
 
     std::string model_name = "leaky_izhikevich";
 
@@ -240,7 +239,7 @@ void simple_test() {
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
     env->add_module(
         (new ModuleConfig("simple", "input_layer", "one_hot_random_input"))
             ->set_property("max", "4")
@@ -260,30 +259,30 @@ void simple_test() {
     env->add_module(
         new ModuleConfig("simple", "hid_2", "heatmap"));
 
-    auto c = new Context(model, env);
+    auto c = new Context(network, env);
 
-    Clock clock(true);
     std::string filename = "simple.bin";
 
     if (State::exists(filename)) {
-        print_model(model, env);
+        print_network(network, env);
         c->get_state()->load("simple.bin");
-        delete clock.run(c, 1000000, true);
+        Engine engine(c, true);
+        delete engine.run(1000000, true);
     } else {
-        print_model(model, env);
-        clock.set_suppress_output(true);
-        clock.set_learning_flag(true);
-        clock.run(c, 500000, true);
+        print_network(network, env);
+        Engine engine(c, true);
+        engine.set_learning_flag(true);
+        engine.run(500000, true);
         c->get_state()->save("simple.bin");
         delete c;
     }
 }
 
 void single_field_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("single field");
-    model->add_structure(structure);
+    network->add_structure(structure);
 
     std::string model_name = "leaky_izhikevich";
 
@@ -316,7 +315,7 @@ void single_field_test() {
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
 
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
     env->add_module(
         (new ModuleConfig("single field", "exc_field", "one_hot_random_input"))
             ->set_property("max", "20")
@@ -332,18 +331,18 @@ void single_field_test() {
     env->add_module(
         new ModuleConfig("single field", "inh_field", "heatmap"));
 
-    auto c = new Context(model, env);
+    auto c = new Context(network, env);
 
-    print_model(model, env);
-    Clock clock(true);
-    delete clock.run(c, 1000000, true);
+    print_network(network, env);
+    Engine engine(c);
+    delete engine.run(1000000, true);
 }
 
 void mnist_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("mnist");
-    model->add_structure(structure);
+    network->add_structure(structure);
 
     structure->add_layer((new LayerConfig("input_layer",
         IZHIKEVICH, 28, 28))
@@ -429,7 +428,7 @@ void mnist_test() {
     // Modules
     std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
     env->add_module(
         (new ModuleConfig("mnist", "input_layer", "csv_input"))
         ->set_property("filename", input_file)
@@ -460,22 +459,22 @@ void mnist_test() {
         new ModuleConfig("mnist", "output_layer", "heatmap"));
 
     std::cout << "MNIST test......\n";
-    print_model(model, env);
+    print_network(network, env);
 
-    Clock clock(true);
-    auto c = new Context(model, env);
-    auto context = clock.run(c, 1000000, true);
-    context->get_state()->save("mnist.bin");
+    auto c = new Context(network, env);
+    Engine engine(c);
+    engine.run(1000000, true);
+    c->get_state()->save("mnist.bin");
 
-    delete context;
+    delete c;
     std::cout << "\n";
 }
 
 void mnist_perceptron_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("mnist", FEEDFORWARD);
-    model->add_structure(structure);
+    network->add_structure(structure);
 
     structure->add_layer(new LayerConfig("input_layer", "relay", 28, 28));
     structure->add_layer(new LayerConfig("output_layer", "perceptron", 1, 10));
@@ -491,7 +490,7 @@ void mnist_perceptron_test() {
     // Modules for training
     std::string input_file = "/HDD/datasets/mnist/processed/mnist_train_input.csv";
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_train_output.csv";
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
     env->add_module(
         (new ModuleConfig("mnist", "input_layer", "csv_input"))
         ->set_property("filename", input_file)
@@ -509,9 +508,10 @@ void mnist_perceptron_test() {
         ->set_property("uniform", "true"));
 
     // Run training
-    Clock clock(false);
-    auto c = new Context(model, env);
-    clock.run(c, 60000, false);
+    auto c = new Context(network, env);
+    Engine engine(c);
+    engine.set_calc_rate(false);
+    engine.run(60000, false);
 
     // Remove modules and replace for testing
     env->remove_modules();
@@ -535,17 +535,18 @@ void mnist_perceptron_test() {
         ->set_property("uniform", "true"));
 
     // Run testing (disable learning)
-    clock.set_learning_flag(false);
-    clock.run(c, 10000, false);
+    engine.rebuild();
+    engine.set_learning_flag(false);
+    engine.run(10000, false);
 
     delete c;
 }
 
 void game_of_life_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("game_of_life");
-    model->add_structure(structure);
+    network->add_structure(structure);
     std::string model_name = "game_of_life";
 
     // Contour rules
@@ -591,7 +592,7 @@ void game_of_life_test() {
     // Modules
     //std::string output_name = "dummy_output";
     std::string output_name = "visualizer_output";
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
 
     /*
     if (one_step)
@@ -617,18 +618,17 @@ void game_of_life_test() {
     env->add_module(
         new ModuleConfig("game_of_life", "board", output_name));
 
-    Clock clock(true);
-    auto c = new Context(model, env);
-    //Clock clock(1.0f);
-    print_model(model, env);
-    delete clock.run(c, 500000, true);
+    auto c = new Context(network, env);
+    Engine engine(c);
+    print_network(network, env);
+    delete engine.run(500000, true);
 }
 
 void working_memory_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *main_structure = new Structure("working memory", PARALLEL);
-    model->add_structure(main_structure);
+    network->add_structure(main_structure);
 
     bool wrap = true;
     int num_cortical_regions = 3;
@@ -816,7 +816,7 @@ void working_memory_test() {
         */
 
 
-        model->add_structure(sub_structure);
+        network->add_structure(sub_structure);
         sub_structures.push_back(sub_structure);
     }
 
@@ -834,7 +834,7 @@ void working_memory_test() {
         ->set_arborized_config(new ArborizedConfig(ff_surround,1,wrap)));
 
     // Modules
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
     for (int i = 0 ; i < num_cortical_regions ; ++i) {
         env->add_module(
             new ModuleConfig(std::to_string(i), "3_cortex", output_name));
@@ -853,11 +853,10 @@ void working_memory_test() {
     env->add_module(
         new ModuleConfig("working memory", "feedforward", output_name));
 
-    Clock clock(true);
-    auto c = new Context(model, env);
-    //Clock clock(1.0f);
-    print_model(model, env);
-    delete clock.run(c, 500000, true);
+    auto c = new Context(network, env);
+    Engine engine(c);
+    print_network(network, env);
+    delete engine.run(500000, true);
 }
 
 void dsst_test() {
@@ -870,10 +869,10 @@ void dsst_test() {
     int focus_rows = rows - cell_rows;
     int focus_cols = cols - cell_cols;
 
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("dsst", PARALLEL);
-    model->add_structure(structure);
+    network->add_structure(structure);
 
     structure->add_layer(
         (new LayerConfig("vision",
@@ -908,7 +907,7 @@ void dsst_test() {
         ->set_arborized_config(new ArborizedConfig(
             focus_rows,focus_cols,0,0,0,0)));
 
-    auto env = new EnvironmentModel();
+    auto env = new Environment();
     env->add_module(
         new ModuleConfig("dsst", "vision", "dsst_input"));
     env->add_module(
@@ -926,19 +925,19 @@ void dsst_test() {
             ->set_property("rate", "10"));
 
     std::cout << "DSST test......\n";
-    print_model(model, env);
-    Clock clock(true);
-    auto c = new Context(model, env);
+    print_network(network, env);
+    auto c = new Context(network, env);
+    Engine engine(c);
 
-    delete clock.run(c, 1000000, true);
-    delete model;
+    delete engine.run(1000000, true);
+    delete network;
 }
 
 void debug_test() {
-    /* Construct the model */
-    Model *model = new Model();
+    /* Construct the network */
+    Network *network = new Network();
     Structure *structure = new Structure("debug", PARALLEL);
-    model->add_structure(structure);
+    network->add_structure(structure);
 
     int rows = 10;
     int cols = 20;
@@ -1048,10 +1047,10 @@ void debug_test() {
             rows,cols,0,0,0,0)));
 
     std::cout << "Debug test......\n";
-    print_model(model);
-    Clock clock(true);
+    print_network(network);
 
-    delete clock.run(new Context(model), 1, true);
+    Engine engine(new Context(network));
+    delete engine.run(1, true);
 }
 
 

@@ -1,8 +1,8 @@
 #include <sstream>
 
-#include "model/layer.h"
-#include "model/connection.h"
-#include "model/connection_config.h"
+#include "network/layer.h"
+#include "network/connection.h"
+#include "network/connection_config.h"
 #include "util/error_manager.h"
 
 ArborizedConfig::ArborizedConfig(

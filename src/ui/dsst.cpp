@@ -3,8 +3,8 @@
 #include "dsst.h"
 #include "dsst_window.h"
 #include "gui.h"
-#include "model/layer.h"
-#include "io/environment.h"
+#include "network/layer.h"
+#include "io/buffer.h"
 #include "util/tools.h"
 
 std::string DSST::name = "dsst";
@@ -71,7 +71,7 @@ bool DSST::add_output_layer(Layer *layer, std::string params) {
     return true;
 }
 
-void DSST::update(Environment *environment) {
+void DSST::update(Buffer *buffer) {
     if (ui_dirty) {
         ui_dirty = false;
 

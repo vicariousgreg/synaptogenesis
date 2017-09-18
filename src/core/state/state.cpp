@@ -4,11 +4,11 @@
 
 #include "state/state.h"
 #include "state/weight_matrix.h"
-#include "model/model.h"
+#include "network/network.h"
 #include "io/buffer.h"
 #include "util/tools.h"
 
-State::State(Model *model) : model(model), on_host(true) {
+State::State(Network *network) : network(network), on_host(true) {
     // Determine number of non-host devices
     // Subtract one if cuda is enabled to avoid distribution to the host
     this->num_devices = ResourceManager::get_instance()->get_num_devices();
@@ -25,7 +25,7 @@ State::State(Model *model) : model(model), on_host(true) {
     // Distribute layers
     // Count up weights
     std::map<Layer*, int> num_weights;
-    for (auto layer : model->get_layers()) {
+    for (auto layer : network->get_layers()) {
         num_weights[layer] = 0;
         for (auto& conn : layer->get_input_connections())
             num_weights[layer] += conn->get_compute_weights();
@@ -60,7 +60,7 @@ State::State(Model *model) : model(model), on_host(true) {
     }
 
     // Validate neural model strings
-    for (auto layer : model->get_layers())
+    for (auto layer : network->get_layers())
         if (Attributes::get_neural_models().count(layer->neural_model) == 0)
             ErrorManager::get_instance()->log_error(
                 "Unrecognized neural model \"" + layer->neural_model +
@@ -71,7 +71,7 @@ State::State(Model *model) : model(model), on_host(true) {
         attributes.push_back(std::map<std::string, Attributes*>());
         for (auto neural_model : Attributes::get_neural_models()) {
             LayerList layers;
-            for (auto layer : model->get_layers(neural_model))
+            for (auto layer : network->get_layers(neural_model))
                 if (layer_devices[layer] == device_id)
                     layers.push_back(layer);
 
@@ -110,7 +110,7 @@ State::State(Model *model) : model(model), on_host(true) {
         LayerList device_layers;
 
         // Extract layers assigned to this device
-        for (auto layer : model->get_layers())
+        for (auto layer : network->get_layers())
             if (layer_devices[layer] == device_id)
                 device_layers.push_back(layer);
 
@@ -128,7 +128,7 @@ State::State(Model *model) : model(model), on_host(true) {
         std::map<int, LayerList> inter_device_layers;
 
         // Identify any inter-device connections and make room for them
-        for (auto layer : model->get_layers())
+        for (auto layer : network->get_layers())
             if (layer_devices[layer] == device_id)
                 for (auto conn : layer->get_input_connections())
                     if (is_inter_device(conn)) {

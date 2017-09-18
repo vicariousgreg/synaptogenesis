@@ -10,7 +10,7 @@ class Layer;
 class DendriticNode;
 class Connection;
 class State;
-class Environment;
+class Engine;
 class Instruction;
 class SynapseInstruction;
 typedef std::vector<Instruction*> InstructionList;
@@ -18,7 +18,7 @@ typedef std::vector<SynapseInstruction*> SynapseInstructionList;
 
 class ClusterNode {
     public:
-        ClusterNode(Layer *layer, State *state, Environment *environment,
+        ClusterNode(Layer *layer, State *state, Engine *engine,
             Stream *io_stream, Stream *compute_stream);
         virtual ~ClusterNode();
 
@@ -44,7 +44,7 @@ class ClusterNode {
         Stream* const compute_stream;
 
         State* const state;
-        Environment* const environment;
+        Engine* const engine;
 
     private:
         void dendrite_DFS(DendriticNode *curr);

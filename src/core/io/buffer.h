@@ -4,11 +4,11 @@
 #include <vector>
 #include <map>
 
-#include "model/layer.h"
+#include "network/layer.h"
 #include "util/constants.h"
 #include "util/pointer.h"
 
-class Model;
+class Network;
 
 class Buffer {
     public:

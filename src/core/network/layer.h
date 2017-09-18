@@ -5,8 +5,8 @@
 #include <set>
 #include <string>
 
-#include "model/layer_config.h"
-#include "model/dendritic_node.h"
+#include "network/layer_config.h"
+#include "network/dendritic_node.h"
 #include "util/constants.h"
 
 class Structure;
@@ -70,7 +70,7 @@ class Layer {
         std::string str() const;
 
     private:
-        friend class Model;
+        friend class Network;
         friend class Structure;
         friend class Connection;
         friend class DendriticNode;

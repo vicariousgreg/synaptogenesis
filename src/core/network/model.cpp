@@ -1,20 +1,20 @@
-#include "model/model.h"
-#include "model/model_builder.h"
+#include "network/network.h"
+#include "network/network_builder.h"
 #include "util/error_manager.h"
 
-Model::~Model() {
+Network::~Network() {
     for (auto& structure : structures) delete structure;
 }
 
-Model* Model::load(std::string path) {
+Network* Network::load(std::string path) {
     return load_model(path);
 }
 
-void Model::save(std::string path) {
+void Network::save(std::string path) {
     save_model(this, path);
 }
 
-void Model::add_structure(Structure *structure) {
+void Network::add_structure(Structure *structure) {
     for (auto& st : this->structures)
         if (st->name == structure->name)
             ErrorManager::get_instance()->log_error(
@@ -22,7 +22,7 @@ void Model::add_structure(Structure *structure) {
     this->structures.push_back(structure);
 }
 
-Structure* Model::get_structure(std::string name) {
+Structure* Network::get_structure(std::string name) {
     Structure *structure = nullptr;
     for (auto s : this->structures)
         if (s->name == name)
@@ -33,7 +33,7 @@ Structure* Model::get_structure(std::string name) {
     return structure;
 }
 
-const LayerList Model::get_layers() const {
+const LayerList Network::get_layers() const {
     LayerList layers;
     for (auto& structure : structures)
         for (auto& layer : structure->get_layers())
@@ -41,7 +41,7 @@ const LayerList Model::get_layers() const {
     return layers;
 }
 
-const LayerList Model::get_layers(std::string neural_model) const {
+const LayerList Network::get_layers(std::string neural_model) const {
     LayerList layers;
     for (auto& structure : structures)
         for (auto& layer : structure->get_layers())
@@ -50,28 +50,28 @@ const LayerList Model::get_layers(std::string neural_model) const {
     return layers;
 }
 
-int Model::get_num_neurons() const {
+int Network::get_num_neurons() const {
     int num_neurons = 0;
     for (auto structure : structures)
         num_neurons += structure->get_num_neurons();
     return num_neurons;
 }
 
-int Model::get_num_layers() const {
+int Network::get_num_layers() const {
     int num_layers = 0;
     for (auto structure : structures)
         num_layers += structure->get_layers().size();
     return num_layers;
 }
 
-int Model::get_num_connections() const {
+int Network::get_num_connections() const {
     int num_connections = 0;
     for (auto structure : structures)
         num_connections += structure->get_connections().size();
     return num_connections;
 }
 
-int Model::get_num_weights() const {
+int Network::get_num_weights() const {
     int num_weights = 0;
     for (auto structure : structures)
         for (auto conn : structure->get_connections())
@@ -79,7 +79,7 @@ int Model::get_num_weights() const {
     return num_weights;
 }
 
-int Model::get_max_layer_size() const {
+int Network::get_max_layer_size() const {
     int max_size = 0;
     for (auto& structure : this->get_structures()) 
         for (auto& layer : structure->get_layers())

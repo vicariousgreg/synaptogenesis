@@ -3,9 +3,10 @@
 #include "heatmap.h"
 #include "visualizer_window.h"
 #include "gui.h"
-#include "model/layer.h"
+#include "network/layer.h"
+#include "network/structure.h"
 #include "state/attributes.h"
-#include "io/environment.h"
+#include "io/buffer.h"
 
 std::string Heatmap::name = "heatmap";
 
@@ -51,7 +52,7 @@ bool Heatmap::add_output_layer(Layer *layer, std::string params) {
     return true;
 }
 
-void Heatmap::update(Environment *environment) {
+void Heatmap::update(Buffer *buffer) {
     ++iterations;
     int reset_iteration = 2500;
     bool verbose = false;
@@ -61,7 +62,6 @@ void Heatmap::update(Environment *environment) {
         LayerInfo *info = visualizer_window->layers[i];
         if (info->get_output()) {
             guint8* data = visualizer_window->pixbufs[i]->get_pixels();
-            Buffer *buffer = environment->get_buffer();
             Output *output = buffer->get_output(info->layer);
             OutputType output_type = Attributes::get_output_type(info->layer);
 

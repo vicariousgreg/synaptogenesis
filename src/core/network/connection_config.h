@@ -2,7 +2,7 @@
 #define connection_config_h
 
 #include "util/property_config.h"
-#include "model/weight_config.h"
+#include "network/weight_config.h"
 #include "util/constants.h"
 
 class Connection;

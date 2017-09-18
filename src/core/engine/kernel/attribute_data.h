@@ -1,7 +1,7 @@
 #ifndef attribute_data_h
 #define attribute_data_h
 
-#include "model/layer.h"
+#include "network/layer.h"
 #include "util/parallel.h"
 #include "util/pointer.h"
 

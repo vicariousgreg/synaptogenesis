@@ -5,7 +5,7 @@
 #include <set>
 #include <vector>
 
-#include "model/layer.h"
+#include "network/layer.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_data.h"

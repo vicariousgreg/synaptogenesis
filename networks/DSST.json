@@ -1,0 +1,148 @@
+{
+	"structures": [
+		{
+			"cluster type": "parallel",
+			"connections": [
+				{
+					"arborized config": {
+						"column field size": "170",
+						"column offset": "0",
+						"column stride": "1",
+						"row field size": "171",
+						"row offset": "0",
+						"row stride": "1",
+						"wrap": "false" 
+					},
+					"delay": "0",
+					"dendrite": "temp",
+					"from layer": "vision",
+					"max weight": "1.000000",
+					"opcode": "add",
+					"plastic": "false",
+					"to layer": "what",
+					"type": "convolutional",
+					"weight config": {
+						"fraction": "1.000000",
+						"type": "flat",
+						"weight": "1.000000" 
+					} 
+				},
+				{
+					"arborized config": {
+						"column field size": "170",
+						"column offset": "0",
+						"column stride": "0",
+						"row field size": "171",
+						"row offset": "0",
+						"row stride": "0",
+						"wrap": "false" 
+					},
+					"delay": "0",
+					"dendrite": "temp",
+					"from layer": "focus",
+					"max weight": "1.000000",
+					"opcode": "mult",
+					"plastic": "false",
+					"to layer": "what",
+					"type": "convolutional",
+					"weight config": {
+						"fraction": "1.000000",
+						"type": "flat",
+						"weight": "1.000000" 
+					} 
+				} 
+			],
+			"layers": [
+				{
+					"columns": "178",
+					"dendrites": {
+						"name": "root",
+						"second order": "false" 
+					},
+					"global": "false",
+					"init": "regular",
+					"modules": [
+						{
+							"type": "dsst_input" 
+						},
+						{
+							"type": "visualizer_output" 
+						} 
+					],
+					"name": "vision",
+					"neural model": "relay",
+					"plastic": "false",
+					"rows": "188" 
+				},
+				{
+					"columns": "8",
+					"dendrites": {
+						"children": [
+							{
+								"name": "temp",
+								"second order": "true" 
+							} 
+						],
+						"name": "root",
+						"second order": "false" 
+					},
+					"global": "false",
+					"init": "regular",
+					"modules": [
+						{
+							"type": "visualizer_output" 
+						} 
+					],
+					"name": "what",
+					"neural model": "relay",
+					"plastic": "false",
+					"rows": "17" 
+				},
+				{
+					"columns": "170",
+					"dendrites": {
+						"name": "root",
+						"second order": "false" 
+					},
+					"global": "false",
+					"init": "regular",
+					"modules": [
+						{
+							"type": "visualizer_output" 
+						},
+						{
+							"max": "1",
+							"rate": "10",
+							"type": "one_hot_random_input",
+							"verbose": "false" 
+						} 
+					],
+					"name": "focus",
+					"neural model": "relay",
+					"plastic": "false",
+					"rows": "171" 
+				},
+				{
+					"columns": "1",
+					"dendrites": {
+						"name": "root",
+						"second order": "false" 
+					},
+					"global": "false",
+					"init": "regular",
+					"modules": [
+						{
+							"type": "dsst_output" 
+						} 
+					],
+					"name": "output_layer",
+					"neural model": "relay",
+					"plastic": "false",
+					"rows": "1" 
+				} 
+			],
+			"name": "dsst" 
+		} 
+	] 
+} 
+

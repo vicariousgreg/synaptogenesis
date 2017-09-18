@@ -1,14 +1,14 @@
 #include "engine/cluster/cluster.h"
 #include "engine/cluster/cluster_node.h"
 #include "engine/instruction.h"
-#include "model/structure.h"
+#include "network/structure.h"
 #include "state/state.h"
-#include "io/environment.h"
+#include "engine/engine.h"
 #include "util/resource_manager.h"
 
-Cluster::Cluster(State *state, Environment *environment)
+Cluster::Cluster(State *state, Engine *engine)
         : state(state),
-          environment(environment) {
+          engine(engine) {
     auto res_man = ResourceManager::get_instance();
     for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
         io_streams.push_back(res_man->create_stream(i));
@@ -53,7 +53,7 @@ void Cluster::wait_for_output() {
 }
 
 Cluster *build_cluster(Structure *structure,
-        State *state, Environment *environment) {
+        State *state, Engine *engine) {
     if (not state->check_compatibility(structure))
         ErrorManager::get_instance()->log_error(
             "Error building cluster for " + structure->str() + ":\n"
@@ -61,11 +61,11 @@ Cluster *build_cluster(Structure *structure,
 
     switch (structure->cluster_type) {
         case PARALLEL:
-            return new ParallelCluster(structure, state, environment);
+            return new ParallelCluster(structure, state, engine);
         case SEQUENTIAL:
-            return new SequentialCluster(structure, state, environment);
+            return new SequentialCluster(structure, state, engine);
         case FEEDFORWARD:
-            return new FeedforwardCluster(structure, state, environment);
+            return new FeedforwardCluster(structure, state, engine);
         default:
             ErrorManager::get_instance()->log_error(
                 "Error building cluster for " + structure->str() + ":\n"

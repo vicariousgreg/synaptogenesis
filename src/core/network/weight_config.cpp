@@ -1,8 +1,8 @@
 #include <sstream>
 
-#include "model/weight_config.h"
-#include "model/layer.h"
-#include "model/connection.h"
+#include "network/weight_config.h"
+#include "network/layer.h"
+#include "network/connection.h"
 #include "state/weight_matrix.h"
 #include "util/error_manager.h"
 

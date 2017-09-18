@@ -1,26 +1,26 @@
-#ifndef model_h
-#define model_h
+#ifndef network_h
+#define network_h
 
 #include <vector>
 #include <string>
 
 #include "util/constants.h"
-#include "model/layer.h"
-#include "model/connection.h"
-#include "model/structure.h"
+#include "network/layer.h"
+#include "network/connection.h"
+#include "network/structure.h"
 
 /* Represents a full neural network model.
  *
- * Models are built up using Structures, which are subgraphs of the full
+ * Networks are built up using Structures, which are subgraphs of the full
  *     network.
  */
-class Model {
+class Network {
     public:
-        Model() { }
-        virtual ~Model();
+        Network() { }
+        virtual ~Network();
 
         /* Save or load model to/from JSON file */
-        static Model* load(std::string path);
+        static Network* load(std::string path);
         void save(std::string path);
 
         /* Add or retrieve structure to/from model */

@@ -1,4 +1,4 @@
-#include "model/structure.h"
+#include "network/structure.h"
 #include "util/error_manager.h"
 
 #define cimg_display 0

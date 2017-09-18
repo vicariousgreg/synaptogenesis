@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include "model/connection.h"
+#include "network/connection.h"
 #include "util/constants.h"
 #include "util/error_manager.h"
 

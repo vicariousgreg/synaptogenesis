@@ -1,7 +1,7 @@
 #include "frontend.h"
 #include "gui.h"
 #include "gui_window.h"
-#include "io/environment.h"
+#include "io/buffer.h"
 
 std::vector<Frontend*> Frontend::instances;
 
@@ -46,9 +46,9 @@ void Frontend::launch_all() {
         GUI::get_instance()->launch();
 }
 
-void Frontend::update_all(Environment *environment) {
+void Frontend::update_all(Buffer *buffer) {
     for (auto f : Frontend::instances)
-        f->update(environment);
+        f->update(buffer);
 }
 
 void Frontend::cleanup() {

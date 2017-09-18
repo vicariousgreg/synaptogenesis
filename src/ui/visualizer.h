@@ -5,7 +5,7 @@
 
 class VisualizerWindow;
 class Layer;
-class Environment;
+class Buffer;
 
 class Visualizer : public Frontend {
     public:
@@ -13,7 +13,7 @@ class Visualizer : public Frontend {
 
         virtual bool add_input_layer(Layer *layer, std::string params);
         virtual bool add_output_layer(Layer *layer, std::string params);
-        virtual void update(Environment *environment);
+        virtual void update(Buffer *buffer);
         virtual std::string get_name() { return Visualizer::name; }
 
     protected:

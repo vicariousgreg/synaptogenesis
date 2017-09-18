@@ -3,13 +3,13 @@
 
 #include "engine/cluster/cluster.h"
 #include "engine/instruction.h"
-#include "model/structure.h"
+#include "network/structure.h"
 #include "state/state.h"
 #include "util/resource_manager.h"
 
 SequentialCluster::SequentialCluster(Structure *structure,
-        State *state, Environment *environment)
-        : Cluster(state, environment) {
+        State *state, Engine *engine)
+        : Cluster(state, engine) {
     // Create compute streams
     auto res_man = ResourceManager::get_instance();
     for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
@@ -23,13 +23,13 @@ SequentialCluster::SequentialCluster(Structure *structure,
     //   to another structure
     std::queue<Layer*> queue;
     for (auto& layer : structure->get_layers())
-        if (environment->is_output(layer)) queue.push(layer);
+        if (engine->is_output(layer)) queue.push(layer);
         else
             for (auto& conn : layer->get_output_connections())
                 if (conn->to_layer->structure != structure)
                     queue.push(layer);
 
-    /* Do breadth first search backwards on the model and create nodes */
+    /* Do breadth first search backwards on the network and create nodes */
     while (not queue.empty()) {
         auto curr_layer = queue.front();
         queue.pop();
@@ -41,7 +41,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
         // Add elements to beginning of list
         DeviceID device_id = state->get_device_id(curr_layer);
         nodes.insert(nodes.begin(),
-            new ClusterNode(curr_layer, state, environment,
+            new ClusterNode(curr_layer, state, engine,
                 io_streams[device_id], compute_streams[device_id]));
 
         // Add any layers that feed into this one to if all of its

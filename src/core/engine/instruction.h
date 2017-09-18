@@ -3,11 +3,11 @@
 
 #include <vector>
 
-#include "model/connection.h"
+#include "network/connection.h"
 #include "state/state.h"
 #include "state/attributes.h"
 #include "io/buffer.h"
-#include "io/environment.h"
+#include "engine/engine.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
 
@@ -365,34 +365,34 @@ class SecondOrderWeightTransferInstruction : public TransferInstruction<float> {
 class InputTransferInstruction : public BufferedTransferInstruction<float> {
     public:
         InputTransferInstruction(Layer *layer, State *state,
-            Environment *environment, Stream *stream)
+            Engine *engine, Stream *stream)
                 : BufferedTransferInstruction(layer, stream,
-                      environment->get_buffer()->get_input(layer),
+                      engine->get_buffer()->get_input(layer),
                       state->get_buffer_input(layer),
                       state->get_input(layer),
-                      environment->get_buffer()) { }
+                      engine->get_buffer()) { }
 };
 
 /* Transfers expected data */
 class ExpectedTransferInstruction : public BufferedTransferInstruction<Output> {
     public:
         ExpectedTransferInstruction(Layer *layer, State *state,
-            Environment *environment, Stream *stream)
+            Engine *engine, Stream *stream)
                 : BufferedTransferInstruction(layer, stream,
-                      environment->get_buffer()->get_expected(layer),
+                      engine->get_buffer()->get_expected(layer),
                       state->get_buffer_expected(layer),
                       state->get_expected(layer),
-                      environment->get_buffer()) { }
+                      engine->get_buffer()) { }
 };
 
 /* Transfers output data */
 class OutputTransferInstruction : public TransferInstruction<Output> {
     public:
         OutputTransferInstruction(Layer *layer, State *state,
-            Environment *environment, Stream *stream)
+            Engine *engine, Stream *stream)
                 : TransferInstruction(layer, stream,
                       state->get_output(layer),
-                      environment->get_buffer()->get_output(layer)) { }
+                      engine->get_buffer()->get_output(layer)) { }
 };
 
 /* Operates on neuron state */

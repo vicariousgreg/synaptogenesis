@@ -7,7 +7,7 @@
 #include "util/property_config.h"
 #include "io/buffer.h"
 
-class Model;
+class Network;
 class Layer;
 class Module;
 class ModuleConfig;
@@ -55,7 +55,7 @@ class Module {
         static IOTypeMask get_type(std::string module_type);
         static IOTypeMask get_type(ModuleConfig *config);
 
-        static Module* build_module(Model *model, ModuleConfig *config);
+        static Module* build_module(Network *network, ModuleConfig *config);
 
     protected:
         class ModuleBank {

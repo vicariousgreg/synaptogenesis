@@ -11,13 +11,13 @@
 #include "util/pointer.h"
 
 class Buffer;
-class Model;
+class Network;
 class Layer;
 class DendriticNode;
 
 class State {
     public:
-        State(Model *model);
+        State(Network *network);
         virtual ~State();
 
         /* Transfers all data to device or back to host */
@@ -59,7 +59,7 @@ class State {
             Connection *conn, int word_index) const;
         bool is_inter_device(Connection *conn) const;
 
-        Model* const model;
+        Network* const network;
 
     private:
         int num_devices;

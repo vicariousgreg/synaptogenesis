@@ -11,13 +11,13 @@
 class Layer;
 class Structure;
 class State;
-class Environment;
+class Engine;
 class Instruction;
 typedef std::vector<Instruction*> InstructionList;
 
 class Cluster {
     public:
-        Cluster(State *state, Environment *environment);
+        Cluster(State *state, Engine *engine);
         virtual ~Cluster();
 
         void add_external_dependencies(
@@ -42,7 +42,7 @@ class Cluster {
 
     protected:
         State *state;
-        Environment *environment;
+        Engine *engine;
         std::vector<Stream*> io_streams;
         std::vector<ClusterNode*> nodes;
 };
@@ -50,7 +50,7 @@ class Cluster {
 class ParallelCluster : public Cluster {
     public:
         ParallelCluster(Structure *structure, State *state,
-            Environment *environment);
+            Engine *engine);
 
         virtual void add_inter_device_instruction(
             Instruction *synapse_instruction,
@@ -63,7 +63,7 @@ class ParallelCluster : public Cluster {
         virtual void launch_weight_update();
 
     protected:
-        InstructionList sort_instructions(Environment *env,
+        InstructionList sort_instructions(Engine *engine,
             IOTypeMask include, IOTypeMask exclude, bool plastic);
 
         InstructionList inter_device_instructions;
@@ -75,7 +75,7 @@ class ParallelCluster : public Cluster {
 class SequentialCluster : public Cluster {
     public:
         SequentialCluster(Structure *structure, State *state,
-            Environment *environment);
+            Engine *engine);
 
         virtual void add_inter_device_instruction(
             Instruction *synapse_instruction,
@@ -91,10 +91,10 @@ class SequentialCluster : public Cluster {
 class FeedforwardCluster : public SequentialCluster {
     public:
         FeedforwardCluster(Structure *structure, State *state,
-            Environment *environment);
+            Engine *engine);
 };
 
 Cluster *build_cluster(Structure *structure,
-        State *state, Environment *environment);
+        State *state, Engine *engine);
 
 #endif

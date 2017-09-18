@@ -3,15 +3,15 @@
 
 #include <vector>
 
-#include "model/connection_config.h"
-#include "model/weight_config.h"
+#include "network/connection_config.h"
+#include "network/weight_config.h"
 #include "util/constants.h"
 
 class Layer;
 class DendriticNode;
 
 /* Represents a connection between two neural layers.
- * Connections bridge Layers and are constructed in the Model class.
+ * Connections bridge Layers and are constructed in the Network class.
  * Connections have several types, enumerated and documented in "util/constants.h".
  */
 class Connection {

@@ -2,8 +2,8 @@
 #define kernel_h
 
 #include "engine/kernel/synapse_data.h"
-#include "model/connection.h"
-#include "model/dendritic_node.h"
+#include "network/connection.h"
+#include "network/dendritic_node.h"
 #include "util/stream.h"
 #include "util/pointer.h"
 

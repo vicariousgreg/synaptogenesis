@@ -1,8 +1,8 @@
 #include <queue>
 
-#include "model/layer.h"
-#include "model/structure.h"
-#include "model/connection.h"
+#include "network/layer.h"
+#include "network/structure.h"
+#include "network/connection.h"
 #include "util/error_manager.h"
 
 Layer::Layer(Structure *structure, LayerConfig *config)

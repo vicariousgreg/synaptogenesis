@@ -10,7 +10,7 @@ class Heatmap : public Visualizer {
         virtual ~Heatmap();
 
         virtual bool add_output_layer(Layer *layer, std::string params);
-        virtual void update(Environment *environment);
+        virtual void update(Buffer *buffer);
         virtual std::string get_name() { return Heatmap::name; }
 
     private:

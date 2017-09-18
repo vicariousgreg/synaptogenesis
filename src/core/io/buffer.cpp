@@ -2,8 +2,8 @@
 #include <cstring>
 
 #include "io/buffer.h"
-#include "model/model.h"
-#include "model/structure.h"
+#include "network/network.h"
+#include "network/structure.h"
 
 Buffer *build_buffer(DeviceID device_id, LayerList input_layers,
         LayerList output_layers, LayerList expected_layers) {

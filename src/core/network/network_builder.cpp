@@ -4,9 +4,9 @@
 
 #include "jsonxx/jsonxx.h"
 
-#include "model/model_builder.h"
-#include "model/layer_config.h"
-#include "model/connection_config.h"
+#include "network/network_builder.h"
+#include "network/layer_config.h"
+#include "network/connection_config.h"
 //#include "io/module/module.h"
 
 using namespace jsonxx;
@@ -15,11 +15,11 @@ using namespace jsonxx;
 /******************************** PARSING *************************************/
 /******************************************************************************/
 
-static void parse_structure(Model *model, Object so);
+static void parse_structure(Network *network, Object so);
 static void parse_layer(Structure *structure, Object lo);
 static void parse_dendrite(Structure *structure, std::string layer,
     std::string node, Object dobj);
-static void parse_connection(Model *model, std::string structure_name, Object co);
+static void parse_connection(Network *network, std::string structure_name, Object co);
 //static ModuleConfig* parse_module(Object mo);
 static NoiseConfig *parse_noise_config(Object nco);
 static WeightConfig *parse_weight_config(Object wo);
@@ -34,45 +34,45 @@ static bool has_object(Object o, std::string key) { return o.has<Object>(key); }
 static bool has_array(Object o, std::string key) { return o.has<Array>(key); }
 
 
-/* Top level model parser
+/* Top level network parser
  *     -> parse_structure
  *     -> parse_connection
  */
-Model* load_model(std::string path) {
-    std::ifstream file("models/" + path);
+Network* load_model(std::string path) {
+    std::ifstream file("networks/" + path);
     std::stringstream buffer;
 
     buffer << file.rdbuf();
     std::string str = buffer.str();
 
-    Model *model = new Model();
+    Network *network = new Network();
 
     Object o;
     o.parse(str);
     if (o.has<Array>("structures")) {
         // Parse structures
         for (auto structure : o.get<Array>("structures").values())
-            parse_structure(model, structure->get<Object>());
+            parse_structure(network, structure->get<Object>());
 
         // Parse connections after because of inter-structure connections
         for (auto structure : o.get<Array>("structures").values()) {
             auto so = structure->get<Object>();
             if (so.has<Array>("connections"))
                 for (auto connection : so.get<Array>("connections").values())
-                    parse_connection(model, so.get<String>("name"),
+                    parse_connection(network, so.get<String>("name"),
                         connection->get<Object>());
         }
     }
 
-    return model;
+    return network;
 }
 
 /* Parses a structure
  *     -> parse_layer
  */
-static void parse_structure(Model *model, Object so) {
+static void parse_structure(Network *network, Object so) {
     std::string name = get_string(so, "name",
-        std::to_string(model->get_structures().size()));
+        std::to_string(network->get_structures().size()));
 
     Structure *structure;
 
@@ -99,7 +99,7 @@ static void parse_structure(Model *model, Object so) {
         for (auto layer : so.get<Array>("layers").values())
             parse_layer(structure, layer->get<Object>());
 
-    model->add_structure(structure);
+    network->add_structure(structure);
 }
 
 /* Parses a layer
@@ -189,7 +189,7 @@ static void parse_dendrite(Structure *structure, std::string layer,
  *     -> parse_arborized_config
  *     -> parse_subset_config
  */
-static void parse_connection(Model *model, std::string structure_name, Object co) {
+static void parse_connection(Network *network, std::string structure_name, Object co) {
     std::string from_layer = "";
     std::string to_layer = "";
     std::string type_string = "fully connected";
@@ -268,9 +268,9 @@ static void parse_connection(Model *model, std::string structure_name, Object co
         connection_config->set_property(pair.first, pair.second);
 
     Structure::connect(
-        model->get_structure(from_structure),
+        network->get_structure(from_structure),
         from_layer,
-        model->get_structure(to_structure),
+        network->get_structure(to_structure),
         to_layer,
         connection_config,
         dendrite);
@@ -462,15 +462,15 @@ static Object write_subset_config(SubsetConfig *subset_config);
 
 
 
-/* Top level model writer
+/* Top level network writer
  *     -> write_structure
  */
-void save_model(Model *model, std::string path) {
-    std::ofstream file("models/" + path);
+void save_model(Network *network, std::string path) {
+    std::ofstream file("networks/" + path);
 
 	Object o;
 	Array a;
-	for (auto structure : model->get_structures())
+	for (auto structure : network->get_structures())
 	    a << write_structure(structure);
 	o << "structures" << a;
 

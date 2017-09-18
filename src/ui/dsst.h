@@ -9,7 +9,7 @@
 
 class DSSTWindow;
 class Layer;
-class Environment;
+class Buffer;
 
 class DSST : public Frontend {
     public:
@@ -20,7 +20,7 @@ class DSST : public Frontend {
         void init();
         bool add_input_layer(Layer *layer, std::string params);
         bool add_output_layer(Layer *layer, std::string params);
-        void update(Environment *environment);
+        void update(Buffer *buffer);
         virtual std::string get_name() { return DSST::name; }
 
         Pointer<float> get_input(std::string params);

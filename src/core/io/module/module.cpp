@@ -1,9 +1,9 @@
 #include "io/module/module.h"
-#include "model/model.h"
-#include "model/layer.h"
+#include "network/network.h"
+#include "network/layer.h"
 #include "util/error_manager.h"
 
-Module* Module::build_module(Model *model, ModuleConfig *config) {
+Module* Module::build_module(Network *network, ModuleConfig *config) {
     // Check type
     auto type = config->get_type();
     auto bank = Module::get_module_bank();
@@ -13,7 +13,7 @@ Module* Module::build_module(Model *model, ModuleConfig *config) {
 
     // Build using structure and layer name
     return bank->build_pointers[type](
-        model->get_structure(config->get_structure())
+        network->get_structure(config->get_structure())
             ->get_layer(config->get_layer()),
         config);
 }

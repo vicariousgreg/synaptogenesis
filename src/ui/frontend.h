@@ -10,7 +10,7 @@
 class GUI;
 class GuiWindow;
 class Layer;
-class Environment;
+class Buffer;
 
 class Frontend {
     public:
@@ -25,14 +25,14 @@ class Frontend {
             std::string params) = 0;
         virtual bool add_output_layer(Layer *layer,
             std::string params) = 0;
-        virtual void update(Environment *environment) = 0;
+        virtual void update(Buffer *buffer) = 0;
 
         virtual std::string get_name() = 0;
 
         static Frontend* get_instance(std::string name);
         static void init_all();
         static void launch_all();
-        static void update_all(Environment *environment);
+        static void update_all(Buffer *buffer);
         static void cleanup();
 
     protected:

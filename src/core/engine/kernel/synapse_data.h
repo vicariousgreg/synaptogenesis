@@ -1,8 +1,8 @@
 #ifndef synapse_data_h
 #define synapse_data_h
 
-#include "model/connection.h"
-#include "model/dendritic_node.h"
+#include "network/connection.h"
+#include "network/dendritic_node.h"
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
 #include "util/pointer.h"

@@ -1,16 +1,16 @@
 #include "engine/cluster/cluster_node.h"
-#include "model/layer.h"
-#include "io/environment.h"
+#include "network/layer.h"
+#include "engine/engine.h"
 #include "engine/instruction.h"
 #include "util/error_manager.h"
 
-ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
+ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
         Stream *io_stream, Stream *compute_stream)
         : to_layer(layer),
           device_id(state->get_device_id(layer)),
-          is_input(environment->is_input(layer)),
-          is_expected(environment->is_expected(layer)),
-          is_output(environment->is_output(layer)),
+          is_input(engine->is_input(layer)),
+          is_expected(engine->is_expected(layer)),
+          is_output(engine->is_output(layer)),
           input_instruction(nullptr),
           expected_instruction(nullptr),
           output_instruction(nullptr),
@@ -19,17 +19,17 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
           io_stream(io_stream),
           compute_stream(compute_stream),
           state(state),
-          environment(environment) {
+          engine(engine) {
     // Add input transfer instruction
     if (this->is_input)
         this->input_instruction =
             new InputTransferInstruction(
-                to_layer, state, environment, compute_stream);
+                to_layer, state, engine, compute_stream);
 
     if (this->is_expected)
         this->expected_instruction =
             new ExpectedTransferInstruction(
-                to_layer, state, environment, compute_stream);
+                to_layer, state, engine, compute_stream);
 
     // Add noise / clear instruction
     auto noise_config = to_layer->get_config()->noise_config;
@@ -39,12 +39,12 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
             activate_instructions.push_back(
                 new NormalNoiseInstruction(
                     to_layer, state, compute_stream,
-                    not environment->is_input(to_layer)));
+                    not engine->is_input(to_layer)));
         else if (type == "poisson")
             activate_instructions.push_back(
                 new PoissonNoiseInstruction(
                     to_layer, state, compute_stream,
-                    not environment->is_input(to_layer)));
+                    not engine->is_input(to_layer)));
         else
             ErrorManager::get_instance()->log_error(
                 "Error building cluster node for " + layer->str() + ":\n"
@@ -75,7 +75,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Environment *environment,
     if (this->is_output) {
         this->output_instruction =
             new OutputTransferInstruction(
-                to_layer, state, environment, io_stream);
+                to_layer, state, engine, io_stream);
 
         // Ensure output and state instructions depend on one another
         output_instruction->add_dependency(state_update_instruction);
