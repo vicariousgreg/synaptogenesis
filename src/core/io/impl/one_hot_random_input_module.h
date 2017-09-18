@@ -9,6 +9,7 @@ class OneHotRandomInputModule : public Module {
         virtual ~OneHotRandomInputModule();
 
         void feed_input(Buffer *buffer);
+        void cycle();
 
     private:
         bool verbose;

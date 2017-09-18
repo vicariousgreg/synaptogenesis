@@ -97,16 +97,6 @@ class Engine {
         int environment_rate;
         bool learning_flag;
 
-        // Main hooks
-        void stage_clear();
-        void stage_input();
-        void stage_output();
-        void stage_calc();
-
-        // Environment hooks
-        void step_input();
-        void step_output();
-
         // Thread loops
         void network_loop(int iterations, bool verbose);
         void environment_loop(int iterations, bool verbose);

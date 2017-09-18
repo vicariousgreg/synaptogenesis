@@ -22,7 +22,7 @@ PrintOutputModule::PrintOutputModule(Layer *layer, ModuleConfig *config)
     this->shift = (8 * sizeof(int)) - this->history_length;
 }
 
-void PrintOutputModule::report_output(Buffer *buffer, OutputType output_type) {
+void PrintOutputModule::report_output(Buffer *buffer) {
     Output* output = buffer->get_output(this->layer);
 
     // Print bar

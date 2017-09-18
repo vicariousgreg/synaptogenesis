@@ -41,19 +41,26 @@ OneHotRandomInputModule::~OneHotRandomInputModule() {
 }
 
 void OneHotRandomInputModule::feed_input(Buffer *buffer) {
-    if (end == 0 or timesteps < end) {
-        if ((end == 0 or timesteps < end) and timesteps++ % shuffle_rate == 0) {
-            if (verbose) {
-                std::cout << "============================ SHUFFLE\n";
-                if (end != 0) std::cout << "  *  ";
-            }
-            shuffle(random_values, max_value, layer->size, verbose);
-            float *input = buffer->get_input(this->layer);
-            for (int nid = 0 ; nid < this->layer->size; ++nid)
-                input[nid] = this->random_values[nid];
-            buffer->set_dirty(this->layer);
+    if (timesteps < end and timesteps % shuffle_rate == 0) {
+        if (verbose) {
+            std::cout << "============================ SHUFFLE\n";
+            if (end != 0) std::cout << "  *  ";
         }
-    } else if (timesteps++ == end) {
+
+        // Shuffle
+        int random_index = rand() % layer->size;
+        for (int nid = 0 ; nid < layer->size; ++nid) {
+            /*  Randomly selects one input to activate */
+            random_values[nid] =  (nid == random_index) ? max_value : 0;
+            if (verbose) std::cout << random_values[nid] << " ";
+        }
+        if (verbose) std::cout << std::endl;
+
+        float *input = buffer->get_input(this->layer);
+        for (int nid = 0 ; nid < this->layer->size; ++nid)
+            input[nid] = this->random_values[nid];
+        buffer->set_dirty(this->layer);
+    } else if (timesteps == end) {
         if (verbose)
             std::cout << "========================================== CLEAR\n";
         float *input = buffer->get_input(this->layer);
@@ -61,4 +68,8 @@ void OneHotRandomInputModule::feed_input(Buffer *buffer) {
             input[nid] = 0.0;
         buffer->set_dirty(this->layer);
     }
+}
+
+void OneHotRandomInputModule::cycle() {
+    if (timesteps <= end) ++timesteps;
 }

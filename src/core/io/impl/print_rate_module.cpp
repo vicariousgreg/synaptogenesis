@@ -1,7 +1,6 @@
 #include <cstdlib>
 #include <climits>
 #include <iostream>
-#include <sstream>
 
 #include "io/impl/print_rate_module.h"
 #include "util/tools.h"
@@ -12,12 +11,7 @@ REGISTER_MODULE(PrintRateModule, "print_rate", OUTPUT);
 PrintRateModule::PrintRateModule(Layer *layer, ModuleConfig *config)
         : Module(layer),
           timesteps(0) {
-    std::stringstream stream(config->get_property("params"));
-    if (!stream.eof()) {
-        stream >> this->rate;
-    } else {
-        this->rate = 100;
-    }
+    this->rate = std::stoi(config->get_property("rate", "100"));
 
     if (this->rate <= 0)
         ErrorManager::get_instance()->log_error(
@@ -28,9 +22,8 @@ PrintRateModule::PrintRateModule(Layer *layer, ModuleConfig *config)
         totals[index] = 0.0;
 }
 
-void PrintRateModule::report_output(Buffer *buffer, OutputType output_type) {
+void PrintRateModule::report_output(Buffer *buffer) {
     Output* output = buffer->get_output(this->layer);
-    timesteps++;
 
     // Print bar
     /*
@@ -60,11 +53,15 @@ void PrintRateModule::report_output(Buffer *buffer, OutputType output_type) {
                     totals[index] += (out_value.i >> 31);
                     break;
             }
-            if (timesteps % this->rate == 0) {
+            if ((timesteps+1) % this->rate == 0) {
                 printf("%d\n", (unsigned int) this->totals[index]);
                 this->totals[index] = 0.0;
             }
         }
         //std::cout << "|\n";
     }
+}
+
+void PrintRateModule::cycle() {
+    ++timesteps;
 }

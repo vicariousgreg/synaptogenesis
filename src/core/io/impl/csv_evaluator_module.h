@@ -9,7 +9,7 @@ class CSVEvaluatorModule : public CSVExpectedModule {
     public:
         CSVEvaluatorModule(Layer *layer, ModuleConfig *config);
 
-        void report_output(Buffer *buffer, OutputType output_type);
+        void report_output(Buffer *buffer);
 
     private:
         int correct;

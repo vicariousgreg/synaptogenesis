@@ -9,6 +9,7 @@ class RandomInputModule : public Module {
         virtual ~RandomInputModule();
 
         void feed_input(Buffer *buffer);
+        void cycle();
 
     private:
         int timesteps;

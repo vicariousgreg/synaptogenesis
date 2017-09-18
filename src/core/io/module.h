@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "state/attributes.h"
 #include "util/property_config.h"
 #include "io/buffer.h"
 
@@ -35,14 +36,19 @@ class ModuleConfig : public PropertyConfig {
 
 class Module {
     public:
-        Module(Layer *layer) : layer(layer) { }
+        Module(Layer *layer)
+            : layer(layer),
+              output_type(Attributes::get_output_type(layer)) { }
         virtual ~Module() {}
 
         /* Override to implement input and output functionality.
          * If unused, do not override */
         virtual void feed_input(Buffer *buffer) { }
         virtual void feed_expected(Buffer *buffer) { }
-        virtual void report_output(Buffer *buffer, OutputType output_type) { }
+        virtual void report_output(Buffer *buffer) { }
+
+        /* Cycles the module */
+        virtual void cycle() { };
 
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call
@@ -50,6 +56,7 @@ class Module {
         virtual IOTypeMask get_type() = 0;
 
         Layer* const layer;
+        const OutputType output_type;
 
         // Get the IOType of a module subclass
         static IOTypeMask get_type(std::string module_type);

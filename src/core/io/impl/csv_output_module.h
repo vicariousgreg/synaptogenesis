@@ -9,7 +9,7 @@ class CSVOutputModule : public Module {
         CSVOutputModule(Layer *layer, ModuleConfig *config);
         virtual ~CSVOutputModule();
 
-        void report_output(Buffer *buffer, OutputType output_type);
+        void report_output(Buffer *buffer);
 
     MODULE_MEMBERS
 };

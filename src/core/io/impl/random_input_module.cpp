@@ -36,7 +36,7 @@ RandomInputModule::~RandomInputModule() {
 }
 
 void RandomInputModule::feed_input(Buffer *buffer) {
-    if (timesteps++ % shuffle_rate == 0) {
+    if (timesteps % shuffle_rate == 0) {
         if (uniform)
             fSet(random_values, layer->size, max_value, fraction);
         else
@@ -53,7 +53,7 @@ void RandomInputModule::feed_input(Buffer *buffer) {
         }
 
         buffer->set_dirty(this->layer);
-    } else if (clear and (timesteps % shuffle_rate == 2)) {
+    } else if (clear and (timesteps % shuffle_rate == 1)) {
         if (verbose) std::cout << "============================ CLEAR\n";
         fSet(random_values, layer->size, 0.0);
 
@@ -62,4 +62,8 @@ void RandomInputModule::feed_input(Buffer *buffer) {
             input[nid] = this->random_values[nid];
         buffer->set_dirty(this->layer);
     }
+}
+
+void RandomInputModule::cycle() {
+    ++timesteps;
 }

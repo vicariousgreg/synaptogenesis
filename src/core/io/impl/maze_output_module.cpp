@@ -20,7 +20,7 @@ static float convert_spikes(unsigned int spikes) {
     return count;
 }
 
-void MazeOutputModule::report_output(Buffer *buffer, OutputType output_type) {
+void MazeOutputModule::report_output(Buffer *buffer) {
     if (wait > 0) {
         --wait;
         return;

@@ -8,7 +8,7 @@ class MazeOutputModule : public Module {
     public:
         MazeOutputModule(Layer *layer, ModuleConfig *config);
 
-        void report_output(Buffer *buffer, OutputType output_type);
+        void report_output(Buffer *buffer);
 
     private:
         MazeGame* maze_game;

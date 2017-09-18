@@ -15,7 +15,7 @@ CSVEvaluatorModule::CSVEvaluatorModule(Layer *layer, ModuleConfig *config)
     this->total_SSE = 0;
 }
 
-void CSVEvaluatorModule::report_output(Buffer *buffer, OutputType output_type) {
+void CSVEvaluatorModule::report_output(Buffer *buffer) {
     Output* output = buffer->get_output(this->layer);
     float max_output = FLT_MIN;
     int max_output_index = 0;
@@ -23,7 +23,7 @@ void CSVEvaluatorModule::report_output(Buffer *buffer, OutputType output_type) {
 
     // Get expected one row back since the expected module will increment
     //   before this function is called during an iteration
-    Output* expected = this->data[curr_row-1].get();
+    Output* expected = (Output*)this->data[curr_row].get();
     float max_expected = FLT_MIN;
     int max_expected_index = 0;
 
@@ -60,7 +60,7 @@ void CSVEvaluatorModule::report_output(Buffer *buffer, OutputType output_type) {
     this->total_SSE += SSE;
 
     // If we hit the end of the CSV file, print stats and reset
-    if (this->curr_row >= this->data.size()) {
+    if (this->curr_row == this->data.size() - 1) {
         printf("Correct: %9d / %9d [ %9.6f%% ]    SSE: %f\n",
             correct, this->data.size(),
             100.0 * float(correct) / this->data.size(),

@@ -12,7 +12,7 @@ REGISTER_MODULE(ImageInputModule, "image_input", INPUT);
 
 ImageInputModule::ImageInputModule(Layer *layer, ModuleConfig *config)
         : Module(layer), transferred(false) {
-    std::string filename = config->get_property("params");
+    std::string filename = config->get_property("filename");
     try {
         cimg_library::CImg<unsigned char> img(filename.c_str());
         width = img.width();

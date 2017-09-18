@@ -108,83 +108,57 @@ Engine::~Engine() {
     for (auto& inst : inter_device_transfers) delete inst;
 }
 
-void Engine::stage_clear() {
-    // Launch pre-input calculations
-    for (auto& cluster : clusters)
-        cluster->launch_pre_input_calculations();
-}
-
-void Engine::stage_input() {
-    // Launch input transfer
-    for (auto& cluster : clusters)
-        cluster->launch_input();
-
-    // Wait for input
-    for (auto& cluster : clusters)
-        cluster->wait_for_input();
-}
-
-void Engine::stage_calc() {
-    for (auto& cluster : clusters) {
-        // Launch post-input calculations
-        cluster->launch_post_input_calculations();
-
-        // Launch state update
-        cluster->launch_state_update();
-
-        // Launch weight updates
-        if (learning_flag) cluster->launch_weight_update();
-    }
-}
-
-void Engine::stage_output() {
-    // Start output streaming
-    for (auto& cluster : clusters)
-        cluster->launch_output();
-
-    // Wait for output
-    for (auto& cluster : clusters)
-        cluster->wait_for_output();
-}
-
-void Engine::step_input() {
-    for (auto& module : this->modules)
-        module->feed_input(buffer);
-
-    for (auto& module : this->modules)
-        module->feed_expected(buffer);
-}
-
-void Engine::step_output() {
-    if (not suppress_output)
-        for (auto& module : this->modules)
-            module->report_output(buffer,
-                Attributes::get_output_type(module->layer));
-}
-
-
 void Engine::network_loop(int iterations, bool verbose) {
     run_timer.reset();
 
     for (int i = 0 ; i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
         iteration_timer.reset();
-        this->stage_clear();
 
-        // Read sensory input
+        // Launch pre-input calculations
+        for (auto& cluster : clusters)
+            cluster->launch_pre_input_calculations();
+
+        /**************************/
+        /*** Read sensory input ***/
+        /**************************/
         sensory_lock.wait(NETWORK);
-        this->stage_input();
+        // Launch input transfer
+        for (auto& cluster : clusters)
+            cluster->launch_input();
+
+        // Wait for input
+        for (auto& cluster : clusters)
+            cluster->wait_for_input();
         sensory_lock.pass(ENVIRONMENT);
 
-        // Perform computations
-        this->stage_calc();
+        /****************************/
+        /*** Perform computations ***/
+        /****************************/
+        for (auto& cluster : clusters) {
+            // Launch post-input calculations
+            cluster->launch_post_input_calculations();
 
-        // Write motor output
+            // Launch state update
+            cluster->launch_state_update();
+
+            // Launch weight updates
+            if (learning_flag) cluster->launch_weight_update();
+        }
+
+        /**************************/
+        /*** Write motor output ***/
+        /**************************/
         motor_lock.wait(NETWORK);
-        // Use (i+1) because the locks belong to the Environment
-        //   during the first iteration (Environment uses blank data
-        //   on first iteration before the Engine sends any data)
-        if ((i+1) % environment_rate == 0) this->stage_output();
+        if (i % environment_rate == 0) {
+            // Start output streaming
+            for (auto& cluster : clusters)
+                cluster->launch_output();
+
+            // Wait for output
+            for (auto& cluster : clusters)
+                cluster->wait_for_output();
+        }
         motor_lock.pass(ENVIRONMENT);
 
         // Synchronize with the clock
@@ -217,17 +191,26 @@ void Engine::environment_loop(int iterations, bool verbose) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT);
-        this->step_input();
+        for (auto& module : this->modules) {
+            module->feed_input(buffer);
+            module->feed_expected(buffer);
+        }
         sensory_lock.pass(NETWORK);
 
         // Read motor buffer
         motor_lock.wait(ENVIRONMENT);
         if (i % environment_rate == 0) {
             // Stream output and update UI
-            this->step_output();
+            if (not suppress_output)
+                for (auto& module : this->modules)
+                    module->report_output(buffer);
             Frontend::update_all(this->buffer);
         }
         motor_lock.pass(NETWORK);
+
+        // Cycle modules
+        for (auto& module : this->modules)
+            module->cycle();
     }
     // TODO: handle race conditions here
     Frontend::quit();

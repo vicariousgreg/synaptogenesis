@@ -1,23 +1,13 @@
 #ifndef csv_input_module_h
 #define csv_input_module_h
 
-#include "io/module.h"
-#include "util/pointer.h"
-#include "csvparser.h"
+#include "io/impl/csv_reader_module.h"
 
-class CSVInputModule : public Module {
+class CSVInputModule : public CSVReaderModule {
     public:
         CSVInputModule(Layer *layer, ModuleConfig *config);
-        virtual ~CSVInputModule();
 
         void feed_input(Buffer *buffer);
-
-    private:
-        int age;
-        int exposure;
-        int curr_row;
-
-        std::vector<Pointer<float>> data;
 
     MODULE_MEMBERS
 };

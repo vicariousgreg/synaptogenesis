@@ -8,12 +8,9 @@ class OneHotCyclicInputModule : public Module {
         OneHotCyclicInputModule(Layer *layer, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
+        void cycle();
 
     private:
-        void print();
-        void cycle(Buffer *buffer);
-        void clear(Buffer *buffer);
-
         int timesteps;
         int end;
         int cycle_rate;

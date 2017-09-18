@@ -8,7 +8,8 @@ class PrintRateModule : public Module {
         PrintRateModule(Layer *layer,
             ModuleConfig *config);
 
-        void report_output(Buffer *buffer, OutputType output_type);
+        void report_output(Buffer *buffer);
+        void cycle();
 
     private:
         int rate;

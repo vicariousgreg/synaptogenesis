@@ -15,7 +15,7 @@ CSVOutputModule::CSVOutputModule(Layer *layer, ModuleConfig *config)
 
 CSVOutputModule::~CSVOutputModule() { }
 
-void CSVOutputModule::report_output(Buffer *buffer, OutputType output_type) {
+void CSVOutputModule::report_output(Buffer *buffer) {
     Output* output = buffer->get_output(this->layer);
 
     for (int row = 0 ; row < this->layer->rows; ++row) {

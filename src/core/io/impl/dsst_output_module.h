@@ -8,7 +8,7 @@ class DSSTOutputModule : public Module {
     public:
         DSSTOutputModule(Layer *layer, ModuleConfig *config);
 
-        void report_output(Buffer *buffer, OutputType output_type);
+        void report_output(Buffer *buffer);
 
     private:
         DSST* dsst;

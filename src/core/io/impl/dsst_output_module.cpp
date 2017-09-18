@@ -15,7 +15,7 @@ DSSTOutputModule::DSSTOutputModule(Layer *layer, ModuleConfig *config)
             "Failed to add layer to DSST!");
 }
 
-void DSSTOutputModule::report_output(Buffer *buffer, OutputType output_type) {
+void DSSTOutputModule::report_output(Buffer *buffer) {
     Output* output = buffer->get_output(this->layer);
 
     /*
