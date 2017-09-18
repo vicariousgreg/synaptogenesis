@@ -7,7 +7,7 @@
 #include <mutex>
 
 #include "io/buffer.h"
-#include "io/module/module.h"
+#include "io/module.h"
 #include "util/constants.h"
 
 class Layer;

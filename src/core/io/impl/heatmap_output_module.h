@@ -1,0 +1,22 @@
+#ifndef heatmap_output_module_h
+#define heatmap_output_module_h
+
+#include "io/module.h"
+#include "util/error_manager.h"
+#include "heatmap.h"
+
+class HeatmapOutputModule : public Module {
+    public:
+        HeatmapOutputModule(Layer *layer, ModuleConfig *config)
+            : Module(layer) {
+            if (not Heatmap::get_instance(true)
+                    ->add_output_layer(layer, config->get_property("params")))
+                ErrorManager::get_instance()->log_error(
+                    "Failed to add layer to Heatmap!");
+        }
+
+
+    MODULE_MEMBERS
+};
+
+#endif

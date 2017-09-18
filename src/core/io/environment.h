@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include "io/module/module.h"
+#include "io/module.h"
 
 class Environment {
     public:

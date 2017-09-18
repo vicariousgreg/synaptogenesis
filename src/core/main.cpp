@@ -7,7 +7,7 @@
 #include "network/network.h"
 #include "network/network_builder.h"
 #include "network/weight_config.h"
-#include "io/module/module.h"
+#include "io/module.h"
 #include "io/environment.h"
 #include "engine/engine.h"
 #include "state/state.h"
