@@ -53,14 +53,10 @@ class Module {
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call
          */
-        virtual IOTypeMask get_type() = 0;
+        virtual IOTypeMask get_io_type() = 0;
 
         Layer* const layer;
         const OutputType output_type;
-
-        // Get the IOType of a module subclass
-        static IOTypeMask get_type(std::string module_type);
-        static IOTypeMask get_type(ModuleConfig *config);
 
         static Module* build_module(Network *network, ModuleConfig *config);
 
@@ -98,7 +94,7 @@ Module *CLASS_NAME::build(Layer *layer, ModuleConfig *config) { \
         static Module *build(Layer *layer, ModuleConfig *config); \
         static int module_id; \
         static IOTypeMask io_type; \
-        virtual IOTypeMask get_type() { return io_type; }
+        virtual IOTypeMask get_io_type() { return io_type; }
 
 
 typedef std::vector<Module*> ModuleList;

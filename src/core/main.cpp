@@ -33,12 +33,14 @@ void print_network(Network *network, Environment *env=nullptr) {
     for (auto structure : network->get_structures()) {
         for (auto layer : structure->get_layers()) {
             printf("%-20s   ", (layer->structure->name + "->" + layer->name).c_str());
+            /*
             if (env != nullptr) {
-                auto type = env->get_type(structure->name, layer->name);
-                std::cout << ((type & INPUT) ? "I " : "  ");
-                std::cout << ((type & OUTPUT) ? "O " : "  ");
-                std::cout << ((type & EXPECTED) ? "E " : "  ");
+                auto io_type = env->get_io_type(structure->name, layer->name);
+                std::cout << ((io_type & INPUT) ? "I " : "  ");
+                std::cout << ((io_type & OUTPUT) ? "O " : "  ");
+                std::cout << ((io_type & EXPECTED) ? "E " : "  ");
             }
+            */
             std::cout << std::endl;
         }
         std::cout << std::endl;

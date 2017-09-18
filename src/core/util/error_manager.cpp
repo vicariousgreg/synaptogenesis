@@ -12,7 +12,7 @@ void ErrorManager::log_warning(std::string error) {
 
 void ErrorManager::log_error(std::string error) {
     if (not suppress_output)
-        std::cout << "FATAL ERROR: \n" << error << "\n";
+        std::cout << "\n============\nFATAL ERROR: \n" << error << "\n";
 
     if (debug) throw DebugError();
     else       throw std::runtime_error(error);

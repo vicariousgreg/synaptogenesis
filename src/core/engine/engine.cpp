@@ -23,6 +23,7 @@ Engine::Engine(Context *context, bool suppress_output)
 }
 
 void Engine::rebuild() {
+    io_types.clear();
     build_environment();
     build_clusters();
 }
@@ -32,12 +33,25 @@ void Engine::build_environment() {
     LayerList input_layers, expected_layers, output_layers;
 
     for (auto config : context->get_environment()->get_modules()) {
-        // If output is suppressed, skip any pure output modules
-        if (suppress_output and (Module::get_type(config) == OUTPUT)) continue;
-
+        // Build module
         Module *module = Module::build_module(context->get_network(), config);
         modules.push_back(module);
-        this->io_types[module->layer] |= module->get_type();
+        auto layer_io_type = io_types[module->layer];
+        auto module_io_type = module->get_io_type();
+
+        // Check for duplicate input/expected modules
+        if (module_io_type & INPUT & layer_io_type)
+            ErrorManager::get_instance()->log_error(
+                "Error in environment model:\n"
+                "  Error adding module to: " + module->layer->str() + "\n" +
+                "    Layer cannot have more than one input module!");
+        if (module_io_type & EXPECTED & layer_io_type)
+            ErrorManager::get_instance()->log_error(
+                "Error in environment model:\n"
+                "  Error adding module to: " + module->layer->str() + "\n" +
+                "    Layer cannot have more than one expected module!");
+
+        this->io_types[module->layer] = layer_io_type | module_io_type;
     }
 
     // Put layers in appropriate lists

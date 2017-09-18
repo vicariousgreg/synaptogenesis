@@ -23,20 +23,6 @@ Module::ModuleBank* Module::get_module_bank() {
     return bank;
 }
 
-// Get the IOType of a module subclass
-IOTypeMask Module::get_type(std::string module_type) {
-    try {
-        return Module::get_module_bank()->io_types.at(module_type);
-    } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
-            "Unrecognized module: " + module_type + "!");
-    }
-}
-
-IOTypeMask Module::get_type(ModuleConfig *config) {
-    return Module::get_type(config->get_property("type"));
-}
-
 int Module::register_module(std::string module_type,
         IOTypeMask type, MODULE_BUILD_PTR build_ptr) {
     auto bank = Module::get_module_bank();

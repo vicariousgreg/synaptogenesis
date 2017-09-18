@@ -10,26 +10,7 @@ void Environment::save(std::string path) {
 }
 
 void Environment::add_module(ModuleConfig* config) {
-    auto structure = config->get_structure();
-    auto layer = config->get_layer();
-    auto io_type = io_type_map[structure][layer];
-    auto config_type = Module::get_type(config);
-
-    if (config_type & INPUT & io_type)
-        ErrorManager::get_instance()->log_error(
-            "Error in environment model:\n"
-            "  Error adding module to layer: "
-                + layer + " in structure: " + structure + "\n"
-            "    Layer cannot have more than one input module!");
-    if (config_type & EXPECTED & io_type)
-        ErrorManager::get_instance()->log_error(
-            "Error in environment model:\n"
-            "  Error adding module to layer: "
-                + layer + " in structure: " + structure + "\n"
-            "    Layer cannot have more than one expected module!");
-
-    config_map[structure][layer].push_back(config);
-    io_type_map[structure][layer] |= config_type;
+    config_map[config->get_structure()][config->get_layer()].push_back(config);
     config_list.push_back(config);
 }
 
@@ -37,19 +18,24 @@ void Environment::remove_modules() {
     for (auto c : config_list) delete c;
     config_map.clear();
     config_list.clear();
-    io_type_map.clear();
 }
 
 void Environment::remove_modules(std::string structure,
-        std::string layer) {
+        std::string layer, std::string type) {
     for (auto l : config_map[structure]) {
         if (layer == "" or l.first == layer) {
-            for (auto c : l.second) delete c;
+            // Filter out configs to keep and delete others
+            std::vector<ModuleConfig*> filtered_configs;
+            for (auto c : l.second)
+                if (type == "" or c->get_type() == type)
+                    delete c;
+                else
+                    filtered_configs.push_back(c);
+
+            // Clear old list and replace configs to keep
             l.second.clear();
-            io_type_map[structure][l.first] = 0;
+            for (auto c : filtered_configs)
+                l.second.push_back(c);
         }
     }
 }
-
-IOTypeMask Environment::get_type(std::string structure, std::string layer)
-    { return io_type_map.at(structure).at(layer); }
