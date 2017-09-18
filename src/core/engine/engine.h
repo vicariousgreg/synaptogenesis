@@ -106,9 +106,6 @@ class Engine {
         // Environment hooks
         void step_input();
         void step_output();
-        void ui_init();
-        void ui_launch();
-        void ui_update();
 
         // Thread loops
         void network_loop(int iterations, bool verbose);

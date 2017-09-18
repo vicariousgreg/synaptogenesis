@@ -162,17 +162,6 @@ void Engine::step_output() {
                 Attributes::get_output_type(module->layer));
 }
 
-void Engine::ui_init() {
-    Frontend::init_all();
-}
-
-void Engine::ui_launch() {
-    Frontend::launch_all();
-}
-
-void Engine::ui_update() {
-    Frontend::update_all(this->buffer);
-}
 
 void Engine::network_loop(int iterations, bool verbose) {
     run_timer.reset();
@@ -236,10 +225,12 @@ void Engine::environment_loop(int iterations, bool verbose) {
         if (i % environment_rate == 0) {
             // Stream output and update UI
             this->step_output();
-            this->ui_update();
+            Frontend::update_all(this->buffer);
         }
         motor_lock.pass(NETWORK);
     }
+    // TODO: handle race conditions here
+    Frontend::quit();
 }
 
 Context* Engine::run(int iterations, bool verbose) {
@@ -253,18 +244,13 @@ Context* Engine::run(int iterations, bool verbose) {
     sensory_lock.set_owner(ENVIRONMENT);
     motor_lock.set_owner(NETWORK);
 
-    // Start timer
-    run_timer.reset();
-
-    if (verbose) run_timer.query("Initialization");
-
     // Ensure device is synchronized without errors
     device_synchronize();
     device_check_error("Clock device synchronization failed!");
     if (verbose) device_check_memory();
 
     // Initialize UI
-    this->ui_init();
+    Frontend::init_all();
 
     /**********************/
     /*** Launch threads ***/
@@ -275,7 +261,7 @@ Context* Engine::run(int iterations, bool verbose) {
         &Engine::environment_loop, this, iterations, verbose);
 
     // Launch UI on main thread
-    this->ui_launch();
+    Frontend::launch_all();
 
     // Wait for threads
     network_thread.join();

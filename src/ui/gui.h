@@ -17,6 +17,7 @@ class GUI {
 
         void add_window(GuiWindow *window);
         void launch();
+        void quit();
         void update();
 
         Glib::Dispatcher dispatcher;

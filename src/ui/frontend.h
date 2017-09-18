@@ -33,6 +33,7 @@ class Frontend {
         static void init_all();
         static void launch_all();
         static void update_all(Buffer *buffer);
+        static void quit();
         static void cleanup();
 
     protected:

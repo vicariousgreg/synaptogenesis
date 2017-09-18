@@ -42,6 +42,12 @@ void GUI::launch() {
         app->run(*windows[0]);
 }
 
+void GUI::quit() {
+    for (auto window : windows) window->close();
+    if (windows.size() > 0)
+        app->quit();
+}
+
 void GUI::update() {
     for (auto window : windows) window->update();
 }

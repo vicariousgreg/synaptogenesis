@@ -51,6 +51,11 @@ void Frontend::update_all(Buffer *buffer) {
         f->update(buffer);
 }
 
+void Frontend::quit() {
+    if (Frontend::instances.size() > 0)
+        GUI::get_instance()->quit();
+}
+
 void Frontend::cleanup() {
     for (auto f : Frontend::instances) delete f;
     Frontend::instances.clear();
