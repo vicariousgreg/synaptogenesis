@@ -62,7 +62,7 @@ class ResourceManager {
 
         int num_cores;
         std::vector<Device*> devices;
-        std::map<DeviceID, std::vector<void*> > managed_pointers;
+        std::map<DeviceID, std::vector<void*>> managed_pointers;
 };
 
 #endif

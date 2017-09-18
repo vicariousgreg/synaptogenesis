@@ -31,11 +31,11 @@ class DSSTWindow : public GuiWindow {
     private:
         std::vector<Gtk::Image*> key_images;
         std::vector<Gtk::Image*> prompt_images;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf> > key_pixbufs;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf> > prompt_pixbufs;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> key_pixbufs;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> prompt_pixbufs;
 
-        std::vector<Glib::RefPtr<Gdk::Pixbuf> > digit_pixbufs;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf> > symbol_pixbufs;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> digit_pixbufs;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> symbol_pixbufs;
         std::vector<int> prompt_answers;
         std::vector<int> prompt_responses;
         std::vector<bool> dirty;

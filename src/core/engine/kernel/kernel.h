@@ -52,7 +52,7 @@ Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_poisson();
 
 /* Dendritic tree internal computation */
 Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal();
-Kernel<int, int, Pointer<float>, Pointer<float> >
+Kernel<int, int, Pointer<float>, Pointer<float>>
 get_calc_internal_second_order();
 
 /* Base activator kernel */

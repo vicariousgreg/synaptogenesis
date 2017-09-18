@@ -382,7 +382,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
+    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
     funcs[FULLY_CONNECTED][ADD]      = get_activate_iz_add_fully_connected();
     funcs[FULLY_CONNECTED][SUB]      = get_activate_iz_sub_fully_connected();
     funcs[FULLY_CONNECTED][MULT]     = get_activate_iz_mult_fully_connected();
@@ -494,7 +494,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
+    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
     funcs[FULLY_CONNECTED][ADD]  = get_update_iz_add_fully_connected();
     funcs[SUBSET][ADD]           = get_update_iz_add_subset();
     funcs[ONE_TO_ONE][ADD]       = get_update_iz_add_one_to_one();

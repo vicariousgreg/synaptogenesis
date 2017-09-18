@@ -1,17 +1,17 @@
 #include "network/network.h"
-#include "network/network_builder.h"
 #include "util/error_manager.h"
+#include "builder.h"
 
 Network::~Network() {
     for (auto& structure : structures) delete structure;
 }
 
 Network* Network::load(std::string path) {
-    return load_model(path);
+    return load_network(path);
 }
 
 void Network::save(std::string path) {
-    save_model(this, path);
+    save_network(this, path);
 }
 
 void Network::add_structure(Structure *structure) {

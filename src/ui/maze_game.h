@@ -60,7 +60,7 @@ class MazeGame : public Frontend {
         int goal_row, goal_col;
         bool ui_dirty;
         std::map<std::string, bool > dirty;
-        std::map<std::string, Pointer<float> > input_data;
+        std::map<std::string, Pointer<float>> input_data;
         MazeGameWindow *maze_window;
 };
 

@@ -45,7 +45,7 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS> > funcs;
+    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     funcs[FULLY_CONNECTED]  = get_activate_perceptron_fully_connected();
     funcs[SUBSET]           = get_activate_perceptron_subset();
     funcs[ONE_TO_ONE]       = get_activate_perceptron_one_to_one();
@@ -78,7 +78,7 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS> > funcs;
+    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     funcs[FULLY_CONNECTED]  = get_update_perceptron_fully_connected();
     funcs[SUBSET]           = get_update_perceptron_subset();
     funcs[ONE_TO_ONE]       = get_update_perceptron_one_to_one();

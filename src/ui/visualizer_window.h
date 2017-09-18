@@ -12,7 +12,7 @@ class VisualizerWindow : public GuiWindow {
         void update();
 
         std::vector<Gtk::Image*> images;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf> > pixbufs;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> pixbufs;
 
     private:
         Gtk::Grid *grid;

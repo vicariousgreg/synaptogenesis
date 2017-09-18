@@ -94,7 +94,7 @@ CALC_CONVOLUTIONAL_BY_WEIGHT(update_debug_convolutional,
 );
 
 Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS> > funcs;
+    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     if (conn->second_order) {
         funcs[FULLY_CONNECTED]      = get_update_debug_fully_connected();
         funcs[SUBSET]               = get_update_debug_subset();
@@ -124,7 +124,7 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 
 Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS> > funcs;
+    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     if (not conn->second_order) {
         funcs[FULLY_CONNECTED]      = get_update_debug_fully_connected();
         funcs[SUBSET]               = get_update_debug_subset();

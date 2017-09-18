@@ -21,7 +21,7 @@ class MazeGameWindow : public GuiWindow {
     private:
         void set_cell(int row, int col, int r, int g, int b);
         std::vector<Gtk::Image*> images;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf> > pixbufs;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> pixbufs;
 
         MazeGame* maze_game;
         Gtk::Grid *grid;

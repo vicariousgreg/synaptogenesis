@@ -17,7 +17,7 @@ class CSVExpectedModule : public Module {
         int exposure;
         int curr_row;
 
-        std::vector<Pointer<Output> > data;
+        std::vector<Pointer<Output>> data;
 
     MODULE_MEMBERS
 };

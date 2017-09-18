@@ -1,4 +1,13 @@
 #include "io/environment.h"
+#include "builder.h"
+
+Environment* Environment::load(std::string path) {
+    return load_environment(path);
+}
+
+void Environment::save(std::string path) {
+    save_environment(this, path);
+}
 
 void Environment::add_module(ModuleConfig* config) {
     auto structure = config->get_structure();

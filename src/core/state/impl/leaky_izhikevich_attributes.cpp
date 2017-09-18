@@ -90,7 +90,7 @@ Kernel<SYNAPSE_ARGS> LeakyIzhikevichAttributes::get_updater(Connection *conn) {
         ErrorManager::get_instance()->log_error(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS> > > funcs;
+    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
     funcs[FULLY_CONNECTED][ADD]  = get_update_liz_add_fully_connected();
     funcs[SUBSET][ADD]           = get_update_liz_add_subset();
     funcs[ONE_TO_ONE][ADD]       = get_update_liz_add_one_to_one();

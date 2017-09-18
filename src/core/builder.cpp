@@ -4,23 +4,24 @@
 
 #include "jsonxx/jsonxx.h"
 
-#include "network/network_builder.h"
+#include "builder.h"
+#include "network/network.h"
 #include "network/layer_config.h"
 #include "network/connection_config.h"
-//#include "io/module.h"
+#include "io/environment.h"
 
 using namespace jsonxx;
 
 /******************************************************************************/
-/******************************** PARSING *************************************/
+/******************************** NETWORK *************************************/
 /******************************************************************************/
 
+/******************************** PARSING *************************************/
 static void parse_structure(Network *network, Object so);
 static void parse_layer(Structure *structure, Object lo);
 static void parse_dendrite(Structure *structure, std::string layer,
     std::string node, Object dobj);
 static void parse_connection(Network *network, std::string structure_name, Object co);
-//static ModuleConfig* parse_module(Object mo);
 static NoiseConfig *parse_noise_config(Object nco);
 static WeightConfig *parse_weight_config(Object wo);
 static ArborizedConfig *parse_arborized_config(Object wo);
@@ -38,7 +39,7 @@ static bool has_array(Object o, std::string key) { return o.has<Array>(key); }
  *     -> parse_structure
  *     -> parse_connection
  */
-Network* load_model(std::string path) {
+Network* load_network(std::string path) {
     std::ifstream file("networks/" + path);
     std::stringstream buffer;
 
@@ -104,7 +105,6 @@ static void parse_structure(Network *network, Object so) {
 
 /* Parses a layer
  *     -> parse_noise_config
- *     -> parse_module
  *     -> parse_dendritic_node
  */
 static void parse_layer(Structure *structure, Object lo) {
@@ -117,7 +117,6 @@ static void parse_layer(Structure *structure, Object lo) {
     bool global = false;
 
     std::map<std::string, std::string> properties;
-    // std::vector<ModuleConfig*> modules;
 
     for (auto pair : lo.kv_map()) {
         if (pair.first == "name")
@@ -134,11 +133,6 @@ static void parse_layer(Structure *structure, Object lo) {
             global = pair.second->get<String>() == "true";
         else if (pair.first == "noise")
             noise_config = parse_noise_config(pair.second->get<Object>());
-        /*
-        else if (pair.first == "modules")
-            for (auto val : pair.second->get<Array>().values())
-                modules.push_back(parse_module(val->get<Object>()));
-        */
         else if (pair.first != "dendrites") // Skip these till end
             properties[pair.first] = pair.second->get<String>();
     }
@@ -150,11 +144,6 @@ static void parse_layer(Structure *structure, Object lo) {
         layer_config->set_property(pair.first, pair.second);
 
     structure->add_layer(layer_config);
-    /*
-    for (auto module : modules)
-        if (module != nullptr)
-            structure->add_module(name, module);
-    */
 
     if (has_object(lo, "dendrites"))
         parse_dendrite(structure, name, "root", lo.get<Object>("dendrites"));
@@ -275,26 +264,6 @@ static void parse_connection(Network *network, std::string structure_name, Objec
         connection_config,
         dendrite);
 }
-
-/* Parses a module list */
-/*
-static ModuleConfig* parse_module(Object mo) {
-    if (get_string(mo, "skip", "false") == "true") return nullptr;
-
-    if (not has_string(mo, "type"))
-        ErrorManager::get_instance()->log_error(
-            "No module type specified!");
-
-    auto module_config = new ModuleConfig(get_string(mo, "type"));
-
-    // Get properties
-    for (auto pair : mo.kv_map())
-        if (pair.first != "type")
-            module_config->set_property(pair.first, pair.second->get<String>());
-
-    return module_config;
-}
-*/
 
 /* Parses a noise configuration */
 static NoiseConfig *parse_noise_config(Object nco) {
@@ -447,10 +416,7 @@ static SubsetConfig *parse_subset_config(Object wo) {
         to_col_start, to_col_end);
 }
 
-/******************************************************************************/
 /******************************** WRITING *************************************/
-/******************************************************************************/
-
 static Object write_structure(Structure *structure);
 static Object write_layer(Layer *layer);
 static Object write_dendrite(DendriticNode *node);
@@ -465,7 +431,7 @@ static Object write_subset_config(SubsetConfig *subset_config);
 /* Top level network writer
  *     -> write_structure
  */
-void save_model(Network *network, std::string path) {
+void save_network(Network *network, std::string path) {
     std::ofstream file("networks/" + path);
 
 	Object o;
@@ -506,7 +472,6 @@ static Object write_structure(Structure *structure) {
 
 /* Writes a layer
  *     -> write_noise_config
- *     -> write_module
  *     -> write_dendrite
  */
 static Object write_layer(Layer *layer) {
@@ -527,15 +492,6 @@ static Object write_layer(Layer *layer) {
     auto noise_config = layer->get_config()->noise_config;
     if (noise_config != nullptr)
         o << "noise" << write_properties(noise_config);
-
-    /*
-    if (layer->get_module_configs().size() > 0) {
-        Array a;
-        for (auto module : layer->get_module_configs())
-            a << write_properties(module);
-        o << "modules" << a;
-    }
-    */
 
     o << "dendrites" << write_dendrite(layer->dendritic_root);
 
@@ -656,4 +612,74 @@ static Object write_subset_config(SubsetConfig *subset_config) {
     o << "to column start" << subset_config->to_col_start;
     o << "to column end" << subset_config->to_col_end;
     return o;
+}
+
+/******************************************************************************/
+/******************************* ENVIRONMENT ***********************************/
+/******************************************************************************/
+
+/******************************** PARSING *************************************/
+static ModuleConfig* parse_module(Object mo);
+
+
+/* Top level environment parser
+ *     -> parse_module
+ */
+Environment* load_environment(std::string path) {
+    std::ifstream file("environments/" + path);
+    std::stringstream buffer;
+
+    buffer << file.rdbuf();
+    std::string str = buffer.str();
+
+    Environment *environment = new Environment();
+
+    Object o;
+    o.parse(str);
+    if (o.has<Array>("modules")) {
+        for (auto module : o.get<Array>("modules").values()) {
+            auto config = parse_module(module->get<Object>());
+            if (config != nullptr)
+                environment->add_module(config);
+        }
+    }
+
+    return environment;
+}
+
+/* Parses a module */
+static ModuleConfig* parse_module(Object mo) {
+    if (get_string(mo, "skip", "false") == "true") return nullptr;
+
+    if (not has_string(mo, "type"))
+        ErrorManager::get_instance()->log_error(
+            "No module type specified!");
+
+    auto module_config = new ModuleConfig(
+        get_string(mo, "structure"),
+        get_string(mo, "layer"),
+        get_string(mo, "type"));
+
+    // Get properties
+    for (auto pair : mo.kv_map())
+        module_config->set_property(pair.first, pair.second->get<String>());
+
+    return module_config;
+}
+
+/******************************** WRITING *************************************/
+/* Top level environment writer
+ *     -> write_properties (defined above)
+ */
+void save_environment(Environment *environment, std::string path) {
+    std::ofstream file("environments/" + path);
+
+	Object o;
+	Array a;
+	for (auto module : environment->get_modules())
+	    a << write_properties(module);
+	o << "modules" << a;
+
+	file << o.json() << std::endl;
+	file.close();
 }

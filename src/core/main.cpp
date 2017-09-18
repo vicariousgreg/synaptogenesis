@@ -5,7 +5,7 @@
 #include <string>
 
 #include "network/network.h"
-#include "network/network_builder.h"
+#include "builder.h"
 #include "network/weight_config.h"
 #include "io/module.h"
 #include "io/environment.h"

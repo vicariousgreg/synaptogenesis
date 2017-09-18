@@ -31,7 +31,7 @@ ParallelCluster::ParallelCluster(Structure *structure,
 
 InstructionList ParallelCluster::sort_instructions(Engine *engine,
         IOTypeMask include, IOTypeMask exclude, bool plastic) {
-    std::map<Layer*, std::queue<Instruction*> > schedules;
+    std::map<Layer*, std::queue<Instruction*>> schedules;
     InstructionList destination;
 
     // Extract instructions

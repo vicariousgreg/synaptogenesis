@@ -65,14 +65,14 @@ class State {
         int num_devices;
         bool on_host;
         std::vector<Buffer*> internal_buffers;
-        std::vector<std::map<int, Buffer*> > inter_device_buffers;
-        std::vector<std::map<std::string, Attributes*> > attributes;
+        std::vector<std::map<int, Buffer*>> inter_device_buffers;
+        std::vector<std::map<std::string, Attributes*>> attributes;
         std::map<Connection*, WeightMatrix*> weight_matrices;
         std::map<Layer*, DeviceID> layer_devices;
 
         // Keep track of all pointers
-        std::vector<std::vector<BasePointer*> > network_pointers;
-        std::vector<std::vector<BasePointer*> > buffer_pointers;
+        std::vector<std::vector<BasePointer*>> network_pointers;
+        std::vector<std::vector<BasePointer*>> buffer_pointers;
 
         std::map<PointerKey, BasePointer*> pointer_map;
 };
