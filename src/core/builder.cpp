@@ -655,14 +655,25 @@ static ModuleConfig* parse_module(Object mo) {
         ErrorManager::get_instance()->log_error(
             "No module type specified!");
 
-    auto module_config = new ModuleConfig(
-        get_string(mo, "structure"),
-        get_string(mo, "layer"),
-        get_string(mo, "type"));
+    auto module_config = new ModuleConfig(get_string(mo, "type"));
+
+    if (not has_array(mo, "layers"))
+        ErrorManager::get_instance()->log_error(
+            "No layers for module specified!");
+
+    // Parse layers
+    for (auto layer : mo.get<Array>("layers").values()) {
+        std::map<std::string, std::string> layer_props;
+        for (auto pair : layer->get<Object>().kv_map())
+            layer_props[pair.first] = pair.second->get<String>();
+        module_config->add_layer(new PropertyConfig(layer_props));
+    }
 
     // Get properties
     for (auto pair : mo.kv_map())
-        module_config->set_property(pair.first, pair.second->get<String>());
+        if (pair.first != "layers")
+            module_config->set_property(
+                pair.first, pair.second->get<String>());
 
     return module_config;
 }
@@ -676,8 +687,14 @@ void save_environment(Environment *environment, std::string path) {
 
 	Object o;
 	Array a;
-	for (auto module : environment->get_modules())
-	    a << write_properties(module);
+	for (auto module : environment->get_modules()) {
+	    Array l;
+	    auto module_o = write_properties(module);
+	    for (auto layer : module->get_layers())
+	        l << write_properties(layer);
+	    module_o << "layers" << l;
+	    a << module_o;
+    }
 	o << "modules" << a;
 
 	file << o.json() << std::endl;
