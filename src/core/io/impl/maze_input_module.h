@@ -6,13 +6,13 @@
 
 class MazeInputModule : public Module {
     public:
-        MazeInputModule(Layer *layer, ModuleConfig *config);
+        MazeInputModule(LayerList layers, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
 
     private:
         MazeGame* maze_game;
-        std::string params;
+        std::map<Layer*, std::string> params;
 
     MODULE_MEMBERS
 };

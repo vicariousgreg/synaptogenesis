@@ -9,8 +9,8 @@
 
 REGISTER_MODULE(OneHotCyclicInputModule, "one_hot_cyclic_input", INPUT);
 
-OneHotCyclicInputModule::OneHotCyclicInputModule(Layer *layer, ModuleConfig *config)
-        : Module(layer), timesteps(0), index(layer->size-1) {
+OneHotCyclicInputModule::OneHotCyclicInputModule(LayerList layers, ModuleConfig *config)
+        : Module(layers), timesteps(0), index(layers.at(0)->size-1) {
     this->max_value = std::stof(config->get_property("max", "1.0"));
     this->cycle_rate = std::stoi(config->get_property("rate", "100"));
     this->end = std::stoi(config->get_property("end", "0"));
@@ -34,14 +34,14 @@ void OneHotCyclicInputModule::feed_input(Buffer *buffer) {
             if (end != 0) std::cout << "  *  ";
 
             // Cycle
-            float *input = buffer->get_input(this->layer);
+            float *input = buffer->get_input(this->layers.at(0));
             input[index] = 0.0;
-            index = (index + 1) % this->layer->size;
+            index = (index + 1) % this->layers.at(0)->size;
             input[index] = max_value;
-            buffer->set_dirty(this->layer);
+            buffer->set_dirty(this->layers.at(0));
 
             // Print
-            for (int nid = 0 ; nid < this->layer->size; ++nid)
+            for (int nid = 0 ; nid < this->layers.at(0)->size; ++nid)
                     std::cout << ((nid == index) ? max_value : 0) << " ";
             std::cout << std::endl;
         }
@@ -51,10 +51,10 @@ void OneHotCyclicInputModule::feed_input(Buffer *buffer) {
             std::cout << "========================================== CLEAR\n";
 
             // Clear
-            float *input = buffer->get_input(this->layer);
-            for (int nid = 0 ; nid < this->layer->size; ++nid)
+            float *input = buffer->get_input(this->layers.at(0));
+            for (int nid = 0 ; nid < this->layers.at(0)->size; ++nid)
                 input[nid] = 0.0;
-            buffer->set_dirty(this->layer);
+            buffer->set_dirty(this->layers.at(0));
         }
     }
 }

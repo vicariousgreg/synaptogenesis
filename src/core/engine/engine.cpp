@@ -36,22 +36,26 @@ void Engine::build_environment() {
         // Build module
         Module *module = Module::build_module(context->get_network(), config);
         modules.push_back(module);
-        auto layer_io_type = io_types[module->layer];
-        auto module_io_type = module->get_io_type();
 
-        // Check for duplicate input/expected modules
-        if (module_io_type & INPUT & layer_io_type)
-            ErrorManager::get_instance()->log_error(
-                "Error in environment model:\n"
-                "  Error adding module to: " + module->layer->str() + "\n" +
-                "    Layer cannot have more than one input module!");
-        if (module_io_type & EXPECTED & layer_io_type)
-            ErrorManager::get_instance()->log_error(
-                "Error in environment model:\n"
-                "  Error adding module to: " + module->layer->str() + "\n" +
-                "    Layer cannot have more than one expected module!");
+        // Update io_types for all layers attached to the module
+        for (auto layer : module->layers) {
+            auto layer_io_type = io_types[layer];
+            auto module_io_type = module->get_io_type(layer);
 
-        this->io_types[module->layer] = layer_io_type | module_io_type;
+            // Check for duplicate input/expected modules
+            if (module_io_type & INPUT & layer_io_type)
+                ErrorManager::get_instance()->log_error(
+                    "Error in environment model:\n"
+                    "  Error adding module to: " + layer->str() + "\n" +
+                    "    Layer cannot have more than one input module!");
+            if (module_io_type & EXPECTED & layer_io_type)
+                ErrorManager::get_instance()->log_error(
+                    "Error in environment model:\n"
+                    "  Error adding module to: " + layer->str() + "\n" +
+                    "    Layer cannot have more than one expected module!");
+
+            this->io_types[layer] = layer_io_type | module_io_type;
+        }
     }
 
     // Put layers in appropriate lists

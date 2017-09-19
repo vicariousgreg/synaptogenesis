@@ -5,7 +5,7 @@
 
 class PrintRateModule : public Module {
     public:
-        PrintRateModule(Layer *layer,
+        PrintRateModule(LayerList layers,
             ModuleConfig *config);
 
         void report_output(Buffer *buffer);

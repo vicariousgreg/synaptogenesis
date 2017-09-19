@@ -6,13 +6,13 @@
 
 class DSSTInputModule : public Module {
     public:
-        DSSTInputModule(Layer *layer, ModuleConfig *config);
+        DSSTInputModule(LayerList layers, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
 
     private:
         DSST* dsst;
-        std::string params;
+        std::map<Layer*, std::string> params;
 
     MODULE_MEMBERS
 };

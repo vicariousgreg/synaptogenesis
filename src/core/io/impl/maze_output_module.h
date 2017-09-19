@@ -6,7 +6,7 @@
 
 class MazeOutputModule : public Module {
     public:
-        MazeOutputModule(Layer *layer, ModuleConfig *config);
+        MazeOutputModule(LayerList layers, ModuleConfig *config);
 
         void report_output(Buffer *buffer);
 

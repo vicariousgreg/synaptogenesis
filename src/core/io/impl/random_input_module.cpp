@@ -9,8 +9,10 @@
 
 REGISTER_MODULE(RandomInputModule, "random_input", INPUT);
 
-RandomInputModule::RandomInputModule(Layer *layer, ModuleConfig *config)
-        : Module(layer), timesteps(0) {
+RandomInputModule::RandomInputModule(LayerList layers, ModuleConfig *config)
+        : Module(layers), timesteps(0) {
+    this->enforce_equal_layer_sizes("random_input");
+
     this->max_value = std::stof(config->get_property("max", "1.0"));
     this->shuffle_rate = std::stoi(config->get_property("rate", "1"));
     this->fraction = std::stof(config->get_property("fraction", "1.0"));
@@ -28,7 +30,7 @@ RandomInputModule::RandomInputModule(Layer *layer, ModuleConfig *config)
         ErrorManager::get_instance()->log_error(
             "Invalid fraction for random input generator!");
 
-    this->random_values = (float*) malloc (layer->size * sizeof(float));
+    this->random_values = (float*) malloc(layers.at(0)->size * sizeof(float));
 }
 
 RandomInputModule::~RandomInputModule() {
@@ -36,31 +38,33 @@ RandomInputModule::~RandomInputModule() {
 }
 
 void RandomInputModule::feed_input(Buffer *buffer) {
-    if (timesteps % shuffle_rate == 0) {
-        if (uniform)
-            fSet(random_values, layer->size, max_value, fraction);
-        else
-            fRand(random_values, layer->size, 0.0, max_value, fraction);
-        float *input = buffer->get_input(this->layer);
-        for (int nid = 0 ; nid < this->layer->size; ++nid)
-            input[nid] = this->random_values[nid];
+    for (auto layer : layers) {
+        if (timesteps % shuffle_rate == 0) {
+            if (uniform)
+                fSet(random_values, layer->size, max_value, fraction);
+            else
+                fRand(random_values, layer->size, 0.0, max_value, fraction);
+            float *input = buffer->get_input(layer);
+            for (int nid = 0 ; nid < layer->size; ++nid)
+                input[nid] = this->random_values[nid];
 
-        if (verbose) {
-            std::cout << "============================ SHUFFLE\n";
-            for (int nid = 0 ; nid < this->layer->size; ++nid)
-                std::cout << this->random_values[nid] << " ";
-            std::cout << std::endl;
+            if (verbose) {
+                std::cout << "============================ SHUFFLE\n";
+                for (int nid = 0 ; nid < layer->size; ++nid)
+                    std::cout << this->random_values[nid] << " ";
+                std::cout << std::endl;
+            }
+
+            buffer->set_dirty(layer);
+        } else if (clear and (timesteps % shuffle_rate == 1)) {
+            if (verbose) std::cout << "============================ CLEAR\n";
+            fSet(random_values, layer->size, 0.0);
+
+            float *input = buffer->get_input(layer);
+            for (int nid = 0 ; nid < layer->size; ++nid)
+                input[nid] = this->random_values[nid];
+            buffer->set_dirty(layer);
         }
-
-        buffer->set_dirty(this->layer);
-    } else if (clear and (timesteps % shuffle_rate == 1)) {
-        if (verbose) std::cout << "============================ CLEAR\n";
-        fSet(random_values, layer->size, 0.0);
-
-        float *input = buffer->get_input(this->layer);
-        for (int nid = 0 ; nid < this->layer->size; ++nid)
-            input[nid] = this->random_values[nid];
-        buffer->set_dirty(this->layer);
     }
 }
 

@@ -3,17 +3,24 @@
 
 REGISTER_MODULE(DSSTInputModule, "dsst_input", INPUT);
 
-DSSTInputModule::DSSTInputModule(Layer *layer, ModuleConfig *config)
-        : Module(layer), params(config->get_property("params")) {
+DSSTInputModule::DSSTInputModule(LayerList layers, ModuleConfig *config)
+        : Module(layers) {
+    enforce_equal_layer_sizes("dsst_input");
+
     dsst = DSST::get_instance(true);
-    if (not dsst->add_input_layer(layer, params))
-        ErrorManager::get_instance()->log_error(
-            "Failed to add layer to DSST!");
+    for (auto layer : layers) {
+        params[layer] = config->get_property("params");
+        if (not dsst->add_input_layer(layer, params[layer]))
+            ErrorManager::get_instance()->log_error(
+                "Failed to add layer to DSST!");
+    }
 }
 
 void DSSTInputModule::feed_input(Buffer *buffer) {
-    if (dsst->is_dirty(params)) {
-        Pointer<float> input = dsst->get_input(params);
-        buffer->set_input(this->layer, input);
+    for (auto layer : layers) {
+        if (dsst->is_dirty(params[layer])) {
+            Pointer<float> input = dsst->get_input(params[layer]);
+            buffer->set_input(layer, input);
+        }
     }
 }

@@ -10,8 +10,10 @@
 
 REGISTER_MODULE(CSVReaderModule, "csv_reader", 0);
 
-CSVReaderModule::CSVReaderModule(Layer *layer, ModuleConfig *config)
-        : Module(layer) {
+CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
+        : Module(layers) {
+    enforce_equal_layer_sizes("csv_reader");
+
     std::string filename = config->get_property("filename", "");
     int offset = std::stoi(config->get_property("offset", "0"));
     float normalization = std::stof(config->get_property("normalization", "1"));
@@ -35,13 +37,13 @@ CSVReaderModule::CSVReaderModule(Layer *layer, ModuleConfig *config)
     CsvRow *row;
 
     while ((row = CsvParser_getRow(csvparser)) ) {
-        data.push_back(Pointer<float>(layer->size));
+        data.push_back(Pointer<float>(layers.at(0)->size));
         const char **rowFields = CsvParser_getFields(row);
-        if (layer->size > CsvParser_getNumFields(row) - offset)
+        if (layers.at(0)->size > CsvParser_getNumFields(row) - offset)
             ErrorManager::get_instance()->log_error("Bad CSV file!");
 
         float *ptr = data[data.size()-1].get();
-        for (int i = 0 ; i < layer->size ; i++) {
+        for (int i = 0 ; i < layers.at(0)->size ; i++) {
             std::stringstream(rowFields[i+offset]) >> ptr[i];
             ptr[i] /= normalization;
         }

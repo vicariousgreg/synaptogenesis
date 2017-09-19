@@ -6,7 +6,7 @@
 
 class ImageInputModule : public Module {
     public:
-        ImageInputModule(Layer *layer, ModuleConfig *config);
+        ImageInputModule(LayerList layers, ModuleConfig *config);
         virtual ~ImageInputModule() {
             this->gray.free();
             this->red.free();

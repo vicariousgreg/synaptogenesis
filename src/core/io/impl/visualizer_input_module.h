@@ -7,12 +7,13 @@
 
 class VisualizerInputModule : public Module {
     public:
-        VisualizerInputModule(Layer *layer, ModuleConfig *config)
-            : Module(layer) {
-            if (not Visualizer::get_instance(true)
-                    ->add_input_layer(layer, config->get_property("params")))
-                ErrorManager::get_instance()->log_error(
-                    "Failed to add layer to Visualizer!");
+        VisualizerInputModule(LayerList layers, ModuleConfig *config)
+            : Module(layers) {
+            for (auto layer : layers)
+                if (not Visualizer::get_instance(true)
+                        ->add_input_layer(layer, config->get_property("params")))
+                    ErrorManager::get_instance()->log_error(
+                        "Failed to add layer to Visualizer!");
         }
 
 

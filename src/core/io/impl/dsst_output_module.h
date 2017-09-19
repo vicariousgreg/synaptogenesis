@@ -6,7 +6,7 @@
 
 class DSSTOutputModule : public Module {
     public:
-        DSSTOutputModule(Layer *layer, ModuleConfig *config);
+        DSSTOutputModule(LayerList layers, ModuleConfig *config);
 
         void report_output(Buffer *buffer);
 

@@ -12,7 +12,8 @@ class Network;
 class Layer;
 class Module;
 class ModuleConfig;
-typedef Module* (*MODULE_BUILD_PTR)(Layer *layer, ModuleConfig *config);
+typedef std::vector<Layer*> LayerList;
+typedef Module* (*MODULE_BUILD_PTR)(LayerList layers, ModuleConfig *config);
 
 class ModuleConfig : public PropertyConfig {
     public:
@@ -36,9 +37,7 @@ class ModuleConfig : public PropertyConfig {
 
 class Module {
     public:
-        Module(Layer *layer)
-            : layer(layer),
-              output_type(Attributes::get_output_type(layer)) { }
+        Module(LayerList layers);
         virtual ~Module() {}
 
         /* Override to implement input and output functionality.
@@ -53,10 +52,9 @@ class Module {
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call
          */
-        virtual IOTypeMask get_io_type() = 0;
+        virtual IOTypeMask get_io_type(Layer *layer) = 0;
 
-        Layer* const layer;
-        const OutputType output_type;
+        const LayerList layers;
 
         static Module* build_module(Network *network, ModuleConfig *config);
 
@@ -73,6 +71,10 @@ class Module {
             IOTypeMask type, MODULE_BUILD_PTR build_ptr);
         static ModuleBank* get_module_bank();
 
+        void enforce_single_layer(std::string type);
+        void enforce_equal_layer_sizes(std::string type);
+
+        std::map<Layer*, OutputType> output_types;
 };
 
 
@@ -84,17 +86,17 @@ int CLASS_NAME::module_id = \
         TYPE, CLASS_NAME::build); \
 IOTypeMask CLASS_NAME::io_type = TYPE; \
 \
-Module *CLASS_NAME::build(Layer *layer, ModuleConfig *config) { \
-    return new CLASS_NAME(layer, config); \
+Module *CLASS_NAME::build(LayerList layers, ModuleConfig *config) { \
+    return new CLASS_NAME(layers, config); \
 }
 
 // Put this one in .h at bottom of class definition
 #define MODULE_MEMBERS \
     protected: \
-        static Module *build(Layer *layer, ModuleConfig *config); \
+        static Module *build(LayerList layers, ModuleConfig *config); \
         static int module_id; \
         static IOTypeMask io_type; \
-        virtual IOTypeMask get_io_type() { return io_type; }
+        virtual IOTypeMask get_io_type(Layer *layer) { return io_type; }
 
 
 typedef std::vector<Module*> ModuleList;

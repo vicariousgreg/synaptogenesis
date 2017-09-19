@@ -1065,11 +1065,11 @@ int main(int argc, char *argv[]) {
 
     try {
         //mnist_test();
-        mnist_perceptron_test();
+        //mnist_perceptron_test();
         //old_test();
         //simple_test();
         //single_field_test();
-        //game_of_life_test();
+        game_of_life_test();
         //working_memory_test();
         //dsst_test();
         //debug_test();

@@ -19,8 +19,10 @@ static void shuffle(float *vals, float max, int size, bool verbose) {
     if (verbose) std::cout << std::endl;
 }
 
-OneHotRandomInputModule::OneHotRandomInputModule(Layer *layer, ModuleConfig *config)
-        : Module(layer), timesteps(0) {
+OneHotRandomInputModule::OneHotRandomInputModule(LayerList layers, ModuleConfig *config)
+        : Module(layers), timesteps(0) {
+    enforce_equal_layer_sizes("one_hot_random_input");
+
     this->max_value = std::stof(config->get_property("max", "1.0"));
     this->shuffle_rate = std::stoi(config->get_property("rate", "100"));
     this->end = std::stoi(config->get_property("end", "0"));
@@ -33,7 +35,7 @@ OneHotRandomInputModule::OneHotRandomInputModule(Layer *layer, ModuleConfig *con
         ErrorManager::get_instance()->log_error(
             "Invalid shuffle rate for random input generator!");
 
-    this->random_values = (float*) malloc (layer->size * sizeof(float));
+    this->random_values = (float*) malloc (layers.at(0)->size * sizeof(float));
 }
 
 OneHotRandomInputModule::~OneHotRandomInputModule() {
@@ -41,32 +43,34 @@ OneHotRandomInputModule::~OneHotRandomInputModule() {
 }
 
 void OneHotRandomInputModule::feed_input(Buffer *buffer) {
-    if (timesteps < end and timesteps % shuffle_rate == 0) {
-        if (verbose) {
-            std::cout << "============================ SHUFFLE\n";
-            if (end != 0) std::cout << "  *  ";
-        }
+    for (auto layer : layers) {
+        if (timesteps < end and timesteps % shuffle_rate == 0) {
+            if (verbose) {
+                std::cout << "============================ SHUFFLE\n";
+                if (end != 0) std::cout << "  *  ";
+            }
 
-        // Shuffle
-        int random_index = rand() % layer->size;
-        for (int nid = 0 ; nid < layer->size; ++nid) {
-            /*  Randomly selects one input to activate */
-            random_values[nid] =  (nid == random_index) ? max_value : 0;
-            if (verbose) std::cout << random_values[nid] << " ";
-        }
-        if (verbose) std::cout << std::endl;
+            // Shuffle
+            int random_index = rand() % layer->size;
+            for (int nid = 0 ; nid < layer->size; ++nid) {
+                /*  Randomly selects one input to activate */
+                random_values[nid] =  (nid == random_index) ? max_value : 0;
+                if (verbose) std::cout << random_values[nid] << " ";
+            }
+            if (verbose) std::cout << std::endl;
 
-        float *input = buffer->get_input(this->layer);
-        for (int nid = 0 ; nid < this->layer->size; ++nid)
-            input[nid] = this->random_values[nid];
-        buffer->set_dirty(this->layer);
-    } else if (timesteps == end) {
-        if (verbose)
-            std::cout << "========================================== CLEAR\n";
-        float *input = buffer->get_input(this->layer);
-        for (int nid = 0 ; nid < this->layer->size; ++nid)
-            input[nid] = 0.0;
-        buffer->set_dirty(this->layer);
+            float *input = buffer->get_input(layer);
+            for (int nid = 0 ; nid < layer->size; ++nid)
+                input[nid] = this->random_values[nid];
+            buffer->set_dirty(layer);
+        } else if (timesteps == end) {
+            if (verbose)
+                std::cout << "========================================== CLEAR\n";
+            float *input = buffer->get_input(layer);
+            for (int nid = 0 ; nid < layer->size; ++nid)
+                input[nid] = 0.0;
+            buffer->set_dirty(layer);
+        }
     }
 }
 

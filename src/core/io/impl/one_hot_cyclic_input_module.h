@@ -5,7 +5,7 @@
 
 class OneHotCyclicInputModule : public Module {
     public:
-        OneHotCyclicInputModule(Layer *layer, ModuleConfig *config);
+        OneHotCyclicInputModule(LayerList layers, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
         void cycle();

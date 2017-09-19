@@ -7,13 +7,13 @@
 
 class CSVEvaluatorModule : public CSVExpectedModule {
     public:
-        CSVEvaluatorModule(Layer *layer, ModuleConfig *config);
+        CSVEvaluatorModule(LayerList layers, ModuleConfig *config);
 
         void report_output(Buffer *buffer);
 
     private:
-        int correct;
-        float total_SSE;
+        std::map<Layer*, int> correct;
+        std::map<Layer*, float> total_SSE;
 
     MODULE_MEMBERS
 };

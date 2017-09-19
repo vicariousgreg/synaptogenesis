@@ -96,10 +96,19 @@ class Layer {
 typedef std::vector<Layer*> LayerList;
 
 /* Counts the number of connections in a layer list */
-inline int get_num_connections(LayerList& layers) {
+inline int get_num_connections(const LayerList& layers) {
     int num_connections = 0;
     for (auto& layer : layers)
         num_connections += layer->get_input_connections().size();
+}
+
+/* Checks if layers in a list are the same size */
+inline bool check_equal_sizes(const LayerList& layers) {
+    if (layers.size() == 0) return true;
+    int size = layers.at(0)->size;
+    for (auto& layer : layers)
+        if (layer->size != size) return false;
+    return true;
 }
 
 #endif

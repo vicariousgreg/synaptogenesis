@@ -7,7 +7,7 @@
 
 class CSVReaderModule : public Module {
     public:
-        CSVReaderModule(Layer *layer, ModuleConfig *config);
+        CSVReaderModule(LayerList layers, ModuleConfig *config);
         virtual ~CSVReaderModule();
 
         void cycle();

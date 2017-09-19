@@ -10,18 +10,21 @@
 
 REGISTER_MODULE(ImageInputModule, "image_input", INPUT);
 
-ImageInputModule::ImageInputModule(Layer *layer, ModuleConfig *config)
-        : Module(layer), transferred(false) {
+ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
+        : Module(layers), transferred(false) {
+    enforce_equal_layer_sizes("image_input");
+
     std::string filename = config->get_property("filename");
     try {
         cimg_library::CImg<unsigned char> img(filename.c_str());
         width = img.width();
         height = img.height();
 
-        if (width != layer->columns or height != layer->rows) {
-            ErrorManager::get_instance()->log_error(
-                "Image size does not match layer size!");
-        }
+        // Check layer rows/columns
+        for (auto layer : layers)
+            if (width != layer->columns or height != layer->rows)
+                ErrorManager::get_instance()->log_error(
+                    "Image size does not match layer size!");
 
         this->gray = Pointer<float>(width * height);
         this->red = Pointer<float>(width * height);
@@ -61,7 +64,9 @@ ImageInputModule::ImageInputModule(Layer *layer, ModuleConfig *config)
 
 void ImageInputModule::feed_input(Buffer *buffer) {
     if (not this->transferred) {
-        buffer->set_input(this->layer, this->gray);
-        this->transferred = true;
+        for (auto layer : layers) {
+            buffer->set_input(layer, this->gray);
+            this->transferred = true;
+        }
     }
 }

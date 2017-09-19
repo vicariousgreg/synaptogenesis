@@ -5,7 +5,7 @@
 
 class DummyInputModule : public Module {
     public:
-        DummyInputModule(Layer *layer, ModuleConfig *config) : Module(layer) {}
+        DummyInputModule(LayerList layers, ModuleConfig *config) : Module(layers) {}
 
 
     MODULE_MEMBERS

@@ -5,7 +5,7 @@
 
 class PrintOutputModule : public Module {
     public:
-        PrintOutputModule(Layer *layer, ModuleConfig *config);
+        PrintOutputModule(LayerList layers, ModuleConfig *config);
 
         void report_output(Buffer *buffer);
 
@@ -16,7 +16,6 @@ class PrintOutputModule : public Module {
         int refresh_rate;
         unsigned int maximum;
         unsigned int shift;
-        OutputType output_type;
 
     MODULE_MEMBERS
 };

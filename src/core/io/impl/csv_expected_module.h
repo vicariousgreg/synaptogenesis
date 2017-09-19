@@ -7,7 +7,7 @@
 
 class CSVExpectedModule : public CSVReaderModule {
     public:
-        CSVExpectedModule(Layer *layer, ModuleConfig *config);
+        CSVExpectedModule(LayerList layers, ModuleConfig *config);
 
         void feed_expected(Buffer *buffer);
 

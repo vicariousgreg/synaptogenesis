@@ -5,7 +5,7 @@
 
 class OneStepInputModule : public Module {
     public:
-        OneStepInputModule(Layer *layer, ModuleConfig *config);
+        OneStepInputModule(LayerList layers, ModuleConfig *config);
         virtual ~OneStepInputModule();
 
         void feed_input(Buffer *buffer);

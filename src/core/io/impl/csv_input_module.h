@@ -5,7 +5,7 @@
 
 class CSVInputModule : public CSVReaderModule {
     public:
-        CSVInputModule(Layer *layer, ModuleConfig *config);
+        CSVInputModule(LayerList layers, ModuleConfig *config);
 
         void feed_input(Buffer *buffer);
 

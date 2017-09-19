@@ -8,8 +8,8 @@
 
 REGISTER_MODULE(PrintRateModule, "print_rate", OUTPUT);
 
-PrintRateModule::PrintRateModule(Layer *layer, ModuleConfig *config)
-        : Module(layer),
+PrintRateModule::PrintRateModule(LayerList layers, ModuleConfig *config)
+        : Module(layers),
           timesteps(0) {
     this->rate = std::stoi(config->get_property("rate", "100"));
 
@@ -17,48 +17,50 @@ PrintRateModule::PrintRateModule(Layer *layer, ModuleConfig *config)
         ErrorManager::get_instance()->log_error(
             "Invalid rate for print rate module!");
 
-    this->totals = (float*) malloc(layer->size * sizeof(float));
-    for (int index = 0 ; index < this->layer->size; ++index)
+    this->totals = (float*) malloc(layers.at(0)->size * sizeof(float));
+    for (int index = 0 ; index < this->layers.at(0)->size; ++index)
         totals[index] = 0.0;
 }
 
 void PrintRateModule::report_output(Buffer *buffer) {
-    Output* output = buffer->get_output(this->layer);
+    for (auto layer : layers) {
+        Output* output = buffer->get_output(layer);
 
-    // Print bar
-    /*
-    for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
-    std::cout << "\n-----  layer: " << this->layer->name << " -----\n";
-    for (int col = 0 ; col < this->layer->columns; ++col) std::cout << "-";
-    std::cout << "\n";
-    */
+        // Print bar
+        /*
+        for (int col = 0 ; col < layer->columns; ++col) std::cout << "-";
+        std::cout << "\n-----  layer: " << layer->name << " -----\n";
+        for (int col = 0 ; col < layer->columns; ++col) std::cout << "-";
+        std::cout << "\n";
+        */
 
-    for (int row = 0 ; row < this->layer->rows; ++row) {
-        for (int col = 0 ; col < this->layer->columns; ++col) {
-            int index = (row * this->layer->columns) + col;
-            // And to remove distant spikes
-            // Multiply by constant factor
-            // Divide by mask
-            //  -> Bins intensity into a constant number of bins
+        for (int row = 0 ; row < layer->rows; ++row) {
+            for (int col = 0 ; col < layer->columns; ++col) {
+                int index = (row * layer->columns) + col;
+                // And to remove distant spikes
+                // Multiply by constant factor
+                // Divide by mask
+                //  -> Bins intensity into a constant number of bins
 
-            Output out_value = output[index];
-            switch (output_type) {
-                case FLOAT:
-                    totals[index] += out_value.f;
-                    break;
-                case INT:
-                    totals[index] += (float)out_value.i / INT_MAX;
-                    break;
-                case BIT:
-                    totals[index] += (out_value.i >> 31);
-                    break;
+                Output out_value = output[index];
+                switch (output_types[layer]) {
+                    case FLOAT:
+                        totals[index] += out_value.f;
+                        break;
+                    case INT:
+                        totals[index] += (float)out_value.i / INT_MAX;
+                        break;
+                    case BIT:
+                        totals[index] += (out_value.i >> 31);
+                        break;
+                }
+                if ((timesteps+1) % this->rate == 0) {
+                    printf("%d\n", (unsigned int) this->totals[index]);
+                    this->totals[index] = 0.0;
+                }
             }
-            if ((timesteps+1) % this->rate == 0) {
-                printf("%d\n", (unsigned int) this->totals[index]);
-                this->totals[index] = 0.0;
-            }
+            //std::cout << "|\n";
         }
-        //std::cout << "|\n";
     }
 }
 

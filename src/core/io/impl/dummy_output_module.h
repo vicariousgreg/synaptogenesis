@@ -5,7 +5,7 @@
 
 class DummyOutputModule : public Module {
     public:
-        DummyOutputModule(Layer *layer, ModuleConfig *config) : Module(layer) {}
+        DummyOutputModule(LayerList layers, ModuleConfig *config) : Module(layers) {}
 
 
     MODULE_MEMBERS
