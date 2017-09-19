@@ -8,10 +8,12 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
-REGISTER_MODULE(CSVOutputModule, "csv_output", OUTPUT);
+REGISTER_MODULE(CSVOutputModule, "csv_output");
 
 CSVOutputModule::CSVOutputModule(LayerList layers, ModuleConfig *config)
-        : Module(layers) { }
+        : Module(layers) {
+    set_io_type(OUTPUT);
+}
 
 CSVOutputModule::~CSVOutputModule() { }
 

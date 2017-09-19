@@ -7,7 +7,7 @@
 #include <sstream>
 #include <iostream>
 
-REGISTER_MODULE(OneHotRandomInputModule, "one_hot_random_input", INPUT);
+REGISTER_MODULE(OneHotRandomInputModule, "one_hot_random_input");
 
 static void shuffle(float *vals, float max, int size, bool verbose) {
     int random_index = rand() % size;
@@ -22,6 +22,7 @@ static void shuffle(float *vals, float max, int size, bool verbose) {
 OneHotRandomInputModule::OneHotRandomInputModule(LayerList layers, ModuleConfig *config)
         : Module(layers), timesteps(0) {
     enforce_equal_layer_sizes("one_hot_random_input");
+    set_io_type(INPUT);
 
     this->max_value = std::stof(config->get_property("max", "1.0"));
     this->shuffle_rate = std::stoi(config->get_property("rate", "100"));
@@ -34,6 +35,9 @@ OneHotRandomInputModule::OneHotRandomInputModule(LayerList layers, ModuleConfig 
     if (this->shuffle_rate <= 0)
         ErrorManager::get_instance()->log_error(
             "Invalid shuffle rate for random input generator!");
+    if (this->end < 0)
+        ErrorManager::get_instance()->log_error(
+            "Invalid shuffle rate for random input generator!");
 
     this->random_values = (float*) malloc (layers.at(0)->size * sizeof(float));
 }
@@ -44,7 +48,7 @@ OneHotRandomInputModule::~OneHotRandomInputModule() {
 
 void OneHotRandomInputModule::feed_input(Buffer *buffer) {
     for (auto layer : layers) {
-        if (timesteps < end and timesteps % shuffle_rate == 0) {
+        if (end == 0 or timesteps <= end and timesteps % shuffle_rate == 0) {
             if (verbose) {
                 std::cout << "============================ SHUFFLE\n";
                 if (end != 0) std::cout << "  *  ";
@@ -75,5 +79,5 @@ void OneHotRandomInputModule::feed_input(Buffer *buffer) {
 }
 
 void OneHotRandomInputModule::cycle() {
-    if (timesteps <= end) ++timesteps;
+    if (end == 0 or timesteps <= end) ++timesteps;
 }

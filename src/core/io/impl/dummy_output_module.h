@@ -5,7 +5,11 @@
 
 class DummyOutputModule : public Module {
     public:
-        DummyOutputModule(LayerList layers, ModuleConfig *config) : Module(layers) {}
+        DummyOutputModule(LayerList layers, ModuleConfig *config)
+                : Module(layers) {
+            for (auto layer : layers)
+                set_io_type(layer, OUTPUT);
+        }
 
 
     MODULE_MEMBERS

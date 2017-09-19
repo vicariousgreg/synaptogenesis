@@ -5,7 +5,11 @@
 
 class DummyInputModule : public Module {
     public:
-        DummyInputModule(LayerList layers, ModuleConfig *config) : Module(layers) {}
+        DummyInputModule(LayerList layers, ModuleConfig *config)
+                : Module(layers) {
+            for (auto layer : layers)
+                set_io_type(INPUT);
+        }
 
 
     MODULE_MEMBERS

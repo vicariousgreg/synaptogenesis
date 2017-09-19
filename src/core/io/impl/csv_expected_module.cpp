@@ -2,10 +2,11 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
-REGISTER_MODULE(CSVExpectedModule, "csv_expected", EXPECTED);
+REGISTER_MODULE(CSVExpectedModule, "csv_expected");
 
 CSVExpectedModule::CSVExpectedModule(LayerList layers, ModuleConfig *config)
         : CSVReaderModule(layers, config) {
+    set_io_type(EXPECTED);
     for (auto layer : layers)
         if (output_types[layer] != FLOAT)
             ErrorManager::get_instance()->log_error(

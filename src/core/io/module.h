@@ -21,10 +21,13 @@ class ModuleConfig : public PropertyConfig {
         ModuleConfig(std::string type, std::string structure, std::string layer);
 
         ModuleConfig* add_layer(std::string structure, std::string layer);
+        ModuleConfig* add_layer(std::string structure, std::string layer,
+            std::string params);
         ModuleConfig* add_layer(PropertyConfig *config);
 
         std::string get_type() const { return get_property("type"); }
         const std::vector<PropertyConfig*> get_layers() const { return layers; }
+        const PropertyConfig* get_layer(Layer *layer) const;
 
         /* Setter that returns self pointer */
         ModuleConfig *set_property(std::string key, std::string value) {
@@ -34,6 +37,8 @@ class ModuleConfig : public PropertyConfig {
 
     protected:
         std::vector<PropertyConfig*> layers;
+        std::map<std::string,
+            std::map<std::string, PropertyConfig*>> layer_map;
 };
 
 class Module {
@@ -51,7 +56,7 @@ class Module {
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call
          */
-        virtual IOTypeMask get_io_type(Layer *layer) = 0;
+        IOTypeMask get_io_type(Layer *layer) { return io_types.at(layer); }
 
         const LayerList layers;
 
@@ -63,27 +68,28 @@ class Module {
                 // Set of module implementations
                 std::set<std::string> modules;
                 std::map<std::string, MODULE_BUILD_PTR> build_pointers;
-                std::map<std::string, IOTypeMask> io_types;
         };
 
         static int register_module(std::string module_type,
-            IOTypeMask type, MODULE_BUILD_PTR build_ptr);
+            MODULE_BUILD_PTR build_ptr);
         static ModuleBank* get_module_bank();
 
         void enforce_single_layer(std::string type);
         void enforce_equal_layer_sizes(std::string type);
+        void set_io_type(IOTypeMask io_type);
+        void set_io_type(Layer *layer, IOTypeMask io_type);
+        OutputType get_output_type(Layer* layer);
 
         std::map<Layer*, OutputType> output_types;
+        std::map<Layer*, IOTypeMask> io_types;
 };
 
 
 /* Macros for Module subclass Registry */
 // Put this one in .cpp
-#define REGISTER_MODULE(CLASS_NAME, STRING, TYPE) \
+#define REGISTER_MODULE(CLASS_NAME, STRING) \
 int CLASS_NAME::module_id = \
-    Module::register_module(STRING, \
-        TYPE, CLASS_NAME::build); \
-IOTypeMask CLASS_NAME::io_type = TYPE; \
+    Module::register_module(STRING, CLASS_NAME::build); \
 \
 Module *CLASS_NAME::build(LayerList layers, ModuleConfig *config) { \
     return new CLASS_NAME(layers, config); \
@@ -93,9 +99,7 @@ Module *CLASS_NAME::build(LayerList layers, ModuleConfig *config) { \
 #define MODULE_MEMBERS \
     protected: \
         static Module *build(LayerList layers, ModuleConfig *config); \
-        static int module_id; \
-        static IOTypeMask io_type; \
-        virtual IOTypeMask get_io_type(Layer *layer) { return io_type; }
+        static int module_id;
 
 
 typedef std::vector<Module*> ModuleList;

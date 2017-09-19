@@ -7,11 +7,12 @@
 #include <sstream>
 #include <iostream>
 
-REGISTER_MODULE(RandomInputModule, "random_input", INPUT);
+REGISTER_MODULE(RandomInputModule, "random_input");
 
 RandomInputModule::RandomInputModule(LayerList layers, ModuleConfig *config)
         : Module(layers), timesteps(0) {
-    this->enforce_equal_layer_sizes("random_input");
+    enforce_equal_layer_sizes("random_input");
+    set_io_type(INPUT);
 
     this->max_value = std::stof(config->get_property("max", "1.0"));
     this->shuffle_rate = std::stoi(config->get_property("rate", "1"));

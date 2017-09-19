@@ -8,11 +8,12 @@
 #define cimg_display 0
 #include "CImg.h"
 
-REGISTER_MODULE(ImageInputModule, "image_input", INPUT);
+REGISTER_MODULE(ImageInputModule, "image_input");
 
 ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
         : Module(layers), transferred(false) {
     enforce_equal_layer_sizes("image_input");
+    set_io_type(INPUT);
 
     std::string filename = config->get_property("filename");
     try {

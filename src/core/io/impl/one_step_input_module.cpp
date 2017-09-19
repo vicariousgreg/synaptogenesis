@@ -8,11 +8,12 @@
 #include <sstream>
 #include <iostream>
 
-REGISTER_MODULE(OneStepInputModule, "one_step_input", INPUT);
+REGISTER_MODULE(OneStepInputModule, "one_step_input");
 
 OneStepInputModule::OneStepInputModule(LayerList layers, ModuleConfig *config)
         : Module(layers), active(true), cleared(false) {
     enforce_equal_layer_sizes("one_step_input");
+    set_io_type(INPUT);
 
     float max_value = std::stof(config->get_property("max", "1.0"));
     float fraction = std::stof(config->get_property("fraction", "1.0"));

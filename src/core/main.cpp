@@ -8,13 +8,12 @@
 #include "builder.h"
 #include "network/weight_config.h"
 #include "io/module.h"
+#include "io/impl/dsst_module.h"
 #include "io/environment.h"
 #include "engine/engine.h"
 #include "state/state.h"
 #include "util/tools.h"
 #include "engine/context.h"
-#include "maze_game.h"
-#include "dsst.h"
 
 #define IZHIKEVICH "izhikevich"
 #define HEBBIAN_RATE_ENCODING "hebbian_rate_encoding"
@@ -123,7 +122,7 @@ void old_test() {
     auto env = new Environment();
 
     env->add_module(
-        (new ModuleConfig("visualizer_output"))
+        (new ModuleConfig("visualizer"))
         //->add_layer("old", "inh_thalamus")
         //->add_layer("old", "inh_cortex")
         ->add_layer("old", "exc_thalamus")
@@ -239,7 +238,7 @@ void simple_test() {
             ->set_property("rate", "1000000"));
 
     env->add_module(
-        (new ModuleConfig("visualizer_output"))
+        (new ModuleConfig("visualizer"))
         ->add_layer("simple", "input_layer")
         ->add_layer("simple", "hid_1")
         ->add_layer("simple", "hid_2"));
@@ -309,7 +308,7 @@ void single_field_test() {
             ->set_property("rate", "1")
             ->set_property("verbose", "false"));
     env->add_module(
-        (new ModuleConfig("visualizer_output"))
+        (new ModuleConfig("visualizer"))
         ->add_layer("single field", "exc_field")
         ->add_layer("single field", "inh_field"));
     env->add_module(
@@ -429,7 +428,7 @@ void mnist_test() {
         ->set_property("normalization", "0.2"));
 
     env->add_module(
-        (new ModuleConfig("visualizer_output"))
+        (new ModuleConfig("visualizer"))
         ->add_layer("mnist", "input_layer")
         ->add_layer("mnist", "hidden")
         //->add_layer("mnist", "separation")
@@ -597,7 +596,7 @@ void game_of_life_test() {
     */
 
     env->add_module(
-        new ModuleConfig("visualizer_output", "game_of_life", "board"));
+        new ModuleConfig("visualizer", "game_of_life", "board"));
 
     auto c = new Context(network, env);
     Engine engine(c);
@@ -813,20 +812,21 @@ void working_memory_test() {
 
     // Modules
     auto env = new Environment();
+    auto vis_mod = new ModuleConfig("visualizer");
     for (int i = 0 ; i < num_cortical_regions ; ++i)
-        env->add_module(
-            (new ModuleConfig("visualizer_output"))
+        vis_mod
             //->add_layer(std::to_string(i), "6_cortex")
             //->add_layer(std::to_string(i), "gamma_thalamus")
-            ->add_layer(std::to_string(i), "3_cortex"));
+            ->add_layer(std::to_string(i), "3_cortex");
+
+    vis_mod->add_layer("working memory", "feedforward");
+    env->add_module(vis_mod);
 
     env->add_module(
         (new ModuleConfig("random_input", "working memory", "tl1_thalamus"))
         ->set_property("max", "3")
         ->set_property("rate", "500")
         ->set_property("verbose", "true"));
-    env->add_module(
-        new ModuleConfig("visualizer_output", "working memory", "feedforward"));
 
     auto c = new Context(network, env);
     Engine engine(c);
@@ -835,11 +835,11 @@ void working_memory_test() {
 }
 
 void dsst_test() {
-    int rows = DSST::get_instance(true)->get_input_rows();
-    int cols = DSST::get_instance(true)->get_input_columns();
+    int rows = DSSTModule::input_rows;
+    int cols = DSSTModule::input_columns;
 
-    int cell_rows = DSST::get_instance(true)->get_cell_rows();
-    int cell_cols = DSST::get_instance(true)->get_cell_columns();
+    int cell_rows = DSSTModule::cell_rows;
+    int cell_cols = DSSTModule::cell_cols;
 
     int focus_rows = rows - cell_rows;
     int focus_cols = cols - cell_cols;
@@ -884,12 +884,12 @@ void dsst_test() {
 
     auto env = new Environment();
     env->add_module(
-        new ModuleConfig("dsst_input", "dsst", "vision"));
-    env->add_module(
-        new ModuleConfig("dsst_output", "dsst", "output_layer"));
+        (new ModuleConfig("dsst"))
+        ->add_layer("dsst", "vision", "input")
+        ->add_layer("dsst", "output_layer", "output"));
 
     env->add_module(
-        (new ModuleConfig("visualizer_output"))
+        (new ModuleConfig("visualizer"))
         ->add_layer("dsst", "vision")
         ->add_layer("dsst", "what")
         ->add_layer("dsst", "focus"));

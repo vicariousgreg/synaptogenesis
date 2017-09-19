@@ -1,6 +1,7 @@
-#include "gui.h"
-
 #include <iostream>
+
+#include "gui.h"
+#include "gui_window.h"
 
 GUI *GUI::instance = nullptr;
 
@@ -10,13 +11,7 @@ GUI *GUI::get_instance() {
     return GUI::instance;
 }
 
-void GUI::delete_instance() {
-    if (GUI::instance != nullptr)
-        delete GUI::instance;
-    GUI::instance = nullptr;
-}
-
-GUI::GUI() {
+GUI::GUI() : active(false) {
     // Mock arguments
     int argc = 1;
     this->argv = (char**)malloc(sizeof(char*));
@@ -24,15 +19,16 @@ GUI::GUI() {
     app =
         Gtk::Application::create(argc, this->argv,
                 "org.gtkmm.examples.base");
+
     dispatcher.connect(sigc::mem_fun(*this, &GUI::update));
 }
-
 
 GUI::~GUI() {
     free(this->argv);
 }
 
 void GUI::add_window(GuiWindow *window) {
+    active = true;
     this->windows.push_back(window);
 }
 
@@ -46,6 +42,13 @@ void GUI::quit() {
     for (auto window : windows) window->close();
     if (windows.size() > 0)
         app->quit();
+    for (auto window : windows) delete window;
+    windows.clear();
+    active = false;
+}
+
+void GUI::signal_update() {
+    if (active) dispatcher.emit();
 }
 
 void GUI::update() {

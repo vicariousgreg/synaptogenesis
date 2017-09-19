@@ -7,10 +7,11 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
-REGISTER_MODULE(CSVEvaluatorModule, "csv_evaluator", EXPECTED | OUTPUT);
+REGISTER_MODULE(CSVEvaluatorModule, "csv_evaluator");
 
 CSVEvaluatorModule::CSVEvaluatorModule(LayerList layers, ModuleConfig *config)
         : CSVExpectedModule(layers, config) {
+    set_io_type(EXPECTED | OUTPUT);
     for (auto layer : layers) {
         this->correct[layer] = 0;
         this->total_SSE[layer] = 0;

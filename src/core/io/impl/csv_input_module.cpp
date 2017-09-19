@@ -1,9 +1,11 @@
 #include "io/impl/csv_input_module.h"
 
-REGISTER_MODULE(CSVInputModule, "csv_input", INPUT);
+REGISTER_MODULE(CSVInputModule, "csv_input");
 
 CSVInputModule::CSVInputModule(LayerList layers, ModuleConfig *config)
-        : CSVReaderModule(layers, config) { }
+        : CSVReaderModule(layers, config) {
+    set_io_type(INPUT);
+}
 
 void CSVInputModule::feed_input(Buffer *buffer) {
     if (age == 0)

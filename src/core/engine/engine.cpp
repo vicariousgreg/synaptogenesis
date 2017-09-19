@@ -9,7 +9,7 @@
 #include "io/environment.h"
 #include "state/state.h"
 #include "state/attributes.h"
-#include "frontend.h"
+#include "gui_controller.h"
 
 Engine::Engine(Context *context, bool suppress_output)
         : context(context),
@@ -23,6 +23,8 @@ Engine::Engine(Context *context, bool suppress_output)
 }
 
 void Engine::rebuild() {
+    for (auto module : modules) delete module;
+    modules.clear();
     io_types.clear();
     build_environment();
     build_clusters();
@@ -222,7 +224,7 @@ void Engine::environment_loop(int iterations, bool verbose) {
             if (not suppress_output)
                 for (auto& module : this->modules)
                     module->report_output(buffer);
-            Frontend::update_all(this->buffer);
+            GuiController::get_instance()->update();
         }
         motor_lock.pass(NETWORK);
 
@@ -231,7 +233,7 @@ void Engine::environment_loop(int iterations, bool verbose) {
             module->cycle();
     }
     // TODO: handle race conditions here
-    Frontend::quit();
+    GuiController::get_instance()->quit();
 }
 
 Context* Engine::run(int iterations, bool verbose) {
@@ -251,7 +253,6 @@ Context* Engine::run(int iterations, bool verbose) {
     if (verbose) device_check_memory();
 
     // Initialize UI
-    Frontend::init_all();
 
     /**********************/
     /*** Launch threads ***/
@@ -262,7 +263,7 @@ Context* Engine::run(int iterations, bool verbose) {
         &Engine::environment_loop, this, iterations, verbose);
 
     // Launch UI on main thread
-    Frontend::launch_all();
+    GuiController::get_instance()->launch();
 
     // Wait for threads
     network_thread.join();
@@ -272,7 +273,6 @@ Context* Engine::run(int iterations, bool verbose) {
     /*** Clean up ***/
     /****************/
     free_rand();
-    Frontend::cleanup();
 
     return context;
 }

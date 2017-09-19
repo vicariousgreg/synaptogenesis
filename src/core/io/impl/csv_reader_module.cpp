@@ -8,7 +8,7 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
-REGISTER_MODULE(CSVReaderModule, "csv_reader", 0);
+REGISTER_MODULE(CSVReaderModule, "csv_reader");
 
 CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
         : Module(layers) {

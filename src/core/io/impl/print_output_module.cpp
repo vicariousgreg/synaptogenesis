@@ -7,11 +7,13 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
-REGISTER_MODULE(PrintOutputModule, "print_output", OUTPUT);
+REGISTER_MODULE(PrintOutputModule, "print_output");
 
 PrintOutputModule::PrintOutputModule(LayerList layers, ModuleConfig *config)
         : Module(layers),
           counter(0) {
+    set_io_type(OUTPUT);
+
     this->history_length = std::stoi(config->get_property("history_length", "1"));
 
     if (this->history_length <= 0 or this->history_length > 8 * sizeof(Output))

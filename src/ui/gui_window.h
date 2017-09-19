@@ -3,14 +3,16 @@
 
 #include <gtkmm.h>
 
-#include "layer_info.h"
+#include "network/layer.h"
+#include "util/constants.h"
 
 class GuiWindow : public Gtk::Window {
     public:
-        virtual void add_layer(LayerInfo *layer_info) = 0;
+        GuiWindow();
+        virtual void add_layer(Layer *layer, IOTypeMask io_type) = 0;
         virtual void update() = 0;
 
-        std::vector<LayerInfo*> layers;
+        std::vector<Layer*> layers;
 };
 
 #endif

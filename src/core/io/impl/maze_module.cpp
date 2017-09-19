@@ -1,48 +1,16 @@
-#include <climits>
+#include <algorithm>
 
-#include "maze_game.h"
-#include "maze_game_window.h"
-#include "gui.h"
-#include "network/layer.h"
-#include "io/buffer.h"
-#include "util/tools.h"
+#include "io/impl/maze_module.h"
+#include "util/error_manager.h"
 
-std::string MazeGame::name = "maze_game";
+REGISTER_MODULE(MazeModule, "maze_game");
 
-MazeGame *MazeGame::get_instance(bool init) {
-    auto instance = (MazeGame*)Frontend::get_instance(MazeGame::name);
-    if (instance != nullptr)
-        return instance;
-    else if (init)
-        return new MazeGame();
-    else
-        return nullptr;
-}
-
-MazeGame::MazeGame() {
+MazeModule::MazeModule(LayerList layers, ModuleConfig *config)
+        : Module(layers), threshold(1), wait(0) {
     this->input_strength = 5.0;
-    this->set_board_dim(3);
-    this->maze_window = new MazeGameWindow(this);
-    Frontend::set_window(this->maze_window);
-}
+    this->window = MazeGameWindow::build();
 
-MazeGame::~MazeGame() {
-    input_data["player"].free();
-    input_data["goal"].free();
-    input_data["reward"].free();
-    input_data["modulate"].free();
-    input_data["somatosensory"].free();
-    input_data["wall_left"].free();
-    input_data["wall_right"].free();
-    input_data["wall_up"].free();
-    input_data["wall_down"].free();
-}
-
-void MazeGame::set_board_dim(int size) {
-    this->board_dim = size;
-
-    for (auto pair : input_data) pair.second.free();
-    input_data.clear();
+    this->ui_dirty = true;
 
     input_data["player"] = Pointer<float>(board_dim*board_dim);
     input_data["goal"] = Pointer<float>(board_dim*board_dim);
@@ -53,12 +21,6 @@ void MazeGame::set_board_dim(int size) {
     input_data["wall_right"] = Pointer<float>(board_dim*board_dim);
     input_data["wall_up"] = Pointer<float>(board_dim*board_dim);
     input_data["wall_down"] = Pointer<float>(board_dim*board_dim);
-}
-
-void MazeGame::init() {
-    this->maze_window->init();
-    this->ui_dirty = true;
-
     dirty["player"] = true;
     dirty["goal"] = true;
     dirty["reward"] = true;
@@ -77,12 +39,113 @@ void MazeGame::init() {
     reset_goal();
 
     add_player();
-    maze_window->set_cell_goal(goal_row, goal_col);
+    window->set_cell_goal(goal_row, goal_col);
 
     // TODO: set up walls
+
+    for (auto layer : layers) {
+        auto param =
+            config->get_layer(layer)->get_property("params", "");
+        params[layer] = param;
+        if (param == "")
+            ErrorManager::get_instance()->log_error(
+                "Unspecified MazeModule layer parameter!");
+
+        if (param == "input") {
+            // Check layer size
+            // Should be the size of the board
+            if (layer->size != input_data[param].get_size())
+                ErrorManager::get_instance()->log_error(
+                    "Mismatched MazeModule input layer size!");
+
+            set_io_type(layer, INPUT);
+            window->add_layer(layer, INPUT);
+        } else if (param == "output") {
+            // Check layer size
+            // Should be 4 for output layer
+            if (layer->size != 4)
+                ErrorManager::get_instance()->log_error(
+                    "Mismatched MazeModule output layer size!");
+
+            set_io_type(layer, OUTPUT);
+            window->add_layer(layer, OUTPUT);
+        } else {
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized layer type: " + param
+                + " in VisualizerModule!");
+        }
+        set_io_type(INPUT);
+    }
 }
 
-bool MazeGame::is_dirty(std::string params) {
+MazeModule::~MazeModule() {
+    input_data["player"].free();
+    input_data["goal"].free();
+    input_data["reward"].free();
+    input_data["modulate"].free();
+    input_data["somatosensory"].free();
+    input_data["wall_left"].free();
+    input_data["wall_right"].free();
+    input_data["wall_up"].free();
+    input_data["wall_down"].free();
+}
+
+void MazeModule::feed_input(Buffer *buffer) {
+    for (auto layer : layers) {
+        if (is_dirty(params[layer])) {
+            Pointer<float> input = get_input(params[layer]);
+            buffer->set_input(layer, input);
+        }
+    }
+}
+
+static float convert_spikes(unsigned int spikes) {
+    int count = 0;
+    for (int i = 0; i < 31; ++i)
+        if (spikes & (1 << (32 - i))) ++count;
+    return count;
+}
+
+void MazeModule::report_output(Buffer *buffer) {
+    if (wait > 0) {
+        --wait;
+        return;
+    }
+
+    for (auto layer : layers) {
+        Output* output = buffer->get_output(layer);
+
+        float up, down, left, right;
+        switch(output_types[layer]) {
+            case BIT:
+                up = convert_spikes(output[0].i);
+                down = convert_spikes(output[1].i);
+                left = convert_spikes(output[2].i);
+                right = convert_spikes(output[3].i);
+                break;
+            case FLOAT:
+                up = output[0].f;
+                down = output[1].f;
+                left = output[2].f;
+                right = output[3].f;
+                break;
+        }
+
+        float max = std::max(up, std::max(down, std::max(left, right)));
+        int num_max = (up == max) + (down == max) + (left == max) + (right == max);
+        if (max >= threshold and num_max == 1) {
+            bool success = false;
+            if (up == max) success = move_up();
+            else if (down == max) success = move_down();
+            else if (left == max) success = move_left();
+            else if (right == max) success = move_right();
+            //if (success) wait = 20;
+            wait = 20;
+        }
+    }
+}
+
+bool MazeModule::is_dirty(std::string params) {
     try {
         return dirty.at(params);
     } catch (std::out_of_range) {
@@ -91,7 +154,7 @@ bool MazeGame::is_dirty(std::string params) {
     }
 }
 
-Pointer<float> MazeGame::get_input(std::string params) {
+Pointer<float> MazeModule::get_input(std::string params) {
     try {
         if (params == "reward") {
             float reward = input_data[params][0] * 0.95;
@@ -119,42 +182,7 @@ Pointer<float> MazeGame::get_input(std::string params) {
     }
 }
 
-bool MazeGame::add_input_layer(Layer *layer, std::string params) {
-    // Check for duplicates
-    try {
-        input_data.at(params);
-        auto info = layer_map.at(layer);
-        return false;
-    } catch (std::out_of_range) { }
-
-    // Check layer size
-    // Should be the size of the board
-    if (layer->size != input_data[params].get_size()) return false;
-
-    LayerInfo* info = new LayerInfo(layer);
-    this->add_layer(layer, info);
-    info->set_input();
-    return true;
-}
-
-bool MazeGame::add_output_layer(Layer *layer, std::string params) {
-    // Check for duplicates
-    try {
-        auto info = layer_map.at(layer);
-        return false;
-    } catch (std::out_of_range) { }
-
-    // Check layer size
-    // Should be 4 for output layer
-    if (layer->size != 4) return false;
-
-    LayerInfo* info = new LayerInfo(layer);
-    this->add_layer(layer, info);
-    info->set_output();
-    return true;
-}
-
-void MazeGame::reset_goal() {
+void MazeModule::reset_goal() {
     // Remove goal
     input_data["goal"][goal_row * board_dim + goal_col] = 0.0;
 
@@ -171,10 +199,10 @@ void MazeGame::reset_goal() {
     ui_dirty = true;
     dirty["goal"] = true;
     dirty["reward"] = true;
-    maze_window->set_cell_goal(goal_row, goal_col);
+    window->set_cell_goal(goal_row, goal_col);
 }
 
-void MazeGame::administer_reward() {
+void MazeModule::administer_reward() {
     input_data["reward"][0] = input_strength;
     printf("Good job!  %6d iterations, %6d / %6d moves successful (%8.4f%%)"
            "     Minimum moves: %2d (%8.4f%% efficiency)\n",
@@ -184,16 +212,16 @@ void MazeGame::administer_reward() {
         (100.0 * min_moves / moves_to_reward));
 }
 
-void MazeGame::remove_player() {
+void MazeModule::remove_player() {
     input_data["player"][player_row * board_dim + player_col] = 0.0;
-    maze_window->set_cell_clear(player_row, player_col);
+    window->set_cell_clear(player_row, player_col);
     dirty["player"] = true;
     ui_dirty = true;
 }
 
-void MazeGame::add_player() {
+void MazeModule::add_player() {
     input_data["player"][player_row * board_dim + player_col] = input_strength;
-    maze_window->set_cell_player(player_row, player_col);
+    window->set_cell_player(player_row, player_col);
     dirty["player"] = true;
     ui_dirty = true;
 
@@ -204,7 +232,7 @@ void MazeGame::add_player() {
     }
 }
 
-bool MazeGame::move_up() {
+bool MazeModule::move_up() {
     ++moves_to_reward;
     ++total_moves;
     if (player_row > 0) {
@@ -222,7 +250,7 @@ bool MazeGame::move_up() {
     return false;
 }
 
-bool MazeGame::move_down() {
+bool MazeModule::move_down() {
     ++moves_to_reward;
     ++total_moves;
     if (player_row < board_dim-1) {
@@ -240,7 +268,7 @@ bool MazeGame::move_down() {
     return false;
 }
 
-bool MazeGame::move_left() {
+bool MazeModule::move_left() {
     ++moves_to_reward;
     ++total_moves;
     if (player_col > 0) {
@@ -257,7 +285,7 @@ bool MazeGame::move_left() {
     }
 }
 
-bool MazeGame::move_right() {
+bool MazeModule::move_right() {
     ++moves_to_reward;
     ++total_moves;
     if (player_col < board_dim-1) {
@@ -275,7 +303,7 @@ bool MazeGame::move_right() {
     return false;
 }
 
-void MazeGame::update(Buffer *buffer) {
+void MazeModule::cycle() {
     ++iterations;
     ++time_to_reward;
 
@@ -289,8 +317,5 @@ void MazeGame::update(Buffer *buffer) {
     }
     if (ui_dirty) {
         ui_dirty = false;
-
-        // Signal GUI to update
-        this->gui->dispatcher.emit();
     }
 }

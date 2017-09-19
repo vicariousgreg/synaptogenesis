@@ -6,11 +6,13 @@
 #include "util/tools.h"
 #include "util/error_manager.h"
 
-REGISTER_MODULE(PrintRateModule, "print_rate", OUTPUT);
+REGISTER_MODULE(PrintRateModule, "print_rate");
 
 PrintRateModule::PrintRateModule(LayerList layers, ModuleConfig *config)
         : Module(layers),
           timesteps(0) {
+    set_io_type(OUTPUT);
+
     this->rate = std::stoi(config->get_property("rate", "100"));
 
     if (this->rate <= 0)
