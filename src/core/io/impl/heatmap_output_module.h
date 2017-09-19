@@ -11,7 +11,8 @@ class HeatmapOutputModule : public Module {
             : Module(layers) {
             for (auto layer : layers)
                 if (not Heatmap::get_instance(true)
-                        ->add_output_layer(layer, config->get_property("params")))
+                        ->add_output_layer(layer,
+                            config->get_property("params", "")))
                     ErrorManager::get_instance()->log_error(
                         "Failed to add layer to Heatmap!");
         }

@@ -11,7 +11,8 @@ DSSTOutputModule::DSSTOutputModule(LayerList layers, ModuleConfig *config)
         : Module(layers) {
     dsst = DSST::get_instance(true);
     for (auto layer : layers)
-        if (not dsst->add_output_layer(layer, config->get_property("params")))
+        if (not dsst->add_output_layer(layer,
+                config->get_property("params", "")))
             ErrorManager::get_instance()->log_error(
                 "Failed to add layer to DSST!");
 }

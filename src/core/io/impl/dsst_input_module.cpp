@@ -9,7 +9,7 @@ DSSTInputModule::DSSTInputModule(LayerList layers, ModuleConfig *config)
 
     dsst = DSST::get_instance(true);
     for (auto layer : layers) {
-        params[layer] = config->get_property("params");
+        params[layer] = config->get_property("params", "");
         if (not dsst->add_input_layer(layer, params[layer]))
             ErrorManager::get_instance()->log_error(
                 "Failed to add layer to DSST!");

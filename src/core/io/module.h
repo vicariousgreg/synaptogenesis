@@ -17,22 +17,23 @@ typedef Module* (*MODULE_BUILD_PTR)(LayerList layers, ModuleConfig *config);
 
 class ModuleConfig : public PropertyConfig {
     public:
-        ModuleConfig(std::string structure, std::string layer, std::string type) {
-            this->set_property("type", type);
-            this->set_property("structure", structure);
-            this->set_property("layer", layer);
-            this->set_property("params", "");
-        }
+        ModuleConfig(std::string type);
+        ModuleConfig(std::string type, std::string structure, std::string layer);
 
-        std::string get_type() { return get_property("type"); }
-        std::string get_structure() { return get_property("structure"); }
-        std::string get_layer() { return get_property("layer"); }
+        ModuleConfig* add_layer(std::string structure, std::string layer);
+        ModuleConfig* add_layer(PropertyConfig *config);
+
+        std::string get_type() const { return get_property("type"); }
+        const std::vector<PropertyConfig*> get_layers() const { return layers; }
 
         /* Setter that returns self pointer */
         ModuleConfig *set_property(std::string key, std::string value) {
             set_property_internal(key, value);
             return this;
         }
+
+    protected:
+        std::vector<PropertyConfig*> layers;
 };
 
 class Module {
@@ -40,13 +41,11 @@ class Module {
         Module(LayerList layers);
         virtual ~Module() {}
 
-        /* Override to implement input and output functionality.
+        /* Override to implement IO functionality and module state cycling.
          * If unused, do not override */
         virtual void feed_input(Buffer *buffer) { }
         virtual void feed_expected(Buffer *buffer) { }
         virtual void report_output(Buffer *buffer) { }
-
-        /* Cycles the module */
         virtual void cycle() { };
 
         /* Override to indicate IO type

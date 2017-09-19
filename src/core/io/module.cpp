@@ -3,6 +3,32 @@
 #include "network/layer.h"
 #include "util/error_manager.h"
 
+ModuleConfig::ModuleConfig(std::string type) {
+    this->set_property("type", type);
+}
+
+ModuleConfig::ModuleConfig(std::string type,
+        std::string structure, std::string layer) {
+    this->set_property("type", type);
+    this->add_layer(structure, layer);
+}
+
+ModuleConfig* ModuleConfig::add_layer(std::string structure, std::string layer) {
+    add_layer(new PropertyConfig(
+        { {"structure", structure},
+          {"layer", layer} }));
+    return this;
+}
+
+ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
+    if (not config->has_property("structure") or
+        not config->has_property("layer"))
+    ErrorManager::get_instance()->log_error(
+        "Module layer config must have structure and layer name!");
+    this->layers.push_back(config);
+    return this;
+}
+
 Module::Module(LayerList layers) : layers(layers) {
     for (auto layer : layers)
         output_types[layer] = Attributes::get_output_type(layer);
@@ -17,11 +43,11 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
             "Unrecognized module: " + type + "!");
 
     // Extract layers
-    auto layer = network
-        ->get_structure(config->get_structure())
-        ->get_layer(config->get_layer());
     LayerList layers;
-    layers.push_back(layer);
+    for (auto layer_conf : config->get_layers())
+        layers.push_back(
+            network->get_structure(layer_conf->get_property("structure"))
+                   ->get_layer(layer_conf->get_property("layer")));
 
     // Ensure there are layers in the set
     if (layers.size() == 0)

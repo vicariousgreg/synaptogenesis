@@ -9,7 +9,7 @@ MazeInputModule::MazeInputModule(LayerList layers, ModuleConfig *config)
 
     maze_game = MazeGame::get_instance(true);
     for (auto layer : layers) {
-        params[layer] = config->get_property("params");
+        params[layer] = config->get_property("params", "");
         if (not maze_game->add_input_layer(layer, params[layer]))
             ErrorManager::get_instance()->log_error(
                 "Failed to add layer to Maze Game!");

@@ -9,7 +9,8 @@ MazeOutputModule::MazeOutputModule(LayerList layers, ModuleConfig *config)
         : Module(layers), threshold(1), wait(0) {
     enforce_single_layer("maze_output");
     maze_game = MazeGame::get_instance(true);
-    if (not maze_game->add_output_layer(layers.at(0), config->get_property("params")))
+    if (not maze_game->add_output_layer(
+            layers.at(0), config->get_property("params", "")))
         ErrorManager::get_instance()->log_error(
             "Failed to add layer to Maze Game!");
 }

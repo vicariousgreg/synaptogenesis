@@ -120,33 +120,27 @@ void old_test() {
 
 
     // Modules
-    //std::string output_name = "dummy_output";
-    std::string output_name = "visualizer_output";
-
     auto env = new Environment();
 
+    env->add_module(
+        (new ModuleConfig("visualizer_output"))
+        //->add_layer("old", "inh_thalamus")
+        //->add_layer("old", "inh_cortex")
+        ->add_layer("old", "exc_thalamus")
+        ->add_layer("old", "exc_cortex"));
+
+    env->add_module(
+        (new ModuleConfig("heatmap"))
+        //->add_layer("old", "inh_thalamus")
+        //->add_layer("old", "inh_cortex")
+        ->add_layer("old", "exc_thalamus")
+        ->add_layer("old", "exc_cortex"));
+
     // env->add_module(
-    //     (new ModuleConfig("old", "input_layer", "random_input"))
+    //     (new ModuleConfig("random_input", "old", "input_layer"))
     //     ->set_property("max", "5")
     //     ->set_property("rate", "1000000")
     //     ->set_property("verbose", "true"));
-    env->add_module(
-        new ModuleConfig("old", "exc_thalamus", output_name));
-    env->add_module(
-        new ModuleConfig("old", "exc_cortex", output_name));
-    env->add_module(
-        new ModuleConfig("old", "exc_thalamus", "heatmap"));
-    env->add_module(
-        new ModuleConfig("old", "exc_cortex", "heatmap"));
-
-    // env->add_module(
-    //     new ModuleConfig("old", "inh_thalamus", output_name));
-    env->add_module(
-        new ModuleConfig("old", "inh_cortex", output_name));
-    // env->add_module(
-    //     new ModuleConfig("old", "inh_thalamus", "heatmap"));
-    env->add_module(
-        new ModuleConfig("old", "inh_cortex", "heatmap"));
 
     print_network(network, env);
     Engine engine(new Context(network, env));
@@ -238,28 +232,22 @@ void simple_test() {
     */
 
     // Modules
-    //std::string output_name = "dummy_output";
-    std::string output_name = "visualizer_output";
-
     auto env = new Environment();
     env->add_module(
-        (new ModuleConfig("simple", "input_layer", "one_hot_random_input"))
+        (new ModuleConfig("one_hot_random_input", "simple", "input_layer"))
             ->set_property("max", "4")
             ->set_property("rate", "1000000"));
 
     env->add_module(
-        new ModuleConfig("simple", "input_layer", output_name));
+        (new ModuleConfig("visualizer_output"))
+        ->add_layer("simple", "input_layer")
+        ->add_layer("simple", "hid_1")
+        ->add_layer("simple", "hid_2"));
     env->add_module(
-        new ModuleConfig("simple", "hid_1", output_name));
-    env->add_module(
-        new ModuleConfig("simple", "hid_2", output_name));
-
-    env->add_module(
-        new ModuleConfig("simple", "input_layer", "heatmap"));
-    env->add_module(
-        new ModuleConfig("simple", "hid_1", "heatmap"));
-    env->add_module(
-        new ModuleConfig("simple", "hid_2", "heatmap"));
+        (new ModuleConfig("heatmap"))
+        ->add_layer("simple", "input_layer")
+        ->add_layer("simple", "hid_1")
+        ->add_layer("simple", "hid_2"));
 
     auto c = new Context(network, env);
 
@@ -314,24 +302,20 @@ void single_field_test() {
         ->set_property("myelinated", "true"));
 
     // Modules
-    //std::string output_name = "dummy_output";
-    std::string output_name = "visualizer_output";
-
     auto env = new Environment();
     env->add_module(
-        (new ModuleConfig("single field", "exc_field", "one_hot_random_input"))
+        (new ModuleConfig("one_hot_random_input", "single field", "exc_field"))
             ->set_property("max", "20")
             ->set_property("rate", "1")
             ->set_property("verbose", "false"));
     env->add_module(
-        new ModuleConfig("single field", "exc_field", output_name));
+        (new ModuleConfig("visualizer_output"))
+        ->add_layer("single field", "exc_field")
+        ->add_layer("single field", "inh_field"));
     env->add_module(
-        new ModuleConfig("single field", "inh_field", output_name));
-
-    env->add_module(
-        new ModuleConfig("single field", "exc_field", "heatmap"));
-    env->add_module(
-        new ModuleConfig("single field", "inh_field", "heatmap"));
+        (new ModuleConfig("heatmap"))
+        ->add_layer("single field", "exc_field")
+        ->add_layer("single field", "inh_field"));
 
     auto c = new Context(network, env);
 
@@ -432,33 +416,30 @@ void mnist_test() {
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
     auto env = new Environment();
     env->add_module(
-        (new ModuleConfig("mnist", "input_layer", "csv_input"))
+        (new ModuleConfig("csv_input", "mnist", "input_layer"))
         ->set_property("filename", input_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "5000")
         ->set_property("normalization", "25"));
     env->add_module(
-        (new ModuleConfig("mnist", "output_layer", "csv_input"))
+        (new ModuleConfig("csv_input", "mnist", "output_layer"))
         ->set_property("filename", output_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "5000")
         ->set_property("normalization", "0.2"));
+
     env->add_module(
-        new ModuleConfig("mnist", "input_layer", "visualizer_output"));
+        (new ModuleConfig("visualizer_output"))
+        ->add_layer("mnist", "input_layer")
+        ->add_layer("mnist", "hidden")
+        //->add_layer("mnist", "separation")
+        ->add_layer("mnist", "output_layer"));
     env->add_module(
-        new ModuleConfig("mnist", "input_layer", "heatmap"));
-    env->add_module(
-        new ModuleConfig("mnist", "hidden", "visualizer_output"));
-    env->add_module(
-        new ModuleConfig("mnist", "hidden", "heatmap"));
-    //env->add_module(
-    //    new ModuleConfig("mnist", "separation", "visualizer_output"));
-    //env->add_module(
-    //    new ModuleConfig("mnist", "separation", "heatmap"));
-    env->add_module(
-        new ModuleConfig("mnist", "output_layer", "visualizer_output"));
-    env->add_module(
-        new ModuleConfig("mnist", "output_layer", "heatmap"));
+        (new ModuleConfig("heatmap"))
+        ->add_layer("mnist", "input_layer")
+        ->add_layer("mnist", "hidden")
+        //->add_layer("mnist", "separation")
+        ->add_layer("mnist", "output_layer"));
 
     std::cout << "MNIST test......\n";
     print_network(network, env);
@@ -494,19 +475,19 @@ void mnist_perceptron_test() {
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_train_output.csv";
     auto env = new Environment();
     env->add_module(
-        (new ModuleConfig("mnist", "input_layer", "csv_input"))
+        (new ModuleConfig("csv_input", "mnist", "input_layer"))
         ->set_property("filename", input_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "255"));
     env->add_module(
-        (new ModuleConfig("mnist", "output_layer", "csv_evaluator"))
+        (new ModuleConfig("csv_evaluator", "mnist", "output_layer"))
         ->set_property("filename", output_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "1"));
     env->add_module(
-        (new ModuleConfig("mnist", "bias_layer", "random_input"))
+        (new ModuleConfig("random_input", "mnist", "bias_layer"))
         ->set_property("uniform", "true"));
 
     // Run training
@@ -521,19 +502,19 @@ void mnist_perceptron_test() {
     input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
     output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
     env->add_module(
-        (new ModuleConfig("mnist", "input_layer", "csv_input"))
+        (new ModuleConfig("csv_input", "mnist", "input_layer"))
         ->set_property("filename", input_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "255"));
     env->add_module(
-        (new ModuleConfig("mnist", "output_layer", "csv_evaluator"))
+        (new ModuleConfig("csv_evaluator", "mnist", "output_layer"))
         ->set_property("filename", output_file)
         ->set_property("offset", "0")
         ->set_property("exposure", "1")
         ->set_property("normalization", "1"));
     env->add_module(
-        (new ModuleConfig("mnist", "bias_layer", "random_input"))
+        (new ModuleConfig("random_input", "mnist", "bias_layer"))
         ->set_property("uniform", "true"));
 
     // Run testing (disable learning)
@@ -592,15 +573,13 @@ void game_of_life_test() {
             new ArborizedConfig(neighborhood_size+2, 1, (-neighborhood_size+1)/2, wrap)));
 
     // Modules
-    //std::string output_name = "dummy_output";
-    std::string output_name = "visualizer_output";
     auto env = new Environment();
 
     /*
     if (one_step)
         // Single Initial State
         env->add_module(
-            (new ModuleConfig("game_of_life", "board", "one_step_input"))
+            (new ModuleConfig("one_step_input", "game_of_life", "board"))
                 ->set_property("max", std::to_string(birth_min))
                 ->set_property("uniform", "true")
                 ->set_property("verbose", "false")
@@ -608,7 +587,7 @@ void game_of_life_test() {
     else
         // Refresh state
         env->add_module(
-            (new ModuleConfig("game_of_life", "board", "random_input"))
+            (new ModuleConfig("random_input", "game_of_life", "board"))
                 ->set_property("max", std::to_string(birth_min))
                 ->set_property("rate", std::to_string(rate))
                 ->set_property("uniform", "true")
@@ -618,7 +597,7 @@ void game_of_life_test() {
     */
 
     env->add_module(
-        new ModuleConfig("game_of_life", "board", output_name));
+        new ModuleConfig("visualizer_output", "game_of_life", "board"));
 
     auto c = new Context(network, env);
     Engine engine(c);
@@ -654,9 +633,6 @@ void working_memory_test() {
     int gamma_surround = 15;
 
     float fraction = 0.1;
-
-    //std::string output_name = "dummy_output";
-    std::string output_name = "visualizer_output";
 
     // Feedforward circuit
     main_structure->add_layer(
@@ -837,23 +813,20 @@ void working_memory_test() {
 
     // Modules
     auto env = new Environment();
-    for (int i = 0 ; i < num_cortical_regions ; ++i) {
+    for (int i = 0 ; i < num_cortical_regions ; ++i)
         env->add_module(
-            new ModuleConfig(std::to_string(i), "3_cortex", output_name));
-        /*
-        env->add_module(
-            new ModuleConfig(std::to_string(i), "6_cortex", output_name));
-        env->add_module(
-            new ModuleConfig(std::to_string(i), "gamma_thalamus", output_name));
-        */
-    }
+            (new ModuleConfig("visualizer_output"))
+            //->add_layer(std::to_string(i), "6_cortex")
+            //->add_layer(std::to_string(i), "gamma_thalamus")
+            ->add_layer(std::to_string(i), "3_cortex"));
+
     env->add_module(
-        (new ModuleConfig("working memory", "tl1_thalamus", "random_input"))
+        (new ModuleConfig("random_input", "working memory", "tl1_thalamus"))
         ->set_property("max", "3")
         ->set_property("rate", "500")
         ->set_property("verbose", "true"));
     env->add_module(
-        new ModuleConfig("working memory", "feedforward", output_name));
+        new ModuleConfig("visualizer_output", "working memory", "feedforward"));
 
     auto c = new Context(network, env);
     Engine engine(c);
@@ -911,17 +884,17 @@ void dsst_test() {
 
     auto env = new Environment();
     env->add_module(
-        new ModuleConfig("dsst", "vision", "dsst_input"));
+        new ModuleConfig("dsst_input", "dsst", "vision"));
     env->add_module(
-        new ModuleConfig("dsst", "output_layer", "dsst_output"));
+        new ModuleConfig("dsst_output", "dsst", "output_layer"));
+
     env->add_module(
-        new ModuleConfig("dsst", "vision", "visualizer_output"));
+        (new ModuleConfig("visualizer_output"))
+        ->add_layer("dsst", "vision")
+        ->add_layer("dsst", "what")
+        ->add_layer("dsst", "focus"));
     env->add_module(
-        new ModuleConfig("dsst", "what", "visualizer_output"));
-    env->add_module(
-        new ModuleConfig("dsst", "focus", "visualizer_output"));
-    env->add_module(
-        (new ModuleConfig("dsst", "focus", "one_hot_random_input"))
+        (new ModuleConfig("one_hot_random_input", "dsst", "focus"))
             ->set_property("max", "1")
             ->set_property("verbose", "false")
             ->set_property("rate", "10"));
@@ -1065,11 +1038,11 @@ int main(int argc, char *argv[]) {
 
     try {
         //mnist_test();
-        //mnist_perceptron_test();
+        mnist_perceptron_test();
         //old_test();
         //simple_test();
         //single_field_test();
-        game_of_life_test();
+        //game_of_life_test();
         //working_memory_test();
         //dsst_test();
         //debug_test();

@@ -60,7 +60,7 @@ void CSVEvaluatorModule::report_output(Buffer *buffer) {
             }
         }
         int corr = (correct[layer] += (max_output_index == max_expected_index));
-        int sse = (total_SSE[layer] += SSE);
+        float sse = (total_SSE[layer] += SSE);
 
         // If we hit the end of the CSV file, print stats and reset
         if (this->curr_row == this->data.size() - 1) {

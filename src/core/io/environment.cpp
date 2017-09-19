@@ -10,8 +10,10 @@ void Environment::save(std::string path) {
 }
 
 void Environment::add_module(ModuleConfig* config) {
-    config_map[config->get_structure()][config->get_layer()].push_back(config);
     config_list.push_back(config);
+    for (auto layer_conf : config->get_layers())
+        config_map[layer_conf->get_property("structure")]
+                  [layer_conf->get_property("layer")].push_back(config);
 }
 
 void Environment::remove_modules() {
