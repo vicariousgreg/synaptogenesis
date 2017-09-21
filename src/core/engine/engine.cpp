@@ -2,6 +2,7 @@
 
 #include "engine/engine.h"
 #include "engine/context.h"
+#include "engine/report.h"
 #include "engine/instruction.h"
 #include "engine/cluster/cluster.h"
 #include "network/network.h"
@@ -149,7 +150,7 @@ Engine::~Engine() {
     clear();
 }
 
-void Engine::network_loop(int iterations, bool verbose) {
+void Engine::network_loop(int iterations, bool verbose, Report** report) {
     run_timer.reset();
 
     for (int i = 0 ; i < iterations; ++i) {
@@ -205,11 +206,14 @@ void Engine::network_loop(int iterations, bool verbose) {
     // Final synchronize
     device_synchronize();
 
+    // Create report
+    *report = new Report(iterations, run_timer.query(nullptr));
+
     // Report time if verbose
     if (verbose) {
-        float time = run_timer.query("Total time");
+        printf("Total time: %f\n", (*report)->total_time);
         printf("Time averaged over %d iterations: %f\n",
-               iterations, time/iterations);
+               iterations, (*report)->average_time);
     }
 }
 
@@ -254,9 +258,12 @@ Context* Engine::run(int iterations, bool verbose) {
     device_check_error("Clock device synchronization failed!");
     if (verbose) device_check_memory();
 
+    // Create
+    Report *report = nullptr;
+
     // Launch threads
     std::thread network_thread(
-        &Engine::network_loop, this, iterations, verbose);
+        &Engine::network_loop, this, iterations, verbose, &report);
     std::thread environment_thread(
         &Engine::environment_loop, this, iterations, verbose);
 
@@ -266,6 +273,10 @@ Context* Engine::run(int iterations, bool verbose) {
     // Wait for threads
     network_thread.join();
     environment_thread.join();
+
+    // Add report to context
+    context->add_report(*report);
+    delete report;
 
     // Clean up
     free_rand();
