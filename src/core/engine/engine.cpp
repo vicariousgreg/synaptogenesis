@@ -217,12 +217,8 @@ void Engine::network_loop(int iterations, bool verbose, Report** report) {
     *report = new Report(this, this->context->get_state(),
         iterations, run_timer.query(nullptr));
 
-    // Report time if verbose
-    if (verbose) {
-        printf("Total time: %f\n", (*report)->total_time);
-        printf("Time averaged over %d iterations: %f\n",
-               iterations, (*report)->average_time);
-    }
+    // Report report if verbose
+    if (verbose) (*report)->print();
 }
 
 void Engine::environment_loop(int iterations, bool verbose) {

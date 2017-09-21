@@ -89,12 +89,12 @@ class Engine {
         std::vector<Cluster*> clusters;
         std::map<Layer*, ClusterNode*> cluster_nodes;
         std::vector<InterDeviceTransferInstruction*> inter_device_transfers;
-        bool suppress_output;
 
         // Environment data
-        std::map<Layer*, IOTypeMask> io_types;
-        ModuleList modules;
         Buffer* buffer;
+        ModuleList modules;
+        std::map<Layer*, IOTypeMask> io_types;
+        bool suppress_output;
 
         // Running data
         Lock sensory_lock;

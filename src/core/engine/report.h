@@ -6,13 +6,8 @@
 
 class Report {
     public:
-        Report(Engine* engine, State* state, int iterations, float total_time)
-            : iterations(iterations),
-              total_time(total_time),
-              average_time(total_time / iterations),
-              network_bytes(state->get_network_bytes()),
-              state_buffer_bytes(state->get_buffer_bytes()),
-              engine_buffer_bytes(engine->get_buffer_bytes()) { }
+        Report(Engine* engine, State* state, int iterations, float total_time);
+        void print();
 
         const int iterations;
         const float total_time;

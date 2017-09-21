@@ -896,8 +896,6 @@ void dsst_test() {
         ->add_layer("dsst", "focus"));
     env->add_module(
         (new ModuleConfig("one_hot_random_input", "dsst", "focus"))
-            ->set("max", "1")
-            ->set("verbose", "false")
             ->set("rate", "10"));
 
     std::cout << "DSST test......\n";
@@ -906,7 +904,6 @@ void dsst_test() {
     Engine engine(c);
 
     delete engine.run(1000000, true);
-    delete network;
 }
 
 void debug_test() {
@@ -1039,14 +1036,14 @@ int main(int argc, char *argv[]) {
 
     try {
         //mnist_test();
-        //mnist_perceptron_test();
+        mnist_perceptron_test();
         //old_test();
         //simple_test();
         //single_field_test();
         //game_of_life_test();
         //working_memory_test();
         //dsst_test();
-        debug_test();
+        //debug_test();
 
         return 0;
     } catch (std::runtime_error e) {
