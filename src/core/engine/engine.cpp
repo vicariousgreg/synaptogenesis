@@ -22,27 +22,6 @@ Engine::Engine(Context *context, bool suppress_output)
     rebuild();
 }
 
-void Engine::rebuild() {
-    // Clear modules and IO types
-    for (auto module : modules) delete module;
-    modules.clear();
-    io_types.clear();
-
-    // Clear clusters
-    for (auto cluster : clusters) delete cluster;
-    clusters.clear();
-    for (auto& inst : inter_device_transfers) delete inst;
-    inter_device_transfers.clear();
-
-    // Clear resources
-    ResourceManager::get_instance()->delete_streams();
-    ResourceManager::get_instance()->delete_events();
-
-    // Rebuild
-    build_environment();
-    build_clusters();
-}
-
 void Engine::build_environment() {
     /* Build environmental buffer */
     LayerList input_layers, expected_layers, output_layers;
@@ -140,11 +119,34 @@ void Engine::build_clusters() {
     }
 }
 
-Engine::~Engine() {
+void Engine::rebuild() {
+    clear();
+    build_environment();
+    build_clusters();
+}
+
+void Engine::clear() {
     delete buffer;
+
+    // Clear modules and IO types
     for (auto module : modules) delete module;
-    for (auto& cluster : clusters) delete cluster;
+    modules.clear();
+    io_types.clear();
+
+    // Clear clusters
+    for (auto cluster : clusters) delete cluster;
+    clusters.clear();
     for (auto& inst : inter_device_transfers) delete inst;
+    inter_device_transfers.clear();
+
+    // Clear resources
+    ResourceManager::get_instance()->delete_streams();
+    ResourceManager::get_instance()->delete_events();
+
+}
+
+Engine::~Engine() {
+    clear();
 }
 
 void Engine::network_loop(int iterations, bool verbose) {

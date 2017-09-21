@@ -51,6 +51,9 @@ class Engine {
         Engine(Context *context, bool suppress_output=false);
         virtual ~Engine();
 
+        // Clears the buffer, modules, cluster, and resources
+        void clear();
+
         // Rebuilds the engine
         // Necessary after changes to network or environment
         void rebuild();
