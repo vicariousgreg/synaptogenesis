@@ -5,8 +5,9 @@
 #include <vector>
 
 #include "state/attributes.h"
-#include "util/property_config.h"
+#include "engine/report.h"
 #include "io/buffer.h"
+#include "util/property_config.h"
 
 class Network;
 class Layer;
@@ -53,10 +54,16 @@ class Module {
         virtual void report_output(Buffer *buffer) { }
         virtual void cycle() { };
 
+        /* Adds properties to an engine report */
+        virtual void report(Report* report) { }
+
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call
          */
         IOTypeMask get_io_type(Layer *layer) { return io_types.at(layer); }
+
+        /* Gets the name of a module */
+        virtual std::string get_name() = 0;
 
         const LayerList layers;
 
@@ -93,13 +100,15 @@ int CLASS_NAME::module_id = \
 \
 Module *CLASS_NAME::build(LayerList layers, ModuleConfig *config) { \
     return new CLASS_NAME(layers, config); \
-}
+} \
+std::string CLASS_NAME::get_name() { return STRING; }
 
 // Put this one in .h at bottom of class definition
 #define MODULE_MEMBERS \
     protected: \
         static Module *build(LayerList layers, ModuleConfig *config); \
-        static int module_id;
+        static int module_id; \
+        virtual std::string get_name();
 
 
 typedef std::vector<Module*> ModuleList;

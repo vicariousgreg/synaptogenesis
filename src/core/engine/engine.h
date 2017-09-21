@@ -107,8 +107,8 @@ class Engine {
         bool learning_flag;
 
         // Thread loops
-        void network_loop(int iterations, bool verbose, Report** report);
-        void environment_loop(int iterations, bool verbose);
+        void network_loop(int iterations, bool verbose);
+        void environment_loop(int iterations, bool verbose, Report** report);
 };
 
 #endif

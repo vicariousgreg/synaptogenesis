@@ -28,8 +28,6 @@ class PeriodicInputModule : public Module {
         bool clear;
         bool random;
         bool dirty;
-
-    MODULE_MEMBERS
 };
 
 class BasicPeriodicInputModule : public PeriodicInputModule {

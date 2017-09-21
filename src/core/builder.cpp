@@ -116,7 +116,7 @@ static void parse_layer(Structure *structure, Object lo) {
     bool plastic = true;
     bool global = false;
 
-    std::map<std::string, std::string> properties;
+    StringPairList properties;
 
     for (auto pair : lo.kv_map()) {
         if (pair.first == "name")
@@ -134,7 +134,7 @@ static void parse_layer(Structure *structure, Object lo) {
         else if (pair.first == "noise")
             noise_config = parse_noise_config(pair.second->get<Object>());
         else if (pair.first != "dendrites") // Skip these till end
-            properties[pair.first] = pair.second->get<String>();
+            properties.push_back(StringPair(pair.first, pair.second->get<String>()));
     }
 
     auto layer_config =
@@ -195,7 +195,7 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     std::string from_structure = structure_name;
     std::string to_structure = structure_name;
 
-    std::map<std::string, std::string> properties;
+    StringPairList properties;
 
     for (auto pair : co.kv_map()) {
         if (pair.first == "from layer")
@@ -225,7 +225,7 @@ static void parse_connection(Network *network, std::string structure_name, Objec
         else if (pair.first == "dendrite")
             dendrite = pair.second->get<String>();
         else
-            properties[pair.first] = pair.second->get<String>();
+            properties.push_back(StringPair(pair.first, pair.second->get<String>()));
     }
 
     ConnectionType type;
@@ -663,9 +663,10 @@ static ModuleConfig* parse_module(Object mo) {
 
     // Parse layers
     for (auto layer : mo.get<Array>("layers").values()) {
-        std::map<std::string, std::string> layer_props;
+        StringPairList layer_props;
         for (auto pair : layer->get<Object>().kv_map())
-            layer_props[pair.first] = pair.second->get<String>();
+            layer_props.push_back(
+                StringPair(pair.first, pair.second->get<String>()));
         module_config->add_layer(new PropertyConfig(layer_props));
     }
 

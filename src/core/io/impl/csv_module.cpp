@@ -23,8 +23,9 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
         : Module(layers) {
     enforce_equal_layer_sizes("csv_reader");
 
-    std::string filename = config->get("filename", "");
+    this->filename = config->get("filename", "");
     int offset = std::stoi(config->get("offset", "0"));
+    this->verbose = config->get("verbose", "false") == "true";
     float normalization = std::stof(config->get("normalization", "1"));
     this->exposure = std::stoi(config->get("exposure", "1"));
     this->age = 0;
@@ -208,13 +209,26 @@ void CSVEvaluatorModule::report_output(Buffer *buffer) {
         float sse = (total_SSE[layer] += SSE);
 
         // If we hit the end of the CSV file, print stats and reset
-        if (this->curr_row == this->data.size() - 1) {
+        if (verbose and this->curr_row == this->data.size() - 1)
             printf("Correct: %9d / %9d [ %9.6f%% ]    SSE: %f\n",
                 corr, this->data.size(),
                 100.0 * float(corr) / this->data.size(),
                 sse);
-            correct[layer] = 0;
-            total_SSE[layer] = 0;
-        }
+    }
+}
+
+void CSVEvaluatorModule::report(Report *report) {
+    for (auto layer : layers) {
+        auto samples = this->data.size();
+        auto corr = correct[layer];
+        auto percentage = 100.0 * corr / samples;
+        report->add_report(this, layer,
+            new PropertyConfig({
+                { "Filename", this->filename },
+                { "Samples", std::to_string(samples) },
+                { "Correct", std::to_string(corr) },
+                { "Percentage", std::to_string(percentage) },
+                { "SSE", std::to_string(total_SSE[layer]) }
+            }));
     }
 }

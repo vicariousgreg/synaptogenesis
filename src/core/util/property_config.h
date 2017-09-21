@@ -3,39 +3,27 @@
 
 #include <string>
 #include <map>
+#include <vector>
+
+typedef std::pair<std::string, std::string> StringPair;
+typedef std::vector<StringPair> StringPairList;
 
 class PropertyConfig {
     public:
         PropertyConfig() { }
+        PropertyConfig(StringPairList pairs);
 
-        PropertyConfig(std::map<std::string, std::string> props)
-            : properties(props) { }
-
-        const std::map<std::string, std::string> get_properties() const
-            { return properties; }
-
-        bool has_property(std::string key) const
-            { return properties.count(key) > 0; }
-
-        std::string remove_property(std::string key) {
-            std::string value = get(key);
-            properties.erase(key);
-            return value;
-        }
-
-        std::string get(std::string key) const
-            { return properties.at(key); }
-
-        std::string get(std::string key, std::string def_val) const {
-            if (has_property(key)) return properties.at(key);
-            else                   return def_val;
-        }
+        const StringPairList get_properties() const;
+        bool has_property(std::string key) const;
+        std::string remove_property(std::string key);
+        std::string get(std::string key) const;
+        std::string get(std::string key, std::string def_val) const;
 
     protected:
-        void set_internal(std::string key, std::string value)
-            { properties[key] = value; }
+        void set_internal(std::string key, std::string value);
 
         std::map<std::string, std::string> properties;
+        std::vector<std::string> keys;
 };
 
 #endif

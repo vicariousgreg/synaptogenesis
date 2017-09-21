@@ -21,15 +21,15 @@ class Context {
         Environment *get_environment() { return environment; }
         State *get_state() { return state; }
 
-        void add_report(Report report) { reports.push_back(report); }
-        std::vector<Report> get_reports() { return reports; }
-        Report get_last_report() { return reports[reports.size()-1]; }
+        void add_report(Report* report) { reports.push_back(report); }
+        const std::vector<Report*>& get_reports() { return reports; }
+        Report* get_last_report() { return reports[reports.size()-1]; }
 
     private:
         Network* network;
         Environment* environment;
         State* state;
-        std::vector<Report> reports;
+        std::vector<Report*> reports;
 };
 
 #endif

@@ -12,6 +12,8 @@ class CSVReaderModule : public Module {
         void cycle();
 
     protected:
+        std::string filename;
+        bool verbose;
         int age;
         int exposure;
         int curr_row;
@@ -54,6 +56,7 @@ class CSVEvaluatorModule : public CSVExpectedModule {
         CSVEvaluatorModule(LayerList layers, ModuleConfig *config);
 
         void report_output(Buffer *buffer);
+        void report(Report *report);
 
     private:
         std::map<Layer*, int> correct;

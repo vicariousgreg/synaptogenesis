@@ -13,4 +13,6 @@ Context::~Context() {
     delete environment;
     delete state;
     delete network;
+    for (auto report : reports)
+        delete report;
 }

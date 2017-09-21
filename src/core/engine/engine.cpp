@@ -157,7 +157,7 @@ size_t Engine::get_buffer_bytes() const {
     return size;
 }
 
-void Engine::network_loop(int iterations, bool verbose, Report** report) {
+void Engine::network_loop(int iterations, bool verbose) {
     run_timer.reset();
 
     for (int i = 0 ; i < iterations; ++i) {
@@ -212,16 +212,9 @@ void Engine::network_loop(int iterations, bool verbose, Report** report) {
 
     // Final synchronize
     device_synchronize();
-
-    // Create report
-    *report = new Report(this, this->context->get_state(),
-        iterations, run_timer.query(nullptr));
-
-    // Report report if verbose
-    if (verbose) (*report)->print();
 }
 
-void Engine::environment_loop(int iterations, bool verbose) {
+void Engine::environment_loop(int iterations, bool verbose, Report** report) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT);
@@ -245,6 +238,18 @@ void Engine::environment_loop(int iterations, bool verbose) {
         // Cycle modules
         for (auto& module : this->modules) module->cycle();
     }
+
+    // Create report
+    *report = new Report(this, this->context->get_state(),
+        iterations, run_timer.query(nullptr));
+
+    // Allow modules to modify report
+    for (auto& module : this->modules)
+        module->report(*report);
+
+    // Report report if verbose
+    if (verbose) (*report)->print();
+
     // TODO: handle race conditions here
     GuiController::get_instance()->quit();
 }
@@ -267,9 +272,9 @@ Context* Engine::run(int iterations, bool verbose) {
 
     // Launch threads
     std::thread network_thread(
-        &Engine::network_loop, this, iterations, verbose, &report);
+        &Engine::network_loop, this, iterations, verbose);
     std::thread environment_thread(
-        &Engine::environment_loop, this, iterations, verbose);
+        &Engine::environment_loop, this, iterations, verbose, &report);
 
     // Launch UI on main thread
     GuiController::get_instance()->launch();
@@ -279,8 +284,7 @@ Context* Engine::run(int iterations, bool verbose) {
     environment_thread.join();
 
     // Add report to context
-    context->add_report(*report);
-    delete report;
+    context->add_report(report);
 
     // Clean up
     free_rand();
