@@ -7,6 +7,7 @@
 
 #include "jsonxx.h"
 
+#include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <iomanip>
@@ -310,6 +311,8 @@ bool Object::parse(std::istream& input, Object& object) {
         // TODO(hjiang): Add an option to allow duplicated keys?
         if (object.value_map_.find(key) == object.value_map_.end()) {
           object.value_map_[key] = v;
+          if (keys_are_ordered())
+            object.key_set_.push_back(key);
         } else {
           if (parser_is_permissive()) {
             delete object.value_map_[key];
@@ -503,16 +506,30 @@ std::ostream& operator<<(std::ostream& stream, const jsonxx::Array& v) {
 
 std::ostream& operator<<(std::ostream& stream, const jsonxx::Object& v) {
     stream << "{";
-    jsonxx::Object::container::const_iterator
-        it = v.kv_map().begin(),
-        end = v.kv_map().end();
-    while (it != end) {
-        jsonxx::stream_string(stream, it->first);
-        stream << ": " << *(it->second);
-        ++it;
-        if (it != end) {
-            stream << ", ";
-        }
+    if (jsonxx::keys_are_ordered()) {
+      const std::vector<std::string>& keys = v.keys();
+      std::string last = keys[keys.size()-1];
+      const std::map<std::string, jsonxx::Value*>& kv_map = v.kv_map();
+      for (std::string key : keys) {
+          printf(" %s\n", key.c_str());
+          jsonxx::stream_string(stream, key);
+          stream << ": " << *(kv_map.at(key));
+          if (key != last) {
+              stream << ", ";
+          }
+      }
+    } else {
+      jsonxx::Object::container::const_iterator
+          it = v.kv_map().begin(),
+          end = v.kv_map().end();
+      while (it != end) {
+          jsonxx::stream_string(stream, it->first);
+          stream << ": " << *(it->second);
+          ++it;
+          if (it != end) {
+              stream << ", ";
+          }
+      }
     }
     return stream << "}";
 }
@@ -603,9 +620,15 @@ namespace json {
 
             case jsonxx::Value::OBJECT_:
                 ss << "{\n";
-                for(Object::container::const_iterator it=t.object_value_->kv_map().begin(),
-                    end = t.object_value_->kv_map().end(); it != end ; ++it)
-                  ss << tag( format, depth+1, it->first, *it->second );
+                if (keys_are_ordered()) {
+                  const std::map<std::string, Value*>& kv_map = t.object_value_->kv_map();
+                  for(std::string key : t.object_value_->keys())
+                    ss << tag( format, depth+1, key, *kv_map.at(key) );
+                } else {
+                  for(Object::container::const_iterator it=t.object_value_->kv_map().begin(),
+                      end = t.object_value_->kv_map().end(); it != end ; ++it)
+                    ss << tag( format, depth+1, it->first, *it->second );
+                }
                 return remove_last_comma( ss.str() ) + tab + "}" ",\n";
 
             case jsonxx::Value::NUMBER_:
@@ -788,13 +811,20 @@ std::string tag( unsigned format, unsigned depth, const std::string &name, const
                        + ss.str()
                        + close_tag( format, 's', name ) + '\n';
 
-        case jsonxx::Value::OBJECT_:
-            for(Object::container::const_iterator it=t.object_value_->kv_map().begin(),
-                end = t.object_value_->kv_map().end(); it != end ; ++it)
-              ss << tag( format, depth+1, it->first, *it->second );
+        case jsonxx::Value::OBJECT_: {
+            if (keys_are_ordered()) {
+              const std::map<std::string, Value*>& kv_map = t.object_value_->kv_map();
+              for(std::string key : t.object_value_->keys())
+                ss << tag( format, depth+1, key, *kv_map.at(key) );
+            } else {
+              for(Object::container::const_iterator it=t.object_value_->kv_map().begin(),
+                  end = t.object_value_->kv_map().end(); it != end ; ++it)
+                ss << tag( format, depth+1, it->first, *it->second );
+            }
             return tab + open_tag( format, 'o', name, attr ) + '\n'
                        + ss.str()
                  + tab + close_tag( format, 'o', name ) + '\n';
+        }
 
         case jsonxx::Value::NUMBER_:
             // max precision
@@ -999,15 +1029,29 @@ void Object::import( const Object &other ) {
   odd.clear();
   if (this != &other) {
     // default
-    container::const_iterator
-        it = other.value_map_.begin(),
-        end = other.value_map_.end();
-    for (/**/ ; it != end ; ++it) {
-      container::iterator found = value_map_.find(it->first);
-      if( found != value_map_.end() ) {
-        delete found->second;
+    if (keys_are_ordered()) {
+      const std::vector<std::string>& keys = other.keys();
+      const std::map<std::string, Value*>& kv_map = other.kv_map();
+      for (std::string key : keys) {
+        container::iterator found = value_map_.find(key);
+        if( found != value_map_.end() ) {
+          delete found->second;
+        } else if (keys_are_ordered()) {
+          key_set_.push_back(key);
+        }
+        value_map_[ key ] = new Value( *kv_map.at(key) );
       }
-      value_map_[ it->first ] = new Value( *it->second );
+    } else {
+      container::const_iterator
+          it = other.value_map_.begin(),
+          end = other.value_map_.end();
+      for (/**/ ; it != end ; ++it) {
+        container::iterator found = value_map_.find(it->first);
+        if( found != value_map_.end() ) {
+          delete found->second;
+        }
+        value_map_[ it->first ] = new Value( *it->second );
+      }
     }
   } else {
     // recursion is supported here
@@ -1019,6 +1063,8 @@ void Object::import( const std::string &key, const Value &value ) {
   container::iterator found = value_map_.find(key);
   if( found != value_map_.end() ) {
     delete found->second;
+  } else if (keys_are_ordered()) {
+    key_set_.push_back(key);
   }
   value_map_[ key ] = new Value( value );
 }
@@ -1050,6 +1096,9 @@ size_t Object::size() const {
 bool Object::empty() const {
   return value_map_.size() == 0;
 }
+const std::vector<std::string> &Object::keys() const {
+  return key_set_;
+}
 const std::map<std::string, Value*> &Object::kv_map() const {
   return value_map_;
 }
@@ -1062,6 +1111,7 @@ void Object::reset() {
     delete i->second;
   }
   value_map_.clear();
+  key_set_.clear();
 }
 bool Object::parse(std::istream &input) {
   return parse(input,*this);

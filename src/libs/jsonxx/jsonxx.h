@@ -62,7 +62,8 @@ enum Settings {
   // values
   Parser = Permissive,  // permissive or strict parsing
   UnquotedKeys = Disabled, // support of unquoted keys
-  Assertions = Enabled  // enabled or disabled assertions (these asserts work both in DEBUG and RELEASE builds)
+  Assertions = Enabled,  // enabled or disabled assertions (these asserts work both in DEBUG and RELEASE builds)
+  OrderedKeys = Enabled
 };
 
 #ifdef _MSC_VER
@@ -72,6 +73,7 @@ enum Settings {
 inline bool parser_is_strict() { return Parser == Strict; }
 inline bool parser_is_permissive() { return Parser == Permissive; }
 inline bool unquoted_keys_are_enabled() { return UnquotedKeys == Enabled; }
+inline bool keys_are_ordered() { return OrderedKeys == Enabled; }
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -133,6 +135,7 @@ class Object {
   size_t size() const;
   bool empty() const;
 
+  const std::vector<std::string>& keys() const;
   const std::map<std::string, Value*>& kv_map() const;
   std::string json() const;
   std::string xml( unsigned format = JSONx, const std::string &header = std::string(), const std::string &attrib = std::string() ) const;
@@ -159,6 +162,7 @@ class Object {
  protected:
   static bool parse(std::istream& input, Object& object);
   container value_map_;
+  std::vector<std::string> key_set_;
   std::string odd;
 };
 
