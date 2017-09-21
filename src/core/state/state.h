@@ -27,6 +27,10 @@ class State {
         /* Copy data over to another state */
         void copy_to(State* other);
 
+        /* Get the size of the state and its buffers */
+        size_t get_network_bytes() const;
+        size_t get_buffer_bytes() const;
+
         /* Save or load state to/from disk */
         static bool exists(std::string file_name);
         void save(std::string file_name, bool verbose=false);

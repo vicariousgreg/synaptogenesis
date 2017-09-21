@@ -150,6 +150,13 @@ Engine::~Engine() {
     clear();
 }
 
+size_t Engine::get_buffer_bytes() const {
+    size_t size = 0;
+    for (auto ptr : buffer->get_pointers())
+        size += ptr->get_bytes();
+    return size;
+}
+
 void Engine::network_loop(int iterations, bool verbose, Report** report) {
     run_timer.reset();
 
@@ -207,7 +214,8 @@ void Engine::network_loop(int iterations, bool verbose, Report** report) {
     device_synchronize();
 
     // Create report
-    *report = new Report(iterations, run_timer.query(nullptr));
+    *report = new Report(this, this->context->get_state(),
+        iterations, run_timer.query(nullptr));
 
     // Report time if verbose
     if (verbose) {

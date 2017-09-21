@@ -77,6 +77,8 @@ class Engine {
         bool is_output(Layer *layer) { return get_io_type(layer) & OUTPUT; }
         bool is_expected(Layer *layer) { return get_io_type(layer) & EXPECTED; }
 
+        size_t get_buffer_bytes() const;
+
     protected:
         Context *context;
 

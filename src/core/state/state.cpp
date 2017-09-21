@@ -240,6 +240,22 @@ void State::copy_to(State* other) {
     if (not other_on_host) other->transfer_to_device();
 }
 
+size_t State::get_network_bytes() const {
+    size_t size = 0;
+    for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
+        for (auto ptr : network_pointers[device_id])
+            size += ptr->get_bytes();
+    return size;
+}
+
+size_t State::get_buffer_bytes() const {
+    size_t size = 0;
+    for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
+        for (auto ptr : buffer_pointers[device_id])
+            size += ptr->get_bytes();
+    return size;
+}
+
 bool State::exists(std::string file_name) {
     std::ifstream f(("./states/" + file_name).c_str());
     return f.good();
