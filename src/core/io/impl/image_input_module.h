@@ -4,6 +4,14 @@
 #include "io/module.h"
 #include "util/pointer.h"
 
+typedef enum Channel {
+    RED,
+    GREEN,
+    BLUE,
+    GRAY
+} Channel;
+
+
 class ImageInputModule : public Module {
     public:
         ImageInputModule(LayerList layers, ModuleConfig *config);
@@ -21,6 +29,7 @@ class ImageInputModule : public Module {
         int width;
         int height;
         Pointer<float> gray, red, green, blue;
+        std::map<Layer*, Channel> channel_map;
 
     MODULE_MEMBERS
 };
