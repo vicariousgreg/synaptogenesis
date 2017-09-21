@@ -136,6 +136,15 @@ Event *ResourceManager::create_event(DeviceID device_id) {
     return devices[device_id]->create_event();
 }
 
+void ResourceManager::delete_streams() {
+    for (auto device : devices) device->delete_streams();
+}
+
+void ResourceManager::delete_events() {
+    for (auto device : devices) device->delete_events();
+}
+
+
 ResourceManager::Device::Device(DeviceID device_id, bool host_flag)
         : device_id(device_id),
           host_flag(host_flag),
@@ -145,8 +154,18 @@ ResourceManager::Device::Device(DeviceID device_id, bool host_flag)
 ResourceManager::Device::~Device() {
     delete default_stream;
     delete inter_device_stream;
+    delete_streams();
+    delete_events();
+}
+
+void ResourceManager::Device::delete_streams() {
     for (auto stream : streams) delete stream;
+    streams.clear();
+}
+
+void ResourceManager::Device::delete_events() {
     for (auto event : events) delete event;
+    events.clear();
 }
 
 Stream *ResourceManager::Device::create_stream() {

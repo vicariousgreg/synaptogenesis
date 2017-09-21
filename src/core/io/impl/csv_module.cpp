@@ -23,10 +23,10 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
         : Module(layers) {
     enforce_equal_layer_sizes("csv_reader");
 
-    std::string filename = config->get_property("filename", "");
-    int offset = std::stoi(config->get_property("offset", "0"));
-    float normalization = std::stof(config->get_property("normalization", "1"));
-    this->exposure = std::stoi(config->get_property("exposure", "1"));
+    std::string filename = config->get("filename", "");
+    int offset = std::stoi(config->get("offset", "0"));
+    float normalization = std::stof(config->get("normalization", "1"));
+    this->exposure = std::stoi(config->get("exposure", "1"));
     this->age = 0;
 
     // Check if file exists

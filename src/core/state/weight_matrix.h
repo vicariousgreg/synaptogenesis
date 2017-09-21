@@ -43,7 +43,7 @@ void transfer_weights(float* from, float* to, int size);
 void clear_diagonal(float *arr, int rows, int cols);
 
 /* Sets delays according to spatial organization */
-void set_delays(OutputType output_type, Connection *conn,
+void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
     int* delays, float velocity,
     float from_spacing, float to_spacing,
     float x_offset, float y_offset);

@@ -28,7 +28,7 @@ const LayerConfig *Layer::get_config() const { return config; }
 std::string Layer::get_parameter(std::string key,
         std::string default_val) const {
     try {
-        return this->get_config()->get_property(key);
+        return this->get_config()->get(key);
     } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_warning(
             "Error in " + this->str() + ":\n"

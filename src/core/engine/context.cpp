@@ -3,12 +3,11 @@
 #include "state/state.h"
 #include "io/environment.h"
 
-Context::Context(Network *network,
-    Environment *env,
-    State *st)
-    : network(network),
-      environment(env==nullptr ? new Environment() : env),
-      state(st==nullptr ? new State(network) : st) { }
+Context::Context(Network *network, Environment *env, State *st) {
+    this->network     = network;
+    this->environment = (env == nullptr) ? new Environment()  : env;
+    this->state       = (st == nullptr)  ? new State(network) : st;
+}
 
 Context::~Context() {
     delete environment;

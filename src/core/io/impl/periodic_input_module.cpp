@@ -14,15 +14,15 @@ PeriodicInputModule::PeriodicInputModule(LayerList layers, ModuleConfig *config)
     enforce_equal_layer_sizes("periodic_input");
     set_io_type(INPUT);
 
-    this->value = std::stof(config->get_property("val", "1.0"));
-    this->min_value = std::stof(config->get_property("min", "0.0"));
-    this->max_value = std::stof(config->get_property("max", "1.0"));
-    this->rate = std::stoi(config->get_property("rate", "1"));
-    this->end = std::stoi(config->get_property("end", "0"));
-    this->fraction = std::stof(config->get_property("fraction", "1.0"));
-    this->random = config->get_property("random", "false") == "true";
-    this->clear = config->get_property("clear", "false") == "true";
-    this->verbose = config->get_property("verbose", "false") == "true";
+    this->value = std::stof(config->get("val", "1.0"));
+    this->min_value = std::stof(config->get("min", "0.0"));
+    this->max_value = std::stof(config->get("max", "1.0"));
+    this->rate = std::stoi(config->get("rate", "1"));
+    this->end = std::stoi(config->get("end", "0"));
+    this->fraction = std::stof(config->get("fraction", "1.0"));
+    this->random = config->get("random", "false") == "true";
+    this->clear = config->get("clear", "false") == "true";
+    this->verbose = config->get("verbose", "false") == "true";
 
     if (this->min_value > this->max_value)
         ErrorManager::get_instance()->log_error(

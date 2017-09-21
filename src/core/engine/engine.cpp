@@ -23,9 +23,22 @@ Engine::Engine(Context *context, bool suppress_output)
 }
 
 void Engine::rebuild() {
+    // Clear modules and IO types
     for (auto module : modules) delete module;
     modules.clear();
     io_types.clear();
+
+    // Clear clusters
+    for (auto cluster : clusters) delete cluster;
+    clusters.clear();
+    for (auto& inst : inter_device_transfers) delete inst;
+    inter_device_transfers.clear();
+
+    // Clear resources
+    ResourceManager::get_instance()->delete_streams();
+    ResourceManager::get_instance()->delete_events();
+
+    // Rebuild
     build_environment();
     build_clusters();
 }
@@ -43,6 +56,12 @@ void Engine::build_environment() {
         for (auto layer : module->layers) {
             auto layer_io_type = io_types[layer];
             auto module_io_type = module->get_io_type(layer);
+
+            if (module_io_type == 0)
+                ErrorManager::get_instance()->log_error(
+                    "Error in environment model:\n"
+                    "  Error adding module to: " + layer->str() + "\n" +
+                    "    Module has zero IO type for layer!");
 
             // Check for duplicate input/expected modules
             if (module_io_type & INPUT & layer_io_type)
@@ -143,26 +162,16 @@ void Engine::network_loop(int iterations, bool verbose) {
         /*** Read sensory input ***/
         /**************************/
         sensory_lock.wait(NETWORK);
-        // Launch input transfer
-        for (auto& cluster : clusters)
-            cluster->launch_input();
-
-        // Wait for input
-        for (auto& cluster : clusters)
-            cluster->wait_for_input();
+        for (auto& cluster : clusters) cluster->launch_input();
+        for (auto& cluster : clusters) cluster->wait_for_input();
         sensory_lock.pass(ENVIRONMENT);
 
         /****************************/
         /*** Perform computations ***/
         /****************************/
         for (auto& cluster : clusters) {
-            // Launch post-input calculations
             cluster->launch_post_input_calculations();
-
-            // Launch state update
             cluster->launch_state_update();
-
-            // Launch weight updates
             if (learning_flag) cluster->launch_weight_update();
         }
 
@@ -171,13 +180,8 @@ void Engine::network_loop(int iterations, bool verbose) {
         /**************************/
         motor_lock.wait(NETWORK);
         if (i % environment_rate == 0) {
-            // Start output streaming
-            for (auto& cluster : clusters)
-                cluster->launch_output();
-
-            // Wait for output
-            for (auto& cluster : clusters)
-                cluster->wait_for_output();
+            for (auto& cluster : clusters) cluster->launch_output();
+            for (auto& cluster : clusters) cluster->wait_for_output();
         }
         motor_lock.pass(ENVIRONMENT);
 
@@ -229,17 +233,13 @@ void Engine::environment_loop(int iterations, bool verbose) {
         motor_lock.pass(NETWORK);
 
         // Cycle modules
-        for (auto& module : this->modules)
-            module->cycle();
+        for (auto& module : this->modules) module->cycle();
     }
     // TODO: handle race conditions here
     GuiController::get_instance()->quit();
 }
 
 Context* Engine::run(int iterations, bool verbose) {
-    /**********************/
-    /*** Initialization ***/
-    /**********************/
     // Initialize cuda random states
     init_rand(context->get_network()->get_max_layer_size());
 
@@ -252,11 +252,7 @@ Context* Engine::run(int iterations, bool verbose) {
     device_check_error("Clock device synchronization failed!");
     if (verbose) device_check_memory();
 
-    // Initialize UI
-
-    /**********************/
-    /*** Launch threads ***/
-    /**********************/
+    // Launch threads
     std::thread network_thread(
         &Engine::network_loop, this, iterations, verbose);
     std::thread environment_thread(
@@ -269,9 +265,7 @@ Context* Engine::run(int iterations, bool verbose) {
     network_thread.join();
     environment_thread.join();
 
-    /****************/
-    /*** Clean up ***/
-    /****************/
+    // Clean up
     free_rand();
 
     return context;

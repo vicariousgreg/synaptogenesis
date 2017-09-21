@@ -97,8 +97,8 @@ class ConnectionConfig : public PropertyConfig {
         }
 
         /* Setter that returns self pointer */
-        ConnectionConfig *set_property(std::string key, std::string value) {
-            set_property_internal(key, value);
+        ConnectionConfig *set(std::string key, std::string value) {
+            set_internal(key, value);
             return this;
         }
 

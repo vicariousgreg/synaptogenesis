@@ -14,7 +14,7 @@ PrintOutputModule::PrintOutputModule(LayerList layers, ModuleConfig *config)
           counter(0) {
     set_io_type(OUTPUT);
 
-    this->history_length = std::stoi(config->get_property("history_length", "1"));
+    this->history_length = std::stoi(config->get("history_length", "1"));
 
     if (this->history_length <= 0 or this->history_length > 8 * sizeof(Output))
         ErrorManager::get_instance()->log_error(

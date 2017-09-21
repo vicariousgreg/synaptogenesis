@@ -141,7 +141,7 @@ static void parse_layer(Structure *structure, Object lo) {
         new LayerConfig(name, neural_model, rows, columns, noise_config);
 
     for (auto pair : properties)
-        layer_config->set_property(pair.first, pair.second);
+        layer_config->set(pair.first, pair.second);
 
     structure->add_layer(layer_config);
 
@@ -254,7 +254,7 @@ static void parse_connection(Network *network, std::string structure_name, Objec
         connection_config->set_subset_config(subset_config);
 
     for (auto pair : properties)
-        connection_config->set_property(pair.first, pair.second);
+        connection_config->set(pair.first, pair.second);
 
     Structure::connect(
         network->get_structure(from_structure),
@@ -277,7 +277,7 @@ static NoiseConfig *parse_noise_config(Object nco) {
     // Get properties
     for (auto pair : nco.kv_map())
         if (pair.first != "type")
-            noise_config->set_property(pair.first, pair.second->get<String>());
+            noise_config->set(pair.first, pair.second->get<String>());
 
     return noise_config;
 }
@@ -293,23 +293,23 @@ static WeightConfig *parse_weight_config(Object wo) {
     WeightConfig *weight_config = new WeightConfig(get_string(wo, "type"));
 
     if (has_string(wo, "weight"))
-        weight_config->set_property("weight", get_string(wo, "weight"));
+        weight_config->set("weight", get_string(wo, "weight"));
     if (has_string(wo, "max weight"))
-        weight_config->set_property("max weight", get_string(wo, "max weight"));
+        weight_config->set("max weight", get_string(wo, "max weight"));
     if (has_string(wo, "fraction"))
-        weight_config->set_property("fraction", get_string(wo, "fraction"));
+        weight_config->set("fraction", get_string(wo, "fraction"));
     if (has_string(wo, "mean"))
-        weight_config->set_property("mean", get_string(wo, "mean"));
+        weight_config->set("mean", get_string(wo, "mean"));
     if (has_string(wo, "std dev"))
-        weight_config->set_property("std dev", get_string(wo, "std dev"));
+        weight_config->set("std dev", get_string(wo, "std dev"));
     if (has_string(wo, "rows"))
-        weight_config->set_property("rows", get_string(wo, "rows"));
+        weight_config->set("rows", get_string(wo, "rows"));
     if (has_string(wo, "columns"))
-        weight_config->set_property("columns", get_string(wo, "columns"));
+        weight_config->set("columns", get_string(wo, "columns"));
     if (has_string(wo, "size"))
-        weight_config->set_property("size", get_string(wo, "size"));
+        weight_config->set("size", get_string(wo, "size"));
     if (has_string(wo, "weight string"))
-        weight_config->set_property("weight string",
+        weight_config->set("weight string",
             get_string(wo, "weight string"));
 
     if (wo.has<Object>("child"))
@@ -672,7 +672,7 @@ static ModuleConfig* parse_module(Object mo) {
     // Get properties
     for (auto pair : mo.kv_map())
         if (pair.first != "layers")
-            module_config->set_property(
+            module_config->set(
                 pair.first, pair.second->get<String>());
 
     return module_config;

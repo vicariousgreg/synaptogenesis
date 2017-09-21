@@ -10,12 +10,12 @@
 class NoiseConfig : public PropertyConfig {
     public:
         NoiseConfig(std::string type) {
-            this->set_property("type", type);
+            this->set("type", type);
         }
 
         /* Setter that returns self pointer */
-        NoiseConfig *set_property(std::string key, std::string value) {
-            set_property_internal(key, value);
+        NoiseConfig *set(std::string key, std::string value) {
+            set_internal(key, value);
             return this;
         }
 };
@@ -50,8 +50,8 @@ class LayerConfig : public PropertyConfig {
         virtual ~LayerConfig() { delete noise_config; }
 
         /* Setter that returns self pointer */
-        LayerConfig *set_property(std::string key, std::string value) {
-            set_property_internal(key, value);
+        LayerConfig *set(std::string key, std::string value) {
+            set_internal(key, value);
             return this;
         }
 

@@ -9,7 +9,7 @@ class DummyModule : public Module {
                 : Module(layers) {
             for (auto layer : layers) {
                 auto params =
-                    config->get_layer(layer)->get_property("params", "output");
+                    config->get_layer(layer)->get("params", "output");
 
                 if (params == "input")
                     set_io_type(layer, INPUT);

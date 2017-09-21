@@ -10,7 +10,7 @@ VisualizerModule::VisualizerModule(LayerList layers, ModuleConfig *config)
     : Module(layers), window(VisualizerWindow::build_visualizer()) {
     for (auto layer : layers) {
         auto params =
-            config->get_layer(layer)->get_property("params", "output");
+            config->get_layer(layer)->get("params", "output");
 
         if (params == "input") {
             set_io_type(layer, INPUT);
@@ -55,7 +55,7 @@ HeatmapModule::HeatmapModule(LayerList layers, ModuleConfig *config)
     : Module(layers), window(VisualizerWindow::build_heatmap()) {
     for (auto layer : layers) {
         auto params =
-            config->get_layer(layer)->get_property("params", "output");
+            config->get_layer(layer)->get("params", "output");
         if (params == "input") {
             set_io_type(layer, INPUT);
             window->add_layer(layer, INPUT);

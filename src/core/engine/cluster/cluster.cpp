@@ -35,11 +35,13 @@ void Cluster::add_external_dependencies(
 }
 
 void Cluster::launch_input() {
-    for (auto& node : nodes) node->activate_input();
+    for (auto& node : nodes)
+        node->activate_input();
 }
 
 void Cluster::launch_output() {
-    for (auto& node : nodes) node->activate_output();
+    for (auto& node : nodes)
+        node->activate_output();
 }
 
 void Cluster::wait_for_input() {

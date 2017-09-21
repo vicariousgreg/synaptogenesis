@@ -57,50 +57,50 @@ void old_test() {
     int resolution = 128;
     // structure->add_layer((new LayerConfig(
     //     "input_layer", model_name, 1, 10))
-    //        ->set_property(IZ_INIT, "default"));
+    //        ->set(IZ_INIT, "default"));
     structure->add_layer(
         (new LayerConfig(
             "exc_thalamus", model_name, resolution, resolution,
             (new NoiseConfig("poisson"))))
-        ->set_property(IZ_INIT, "thalamo_cortical"));
+        ->set(IZ_INIT, "thalamo_cortical"));
     // structure->add_layer((new LayerConfig(
     //     "inh_thalamus", model_name, resolution/2, resolution/2))
-    //         ->set_property("spacing", "0.2")
-    //         ->set_property(IZ_INIT, "random negative"));
+    //         ->set("spacing", "0.2")
+    //         ->set(IZ_INIT, "random negative"));
     structure->add_layer((new LayerConfig(
         "exc_cortex", model_name, resolution, resolution))
-            ->set_property(IZ_INIT, "random positive"));
+            ->set(IZ_INIT, "random positive"));
     structure->add_layer((new LayerConfig(
         "inh_cortex", model_name, resolution/2, resolution/2))
-            ->set_property("spacing", "0.2")
-            ->set_property(IZ_INIT, "random negative"));
+            ->set("spacing", "0.2")
+            ->set(IZ_INIT, "random negative"));
 
     /* Forward excitatory pathway */
     // structure->connect_layers("input_layer", "exc_thalamus",
     //     (new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
     //         new RandomWeightConfig(1, 0.01)))
-    //     ->set_property("myelinated", "true"));
+    //     ->set("myelinated", "true"));
     structure->connect_layers("exc_thalamus", "exc_cortex",
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_property("myelinated", "false")
+        ->set("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(15,1,true)));
     structure->connect_layers("exc_cortex", "exc_cortex",
         (new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_property("myelinated", "false")
+        ->set("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(31,1,true)));
 
     /* Cortical inhibitory loop */
     structure->connect_layers("exc_cortex", "inh_cortex",
         (new ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_property("myelinated", "false")
+        ->set("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(31,2,true)));
     structure->connect_layers("inh_cortex", "exc_cortex",
         (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_property("myelinated", "false")
+        ->set("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(5,2,true)));
 
     /* Cortico-thalamic inhibitory loop */
@@ -108,12 +108,12 @@ void old_test() {
     structure->connect_layers("exc_cortex", "inh_thalamus",
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_property("myelinated", "false")
+        ->set("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(7,2,true)));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
         (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
             new FlatWeightConfig(0.5, 0.1)))
-        ->set_property("myelinated", "false")
+        ->set("myelinated", "false")
         ->set_arborized_config(new ArborizedConfig(5,2,true)));
     */
 
@@ -137,10 +137,10 @@ void old_test() {
 
     // env->add_module(
     //     (new ModuleConfig("periodic_input", "old", "input_layer"))
-    //     ->set_property("max", "5")
-    //     ->set_property("random", "true")
-    //     ->set_property("rate", "1000000")
-    //     ->set_property("verbose", "true"));
+    //     ->set("max", "5")
+    //     ->set("random", "true")
+    //     ->set("rate", "1000000")
+    //     ->set("verbose", "true"));
 
     print_network(network, env);
     Engine engine(new Context(network, env));
@@ -161,24 +161,24 @@ void simple_test() {
     int resolution = 96;
     structure->add_layer((new LayerConfig(
         "input_layer", model_name, 1, 10))
-            ->set_property(IZ_INIT, "regular"));
+            ->set(IZ_INIT, "regular"));
     structure->add_layer(
         (new LayerConfig(
             "hid_1", model_name, resolution, resolution,
             (new NoiseConfig("poisson"))
-                ->set_property("value", "20")
-                ->set_property("rate", "1")))
-            ->set_property(IZ_INIT, "regular"));
+                ->set("value", "20")
+                ->set("rate", "1")))
+            ->set(IZ_INIT, "regular"));
     structure->add_layer((new LayerConfig(
         "hid_2", model_name, resolution, resolution))
-            ->set_property(IZ_INIT, "regular"));
+            ->set(IZ_INIT, "regular"));
 
     /* Forward excitatory pathway */
     /*
     structure->connect_layers("input_layer", "hid_1",
         (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, ADD,
             new RandomWeightConfig(1, 0.05)))
-        ->set_property("myelinated", "true"));
+        ->set("myelinated", "true"));
     */
 
     structure->connect_layers("hid_1", "hid_2",
@@ -235,8 +235,8 @@ void simple_test() {
     auto env = new Environment();
     env->add_module(
         (new ModuleConfig("one_hot_random_input", "simple", "input_layer"))
-            ->set_property("max", "4")
-            ->set_property("rate", "1000000"));
+            ->set("max", "4")
+            ->set("rate", "1000000"));
 
     env->add_module(
         (new ModuleConfig("visualizer"))
@@ -278,36 +278,36 @@ void single_field_test() {
 
     structure->add_layer((new LayerConfig(
         "exc_field", model_name, 40, 40))
-            ->set_property(IZ_INIT, "random positive"));
+            ->set(IZ_INIT, "random positive"));
     structure->add_layer((new LayerConfig(
         "inh_field", model_name, 10, 40))
-            ->set_property(IZ_INIT, "random negative"));
+            ->set(IZ_INIT, "random negative"));
 
     structure->connect_layers("exc_field", "exc_field",
         (new ConnectionConfig(true, 0, 10, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(.6, 0.1)))
-        ->set_property("random delay", "20"));
+        ->set("random delay", "20"));
     structure->connect_layers("exc_field", "inh_field",
         (new ConnectionConfig(true, 0, 10, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(.6, 0.1)))
-        ->set_property("random delay", "20"));
+        ->set("random delay", "20"));
 
     structure->connect_layers("inh_field", "inh_field",
         (new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, SUB,
             new FlatWeightConfig(.5, 0.1)))
-        ->set_property("myelinated", "true"));
+        ->set("myelinated", "true"));
     structure->connect_layers("inh_field", "exc_field",
         (new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, SUB,
             new FlatWeightConfig(.5, 0.1)))
-        ->set_property("myelinated", "true"));
+        ->set("myelinated", "true"));
 
     // Modules
     auto env = new Environment();
     env->add_module(
         (new ModuleConfig("one_hot_random_input", "single field", "exc_field"))
-            ->set_property("max", "20")
-            ->set_property("rate", "1")
-            ->set_property("verbose", "false"));
+            ->set("max", "20")
+            ->set("rate", "1")
+            ->set("verbose", "false"));
     env->add_module(
         (new ModuleConfig("visualizer"))
         ->add_layer("single field", "exc_field")
@@ -332,24 +332,24 @@ void mnist_test() {
 
     structure->add_layer((new LayerConfig("input_layer",
         IZHIKEVICH, 28, 28))
-            ->set_property(IZ_INIT, "regular"));
+            ->set(IZ_INIT, "regular"));
 
     // Hidden distributed layer
     structure->add_layer(
         (new LayerConfig("hidden",
             "leaky_izhikevich", 28*3, 28*3))
-            ->set_property(IZ_INIT, "regular"));
+            ->set(IZ_INIT, "regular"));
     structure->connect_layers("input_layer", "hidden",
         (new ConnectionConfig(true, 0, 0.5, DIVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(new ArborizedConfig(21,3,false))
-        ->set_property("myelinated", "false"));
+        ->set("myelinated", "false"));
     /*
     structure->connect_layers("hidden", "input_layer",
         (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(new ArborizedConfig(9,1,true))
-        ->set_property("myelinated", "true"));
+        ->set("myelinated", "true"));
     */
 
     structure->connect_layers("hidden", "hidden",
@@ -366,17 +366,17 @@ void mnist_test() {
     structure->add_layer(
         (new LayerConfig("separation",
             "leaky_izhikevich", 10, 100))
-            ->set_property(IZ_INIT, "regular"));
+            ->set(IZ_INIT, "regular"));
     structure->connect_layers("hidden", "separation",
         (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(0.01, 0.1)))
         ->set_arborized_config(new ArborizedConfig(9,1,true))
-        ->set_property("myelinated", "true"));
+        ->set("myelinated", "true"));
     structure->connect_layers("separation", "hidden",
         (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(0.01, 0.1)))
         ->set_arborized_config(new ArborizedConfig(9,1,true))
-        ->set_property("myelinated", "true"));
+        ->set("myelinated", "true"));
 
     / *
     structure->connect_layers("separation", "separation",
@@ -388,20 +388,20 @@ void mnist_test() {
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
             new FlatWeightConfig(0.01, 0.1)))
         ->set_arborized_config(new ArborizedConfig(11,1,true))
-        ->set_property("myelinated", "true"));
+        ->set("myelinated", "true"));
     */ /////////////
 
     // Discrete output layer
     structure->add_layer((new LayerConfig("output_layer",
         IZHIKEVICH, 1, 10))
-            ->set_property(IZ_INIT, "regular"));
+            ->set(IZ_INIT, "regular"));
 
     /* //////////
     for (int i = 0 ; i < 10 ; ++i) {
         structure->connect_layers("output_layer", "separation",
             (new ConnectionConfig(false, 0, 0.5, SUBSET, ADD,
                 new RandomWeightConfig(2)))
-            ->set_property("myelinated", "true")
+            ->set("myelinated", "true")
             ->set_subset_config(
                 new SubsetConfig(
                     0,1,
@@ -417,16 +417,16 @@ void mnist_test() {
     auto env = new Environment();
     env->add_module(
         (new ModuleConfig("csv_input", "mnist", "input_layer"))
-        ->set_property("filename", input_file)
-        ->set_property("offset", "0")
-        ->set_property("exposure", "5000")
-        ->set_property("normalization", "25"));
+        ->set("filename", input_file)
+        ->set("offset", "0")
+        ->set("exposure", "5000")
+        ->set("normalization", "25"));
     env->add_module(
         (new ModuleConfig("csv_input", "mnist", "output_layer"))
-        ->set_property("filename", output_file)
-        ->set_property("offset", "0")
-        ->set_property("exposure", "5000")
-        ->set_property("normalization", "0.2"));
+        ->set("filename", output_file)
+        ->set("offset", "0")
+        ->set("exposure", "5000")
+        ->set("normalization", "0.2"));
 
     env->add_module(
         (new ModuleConfig("visualizer"))
@@ -476,16 +476,16 @@ void mnist_perceptron_test() {
     auto env = new Environment();
     env->add_module(
         (new ModuleConfig("csv_input", "mnist", "input_layer"))
-        ->set_property("filename", input_file)
-        ->set_property("offset", "0")
-        ->set_property("exposure", "1")
-        ->set_property("normalization", "255"));
+        ->set("filename", input_file)
+        ->set("offset", "0")
+        ->set("exposure", "1")
+        ->set("normalization", "255"));
     env->add_module(
         (new ModuleConfig("csv_evaluator", "mnist", "output_layer"))
-        ->set_property("filename", output_file)
-        ->set_property("offset", "0")
-        ->set_property("exposure", "1")
-        ->set_property("normalization", "1"));
+        ->set("filename", output_file)
+        ->set("offset", "0")
+        ->set("exposure", "1")
+        ->set("normalization", "1"));
     env->add_module(
         new ModuleConfig("periodic_input", "mnist", "bias_layer"));
 
@@ -493,7 +493,7 @@ void mnist_perceptron_test() {
     auto c = new Context(network, env);
     Engine engine(c);
     engine.set_calc_rate(false);
-    engine.run(60000, false);
+    engine.run(60000, true);
 
     // Remove modules and replace for testing
     env->remove_modules();
@@ -502,23 +502,23 @@ void mnist_perceptron_test() {
     output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
     env->add_module(
         (new ModuleConfig("csv_input", "mnist", "input_layer"))
-        ->set_property("filename", input_file)
-        ->set_property("offset", "0")
-        ->set_property("exposure", "1")
-        ->set_property("normalization", "255"));
+        ->set("filename", input_file)
+        ->set("offset", "0")
+        ->set("exposure", "1")
+        ->set("normalization", "255"));
     env->add_module(
         (new ModuleConfig("csv_evaluator", "mnist", "output_layer"))
-        ->set_property("filename", output_file)
-        ->set_property("offset", "0")
-        ->set_property("exposure", "1")
-        ->set_property("normalization", "1"));
+        ->set("filename", output_file)
+        ->set("offset", "0")
+        ->set("exposure", "1")
+        ->set("normalization", "1"));
     env->add_module(
         new ModuleConfig("periodic_input", "mnist", "bias_layer"));
 
     // Run testing (disable learning)
     engine.rebuild();
     engine.set_learning_flag(false);
-    engine.run(10000, false);
+    engine.run(10000, true);
 
     delete c;
 }
@@ -552,12 +552,12 @@ void game_of_life_test() {
     structure->add_layer((new LayerConfig(
         "board", model_name, board_dim, board_dim,
         (new NoiseConfig("poisson"))
-        ->set_property("value", std::to_string(birth_min))
-        ->set_property("rate", "0.5")))
-            ->set_property("survival_min", std::to_string(survival_min))
-            ->set_property("survival_max", std::to_string(survival_max))
-            ->set_property("birth_min", std::to_string(birth_min))
-            ->set_property("birth_max", std::to_string(birth_max)));
+        ->set("value", std::to_string(birth_min))
+        ->set("rate", "0.5")))
+            ->set("survival_min", std::to_string(survival_min))
+            ->set("survival_max", std::to_string(survival_max))
+            ->set("birth_min", std::to_string(birth_min))
+            ->set("birth_max", std::to_string(birth_max)));
     structure->connect_layers("board", "board",
         (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, ADD,
             new SurroundWeightConfig(1,1, new FlatWeightConfig(1))))
@@ -579,20 +579,20 @@ void game_of_life_test() {
         // Set the end to timestep 1
         env->add_module(
             (new ModuleConfig("periodic_input", "game_of_life", "board"))
-                ->set_property("end", "1")
-                ->set_property("max", std::to_string(birth_min))
-                ->set_property("random", "false")
-                ->set_property("verbose", "false")
-                ->set_property("fraction", std::to_string(one_step_fraction)));
+                ->set("end", "1")
+                ->set("max", std::to_string(birth_min))
+                ->set("random", "false")
+                ->set("verbose", "false")
+                ->set("fraction", std::to_string(one_step_fraction)));
     else
         // Refresh state
         env->add_module(
             (new ModuleConfig("periodic_input", "game_of_life", "board"))
-                ->set_property("max", std::to_string(birth_min))
-                ->set_property("rate", std::to_string(rate))
-                ->set_property("clear", "true")
-                ->set_property("verbose", "false")
-                ->set_property("fraction", std::to_string(random_fraction)));
+                ->set("max", std::to_string(birth_min))
+                ->set("rate", std::to_string(rate))
+                ->set("clear", "true")
+                ->set("verbose", "false")
+                ->set("fraction", std::to_string(random_fraction)));
     */
 
     env->add_module(
@@ -638,13 +638,13 @@ void working_memory_test() {
         (new LayerConfig("feedforward",
             IZHIKEVICH, cortex_size, cortex_size,
             new NoiseConfig("poisson")))
-        ->set_property(IZ_INIT, "regular"));
+        ->set(IZ_INIT, "regular"));
 
     // Thalamic relay
     main_structure->add_layer(
         (new LayerConfig("tl1_thalamus",
             IZHIKEVICH, 1, 1))
-        ->set_property(IZ_INIT, "thalamo_cortical"));
+        ->set(IZ_INIT, "thalamo_cortical"));
 
     std::vector<Structure*> sub_structures;
     for (int i = 0 ; i < num_cortical_regions ; ++i) {
@@ -655,7 +655,7 @@ void working_memory_test() {
         sub_structure->add_layer(
             (new LayerConfig("gamma_thalamus",
                 IZHIKEVICH, thal_size, thal_size))
-            ->set_property(IZ_INIT, "thalamo_cortical"));
+            ->set(IZ_INIT, "thalamo_cortical"));
         */
 
         // Cortical layers
@@ -663,17 +663,17 @@ void working_memory_test() {
             (new LayerConfig("3_cortex",
                 IZHIKEVICH, cortex_size, cortex_size,
                 (new NoiseConfig("normal"))
-                ->set_property("mean", std::to_string(cortex_noise))
-                ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
-            ->set_property(IZ_INIT, "random positive"));
+                ->set("mean", std::to_string(cortex_noise))
+                ->set("std_dev", std::to_string(cortex_noise_stdev))))
+            ->set(IZ_INIT, "random positive"));
         /*
         sub_structure->add_layer(
             (new LayerConfig("6_cortex",
                 IZHIKEVICH, cortex_size, cortex_size,
                 (new NoiseConfig("normal"))
-                ->set_property("mean", std::to_string(cortex_noise))
-                ->set_property("std_dev", std::to_string(cortex_noise_stdev))))
-            ->set_property(IZ_INIT, "regular"));
+                ->set("mean", std::to_string(cortex_noise))
+                ->set("std_dev", std::to_string(cortex_noise_stdev))))
+            ->set(IZ_INIT, "regular"));
         */
 
         // Cortico-cortical connectivity
@@ -783,13 +783,13 @@ void working_memory_test() {
             sub_structure, "3_cortex",
             (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
                 new FlatWeightConfig(0.1*thal_ratio)))
-            ->set_property("myelinated", "true"));
+            ->set("myelinated", "true"));
         /*
         Structure::connect(main_structure, "tl1_thalamus",
             sub_structure, "6_cortex",
             (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
                 new FlatWeightConfig(0.1*thal_ratio)))
-            ->set_property("myelinated", "true"));
+            ->set("myelinated", "true"));
         */
 
 
@@ -824,10 +824,10 @@ void working_memory_test() {
 
     env->add_module(
         (new ModuleConfig("periodic_input", "working memory", "tl1_thalamus"))
-        ->set_property("random", "true")
-        ->set_property("max", "3")
-        ->set_property("rate", "500")
-        ->set_property("verbose", "true"));
+        ->set("random", "true")
+        ->set("max", "3")
+        ->set("rate", "500")
+        ->set("verbose", "true"));
 
     auto c = new Context(network, env);
     Engine engine(c);
@@ -853,22 +853,22 @@ void dsst_test() {
     structure->add_layer(
         (new LayerConfig("vision",
             "relay", rows, cols))
-        ->set_property(IZ_INIT, "regular"));
+        ->set(IZ_INIT, "regular"));
 
     structure->add_layer(
         (new LayerConfig("what",
             "relay", cell_rows, cell_cols))
-        ->set_property(IZ_INIT, "regular"));
+        ->set(IZ_INIT, "regular"));
 
     structure->add_layer(
         (new LayerConfig("focus",
             "relay", focus_rows, focus_cols))
-        ->set_property(IZ_INIT, "regular"));
+        ->set(IZ_INIT, "regular"));
 
     structure->add_layer(
         (new LayerConfig("output_layer",
             "relay", 1, 1))
-        ->set_property(IZ_INIT, "regular"));
+        ->set(IZ_INIT, "regular"));
 
     // Connect vision to what
     structure->set_second_order("what", "root");
@@ -896,9 +896,9 @@ void dsst_test() {
         ->add_layer("dsst", "focus"));
     env->add_module(
         (new ModuleConfig("one_hot_random_input", "dsst", "focus"))
-            ->set_property("max", "1")
-            ->set_property("verbose", "false")
-            ->set_property("rate", "10"));
+            ->set("max", "1")
+            ->set("verbose", "false")
+            ->set("rate", "10"));
 
     std::cout << "DSST test......\n";
     print_network(network, env);
@@ -1014,13 +1014,13 @@ void debug_test() {
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
-            rows,cols,0,0,0,0)));
+        ->set_arborized_config(
+            new ArborizedConfig(rows,cols,0,0,0,0)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
-            rows,cols,0,0,0,0)));
+        ->set_arborized_config(
+            new ArborizedConfig(rows,cols,0,0,0,0)));
 
     std::cout << "Debug test......\n";
     print_network(network);

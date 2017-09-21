@@ -23,6 +23,10 @@ class ResourceManager {
         void flush_host();
         void flush(DeviceID device_id);
 
+        /* Delete resources */
+        void delete_streams();
+        void delete_events();
+
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }
         DeviceID get_host_id() { return devices.size()-1; }
@@ -51,6 +55,9 @@ class ResourceManager {
                 bool is_host() { return host_flag; }
                 Stream *create_stream();
                 Event *create_event();
+
+                void delete_streams();
+                void delete_events();
 
                 const DeviceID device_id;
                 const bool host_flag;

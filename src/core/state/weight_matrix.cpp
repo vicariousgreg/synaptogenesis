@@ -101,7 +101,7 @@ BasePointer* WeightMatrix::get_pointer() {
     return &this->mData;
 }
 
-void set_delays(OutputType output_type, Connection *conn,
+void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
         int* delays, float velocity,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset) {
@@ -113,6 +113,8 @@ void set_delays(OutputType output_type, Connection *conn,
     ErrorManager::get_instance()->log_debug(
         conn->from_layer->name + " -> " +
         conn->to_layer->name + "delay initialization...\n");
+
+    bool is_host = ResourceManager::get_instance()->is_host(device_id);
 
     switch(conn->type) {
         case FULLY_CONNECTED:
@@ -204,13 +206,12 @@ void set_delays(OutputType output_type, Connection *conn,
 
                     int f_index = (f_row * ac->column_field_size) + f_col;
 
-                    for (int i = 0 ; i < to_size ; ++i) {
-#ifdef __CUDACC__
-                        delays[(f_index * to_size) + i] = delay;
-#else
-                        delays[(i * field_size) + f_index] = delay;
-#endif
-                    }
+                    if (is_host)
+                        for (int i = 0 ; i < to_size ; ++i)
+                            delays[(i * field_size) + f_index] = delay;
+                    else
+                        for (int i = 0 ; i < to_size ; ++i)
+                            delays[(f_index * to_size) + i] = delay;
                 }
             }
             break;
@@ -283,11 +284,9 @@ void set_delays(OutputType output_type, Connection *conn,
                                     + conn->str() + "\n"
                                     "  Unmyelinated axons cannot have delays "
                                     "greater than 31!");
-#ifdef __CUDACC__
-                            int weight_index = to_index + (k_index * kernel_row_size);
-#else
-                            int weight_index = weight_offset + k_index;
-#endif
+                            int weight_index = (is_host)
+                                ? weight_offset + k_index
+                                : to_index + (k_index * kernel_row_size);
                             delays[weight_index] = delay;
                         }
                     }

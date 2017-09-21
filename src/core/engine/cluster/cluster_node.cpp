@@ -34,7 +34,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
     // Add noise / clear instruction
     auto noise_config = to_layer->get_config()->noise_config;
     if (noise_config != nullptr) {
-        auto type = noise_config->get_property("type");
+        auto type = noise_config->get("type");
         if (type == "normal")
             activate_instructions.push_back(
                 new NormalNoiseInstruction(
@@ -178,7 +178,7 @@ void ClusterNode::activate_output() {
 }
 
 void ClusterNode::synchronize_input() {
-    if (is_input) input_instruction->synchronize();
+    if (is_input)    input_instruction->synchronize();
     if (is_expected) expected_instruction->synchronize();
 }
 

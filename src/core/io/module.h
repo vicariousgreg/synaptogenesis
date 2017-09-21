@@ -25,13 +25,13 @@ class ModuleConfig : public PropertyConfig {
             std::string params);
         ModuleConfig* add_layer(PropertyConfig *config);
 
-        std::string get_type() const { return get_property("type"); }
+        std::string get_type() const { return get("type"); }
         const std::vector<PropertyConfig*> get_layers() const { return layers; }
         const PropertyConfig* get_layer(Layer *layer) const;
 
         /* Setter that returns self pointer */
-        ModuleConfig *set_property(std::string key, std::string value) {
-            set_property_internal(key, value);
+        ModuleConfig *set(std::string key, std::string value) {
+            set_internal(key, value);
             return this;
         }
 

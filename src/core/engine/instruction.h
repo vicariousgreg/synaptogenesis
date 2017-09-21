@@ -156,9 +156,9 @@ class NormalNoiseInstruction : public InitializeInstruction {
                 : InitializeInstruction(layer, state, stream),
                   init(init),
                   mean(std::stof(layer->get_config()->noise_config
-                      ->get_property("mean", "1.0"))),
+                      ->get("mean", "1.0"))),
                   std_dev(std::stof(layer->get_config()->noise_config
-                      ->get_property("std_dev", "0.1"))) { }
+                      ->get("std_dev", "0.1"))) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
@@ -183,9 +183,9 @@ class PoissonNoiseInstruction : public InitializeInstruction {
                 : InitializeInstruction(layer, state, stream),
                   init(init),
                   val(std::stof(layer->get_config()->noise_config
-                      ->get_property("value", "20"))),
+                      ->get("value", "20"))),
                   rate(0.001 * std::stof(layer->get_config()->noise_config
-                      ->get_property("rate", "1"))) { }
+                      ->get("rate", "1"))) { }
 
         void activate() {
             Instruction::wait_for_dependencies();

@@ -9,7 +9,7 @@ DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
           window(DSSTWindow::build()) {
     for (auto layer : layers) {
         auto param =
-            config->get_layer(layer)->get_property("params", "output");
+            config->get_layer(layer)->get("params", "output");
         params[layer] = param;
 
         if (param == "input") {

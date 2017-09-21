@@ -12,8 +12,8 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
     enforce_equal_layer_sizes("image_input");
     set_io_type(INPUT);
 
-    std::string filename = config->get_property("filename", "");
-    float scale = std::stoi(config->get_property("scale", "1"));
+    std::string filename = config->get("filename", "");
+    float scale = std::stoi(config->get("scale", "1"));
 
     if (filename == "")
         ErrorManager::get_instance()->log_error(
@@ -30,7 +30,7 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
                 ErrorManager::get_instance()->log_error(
                     "Image size does not match layer size!");
             auto channel =
-                config->get_layer(layer)->get_property("channel", "gray");
+                config->get_layer(layer)->get("channel", "gray");
             if (channel == "gray")       channel_map[layer] = GRAY;
             else if (channel == "red")   channel_map[layer] = RED;
             else if (channel == "green") channel_map[layer] = GREEN;

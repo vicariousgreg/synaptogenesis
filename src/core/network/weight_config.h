@@ -10,7 +10,7 @@ class Connection;
 class WeightConfig : public PropertyConfig {
     public:
         WeightConfig(std::string type) : child_config(nullptr) {
-            this->set_property("type", type);
+            this->set("type", type);
         }
 
         virtual ~WeightConfig()
@@ -19,8 +19,8 @@ class WeightConfig : public PropertyConfig {
 
         void initialize(float* target_matrix, Connection* conn, bool is_host);
 
-        WeightConfig *set_property(std::string key, std::string value) {
-            set_property_internal(key, value);
+        WeightConfig *set(std::string key, std::string value) {
+            set_internal(key, value);
             return this;
         }
 
@@ -54,8 +54,8 @@ class FlatWeightConfig : public WeightConfig {
     public:
         FlatWeightConfig(float weight, float fraction=1.0)
                 : WeightConfig("flat") {
-            this->set_property("weight", std::to_string(weight));
-            this->set_property("fraction", std::to_string(fraction));
+            this->set("weight", std::to_string(weight));
+            this->set("fraction", std::to_string(fraction));
         }
 };
 
@@ -63,8 +63,8 @@ class RandomWeightConfig : public WeightConfig {
     public:
         RandomWeightConfig(float max_weight, float fraction=1.0)
                 : WeightConfig("random") {
-            this->set_property("max weight", std::to_string(max_weight));
-            this->set_property("fraction", std::to_string(fraction));
+            this->set("max weight", std::to_string(max_weight));
+            this->set("fraction", std::to_string(fraction));
         }
 };
 
@@ -72,9 +72,9 @@ class GaussianWeightConfig : public WeightConfig {
     public:
         GaussianWeightConfig(float mean, float std_dev, float fraction=1.0)
                 : WeightConfig("gaussian") {
-            this->set_property("mean", std::to_string(mean));
-            this->set_property("std dev", std::to_string(std_dev));
-            this->set_property("fraction", std::to_string(fraction));
+            this->set("mean", std::to_string(mean));
+            this->set("std dev", std::to_string(std_dev));
+            this->set("fraction", std::to_string(fraction));
         }
 };
 
@@ -82,9 +82,9 @@ class LogNormalWeightConfig : public WeightConfig {
     public:
         LogNormalWeightConfig(float mean, float std_dev, float fraction=1.0)
                 : WeightConfig("log normal") {
-            this->set_property("mean", std::to_string(mean));
-            this->set_property("std dev", std::to_string(std_dev));
-            this->set_property("fraction", std::to_string(fraction));
+            this->set("mean", std::to_string(mean));
+            this->set("std dev", std::to_string(std_dev));
+            this->set("fraction", std::to_string(fraction));
         }
 };
 
@@ -92,14 +92,14 @@ class SurroundWeightConfig : public WeightConfig {
     public:
         SurroundWeightConfig(int rows, int cols, WeightConfig* child_config)
                 : WeightConfig("surround") {
-            this->set_property("rows", std::to_string(rows));
-            this->set_property("columns", std::to_string(cols));
+            this->set("rows", std::to_string(rows));
+            this->set("columns", std::to_string(cols));
             this->child_config = child_config;
         }
 
         SurroundWeightConfig(int size, WeightConfig* child_config)
                 : WeightConfig("surround") {
-            this->set_property("size", std::to_string(size));
+            this->set("size", std::to_string(size));
             this->child_config = child_config;
         }
 };
@@ -108,7 +108,7 @@ class SpecifiedWeightConfig : public WeightConfig {
     public:
         SpecifiedWeightConfig(std::string weight_string)
                 : WeightConfig("specified") {
-            this->set_property("weight string", weight_string);
+            this->set("weight string", weight_string);
         }
 };
 

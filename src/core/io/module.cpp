@@ -5,12 +5,12 @@
 #include "util/error_manager.h"
 
 ModuleConfig::ModuleConfig(std::string type) {
-    this->set_property("type", type);
+    this->set("type", type);
 }
 
 ModuleConfig::ModuleConfig(std::string type,
         std::string structure, std::string layer) {
-    this->set_property("type", type);
+    this->set("type", type);
     this->add_layer(structure, layer);
 }
 
@@ -36,8 +36,8 @@ ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
     ErrorManager::get_instance()->log_error(
         "Module layer config must have structure and layer name!");
     this->layers.push_back(config);
-    this->layer_map[config->get_property("structure")]
-                   [config->get_property("layer")] = config;
+    this->layer_map[config->get("structure")]
+                   [config->get("layer")] = config;
     return this;
 }
 
@@ -61,8 +61,8 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
     LayerList layers;
     for (auto layer_conf : config->get_layers())
         layers.push_back(
-            network->get_structure(layer_conf->get_property("structure"))
-                   ->get_layer(layer_conf->get_property("layer")));
+            network->get_structure(layer_conf->get("structure"))
+                   ->get_layer(layer_conf->get("layer")));
 
     // Ensure there are layers in the set
     if (layers.size() == 0)

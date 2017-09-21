@@ -8,16 +8,16 @@
 
 void WeightConfig::flat_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    float weight = std::stof(this->get_property("weight", "1.0"));
-    float fraction = std::stof(this->get_property("fraction", "1.0"));
+    float weight = std::stof(this->get("weight", "1.0"));
+    float fraction = std::stof(this->get("fraction", "1.0"));
 
     set_weights(target_matrix, conn->get_num_weights(), weight, fraction);
 }
 
 void WeightConfig::random_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    float max_weight = std::stof(this->get_property("max weight", "1.0"));
-    float fraction = std::stof(this->get_property("fraction", "1.0"));
+    float max_weight = std::stof(this->get("max weight", "1.0"));
+    float fraction = std::stof(this->get("fraction", "1.0"));
 
     randomize_weights(target_matrix, conn->get_num_weights(),
         max_weight, fraction);
@@ -25,9 +25,9 @@ void WeightConfig::random_config(float* target_matrix,
 
 void WeightConfig::gaussian_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    float mean = std::stof(this->get_property("mean", "1.0"));
-    float std_dev = std::stof(this->get_property("std dev", "0.3"));
-    float fraction = std::stof(this->get_property("fraction", "1.0"));
+    float mean = std::stof(this->get("mean", "1.0"));
+    float std_dev = std::stof(this->get("std dev", "0.3"));
+    float fraction = std::stof(this->get("fraction", "1.0"));
 
     if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
@@ -40,9 +40,9 @@ void WeightConfig::gaussian_config(float* target_matrix,
 
 void WeightConfig::log_normal_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    float mean = std::stof(this->get_property("mean", "1.0"));
-    float std_dev = std::stof(this->get_property("std dev", "0.3"));
-    float fraction = std::stof(this->get_property("fraction", "1.0"));
+    float mean = std::stof(this->get("mean", "1.0"));
+    float std_dev = std::stof(this->get("std dev", "0.3"));
+    float fraction = std::stof(this->get("fraction", "1.0"));
 
     if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
@@ -66,9 +66,9 @@ void WeightConfig::surround_config(float* target_matrix,
                 "on arborized connections!");
     }
 
-    int rows = std::stoi(this->get_property("rows", "0"));
-    int cols = std::stoi(this->get_property("columns", "0"));
-    int size_param = std::stoi(this->get_property("size", "-1"));
+    int rows = std::stoi(this->get("rows", "0"));
+    int cols = std::stoi(this->get("columns", "0"));
+    int size_param = std::stoi(this->get("size", "-1"));
 
     if (size_param >= 0)
         rows = cols = size_param;
@@ -137,7 +137,7 @@ void WeightConfig::surround_config(float* target_matrix,
 
 void WeightConfig::specified_config(float* target_matrix,
         Connection* conn, bool is_host) {
-    std::string weight_string = this->get_property("weight string", "");
+    std::string weight_string = this->get("weight string", "");
     if (weight_string == "")
         ErrorManager::get_instance()->log_error(
             "Error in weight config for " + conn->str() + ":\n"
@@ -191,14 +191,14 @@ void WeightConfig::specified_config(float* target_matrix,
 void WeightConfig::initialize(float* target_matrix,
         Connection* conn, bool is_host) {
     if (this->has_property("fraction")) {
-        float fraction = std::stof(this->get_property("fraction", "1.0"));
+        float fraction = std::stof(this->get("fraction", "1.0"));
         if (fraction < 0 or fraction > 1.0)
             ErrorManager::get_instance()->log_error(
                 "Error in weight config for " + conn->str() + ":\n"
                 "  Weight config fraction must be between 0 and 1!");
     }
 
-    auto type = this->get_property("type");
+    auto type = this->get("type");
 
     if (type == "flat")
         flat_config(target_matrix, conn, is_host);
@@ -217,7 +217,7 @@ void WeightConfig::initialize(float* target_matrix,
             "Error in weight config for " + conn->str() + ":\n"
             "  Unrecognized weight config type: " + type);
 
-    if (this->get_property("diagonal", "true") != "true") {
+    if (this->get("diagonal", "true") != "true") {
         switch(conn->type) {
             case FULLY_CONNECTED:
                 clear_diagonal(target_matrix,

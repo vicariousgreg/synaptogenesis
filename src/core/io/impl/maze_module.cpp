@@ -45,7 +45,7 @@ MazeModule::MazeModule(LayerList layers, ModuleConfig *config)
 
     for (auto layer : layers) {
         auto param =
-            config->get_layer(layer)->get_property("params", "");
+            config->get_layer(layer)->get("params", "");
         params[layer] = param;
         if (param == "")
             ErrorManager::get_instance()->log_error(

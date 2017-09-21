@@ -156,8 +156,9 @@ void Attributes::transfer_to_device() {
 #ifdef __CUDACC__
     // Copy attributes to device and set the pointer
     if (not ResourceManager::get_instance()->is_host(device_id)) {
-        // If already transfered, free old copy
         cudaSetDevice(device_id);
+
+        // If already transfered, free old copy
         if (this->pointer != this) cudaFree(this->pointer);
 
         // Transfer to device
