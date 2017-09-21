@@ -113,6 +113,7 @@ DSSTWindowImpl::DSSTWindowImpl()
             this->table->attach(
                 *prompt_images[row*num_cols + col],
                 col, col+1, row+2, row+3);
+    this->table->show_all();
 }
 
 DSSTWindowImpl::~DSSTWindowImpl() {

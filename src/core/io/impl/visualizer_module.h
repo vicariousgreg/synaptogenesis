@@ -18,4 +18,16 @@ class VisualizerModule : public Module {
     MODULE_MEMBERS
 };
 
+class HeatmapModule : public Module {
+    public:
+        HeatmapModule(LayerList layers, ModuleConfig *config);
+
+        void report_output(Buffer *buffer);
+
+    protected:
+        VisualizerWindow *window;
+
+    MODULE_MEMBERS
+};
+
 #endif

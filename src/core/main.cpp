@@ -136,8 +136,9 @@ void old_test() {
         ->add_layer("old", "exc_cortex"));
 
     // env->add_module(
-    //     (new ModuleConfig("random_input", "old", "input_layer"))
+    //     (new ModuleConfig("periodic_input", "old", "input_layer"))
     //     ->set_property("max", "5")
+    //     ->set_property("random", "true")
     //     ->set_property("rate", "1000000")
     //     ->set_property("verbose", "true"));
 
@@ -486,8 +487,7 @@ void mnist_perceptron_test() {
         ->set_property("exposure", "1")
         ->set_property("normalization", "1"));
     env->add_module(
-        (new ModuleConfig("random_input", "mnist", "bias_layer"))
-        ->set_property("uniform", "true"));
+        new ModuleConfig("periodic_input", "mnist", "bias_layer"));
 
     // Run training
     auto c = new Context(network, env);
@@ -513,8 +513,7 @@ void mnist_perceptron_test() {
         ->set_property("exposure", "1")
         ->set_property("normalization", "1"));
     env->add_module(
-        (new ModuleConfig("random_input", "mnist", "bias_layer"))
-        ->set_property("uniform", "true"));
+        new ModuleConfig("periodic_input", "mnist", "bias_layer"));
 
     // Run testing (disable learning)
     engine.rebuild();
@@ -577,19 +576,20 @@ void game_of_life_test() {
     /*
     if (one_step)
         // Single Initial State
+        // Set the end to timestep 1
         env->add_module(
-            (new ModuleConfig("one_step_input", "game_of_life", "board"))
+            (new ModuleConfig("periodic_input", "game_of_life", "board"))
+                ->set_property("end", "1")
                 ->set_property("max", std::to_string(birth_min))
-                ->set_property("uniform", "true")
+                ->set_property("random", "false")
                 ->set_property("verbose", "false")
                 ->set_property("fraction", std::to_string(one_step_fraction)));
     else
         // Refresh state
         env->add_module(
-            (new ModuleConfig("random_input", "game_of_life", "board"))
+            (new ModuleConfig("periodic_input", "game_of_life", "board"))
                 ->set_property("max", std::to_string(birth_min))
                 ->set_property("rate", std::to_string(rate))
-                ->set_property("uniform", "true")
                 ->set_property("clear", "true")
                 ->set_property("verbose", "false")
                 ->set_property("fraction", std::to_string(random_fraction)));
@@ -823,7 +823,8 @@ void working_memory_test() {
     env->add_module(vis_mod);
 
     env->add_module(
-        (new ModuleConfig("random_input", "working memory", "tl1_thalamus"))
+        (new ModuleConfig("periodic_input", "working memory", "tl1_thalamus"))
+        ->set_property("random", "true")
         ->set_property("max", "3")
         ->set_property("rate", "500")
         ->set_property("verbose", "true"));
