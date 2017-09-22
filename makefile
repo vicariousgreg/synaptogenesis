@@ -7,6 +7,7 @@ NVCC          := nvcc
 #The Target Binary Program
 TARGET_S      := test
 TARGET_P      := parallel_test
+SHARED_LIBRARY:= synaptogenesis.so
 
 #The Directories, Source, Includes, Objects, Binary and Resources
 BUILDDIR_S    := ./build/serial
@@ -24,7 +25,7 @@ BUILDDIR_LIBS := build/libs
 UILIBPATH     := $(BUILDDIR_UI)/gui.a
 
 #Flags, Libraries and Includes
-CCFLAGS      := -w -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
+CCFLAGS      := -w -fPIC -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
 NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
@@ -102,6 +103,8 @@ clean:
 #Link
 $(TARGET_S): $(UILIBPATH) $(OBJECTS_S) $(OBJECTS_LIBS)
 	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
+	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(SHARED_LIBRARY) $^ $(UILIBPATH) $(LIBS)
+	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/libs
 
 #Compile
 $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
@@ -124,6 +127,8 @@ parallel: directories libs $(TARGET_P)
 
 $(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS)
 	$(NVCC) $(NVCCLINK) -o $(TARGETDIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
+	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(SHARED_LIBRARY) $^ $(UILIBPATH) $(LIBS)
+	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/libs
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
