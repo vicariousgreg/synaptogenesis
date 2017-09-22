@@ -2,7 +2,7 @@ MAKEFLAGS += --jobs=10
 
 #Compiler and Linker
 CC            := g++
-NVCC          := nvcc
+NVCC          := /usr/local/cuda-8.0/bin/nvcc
 
 #The Target Binary Program
 TARGET_S      := test
@@ -26,7 +26,7 @@ UILIBPATH     := $(BUILDDIR_UI)/gui.a
 
 #Flags, Libraries and Includes
 CCFLAGS      := -w -fPIC -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
-NVCCFLAGS    := -w -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
+NVCCFLAGS    := -w -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
@@ -104,7 +104,7 @@ clean:
 $(TARGET_S): $(UILIBPATH) $(OBJECTS_S) $(OBJECTS_LIBS)
 	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(SHARED_LIBRARY) $^ $(UILIBPATH) $(LIBS)
-	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/libs
+	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/lib/
 
 #Compile
 $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
@@ -127,8 +127,9 @@ parallel: directories libs $(TARGET_P)
 
 $(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS)
 	$(NVCC) $(NVCCLINK) -o $(TARGETDIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
-	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(SHARED_LIBRARY) $^ $(UILIBPATH) $(LIBS)
-	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/libs
+	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(TARGETDIR)/link.o $^ $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
+	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(SHARED_LIBRARY) $^ $(TARGETDIR)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
+	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/lib/
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
