@@ -1026,6 +1026,81 @@ void debug_test() {
     delete engine.run(1, true);
 }
 
+int cli() {
+    bool quit = false;
+    Engine *engine = nullptr;
+    Context *context = nullptr;
+
+    while (not quit) {
+        std::cout << "Options:" << std::endl;
+        std::cout << "Load (N)etwork" << std::endl;
+        if (context != nullptr) {
+            std::cout << "Load (E)nvironment" << std::endl;
+            std::cout << "Load (S)tate" << std::endl;
+            std::cout << "(R)un Engine" << std::endl;
+        }
+        std::cout << "(Q)uit" << std::endl;
+
+        std::cout << std::endl << "Enter option: ";
+
+        std::string input;
+        std::cin >> input;
+        try {
+            switch (input.at(0)) {
+                case 'n':
+                case 'N':
+                    std::cout << "Enter network name: ";
+                    std::cin >> input;
+                    context = new Context(load_network(input + ".json"));
+                    break;
+                case 'q':
+                case 'Q':
+                    quit = true;
+                    break;
+                default:
+                    if (context == nullptr) throw std::runtime_error("");
+                    switch (input.at(0)) {
+                        case 'e':
+                        case 'E':
+                            std::cout << "Enter environment name: ";
+                            std::cin >> input;
+                            context->set_environment(
+                                load_environment(input + ".json"));
+                            if (engine != nullptr)
+                                engine->rebuild();
+                            break;
+                        case 's':
+                        case 'S':
+                            std::cout << "Enter state name: ";
+                            std::cin >> input;
+                            context->get_state()->load(input + ".bin");
+                            if (engine != nullptr)
+                                engine->rebuild();
+                            break;
+                        case 'r':
+                        case 'R':
+                            std::cout << "Number of iterations: ";
+                            std::cin >> input;
+                            int iterations = stoi(input);
+                            try {
+                                if (engine == nullptr)
+                                    engine = new Engine(context);
+                                engine->run(iterations, true);
+                            } catch (std::runtime_error e) {
+                                printf("Fatal error -- exiting...\n");
+                                return 1;
+                            }
+                            break;
+                    }
+            }
+        } catch (...) {
+            std::cout << "Unrecognized input!" << std::endl;
+        }
+        std::cout << std::endl;
+    }
+    return 0;
+}
+
 
 int main(int argc, char *argv[]) {
     // Seed random number generator
@@ -1034,6 +1109,9 @@ int main(int argc, char *argv[]) {
     // Suppress warnings
     ErrorManager::get_instance()->set_warnings(false);
 
+    return cli();
+
+    /*
     try {
         //mnist_test();
         mnist_perceptron_test();
@@ -1050,4 +1128,5 @@ int main(int argc, char *argv[]) {
         printf("Fatal error -- exiting...\n");
         return 1;
     }
+    */
 }

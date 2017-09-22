@@ -19,7 +19,8 @@ Engine::Engine(Context *context, bool suppress_output)
           refresh_rate(INT_MAX),
           time_limit(1.0 / refresh_rate),
           environment_rate(1),
-          calc_rate(true) {
+          calc_rate(true),
+          buffer(nullptr) {
     rebuild();
 }
 
@@ -127,7 +128,10 @@ void Engine::rebuild() {
 }
 
 void Engine::clear() {
-    delete buffer;
+    if (buffer != nullptr) {
+        delete buffer;
+        buffer = nullptr;
+    }
 
     // Clear modules and IO types
     for (auto module : modules) delete module;

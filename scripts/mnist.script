@@ -1,0 +1,11 @@
+n
+mnist
+e
+mnist_train
+r
+60000
+e
+mnist_test
+r
+10000
+q

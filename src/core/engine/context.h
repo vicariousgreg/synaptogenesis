@@ -11,15 +11,19 @@ class Environment;
 
 class Context {
     public:
-        Context(Network *network,
+        Context(Network *network = nullptr,
                 Environment *env = nullptr,
                 State *st = nullptr);
 
         virtual ~Context();
 
-        Network *get_network() { return network; }
-        Environment *get_environment() { return environment; }
-        State *get_state() { return state; }
+        void set_network(Network *net);
+        void set_environment(Environment *env);
+        void set_state(State *st);
+
+        Network *get_network();
+        Environment *get_environment();
+        State *get_state();
 
         void add_report(Report* report) { reports.push_back(report); }
         const std::vector<Report*>& get_reports() { return reports; }

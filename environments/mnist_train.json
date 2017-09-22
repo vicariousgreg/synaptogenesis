@@ -1,0 +1,40 @@
+{
+	"modules": [
+		{
+			"type": "csv_input",
+			"filename": "\/HDD\/datasets\/mnist\/processed\/mnist_train_input.csv",
+			"offset": "0",
+			"exposure": "1",
+			"normalization": "255",
+			"layers": [
+				{
+					"structure": "mnist",
+					"layer": "input_layer" 
+				} 
+			] 
+		},
+		{
+			"type": "csv_evaluator",
+			"filename": "\/HDD\/datasets\/mnist\/processed\/mnist_train_output.csv",
+			"offset": "0",
+			"exposure": "1",
+			"normalization": "1",
+			"layers": [
+				{
+					"structure": "mnist",
+					"layer": "output_layer" 
+				} 
+			] 
+		},
+		{
+			"type": "periodic_input",
+			"layers": [
+				{
+					"structure": "mnist",
+					"layer": "bias_layer" 
+				} 
+			] 
+		} 
+	] 
+} 
+

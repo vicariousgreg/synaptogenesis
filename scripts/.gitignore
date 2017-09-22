@@ -1,0 +1,8 @@
+*.o
+*.d
+*.a
+*.gch
+*.pyc
+.*.swp
+test
+parallel_test
