@@ -7,11 +7,13 @@ NVCC          := /usr/local/cuda-8.0/bin/nvcc
 #The Target Binary Program
 TARGET_S      := test
 TARGET_P      := parallel_test
-SHARED_LIBRARY:= synaptogenesis.so
+LIBRARY       := synaptogenesis.so
 
 #The Directories, Source, Includes, Objects, Binary and Resources
+BUILDDIR_LINK := ./build
 BUILDDIR_S    := ./build/serial
 BUILDDIR_P    := ./build/parallel
+LIBRARY_DIR   := /usr/lib/synaptogenesis/synaptogenesis.so
 TARGETDIR     := .
 SRCEXT        := cpp
 DEPEXT        := d
@@ -82,6 +84,8 @@ SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(COREPATH)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 serial: directories libs $(TARGET_S)
+	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
+	cp $(TARGETDIR)/$(LIBRARY) /usr/lib/
 
 #Make the Directories
 directories:
@@ -89,6 +93,7 @@ directories:
 	@mkdir -p $(BUILDDIR_P)
 	@mkdir -p $(BUILDDIR_UI)
 	@mkdir -p $(BUILDDIR_LIBS)
+	@mkdir -p $(LIBRARY_DIR)
 
 #Clean only Objects
 clean:
@@ -96,6 +101,7 @@ clean:
 	@$(RM) -rf $(BUILDDIR_P)
 	@$(RM) -rf $(BUILDDIR_UI)
 	@$(RM) -rf $(BUILDDIR_LIBS)
+	@$(RM) -rf $(LIBRARY_DIR)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
@@ -103,8 +109,6 @@ clean:
 #Link
 $(TARGET_S): $(UILIBPATH) $(OBJECTS_S) $(OBJECTS_LIBS)
 	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
-	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(SHARED_LIBRARY) $^ $(UILIBPATH) $(LIBS)
-	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/lib/
 
 #Compile
 $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
@@ -121,15 +125,15 @@ SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 parallel: directories libs $(TARGET_P)
+	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
+	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
+	cp $(TARGETDIR)/$(LIBRARY) /usr/lib/
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
 $(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS)
 	$(NVCC) $(NVCCLINK) -o $(TARGETDIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
-	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(TARGETDIR)/link.o $^ $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
-	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(SHARED_LIBRARY) $^ $(TARGETDIR)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
-	cp $(TARGETDIR)/$(SHARED_LIBRARY) /usr/lib/
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
