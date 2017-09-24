@@ -89,7 +89,7 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
 
     // If parameter is specified, interpret it for initialization
     // Otherwise, perform randomization
-    conn->get_config()->weight_config->initialize(mData, conn,
+    conn->get_config()->get_weight_config()->initialize(mData, conn,
         ResourceManager::get_instance()->is_host(device_id));
 }
 

@@ -31,6 +31,7 @@ class SubsetConfig {
 
 class ArborizedConfig {
     public:
+        ArborizedConfig(PropertyConfig *config);
         ArborizedConfig() : ArborizedConfig(0,0,0,0,0,0) { }
 
         ArborizedConfig(
@@ -63,13 +64,22 @@ class ArborizedConfig {
 
 class ConnectionConfig : public PropertyConfig {
     public:
+        ConnectionConfig(PropertyConfig *config);
+
+        ConnectionConfig(
+            bool plastic,
+            int delay,
+            float max_weight,
+            ConnectionType type,
+            Opcode opcode);
+
         ConnectionConfig(
             bool plastic,
             int delay,
             float max_weight,
             ConnectionType type,
             Opcode opcode,
-            WeightConfig* weight_config=nullptr);
+            WeightConfig* weight_config);
 
         virtual ~ConnectionConfig();
 
@@ -80,12 +90,18 @@ class ConnectionConfig : public PropertyConfig {
             { arborized_config = config; }
         ConnectionConfig *set_subset_config(SubsetConfig *config)
             { subset_config = config; }
+        ConnectionConfig *set_weight_config(WeightConfig *config) {
+            delete weight_config;
+            weight_config = config;
+        }
 
         /* Specialized config getters */
         ArborizedConfig *get_arborized_config() const
             { return arborized_config; }
         SubsetConfig *get_subset_config() const
             { return subset_config; }
+        WeightConfig *get_weight_config() const
+            { return weight_config; }
 
         ArborizedConfig copy_arborized_config() const {
             return (arborized_config == nullptr)
@@ -113,11 +129,11 @@ class ConnectionConfig : public PropertyConfig {
         const float max_weight;
         const ConnectionType type;
         const Opcode opcode;
-        WeightConfig* const weight_config;
 
     protected:
         ArborizedConfig* arborized_config;
         SubsetConfig* subset_config;
+        WeightConfig* weight_config;
 };
 
 #endif

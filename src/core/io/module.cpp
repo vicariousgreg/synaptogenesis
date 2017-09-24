@@ -4,6 +4,14 @@
 #include "network/layer.h"
 #include "util/error_manager.h"
 
+ModuleConfig::ModuleConfig(PropertyConfig *config) {
+    this->set("type", config->get("type"));
+    for (auto pair : config->get())
+        this->set(pair.first, pair.second);
+    for (auto pair : config->get_children())
+        this->add_layer(pair.second);
+}
+
 ModuleConfig::ModuleConfig(std::string type) {
     this->set("type", type);
 }

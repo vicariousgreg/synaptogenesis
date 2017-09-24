@@ -175,10 +175,10 @@ void Engine::network_loop(int iterations, bool verbose) {
         /**************************/
         /*** Read sensory input ***/
         /**************************/
-        sensory_lock.wait(NETWORK);
+        sensory_lock.wait(NETWORK_THREAD);
         for (auto& cluster : clusters) cluster->launch_input();
         for (auto& cluster : clusters) cluster->wait_for_input();
-        sensory_lock.pass(ENVIRONMENT);
+        sensory_lock.pass(ENVIRONMENT_THREAD);
 
         /****************************/
         /*** Perform computations ***/
@@ -192,12 +192,12 @@ void Engine::network_loop(int iterations, bool verbose) {
         /**************************/
         /*** Write motor output ***/
         /**************************/
-        motor_lock.wait(NETWORK);
+        motor_lock.wait(NETWORK_THREAD);
         if (i % environment_rate == 0) {
             for (auto& cluster : clusters) cluster->launch_output();
             for (auto& cluster : clusters) cluster->wait_for_output();
         }
-        motor_lock.pass(ENVIRONMENT);
+        motor_lock.pass(ENVIRONMENT_THREAD);
 
         // Synchronize with the clock
         iteration_timer.wait(time_limit);
@@ -221,15 +221,15 @@ void Engine::network_loop(int iterations, bool verbose) {
 void Engine::environment_loop(int iterations, bool verbose, Report** report) {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
-        sensory_lock.wait(ENVIRONMENT);
+        sensory_lock.wait(ENVIRONMENT_THREAD);
         for (auto& module : this->modules) {
             module->feed_input(buffer);
             module->feed_expected(buffer);
         }
-        sensory_lock.pass(NETWORK);
+        sensory_lock.pass(NETWORK_THREAD);
 
         // Read motor buffer
-        motor_lock.wait(ENVIRONMENT);
+        motor_lock.wait(ENVIRONMENT_THREAD);
         if (i % environment_rate == 0) {
             // Stream output and update UI
             if (not suppress_output)
@@ -237,7 +237,7 @@ void Engine::environment_loop(int iterations, bool verbose, Report** report) {
                     module->report_output(buffer);
             GuiController::get_instance()->update();
         }
-        motor_lock.pass(NETWORK);
+        motor_lock.pass(NETWORK_THREAD);
 
         // Cycle modules
         for (auto& module : this->modules) module->cycle();
@@ -263,8 +263,8 @@ Context* Engine::run(int iterations, bool verbose) {
     init_rand(context->get_network()->get_max_layer_size());
 
     // Set locks
-    sensory_lock.set_owner(ENVIRONMENT);
-    motor_lock.set_owner(NETWORK);
+    sensory_lock.set_owner(ENVIRONMENT_THREAD);
+    motor_lock.set_owner(NETWORK_THREAD);
 
     // Ensure device is synchronized without errors
     device_synchronize();

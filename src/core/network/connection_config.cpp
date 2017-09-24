@@ -82,19 +82,140 @@ bool SubsetConfig::validate(Connection *conn) {
         and to_col_end <= to_layer->columns;
 }
 
+ConnectionConfig::ConnectionConfig(PropertyConfig *config)
+    : plastic(config->get("plastic", "true") == "true"),
+      delay(std::stoi(config->get("delay", "0"))),
+      max_weight(std::stof(config->get("max", "1.0"))),
+      type(ConnectionTypes.at(config->get("type", "fully connected"))),
+      opcode(Opcodes.at(config->get("opcode", "add"))),
+      weight_config(new FlatWeightConfig(1.0)),
+      subset_config(nullptr),
+      arborized_config(nullptr) {
+    for (auto pair : config->get())
+        this->set(pair.first, pair.second);
+    for (auto pair : config->get_children()) {
+        if (pair.first == "weight config") {
+            set_weight_config(new WeightConfig(pair.second));
+        } else if (pair.first == "subset config") {
+            int from_row_start = 0;
+            int from_row_end = 0;
+            int from_col_start = 0;
+            int from_col_end = 0;
+            int to_row_start = 0;
+            int to_row_end = 0;
+            int to_col_start = 0;
+            int to_col_end = 0;
+
+            for (auto c_pair : pair.second->get()) {
+                if (c_pair.first == "from row start")
+                    from_row_start = std::stoi(c_pair.second);
+                else if (c_pair.first == "from row end")
+                    from_row_end = std::stoi(c_pair.second);
+                else if (c_pair.first == "from column start")
+                    from_col_start = std::stoi(c_pair.second);
+                else if (c_pair.first == "from column end")
+                    from_col_end = std::stoi(c_pair.second);
+                else if (c_pair.first == "to row start")
+                    to_row_start = std::stoi(c_pair.second);
+                else if (c_pair.first == "to row end")
+                    to_row_end = std::stoi(c_pair.second);
+                else if (c_pair.first == "to column start")
+                    to_col_start = std::stoi(c_pair.second);
+                else if (c_pair.first == "to column end")
+                    to_col_end = std::stoi(c_pair.second);
+                else
+                    ErrorManager::get_instance()->log_error(
+                        "Unrecognized subset config property: " + c_pair.first);
+            }
+            set_subset_config(
+                new SubsetConfig(
+                    from_row_start, from_row_end,
+                    from_col_start, from_col_end,
+                    to_row_start, to_row_end,
+                    to_col_start, to_col_end));
+        } else if (pair.first == "arborized config") {
+            int row_field_size = -1;
+            int column_field_size = -1;
+            int row_stride = 1;
+            int column_stride = 1;
+            int row_offset = -1;
+            int column_offset = -1;
+            bool wrap = false;
+
+            for (auto c_pair : pair.second->get()) {
+                if (c_pair.first == "row field size")
+                    row_field_size = std::stoi(c_pair.second);
+                else if (c_pair.first == "column field size")
+                    column_field_size = std::stoi(c_pair.second);
+                else if (c_pair.first == "field size")
+                    row_field_size = column_field_size =
+                        std::stoi(c_pair.second);
+                else if (c_pair.first == "row stride")
+                    row_stride = std::stoi(c_pair.second);
+                else if (c_pair.first == "column stride")
+                    column_stride = std::stoi(c_pair.second);
+                else if (c_pair.first == "stride")
+                    row_stride = column_stride = std::stoi(c_pair.second);
+                else if (c_pair.first == "row offset")
+                    row_offset = std::stoi(c_pair.second);
+                else if (c_pair.first == "column offset")
+                    column_offset = std::stoi(c_pair.second);
+                else if (c_pair.first == "offset")
+                    row_offset = column_offset = std::stoi(c_pair.second);
+                else if (c_pair.first == "wrap")
+                    wrap = c_pair.second == "true";
+                else
+                    ErrorManager::get_instance()->log_error(
+                        "Unrecognized arborized config property: " + c_pair.first);
+            }
+
+            if (row_field_size < 0 or column_field_size < 0)
+                ErrorManager::get_instance()->log_error(
+                    "Unspecified field size for arborized config!");
+
+            if (row_offset < 0 and column_offset < 0) {
+                set_arborized_config(
+                    new ArborizedConfig(
+                        row_field_size, column_field_size,
+                        row_stride, column_stride,
+                        wrap));
+            } else if (row_offset < 0 or column_offset < 0) {
+                row_offset = std::max(0, row_offset);
+                column_offset = std::max(0, column_offset);
+            } else {
+                set_arborized_config(
+                    new ArborizedConfig(
+                        row_field_size, column_field_size,
+                        row_stride, column_stride,
+                        row_offset, column_offset,
+                        wrap));
+            }
+        }
+    }
+}
+
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
-    ConnectionType type, Opcode opcode,
-    WeightConfig* weight_config)
+    ConnectionType type, Opcode opcode)
         : plastic(plastic),
           delay(delay),
           max_weight(max_weight),
           type(type),
           opcode(opcode),
-          weight_config(
-              (weight_config==nullptr)
-                  ? new FlatWeightConfig(1.0)
-                  : weight_config),
+          weight_config(new FlatWeightConfig(1.0)),
+          arborized_config(nullptr),
+          subset_config(nullptr) { }
+
+ConnectionConfig::ConnectionConfig(
+    bool plastic, int delay, float max_weight,
+    ConnectionType type, Opcode opcode,
+    WeightConfig *weight_config)
+        : plastic(plastic),
+          delay(delay),
+          max_weight(max_weight),
+          type(type),
+          opcode(opcode),
+          weight_config(weight_config),
           arborized_config(nullptr),
           subset_config(nullptr) { }
 

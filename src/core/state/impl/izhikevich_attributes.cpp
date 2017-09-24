@@ -518,7 +518,7 @@ static void check_parameters(Layer *layer) {
     valid_params.insert("init");
     valid_params.insert("spacing");
 
-    for (auto pair : layer->get_config()->get_properties())
+    for (auto pair : layer->get_config()->get())
         if (valid_params.count(pair.first) == 0)
             ErrorManager::get_instance()->log_error(
                 "Unrecognized layer parameter: " + pair.first);
@@ -534,7 +534,7 @@ static void check_parameters(Connection *conn) {
     valid_params.insert("y offset");
     valid_params.insert("short term plasticity");
 
-    for (auto pair : conn->get_config()->get_properties())
+    for (auto pair : conn->get_config()->get())
         if (valid_params.count(pair.first) == 0)
             ErrorManager::get_instance()->log_error(
                 "Unrecognized connection parameter: " + pair.first);

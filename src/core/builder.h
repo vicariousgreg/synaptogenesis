@@ -1,6 +1,8 @@
 #ifndef builder_h
 #define builder_h
 
+#include <string>
+
 class Network;
 class Environment;
 

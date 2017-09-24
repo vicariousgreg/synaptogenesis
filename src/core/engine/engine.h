@@ -19,8 +19,8 @@ class ClusterNode;
 class InterDeviceTransferInstruction;
 
 enum Thread_ID {
-    NETWORK,
-    ENVIRONMENT
+    NETWORK_THREAD,
+    ENVIRONMENT_THREAD
 };
 
 class Lock {

@@ -35,7 +35,7 @@ void Report::print() {
         printf("\nReport for %s\n", layer_pair.first->str().c_str());
         for (auto rep : layer_pair.second) {
             printf("  Module: %s\n", rep->module.c_str());
-            for (auto pair : rep->properties->get_properties())
+            for (auto pair : rep->properties->get())
                 printf("  %15s -> %s\n",
                     pair.first.c_str(),
                     pair.second.c_str());

@@ -486,10 +486,10 @@ static Object write_layer(Layer *layer) {
     (layer->global)
         ? (o << "global" << "true") : (o << "global" << "false");
 
-    for (auto pair : layer->get_config()->get_properties())
+    for (auto pair : layer->get_config()->get())
         o << pair.first << pair.second;
 
-    auto noise_config = layer->get_config()->noise_config;
+    auto noise_config = layer->get_config()->get_noise_config();
     if (noise_config != nullptr)
         o << "noise" << write_properties(noise_config);
 
@@ -541,7 +541,7 @@ static Object write_connection(Connection *connection) {
 
     auto connection_config = connection->get_config();
     o << "weight config"
-        << write_weight_config(connection_config->weight_config);
+        << write_weight_config(connection_config->get_weight_config());
 
     auto arborized_config = connection_config->get_arborized_config();
     if (arborized_config != nullptr)
@@ -552,7 +552,7 @@ static Object write_connection(Connection *connection) {
     if (subset_config != nullptr)
         o << "subset config" << write_subset_config(subset_config);
 
-    for (auto pair : connection_config->get_properties())
+    for (auto pair : connection_config->get())
         o << pair.first << pair.second;
 
     o << "dendrite"
@@ -564,7 +564,7 @@ static Object write_connection(Connection *connection) {
 /* Writes a PropertyConfig to an object */
 static Object write_properties(PropertyConfig *config) {
     Object o;
-    for (auto pair : config->get_properties())
+    for (auto pair : config->get())
         if (pair.second != "")
             o << pair.first << pair.second;
     return o;
@@ -574,7 +574,7 @@ static Object write_properties(PropertyConfig *config) {
 static Object write_weight_config(WeightConfig *weight_config) {
     Object o;
 
-    for (auto pair : weight_config->get_properties())
+    for (auto pair : weight_config->get())
         o << pair.first << pair.second;
 
     auto child_config = weight_config->get_child();
@@ -603,14 +603,14 @@ static Object write_arborized_config(ArborizedConfig *arborized_config) {
 /* Writes a subset connection configuration */
 static Object write_subset_config(SubsetConfig *subset_config) {
     Object o;
-    o << "from row start" << subset_config->from_row_start;
-    o << "from row end" << subset_config->from_row_end;
-    o << "from column start" << subset_config->from_col_start;
-    o << "from column end" << subset_config->from_col_end;
-    o << "to row start" << subset_config->to_row_start;
-    o << "to row end" << subset_config->to_row_end;
-    o << "to column start" << subset_config->to_col_start;
-    o << "to column end" << subset_config->to_col_end;
+    o << "from row start" << std::to_string(subset_config->from_row_start);
+    o << "from row end" << std::to_string(subset_config->from_row_end);
+    o << "from column start" << std::to_string(subset_config->from_col_start);
+    o << "from column end" << std::to_string(subset_config->from_col_end);
+    o << "to row start" << std::to_string(subset_config->to_row_start);
+    o << "to row end" << std::to_string(subset_config->to_row_end);
+    o << "to column start" << std::to_string(subset_config->to_col_start);
+    o << "to column end" << std::to_string(subset_config->to_col_end);
     return o;
 }
 

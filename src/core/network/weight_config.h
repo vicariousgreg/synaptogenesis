@@ -4,11 +4,24 @@
 #include <string>
 
 #include "util/property_config.h"
+#include "util/error_manager.h"
 
 class Connection;
 
 class WeightConfig : public PropertyConfig {
     public:
+        WeightConfig(PropertyConfig *config) : child_config(nullptr) {
+            this->set("type", config->get("type"));
+            for (auto pair : config->get())
+                this->set(pair.first, pair.second);
+
+            if (config->get_children().size() > 1)
+                ErrorManager::get_instance()->log_error(
+                    "Weight config cannot have more than one child!");
+            for (auto pair : config->get_children())
+                this->set_child(new WeightConfig(pair.second));
+        }
+
         WeightConfig(std::string type) : child_config(nullptr) {
             this->set("type", type);
         }

@@ -18,6 +18,7 @@ typedef Module* (*MODULE_BUILD_PTR)(LayerList layers, ModuleConfig *config);
 
 class ModuleConfig : public PropertyConfig {
     public:
+        ModuleConfig(PropertyConfig *config);
         ModuleConfig(std::string type);
         ModuleConfig(std::string type, std::string structure, std::string layer);
 
