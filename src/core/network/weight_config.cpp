@@ -190,7 +190,7 @@ void WeightConfig::specified_config(float* target_matrix,
 
 void WeightConfig::initialize(float* target_matrix,
         Connection* conn, bool is_host) {
-    if (this->has_property("fraction")) {
+    if (this->has("fraction")) {
         float fraction = std::stof(this->get("fraction", "1.0"));
         if (fraction < 0 or fraction > 1.0)
             ErrorManager::get_instance()->log_error(

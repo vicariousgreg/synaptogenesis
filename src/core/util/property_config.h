@@ -14,7 +14,7 @@ class PropertyConfig {
         PropertyConfig(StringPairList pairs);
 
         const StringPairList get_properties() const;
-        bool has_property(std::string key) const;
+        bool has(std::string key) const;
         std::string remove_property(std::string key);
         std::string get(std::string key) const;
         std::string get(std::string key, std::string def_val) const;

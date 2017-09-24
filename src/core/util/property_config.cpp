@@ -17,11 +17,11 @@ const StringPairList PropertyConfig::get_properties() const {
     return pairs;
 }
 
-bool PropertyConfig::has_property(std::string key) const
+bool PropertyConfig::has(std::string key) const
     { return properties.count(key) > 0; }
 
 std::string PropertyConfig::remove_property(std::string key) {
-    if (has_property(key)) {
+    if (has(key)) {
         std::string value = get(key);
         properties.erase(key);
         keys.erase(std::find(keys.begin(), keys.end(), key));
@@ -36,7 +36,7 @@ std::string PropertyConfig::get(std::string key) const
     { return properties.at(key); }
 
 std::string PropertyConfig::get(std::string key, std::string def_val) const {
-    if (has_property(key)) return properties.at(key);
+    if (has(key)) return properties.at(key);
     else                   return def_val;
 }
 

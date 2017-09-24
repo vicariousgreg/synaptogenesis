@@ -2,13 +2,15 @@
 #include "io/impl/dsst_module.h"
 #include "util/tools.h"
 
-DSSTWindowImpl::DSSTWindowImpl()
-            : curr_prompt(0),
-              num_rows(DSSTModule::num_rows),
-              num_cols(DSSTModule::num_cols),
-              cell_cols(DSSTModule::cell_cols),
-              cell_rows(DSSTModule::cell_rows),
-              spacing(DSSTModule::spacing),
+DSSTWindowImpl::DSSTWindowImpl(DSSTModule *module)
+            : module(module),
+              curr_prompt(0),
+              num_rows(module->get_num_rows()),
+              num_cols(module->get_num_columns()),
+              cell_rows(module->get_cell_rows()),
+              cell_cols(module->get_cell_columns()),
+              spacing(module->get_spacing()),
+              input_columns(module->get_input_columns()),
               input_dirty(true) {
     table = new Gtk::Table(num_rows + 2, num_cols, false);
     table->set_row_spacings(spacing);
@@ -135,7 +137,7 @@ void DSSTWindowImpl::feed_input(Layer *layer, float *input) {
     if (input_dirty) {
         input_dirty = false;
 
-        int input_cols = DSSTModule::input_columns;
+        int input_cols = input_columns;
 
         // Copy over keys
         for (int key_col = 0; key_col < num_cols/2; ++key_col) {

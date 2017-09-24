@@ -15,33 +15,37 @@ class DSSTModule : public Module {
         void init();
         void update(Buffer *buffer);
 
-        void input_symbol(int index);
+        // Primarily used by DSST window
+        int get_num_rows()      { return num_rows; }
+        int get_num_columns()   { return num_cols; }
+        int get_cell_rows()     { return cell_rows; }
+        int get_cell_columns()  { return cell_cols; }
+        int get_cell_size()     { return cell_size; }
+        int get_spacing()       { return spacing; }
+        int get_input_rows()    { return input_rows; }
+        int get_input_columns() { return input_cols; }
+        int get_input_size()    { return input_size; }
 
-        static const int num_cols = 18;
-        static const int num_rows = 8;
-        static const int cell_cols = 8;
-        static const int cell_rows = 1+2*DSSTModule::cell_cols;
-        static const int cell_size = DSSTModule::cell_rows * DSSTModule::cell_cols;
-        static const int spacing = DSSTModule::cell_cols/4;
-
-        static const int input_rows =
-            (DSSTModule::num_rows + 2)
-            * (DSSTModule::cell_rows + DSSTModule::spacing)
-            - DSSTModule::spacing;
-        static const int input_columns =
-            DSSTModule::num_cols
-            * (DSSTModule::spacing + DSSTModule::cell_cols)
-            - DSSTModule::spacing;
-        static const int input_size =input_rows * input_columns;
+        // Useful for determining layer properties before construction
+        static int get_num_rows(ModuleConfig *config);
+        static int get_num_columns(ModuleConfig *config);
+        static int get_cell_rows(ModuleConfig *config);
+        static int get_cell_columns(ModuleConfig *config);
+        static int get_cell_size(ModuleConfig *config);
+        static int get_spacing(ModuleConfig *config);
+        static int get_input_rows(ModuleConfig *config);
+        static int get_input_columns(ModuleConfig *config);
+        static int get_input_size(ModuleConfig *config);
 
     private:
         std::map<Layer*, std::string> params;
-
         Pointer<float> input_data;
-
-        bool ui_dirty;
-        bool input_dirty;
         DSSTWindow *window;
+
+        int num_cols, num_rows, cell_cols, cell_rows, cell_size, spacing;
+        int input_rows, input_cols, input_size;
+
+        void input_symbol(int index);
 
     MODULE_MEMBERS
 };

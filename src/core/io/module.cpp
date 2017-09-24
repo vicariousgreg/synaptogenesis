@@ -31,8 +31,8 @@ ModuleConfig* ModuleConfig::add_layer(std::string structure,
 }
 
 ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
-    if (not config->has_property("structure") or
-        not config->has_property("layer"))
+    if (not config->has("structure") or
+        not config->has("layer"))
     ErrorManager::get_instance()->log_error(
         "Module layer config must have structure and layer name!");
     this->layers.push_back(config);

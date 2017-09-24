@@ -7,7 +7,7 @@
 
 class DSSTWindowImpl : public DSSTWindow, public GuiWindow {
     public:
-        DSSTWindowImpl();
+        DSSTWindowImpl(DSSTModule* module);
         virtual ~DSSTWindowImpl();
 
         void update();
@@ -36,7 +36,11 @@ class DSSTWindowImpl : public DSSTWindow, public GuiWindow {
 
         Gtk::Table *table;
 
-        const int num_rows, num_cols, cell_cols, cell_rows, spacing;
+        DSSTModule *module;
+
+        const int num_rows, num_cols,
+            cell_cols, cell_rows,
+            spacing, input_columns;
 };
 
 #endif

@@ -836,14 +836,19 @@ void working_memory_test() {
 }
 
 void dsst_test() {
-    int rows = DSSTModule::input_rows;
-    int cols = DSSTModule::input_columns;
+    // Use default DSST parameters
+    auto temp_config = new ModuleConfig("dsst");
 
-    int cell_rows = DSSTModule::cell_rows;
-    int cell_cols = DSSTModule::cell_cols;
+    int rows = DSSTModule::get_input_rows(temp_config);
+    int cols = DSSTModule::get_input_columns(temp_config);
+
+    int cell_rows = DSSTModule::get_cell_rows(temp_config);
+    int cell_cols = DSSTModule::get_cell_columns(temp_config);
 
     int focus_rows = rows - cell_rows;
     int focus_cols = cols - cell_cols;
+
+    delete temp_config;
 
     /* Construct the network */
     Network *network = new Network();
