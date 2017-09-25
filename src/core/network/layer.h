@@ -100,6 +100,7 @@ inline int get_num_connections(const LayerList& layers) {
     int num_connections = 0;
     for (auto& layer : layers)
         num_connections += layer->get_input_connections().size();
+    return num_connections;
 }
 
 /* Checks if layers in a list are the same size */
