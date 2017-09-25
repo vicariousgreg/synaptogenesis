@@ -77,14 +77,6 @@ void WeightConfig::surround_config(float* target_matrix,
             "Error in weight config for " + conn->str() + ":\n"
             "  Surround weight config rows/cols must be positive!");
 
-    // Initialize with child config
-    auto child_config = this->get_child();
-    if (child_config == nullptr)
-        ErrorManager::get_instance()->log_error(
-            "Error in weight config for " + conn->str() + ":\n"
-            "  Missing child weight config for surround weight config!");
-    child_config->initialize(target_matrix, conn, is_host);
-
     // Carve out center
     int row_field_size =
         conn->get_config()->get_arborized_config()->column_field_size;
@@ -198,7 +190,17 @@ void WeightConfig::initialize(float* target_matrix,
                 "  Weight config fraction must be between 0 and 1!");
     }
 
-    auto type = this->get("type");
+    auto type = this->get("type", "flat");
+
+    // If surround, treat as child type and then process as surround after
+    bool surround = type == "surround";
+    if (surround) {
+        if (not this->has("child type"))
+            ErrorManager::get_instance()->log_error(
+                "Error in weight config for " + conn->str() + ":\n"
+                "  Missing child weight config for surround weight config!");
+        type = this->get("child type");
+    }
 
     if (type == "flat")
         flat_config(target_matrix, conn, is_host);
@@ -208,14 +210,16 @@ void WeightConfig::initialize(float* target_matrix,
         gaussian_config(target_matrix, conn, is_host);
     else if (type == "log normal")
         log_normal_config(target_matrix, conn, is_host);
-    else if (type == "surround")
-        surround_config(target_matrix, conn, is_host);
     else if (type == "specified")
         specified_config(target_matrix, conn, is_host);
     else
         ErrorManager::get_instance()->log_error(
             "Error in weight config for " + conn->str() + ":\n"
             "  Unrecognized weight config type: " + type);
+
+    // Now do surround processing
+    if (surround)
+        surround_config(target_matrix, conn, is_host);
 
     if (this->get("diagonal", "true") != "true") {
         switch(conn->type) {

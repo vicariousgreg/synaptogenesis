@@ -10,25 +10,16 @@ class Connection;
 
 class WeightConfig : public PropertyConfig {
     public:
-        WeightConfig(PropertyConfig *config) : child_config(nullptr) {
-            this->set("type", config->get("type"));
+        WeightConfig() { }
+
+        WeightConfig(PropertyConfig *config) {
             for (auto pair : config->get())
                 this->set(pair.first, pair.second);
-
-            if (config->get_children().size() > 1)
-                ErrorManager::get_instance()->log_error(
-                    "Weight config cannot have more than one child!");
-            for (auto pair : config->get_children())
-                this->set_child(new WeightConfig(pair.second));
         }
 
-        WeightConfig(std::string type) : child_config(nullptr) {
+        WeightConfig(std::string type) {
             this->set("type", type);
         }
-
-        virtual ~WeightConfig()
-            { if (child_config != nullptr) delete child_config; }
-
 
         void initialize(float* target_matrix, Connection* conn, bool is_host);
 
@@ -37,12 +28,7 @@ class WeightConfig : public PropertyConfig {
             return this;
         }
 
-        void set_child(WeightConfig *child) { child_config = child; }
-        WeightConfig *get_child() { return child_config; }
-
     protected:
-        WeightConfig *child_config;
-
         void flat_config(float* target_matrix,
             Connection* conn, bool is_host);
 
@@ -107,13 +93,13 @@ class SurroundWeightConfig : public WeightConfig {
                 : WeightConfig("surround") {
             this->set("rows", std::to_string(rows));
             this->set("columns", std::to_string(cols));
-            this->child_config = child_config;
+            this->set("child type", child_config->get("type"));
         }
 
         SurroundWeightConfig(int size, WeightConfig* child_config)
                 : WeightConfig("surround") {
             this->set("size", std::to_string(size));
-            this->child_config = child_config;
+            this->set("child type", child_config->get("type"));
         }
 };
 

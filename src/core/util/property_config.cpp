@@ -58,13 +58,19 @@ void PropertyConfig::set_child(std::string key, PropertyConfig *child) {
         children_keys.push_back(key);
 }
 
-bool PropertyConfig::has_child(std::string key)
+bool PropertyConfig::has_child(std::string key) const
     { return children.count(key) > 0; }
 
-PropertyConfig* PropertyConfig::get_child(std::string key)
+PropertyConfig* PropertyConfig::get_child(std::string key) const
     { return children.at(key); }
 
-const PropertyPairList PropertyConfig::get_children() {
+PropertyConfig* PropertyConfig::get_child(
+        std::string key, PropertyConfig *def_val) const {
+    if (has_child(key)) return children.at(key);
+    else                return def_val;
+}
+
+const PropertyPairList PropertyConfig::get_children() const{
     PropertyPairList pairs;
     for (auto key : children_keys)
         pairs.push_back(PropertyPair(key, children.at(key)));

@@ -32,9 +32,9 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
                 to_layer, state, engine, compute_stream);
 
     // Add noise / clear instruction
-    auto noise_config = to_layer->get_config()->get_noise_config();
+    auto noise_config = to_layer->get_config()->get_child("noise", nullptr);
     if (noise_config != nullptr) {
-        auto type = noise_config->get("type");
+        auto type = noise_config->get("type", "normal");
         if (type == "normal")
             activate_instructions.push_back(
                 new NormalNoiseInstruction(

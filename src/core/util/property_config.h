@@ -25,10 +25,11 @@ class PropertyConfig {
         std::string get(std::string key, std::string def_val) const;
         PropertyConfig *set_value(std::string key, std::string val);
 
-        bool has_child(std::string key);
+        bool has_child(std::string key) const;
         void set_child(std::string key, PropertyConfig *child);
-        PropertyConfig *get_child(std::string key);
-        const PropertyPairList get_children();
+        PropertyConfig *get_child(std::string key) const;
+        PropertyConfig *get_child(std::string key, PropertyConfig* def_val) const;
+        const PropertyPairList get_children() const;
 
     protected:
         void set_internal(std::string key, std::string value);

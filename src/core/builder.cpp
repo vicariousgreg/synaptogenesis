@@ -22,8 +22,7 @@ static void parse_layer(Structure *structure, Object lo);
 static void parse_dendrite(Structure *structure, std::string layer,
     std::string node, Object dobj);
 static void parse_connection(Network *network, std::string structure_name, Object co);
-static NoiseConfig *parse_noise_config(Object nco);
-static WeightConfig *parse_weight_config(Object wo);
+static PropertyConfig *parse_properties(Object nco);
 static ArborizedConfig *parse_arborized_config(Object wo);
 static SubsetConfig *parse_subset_config(Object wo);
 
@@ -104,7 +103,7 @@ static void parse_structure(Network *network, Object so) {
 }
 
 /* Parses a layer
- *     -> parse_noise_config
+ *     -> parse_properties
  *     -> parse_dendritic_node
  */
 static void parse_layer(Structure *structure, Object lo) {
@@ -112,7 +111,7 @@ static void parse_layer(Structure *structure, Object lo) {
     std::string neural_model = "izhikevich";
     int rows = 0;
     int columns = 0;
-    NoiseConfig *noise_config = nullptr;
+    PropertyConfig *noise_config = nullptr;
     bool plastic = true;
     bool global = false;
 
@@ -132,7 +131,7 @@ static void parse_layer(Structure *structure, Object lo) {
         else if (pair.first == "global")
             global = pair.second->get<String>() == "true";
         else if (pair.first == "noise")
-            noise_config = parse_noise_config(pair.second->get<Object>());
+            noise_config = parse_properties(pair.second->get<Object>());
         else if (pair.first != "dendrites") // Skip these till end
             properties.push_back(StringPair(pair.first, pair.second->get<String>()));
     }
@@ -174,7 +173,7 @@ static void parse_dendrite(Structure *structure, std::string layer,
 }
 
 /* Parses a connection
- *     -> parse_weight_config
+ *     -> parse_properties
  *     -> parse_arborized_config
  *     -> parse_subset_config
  */
@@ -189,7 +188,7 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     std::string dendrite = "root";
 
     ArborizedConfig *arborized_config = nullptr;
-    WeightConfig *weight_config = nullptr;
+    PropertyConfig *weight_config = nullptr;
     SubsetConfig *subset_config = nullptr;
 
     std::string from_structure = structure_name;
@@ -217,7 +216,7 @@ static void parse_connection(Network *network, std::string structure_name, Objec
         else if (pair.first == "delay")
             delay = std::stoi(pair.second->get<String>());
         else if (pair.first == "weight config")
-            weight_config = parse_weight_config(pair.second->get<Object>());
+            weight_config = parse_properties(pair.second->get<Object>());
         else if (pair.first == "arborized config")
             arborized_config = parse_arborized_config(pair.second->get<Object>());
         else if (pair.first == "subset config")
@@ -246,7 +245,7 @@ static void parse_connection(Network *network, std::string structure_name, Objec
 
     auto connection_config =
         new ConnectionConfig(plastic, delay, max_weight,
-            type, opcode, weight_config);
+            type, opcode, new WeightConfig(weight_config));
 
     if (arborized_config != nullptr)
         connection_config->set_arborized_config(arborized_config);
@@ -265,57 +264,13 @@ static void parse_connection(Network *network, std::string structure_name, Objec
         dendrite);
 }
 
-/* Parses a noise configuration */
-static NoiseConfig *parse_noise_config(Object nco) {
-    if (not has_string(nco, "type"))
-        ErrorManager::get_instance()->log_error(
-            "No noise config type specified!");
+static PropertyConfig *parse_properties(Object nco) {
+    PropertyConfig *config = new PropertyConfig();
 
-    // Get type string, or use normal as default
-    NoiseConfig *noise_config = new NoiseConfig(get_string(nco, "type"));
-
-    // Get properties
     for (auto pair : nco.kv_map())
-        if (pair.first != "type")
-            noise_config->set(pair.first, pair.second->get<String>());
+        config->set_value(pair.first, pair.second->get<String>());
 
-    return noise_config;
-}
-
-/* Parses a weight configuration */
-static WeightConfig *parse_weight_config(Object wo) {
-    if (not has_string(wo, "type"))
-        ErrorManager::get_instance()->log_error(
-            "No weight config type specified!");
-
-    // Get type string, or use normal as default
-
-    WeightConfig *weight_config = new WeightConfig(get_string(wo, "type"));
-
-    if (has_string(wo, "weight"))
-        weight_config->set("weight", get_string(wo, "weight"));
-    if (has_string(wo, "max weight"))
-        weight_config->set("max weight", get_string(wo, "max weight"));
-    if (has_string(wo, "fraction"))
-        weight_config->set("fraction", get_string(wo, "fraction"));
-    if (has_string(wo, "mean"))
-        weight_config->set("mean", get_string(wo, "mean"));
-    if (has_string(wo, "std dev"))
-        weight_config->set("std dev", get_string(wo, "std dev"));
-    if (has_string(wo, "rows"))
-        weight_config->set("rows", get_string(wo, "rows"));
-    if (has_string(wo, "columns"))
-        weight_config->set("columns", get_string(wo, "columns"));
-    if (has_string(wo, "size"))
-        weight_config->set("size", get_string(wo, "size"));
-    if (has_string(wo, "weight string"))
-        weight_config->set("weight string",
-            get_string(wo, "weight string"));
-
-    if (wo.has<Object>("child"))
-        weight_config->set_child(parse_weight_config(wo.get<Object>("child")));
-
-    return weight_config;
+    return config;
 }
 
 /* Parses an arborized connection configuration */
@@ -422,7 +377,6 @@ static Object write_layer(Layer *layer);
 static Object write_dendrite(DendriticNode *node);
 static Object write_connection(Connection *connection);
 static Object write_properties(PropertyConfig *config);
-static Object write_weight_config(WeightConfig *weight_config);
 static Object write_arborized_config(ArborizedConfig *arborized_config);
 static Object write_subset_config(SubsetConfig *subset_config);
 
@@ -489,7 +443,7 @@ static Object write_layer(Layer *layer) {
     for (auto pair : layer->get_config()->get())
         o << pair.first << pair.second;
 
-    auto noise_config = layer->get_config()->get_noise_config();
+    auto noise_config = layer->get_config()->get_child("noise", nullptr);
     if (noise_config != nullptr)
         o << "noise" << write_properties(noise_config);
 
@@ -517,7 +471,7 @@ static Object write_dendrite(DendriticNode *node) {
 }
 
 /* Writes a connection
- *     -> write_weight_config
+ *     -> write_properties
  *     -> write_arborized_config
  *     -> write_subset_config
  */
@@ -541,7 +495,7 @@ static Object write_connection(Connection *connection) {
 
     auto connection_config = connection->get_config();
     o << "weight config"
-        << write_weight_config(connection_config->get_weight_config());
+        << write_properties(connection_config->get_weight_config());
 
     auto arborized_config = connection_config->get_arborized_config();
     if (arborized_config != nullptr)
@@ -567,20 +521,6 @@ static Object write_properties(PropertyConfig *config) {
     for (auto pair : config->get())
         if (pair.second != "")
             o << pair.first << pair.second;
-    return o;
-}
-
-/* Writes a weight configuration */
-static Object write_weight_config(WeightConfig *weight_config) {
-    Object o;
-
-    for (auto pair : weight_config->get())
-        o << pair.first << pair.second;
-
-    auto child_config = weight_config->get_child();
-    if (child_config != nullptr)
-        o << "child" << write_weight_config(child_config);
-
     return o;
 }
 
