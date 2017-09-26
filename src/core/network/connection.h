@@ -62,7 +62,8 @@ class Connection {
         friend class Structure;
 
         Connection(Layer *from_layer, Layer *to_layer,
-            ConnectionConfig *config, DendriticNode *node);
+            ConnectionConfig *config, DendriticNode *node,
+            std::string name="");
 
         // Number of weights in connection
         int num_weights;

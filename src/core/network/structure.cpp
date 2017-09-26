@@ -28,17 +28,17 @@ Connection* Structure::connect(
         Structure *from_structure, std::string from_layer_name,
         Structure *to_structure, std::string to_layer_name,
         ConnectionConfig *config,
-        std::string node) {
+        std::string node, std::string name) {
     return to_structure->connect_layers(
         from_structure->get_layer(from_layer_name),
         to_structure->get_layer(to_layer_name),
-        config, node);
+        config, node, name);
 }
 
 Connection* Structure::connect_layers(
         Layer *from_layer, Layer *to_layer,
         ConnectionConfig *config,
-        std::string node) {
+        std::string node, std::string name) {
     if (not config->validate())
         ErrorManager::get_instance()->log_error(
             "Error in " + this->str() + ":\n"
@@ -46,7 +46,9 @@ Connection* Structure::connect_layers(
             + from_layer->str() + " to " + to_layer->str());
 
     Connection *conn = new Connection(
-        from_layer, to_layer, config, to_layer->get_dendritic_node(node));
+        from_layer, to_layer, config,
+        to_layer->get_dendritic_node(node),
+        name);
     this->connections.push_back(conn);
     return conn;
 }
@@ -54,17 +56,19 @@ Connection* Structure::connect_layers(
 Connection* Structure::connect_layers(
         std::string from_layer_name, std::string to_layer_name,
         ConnectionConfig *config,
-        std::string node) {
+        std::string node,
+        std::string name) {
     return connect_layers(
         get_layer(from_layer_name),
         get_layer(to_layer_name),
-        config, node);
+        config, node, name);
 }
 
 Connection* Structure::connect_layers_expected(
         std::string from_layer_name, LayerConfig *layer_config,
         ConnectionConfig *conn_config,
-        std::string node) {
+        std::string node,
+        std::string name) {
     Layer *from_layer = get_layer(from_layer_name);
 
     if (not conn_config->validate())
@@ -82,13 +86,14 @@ Connection* Structure::connect_layers_expected(
     Layer *to_layer = get_layer(layer_config->name);
 
     // Connect new layer to given layer
-    return connect_layers(from_layer, to_layer, conn_config, node);
+    return connect_layers(from_layer, to_layer, conn_config, node, name);
 }
 
 Connection* Structure::connect_layers_matching(
         std::string from_layer_name,
         LayerConfig *layer_config, ConnectionConfig *conn_config,
-        std::string node) {
+        std::string node,
+        std::string name) {
     Layer *from_layer = get_layer(from_layer_name);
 
     // Determine new layer size and create
@@ -98,7 +103,7 @@ Connection* Structure::connect_layers_matching(
     Layer *to_layer = get_layer(layer_config->name);
 
     // Connect new layer to given layer
-    return connect_layers(from_layer, to_layer, conn_config, node);
+    return connect_layers(from_layer, to_layer, conn_config, node, name);
 }
 
 void Structure::set_second_order(std::string to_layer_name,

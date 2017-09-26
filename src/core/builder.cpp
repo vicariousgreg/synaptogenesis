@@ -178,6 +178,7 @@ static void parse_dendrite(Structure *structure, std::string layer,
  *     -> parse_subset_config
  */
 static void parse_connection(Network *network, std::string structure_name, Object co) {
+    std::string name = "";
     std::string from_layer = "";
     std::string to_layer = "";
     std::string type_string = "fully connected";
@@ -197,7 +198,9 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     StringPairList properties;
 
     for (auto pair : co.kv_map()) {
-        if (pair.first == "from layer")
+        if (pair.first == "name")
+            name = pair.second->get<String>();
+        else if (pair.first == "from layer")
             from_layer = pair.second->get<String>();
         else if (pair.first == "to layer")
             to_layer = pair.second->get<String>();
@@ -261,7 +264,8 @@ static void parse_connection(Network *network, std::string structure_name, Objec
         network->get_structure(to_structure),
         to_layer,
         connection_config,
-        dendrite);
+        dendrite,
+        name);
 }
 
 static PropertyConfig *parse_properties(Object nco) {

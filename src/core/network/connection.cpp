@@ -5,7 +5,7 @@
 #include "util/error_manager.h"
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,
-        ConnectionConfig *config, DendriticNode* node) :
+        ConnectionConfig *config, DendriticNode* node, std::string name) :
             config(config),
             from_layer(from_layer),
             to_layer(to_layer),
@@ -23,7 +23,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             id(std::hash<std::string>()(
                 from_layer->structure->name + "/" + from_layer->name + "-" +
                 to_layer->structure->name + "/" + to_layer->name +
-                node->name + "/" + config->str())) {
+                node->name + "/" +
+                (name != "" ? name : config->str()))) {
 
     // Check for plastic second order connection
     if (second_order and plastic)

@@ -57,25 +57,29 @@ class Structure {
             Structure *from_structure, std::string from_layer_name,
             Structure *to_structure, std::string to_layer_name,
             ConnectionConfig *config,
-            std::string node="root");
+            std::string node="root",
+            std::string name="");
 
         Connection* connect_layers(
             std::string from_layer_name,
             std::string to_layer_name,
             ConnectionConfig *config,
-            std::string node="root");
+            std::string node="root",
+            std::string name="");
 
         Connection* connect_layers_expected(
             std::string from_layer_name,
             LayerConfig *layer_config,
             ConnectionConfig *conn_config,
-            std::string node="root");
+            std::string node="root",
+            std::string name="");
 
         Connection* connect_layers_matching(
             std::string from_layer_name,
             LayerConfig *layer_config,
             ConnectionConfig *conn_config,
-            std::string node="root");
+            std::string node="root",
+            std::string name="");
 
         /*****************************/
         /********* DENDRITES *********/
@@ -105,7 +109,8 @@ class Structure {
         Connection* connect_layers(
                 Layer *from_layer, Layer *to_layer,
                 ConnectionConfig *config,
-                std::string node="root");
+                std::string node="root",
+                std::string name="");
 
         // Layers
         LayerList layers;
