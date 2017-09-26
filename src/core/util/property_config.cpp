@@ -17,6 +17,13 @@ const StringPairList PropertyConfig::get() const {
     return pairs;
 }
 
+const StringPairList PropertyConfig::get_alphabetical() const {
+    StringPairList pairs;
+    for (auto pair : properties)
+        pairs.push_back(StringPair(pair.first, pair.second));
+    return pairs;
+}
+
 bool PropertyConfig::has(std::string key) const
     { return properties.count(key) > 0; }
 
@@ -70,9 +77,25 @@ PropertyConfig* PropertyConfig::get_child(
     else                return def_val;
 }
 
-const PropertyPairList PropertyConfig::get_children() const{
+const PropertyPairList PropertyConfig::get_children() const {
     PropertyPairList pairs;
     for (auto key : children_keys)
         pairs.push_back(PropertyPair(key, children.at(key)));
     return pairs;
+}
+
+const PropertyPairList PropertyConfig::get_children_alphabetical() const {
+    PropertyPairList pairs;
+    for (auto pair : children)
+        pairs.push_back(PropertyPair(pair.first, pair.second));
+    return pairs;
+}
+
+std::string PropertyConfig::str() const {
+    std::string str = "{";
+    for (pair : get_alphabetical())
+        str += "(" + pair.first + "," + pair.second + ")";
+    for (pair : get_children_alphabetical())
+        str += "(" + pair.first + "," + pair.second->str() + ")";
+    return str + "}";
 }

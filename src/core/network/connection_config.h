@@ -18,6 +18,8 @@ class SubsetConfig {
 
         bool validate(Connection *conn);
 
+        std::string str() const;
+
         const int from_row_start, from_row_end;
         const int from_col_start, from_col_end;
         const int from_row_size, from_col_size;
@@ -55,6 +57,8 @@ class ArborizedConfig {
                 and (row_field_size == column_field_size)
                 and (row_offset == column_offset == -row_field_size/2);
         }
+
+        std::string str() const;
 
         const int row_field_size, column_field_size;
         const int row_stride, column_stride;
@@ -117,6 +121,8 @@ class ConnectionConfig : public PropertyConfig {
             set_internal(key, value);
             return this;
         }
+
+        std::string str() const;
 
         /* Gets the expected row/col size of a destination layer given.
          * This function only returns meaningful values for connection types that

@@ -42,6 +42,7 @@ class Connection {
         // Connected layers
         Layer* const from_layer;
         Layer* const to_layer;
+        DendriticNode* const node;
 
         // Connection delay
         const int delay;

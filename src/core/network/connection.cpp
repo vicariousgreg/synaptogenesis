@@ -6,12 +6,10 @@
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,
         ConnectionConfig *config, DendriticNode* node) :
-            id(std::hash<std::string>()(
-                from_layer->structure->name + "/" + from_layer->name + "-" +
-                to_layer->structure->name + "/" + to_layer->name)),
             config(config),
             from_layer(from_layer),
             to_layer(to_layer),
+            node(node),
             plastic(config->plastic),
             delay(config->delay),
             max_weight(config->max_weight),
@@ -21,7 +19,12 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             second_order(node->is_second_order()),
             second_order_host(second_order and
                 node->get_second_order_connection() == nullptr),
-            second_order_slave(second_order and not second_order_host) {
+            second_order_slave(second_order and not second_order_host),
+            id(std::hash<std::string>()(
+                from_layer->structure->name + "/" + from_layer->name + "-" +
+                to_layer->structure->name + "/" + to_layer->name +
+                node->name + "/" + config->str())) {
+
     // Check for plastic second order connection
     if (second_order and plastic)
         ErrorManager::get_instance()->log_error(
@@ -176,5 +179,5 @@ std::string Connection::str() const {
         + from_layer->name
         + " (" + from_layer->structure->name + ") -> "
         + to_layer->name
-        + " (" + to_layer->structure->name + ")]";
+        + " (" + to_layer->structure->name + ") {Node: " + node->name + "}]";
 }

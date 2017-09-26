@@ -19,6 +19,7 @@ class PropertyConfig {
         PropertyConfig(StringPairList pairs);
 
         const StringPairList get() const;
+        const StringPairList get_alphabetical() const;
         bool has(std::string key) const;
         std::string remove_property(std::string key);
         std::string get(std::string key) const;
@@ -30,6 +31,9 @@ class PropertyConfig {
         PropertyConfig *get_child(std::string key) const;
         PropertyConfig *get_child(std::string key, PropertyConfig* def_val) const;
         const PropertyPairList get_children() const;
+        const PropertyPairList get_children_alphabetical() const;
+
+        std::string str() const;
 
     protected:
         void set_internal(std::string key, std::string value);

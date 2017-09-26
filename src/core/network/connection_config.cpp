@@ -40,6 +40,17 @@ ArborizedConfig::ArborizedConfig(int field_size,
                       offset, offset,
                       wrap) { }
 
+std::string ArborizedConfig::str() const {
+    return "(" +
+        std::to_string(row_field_size) + "-" +
+        std::to_string(column_field_size) + "-" +
+        std::to_string(row_stride) + "-" +
+        std::to_string(column_stride) + "-" +
+        std::to_string(row_offset) + "-" +
+        std::to_string(column_offset) + "-" +
+        std::to_string(wrap) + ")";
+}
+
 SubsetConfig::SubsetConfig(
     int from_row_start, int from_row_end,
     int from_col_start, int from_col_end,
@@ -80,6 +91,18 @@ bool SubsetConfig::validate(Connection *conn) {
         and from_col_end <= from_layer->columns
         and to_row_end <= to_layer->rows
         and to_col_end <= to_layer->columns;
+}
+
+std::string SubsetConfig::str() const {
+    return " (" +
+        std::to_string(from_row_start) + "-" +
+        std::to_string(from_row_end) + "-" +
+        std::to_string(from_col_start) + "-" +
+        std::to_string(from_col_end) + "-" +
+        std::to_string(to_row_start) + "-" +
+        std::to_string(to_row_end) + "-" +
+        std::to_string(to_col_start) + "-" +
+        std::to_string(to_col_end) + ")";
 }
 
 ConnectionConfig::ConnectionConfig(PropertyConfig *config)
@@ -234,6 +257,29 @@ bool ConnectionConfig::validate() {
             return arborized_config != nullptr;
     }
     return true;
+}
+
+std::string ConnectionConfig::str() const {
+    std::string str = "[" +
+        ConnectionTypeStrings.at(type) + "/" +
+        OpcodeStrings.at(opcode) + "/" +
+        std::to_string(plastic) + "/" +
+        std::to_string(delay) + "/" +
+        std::to_string(max_weight) + "/" +
+        weight_config->str();
+
+    switch (type) {
+        case SUBSET:
+            str += ((subset_config == nullptr) ? "" : subset_config->str());
+            break;
+        case CONVERGENT:
+        case CONVOLUTIONAL:
+        case DIVERGENT:
+            str += ((arborized_config == nullptr) ? "" : arborized_config->str());
+            break;
+    }
+
+    return str + "]";
 }
 
 int ConnectionConfig::get_expected_rows(int rows) {
