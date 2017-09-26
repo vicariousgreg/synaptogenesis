@@ -5,6 +5,53 @@
 #include "network/connection_config.h"
 #include "util/error_manager.h"
 
+ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
+    row_field_size = -1;
+    column_field_size = -1;
+    row_stride = 1;
+    column_stride = 1;
+    row_offset = -1;
+    column_offset = -1;
+    wrap = false;
+
+    for (auto pair : config->get()) {
+        if (pair.first == "row field size")
+            row_field_size = std::stoi(pair.second);
+        else if (pair.first == "column field size")
+            column_field_size = std::stoi(pair.second);
+        else if (pair.first == "field size")
+            row_field_size = column_field_size =
+                std::stoi(pair.second);
+        else if (pair.first == "row stride")
+            row_stride = std::stoi(pair.second);
+        else if (pair.first == "column stride")
+            column_stride = std::stoi(pair.second);
+        else if (pair.first == "stride")
+            row_stride = column_stride = std::stoi(pair.second);
+        else if (pair.first == "row offset")
+            row_offset = std::stoi(pair.second);
+        else if (pair.first == "column offset")
+            column_offset = std::stoi(pair.second);
+        else if (pair.first == "offset")
+            row_offset = column_offset = std::stoi(pair.second);
+        else if (pair.first == "wrap")
+            wrap = pair.second == "true";
+        else
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized arborized config property: " + pair.first);
+    }
+
+    if (row_field_size < 0 or column_field_size < 0)
+        ErrorManager::get_instance()->log_error(
+            "Unspecified field size for arborized config!");
+
+    // If offsets are not provided, use default
+    if (not config->has("row offset") and not config->has("offset"))
+        row_offset = -row_field_size/2;
+    if (not config->has("column offset") and not config->has("offset"))
+        column_offset = -row_field_size/2;
+}
+
 ArborizedConfig::ArborizedConfig(
     int row_field_size, int column_field_size,
     int row_stride, int column_stride,
@@ -51,6 +98,46 @@ std::string ArborizedConfig::str() const {
         std::to_string(wrap) + ")";
 }
 
+PropertyConfig ArborizedConfig::to_property_config() const {
+    PropertyConfig props;
+    props.set_value("row field size", std::to_string(row_field_size));
+    props.set_value("column field size", std::to_string(column_field_size));
+    props.set_value("row stride", std::to_string(row_stride));
+    props.set_value("column stride", std::to_string(column_stride));
+    props.set_value("row offset", std::to_string(row_offset));
+    props.set_value("column offset", std::to_string(column_offset));
+    props.set_value("wrap", std::to_string(wrap));
+    return props;
+}
+
+SubsetConfig::SubsetConfig(PropertyConfig *config) {
+    from_row_start = from_row_end =
+        from_col_start = from_col_end =
+        to_row_start = to_row_end =
+        to_col_start = to_col_end = 0;
+
+    for (auto pair : config->get()) {
+        if (pair.first == "from row start")
+            from_row_start = std::stoi(pair.second);
+        else if (pair.first == "from row end")
+            from_row_end = std::stoi(pair.second);
+        else if (pair.first == "from column start")
+            from_col_start = std::stoi(pair.second);
+        else if (pair.first == "from column end")
+            from_col_end = std::stoi(pair.second);
+        else if (pair.first == "to row start")
+            to_row_start = std::stoi(pair.second);
+        else if (pair.first == "to row end")
+            to_row_end = std::stoi(pair.second);
+        else if (pair.first == "to column start")
+            to_col_start = std::stoi(pair.second);
+        else if (pair.first == "to column end")
+            to_col_end = std::stoi(pair.second);
+        else
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized subset config property: " + pair.first);
+    }
+}
 SubsetConfig::SubsetConfig(
     int from_row_start, int from_row_end,
     int from_col_start, int from_col_end,
@@ -83,7 +170,7 @@ SubsetConfig::SubsetConfig(
                 " greater than end indices!");
 }
 
-bool SubsetConfig::validate(Connection *conn) {
+bool SubsetConfig::validate(Connection *conn) const {
     Layer *from_layer = conn->from_layer;
     Layer *to_layer = conn->to_layer;
     return
@@ -91,6 +178,19 @@ bool SubsetConfig::validate(Connection *conn) {
         and from_col_end <= from_layer->columns
         and to_row_end <= to_layer->rows
         and to_col_end <= to_layer->columns;
+}
+
+PropertyConfig SubsetConfig::to_property_config() const {
+    PropertyConfig props;
+    props.set_value("from row start", std::to_string(from_row_start));
+    props.set_value("from row end", std::to_string(from_row_end));
+    props.set_value("from column start", std::to_string(from_col_start));
+    props.set_value("from column end", std::to_string(from_col_end));
+    props.set_value("to row start", std::to_string(to_row_start));
+    props.set_value("to row end", std::to_string(to_row_end));
+    props.set_value("to column start", std::to_string(to_col_start));
+    props.set_value("to column end", std::to_string(to_col_end));
+    return props;
 }
 
 std::string SubsetConfig::str() const {
@@ -106,116 +206,12 @@ std::string SubsetConfig::str() const {
 }
 
 ConnectionConfig::ConnectionConfig(PropertyConfig *config)
-    : plastic(config->get("plastic", "true") == "true"),
+    : PropertyConfig(config),
+      plastic(config->get("plastic", "true") == "true"),
       delay(std::stoi(config->get("delay", "0"))),
       max_weight(std::stof(config->get("max", "1.0"))),
       type(ConnectionTypes.at(config->get("type", "fully connected"))),
-      opcode(Opcodes.at(config->get("opcode", "add"))),
-      weight_config(new FlatWeightConfig(1.0)),
-      subset_config(nullptr),
-      arborized_config(nullptr) {
-    for (auto pair : config->get())
-        this->set(pair.first, pair.second);
-    for (auto pair : config->get_children()) {
-        if (pair.first == "weight config") {
-            set_weight_config(new WeightConfig(pair.second));
-        } else if (pair.first == "subset config") {
-            int from_row_start = 0;
-            int from_row_end = 0;
-            int from_col_start = 0;
-            int from_col_end = 0;
-            int to_row_start = 0;
-            int to_row_end = 0;
-            int to_col_start = 0;
-            int to_col_end = 0;
-
-            for (auto c_pair : pair.second->get()) {
-                if (c_pair.first == "from row start")
-                    from_row_start = std::stoi(c_pair.second);
-                else if (c_pair.first == "from row end")
-                    from_row_end = std::stoi(c_pair.second);
-                else if (c_pair.first == "from column start")
-                    from_col_start = std::stoi(c_pair.second);
-                else if (c_pair.first == "from column end")
-                    from_col_end = std::stoi(c_pair.second);
-                else if (c_pair.first == "to row start")
-                    to_row_start = std::stoi(c_pair.second);
-                else if (c_pair.first == "to row end")
-                    to_row_end = std::stoi(c_pair.second);
-                else if (c_pair.first == "to column start")
-                    to_col_start = std::stoi(c_pair.second);
-                else if (c_pair.first == "to column end")
-                    to_col_end = std::stoi(c_pair.second);
-                else
-                    ErrorManager::get_instance()->log_error(
-                        "Unrecognized subset config property: " + c_pair.first);
-            }
-            set_subset_config(
-                new SubsetConfig(
-                    from_row_start, from_row_end,
-                    from_col_start, from_col_end,
-                    to_row_start, to_row_end,
-                    to_col_start, to_col_end));
-        } else if (pair.first == "arborized config") {
-            int row_field_size = -1;
-            int column_field_size = -1;
-            int row_stride = 1;
-            int column_stride = 1;
-            int row_offset = -1;
-            int column_offset = -1;
-            bool wrap = false;
-
-            for (auto c_pair : pair.second->get()) {
-                if (c_pair.first == "row field size")
-                    row_field_size = std::stoi(c_pair.second);
-                else if (c_pair.first == "column field size")
-                    column_field_size = std::stoi(c_pair.second);
-                else if (c_pair.first == "field size")
-                    row_field_size = column_field_size =
-                        std::stoi(c_pair.second);
-                else if (c_pair.first == "row stride")
-                    row_stride = std::stoi(c_pair.second);
-                else if (c_pair.first == "column stride")
-                    column_stride = std::stoi(c_pair.second);
-                else if (c_pair.first == "stride")
-                    row_stride = column_stride = std::stoi(c_pair.second);
-                else if (c_pair.first == "row offset")
-                    row_offset = std::stoi(c_pair.second);
-                else if (c_pair.first == "column offset")
-                    column_offset = std::stoi(c_pair.second);
-                else if (c_pair.first == "offset")
-                    row_offset = column_offset = std::stoi(c_pair.second);
-                else if (c_pair.first == "wrap")
-                    wrap = c_pair.second == "true";
-                else
-                    ErrorManager::get_instance()->log_error(
-                        "Unrecognized arborized config property: " + c_pair.first);
-            }
-
-            if (row_field_size < 0 or column_field_size < 0)
-                ErrorManager::get_instance()->log_error(
-                    "Unspecified field size for arborized config!");
-
-            if (row_offset < 0 and column_offset < 0) {
-                set_arborized_config(
-                    new ArborizedConfig(
-                        row_field_size, column_field_size,
-                        row_stride, column_stride,
-                        wrap));
-            } else if (row_offset < 0 or column_offset < 0) {
-                row_offset = std::max(0, row_offset);
-                column_offset = std::max(0, column_offset);
-            } else {
-                set_arborized_config(
-                    new ArborizedConfig(
-                        row_field_size, column_field_size,
-                        row_stride, column_stride,
-                        row_offset, column_offset,
-                        wrap));
-            }
-        }
-    }
-}
+      opcode(Opcodes.at(config->get("opcode", "add"))) { }
 
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
@@ -224,39 +220,93 @@ ConnectionConfig::ConnectionConfig(
           delay(delay),
           max_weight(max_weight),
           type(type),
-          opcode(opcode),
-          weight_config(new FlatWeightConfig(1.0)),
-          arborized_config(nullptr),
-          subset_config(nullptr) { }
+          opcode(opcode) { }
 
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
-    WeightConfig *weight_config)
+    PropertyConfig *weight_config)
         : plastic(plastic),
           delay(delay),
           max_weight(max_weight),
           type(type),
-          opcode(opcode),
-          weight_config(weight_config),
-          arborized_config(nullptr),
-          subset_config(nullptr) { }
-
-ConnectionConfig::~ConnectionConfig() {
-    delete weight_config;
-    if (arborized_config != nullptr) delete arborized_config;
-    if (subset_config != nullptr) delete subset_config;
+          opcode(opcode) {
+    this->set_child("weight config", weight_config);
 }
 
-bool ConnectionConfig::validate() {
-    switch (type) {
-        case SUBSET: return subset_config != nullptr;
-        case CONVERGENT:
-        case CONVOLUTIONAL:
-        case DIVERGENT:
-            return arborized_config != nullptr;
-    }
+ConnectionConfig::~ConnectionConfig() { }
+
+bool ConnectionConfig::validate(Connection *conn) const {
+    if (type == SUBSET)
+        return get_subset_config().validate(conn);
     return true;
+}
+
+ConnectionConfig* ConnectionConfig::set_arborized_config(
+        ArborizedConfig *config) {
+    auto props = config->to_property_config();
+    return this->set_arborized_config(&props);
+}
+
+ConnectionConfig* ConnectionConfig::set_subset_config(SubsetConfig *config) {
+    auto props = config->to_property_config();
+    return this->set_subset_config(&props);
+}
+
+ConnectionConfig* ConnectionConfig::set_arborized_config(
+        PropertyConfig *config) {
+    if (not this->has_child("arborized config")) {
+        this->set_child("arborized config", new PropertyConfig(config));
+    } else {
+        auto child = this->get_child("arborized config");
+        for (auto pair : config->get())
+            child->set_value(pair.first, pair.second);
+    }
+    return this;
+}
+
+ConnectionConfig* ConnectionConfig::set_subset_config(PropertyConfig *config) {
+    if (not this->has_child("subset config")) {
+        this->set_child("subset config", new PropertyConfig(config));
+    } else {
+        auto child = this->get_child("subset config");
+        for (auto pair : config->get())
+            child->set_value(pair.first, pair.second);
+    }
+    return this;
+}
+
+ConnectionConfig* ConnectionConfig::set_weight_config(PropertyConfig *config) {
+    if (not this->has_child("weight config")) {
+        this->set_child("weight config", new PropertyConfig(config));
+    } else {
+        auto child = this->get_child("weight config");
+        for (auto pair :config->get())
+            child->set_value(pair.first, pair.second);
+    }
+    return this;
+}
+
+/* Specialized config getters */
+const ArborizedConfig ConnectionConfig::get_arborized_config() const {
+    if (this->has_child("arborized config"))
+        return ArborizedConfig(this->get_child("arborized config"));
+    else
+        return ArborizedConfig();
+}
+
+const SubsetConfig ConnectionConfig::get_subset_config() const {
+    if (this->has_child("subset config"))
+        return SubsetConfig(this->get_child("subset config"));
+    else
+        return SubsetConfig();
+}
+
+const PropertyConfig ConnectionConfig::get_weight_config() const {
+    if (this->has_child("weight config"))
+        return PropertyConfig(this->get_child("weight config"));
+    else
+        return PropertyConfig();
 }
 
 std::string ConnectionConfig::str() const {
@@ -266,16 +316,16 @@ std::string ConnectionConfig::str() const {
         std::to_string(plastic) + "/" +
         std::to_string(delay) + "/" +
         std::to_string(max_weight) + "/" +
-        weight_config->str();
+        get_weight_config().str();
 
     switch (type) {
         case SUBSET:
-            str += ((subset_config == nullptr) ? "" : subset_config->str());
+            str += get_subset_config().str();
             break;
         case CONVERGENT:
         case CONVOLUTIONAL:
         case DIVERGENT:
-            str += ((arborized_config == nullptr) ? "" : arborized_config->str());
+            str += get_arborized_config().str();
             break;
     }
 
@@ -288,11 +338,14 @@ int ConnectionConfig::get_expected_rows(int rows) {
             return rows;
         case FULLY_CONNECTED:
             return rows;
-        case SUBSET:
-            return subset_config->to_row_end - subset_config->to_row_start;
+        case SUBSET: {
+            auto subset_config = get_subset_config();
+            return subset_config.to_row_end - subset_config.to_row_start;
+        }
         default:
-            int row_field_size = arborized_config->row_field_size;
-            int row_stride = arborized_config->row_stride;
+            auto arborized_config = get_arborized_config();
+            int row_field_size = arborized_config.row_field_size;
+            int row_stride = arborized_config.row_stride;
             switch(type) {
                 case CONVERGENT:
                 case CONVOLUTIONAL:
@@ -315,11 +368,14 @@ int ConnectionConfig::get_expected_columns(int columns) {
             return columns;
         case FULLY_CONNECTED:
             return columns;
-        case SUBSET:
-            return subset_config->to_col_end - subset_config->to_col_start;
+        case SUBSET: {
+            auto subset_config = get_subset_config();
+            return subset_config.to_col_end - subset_config.to_col_start;
+        }
         default:
-            int column_field_size = arborized_config->column_field_size;
-            int column_stride = arborized_config->column_stride;
+            auto arborized_config = get_arborized_config();
+            int column_field_size = arborized_config.column_field_size;
+            int column_stride = arborized_config.column_stride;
             switch(type) {
                 case CONVERGENT:
                 case CONVOLUTIONAL:

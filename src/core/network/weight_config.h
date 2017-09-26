@@ -8,106 +8,68 @@
 
 class Connection;
 
-class WeightConfig : public PropertyConfig {
+void initialize_weights(const PropertyConfig config,
+    float* target_matrix, Connection* conn, bool is_host);
+
+class FlatWeightConfig : public PropertyConfig {
     public:
-        WeightConfig() { }
-
-        WeightConfig(PropertyConfig *config) {
-            for (auto pair : config->get())
-                this->set(pair.first, pair.second);
-        }
-
-        WeightConfig(std::string type) {
-            this->set("type", type);
-        }
-
-        void initialize(float* target_matrix, Connection* conn, bool is_host);
-
-        WeightConfig *set(std::string key, std::string value) {
-            set_internal(key, value);
-            return this;
-        }
-
-    protected:
-        void flat_config(float* target_matrix,
-            Connection* conn, bool is_host);
-
-        void random_config(float* target_matrix,
-            Connection* conn, bool is_host);
-
-        void gaussian_config(float* target_matrix,
-            Connection* conn, bool is_host);
-
-        void log_normal_config(float* target_matrix,
-            Connection* conn, bool is_host);
-
-        void surround_config(float* target_matrix,
-            Connection* conn, bool is_host);
-
-        void specified_config(float* target_matrix,
-            Connection* conn, bool is_host);
-
-};
-
-class FlatWeightConfig : public WeightConfig {
-    public:
-        FlatWeightConfig(float weight, float fraction=1.0)
-                : WeightConfig("flat") {
-            this->set("weight", std::to_string(weight));
-            this->set("fraction", std::to_string(fraction));
+        FlatWeightConfig(float weight, float fraction=1.0) {
+            this->set_value("type", "flat");
+            this->set_value("weight", std::to_string(weight));
+            this->set_value("fraction", std::to_string(fraction));
         }
 };
 
-class RandomWeightConfig : public WeightConfig {
+class RandomWeightConfig : public PropertyConfig {
     public:
-        RandomWeightConfig(float max_weight, float fraction=1.0)
-                : WeightConfig("random") {
-            this->set("max weight", std::to_string(max_weight));
-            this->set("fraction", std::to_string(fraction));
+        RandomWeightConfig(float max_weight, float fraction=1.0) {
+            this->set_value("type", "random");
+            this->set_value("max weight", std::to_string(max_weight));
+            this->set_value("fraction", std::to_string(fraction));
         }
 };
 
-class GaussianWeightConfig : public WeightConfig {
+class GaussianWeightConfig : public PropertyConfig {
     public:
-        GaussianWeightConfig(float mean, float std_dev, float fraction=1.0)
-                : WeightConfig("gaussian") {
-            this->set("mean", std::to_string(mean));
-            this->set("std dev", std::to_string(std_dev));
-            this->set("fraction", std::to_string(fraction));
+        GaussianWeightConfig(float mean, float std_dev, float fraction=1.0) {
+            this->set_value("type", "gaussian");
+            this->set_value("mean", std::to_string(mean));
+            this->set_value("std dev", std::to_string(std_dev));
+            this->set_value("fraction", std::to_string(fraction));
         }
 };
 
-class LogNormalWeightConfig : public WeightConfig {
+class LogNormalWeightConfig : public PropertyConfig {
     public:
-        LogNormalWeightConfig(float mean, float std_dev, float fraction=1.0)
-                : WeightConfig("log normal") {
-            this->set("mean", std::to_string(mean));
-            this->set("std dev", std::to_string(std_dev));
-            this->set("fraction", std::to_string(fraction));
+        LogNormalWeightConfig(float mean, float std_dev, float fraction=1.0) {
+            this->set_value("type", "log normal");
+            this->set_value("mean", std::to_string(mean));
+            this->set_value("std dev", std::to_string(std_dev));
+            this->set_value("fraction", std::to_string(fraction));
         }
 };
 
-class SurroundWeightConfig : public WeightConfig {
+class SurroundWeightConfig : public PropertyConfig {
     public:
-        SurroundWeightConfig(int rows, int cols, WeightConfig* child_config)
-                : WeightConfig("surround") {
-            this->set("rows", std::to_string(rows));
-            this->set("columns", std::to_string(cols));
-            this->set("child type", child_config->get("type"));
+        SurroundWeightConfig(int rows, int cols, PropertyConfig* child_config) {
+            this->set_value("type", "surround");
+            this->set_value("rows", std::to_string(rows));
+            this->set_value("columns", std::to_string(cols));
+            this->set_value("child type", child_config->get("type"));
         }
 
-        SurroundWeightConfig(int size, WeightConfig* child_config)
-                : WeightConfig("surround") {
-            this->set("size", std::to_string(size));
-            this->set("child type", child_config->get("type"));
+        SurroundWeightConfig(int size, PropertyConfig* child_config) {
+            this->set_value("type", "surround");
+            this->set_value("size", std::to_string(size));
+            this->set_value("child type", child_config->get("type"));
         }
 };
 
-class SpecifiedWeightConfig : public WeightConfig {
+class SpecifiedWeightConfig : public PropertyConfig {
     public:
-        SpecifiedWeightConfig(std::string weight_string)
-                : WeightConfig("specified") {
-            this->set("weight string", weight_string);
+        SpecifiedWeightConfig(std::string weight_string) {
+            this->set_value("type", "specified");
+            this->set_value("weight string", weight_string);
         }
 };
 

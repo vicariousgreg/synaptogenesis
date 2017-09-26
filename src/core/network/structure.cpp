@@ -39,12 +39,6 @@ Connection* Structure::connect_layers(
         Layer *from_layer, Layer *to_layer,
         ConnectionConfig *config,
         std::string node, std::string name) {
-    if (not config->validate())
-        ErrorManager::get_instance()->log_error(
-            "Error in " + this->str() + ":\n"
-            "  Invalid connection config for connection from "
-            + from_layer->str() + " to " + to_layer->str());
-
     Connection *conn = new Connection(
         from_layer, to_layer, config,
         to_layer->get_dendritic_node(node),
@@ -70,12 +64,6 @@ Connection* Structure::connect_layers_expected(
         std::string node,
         std::string name) {
     Layer *from_layer = get_layer(from_layer_name);
-
-    if (not conn_config->validate())
-        ErrorManager::get_instance()->log_error(
-            "Error in " + this->str() + ":\n"
-            "  Invalid connection config for connection from "
-            + from_layer->str() + " to " + layer_config->name);
 
     // Determine new layer size and create
     layer_config->rows =

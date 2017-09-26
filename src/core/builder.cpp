@@ -23,8 +23,6 @@ static void parse_dendrite(Structure *structure, std::string layer,
     std::string node, Object dobj);
 static void parse_connection(Network *network, std::string structure_name, Object co);
 static PropertyConfig *parse_properties(Object nco);
-static ArborizedConfig *parse_arborized_config(Object wo);
-static SubsetConfig *parse_subset_config(Object wo);
 
 static bool has_string(Object o, std::string key) { return o.has<String>(key); }
 static std::string get_string(Object o, std::string key, std::string def_val="")
@@ -130,7 +128,7 @@ static void parse_layer(Structure *structure, Object lo) {
             plastic = pair.second->get<String>() == "true";
         else if (pair.first == "global")
             global = pair.second->get<String>() == "true";
-        else if (pair.first == "noise")
+        else if (pair.first == "noise config")
             noise_config = parse_properties(pair.second->get<Object>());
         else if (pair.first != "dendrites") // Skip these till end
             properties.push_back(StringPair(pair.first, pair.second->get<String>()));
@@ -174,8 +172,6 @@ static void parse_dendrite(Structure *structure, std::string layer,
 
 /* Parses a connection
  *     -> parse_properties
- *     -> parse_arborized_config
- *     -> parse_subset_config
  */
 static void parse_connection(Network *network, std::string structure_name, Object co) {
     std::string name = "";
@@ -188,9 +184,9 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     int delay = 0;
     std::string dendrite = "root";
 
-    ArborizedConfig *arborized_config = nullptr;
+    PropertyConfig *arborized_config = nullptr;
     PropertyConfig *weight_config = nullptr;
-    SubsetConfig *subset_config = nullptr;
+    PropertyConfig *subset_config = nullptr;
 
     std::string from_structure = structure_name;
     std::string to_structure = structure_name;
@@ -221,9 +217,9 @@ static void parse_connection(Network *network, std::string structure_name, Objec
         else if (pair.first == "weight config")
             weight_config = parse_properties(pair.second->get<Object>());
         else if (pair.first == "arborized config")
-            arborized_config = parse_arborized_config(pair.second->get<Object>());
+            arborized_config = parse_properties(pair.second->get<Object>());
         else if (pair.first == "subset config")
-            subset_config = parse_subset_config(pair.second->get<Object>());
+            subset_config = parse_properties(pair.second->get<Object>());
         else if (pair.first == "dendrite")
             dendrite = pair.second->get<String>();
         else
@@ -247,13 +243,20 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     }
 
     auto connection_config =
-        new ConnectionConfig(plastic, delay, max_weight,
-            type, opcode, new WeightConfig(weight_config));
+        new ConnectionConfig(plastic, delay, max_weight, type, opcode);
 
-    if (arborized_config != nullptr)
+    if (arborized_config != nullptr) {
         connection_config->set_arborized_config(arborized_config);
-    if (subset_config != nullptr)
+        delete arborized_config;
+    }
+    if (subset_config != nullptr) {
         connection_config->set_subset_config(subset_config);
+        delete subset_config;
+    }
+    if (weight_config != nullptr) {
+        connection_config->set_weight_config(weight_config);
+        delete weight_config;
+    }
 
     for (auto pair : properties)
         connection_config->set(pair.first, pair.second);
@@ -277,113 +280,12 @@ static PropertyConfig *parse_properties(Object nco) {
     return config;
 }
 
-/* Parses an arborized connection configuration */
-static ArborizedConfig *parse_arborized_config(Object wo) {
-    int row_field_size = -1;
-    int column_field_size = -1;
-    int row_stride = 1;
-    int column_stride = 1;
-    int row_offset = -1;
-    int column_offset = -1;
-    bool wrap = false;
-
-    for (auto pair : wo.kv_map()) {
-        if (pair.first == "row field size")
-            row_field_size = std::stoi(pair.second->get<String>());
-        else if (pair.first == "column field size")
-            column_field_size = std::stoi(pair.second->get<String>());
-        else if (pair.first == "field size")
-            row_field_size = column_field_size =
-                std::stoi(pair.second->get<String>());
-        else if (pair.first == "row stride")
-            row_stride = std::stoi(pair.second->get<String>());
-        else if (pair.first == "column stride")
-            column_stride = std::stoi(pair.second->get<String>());
-        else if (pair.first == "stride")
-            row_stride = column_stride = std::stoi(pair.second->get<String>());
-        else if (pair.first == "row offset")
-            row_offset = std::stoi(pair.second->get<String>());
-        else if (pair.first == "column offset")
-            column_offset = std::stoi(pair.second->get<String>());
-        else if (pair.first == "offset")
-            row_offset = column_offset = std::stoi(pair.second->get<String>());
-        else if (pair.first == "wrap")
-            wrap = pair.second->get<String>() == "true";
-        else
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized arborized config property: " + pair.first);
-    }
-
-    if (row_field_size < 0 or column_field_size < 0)
-        ErrorManager::get_instance()->log_error(
-            "Unspecified field size for arborized config!");
-
-    if (row_offset < 0 and column_offset < 0) {
-        return new ArborizedConfig(
-            row_field_size, column_field_size,
-            row_stride, column_stride,
-            wrap);
-    } else if (row_offset < 0 or column_offset < 0) {
-        row_offset = std::max(0, row_offset);
-        column_offset = std::max(0, column_offset);
-    }
-
-    return new ArborizedConfig(
-        row_field_size, column_field_size,
-        row_stride, column_stride,
-        row_offset, column_offset,
-        wrap);
-}
-
-/* Parses a subset connection configuration */
-static SubsetConfig *parse_subset_config(Object wo) {
-    int from_row_start = 0;
-    int from_row_end = 0;
-    int from_col_start = 0;
-    int from_col_end = 0;
-    int to_row_start = 0;
-    int to_row_end = 0;
-    int to_col_start = 0;
-    int to_col_end = 0;
-
-    for (auto pair : wo.kv_map()) {
-        if (pair.first == "from row start")
-            from_row_start = std::stoi(pair.second->get<String>());
-        else if (pair.first == "from row end")
-            from_row_end = std::stoi(pair.second->get<String>());
-        else if (pair.first == "from column start")
-            from_col_start = std::stoi(pair.second->get<String>());
-        else if (pair.first == "from column end")
-            from_col_end = std::stoi(pair.second->get<String>());
-        else if (pair.first == "to row start")
-            to_row_start = std::stoi(pair.second->get<String>());
-        else if (pair.first == "to row end")
-            to_row_end = std::stoi(pair.second->get<String>());
-        else if (pair.first == "to column start")
-            to_col_start = std::stoi(pair.second->get<String>());
-        else if (pair.first == "to column end")
-            to_col_end = std::stoi(pair.second->get<String>());
-        else
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized subset config property: " + pair.first);
-    }
-
-    return new SubsetConfig(
-        from_row_start, from_row_end,
-        from_col_start, from_col_end,
-        to_row_start, to_row_end,
-        to_col_start, to_col_end);
-}
-
 /******************************** WRITING *************************************/
 static Object write_structure(Structure *structure);
 static Object write_layer(Layer *layer);
 static Object write_dendrite(DendriticNode *node);
 static Object write_connection(Connection *connection);
 static Object write_properties(PropertyConfig *config);
-static Object write_arborized_config(ArborizedConfig *arborized_config);
-static Object write_subset_config(SubsetConfig *subset_config);
-
 
 
 /* Top level network writer
@@ -447,9 +349,9 @@ static Object write_layer(Layer *layer) {
     for (auto pair : layer->get_config()->get())
         o << pair.first << pair.second;
 
-    auto noise_config = layer->get_config()->get_child("noise", nullptr);
+    auto noise_config = layer->get_config()->get_child("noise config", nullptr);
     if (noise_config != nullptr)
-        o << "noise" << write_properties(noise_config);
+        o << "noise config" << write_properties(noise_config);
 
     o << "dendrites" << write_dendrite(layer->dendritic_root);
 
@@ -476,8 +378,6 @@ static Object write_dendrite(DendriticNode *node) {
 
 /* Writes a connection
  *     -> write_properties
- *     -> write_arborized_config
- *     -> write_subset_config
  */
 static Object write_connection(Connection *connection) {
     Object o;
@@ -498,23 +398,14 @@ static Object write_connection(Connection *connection) {
         ? (o << "plastic" << "true") : (o << "plastic" << "false");
 
     auto connection_config = connection->get_config();
-    o << "weight config"
-        << write_properties(connection_config->get_weight_config());
-
-    auto arborized_config = connection_config->get_arborized_config();
-    if (arborized_config != nullptr)
-        o << "arborized config"
-            << write_arborized_config(arborized_config);
-
-    auto subset_config = connection_config->get_subset_config();
-    if (subset_config != nullptr)
-        o << "subset config" << write_subset_config(subset_config);
-
-    for (auto pair : connection_config->get())
-        o << pair.first << pair.second;
 
     o << "dendrite"
         << connection->to_layer->structure->get_parent_node_name(connection);
+
+    for (auto pair : connection_config->get())
+        o << pair.first << pair.second;
+    for (auto pair : connection_config->get_children())
+        o << pair.first << write_properties(pair.second);
 
     return o;
 }
@@ -525,36 +416,8 @@ static Object write_properties(PropertyConfig *config) {
     for (auto pair : config->get())
         if (pair.second != "")
             o << pair.first << pair.second;
-    return o;
-}
-
-/* Writes an arborized connection configuration */
-static Object write_arborized_config(ArborizedConfig *arborized_config) {
-    Object o;
-    o << "row field size" << std::to_string(arborized_config->row_field_size);
-    o << "column field size" << std::to_string(arborized_config->column_field_size);
-    o << "row stride" << std::to_string(arborized_config->row_stride);
-    o << "column stride" << std::to_string(arborized_config->column_stride);
-    o << "row offset" << std::to_string(arborized_config->row_offset);
-    o << "column offset" << std::to_string(arborized_config->column_offset);
-
-    (arborized_config->wrap)
-        ? (o << "wrap" << "true") : (o << "wrap" << "false");
-
-    return o;
-}
-
-/* Writes a subset connection configuration */
-static Object write_subset_config(SubsetConfig *subset_config) {
-    Object o;
-    o << "from row start" << std::to_string(subset_config->from_row_start);
-    o << "from row end" << std::to_string(subset_config->from_row_end);
-    o << "from column start" << std::to_string(subset_config->from_col_start);
-    o << "from column end" << std::to_string(subset_config->from_col_end);
-    o << "to row start" << std::to_string(subset_config->to_row_start);
-    o << "to row end" << std::to_string(subset_config->to_row_end);
-    o << "to column start" << std::to_string(subset_config->to_col_start);
-    o << "to column end" << std::to_string(subset_config->to_col_end);
+    for (auto pair : config->get_children())
+        o << pair.first << write_properties(pair.second);
     return o;
 }
 

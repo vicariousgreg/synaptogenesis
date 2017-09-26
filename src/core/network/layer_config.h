@@ -37,7 +37,7 @@ class LayerConfig : public PropertyConfig {
                       plastic(plastic),
                       global(global) {
             if (noise_config != nullptr)
-                this->set_child("noise", noise_config);
+                this->set_child("noise config", noise_config);
         }
 
         LayerConfig(
@@ -51,7 +51,7 @@ class LayerConfig : public PropertyConfig {
 
         /* Setter that returns self pointer */
         LayerConfig *set(std::string key, std::string value) {
-            set_internal(key, value);
+            set_value(key, value);
             return this;
         }
 

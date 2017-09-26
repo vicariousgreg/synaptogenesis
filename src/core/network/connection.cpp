@@ -38,17 +38,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             break;
         }
         case SUBSET: {
-            auto subset_config = config->get_subset_config();
-            if (subset_config == nullptr)
-                ErrorManager::get_instance()->log_error(
-                    "Error in " + this->str() + ":\n"
-                    "  Unspecified config for subset connection!");
-            if (not subset_config->validate(this))
-                ErrorManager::get_instance()->log_error(
-                    "Error in " + this->str() + ":\n"
-                    "  Invalid config for subset connection!");
-
-            this->num_weights = subset_config->total_size;
+            this->num_weights = config->get_subset_config().total_size;
             break;
         }
         case ONE_TO_ONE:
@@ -62,11 +52,6 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             break;
         default:
             auto arborized_config = config->get_arborized_config();
-            if (arborized_config == nullptr)
-                ErrorManager::get_instance()->log_error(
-                    "Error in " + this->str() + ":\n"
-                    "  Convergent/divergent connections "
-                    "require ArborizedConfig!");
 
             // Because of checks in the kernels, mismatched layers will not cause
             //     problems.  Therefore, we only log a warning for this.
@@ -87,24 +72,24 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             switch (type) {
                 case CONVOLUTIONAL:
                     // Convolutional connections use a shared weight kernel
-                    this->num_weights = arborized_config->get_total_field_size();
+                    this->num_weights = arborized_config.get_total_field_size();
                     break;
                 case CONVERGENT:
                     // Convergent connections use unshared mini weight matrices
                     // Each destination neuron connects to field_size squared neurons
                     this->num_weights =
-                        arborized_config->get_total_field_size() * to_layer->size;
+                        arborized_config.get_total_field_size() * to_layer->size;
                     break;
                 case DIVERGENT:
                     // Divergent connections use unshared mini weight matrices
                     // Each source neuron connects to field_size squared neurons
                     this->num_weights =
-                        arborized_config->get_total_field_size() * to_layer->size;
+                        arborized_config.get_total_field_size() * to_layer->size;
 
                     // Arithmetic operations for the divergent kernel constrain
                     //   the stride to non-zero values (division)
-                    if (arborized_config->row_stride == 0 or
-                        arborized_config->column_stride == 0)
+                    if (arborized_config.row_stride == 0 or
+                        arborized_config.column_stride == 0)
                         ErrorManager::get_instance()->log_error(
                             "Error in " + this->str() + ":\n"
                             "  Divergent connections cannot have zero stride!");
@@ -134,14 +119,20 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
         //   connections are computed like one-to-one connections.
         auto arborized_config = config->get_arborized_config();
         if (this->type == CONVOLUTIONAL and
-            (arborized_config->get_total_field_size() != from_layer->size
-                or arborized_config->row_stride != 0
-                or arborized_config->column_stride != 0))
+            (arborized_config.get_total_field_size() != from_layer->size
+                or arborized_config.row_stride != 0
+                or arborized_config.column_stride != 0))
             ErrorManager::get_instance()->log_error(
                 "Error in " + this->str() + ":\n"
                 "  Second order convolutional connections must have fields"
                 " that are the size of the input layer, and must have 0 stride!");
     }
+
+    // Validate the config
+    if (not config->validate(this))
+        ErrorManager::get_instance()->log_error(
+            "Error in " + this->str() + ":\n"
+            "  Invalid connection config!");
 
     // Assuming all went well, connect the layers
     from_layer->add_output_connection(this);

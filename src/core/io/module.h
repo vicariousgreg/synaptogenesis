@@ -33,7 +33,7 @@ class ModuleConfig : public PropertyConfig {
 
         /* Setter that returns self pointer */
         ModuleConfig *set(std::string key, std::string value) {
-            set_internal(key, value);
+            set_value(key, value);
             return this;
         }
 

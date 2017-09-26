@@ -9,6 +9,7 @@ class Connection;
 
 class SubsetConfig {
     public:
+        SubsetConfig(PropertyConfig *config);
         SubsetConfig() : SubsetConfig(0,0,0,0,0,0,0,0) { }
         SubsetConfig(
             int from_row_start, int from_row_end,
@@ -16,19 +17,20 @@ class SubsetConfig {
             int to_row_start, int to_row_end,
             int to_col_start, int to_col_end);
 
-        bool validate(Connection *conn);
+        bool validate(Connection *conn) const;
+        PropertyConfig to_property_config() const;
 
         std::string str() const;
 
-        const int from_row_start, from_row_end;
-        const int from_col_start, from_col_end;
-        const int from_row_size, from_col_size;
-        const int from_size;
-        const int to_row_start, to_row_end;
-        const int to_col_start, to_col_end;
-        const int to_row_size, to_col_size;
-        const int to_size;
-        const int total_size;
+        int from_row_start, from_row_end;
+        int from_col_start, from_col_end;
+        int from_row_size, from_col_size;
+        int from_size;
+        int to_row_start, to_row_end;
+        int to_col_start, to_col_end;
+        int to_row_size, to_col_size;
+        int to_size;
+        int total_size;
 };
 
 class ArborizedConfig {
@@ -58,12 +60,14 @@ class ArborizedConfig {
                 and (row_offset == column_offset == -row_field_size/2);
         }
 
+        PropertyConfig to_property_config() const;
+
         std::string str() const;
 
-        const int row_field_size, column_field_size;
-        const int row_stride, column_stride;
-        const int row_offset, column_offset;
-        const bool wrap;
+        int row_field_size, column_field_size;
+        int row_stride, column_stride;
+        int row_offset, column_offset;
+        bool wrap;
 };
 
 class ConnectionConfig : public PropertyConfig {
@@ -83,42 +87,28 @@ class ConnectionConfig : public PropertyConfig {
             float max_weight,
             ConnectionType type,
             Opcode opcode,
-            WeightConfig* weight_config);
+            PropertyConfig* weight_config);
 
         virtual ~ConnectionConfig();
 
-        bool validate();
+        bool validate(Connection *conn) const;
 
         /* Specialized config setters */
-        ConnectionConfig *set_arborized_config(ArborizedConfig *config)
-            { arborized_config = config; }
-        ConnectionConfig *set_subset_config(SubsetConfig *config)
-            { subset_config = config; }
-        ConnectionConfig *set_weight_config(WeightConfig *config) {
-            delete weight_config;
-            weight_config = config;
-        }
+        ConnectionConfig *set_arborized_config(ArborizedConfig *config);
+        ConnectionConfig *set_subset_config(SubsetConfig *config);
+
+        ConnectionConfig *set_arborized_config(PropertyConfig *config);
+        ConnectionConfig *set_subset_config(PropertyConfig *config);
+        ConnectionConfig *set_weight_config(PropertyConfig *config);
 
         /* Specialized config getters */
-        ArborizedConfig *get_arborized_config() const
-            { return arborized_config; }
-        SubsetConfig *get_subset_config() const
-            { return subset_config; }
-        WeightConfig *get_weight_config() const
-            { return weight_config; }
-
-        ArborizedConfig copy_arborized_config() const {
-            return (arborized_config == nullptr)
-                ? ArborizedConfig() : *arborized_config;
-        }
-        SubsetConfig copy_subset_config() const {
-            return (subset_config == nullptr)
-                ? SubsetConfig() : *subset_config;
-        }
+        const ArborizedConfig get_arborized_config() const;
+        const SubsetConfig get_subset_config() const;
+        const PropertyConfig get_weight_config() const;
 
         /* Setter that returns self pointer */
         ConnectionConfig *set(std::string key, std::string value) {
-            set_internal(key, value);
+            set_value(key, value);
             return this;
         }
 
@@ -135,11 +125,6 @@ class ConnectionConfig : public PropertyConfig {
         const float max_weight;
         const ConnectionType type;
         const Opcode opcode;
-
-    protected:
-        ArborizedConfig* arborized_config;
-        SubsetConfig* subset_config;
-        WeightConfig* weight_config;
 };
 
 #endif

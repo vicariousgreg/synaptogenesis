@@ -89,8 +89,8 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
 
     // If parameter is specified, interpret it for initialization
     // Otherwise, perform randomization
-    conn->get_config()->get_weight_config()->initialize(mData, conn,
-        ResourceManager::get_instance()->is_host(device_id));
+    initialize_weights(conn->get_config()->get_weight_config(),
+        mData, conn, ResourceManager::get_instance()->is_host(device_id));
 }
 
 WeightMatrix::~WeightMatrix() {
@@ -130,14 +130,14 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                 to_col_end = conn->to_layer->columns;
             } else if (conn->type == SUBSET) {
                 auto sc = conn->get_config()->get_subset_config();
-                from_row_start = sc->from_row_start;
-                from_col_start = sc->from_col_start;
-                to_row_start = sc->to_row_start;
-                to_col_start = sc->to_col_start;
-                from_row_end = sc->from_row_end;
-                from_col_end = sc->from_col_end;
-                to_row_end = sc->to_row_end;
-                to_col_end = sc->to_col_end;
+                from_row_start = sc.from_row_start;
+                from_col_start = sc.from_col_start;
+                to_row_start = sc.to_row_start;
+                to_col_start = sc.to_col_start;
+                from_row_end = sc.from_row_end;
+                from_col_end = sc.from_col_end;
+                to_row_end = sc.to_row_end;
+                to_col_end = sc.to_col_end;
             }
 
             int from_columns = conn->from_layer->columns;
@@ -179,20 +179,20 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
         case CONVERGENT: {
             auto ac = conn->get_config()->get_arborized_config();
             int to_size = conn->to_layer->size;
-            int field_size = ac->row_field_size * ac->column_field_size;
+            int field_size = ac.row_field_size * ac.column_field_size;
 
-            if (ac->row_stride != ac->column_stride
-                or (int(to_spacing / from_spacing) != ac->row_stride))
+            if (ac.row_stride != ac.column_stride
+                or (int(to_spacing / from_spacing) != ac.row_stride))
                 ErrorManager::get_instance()->log_error(
                     "Error initializing delays for " + conn->str() + "\n"
                     "  Spacing and strides must match up for "
                     "convergent connection!");
 
-            for (int f_row = 0; f_row < ac->row_field_size; ++f_row) {
-                float f_y = (f_row + ac->row_offset) * to_spacing;
+            for (int f_row = 0; f_row < ac.row_field_size; ++f_row) {
+                float f_y = (f_row + ac.row_offset) * to_spacing;
 
-                for (int f_col = 0; f_col < ac->column_field_size; ++f_col) {
-                    float f_x = (f_col + ac->column_offset) * to_spacing;
+                for (int f_col = 0; f_col < ac.column_field_size; ++f_col) {
+                    float f_x = (f_col + ac.column_offset) * to_spacing;
 
                     float distance = pow(
                         pow(f_x, 2) + pow(f_y, 2),
@@ -204,7 +204,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                             "  Unmyelinated axons cannot have delays "
                             "greater than 31!");
 
-                    int f_index = (f_row * ac->column_field_size) + f_col;
+                    int f_index = (f_row * ac.column_field_size) + f_col;
 
                     if (is_host)
                         for (int i = 0 ; i < to_size ; ++i)
@@ -225,20 +225,20 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
             int from_rows = conn->from_layer->rows;
             int from_columns = conn->from_layer->columns;
 
-            if (ac->row_stride != ac->column_stride
-                or (int(from_spacing / to_spacing) != ac->row_stride))
+            if (ac.row_stride != ac.column_stride
+                or (int(from_spacing / to_spacing) != ac.row_stride))
                 ErrorManager::get_instance()->log_error(
                     "Error initializing delays for " + conn->str() + "\n"
                     "  Spacing and strides must match up for "
                     "divergent connection!");
 
 
-            int row_field_size = ac->row_field_size;
-            int column_field_size = ac->column_field_size;
-            int row_stride = ac->row_stride;
-            int column_stride = ac->column_stride;
-            int row_offset = ac->row_offset;
-            int column_offset = ac->column_offset;
+            int row_field_size = ac.row_field_size;
+            int column_field_size = ac.column_field_size;
+            int row_stride = ac.row_stride;
+            int column_stride = ac.column_stride;
+            int row_offset = ac.row_offset;
+            int column_offset = ac.column_offset;
             int kernel_size = row_field_size * column_field_size;
 
             for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
@@ -268,10 +268,10 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                             int from_index = (s_row * from_columns) + s_col;
 
                             float d_x = abs(
-                                ((d_row + ac->row_offset) * to_spacing)
+                                ((d_row + ac.row_offset) * to_spacing)
                                 - (s_row * from_spacing));
                             float d_y = abs(
-                                ((d_col + ac->column_offset) * to_spacing)
+                                ((d_col + ac.column_offset) * to_spacing)
                                 - (s_col * from_spacing));
 
                             float distance = pow(

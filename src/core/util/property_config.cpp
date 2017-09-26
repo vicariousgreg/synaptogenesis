@@ -3,6 +3,13 @@
 #include "util/property_config.h"
 #include "util/error_manager.h"
 
+PropertyConfig::PropertyConfig(PropertyConfig *other) {
+    for (auto pair : other->get())
+        this->set_value(pair.first, pair.second);
+    for (auto pair : other->get_children())
+        this->set_child(pair.first, pair.second);
+}
+
 PropertyConfig::PropertyConfig(StringPairList pairs) {
     for (auto pair : pairs) {
         keys.push_back(pair.first);
@@ -47,14 +54,10 @@ std::string PropertyConfig::get(std::string key, std::string def_val) const {
     else                   return def_val;
 }
 
-void PropertyConfig::set_internal(std::string key, std::string value) {
+PropertyConfig* PropertyConfig::set_value(std::string key, std::string value) {
     properties[key] = value;
     if (std::find(keys.begin(), keys.end(), key) == keys.end())
         keys.push_back(key);
-}
-
-PropertyConfig* PropertyConfig::set_value(std::string key, std::string val) {
-    set_internal(key, val);
     return this;
 }
 

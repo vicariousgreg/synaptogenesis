@@ -6,28 +6,28 @@
 #include "state/weight_matrix.h"
 #include "util/error_manager.h"
 
-void WeightConfig::flat_config(float* target_matrix,
+static void flat_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
-    float weight = std::stof(this->get("weight", "1.0"));
-    float fraction = std::stof(this->get("fraction", "1.0"));
+    float weight = std::stof(config.get("weight", "1.0"));
+    float fraction = std::stof(config.get("fraction", "1.0"));
 
     set_weights(target_matrix, conn->get_num_weights(), weight, fraction);
 }
 
-void WeightConfig::random_config(float* target_matrix,
+static void random_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
-    float max_weight = std::stof(this->get("max weight", "1.0"));
-    float fraction = std::stof(this->get("fraction", "1.0"));
+    float max_weight = std::stof(config.get("max weight", "1.0"));
+    float fraction = std::stof(config.get("fraction", "1.0"));
 
     randomize_weights(target_matrix, conn->get_num_weights(),
         max_weight, fraction);
 }
 
-void WeightConfig::gaussian_config(float* target_matrix,
+static void gaussian_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
-    float mean = std::stof(this->get("mean", "1.0"));
-    float std_dev = std::stof(this->get("std dev", "0.3"));
-    float fraction = std::stof(this->get("fraction", "1.0"));
+    float mean = std::stof(config.get("mean", "1.0"));
+    float std_dev = std::stof(config.get("std dev", "0.3"));
+    float fraction = std::stof(config.get("fraction", "1.0"));
 
     if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
@@ -38,11 +38,11 @@ void WeightConfig::gaussian_config(float* target_matrix,
         mean, std_dev, conn->max_weight, fraction);
 }
 
-void WeightConfig::log_normal_config(float* target_matrix,
+static void log_normal_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
-    float mean = std::stof(this->get("mean", "1.0"));
-    float std_dev = std::stof(this->get("std dev", "0.3"));
-    float fraction = std::stof(this->get("fraction", "1.0"));
+    float mean = std::stof(config.get("mean", "1.0"));
+    float std_dev = std::stof(config.get("std dev", "0.3"));
+    float fraction = std::stof(config.get("fraction", "1.0"));
 
     if (std_dev < 0)
         ErrorManager::get_instance()->log_error(
@@ -53,7 +53,7 @@ void WeightConfig::log_normal_config(float* target_matrix,
         mean, std_dev, conn->max_weight, fraction);
 }
 
-void WeightConfig::surround_config(float* target_matrix,
+static void surround_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
     switch (conn->type) {
         case CONVERGENT:
@@ -66,9 +66,9 @@ void WeightConfig::surround_config(float* target_matrix,
                 "on arborized connections!");
     }
 
-    int rows = std::stoi(this->get("rows", "0"));
-    int cols = std::stoi(this->get("columns", "0"));
-    int size_param = std::stoi(this->get("size", "-1"));
+    int rows = std::stoi(config.get("rows", "0"));
+    int cols = std::stoi(config.get("columns", "0"));
+    int size_param = std::stoi(config.get("size", "-1"));
 
     if (size_param >= 0)
         rows = cols = size_param;
@@ -78,12 +78,10 @@ void WeightConfig::surround_config(float* target_matrix,
             "  Surround weight config rows/cols must be positive!");
 
     // Carve out center
-    int row_field_size =
-        conn->get_config()->get_arborized_config()->column_field_size;
-    int col_field_size =
-        conn->get_config()->get_arborized_config()->column_field_size;
-    int kernel_size =
-        conn->get_config()->get_arborized_config()->get_total_field_size();
+    auto ac = conn->get_config()->get_arborized_config();
+    int row_field_size = ac.column_field_size;
+    int col_field_size = ac.column_field_size;
+    int kernel_size = ac.get_total_field_size();
 
     int row_offset = (row_field_size - rows) / 2;
     int col_offset = (col_field_size - cols) / 2;
@@ -127,9 +125,9 @@ void WeightConfig::surround_config(float* target_matrix,
     }
 }
 
-void WeightConfig::specified_config(float* target_matrix,
+static void specified_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
-    std::string weight_string = this->get("weight string", "");
+    std::string weight_string = config.get("weight string", "");
     if (weight_string == "")
         ErrorManager::get_instance()->log_error(
             "Error in weight config for " + conn->str() + ":\n"
@@ -140,10 +138,9 @@ void WeightConfig::specified_config(float* target_matrix,
 
     int rows = conn->to_layer->size;
     int cols = conn->from_layer->size;
-    int row_field_size =
-        conn->get_config()->get_arborized_config()->row_field_size;
-    int column_field_size =
-        conn->get_config()->get_arborized_config()->column_field_size;
+    auto ac = conn->get_config()->get_arborized_config();
+    int row_field_size = ac.row_field_size;
+    int column_field_size = ac.column_field_size;
     switch (conn->type) {
         case CONVOLUTIONAL:
             rows = 1;
@@ -180,38 +177,38 @@ void WeightConfig::specified_config(float* target_matrix,
     }
 }
 
-void WeightConfig::initialize(float* target_matrix,
-        Connection* conn, bool is_host) {
-    if (this->has("fraction")) {
-        float fraction = std::stof(this->get("fraction", "1.0"));
+void initialize_weights(const PropertyConfig config,
+        float* target_matrix, Connection* conn, bool is_host) {
+    if (config.has("fraction")) {
+        float fraction = std::stof(config.get("fraction", "1.0"));
         if (fraction < 0 or fraction > 1.0)
             ErrorManager::get_instance()->log_error(
                 "Error in weight config for " + conn->str() + ":\n"
                 "  Weight config fraction must be between 0 and 1!");
     }
 
-    auto type = this->get("type", "flat");
+    auto type = config.get("type", "flat");
 
     // If surround, treat as child type and then process as surround after
     bool surround = type == "surround";
     if (surround) {
-        if (not this->has("child type"))
+        if (not config.has("child type"))
             ErrorManager::get_instance()->log_error(
                 "Error in weight config for " + conn->str() + ":\n"
                 "  Missing child weight config for surround weight config!");
-        type = this->get("child type");
+        type = config.get("child type");
     }
 
     if (type == "flat")
-        flat_config(target_matrix, conn, is_host);
+        flat_config(config, target_matrix, conn, is_host);
     else if (type == "random")
-        random_config(target_matrix, conn, is_host);
+        random_config(config, target_matrix, conn, is_host);
     else if (type == "gaussian")
-        gaussian_config(target_matrix, conn, is_host);
+        gaussian_config(config, target_matrix, conn, is_host);
     else if (type == "log normal")
-        log_normal_config(target_matrix, conn, is_host);
+        log_normal_config(config, target_matrix, conn, is_host);
     else if (type == "specified")
-        specified_config(target_matrix, conn, is_host);
+        specified_config(config, target_matrix, conn, is_host);
     else
         ErrorManager::get_instance()->log_error(
             "Error in weight config for " + conn->str() + ":\n"
@@ -219,9 +216,9 @@ void WeightConfig::initialize(float* target_matrix,
 
     // Now do surround processing
     if (surround)
-        surround_config(target_matrix, conn, is_host);
+        surround_config(config, target_matrix, conn, is_host);
 
-    if (this->get("diagonal", "true") != "true") {
+    if (config.get("diagonal", "true") != "true") {
         switch(conn->type) {
             case FULLY_CONNECTED:
                 clear_diagonal(target_matrix,
@@ -230,7 +227,8 @@ void WeightConfig::initialize(float* target_matrix,
             case SUBSET: {
                 auto subset_config = conn->get_config()->get_subset_config();
                 clear_diagonal(target_matrix,
-                    subset_config->from_size, subset_config->to_size);
+                    subset_config.from_size,
+                    subset_config.to_size);
                 break;
             }
             case CONVERGENT:

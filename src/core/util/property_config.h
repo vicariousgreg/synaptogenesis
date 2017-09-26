@@ -16,6 +16,7 @@ typedef std::vector<PropertyPair> PropertyPairList;
 class PropertyConfig {
     public:
         PropertyConfig() { }
+        PropertyConfig(PropertyConfig *other);
         PropertyConfig(StringPairList pairs);
 
         const StringPairList get() const;
@@ -36,8 +37,6 @@ class PropertyConfig {
         std::string str() const;
 
     protected:
-        void set_internal(std::string key, std::string value);
-
         std::map<std::string, std::string> properties;
         std::vector<std::string> keys;
 
