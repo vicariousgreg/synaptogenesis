@@ -177,11 +177,6 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     std::string name = "";
     std::string from_layer = "";
     std::string to_layer = "";
-    std::string type_string = "fully connected";
-    std::string opcode_string = "add";
-    float max_weight = 0.0;
-    bool plastic = true;
-    int delay = 0;
     std::string dendrite = "root";
 
     PropertyConfig *arborized_config = nullptr;
@@ -191,7 +186,7 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     std::string from_structure = structure_name;
     std::string to_structure = structure_name;
 
-    StringPairList properties;
+    PropertyConfig* props = new PropertyConfig();
 
     for (auto pair : co.kv_map()) {
         if (pair.first == "name")
@@ -204,62 +199,31 @@ static void parse_connection(Network *network, std::string structure_name, Objec
             from_structure = pair.second->get<String>();
         else if (pair.first == "to structure")
             to_structure = pair.second->get<String>();
-        else if (pair.first == "type")
-            type_string = pair.second->get<String>();
-        else if (pair.first == "opcode")
-            opcode_string = pair.second->get<String>();
-        else if (pair.first == "max weight")
-            max_weight = std::stof(pair.second->get<String>());
-        else if (pair.first == "plastic")
-            plastic = pair.second->get<String>() == "true";
-        else if (pair.first == "delay")
-            delay = std::stoi(pair.second->get<String>());
-        else if (pair.first == "weight config")
-            weight_config = parse_properties(pair.second->get<Object>());
-        else if (pair.first == "arborized config")
-            arborized_config = parse_properties(pair.second->get<Object>());
-        else if (pair.first == "subset config")
-            subset_config = parse_properties(pair.second->get<Object>());
         else if (pair.first == "dendrite")
             dendrite = pair.second->get<String>();
-        else
-            properties.push_back(StringPair(pair.first, pair.second->get<String>()));
+        else if (pair.second->is<Object>())
+            props->set_child(pair.first,
+                parse_properties(pair.second->get<Object>()));
+        else if (pair.second->is<String>())
+            props->set_value(pair.first, pair.second->get<String>());
     }
 
-    ConnectionType type;
     try {
-        type = ConnectionTypes[type_string];
+        ConnectionTypes[props->get("type", "fully connected")];
     } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
-            "Unrecognized connection type: " + type_string);
+            "Unrecognized connection type: " + props->get("type"));
     }
 
-    Opcode opcode;
     try {
-        opcode = Opcodes[opcode_string];
+        Opcodes[props->get("opcode", "add")];
     } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
-            "Unrecognized opcode: " + opcode_string);
+            "Unrecognized opcode: " + props->get("opcode"));
     }
 
-    auto connection_config =
-        new ConnectionConfig(plastic, delay, max_weight, type, opcode);
-
-    if (arborized_config != nullptr) {
-        connection_config->set_arborized_config(arborized_config);
-        delete arborized_config;
-    }
-    if (subset_config != nullptr) {
-        connection_config->set_subset_config(subset_config);
-        delete subset_config;
-    }
-    if (weight_config != nullptr) {
-        connection_config->set_weight_config(weight_config);
-        delete weight_config;
-    }
-
-    for (auto pair : properties)
-        connection_config->set(pair.first, pair.second);
+    auto connection_config = new ConnectionConfig(props);
+    delete props;
 
     Structure::connect(
         network->get_structure(from_structure),

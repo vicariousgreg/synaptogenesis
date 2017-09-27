@@ -209,6 +209,10 @@ void initialize_weights(const PropertyConfig config,
         log_normal_config(config, target_matrix, conn, is_host);
     else if (type == "specified")
         specified_config(config, target_matrix, conn, is_host);
+    else if (type == "surround")
+        ErrorManager::get_instance()->log_error(
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Surround weight configs cannot be nested!");
     else
         ErrorManager::get_instance()->log_error(
             "Error in weight config for " + conn->str() + ":\n"

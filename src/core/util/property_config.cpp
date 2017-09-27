@@ -7,7 +7,7 @@ PropertyConfig::PropertyConfig(PropertyConfig *other) {
     for (auto pair : other->get())
         this->set_value(pair.first, pair.second);
     for (auto pair : other->get_children())
-        this->set_child(pair.first, pair.second);
+        this->set_child(pair.first, new PropertyConfig(pair.second));
 }
 
 PropertyConfig::PropertyConfig(StringPairList pairs) {
@@ -16,6 +16,11 @@ PropertyConfig::PropertyConfig(StringPairList pairs) {
         properties[pair.first] = pair.second;
     }
 }
+
+PropertyConfig::~PropertyConfig() {
+    for (auto pair : children) delete pair.second;
+}
+
 
 const StringPairList PropertyConfig::get() const {
     StringPairList pairs;
@@ -31,20 +36,9 @@ const StringPairList PropertyConfig::get_alphabetical() const {
     return pairs;
 }
 
+
 bool PropertyConfig::has(std::string key) const
     { return properties.count(key) > 0; }
-
-std::string PropertyConfig::remove_property(std::string key) {
-    if (has(key)) {
-        std::string value = get(key);
-        properties.erase(key);
-        keys.erase(std::find(keys.begin(), keys.end(), key));
-        return value;
-    }
-    ErrorManager::get_instance()->log_error(
-        "Attempted to remove non-existent property " + key
-        + " from PropertyConfig!");
-}
 
 std::string PropertyConfig::get(std::string key) const
     { return properties.at(key); }
@@ -61,24 +55,18 @@ PropertyConfig* PropertyConfig::set_value(std::string key, std::string value) {
     return this;
 }
 
-void PropertyConfig::set_child(std::string key, PropertyConfig *child) {
-    children[key] = child;
-    if (std::find(children_keys.begin(), children_keys.end(), key)
-            == children_keys.end())
-        children_keys.push_back(key);
+std::string PropertyConfig::remove_property(std::string key) {
+    if (has(key)) {
+        std::string value = get(key);
+        properties.erase(key);
+        keys.erase(std::find(keys.begin(), keys.end(), key));
+        return value;
+    }
+    ErrorManager::get_instance()->log_error(
+        "Attempted to remove non-existent property " + key
+        + " from PropertyConfig!");
 }
 
-bool PropertyConfig::has_child(std::string key) const
-    { return children.count(key) > 0; }
-
-PropertyConfig* PropertyConfig::get_child(std::string key) const
-    { return children.at(key); }
-
-PropertyConfig* PropertyConfig::get_child(
-        std::string key, PropertyConfig *def_val) const {
-    if (has_child(key)) return children.at(key);
-    else                return def_val;
-}
 
 const PropertyPairList PropertyConfig::get_children() const {
     PropertyPairList pairs;
@@ -94,11 +82,44 @@ const PropertyPairList PropertyConfig::get_children_alphabetical() const {
     return pairs;
 }
 
+
+bool PropertyConfig::has_child(std::string key) const
+    { return children.count(key) > 0; }
+
+PropertyConfig* PropertyConfig::get_child(std::string key) const
+    { return children.at(key); }
+
+PropertyConfig* PropertyConfig::get_child(
+        std::string key, PropertyConfig *def_val) const {
+    if (has_child(key)) return children.at(key);
+    else                return def_val;
+}
+
+void PropertyConfig::set_child(std::string key, PropertyConfig *child) {
+    children[key] = child;
+    if (std::find(children_keys.begin(), children_keys.end(), key)
+            == children_keys.end())
+        children_keys.push_back(key);
+}
+
+PropertyConfig* PropertyConfig::remove_child(std::string key) {
+    if (has_child(key)) {
+        PropertyConfig* child = get_child(key);
+        children.erase(key);
+        children_keys.erase(
+            std::find(children_keys.begin(), children_keys.end(), key));
+        return child;
+    }
+    ErrorManager::get_instance()->log_error(
+        "Attempted to remove non-existent property " + key
+        + " from PropertyConfig!");
+}
+
 std::string PropertyConfig::str() const {
     std::string str = "{";
-    for (pair : get_alphabetical())
+    for (auto pair : get_alphabetical())
         str += "(" + pair.first + "," + pair.second + ")";
-    for (pair : get_children_alphabetical())
+    for (auto pair : get_children_alphabetical())
         str += "(" + pair.first + "," + pair.second->str() + ")";
     return str + "}";
 }

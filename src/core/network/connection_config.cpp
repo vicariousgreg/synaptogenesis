@@ -137,7 +137,16 @@ SubsetConfig::SubsetConfig(PropertyConfig *config) {
             ErrorManager::get_instance()->log_error(
                 "Unrecognized subset config property: " + pair.first);
     }
+
+    from_row_size = from_row_end - from_row_start;
+    from_col_size = from_col_end - from_col_start;
+    from_size = from_row_size * from_col_size;
+    to_row_size = to_row_end - to_row_start;
+    to_col_size = to_col_end - to_col_start;
+    to_size = to_row_size * to_col_size;
+    total_size = from_size * to_size;
 }
+
 SubsetConfig::SubsetConfig(
     int from_row_start, int from_row_end,
     int from_col_start, int from_col_end,

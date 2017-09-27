@@ -675,7 +675,8 @@ void working_memory_test() {
         sub_structure->add_layer(
             (new LayerConfig("6_cortex",
                 IZHIKEVICH, cortex_size, cortex_size,
-                (new NoiseConfig("normal"))
+                (new PropertyConfig())
+                ->set("type", "normal")
                 ->set("mean", std::to_string(cortex_noise))
                 ->set("std_dev", std::to_string(cortex_noise_stdev))))
             ->set(IZ_INIT, "regular"));

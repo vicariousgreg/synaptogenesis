@@ -52,6 +52,8 @@ class LogNormalWeightConfig : public PropertyConfig {
 class SurroundWeightConfig : public PropertyConfig {
     public:
         SurroundWeightConfig(int rows, int cols, PropertyConfig* child_config) {
+            for (auto pair : child_config->get())
+                this->set_value(pair.first, pair.second);
             this->set_value("type", "surround");
             this->set_value("rows", std::to_string(rows));
             this->set_value("columns", std::to_string(cols));
@@ -59,6 +61,8 @@ class SurroundWeightConfig : public PropertyConfig {
         }
 
         SurroundWeightConfig(int size, PropertyConfig* child_config) {
+            for (auto pair : child_config->get())
+                this->set_value(pair.first, pair.second);
             this->set_value("type", "surround");
             this->set_value("size", std::to_string(size));
             this->set_value("child type", child_config->get("type"));
