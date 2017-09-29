@@ -882,17 +882,20 @@ void dsst_test() {
         ->set(IZ_INIT, "regular"));
 
     // Connect vision to what
-    structure->set_second_order("what", "root");
+    structure->create_dendritic_node("what", "root", "fixation");
+    structure->set_second_order("what", "fixation");
     structure->connect_layers("vision", "what",
         (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
         ->set_arborized_config(ArborizedConfig(
-            focus_rows,focus_cols,1,1,0,0)));
+            focus_rows,focus_cols,1,1,0,0)),
+            "fixation");
     structure->connect_layers("focus", "what",
         (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, MULT,
             new FlatWeightConfig(1.0)))
         ->set_arborized_config(ArborizedConfig(
-            focus_rows,focus_cols,0,0,0,0)));
+            focus_rows,focus_cols,0,0,0,0)),
+            "fixation");
 
     auto env = new Environment();
     env->add_module(

@@ -18,9 +18,6 @@ using namespace jsonxx;
 
 /******************************** PARSING *************************************/
 static void parse_structure(Network *network, Object so);
-static void parse_layer(Structure *structure, Object lo);
-static void parse_dendrite(Structure *structure, std::string layer,
-    std::string node, Object dobj);
 static void parse_connection(Network *network, std::string structure_name, Object co);
 static PropertyConfig *parse_properties(Object nco);
 
@@ -47,7 +44,7 @@ Network* load_network(std::string path) {
 
     Object o;
     o.parse(str);
-    if (o.has<Array>("structures")) {
+    if (has_array(o, "structures")) {
         // Parse structures
         for (auto structure : o.get<Array>("structures").values())
             parse_structure(network, structure->get<Object>());
@@ -55,7 +52,7 @@ Network* load_network(std::string path) {
         // Parse connections after because of inter-structure connections
         for (auto structure : o.get<Array>("structures").values()) {
             auto so = structure->get<Object>();
-            if (so.has<Array>("connections"))
+            if (has_array(so, "connections"))
                 for (auto connection : so.get<Array>("connections").values())
                     parse_connection(network, so.get<String>("name"),
                         connection->get<Object>());
@@ -66,7 +63,7 @@ Network* load_network(std::string path) {
 }
 
 /* Parses a structure
- *     -> parse_layer
+ *     -> parse_properties
  */
 static void parse_structure(Network *network, Object so) {
     std::string name = get_string(so, "name",
@@ -93,120 +90,22 @@ static void parse_structure(Network *network, Object so) {
         structure = new Structure(name);
     }
 
-    if (so.has<Array>("layers"))
-        for (auto layer : so.get<Array>("layers").values())
-            parse_layer(structure, layer->get<Object>());
-
-    network->add_structure(structure);
-}
-
-/* Parses a layer
- *     -> parse_properties
- *     -> parse_dendritic_node
- */
-static void parse_layer(Structure *structure, Object lo) {
-    std::string name = std::to_string(structure->get_layers().size());
-    std::string neural_model = "izhikevich";
-    int rows = 0;
-    int columns = 0;
-    PropertyConfig *noise_config = nullptr;
-    bool plastic = true;
-    bool global = false;
-
-    StringPairList properties;
-
-    for (auto pair : lo.kv_map()) {
-        if (pair.first == "name")
-            name = pair.second->get<String>();
-        else if (pair.first == "neural model")
-            neural_model = pair.second->get<String>();
-        else if (pair.first == "rows")
-            rows = std::stoi(pair.second->get<String>());
-        else if (pair.first == "columns")
-            columns = std::stoi(pair.second->get<String>());
-        else if (pair.first == "plastic")
-            plastic = pair.second->get<String>() == "true";
-        else if (pair.first == "global")
-            global = pair.second->get<String>() == "true";
-        else if (pair.first == "noise config")
-            noise_config = parse_properties(pair.second->get<Object>());
-        else if (pair.first != "dendrites") // Skip these till end
-            properties.push_back(StringPair(pair.first, pair.second->get<String>()));
-    }
-
-    auto layer_config =
-        new LayerConfig(name, neural_model, rows, columns, noise_config);
-
-    for (auto pair : properties)
-        layer_config->set(pair.first, pair.second);
-
-    structure->add_layer(layer_config);
-
-    if (has_object(lo, "dendrites"))
-        parse_dendrite(structure, name, "root", lo.get<Object>("dendrites"));
-}
-
-/* Parses a dendritic node
- *     -> parse_dendritic_node (recursive)
- */
-static void parse_dendrite(Structure *structure, std::string layer,
-        std::string node, Object dobj) {
-    if (get_string(dobj, "second order", "false") == "true")
-        structure->set_second_order(layer, node);
-
-    if (has_array(dobj, "children")) {
-        for (auto child : dobj.get<Array>("children").values()) {
-            auto child_obj = child->get<Object>();
-
-            if (not has_string(child_obj, "name"))
-                ErrorManager::get_instance()->log_error(
-                    "Unspecifed name for dendritic node in layer: " + layer);
-
-            auto child_name = get_string(child_obj, "name");
-
-            structure->create_dendritic_node(layer, node, child_name);
-            parse_dendrite(structure, layer, child_name, child_obj);
+    if (has_array(so, "layers")) {
+        for (auto layer : so.get<Array>("layers").values()) {
+            auto props = parse_properties(layer->get<Object>());
+            structure->add_layer(new LayerConfig(props));
+            delete props;
         }
     }
+
+    network->add_structure(structure);
 }
 
 /* Parses a connection
  *     -> parse_properties
  */
 static void parse_connection(Network *network, std::string structure_name, Object co) {
-    std::string name = "";
-    std::string from_layer = "";
-    std::string to_layer = "";
-    std::string dendrite = "root";
-
-    PropertyConfig *arborized_config = nullptr;
-    PropertyConfig *weight_config = nullptr;
-    PropertyConfig *subset_config = nullptr;
-
-    std::string from_structure = structure_name;
-    std::string to_structure = structure_name;
-
-    PropertyConfig* props = new PropertyConfig();
-
-    for (auto pair : co.kv_map()) {
-        if (pair.first == "name")
-            name = pair.second->get<String>();
-        else if (pair.first == "from layer")
-            from_layer = pair.second->get<String>();
-        else if (pair.first == "to layer")
-            to_layer = pair.second->get<String>();
-        else if (pair.first == "from structure")
-            from_structure = pair.second->get<String>();
-        else if (pair.first == "to structure")
-            to_structure = pair.second->get<String>();
-        else if (pair.first == "dendrite")
-            dendrite = pair.second->get<String>();
-        else if (pair.second->is<Object>())
-            props->set_child(pair.first,
-                parse_properties(pair.second->get<Object>()));
-        else if (pair.second->is<String>())
-            props->set_value(pair.first, pair.second->get<String>());
-    }
+    PropertyConfig* props = parse_properties(co);
 
     try {
         ConnectionTypes[props->get("type", "fully connected")];
@@ -223,23 +122,39 @@ static void parse_connection(Network *network, std::string structure_name, Objec
     }
 
     auto connection_config = new ConnectionConfig(props);
-    delete props;
 
     Structure::connect(
-        network->get_structure(from_structure),
-        from_layer,
-        network->get_structure(to_structure),
-        to_layer,
+        network->get_structure(props->get("from structure", structure_name)),
+        props->get("from layer", ""),
+        network->get_structure(props->get("to structure", structure_name)),
+        props->get("to layer", ""),
         connection_config,
-        dendrite,
-        name);
+        props->get("dendrite", "root"),
+        props->get("name", ""));
+
+    delete props;
 }
 
 static PropertyConfig *parse_properties(Object nco) {
     PropertyConfig *config = new PropertyConfig();
 
-    for (auto pair : nco.kv_map())
-        config->set_value(pair.first, pair.second->get<String>());
+    for (auto pair : nco.kv_map()) {
+        if (pair.second->is<String>()) {
+            config->set_value(pair.first, pair.second->get<String>());
+        } else if (pair.second->is<Object>()) {
+            auto props =  parse_properties(pair.second->get<Object>());
+            config->set_child(pair.first, props);
+            delete props;
+        } else if (pair.second->is<Array>()) {
+            for (auto item : pair.second->get<Array>().values()) {
+                if (item->is<Object>()) {
+                    auto props = parse_properties(item->get<Object>());
+                    config->add_to_array(pair.first, props);
+                    delete props;
+                }
+            }
+        }
+    }
 
     return config;
 }
@@ -247,7 +162,8 @@ static PropertyConfig *parse_properties(Object nco) {
 /******************************** WRITING *************************************/
 static Object write_structure(Structure *structure);
 static Object write_layer(Layer *layer);
-static Object write_dendrite(DendriticNode *node);
+static void write_dendrites(Object& parent, std::string key,
+        const DendriticNodeList& children);
 static Object write_connection(Connection *connection);
 static Object write_properties(PropertyConfig *config);
 
@@ -296,7 +212,7 @@ static Object write_structure(Structure *structure) {
 
 /* Writes a layer
  *     -> write_noise_config
- *     -> write_dendrite
+ *     -> write_dendrites
  */
 static Object write_layer(Layer *layer) {
     Object o;
@@ -317,27 +233,29 @@ static Object write_layer(Layer *layer) {
     if (noise_config != nullptr)
         o << "noise config" << write_properties(noise_config);
 
-    o << "dendrites" << write_dendrite(layer->dendritic_root);
+    write_dendrites(o, "dendrites", layer->dendritic_root->get_children());
 
     return o;
 }
 
 /* Writes a dendrite */
-static Object write_dendrite(DendriticNode *node) {
-    Object o;
-    o << "name" << node->name;
-    if (node->is_second_order())
-        o << "second order" << "true";
-    else
-        o << "second order" << "false";
-
+static void write_dendrites(Object& parent, std::string key,
+        const DendriticNodeList& children) {
     Array a;
-    for (auto child : node->get_children())
-        if (not child->is_leaf())
-            a << write_dendrite(child);
-    if (a.size() > 0) o << "children" << a;
+    for (auto child : children) {
+        if (not child->is_leaf()) {
+            Object o;
+            o << "name" << child->name;
+            if (child->is_second_order())
+                o << "second order" << "true";
+            else
+                o << "second order" << "false";
+            write_dendrites(o, "children", child->get_children());
+            a << o;
+        }
+    }
 
-    return o;
+    if (a.size() > 0) parent << key << a;
 }
 
 /* Writes a connection
@@ -370,6 +288,12 @@ static Object write_connection(Connection *connection) {
         o << pair.first << pair.second;
     for (auto pair : connection_config->get_children())
         o << pair.first << write_properties(pair.second);
+    for (auto pair : connection_config->get_arrays()) {
+        Array a;
+        for (auto item : pair.second)
+            a << write_properties(item);
+        o << pair.first << a;
+    }
 
     return o;
 }
@@ -377,11 +301,23 @@ static Object write_connection(Connection *connection) {
 /* Writes a PropertyConfig to an object */
 static Object write_properties(PropertyConfig *config) {
     Object o;
+
+    // Strings
     for (auto pair : config->get())
         if (pair.second != "")
             o << pair.first << pair.second;
+
+    // Children
     for (auto pair : config->get_children())
         o << pair.first << write_properties(pair.second);
+
+    // Arrays
+    for (auto pair : config->get_arrays()) {
+        Array a;
+        for (auto item : pair.second)
+            o << pair.first << write_properties(item);
+        if (a.size() > 0) o << pair.first << a;
+    }
     return o;
 }
 
@@ -407,7 +343,7 @@ Environment* load_environment(std::string path) {
 
     Object o;
     o.parse(str);
-    if (o.has<Array>("modules")) {
+    if (has_array(o, "modules")) {
         for (auto module : o.get<Array>("modules").values()) {
             auto config = parse_module(module->get<Object>());
             if (config != nullptr)
@@ -426,26 +362,13 @@ static ModuleConfig* parse_module(Object mo) {
         ErrorManager::get_instance()->log_error(
             "No module type specified!");
 
-    auto module_config = new ModuleConfig(get_string(mo, "type"));
-
     if (not has_array(mo, "layers"))
         ErrorManager::get_instance()->log_error(
             "No layers for module specified!");
 
-    // Parse layers
-    for (auto layer : mo.get<Array>("layers").values()) {
-        StringPairList layer_props;
-        for (auto pair : layer->get<Object>().kv_map())
-            layer_props.push_back(
-                StringPair(pair.first, pair.second->get<String>()));
-        module_config->add_layer(new PropertyConfig(layer_props));
-    }
-
-    // Get properties
-    for (auto pair : mo.kv_map())
-        if (pair.first != "layers")
-            module_config->set(
-                pair.first, pair.second->get<String>());
+    auto props = parse_properties(mo);
+    auto module_config = new ModuleConfig(props);
+    delete props;
 
     return module_config;
 }
@@ -459,14 +382,8 @@ void save_environment(Environment *environment, std::string path) {
 
 	Object o;
 	Array a;
-	for (auto module : environment->get_modules()) {
-	    Array l;
-	    auto module_o = write_properties(module);
-	    for (auto layer : module->get_layers())
-	        l << write_properties(layer);
-	    module_o << "layers" << l;
-	    a << module_o;
-    }
+	for (auto module : environment->get_modules())
+	    a << write_properties(module);
 	o << "modules" << a;
 
 	file << o.json() << std::endl;

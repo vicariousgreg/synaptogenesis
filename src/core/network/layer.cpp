@@ -16,7 +16,9 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           size(rows * columns),
           plastic(config->plastic),
           global(config->global),
-          dendritic_root(new DendriticNode(this)) { }
+          dendritic_root(new DendriticNode(this)) {
+    config->add_dendrites(this);
+}
 
 Layer::~Layer() {
     delete dendritic_root;

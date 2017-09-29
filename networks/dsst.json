@@ -1,0 +1,103 @@
+{
+	"structures": [
+		{
+			"name": "dsst",
+			"cluster type": "parallel",
+			"layers": [
+				{
+					"name": "vision",
+					"neural model": "relay",
+					"rows": "188",
+					"columns": "178",
+					"plastic": "false",
+					"global": "false",
+					"init": "regular" 
+				},
+				{
+					"name": "what",
+					"neural model": "relay",
+					"rows": "17",
+					"columns": "8",
+					"plastic": "false",
+					"global": "false",
+					"init": "regular",
+					"dendrites": [
+						{
+							"name": "fixation",
+							"second order": "true" 
+						} 
+					] 
+				},
+				{
+					"name": "focus",
+					"neural model": "relay",
+					"rows": "171",
+					"columns": "170",
+					"plastic": "false",
+					"global": "false",
+					"init": "regular" 
+				},
+				{
+					"name": "output_layer",
+					"neural model": "relay",
+					"rows": "1",
+					"columns": "1",
+					"plastic": "false",
+					"global": "false",
+					"init": "regular" 
+				} 
+			],
+			"connections": [
+				{
+					"from layer": "vision",
+					"to layer": "what",
+					"type": "convolutional",
+					"opcode": "add",
+					"max weight": "1.000000",
+					"delay": "0",
+					"plastic": "false",
+					"dendrite": "fixation",
+					"weight config": {
+						"type": "flat",
+						"weight": "1.000000",
+						"fraction": "1.000000" 
+					},
+					"arborized config": {
+						"row field size": "171",
+						"column field size": "170",
+						"row stride": "1",
+						"column stride": "1",
+						"row offset": "0",
+						"column offset": "0",
+						"wrap": "0" 
+					} 
+				},
+				{
+					"from layer": "focus",
+					"to layer": "what",
+					"type": "convolutional",
+					"opcode": "mult",
+					"max weight": "1.000000",
+					"delay": "0",
+					"plastic": "false",
+					"dendrite": "fixation",
+					"weight config": {
+						"type": "flat",
+						"weight": "1.000000",
+						"fraction": "1.000000" 
+					},
+					"arborized config": {
+						"row field size": "171",
+						"column field size": "170",
+						"row stride": "0",
+						"column stride": "0",
+						"row offset": "0",
+						"column offset": "0",
+						"wrap": "0" 
+					} 
+				} 
+			] 
+		} 
+	] 
+} 
+

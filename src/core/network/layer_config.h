@@ -5,6 +5,8 @@
 
 #include "util/property_config.h"
 
+class Layer;
+
 class LayerConfig : public PropertyConfig {
     public:
         LayerConfig(PropertyConfig *config);
@@ -24,6 +26,8 @@ class LayerConfig : public PropertyConfig {
             PropertyConfig* noise_config=nullptr,
             bool plastic=false,
             bool global=false);
+
+        void add_dendrites(Layer* layer);
 
         /* Setter that returns self pointer */
         LayerConfig *set(std::string key, std::string value) {
