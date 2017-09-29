@@ -1,3 +1,6 @@
+CTAGS  := $(shell command -v ctags 2> /dev/null)
+CSCOPE := $(shell command -v cscope 2> /dev/null)
+
 MAKEFLAGS += --jobs=10
 
 #Compiler and Linker
@@ -87,9 +90,14 @@ serial: ctags directories libs $(TARGET_S)
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
 	cp $(TARGETDIR)/$(LIBRARY) /usr/lib/
 
-#Make ctags
+#Make tags
 ctags:
+ifdef CTAGS
 	ctags -R --exclude=.git src
+endif
+ifdef CSCOPE
+	cscope -Rb
+endif
 
 #Make the Directories
 directories:
