@@ -83,9 +83,13 @@ $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(COREPATH)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-serial: directories libs $(TARGET_S)
+serial: ctags directories libs $(TARGET_S)
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
 	cp $(TARGETDIR)/$(LIBRARY) /usr/lib/
+
+#Make ctags
+ctags:
+	ctags -R --exclude=.git src
 
 #Make the Directories
 directories:
@@ -124,7 +128,7 @@ $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-parallel: directories libs $(TARGET_P)
+parallel: ctags directories libs $(TARGET_P)
 	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
 	cp $(TARGETDIR)/$(LIBRARY) /usr/lib/

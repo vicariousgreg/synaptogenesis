@@ -7,11 +7,16 @@
 
 class PropertyConfig;
 
+typedef std::vector<PropertyConfig*> ConfigArray;
+
 typedef std::pair<std::string, std::string> StringPair;
 typedef std::vector<StringPair> StringPairList;
 
 typedef std::pair<std::string, PropertyConfig*> PropertyPair;
 typedef std::vector<PropertyPair> PropertyPairList;
+
+typedef std::pair<std::string, ConfigArray> ArrayPair;
+typedef std::vector<ArrayPair> ArrayPairList;
 
 class PropertyConfig {
     public:
@@ -27,8 +32,7 @@ class PropertyConfig {
 
         /* Single property functions */
         bool has(std::string key) const;
-        std::string get(std::string key) const;
-        std::string get(std::string key, std::string def_val) const;
+        std::string get(std::string key, std::string def_val="") const;
         PropertyConfig *set_value(std::string key, std::string val);
         std::string remove_property(std::string key);
 
@@ -38,10 +42,23 @@ class PropertyConfig {
 
         /* Single child functions */
         bool has_child(std::string key) const;
-        PropertyConfig *get_child(std::string key) const;
-        PropertyConfig *get_child(std::string key, PropertyConfig* def_val) const;
+        PropertyConfig *get_child(
+            std::string key, PropertyConfig* def_val=nullptr) const;
+        void set_child(std::string key, PropertyConfig child);
         void set_child(std::string key, PropertyConfig *child);
         PropertyConfig *remove_child(std::string key);
+
+        /* Get a set of key-array pairs */
+        const ArrayPairList get_arrays() const;
+        const ArrayPairList get_arrays_alphabetical() const;
+
+        /* Single array functions */
+        bool has_array(std::string key) const;
+        const ConfigArray get_array(std::string key) const;
+        void set_array(std::string key, ConfigArray array);
+        void add_to_array(std::string key, PropertyConfig config);
+        void add_to_array(std::string key, PropertyConfig* config);
+        ConfigArray remove_array(std::string key);
 
         std::string str() const;
 
@@ -51,6 +68,9 @@ class PropertyConfig {
 
         std::map<std::string, PropertyConfig*> children;
         std::vector<std::string> children_keys;
+
+        std::map<std::string, ConfigArray> arrays;
+        std::vector<std::string> array_keys;
 };
 
 #endif

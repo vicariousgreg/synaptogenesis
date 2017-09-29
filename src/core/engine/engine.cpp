@@ -1,4 +1,4 @@
-#include <climits>
+#include <cfloat>
 
 #include "engine/engine.h"
 #include "engine/context.h"
@@ -16,7 +16,7 @@ Engine::Engine(Context *context, bool suppress_output)
         : context(context),
           learning_flag(true),
           suppress_output(suppress_output),
-          refresh_rate(INT_MAX),
+          refresh_rate(FLT_MAX),
           time_limit(1.0 / refresh_rate),
           environment_rate(1),
           calc_rate(true),
@@ -261,6 +261,10 @@ void Engine::environment_loop(int iterations, bool verbose, Report** report) {
 Context* Engine::run(int iterations, bool verbose) {
     // Initialize cuda random states
     init_rand(context->get_network()->get_max_layer_size());
+
+    // Reset rate / time limit if calc_rate
+    if (calc_rate)
+        set_refresh_rate(FLT_MAX);
 
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT_THREAD);

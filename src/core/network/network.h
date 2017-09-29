@@ -25,7 +25,7 @@ class Network {
 
         /* Add or retrieve structure to/from model */
         void add_structure(Structure *structure);
-        Structure* get_structure(std::string name);
+        Structure* get_structure(std::string name, bool log_error=true);
 
         /* Getters */
         const StructureList& get_structures() const { return structures; }

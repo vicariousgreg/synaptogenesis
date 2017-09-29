@@ -7,7 +7,12 @@ PropertyConfig::PropertyConfig(PropertyConfig *other) {
     for (auto pair : other->get())
         this->set_value(pair.first, pair.second);
     for (auto pair : other->get_children())
-        this->set_child(pair.first, new PropertyConfig(pair.second));
+        this->set_child(pair.first, pair.second);
+    for (auto pair : other->get_arrays()) {
+        this->set_array(pair.first, ConfigArray());
+        for (auto config : pair.second)
+            this->add_to_array(pair.first, config);
+    }
 }
 
 PropertyConfig::PropertyConfig(StringPairList pairs) {
@@ -19,6 +24,9 @@ PropertyConfig::PropertyConfig(StringPairList pairs) {
 
 PropertyConfig::~PropertyConfig() {
     for (auto pair : children) delete pair.second;
+    for (auto pair : arrays)
+        for (auto config : pair.second)
+            delete config;
 }
 
 
@@ -40,12 +48,9 @@ const StringPairList PropertyConfig::get_alphabetical() const {
 bool PropertyConfig::has(std::string key) const
     { return properties.count(key) > 0; }
 
-std::string PropertyConfig::get(std::string key) const
-    { return properties.at(key); }
-
 std::string PropertyConfig::get(std::string key, std::string def_val) const {
     if (has(key)) return properties.at(key);
-    else                   return def_val;
+    else          return def_val;
 }
 
 PropertyConfig* PropertyConfig::set_value(std::string key, std::string value) {
@@ -86,17 +91,17 @@ const PropertyPairList PropertyConfig::get_children_alphabetical() const {
 bool PropertyConfig::has_child(std::string key) const
     { return children.count(key) > 0; }
 
-PropertyConfig* PropertyConfig::get_child(std::string key) const
-    { return children.at(key); }
-
 PropertyConfig* PropertyConfig::get_child(
         std::string key, PropertyConfig *def_val) const {
     if (has_child(key)) return children.at(key);
     else                return def_val;
 }
 
+void PropertyConfig::set_child(std::string key, PropertyConfig child)
+    { set_child(key, &child); }
+
 void PropertyConfig::set_child(std::string key, PropertyConfig *child) {
-    children[key] = child;
+    children[key] = new PropertyConfig(child);
     if (std::find(children_keys.begin(), children_keys.end(), key)
             == children_keys.end())
         children_keys.push_back(key);
@@ -115,11 +120,71 @@ PropertyConfig* PropertyConfig::remove_child(std::string key) {
         + " from PropertyConfig!");
 }
 
+
+const ArrayPairList PropertyConfig::get_arrays() const {
+    ArrayPairList pairs;
+    for (auto key : array_keys)
+        pairs.push_back(ArrayPair(key, arrays.at(key)));
+    return pairs;
+}
+
+const ArrayPairList PropertyConfig::get_arrays_alphabetical() const {
+    ArrayPairList pairs;
+    for (auto pair : arrays)
+        pairs.push_back(ArrayPair(pair.first, pair.second));
+    return pairs;
+}
+
+
+bool PropertyConfig::has_array(std::string key) const
+    { return arrays.count(key) > 0; }
+
+const ConfigArray PropertyConfig::get_array(std::string key) const {
+    if (has_array(key)) return arrays.at(key);
+    else                return ConfigArray();
+}
+
+void PropertyConfig::set_array(std::string key, ConfigArray array) {
+    arrays[key] = array;
+    if (std::find(array_keys.begin(), array_keys.end(), key)
+            == array_keys.end())
+        array_keys.push_back(key);
+}
+
+void PropertyConfig::add_to_array(std::string key, PropertyConfig config)
+    { add_to_array(key, &config); }
+
+void PropertyConfig::add_to_array(std::string key, PropertyConfig* config) {
+    if (not has_array(key))
+        set_array(key, ConfigArray());
+    arrays.at(key).push_back(new PropertyConfig(config));
+}
+
+ConfigArray PropertyConfig::remove_array(std::string key) {
+    if (has_array(key)) {
+        ConfigArray array = get_array(key);
+        arrays.erase(key);
+        array_keys.erase(
+            std::find(array_keys.begin(), array_keys.end(), key));
+        return array;
+    }
+    ErrorManager::get_instance()->log_error(
+        "Attempted to remove non-existent property " + key
+        + " from PropertyConfig!");
+}
+
+
 std::string PropertyConfig::str() const {
     std::string str = "{";
     for (auto pair : get_alphabetical())
         str += "(" + pair.first + "," + pair.second + ")";
     for (auto pair : get_children_alphabetical())
         str += "(" + pair.first + "," + pair.second->str() + ")";
+    for (auto pair : get_arrays_alphabetical()) {
+        str += "(" + pair.first + "," + "[";
+        for (auto config : pair.second)
+            str += config->str();
+        str += "])";
+    }
     return str + "}";
 }

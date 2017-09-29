@@ -27,8 +27,9 @@ class ModuleConfig : public PropertyConfig {
             std::string params);
         ModuleConfig* add_layer(PropertyConfig *config);
 
-        std::string get_type() const { return get("type"); }
-        const std::vector<PropertyConfig*> get_layers() const { return layers; }
+        std::string get_type() const { return get("type", ""); }
+        const ConfigArray get_layers() const
+            { return get_array("layers"); }
         const PropertyConfig* get_layer(Layer *layer) const;
 
         /* Setter that returns self pointer */
@@ -38,7 +39,6 @@ class ModuleConfig : public PropertyConfig {
         }
 
     protected:
-        std::vector<PropertyConfig*> layers;
         std::map<std::string,
             std::map<std::string, PropertyConfig*>> layer_map;
 };

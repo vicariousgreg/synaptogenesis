@@ -57,6 +57,10 @@ class SurroundWeightConfig : public PropertyConfig {
             this->set_value("type", "surround");
             this->set_value("rows", std::to_string(rows));
             this->set_value("columns", std::to_string(cols));
+            if (not child_config->has("type"))
+                ErrorManager::get_instance()->log_error(
+                    "Attempted to build surround weight config"
+                    " without specified child config type!");
             this->set_value("child type", child_config->get("type"));
         }
 
@@ -65,6 +69,10 @@ class SurroundWeightConfig : public PropertyConfig {
                 this->set_value(pair.first, pair.second);
             this->set_value("type", "surround");
             this->set_value("size", std::to_string(size));
+            if (not child_config->has("type"))
+                ErrorManager::get_instance()->log_error(
+                    "Attempted to build surround weight config"
+                    " without specified child config type!");
             this->set_value("child type", child_config->get("type"));
         }
 };

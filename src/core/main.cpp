@@ -85,24 +85,24 @@ void old_test() {
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set("myelinated", "false")
-        ->set_arborized_config(new ArborizedConfig(15,1,true)));
+        ->set_arborized_config(ArborizedConfig(15,1,true)));
     structure->connect_layers("exc_cortex", "exc_cortex",
         (new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set("myelinated", "false")
-        ->set_arborized_config(new ArborizedConfig(31,1,true)));
+        ->set_arborized_config(ArborizedConfig(31,1,true)));
 
     /* Cortical inhibitory loop */
     structure->connect_layers("exc_cortex", "inh_cortex",
         (new ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set("myelinated", "false")
-        ->set_arborized_config(new ArborizedConfig(31,2,true)));
+        ->set_arborized_config(ArborizedConfig(31,2,true)));
     structure->connect_layers("inh_cortex", "exc_cortex",
         (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set("myelinated", "false")
-        ->set_arborized_config(new ArborizedConfig(5,2,true)));
+        ->set_arborized_config(ArborizedConfig(5,2,true)));
 
     /* Cortico-thalamic inhibitory loop */
     /*
@@ -110,12 +110,12 @@ void old_test() {
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set("myelinated", "false")
-        ->set_arborized_config(new ArborizedConfig(7,2,true)));
+        ->set_arborized_config(ArborizedConfig(7,2,true)));
     structure->connect_layers("inh_thalamus", "exc_thalamus",
         (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
             new FlatWeightConfig(0.5, 0.1)))
         ->set("myelinated", "false")
-        ->set_arborized_config(new ArborizedConfig(5,2,true)));
+        ->set_arborized_config(ArborizedConfig(5,2,true)));
     */
 
 
@@ -187,13 +187,13 @@ void simple_test() {
         (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field,1,true)));
+            ArborizedConfig(exc_field,1,true)));
     /*
     structure->connect_layers("hid_1", "hid_2",
         (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field,1,true)));
+            ArborizedConfig(inh_field,1,true)));
     */
 
     /* Recurrent self connectivity */
@@ -201,36 +201,36 @@ void simple_test() {
         (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field,1,true)));
+            ArborizedConfig(exc_field,1,true)));
     structure->connect_layers("hid_1", "hid_1",
         (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field,1,true)));
+            ArborizedConfig(inh_field,1,true)));
 
     structure->connect_layers("hid_2", "hid_2",
         (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field,1,true)));
+            ArborizedConfig(exc_field,1,true)));
     structure->connect_layers("hid_2", "hid_2",
         (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field,1,true)));
+            ArborizedConfig(inh_field,1,true)));
 
     /* Feedback connectivity */
     structure->connect_layers("hid_2", "hid_1",
         (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(exc_field,1,true)));
+            ArborizedConfig(exc_field,1,true)));
     /*
     structure->connect_layers("hid_2", "hid_1",
         (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
             new FlatWeightConfig(0.1, 0.1)))
         ->set_arborized_config(
-            new ArborizedConfig(inh_field,1,true)));
+            ArborizedConfig(inh_field,1,true)));
     */
 
     // Modules
@@ -344,24 +344,24 @@ void mnist_test() {
     structure->connect_layers("input_layer", "hidden",
         (new ConnectionConfig(true, 0, 0.5, DIVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(21,3,false))
+        ->set_arborized_config(ArborizedConfig(21,3,false))
         ->set("myelinated", "false"));
     /*
     structure->connect_layers("hidden", "input_layer",
         (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(9,1,true))
+        ->set_arborized_config(ArborizedConfig(9,1,true))
         ->set("myelinated", "true"));
     */
 
     structure->connect_layers("hidden", "hidden",
         (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(25,1,false)));
+        ->set_arborized_config(ArborizedConfig(25,1,false)));
     structure->connect_layers("hidden", "hidden",
         (new ConnectionConfig(false, 0, 1, CONVERGENT, SUB,
             new SurroundWeightConfig(25, 25, new FlatWeightConfig(0.1, 0.1))))
-        ->set_arborized_config(new ArborizedConfig(31,1,false)));
+        ->set_arborized_config(ArborizedConfig(31,1,false)));
 
     // Topological separation layer
     /* ////////
@@ -372,24 +372,24 @@ void mnist_test() {
     structure->connect_layers("hidden", "separation",
         (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(0.01, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(9,1,true))
+        ->set_arborized_config(ArborizedConfig(9,1,true))
         ->set("myelinated", "true"));
     structure->connect_layers("separation", "hidden",
         (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
             new FlatWeightConfig(0.01, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(9,1,true))
+        ->set_arborized_config(ArborizedConfig(9,1,true))
         ->set("myelinated", "true"));
 
     / *
     structure->connect_layers("separation", "separation",
         (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(9,1,true)));
+        ->set_arborized_config(ArborizedConfig(9,1,true)));
     * /
     structure->connect_layers("separation", "separation",
         (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
             new FlatWeightConfig(0.01, 0.1)))
-        ->set_arborized_config(new ArborizedConfig(11,1,true))
+        ->set_arborized_config(ArborizedConfig(11,1,true))
         ->set("myelinated", "true"));
     */ /////////////
 
@@ -405,7 +405,7 @@ void mnist_test() {
                 new RandomWeightConfig(2)))
             ->set("myelinated", "true")
             ->set_subset_config(
-                new SubsetConfig(
+                SubsetConfig(
                     0,1,
                     i,i+1,
                     0,10,
@@ -565,13 +565,13 @@ void game_of_life_test() {
         (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, ADD,
             new SurroundWeightConfig(1,1, new FlatWeightConfig(1))))
         ->set_arborized_config(
-            new ArborizedConfig(neighborhood_size, 1, -neighborhood_size/2, wrap)));
+            ArborizedConfig(neighborhood_size, 1, -neighborhood_size/2, wrap)));
     structure->connect_layers("board", "board",
         (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, SUB,
             new SurroundWeightConfig(neighborhood_size,neighborhood_size,
                 new FlatWeightConfig(1))))
         ->set_arborized_config(
-            new ArborizedConfig(neighborhood_size+2, 1, (-neighborhood_size+1)/2, wrap)));
+            ArborizedConfig(neighborhood_size+2, 1, (-neighborhood_size+1)/2, wrap)));
 
     // Modules
     auto env = new Environment();
@@ -687,21 +687,21 @@ void working_memory_test() {
         sub_structure->connect_layers("3_cortex", "6_cortex",
             (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
+            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
         */
         sub_structure->connect_layers("3_cortex", "3_cortex",
             (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
+            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
         /*
         sub_structure->connect_layers("6_cortex", "6_cortex",
             (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
+            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
         sub_structure->connect_layers("6_cortex", "3_cortex",
             (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(new ArborizedConfig(intra_cortex_center,1,wrap)));
+            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
         */
 
         if (intra_cortex_surround > intra_cortex_center) {
@@ -710,24 +710,24 @@ void working_memory_test() {
                 (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
                     new SurroundWeightConfig(intra_cortex_center,
                         new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(new ArborizedConfig(intra_cortex_surround,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
             */
             sub_structure->connect_layers("3_cortex", "3_cortex",
                 (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
                     new SurroundWeightConfig(intra_cortex_center,
                         new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(new ArborizedConfig(intra_cortex_surround,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
             /*
             sub_structure->connect_layers("6_cortex", "6_cortex",
                 (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
                     new SurroundWeightConfig(intra_cortex_center,
                         new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(new ArborizedConfig(intra_cortex_surround,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
             sub_structure->connect_layers("6_cortex", "3_cortex",
                 (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
                     new SurroundWeightConfig(intra_cortex_center,
                         new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(new ArborizedConfig(intra_cortex_surround,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
             */
         }
 
@@ -736,23 +736,23 @@ void working_memory_test() {
         sub_structure->connect_layers("gamma_thalamus", "6_cortex",
             (new ConnectionConfig(exc_plastic, 10 + exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1*thal_ratio, fraction)))
-            ->set_arborized_config(new ArborizedConfig(gamma_center,1,wrap)));
+            ->set_arborized_config(ArborizedConfig(gamma_center,1,wrap)));
         sub_structure->connect_layers("6_cortex", "gamma_thalamus",
             (new ConnectionConfig(exc_plastic, 10 + exc_delay, 0.5, CONVERGENT, ADD,
                 new FlatWeightConfig(0.1*thal_ratio, fraction)))
-            ->set_arborized_config(new ArborizedConfig(gamma_center,1,wrap)));
+            ->set_arborized_config(ArborizedConfig(gamma_center,1,wrap)));
 
         if (gamma_surround > gamma_center) {
             sub_structure->connect_layers("gamma_thalamus", "6_cortex",
                 (new ConnectionConfig(false, 10 + inh_delay, 0.5, CONVERGENT, SUB,
                     new SurroundWeightConfig(gamma_center,
                         new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                ->set_arborized_config(new ArborizedConfig(gamma_surround,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(gamma_surround,1,wrap)));
             sub_structure->connect_layers("6_cortex", "gamma_thalamus",
                 (new ConnectionConfig(false, 10 + inh_delay, 0.5, CONVERGENT, SUB,
                     new SurroundWeightConfig(gamma_center,
                         new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                ->set_arborized_config(new ArborizedConfig(gamma_surround,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(gamma_surround,1,wrap)));
         }
         */
 
@@ -762,25 +762,25 @@ void working_memory_test() {
                 sub_structure, "3_cortex",
                 (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
                     new FlatWeightConfig(0.1*thal_ratio, fraction)))
-                ->set_arborized_config(new ArborizedConfig(ff_center,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(ff_center,1,wrap)));
             Structure::connect(sub_structure, "3_cortex",
                 sub_structures[i-1], "3_cortex",
                 (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
                     new FlatWeightConfig(0.1*thal_ratio, fraction)))
-                ->set_arborized_config(new ArborizedConfig(ff_center,1,wrap)));
+                ->set_arborized_config(ArborizedConfig(ff_center,1,wrap)));
             if (ff_center > ff_surround) {
                 Structure::connect(sub_structures[i-1], "3_cortex",
                     sub_structure, "3_cortex",
                     (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
                         new SurroundWeightConfig(ff_center,
                             new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                    ->set_arborized_config(new ArborizedConfig(ff_surround,1,wrap)));
+                    ->set_arborized_config(ArborizedConfig(ff_surround,1,wrap)));
                 Structure::connect(sub_structure, "3_cortex",
                     sub_structures[i-1], "3_cortex",
                     (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
                         new SurroundWeightConfig(ff_center,
                             new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                    ->set_arborized_config(new ArborizedConfig(ff_surround,1,wrap)));
+                    ->set_arborized_config(ArborizedConfig(ff_surround,1,wrap)));
             }
         }
 
@@ -808,13 +808,13 @@ void working_memory_test() {
         sub_structures[0], "3_cortex",
         (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
             new FlatWeightConfig(0.1*thal_ratio, fraction)))
-        ->set_arborized_config(new ArborizedConfig(ff_center,1,wrap)));
+        ->set_arborized_config(ArborizedConfig(ff_center,1,wrap)));
     Structure::connect(main_structure, "feedforward",
         sub_structures[0], "3_cortex",
         (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
             new SurroundWeightConfig(ff_center,
                 new FlatWeightConfig(0.1*thal_ratio, fraction))))
-        ->set_arborized_config(new ArborizedConfig(ff_surround,1,wrap)));
+        ->set_arborized_config(ArborizedConfig(ff_surround,1,wrap)));
 
     // Modules
     auto env = new Environment();
@@ -886,12 +886,12 @@ void dsst_test() {
     structure->connect_layers("vision", "what",
         (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             focus_rows,focus_cols,1,1,0,0)));
     structure->connect_layers("focus", "what",
         (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, MULT,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             focus_rows,focus_cols,0,0,0,0)));
 
     auto env = new Environment();
@@ -940,7 +940,7 @@ void debug_test() {
 
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, SUBSET, ADD))
-        ->set_subset_config(new SubsetConfig(
+        ->set_subset_config(SubsetConfig(
             rows / 4, 3 * rows / 4,
             cols / 4, 3 * cols / 4,
             rows / 4, 3 * rows / 4,
@@ -953,68 +953,68 @@ void debug_test() {
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1)));
 
     // Non-wrapping unshifted arborized
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,0,0)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,0,0)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,0,0)));
 
     // Wrapping standard arborized
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,true)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,true)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,true)));
 
     // Wrapping unshifted arborized
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,0,0,true)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,0,0,true)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
             new FlatWeightConfig(1.0)))
-        ->set_arborized_config(new ArborizedConfig(
+        ->set_arborized_config(ArborizedConfig(
             3,3,1,1,0,0,true)));
 
     // Zero stride full size arborized
@@ -1023,12 +1023,12 @@ void debug_test() {
         (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
             new FlatWeightConfig(1.0)))
         ->set_arborized_config(
-            new ArborizedConfig(rows,cols,0,0,0,0)));
+            ArborizedConfig(rows,cols,0,0,0,0)));
     structure->connect_layers("source", "dest",
         (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
             new FlatWeightConfig(1.0)))
         ->set_arborized_config(
-            new ArborizedConfig(rows,cols,0,0,0,0)));
+            ArborizedConfig(rows,cols,0,0,0,0)));
 
     std::cout << "Debug test......\n";
     print_network(network);

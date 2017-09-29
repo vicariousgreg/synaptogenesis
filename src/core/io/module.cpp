@@ -4,13 +4,8 @@
 #include "network/layer.h"
 #include "util/error_manager.h"
 
-ModuleConfig::ModuleConfig(PropertyConfig *config) {
-    this->set("type", config->get("type"));
-    for (auto pair : config->get())
-        this->set(pair.first, pair.second);
-    for (auto pair : config->get_children())
-        this->add_layer(pair.second);
-}
+ModuleConfig::ModuleConfig(PropertyConfig *config)
+    : PropertyConfig(config) { }
 
 ModuleConfig::ModuleConfig(std::string type) {
     this->set("type", type);
@@ -39,11 +34,11 @@ ModuleConfig* ModuleConfig::add_layer(std::string structure,
 }
 
 ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
-    if (not config->has("structure") or
-        not config->has("layer"))
-    ErrorManager::get_instance()->log_error(
-        "Module layer config must have structure and layer name!");
-    this->layers.push_back(config);
+    if (not config->has("structure") or not config->has("layer"))
+        ErrorManager::get_instance()->log_error(
+            "Module layer config must have structure and layer name!");
+
+    this->add_to_array("layers", config);
     this->layer_map[config->get("structure")]
                    [config->get("layer")] = config;
     return this;

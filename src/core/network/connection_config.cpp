@@ -252,20 +252,20 @@ bool ConnectionConfig::validate(Connection *conn) const {
 }
 
 ConnectionConfig* ConnectionConfig::set_arborized_config(
-        ArborizedConfig *config) {
-    auto props = config->to_property_config();
+        ArborizedConfig config) {
+    auto props = config.to_property_config();
     return this->set_arborized_config(&props);
 }
 
-ConnectionConfig* ConnectionConfig::set_subset_config(SubsetConfig *config) {
-    auto props = config->to_property_config();
+ConnectionConfig* ConnectionConfig::set_subset_config(SubsetConfig config) {
+    auto props = config.to_property_config();
     return this->set_subset_config(&props);
 }
 
 ConnectionConfig* ConnectionConfig::set_arborized_config(
         PropertyConfig *config) {
     if (not this->has_child("arborized config")) {
-        this->set_child("arborized config", new PropertyConfig(config));
+        this->set_child("arborized config", config);
     } else {
         auto child = this->get_child("arborized config");
         for (auto pair : config->get())
@@ -276,7 +276,7 @@ ConnectionConfig* ConnectionConfig::set_arborized_config(
 
 ConnectionConfig* ConnectionConfig::set_subset_config(PropertyConfig *config) {
     if (not this->has_child("subset config")) {
-        this->set_child("subset config", new PropertyConfig(config));
+        this->set_child("subset config", config);
     } else {
         auto child = this->get_child("subset config");
         for (auto pair : config->get())
@@ -287,7 +287,7 @@ ConnectionConfig* ConnectionConfig::set_subset_config(PropertyConfig *config) {
 
 ConnectionConfig* ConnectionConfig::set_weight_config(PropertyConfig *config) {
     if (not this->has_child("weight config")) {
-        this->set_child("weight config", new PropertyConfig(config));
+        this->set_child("weight config", config);
     } else {
         auto child = this->get_child("weight config");
         for (auto pair :config->get())

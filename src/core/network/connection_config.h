@@ -94,8 +94,8 @@ class ConnectionConfig : public PropertyConfig {
         bool validate(Connection *conn) const;
 
         /* Specialized config setters */
-        ConnectionConfig *set_arborized_config(ArborizedConfig *config);
-        ConnectionConfig *set_subset_config(SubsetConfig *config);
+        ConnectionConfig *set_arborized_config(ArborizedConfig config);
+        ConnectionConfig *set_subset_config(SubsetConfig config);
 
         ConnectionConfig *set_arborized_config(PropertyConfig *config);
         ConnectionConfig *set_subset_config(PropertyConfig *config);

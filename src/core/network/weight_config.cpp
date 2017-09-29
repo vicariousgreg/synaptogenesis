@@ -63,7 +63,7 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
             ErrorManager::get_instance()->log_error(
                 "Error in weight config for " + conn->str() + ":\n"
                 "  SurroundWeightConfig can only be used "
-                "on arborized connections!");
+                "on convergent/convolutional arborized connections!");
     }
 
     int rows = std::stoi(config.get("rows", "0"));
@@ -86,7 +86,7 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
     int row_offset = (row_field_size - rows) / 2;
     int col_offset = (col_field_size - cols) / 2;
 
-    // Convoltuional connections are unique in that there is only one kernel.
+    // Convolutional connections are unique in that there is only one kernel.
     //   All other connection types organize based on the
     int size;
     switch (conn->type) {
