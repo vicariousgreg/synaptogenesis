@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "network/connection_config.h"
-#include "network/weight_config.h"
 #include "util/constants.h"
 
 class Layer;

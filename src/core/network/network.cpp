@@ -11,6 +11,7 @@ Network::Network(NetworkConfig* config) : config(config) {
 
 Network::~Network() {
     for (auto& structure : structures) delete structure;
+    delete config;
 }
 
 Network* Network::load(std::string path) {

@@ -6,7 +6,6 @@
 
 #include "network/network.h"
 #include "builder.h"
-#include "network/weight_config.h"
 #include "io/module.h"
 #include "io/impl/dsst_module.h"
 #include "io/environment.h"
@@ -50,9 +49,25 @@ void mnist_test() {
     NetworkConfig *network_config = new NetworkConfig();
     StructureConfig *structure = new StructureConfig("mnist", FEEDFORWARD);
 
-    structure->add_layer(new LayerConfig("input_layer", "relay", 28, 28));
-    structure->add_layer(new LayerConfig("output_layer", "perceptron", 1, 10));
-    structure->add_layer(new LayerConfig("bias_layer", "relay", 1, 1));
+    structure->add_layer(
+        (new PropertyConfig())
+            ->set("name", "input_layer")
+            ->set("neural model", "relay")
+            ->set("rows", "28")
+            ->set("columns", "28"));
+    structure->add_layer(
+        (new PropertyConfig())
+            ->set("name", "output_layer")
+            ->set("neural model", "perceptron")
+            ->set("rows", "1")
+            ->set("columns", "10"));
+    structure->add_layer(
+        (new PropertyConfig())
+            ->set("name", "bias_layer")
+            ->set("neural model", "relay")
+            ->set("rows", "1")
+            ->set("columns", "1"));
+
     network_config->add_structure(structure);
 
     network_config->add_connection(
@@ -63,7 +78,9 @@ void mnist_test() {
             ->set("type", "fully connected")
             ->set("opcode", "add")
             ->set_child("weight config",
-                new FlatWeightConfig(0))
+                (new PropertyConfig())
+                    ->set("type", "flat")
+                    ->set("weight", "0"))
             ->set("from structure", "mnist")
             ->set("to structure", "mnist")
             ->set("from layer", "input_layer")
@@ -77,7 +94,9 @@ void mnist_test() {
             ->set("type", "fully connected")
             ->set("opcode", "add")
             ->set_child("weight config",
-                new FlatWeightConfig(0))
+                (new PropertyConfig())
+                    ->set("type", "flat")
+                    ->set("weight", "0"))
             ->set("from structure", "mnist")
             ->set("to structure", "mnist")
             ->set("from layer", "bias_layer")
@@ -159,16 +178,22 @@ void game_of_life_test() {
     float random_fraction = 0.5;
     float rate = 1000;
 
-    structure->add_layer((new LayerConfig(
-        "board", "game_of_life", board_dim, board_dim,
+    structure->add_layer(
         (new PropertyConfig())
-        ->set("type", "poisson")
-        ->set("value", std::to_string(birth_min))
-        ->set("rate", "0.5")))
+            ->set("name", "board")
+            ->set("neural model", "game_of_life")
+            ->set("rows", std::to_string(board_dim))
+            ->set("columns", std::to_string(board_dim))
+            ->set_child("noise config",
+                (new PropertyConfig())
+                    ->set("type", "poisson")
+                    ->set("value", std::to_string(birth_min))
+                    ->set("rate", "0.5"))
             ->set("survival_min", std::to_string(survival_min))
             ->set("survival_max", std::to_string(survival_max))
             ->set("birth_min", std::to_string(birth_min))
             ->set("birth_max", std::to_string(birth_max)));
+
     network_config->add_structure(structure);
 
     network_config->add_connection(
@@ -179,7 +204,11 @@ void game_of_life_test() {
             ->set("type", "convolutional")
             ->set("opcode", "add")
             ->set_child("weight config",
-                new SurroundWeightConfig(1,1, new FlatWeightConfig(1)))
+                (new PropertyConfig())
+                    ->set("type", "surround")
+                    ->set("size", "1")
+                    ->set("child type", "flat")
+                    ->set("weight", "1"))
             ->set("from structure", "game_of_life")
             ->set("to structure", "game_of_life")
             ->set("from layer", "board")
@@ -197,10 +226,12 @@ void game_of_life_test() {
             ->set("type", "convolutional")
             ->set("opcode", "sub")
             ->set_child("weight config",
-                new SurroundWeightConfig(
-                    neighborhood_size,
-                    neighborhood_size,
-                    new FlatWeightConfig(1)))
+                (new PropertyConfig())
+                    ->set("type", "surround")
+                    ->set("rows", std::to_string(neighborhood_size))
+                    ->set("columns", std::to_string(neighborhood_size))
+                    ->set("child type", "flat")
+                    ->set("weight", "1"))
             ->set("from structure", "game_of_life")
             ->set("to structure", "game_of_life")
             ->set("from layer", "board")
@@ -261,30 +292,41 @@ void working_memory_test() {
 
     // Feedforward circuit
     main_structure->add_layer(
-        (new LayerConfig("feedforward",
-            IZHIKEVICH, cortex_size, cortex_size,
-            (new PropertyConfig())
-            ->set("type", "poisson")))
-        ->set(IZ_INIT, "regular"));
+        (new PropertyConfig())
+            ->set("name", "feedforward")
+            ->set("neural model", IZHIKEVICH)
+            ->set("rows", std::to_string(cortex_size))
+            ->set("columns", std::to_string(cortex_size))
+            ->set_child("noise config",
+                (new PropertyConfig())
+                    ->set("type", "poisson"))
+            ->set(IZ_INIT, "regular"));
 
     // Thalamic relay
     main_structure->add_layer(
-        (new LayerConfig("tl1_thalamus",
-            IZHIKEVICH, 1, 1))
-        ->set(IZ_INIT, "thalamo_cortical"));
+        (new PropertyConfig())
+            ->set("name", "tl1_thalamus")
+            ->set("neural model", IZHIKEVICH)
+            ->set("rows", "1")
+            ->set("columns", "1")
+            ->set(IZ_INIT, "thalamo_cortical"));
 
     for (int i = 0 ; i < num_cortical_regions ; ++i) {
         StructureConfig *sub_structure = new StructureConfig(std::to_string(i), PARALLEL);
 
         // Cortical layers
         sub_structure->add_layer(
-            (new LayerConfig("3_cortex",
-                IZHIKEVICH, cortex_size, cortex_size,
-                (new PropertyConfig())
-                ->set("type", "normal")
-                ->set("mean", std::to_string(cortex_noise))
-                ->set("std_dev", std::to_string(cortex_noise_stdev))))
-            ->set(IZ_INIT, "random positive"));
+            (new PropertyConfig())
+                ->set("name", "3_cortex")
+                ->set("neural model", IZHIKEVICH)
+                ->set("rows", std::to_string(cortex_size))
+                ->set("columns", std::to_string(cortex_size))
+                ->set_child("noise config",
+                    (new PropertyConfig())
+                        ->set("type", "normal")
+                        ->set("mean", std::to_string(cortex_noise))
+                        ->set("std_dev", std::to_string(cortex_noise_stdev)))
+                ->set(IZ_INIT, "random positive"));
 
         // Cortico-cortical connectivity
         network_config->add_connection(
@@ -295,7 +337,10 @@ void working_memory_test() {
                 ->set("type", "convergent")
                 ->set("opcode", "add")
                 ->set_child("weight config",
-                    new FlatWeightConfig(0.1, fraction))
+                    (new PropertyConfig())
+                        ->set("type", "flat")
+                        ->set("weight", "0.1")
+                        ->set("fraction", std::to_string(fraction)))
                 ->set("from structure", std::to_string(i))
                 ->set("to structure", std::to_string(i))
                 ->set("from layer", "3_cortex")
@@ -314,8 +359,12 @@ void working_memory_test() {
                     ->set("type", "convergent")
                     ->set("opcode", "sub")
                     ->set_child("weight config",
-                        new SurroundWeightConfig(intra_cortex_center,
-                            new FlatWeightConfig(0.1, fraction)))
+                        (new PropertyConfig())
+                            ->set("type", "surround")
+                            ->set("size", std::to_string(intra_cortex_center))
+                            ->set("child type", "flat")
+                            ->set("weight", "0.1")
+                            ->set("fraction", std::to_string(fraction)))
                     ->set("from structure", std::to_string(i))
                     ->set("to structure", std::to_string(i))
                     ->set("from layer", "3_cortex")
@@ -336,7 +385,10 @@ void working_memory_test() {
                     ->set("type", "convergent")
                     ->set("opcode", "add")
                     ->set_child("weight config",
-                        new FlatWeightConfig(0.1 * thal_ratio, fraction))
+                        (new PropertyConfig())
+                            ->set("type", "flat")
+                            ->set("weight", std::to_string(0.1 * thal_ratio))
+                            ->set("fraction", std::to_string(fraction)))
                     ->set("from structure", std::to_string(i-1))
                     ->set("to structure", std::to_string(i))
                     ->set("from layer", "3_cortex")
@@ -353,7 +405,10 @@ void working_memory_test() {
                     ->set("type", "convergent")
                     ->set("opcode", "add")
                     ->set_child("weight config",
-                        new FlatWeightConfig(0.1 * thal_ratio, fraction))
+                        (new PropertyConfig())
+                            ->set("type", "flat")
+                            ->set("weight", std::to_string(0.1 * thal_ratio))
+                            ->set("fraction", std::to_string(fraction)))
                     ->set("from structure", std::to_string(i))
                     ->set("to structure", std::to_string(i-1))
                     ->set("from layer", "3_cortex")
@@ -371,8 +426,12 @@ void working_memory_test() {
                         ->set("type", "convergent")
                         ->set("opcode", "sub")
                         ->set_child("weight config",
-                            new SurroundWeightConfig(ff_center,
-                                new FlatWeightConfig(0.1*thal_ratio, fraction)))
+                            (new PropertyConfig())
+                                ->set("type", "surround")
+                                ->set("size", std::to_string(ff_center))
+                                ->set("child type", "flat")
+                                ->set("weight", std::to_string(0.1*thal_ratio))
+                                ->set("fraction", std::to_string(fraction)))
                         ->set("from structure", std::to_string(i))
                         ->set("to structure", std::to_string(i-1))
                         ->set("from layer", "3_cortex")
@@ -389,8 +448,12 @@ void working_memory_test() {
                         ->set("type", "convergent")
                         ->set("opcode", "sub")
                         ->set_child("weight config",
-                            new SurroundWeightConfig(ff_center,
-                                new FlatWeightConfig(0.1*thal_ratio, fraction)))
+                            (new PropertyConfig())
+                                ->set("type", "surround")
+                                ->set("size", std::to_string(ff_center))
+                                ->set("child type", "flat")
+                                ->set("weight", std::to_string(0.1*thal_ratio))
+                                ->set("fraction", std::to_string(fraction)))
                         ->set("from structure", std::to_string(i-1))
                         ->set("to structure", std::to_string(i))
                         ->set("from layer", "3_cortex")
@@ -411,7 +474,9 @@ void working_memory_test() {
                 ->set("type", "fully connected")
                 ->set("opcode", "mult")
                 ->set_child("weight config",
-                    new FlatWeightConfig(0.1*thal_ratio))
+                    (new PropertyConfig())
+                        ->set("type", "flat")
+                        ->set("weight", std::to_string(0.1 * thal_ratio)))
                 ->set("from structure", "working memory")
                 ->set("to structure", std::to_string(i))
                 ->set("from layer", "tl1_thalamus")
@@ -431,7 +496,10 @@ void working_memory_test() {
             ->set("type", "convergent")
             ->set("opcode", "add")
             ->set_child("weight config",
-                new FlatWeightConfig(0.1*thal_ratio, fraction))
+                (new PropertyConfig())
+                    ->set("type", "flat")
+                    ->set("weight", std::to_string(0.1 * thal_ratio))
+                    ->set("fraction", std::to_string(fraction)))
             ->set("from structure", "working memory")
             ->set("to structure", "0")
             ->set("from layer", "feedforward")
@@ -449,8 +517,12 @@ void working_memory_test() {
             ->set("type", "convergent")
             ->set("opcode", "sub")
             ->set_child("weight config",
-                new SurroundWeightConfig(ff_center,
-                    new FlatWeightConfig(0.1*thal_ratio, fraction)))
+                (new PropertyConfig())
+                    ->set("type", "surround")
+                    ->set("size", std::to_string(ff_center))
+                    ->set("child type", "flat")
+                    ->set("weight", std::to_string(0.1*thal_ratio))
+                    ->set("fraction", std::to_string(fraction)))
             ->set("from structure", "working memory")
             ->set("to structure", "0")
             ->set("from layer", "feedforward")
@@ -508,30 +580,39 @@ void dsst_test() {
     StructureConfig *structure = new StructureConfig("dsst", PARALLEL);
 
     structure->add_layer(
-        (new LayerConfig("vision",
-            "relay", rows, cols))
-        ->set(IZ_INIT, "regular"));
+        (new PropertyConfig())
+            ->set("name", "vision")
+            ->set("neural model", "relay")
+            ->set("rows", std::to_string(rows))
+            ->set("columns", std::to_string(cols)));
 
     structure->add_layer(
-        (new LayerConfig("what",
-            "relay", cell_rows, cell_cols))
-        ->set(IZ_INIT, "regular")
-        ->set_array("dendrites",
-            {
-                (new PropertyConfig())
-                    ->set("name", "fixation")
-                    ->set("second order", "true")
-            }));
+        (new PropertyConfig())
+            ->set("name", "what")
+            ->set("neural model", "relay")
+            ->set("rows", std::to_string(cell_rows))
+            ->set("columns", std::to_string(cell_cols))
+            ->set_array("dendrites",
+                {
+                    (new PropertyConfig())
+                        ->set("name", "fixation")
+                        ->set("second order", "true")
+                }
+            ));
 
     structure->add_layer(
-        (new LayerConfig("focus",
-            "relay", focus_rows, focus_cols))
-        ->set(IZ_INIT, "regular"));
+        (new PropertyConfig())
+            ->set("name", "focus")
+            ->set("neural model", "relay")
+            ->set("rows", std::to_string(focus_rows))
+            ->set("columns", std::to_string(focus_cols)));
 
     structure->add_layer(
-        (new LayerConfig("output_layer",
-            "relay", 1, 1))
-        ->set(IZ_INIT, "regular"));
+        (new PropertyConfig())
+            ->set("name", "output_layer")
+            ->set("neural model", "relay")
+            ->set("rows", "1")
+            ->set("columns", "1"));
 
     // Connect vision to what
     network_config->add_connection(
@@ -542,7 +623,9 @@ void dsst_test() {
             ->set("type", "convolutional")
             ->set("opcode", "add")
             ->set_child("weight config",
-                new FlatWeightConfig(1))
+                (new PropertyConfig())
+                    ->set("type", "flat")
+                    ->set("weight", "1"))
             ->set("from structure", "dsst")
             ->set("to structure", "dsst")
             ->set("from layer", "vision")
@@ -561,7 +644,9 @@ void dsst_test() {
             ->set("type", "convolutional")
             ->set("opcode", "mult")
             ->set_child("weight config",
-                new FlatWeightConfig(1))
+                (new PropertyConfig())
+                    ->set("type", "flat")
+                    ->set("weight", "1"))
             ->set("from structure", "dsst")
             ->set("to structure", "dsst")
             ->set("from layer", "focus")
@@ -608,12 +693,17 @@ void debug_test() {
     int cols = 20;
 
     structure->add_layer(
-        new LayerConfig("source",
-            "debug", rows, cols));
-
+        (new PropertyConfig())
+            ->set("name", "source")
+            ->set("neural model", "debug")
+            ->set("rows", std::to_string(rows))
+            ->set("columns", std::to_string(cols)));
     structure->add_layer(
-        new LayerConfig("dest",
-            "debug", rows, cols));
+        (new PropertyConfig())
+            ->set("name", "dest")
+            ->set("neural model", "debug")
+            ->set("rows", std::to_string(rows))
+            ->set("columns", std::to_string(cols)));
 
     network_config->add_structure(structure);
 
@@ -984,6 +1074,8 @@ int cli() {
         }
         std::cout << std::endl;
     }
+    if (context != nullptr) delete context;
+    if (engine != nullptr) delete engine;
     return 0;
 }
 

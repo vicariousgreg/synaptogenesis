@@ -22,6 +22,7 @@ Structure::Structure(std::string name, ClusterType cluster_type)
 Structure::~Structure() {
     for (auto layer : layers) delete layer;
     for (auto conn : connections) delete conn;
+    delete config;
 }
 
 Layer* Structure::get_layer(std::string name, bool log_error) {
