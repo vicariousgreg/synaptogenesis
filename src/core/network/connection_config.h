@@ -105,24 +105,6 @@ class ConnectionConfig : public PropertyConfig {
         const SubsetConfig get_subset_config() const;
         const PropertyConfig get_weight_config() const;
 
-        /* Setter that returns self pointer */
-        ConnectionConfig *set(std::string key, std::string value) {
-            PropertyConfig::set(key, value);
-            return this;
-        }
-        ConnectionConfig *set_child(std::string key, PropertyConfig* child) {
-            PropertyConfig::set_child(key, child);
-            return this;
-        }
-        ConnectionConfig *set_array(std::string key, ConfigArray array) {
-            PropertyConfig::set_array(key, array);
-            return this;
-        }
-        ConnectionConfig *add_to_array(std::string key, PropertyConfig* config) {
-            PropertyConfig::add_to_array(key, config);
-            return this;
-        }
-
         std::string str() const;
 
         /* Gets the expected row/col size of a destination layer given.

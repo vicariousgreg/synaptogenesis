@@ -31,24 +31,6 @@ class ModuleConfig : public PropertyConfig {
             { return get_array("layers"); }
         const PropertyConfig* get_layer(Layer *layer) const;
 
-        /* Setters that returns self pointer */
-        ModuleConfig *set(std::string key, std::string value) {
-            PropertyConfig::set(key, value);
-            return this;
-        }
-        ModuleConfig *set_child(std::string key, PropertyConfig* child) {
-            PropertyConfig::set_child(key, child);
-            return this;
-        }
-        ModuleConfig *set_array(std::string key, ConfigArray array) {
-            PropertyConfig::set_array(key, array);
-            return this;
-        }
-        ModuleConfig *add_to_array(std::string key, PropertyConfig* config) {
-            PropertyConfig::add_to_array(key, config);
-            return this;
-        }
-
     protected:
         std::map<std::string,
             std::map<std::string, PropertyConfig*>> layer_map;

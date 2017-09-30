@@ -34,6 +34,11 @@ class PropertyConfig {
         bool has(std::string key) const;
         std::string get(std::string key, std::string def_val="") const;
         PropertyConfig *set(std::string key, std::string val);
+        PropertyConfig *set(std::string key, char* val);
+        PropertyConfig *set(std::string key, int val);
+        PropertyConfig *set(std::string key, float val);
+        PropertyConfig *set(std::string key, double val);
+        PropertyConfig *set(std::string key, bool val);
         std::string remove_property(std::string key);
 
         /* Get a set of key-child pairs */

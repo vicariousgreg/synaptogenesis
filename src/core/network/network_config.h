@@ -19,12 +19,6 @@ class NetworkConfig : public PropertyConfig {
         NetworkConfig* add_connection(PropertyConfig* config);
         const std::vector<ConnectionConfig*> get_connections() const;
 
-        /* Setter that returns self pointer */
-        NetworkConfig *set(std::string key, std::string value) {
-            PropertyConfig::set(key, value);
-            return this;
-        }
-
     protected:
         void add_structure_internal(StructureConfig* config);
         void add_connection_internal(ConnectionConfig* config);

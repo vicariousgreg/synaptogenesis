@@ -15,12 +15,6 @@ class StructureConfig : public PropertyConfig {
         StructureConfig* add_layer(PropertyConfig* config);
         const std::vector<LayerConfig*> get_layers() const;
 
-        /* Setter that returns self pointer */
-        StructureConfig *set(std::string key, std::string value) {
-            PropertyConfig::set(key, value);
-            return this;
-        }
-
         const std::string name;
         const ClusterType cluster_type;
 

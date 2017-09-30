@@ -182,17 +182,17 @@ void game_of_life_test() {
         (new PropertyConfig())
             ->set("name", "board")
             ->set("neural model", "game_of_life")
-            ->set("rows", std::to_string(board_dim))
-            ->set("columns", std::to_string(board_dim))
+            ->set("rows", board_dim)
+            ->set("columns", board_dim)
             ->set_child("noise config",
                 (new PropertyConfig())
                     ->set("type", "poisson")
-                    ->set("value", std::to_string(birth_min))
+                    ->set("value", birth_min)
                     ->set("rate", "0.5"))
-            ->set("survival_min", std::to_string(survival_min))
-            ->set("survival_max", std::to_string(survival_max))
-            ->set("birth_min", std::to_string(birth_min))
-            ->set("birth_max", std::to_string(birth_max)));
+            ->set("survival_min", survival_min)
+            ->set("survival_max", survival_max)
+            ->set("birth_min", birth_min)
+            ->set("birth_max", birth_max));
 
     network_config->add_structure(structure);
 
@@ -215,7 +215,7 @@ void game_of_life_test() {
             ->set("to layer", "board")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("field size", std::to_string(neighborhood_size))
+                    ->set("field size", neighborhood_size)
                     ->set("wrap", (wrap) ? "true" : "false")));
 
     network_config->add_connection(
@@ -228,8 +228,8 @@ void game_of_life_test() {
             ->set_child("weight config",
                 (new PropertyConfig())
                     ->set("type", "surround")
-                    ->set("rows", std::to_string(neighborhood_size))
-                    ->set("columns", std::to_string(neighborhood_size))
+                    ->set("rows", neighborhood_size)
+                    ->set("columns", neighborhood_size)
                     ->set("child type", "flat")
                     ->set("weight", "1"))
             ->set("from structure", "game_of_life")
@@ -238,8 +238,8 @@ void game_of_life_test() {
             ->set("to layer", "board")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("field size", std::to_string(neighborhood_size+2))
-                    ->set("offset", std::to_string((-neighborhood_size+1)/2))
+                    ->set("field size", neighborhood_size+2)
+                    ->set("offset", (-neighborhood_size+1)/2)
                     ->set("wrap", (wrap) ? "true" : "false")));
 
     auto network = new Network(network_config);
@@ -250,11 +250,11 @@ void game_of_life_test() {
     // Refresh state
     env->add_module(
         (new ModuleConfig("periodic_input", "game_of_life", "board"))
-            ->set("max", std::to_string(birth_min))
-            ->set("rate", std::to_string(rate))
+            ->set("max", birth_min)
+            ->set("rate", rate)
             ->set("clear", "true")
             ->set("verbose", "false")
-            ->set("fraction", std::to_string(random_fraction)));
+            ->set("fraction", random_fraction));
 
     env->add_module(
         new ModuleConfig("visualizer", "game_of_life", "board"));
@@ -295,8 +295,8 @@ void working_memory_test() {
         (new PropertyConfig())
             ->set("name", "feedforward")
             ->set("neural model", IZHIKEVICH)
-            ->set("rows", std::to_string(cortex_size))
-            ->set("columns", std::to_string(cortex_size))
+            ->set("rows", cortex_size)
+            ->set("columns", cortex_size)
             ->set_child("noise config",
                 (new PropertyConfig())
                     ->set("type", "poisson"))
@@ -319,20 +319,20 @@ void working_memory_test() {
             (new PropertyConfig())
                 ->set("name", "3_cortex")
                 ->set("neural model", IZHIKEVICH)
-                ->set("rows", std::to_string(cortex_size))
-                ->set("columns", std::to_string(cortex_size))
+                ->set("rows", cortex_size)
+                ->set("columns", cortex_size)
                 ->set_child("noise config",
                     (new PropertyConfig())
                         ->set("type", "normal")
-                        ->set("mean", std::to_string(cortex_noise))
-                        ->set("std_dev", std::to_string(cortex_noise_stdev)))
+                        ->set("mean", cortex_noise)
+                        ->set("std_dev", cortex_noise_stdev))
                 ->set(IZ_INIT, "random positive"));
 
         // Cortico-cortical connectivity
         network_config->add_connection(
             (new PropertyConfig())
                 ->set("plastic", (exc_plastic) ? "true" : "false")
-                ->set("delay", std::to_string(exc_delay))
+                ->set("delay", exc_delay)
                 ->set("max weight", "0.5")
                 ->set("type", "convergent")
                 ->set("opcode", "add")
@@ -340,38 +340,38 @@ void working_memory_test() {
                     (new PropertyConfig())
                         ->set("type", "flat")
                         ->set("weight", "0.1")
-                        ->set("fraction", std::to_string(fraction)))
-                ->set("from structure", std::to_string(i))
-                ->set("to structure", std::to_string(i))
+                        ->set("fraction", fraction))
+                ->set("from structure", i)
+                ->set("to structure", i)
                 ->set("from layer", "3_cortex")
                 ->set("to layer", "3_cortex")
                 ->set_child("arborized config",
                     (new PropertyConfig())
-                        ->set("field size", std::to_string(intra_cortex_center))
+                        ->set("field size", intra_cortex_center)
                         ->set("wrap", (wrap) ? "true" : "false")));
 
         if (intra_cortex_surround > intra_cortex_center) {
             network_config->add_connection(
                 (new PropertyConfig())
                     ->set("plastic", "false")
-                    ->set("delay", std::to_string(inh_delay))
+                    ->set("delay", inh_delay)
                     ->set("max weight", "0.5")
                     ->set("type", "convergent")
                     ->set("opcode", "sub")
                     ->set_child("weight config",
                         (new PropertyConfig())
                             ->set("type", "surround")
-                            ->set("size", std::to_string(intra_cortex_center))
+                            ->set("size", intra_cortex_center)
                             ->set("child type", "flat")
                             ->set("weight", "0.1")
-                            ->set("fraction", std::to_string(fraction)))
-                    ->set("from structure", std::to_string(i))
-                    ->set("to structure", std::to_string(i))
+                            ->set("fraction", fraction))
+                    ->set("from structure", i)
+                    ->set("to structure", i)
                     ->set("from layer", "3_cortex")
                     ->set("to layer", "3_cortex")
                     ->set_child("arborized config",
                         (new PropertyConfig())
-                            ->set("field size", std::to_string(intra_cortex_center))
+                            ->set("field size", intra_cortex_center)
                             ->set("wrap", (wrap) ? "true" : "false")));
         }
 
@@ -387,15 +387,15 @@ void working_memory_test() {
                     ->set_child("weight config",
                         (new PropertyConfig())
                             ->set("type", "flat")
-                            ->set("weight", std::to_string(0.1 * thal_ratio))
-                            ->set("fraction", std::to_string(fraction)))
-                    ->set("from structure", std::to_string(i-1))
-                    ->set("to structure", std::to_string(i))
+                            ->set("weight", 0.1 * thal_ratio)
+                            ->set("fraction", fraction))
+                    ->set("from structure", i-1)
+                    ->set("to structure", i)
                     ->set("from layer", "3_cortex")
                     ->set("to layer", "3_cortex")
                     ->set_child("arborized config",
                         (new PropertyConfig())
-                            ->set("field size", std::to_string(ff_center))
+                            ->set("field size", ff_center)
                             ->set("wrap", (wrap) ? "true" : "false")));
             network_config->add_connection(
                 (new PropertyConfig())
@@ -407,15 +407,15 @@ void working_memory_test() {
                     ->set_child("weight config",
                         (new PropertyConfig())
                             ->set("type", "flat")
-                            ->set("weight", std::to_string(0.1 * thal_ratio))
-                            ->set("fraction", std::to_string(fraction)))
-                    ->set("from structure", std::to_string(i))
-                    ->set("to structure", std::to_string(i-1))
+                            ->set("weight", 0.1 * thal_ratio)
+                            ->set("fraction", fraction))
+                    ->set("from structure", i)
+                    ->set("to structure", i-1)
                     ->set("from layer", "3_cortex")
                     ->set("to layer", "3_cortex")
                     ->set_child("arborized config",
                         (new PropertyConfig())
-                            ->set("field size", std::to_string(ff_center))
+                            ->set("field size", ff_center)
                             ->set("wrap", (wrap) ? "true" : "false")));
             if (ff_center > ff_surround) {
                 network_config->add_connection(
@@ -428,17 +428,17 @@ void working_memory_test() {
                         ->set_child("weight config",
                             (new PropertyConfig())
                                 ->set("type", "surround")
-                                ->set("size", std::to_string(ff_center))
+                                ->set("size", ff_center)
                                 ->set("child type", "flat")
-                                ->set("weight", std::to_string(0.1*thal_ratio))
-                                ->set("fraction", std::to_string(fraction)))
-                        ->set("from structure", std::to_string(i))
-                        ->set("to structure", std::to_string(i-1))
+                                ->set("weight", 0.1*thal_ratio)
+                                ->set("fraction", fraction))
+                        ->set("from structure", i)
+                        ->set("to structure", i-1)
                         ->set("from layer", "3_cortex")
                         ->set("to layer", "3_cortex")
                         ->set_child("arborized config",
                             (new PropertyConfig())
-                                ->set("field size", std::to_string(ff_surround))
+                                ->set("field size", ff_surround)
                                 ->set("wrap", (wrap) ? "true" : "false")));
                 network_config->add_connection(
                     (new PropertyConfig())
@@ -450,17 +450,17 @@ void working_memory_test() {
                         ->set_child("weight config",
                             (new PropertyConfig())
                                 ->set("type", "surround")
-                                ->set("size", std::to_string(ff_center))
+                                ->set("size", ff_center)
                                 ->set("child type", "flat")
-                                ->set("weight", std::to_string(0.1*thal_ratio))
-                                ->set("fraction", std::to_string(fraction)))
-                        ->set("from structure", std::to_string(i-1))
-                        ->set("to structure", std::to_string(i))
+                                ->set("weight", 0.1*thal_ratio)
+                                ->set("fraction", fraction))
+                        ->set("from structure", i-1)
+                        ->set("to structure", i)
                         ->set("from layer", "3_cortex")
                         ->set("to layer", "3_cortex")
                         ->set_child("arborized config",
                             (new PropertyConfig())
-                                ->set("field size", std::to_string(ff_surround))
+                                ->set("field size", ff_surround)
                                 ->set("wrap", (wrap) ? "true" : "false")));
             }
         }
@@ -476,9 +476,9 @@ void working_memory_test() {
                 ->set_child("weight config",
                     (new PropertyConfig())
                         ->set("type", "flat")
-                        ->set("weight", std::to_string(0.1 * thal_ratio)))
+                        ->set("weight", 0.1 * thal_ratio))
                 ->set("from structure", "working memory")
-                ->set("to structure", std::to_string(i))
+                ->set("to structure", i)
                 ->set("from layer", "tl1_thalamus")
                 ->set("to layer", "3_cortex")
                 ->set("myelinated", "true"));
@@ -498,8 +498,8 @@ void working_memory_test() {
             ->set_child("weight config",
                 (new PropertyConfig())
                     ->set("type", "flat")
-                    ->set("weight", std::to_string(0.1 * thal_ratio))
-                    ->set("fraction", std::to_string(fraction)))
+                    ->set("weight", 0.1 * thal_ratio)
+                    ->set("fraction", fraction))
             ->set("from structure", "working memory")
             ->set("to structure", "0")
             ->set("from layer", "feedforward")
@@ -507,7 +507,7 @@ void working_memory_test() {
             ->set("myelinated", "true")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("field size", std::to_string(ff_center))
+                    ->set("field size", ff_center)
                     ->set("wrap", (wrap) ? "true" : "false")));
     network_config->add_connection(
         (new PropertyConfig())
@@ -519,10 +519,10 @@ void working_memory_test() {
             ->set_child("weight config",
                 (new PropertyConfig())
                     ->set("type", "surround")
-                    ->set("size", std::to_string(ff_center))
+                    ->set("size", ff_center)
                     ->set("child type", "flat")
-                    ->set("weight", std::to_string(0.1*thal_ratio))
-                    ->set("fraction", std::to_string(fraction)))
+                    ->set("weight", 0.1*thal_ratio)
+                    ->set("fraction", fraction))
             ->set("from structure", "working memory")
             ->set("to structure", "0")
             ->set("from layer", "feedforward")
@@ -530,7 +530,7 @@ void working_memory_test() {
             ->set("myelinated", "true")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("field size", std::to_string(ff_surround))
+                    ->set("field size", ff_surround)
                     ->set("wrap", (wrap) ? "true" : "false")));
 
     network_config->add_structure(main_structure);
@@ -583,15 +583,15 @@ void dsst_test() {
         (new PropertyConfig())
             ->set("name", "vision")
             ->set("neural model", "relay")
-            ->set("rows", std::to_string(rows))
-            ->set("columns", std::to_string(cols)));
+            ->set("rows", rows)
+            ->set("columns", cols));
 
     structure->add_layer(
         (new PropertyConfig())
             ->set("name", "what")
             ->set("neural model", "relay")
-            ->set("rows", std::to_string(cell_rows))
-            ->set("columns", std::to_string(cell_cols))
+            ->set("rows", cell_rows)
+            ->set("columns", cell_cols)
             ->set_array("dendrites",
                 {
                     (new PropertyConfig())
@@ -604,8 +604,8 @@ void dsst_test() {
         (new PropertyConfig())
             ->set("name", "focus")
             ->set("neural model", "relay")
-            ->set("rows", std::to_string(focus_rows))
-            ->set("columns", std::to_string(focus_cols)));
+            ->set("rows", focus_rows)
+            ->set("columns", focus_cols));
 
     structure->add_layer(
         (new PropertyConfig())
@@ -633,8 +633,8 @@ void dsst_test() {
             ->set("dendrite", "fixation")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("row field size", std::to_string(focus_rows))
-                    ->set("column field size", std::to_string(focus_cols))
+                    ->set("row field size", focus_rows)
+                    ->set("column field size", focus_cols)
                     ->set("offset", "0")));
     network_config->add_connection(
         (new PropertyConfig())
@@ -654,8 +654,8 @@ void dsst_test() {
             ->set("dendrite", "fixation")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("row field size", std::to_string(focus_rows))
-                    ->set("column field size", std::to_string(focus_cols))
+                    ->set("row field size", focus_rows)
+                    ->set("column field size", focus_cols)
                     ->set("stride", "0")
                     ->set("offset", "0")));
 
@@ -696,14 +696,14 @@ void debug_test() {
         (new PropertyConfig())
             ->set("name", "source")
             ->set("neural model", "debug")
-            ->set("rows", std::to_string(rows))
-            ->set("columns", std::to_string(cols)));
+            ->set("rows", rows)
+            ->set("columns", cols));
     structure->add_layer(
         (new PropertyConfig())
             ->set("name", "dest")
             ->set("neural model", "debug")
-            ->set("rows", std::to_string(rows))
-            ->set("columns", std::to_string(cols)));
+            ->set("rows", rows)
+            ->set("columns", cols));
 
     network_config->add_structure(structure);
 
@@ -733,14 +733,14 @@ void debug_test() {
             ->set("to layer", "dest")
             ->set_child("subset config",
                 (new PropertyConfig())
-                    ->set("from row start", std::to_string(rows / 4))
-                    ->set("from row end",   std::to_string(3 * rows / 4))
-                    ->set("to row start",   std::to_string(rows / 4))
-                    ->set("to row end",     std::to_string(3 * rows / 4))
-                    ->set("from column start", std::to_string(cols / 4))
-                    ->set("from column end",   std::to_string(3 * cols / 4))
-                    ->set("to column start",   std::to_string(cols / 4))
-                    ->set("to column end",     std::to_string(3 * cols / 4))));
+                    ->set("from row start", rows / 4)
+                    ->set("from row end",   3 * rows / 4)
+                    ->set("to row start",   rows / 4)
+                    ->set("to row end",     3 * rows / 4)
+                    ->set("from column start", cols / 4)
+                    ->set("from column end",   3 * cols / 4)
+                    ->set("to column start",   cols / 4)
+                    ->set("to column end",     3 * cols / 4)));
 
     network_config->add_connection(
         (new PropertyConfig())
@@ -969,8 +969,8 @@ void debug_test() {
             ->set("to layer", "dest")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("row field size", std::to_string(rows)) 
-                    ->set("column field size", std::to_string(cols)) 
+                    ->set("row field size", rows)
+                    ->set("column field size", cols)
                     ->set("stride", "0")
                     ->set("offset", "0")
                     ->set("wrap", "true")));
@@ -987,8 +987,8 @@ void debug_test() {
             ->set("to layer", "dest")
             ->set_child("arborized config",
                 (new PropertyConfig())
-                    ->set("row field size", std::to_string(rows)) 
-                    ->set("column field size", std::to_string(cols)) 
+                    ->set("row field size", rows)
+                    ->set("column field size", cols)
                     ->set("stride", "0")
                     ->set("offset", "0")
                     ->set("wrap", "true")));

@@ -35,24 +35,6 @@ class LayerConfig : public PropertyConfig {
         LayerConfig* set_columns(int x)
             { columns = x; return this; }
 
-        /* Setter that returns self pointer */
-        LayerConfig *set(std::string key, std::string value) {
-            PropertyConfig::set(key, value);
-            return this;
-        }
-        LayerConfig *set_child(std::string key, PropertyConfig* child) {
-            PropertyConfig::set_child(key, child);
-            return this;
-        }
-        LayerConfig *set_array(std::string key, ConfigArray array) {
-            PropertyConfig::set_array(key, array);
-            return this;
-        }
-        LayerConfig *add_to_array(std::string key, PropertyConfig* config) {
-            PropertyConfig::add_to_array(key, config);
-            return this;
-        }
-
         const std::string name;
         const std::string neural_model;
         const bool plastic;

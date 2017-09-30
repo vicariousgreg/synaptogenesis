@@ -60,6 +60,17 @@ PropertyConfig* PropertyConfig::set(std::string key, std::string value) {
     return this;
 }
 
+PropertyConfig* PropertyConfig::set(std::string key, char* value)
+    { return set(key, std::string(value)); }
+PropertyConfig* PropertyConfig::set(std::string key, int value)
+    { return set(key, std::to_string(value)); }
+PropertyConfig* PropertyConfig::set(std::string key, float value)
+    { return set(key, std::to_string(value)); }
+PropertyConfig* PropertyConfig::set(std::string key, double value)
+    { return set(key, std::to_string(value)); }
+PropertyConfig* PropertyConfig::set(std::string key, bool value)
+    { return set(key, ((value) ? std::string("true") : std::string("false"))); }
+
 std::string PropertyConfig::remove_property(std::string key) {
     if (has(key)) {
         std::string value = get(key);
