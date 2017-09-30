@@ -5,10 +5,7 @@
 #include "util/error_manager.h"
 
 ModuleConfig::ModuleConfig(PropertyConfig *config)
-    : PropertyConfig(config) {
-    for (auto layer : config->get_array("layers"))
-        add_layer_internal(layer);
-}
+    : PropertyConfig(config) { }
 
 ModuleConfig::ModuleConfig(std::string type) {
     this->set("type", type);
@@ -32,25 +29,19 @@ ModuleConfig* ModuleConfig::add_layer(std::string structure,
 }
 
 ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
-    this->add_layer_internal(config);
-    return this;
-}
-
-void ModuleConfig::add_layer_internal(PropertyConfig *config) {
     if (not config->has("structure") or not config->has("layer"))
         ErrorManager::get_instance()->log_error(
             "Module layer config must have structure and layer name!");
-
-    // Adding to array makes a copy
-    // Retrieve that copy and add it to the layer map
     this->add_to_array("layers", config);
-    auto layers = get_array("layers");
-    this->layer_map[config->get("structure")]
-                   [config->get("layer")] = layers.at(layers.size()-1);
+    return this;
 }
 
-const PropertyConfig* ModuleConfig::get_layer(Layer *layer) const
-    { return layer_map.at(layer->structure->name).at(layer->name); }
+const PropertyConfig* ModuleConfig::get_layer(Layer *layer) const {
+    for (auto config : get_array("layers"))
+        if (config->get("structure") == layer->structure->name and
+            config->get("layer") == layer->name)
+            return config;
+}
 
 Module::Module(LayerList layers) : layers(layers) {
     for (auto layer : layers)

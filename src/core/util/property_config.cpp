@@ -157,6 +157,33 @@ PropertyConfig *PropertyConfig::add_to_array(std::string key, PropertyConfig* co
     return this;
 }
 
+PropertyConfig *PropertyConfig::remove_from_array(std::string key, PropertyConfig* config) {
+    if (has_array(key)) {
+        auto arr = arrays.at(key);
+        auto it = std::find(arr.begin(), arr.end(), config);
+        if (it != arr.end()) arr.erase(it);
+        else
+            ErrorManager::get_instance()->log_error(
+                "Attempted to remove non-existent property " + key
+                + " from PropertyConfig array " + key + "!");
+    } else {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to remove non-existent property " + key
+            + " from PropertyConfig array " + key + "!");
+    }
+    return config;
+}
+
+PropertyConfig *PropertyConfig::remove_from_array(std::string key, int index) {
+    auto arr = get_array(key);
+    if (arr.size() > index)
+        return remove_from_array(key, arr.at(index));
+    else
+        ErrorManager::get_instance()->log_error(
+            "Attempted to remove non-existent property " + key
+            + " from PropertyConfig array " + key + "!");
+}
+
 ConfigArray PropertyConfig::remove_array(std::string key) {
     if (has_array(key)) {
         ConfigArray array = get_array(key);

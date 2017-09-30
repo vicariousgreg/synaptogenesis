@@ -85,9 +85,6 @@ void mnist_test() {
 
     auto network = new Network(network_config);
 
-    save_network(network, "mnist_new.json");
-    network = load_network("mnist_new.json");
-
     // Modules for training
     std::string input_file = "/HDD/datasets/mnist/processed/mnist_train_input.csv";
     std::string output_file = "/HDD/datasets/mnist/processed/mnist_train_output.csv";

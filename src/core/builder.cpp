@@ -12,18 +12,6 @@
 
 using namespace jsonxx;
 
-/******************************************************************************/
-/******************************** NETWORK *************************************/
-/******************************************************************************/
-
-/******************************** PARSING *************************************/
-static bool has_string(Object o, std::string key) { return o.has<String>(key); }
-static std::string get_string(Object o, std::string key, std::string def_val="")
-    { return (o.has<String>(key)) ? o.get<String>(key) : def_val; }
-
-static bool has_object(Object o, std::string key) { return o.has<Object>(key); }
-static bool has_array(Object o, std::string key) { return o.has<Array>(key); }
-
 static PropertyConfig *parse_properties(Object nco) {
     PropertyConfig *config = new PropertyConfig();
 
@@ -48,24 +36,6 @@ static PropertyConfig *parse_properties(Object nco) {
     return config;
 }
 
-/* Top level network parser */
-Network* load_network(std::string path) {
-    std::ifstream file("networks/" + path);
-    std::stringstream buffer;
-
-    buffer << file.rdbuf();
-    std::string str = buffer.str();
-
-    Object o;
-    o.parse(str);
-    auto props = parse_properties(o);
-    Network *network = new Network(new NetworkConfig(props));
-    delete props;
-
-    return network;
-}
-
-/******************************** WRITING *************************************/
 static Object write_properties(const PropertyConfig *config) {
     Object o;
 
@@ -88,83 +58,41 @@ static Object write_properties(const PropertyConfig *config) {
     return o;
 }
 
+Network* load_network(std::string path) {
+    std::stringstream buffer;
+    buffer << std::ifstream("networks/" + path).rdbuf();
+
+    Object o;
+    o.parse(buffer.str());
+    auto props = parse_properties(o);
+    Network *network = new Network(new NetworkConfig(props));
+    delete props;
+
+    return network;
+}
+
 void save_network(Network *network, std::string path) {
     std::ofstream file("networks/" + path);
-
-	Object o;
-	Array struct_array;
-	Array conn_array;
-	for (auto structure : network->get_structures()) {
-	    struct_array << write_properties(structure->config);
-        if (structure->get_connections().size() > 0)
-            for (auto connection : structure->get_connections())
-                conn_array << write_properties(connection->config);
-    }
-	o << "structures" << struct_array;
-	o << "connections" << conn_array;
-
-	file << o.json() << std::endl;
+	file << write_properties(network->config).json() << std::endl;
 	file.close();
 }
 
-/******************************************************************************/
-/******************************* ENVIRONMENT ***********************************/
-/******************************************************************************/
-
-/******************************** PARSING *************************************/
-static ModuleConfig* parse_module(Object mo);
-
-
 Environment* load_environment(std::string path) {
-    std::ifstream file("environments/" + path);
     std::stringstream buffer;
-
-    buffer << file.rdbuf();
-    std::string str = buffer.str();
-
-    Environment *environment = new Environment();
+    buffer << std::ifstream("environments/" + path).rdbuf();
 
     Object o;
-    o.parse(str);
-    if (has_array(o, "modules")) {
-        for (auto module : o.get<Array>("modules").values()) {
-            auto config = parse_module(module->get<Object>());
-            if (config != nullptr)
-                environment->add_module(config);
-        }
-    }
+    o.parse(buffer.str());
+
+    auto props = parse_properties(o);
+    Environment *environment = new Environment(props);
+    delete props;
 
     return environment;
 }
 
-static ModuleConfig* parse_module(Object mo) {
-    if (get_string(mo, "skip", "false") == "true") return nullptr;
-
-    if (not has_string(mo, "type"))
-        ErrorManager::get_instance()->log_error(
-            "No module type specified!");
-
-    if (not has_array(mo, "layers"))
-        ErrorManager::get_instance()->log_error(
-            "No layers for module specified!");
-
-    auto props = parse_properties(mo);
-    auto module_config = new ModuleConfig(props);
-    delete props;
-
-    return module_config;
-}
-
-/******************************** WRITING *************************************/
 void save_environment(Environment *environment, std::string path) {
     std::ofstream file("environments/" + path);
-
-	Object o;
-	Array a;
-	for (auto module : environment->get_modules())
-	    a << write_properties(module);
-	o << "modules" << a;
-
-	file << o.json() << std::endl;
+	file << write_properties(environment).json() << std::endl;
 	file.close();
 }

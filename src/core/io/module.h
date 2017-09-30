@@ -50,8 +50,6 @@ class ModuleConfig : public PropertyConfig {
         }
 
     protected:
-        void add_layer_internal(PropertyConfig *config);
-
         std::map<std::string,
             std::map<std::string, PropertyConfig*>> layer_map;
 };

@@ -56,6 +56,8 @@ class PropertyConfig {
         const ConfigArray get_array(std::string key) const;
         PropertyConfig *set_array(std::string key, ConfigArray array);
         PropertyConfig *add_to_array(std::string key, PropertyConfig* config);
+        PropertyConfig *remove_from_array(std::string key, PropertyConfig* config);
+        PropertyConfig *remove_from_array(std::string key, int index);
         ConfigArray remove_array(std::string key);
 
         std::string str() const;

@@ -29,8 +29,12 @@ void Engine::build_environment() {
     LayerList input_layers, expected_layers, output_layers;
 
     for (auto config : context->get_environment()->get_modules()) {
+        // Skip if necessary
+        if (config->get("skip", "false") == "true") continue;
+
         // Build module
-        Module *module = Module::build_module(context->get_network(), config);
+        Module *module = Module::build_module(
+            context->get_network(), new ModuleConfig(config));
         modules.push_back(module);
 
         // Update io_types for all layers attached to the module
@@ -41,19 +45,22 @@ void Engine::build_environment() {
             if (module_io_type == 0)
                 ErrorManager::get_instance()->log_error(
                     "Error in environment model:\n"
-                    "  Error adding module to: " + layer->str() + "\n" +
+                    "  Error adding module " + config->get("type") +
+                    "to: " + layer->str() + "\n" +
                     "    Module has zero IO type for layer!");
 
             // Check for duplicate input/expected modules
             if (module_io_type & INPUT & layer_io_type)
                 ErrorManager::get_instance()->log_error(
                     "Error in environment model:\n"
-                    "  Error adding module to: " + layer->str() + "\n" +
+                    "  Error adding module " + config->get("type") +
+                    "to: " + layer->str() + "\n" +
                     "    Layer cannot have more than one input module!");
             if (module_io_type & EXPECTED & layer_io_type)
                 ErrorManager::get_instance()->log_error(
                     "Error in environment model:\n"
-                    "  Error adding module to: " + layer->str() + "\n" +
+                    "  Error adding module " + config->get("type") +
+                    "to: " + layer->str() + "\n" +
                     "    Layer cannot have more than one expected module!");
 
             this->io_types[layer] = layer_io_type | module_io_type;
