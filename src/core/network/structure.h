@@ -6,9 +6,10 @@
 #include <vector>
 #include <string>
 
-#include "util/constants.h"
 #include "network/layer.h"
 #include "network/connection.h"
+#include "network/structure_config.h"
+#include "util/constants.h"
 #include "util/property_config.h"
 
 /* Represents a neural structure in a network model.
@@ -27,6 +28,7 @@
  */
 class Structure {
     public:
+        Structure(StructureConfig* config);
         Structure(std::string name, ClusterType cluster_type=PARALLEL);
         virtual ~Structure();
 
@@ -44,8 +46,8 @@ class Structure {
         /************ LAYERS ***********/
         /*******************************/
         const LayerList& get_layers() const { return layers; }
-        Layer* add_layer(LayerConfig *config);
-        Layer* add_layer_from_image(std::string path, LayerConfig *config);
+        Layer* add_layer(LayerConfig *layer_config);
+        Layer* add_layer_from_image(std::string path, LayerConfig *layer_config);
 
         /*******************************/
         /********* CONNECTIONS *********/
@@ -56,14 +58,14 @@ class Structure {
         static Connection* connect(
             Structure *from_structure, std::string from_layer_name,
             Structure *to_structure, std::string to_layer_name,
-            ConnectionConfig *config,
+            ConnectionConfig *conn_config,
             std::string node="root",
             std::string name="");
 
         Connection* connect_layers(
             std::string from_layer_name,
             std::string to_layer_name,
-            ConnectionConfig *config,
+            ConnectionConfig *conn_config,
             std::string node="root",
             std::string name="");
 
@@ -81,15 +83,6 @@ class Structure {
             std::string node="root",
             std::string name="");
 
-        /*****************************/
-        /********* DENDRITES *********/
-        /*****************************/
-        void set_second_order(std::string to_layer_name,
-            std::string dendrite_name);
-
-        void create_dendritic_node(std::string to_layer_name,
-            std::string parent_node_name, std::string child_node_name);
-
         std::string get_parent_node_name(Connection *conn) const;
 
         // Structure name
@@ -104,11 +97,16 @@ class Structure {
          * If not found, logs an error or returns nullptr */
         Layer* get_layer(std::string name, bool log_error=true);
 
-    private:
-        /* Internal layer connection functions */
+        // Structure config
+        StructureConfig* const config;
+
+    protected:
+        Layer* add_layer_internal(LayerConfig *layer_config);
+
+        /* Internal layer connection function */
         Connection* connect_layers(
                 Layer *from_layer, Layer *to_layer,
-                ConnectionConfig *config,
+                ConnectionConfig *conn_config,
                 std::string node="root",
                 std::string name="");
 
@@ -122,6 +120,7 @@ class Structure {
         // Number of neurons
         int total_neurons;
 
+        // Neural models used in this structure
         std::set<std::string> neural_model_flags;
 };
 

@@ -129,7 +129,7 @@ class Attributes {
         void register_layer_variable(std::string key, BasePointer *pointer);
 
         // Traverse the dendritic tree and find second order nodes
-        int dendrite_DFS(DendriticNode *curr, int second_order_size);
+        int dendrite_DFS(const DendriticNode *curr, int second_order_size);
 
         // Number of neurons and layers
         int total_neurons;

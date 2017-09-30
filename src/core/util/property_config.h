@@ -33,7 +33,7 @@ class PropertyConfig {
         /* Single property functions */
         bool has(std::string key) const;
         std::string get(std::string key, std::string def_val="") const;
-        PropertyConfig *set_value(std::string key, std::string val);
+        PropertyConfig *set(std::string key, std::string val);
         std::string remove_property(std::string key);
 
         /* Get a set of key-child pairs */
@@ -44,8 +44,7 @@ class PropertyConfig {
         bool has_child(std::string key) const;
         PropertyConfig *get_child(
             std::string key, PropertyConfig* def_val=nullptr) const;
-        void set_child(std::string key, PropertyConfig child);
-        void set_child(std::string key, PropertyConfig *child);
+        PropertyConfig *set_child(std::string key, PropertyConfig *child);
         PropertyConfig *remove_child(std::string key);
 
         /* Get a set of key-array pairs */
@@ -55,9 +54,8 @@ class PropertyConfig {
         /* Single array functions */
         bool has_array(std::string key) const;
         const ConfigArray get_array(std::string key) const;
-        void set_array(std::string key, ConfigArray array);
-        void add_to_array(std::string key, PropertyConfig config);
-        void add_to_array(std::string key, PropertyConfig* config);
+        PropertyConfig *set_array(std::string key, ConfigArray array);
+        PropertyConfig *add_to_array(std::string key, PropertyConfig* config);
         ConfigArray remove_array(std::string key);
 
         std::string str() const;

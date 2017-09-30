@@ -1,0 +1,77 @@
+{
+	"structures": [
+		{
+			"name": "game_of_life",
+			"cluster type": "parallel",
+			"layers": [
+				{
+					"name": "board",
+					"neural model": "game_of_life",
+					"rows": "256",
+					"columns": "256",
+					"plastic": "false",
+					"global": "false",
+					"survival_min": "2",
+					"survival_max": "3",
+					"birth_min": "3",
+					"birth_max": "4",
+					"noise config": {
+						"type": "poisson",
+						"value": "3",
+						"rate": "0.5" 
+					} 
+				} 
+			] 
+		} 
+	],
+	"connections": [
+		{
+			"plastic": "false",
+			"delay": "0",
+			"max weight": "1",
+			"type": "convolutional",
+			"opcode": "add",
+			"from structure": "game_of_life",
+			"to structure": "game_of_life",
+			"from layer": "board",
+			"to layer": "board",
+			"weight config": {
+				"type": "surround",
+				"weight": "1.000000",
+				"fraction": "1.000000",
+				"rows": "1",
+				"columns": "1",
+				"child type": "flat" 
+			},
+			"arborized config": {
+				"field size": "5",
+				"wrap": "true" 
+			} 
+		},
+		{
+			"plastic": "false",
+			"delay": "0",
+			"max weight": "1",
+			"type": "convolutional",
+			"opcode": "sub",
+			"from structure": "game_of_life",
+			"to structure": "game_of_life",
+			"from layer": "board",
+			"to layer": "board",
+			"weight config": {
+				"type": "surround",
+				"weight": "1.000000",
+				"fraction": "1.000000",
+				"rows": "5",
+				"columns": "5",
+				"child type": "flat" 
+			},
+			"arborized config": {
+				"field size": "7",
+				"offset": "-2",
+				"wrap": "true" 
+			} 
+		} 
+	] 
+} 
+

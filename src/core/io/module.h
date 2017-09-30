@@ -22,9 +22,8 @@ class ModuleConfig : public PropertyConfig {
         ModuleConfig(std::string type);
         ModuleConfig(std::string type, std::string structure, std::string layer);
 
-        ModuleConfig* add_layer(std::string structure, std::string layer);
         ModuleConfig* add_layer(std::string structure, std::string layer,
-            std::string params);
+            std::string params="");
         ModuleConfig* add_layer(PropertyConfig *config);
 
         std::string get_type() const { return get("type", ""); }
@@ -32,13 +31,27 @@ class ModuleConfig : public PropertyConfig {
             { return get_array("layers"); }
         const PropertyConfig* get_layer(Layer *layer) const;
 
-        /* Setter that returns self pointer */
+        /* Setters that returns self pointer */
         ModuleConfig *set(std::string key, std::string value) {
-            set_value(key, value);
+            PropertyConfig::set(key, value);
+            return this;
+        }
+        ModuleConfig *set_child(std::string key, PropertyConfig* child) {
+            PropertyConfig::set_child(key, child);
+            return this;
+        }
+        ModuleConfig *set_array(std::string key, ConfigArray array) {
+            PropertyConfig::set_array(key, array);
+            return this;
+        }
+        ModuleConfig *add_to_array(std::string key, PropertyConfig* config) {
+            PropertyConfig::add_to_array(key, config);
             return this;
         }
 
     protected:
+        void add_layer_internal(PropertyConfig *config);
+
         std::map<std::string,
             std::map<std::string, PropertyConfig*>> layer_map;
 };

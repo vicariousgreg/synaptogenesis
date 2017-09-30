@@ -34,6 +34,14 @@ LayerConfig::LayerConfig(
               global(global) {
     if (noise_config != nullptr)
         this->set_child("noise config", noise_config);
+    this->set("name", name);
+    this->set("neural model", neural_model);
+    this->set("rows", std::to_string(rows));
+    this->set("columns", std::to_string(columns));
+    if (noise_config != nullptr)
+        this->set_child("noise config", noise_config);
+    this->set("plastic", (plastic) ? "true" : "false");
+    this->set("global", (global) ? "true" : "false");
 }
 
 LayerConfig::LayerConfig(
@@ -45,24 +53,38 @@ LayerConfig::LayerConfig(
         : LayerConfig(name, neural_model,
             0, 0, noise_config, plastic, global) { }
 
-static void add_dendrites_helper(Layer* layer,
-        std::string parent_name, const ConfigArray& dendrites) {
-    auto parent = layer->get_dendritic_node(parent_name);
-    for (auto dendrite : dendrites) {
-        if (not dendrite->has("name"))
-            ErrorManager::get_instance()->log_error(
-                "Attempted to dendrite without name to layer!");
-
-        auto child = parent->add_child(dendrite->get("name"));
-
-        if (dendrite->get("second order", "false") == "true")
-            child->set_second_order();
-
-        add_dendrites_helper(layer, child->name,
-            dendrite->get_array("children"));
-    }
+static PropertyConfig* get_dendrite(const ConfigArray& arr, std::string name) {
+    for (auto node : arr)
+        if (node->get("name") == name)
+            return node;
+        else {
+            auto props = get_dendrite(node->get_array("children"), name);
+            if (props != nullptr) return props;
+        }
+    return nullptr;
 }
 
-void LayerConfig::add_dendrites(Layer* layer) {
-    add_dendrites_helper(layer, "root", get_array("dendrites"));
+LayerConfig* LayerConfig::add_dendrite(std::string parent,
+        PropertyConfig *config) {
+    if (parent == "root") {
+        this->add_to_array("dendrites", config);
+    } else {
+        auto node = get_dendrite(this->get_array("dendrites"), parent);
+        if (node == nullptr)
+            ErrorManager::get_instance()->log_error(
+                "Could not find dendrite " + parent
+                + "in layer " + name + "!");
+        node->add_to_array("children", config);
+    }
+    return this;
+}
+
+LayerConfig* LayerConfig::add_dendrite(std::string parent,
+            std::string name, bool second_order) {
+    auto props = new PropertyConfig();
+    props->set("name", name);
+    props->set("second order", second_order ? "true" : "false");
+    this->add_dendrite(parent, props);
+    delete props;
+    return this;
 }

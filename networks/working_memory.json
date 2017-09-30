@@ -1,0 +1,468 @@
+{
+	"structures": [
+		{
+			"name": "working memory",
+			"cluster type": "parallel",
+			"layers": [
+				{
+					"name": "feedforward",
+					"neural model": "izhikevich",
+					"rows": "128",
+					"columns": "128",
+					"plastic": "false",
+					"global": "false",
+					"init": "regular",
+					"noise config": {
+						"type": "poisson" 
+					} 
+				},
+				{
+					"name": "tl1_thalamus",
+					"neural model": "izhikevich",
+					"rows": "1",
+					"columns": "1",
+					"plastic": "false",
+					"global": "false",
+					"init": "thalamo_cortical" 
+				} 
+			] 
+		},
+		{
+			"name": "0",
+			"cluster type": "parallel",
+			"layers": [
+				{
+					"name": "3_cortex",
+					"neural model": "izhikevich",
+					"rows": "128",
+					"columns": "128",
+					"plastic": "false",
+					"global": "false",
+					"init": "random positive",
+					"noise config": {
+						"type": "normal",
+						"mean": "1.000000",
+						"std_dev": "0.300000" 
+					} 
+				} 
+			] 
+		},
+		{
+			"name": "1",
+			"cluster type": "parallel",
+			"layers": [
+				{
+					"name": "3_cortex",
+					"neural model": "izhikevich",
+					"rows": "128",
+					"columns": "128",
+					"plastic": "false",
+					"global": "false",
+					"init": "random positive",
+					"noise config": {
+						"type": "normal",
+						"mean": "1.000000",
+						"std_dev": "0.300000" 
+					} 
+				} 
+			] 
+		},
+		{
+			"name": "2",
+			"cluster type": "parallel",
+			"layers": [
+				{
+					"name": "3_cortex",
+					"neural model": "izhikevich",
+					"rows": "128",
+					"columns": "128",
+					"plastic": "false",
+					"global": "false",
+					"init": "random positive",
+					"noise config": {
+						"type": "normal",
+						"mean": "1.000000",
+						"std_dev": "0.300000" 
+					} 
+				} 
+			] 
+		} 
+	],
+	"connections": [
+		{
+			"from structure": "0",
+			"from layer": "3_cortex",
+			"to structure": "0",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "0",
+			"from layer": "3_cortex",
+			"to structure": "0",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "sub",
+			"max weight": "0.500000",
+			"delay": "3",
+			"plastic": "false",
+			"weight config": {
+				"type": "surround",
+				"weight": "0.100000",
+				"fraction": "0.100000",
+				"size": "15",
+				"child type": "flat" 
+			},
+			"arborized config": {
+				"row field size": "19",
+				"column field size": "19",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-9",
+				"column offset": "-9",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "working memory",
+			"from layer": "tl1_thalamus",
+			"to structure": "0",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "fully connected",
+			"opcode": "mult",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "false",
+			"myelinated": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "1.000000" 
+			} 
+		},
+		{
+			"from structure": "1",
+			"from layer": "3_cortex",
+			"to structure": "0",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "working memory",
+			"from layer": "feedforward",
+			"to structure": "0",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "working memory",
+			"from layer": "feedforward",
+			"to structure": "0",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "sub",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "false",
+			"weight config": {
+				"type": "surround",
+				"weight": "0.100000",
+				"fraction": "0.100000",
+				"size": "15",
+				"child type": "flat" 
+			},
+			"arborized config": {
+				"row field size": "19",
+				"column field size": "19",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-9",
+				"column offset": "-9",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "1",
+			"from layer": "3_cortex",
+			"to structure": "1",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "1",
+			"from layer": "3_cortex",
+			"to structure": "1",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "sub",
+			"max weight": "0.500000",
+			"delay": "3",
+			"plastic": "false",
+			"weight config": {
+				"type": "surround",
+				"weight": "0.100000",
+				"fraction": "0.100000",
+				"size": "15",
+				"child type": "flat" 
+			},
+			"arborized config": {
+				"row field size": "19",
+				"column field size": "19",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-9",
+				"column offset": "-9",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "0",
+			"from layer": "3_cortex",
+			"to structure": "1",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "working memory",
+			"from layer": "tl1_thalamus",
+			"to structure": "1",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "fully connected",
+			"opcode": "mult",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "false",
+			"myelinated": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "1.000000" 
+			} 
+		},
+		{
+			"from structure": "2",
+			"from layer": "3_cortex",
+			"to structure": "1",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "2",
+			"from layer": "3_cortex",
+			"to structure": "2",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "2",
+			"from layer": "3_cortex",
+			"to structure": "2",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "sub",
+			"max weight": "0.500000",
+			"delay": "3",
+			"plastic": "false",
+			"weight config": {
+				"type": "surround",
+				"weight": "0.100000",
+				"fraction": "0.100000",
+				"size": "15",
+				"child type": "flat" 
+			},
+			"arborized config": {
+				"row field size": "19",
+				"column field size": "19",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-9",
+				"column offset": "-9",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "1",
+			"from layer": "3_cortex",
+			"to structure": "2",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "convergent",
+			"opcode": "add",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "0.100000" 
+			},
+			"arborized config": {
+				"row field size": "15",
+				"column field size": "15",
+				"row stride": "1",
+				"column stride": "1",
+				"row offset": "-7",
+				"column offset": "-7",
+				"wrap": "1" 
+			} 
+		},
+		{
+			"from structure": "working memory",
+			"from layer": "tl1_thalamus",
+			"to structure": "2",
+			"to layer": "3_cortex",
+			"dendrite": "root",
+			"type": "fully connected",
+			"opcode": "mult",
+			"max weight": "0.500000",
+			"delay": "0",
+			"plastic": "false",
+			"myelinated": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.100000",
+				"fraction": "1.000000" 
+			} 
+		} 
+	] 
+} 
+

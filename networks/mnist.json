@@ -10,11 +10,7 @@
 					"rows": "28",
 					"columns": "28",
 					"plastic": "false",
-					"global": "false",
-					"dendrites": {
-						"name": "root",
-						"second order": "false" 
-					} 
+					"global": "false" 
 				},
 				{
 					"name": "output_layer",
@@ -22,11 +18,7 @@
 					"rows": "1",
 					"columns": "10",
 					"plastic": "false",
-					"global": "false",
-					"dendrites": {
-						"name": "root",
-						"second order": "false" 
-					} 
+					"global": "false" 
 				},
 				{
 					"name": "bias_layer",
@@ -34,45 +26,45 @@
 					"rows": "1",
 					"columns": "1",
 					"plastic": "false",
-					"global": "false",
-					"dendrites": {
-						"name": "root",
-						"second order": "false" 
-					} 
-				} 
-			],
-			"connections": [
-				{
-					"from layer": "input_layer",
-					"to layer": "output_layer",
-					"type": "fully connected",
-					"opcode": "add",
-					"max weight": "1.000000",
-					"delay": "0",
-					"plastic": "true",
-					"weight config": {
-						"type": "flat",
-						"weight": "0.000000",
-						"fraction": "1.000000" 
-					},
-					"dendrite": "root" 
-				},
-				{
-					"from layer": "bias_layer",
-					"to layer": "output_layer",
-					"type": "fully connected",
-					"opcode": "add",
-					"max weight": "1.000000",
-					"delay": "0",
-					"plastic": "true",
-					"weight config": {
-						"type": "flat",
-						"weight": "0.000000",
-						"fraction": "1.000000" 
-					},
-					"dendrite": "root" 
+					"global": "false" 
 				} 
 			] 
+		} 
+	],
+	"connections": [
+		{
+			"from structure": "mnist",
+			"from layer": "input_layer",
+			"to structure": "mnist",
+			"to layer": "output_layer",
+			"dendrite": "root",
+			"type": "fully connected",
+			"opcode": "add",
+			"max weight": "1.000000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.000000",
+				"fraction": "1.000000" 
+			} 
+		},
+		{
+			"from structure": "mnist",
+			"from layer": "bias_layer",
+			"to structure": "mnist",
+			"to layer": "output_layer",
+			"dendrite": "root",
+			"type": "fully connected",
+			"opcode": "add",
+			"max weight": "1.000000",
+			"delay": "0",
+			"plastic": "true",
+			"weight config": {
+				"type": "flat",
+				"weight": "0.000000",
+				"fraction": "1.000000" 
+			} 
 		} 
 	] 
 } 

@@ -100,13 +100,25 @@ std::string ArborizedConfig::str() const {
 
 PropertyConfig ArborizedConfig::to_property_config() const {
     PropertyConfig props;
-    props.set_value("row field size", std::to_string(row_field_size));
-    props.set_value("column field size", std::to_string(column_field_size));
-    props.set_value("row stride", std::to_string(row_stride));
-    props.set_value("column stride", std::to_string(column_stride));
-    props.set_value("row offset", std::to_string(row_offset));
-    props.set_value("column offset", std::to_string(column_offset));
-    props.set_value("wrap", std::to_string(wrap));
+    if (row_field_size == column_field_size) {
+        props.set("field size", std::to_string(row_field_size));
+    } else {
+        props.set("row field size", std::to_string(row_field_size));
+        props.set("column field size", std::to_string(column_field_size));
+    }
+    if (row_stride == column_stride) {
+        props.set("stride", std::to_string(row_stride));
+    } else {
+        props.set("row stride", std::to_string(row_stride));
+        props.set("column stride", std::to_string(column_stride));
+    }
+    if (row_offset == column_offset) {
+        props.set("offset", std::to_string(row_offset));
+    } else {
+        props.set("row offset", std::to_string(row_offset));
+        props.set("column offset", std::to_string(column_offset));
+    }
+    props.set("wrap", std::to_string(wrap));
     return props;
 }
 
@@ -191,14 +203,14 @@ bool SubsetConfig::validate(Connection *conn) const {
 
 PropertyConfig SubsetConfig::to_property_config() const {
     PropertyConfig props;
-    props.set_value("from row start", std::to_string(from_row_start));
-    props.set_value("from row end", std::to_string(from_row_end));
-    props.set_value("from column start", std::to_string(from_col_start));
-    props.set_value("from column end", std::to_string(from_col_end));
-    props.set_value("to row start", std::to_string(to_row_start));
-    props.set_value("to row end", std::to_string(to_row_end));
-    props.set_value("to column start", std::to_string(to_col_start));
-    props.set_value("to column end", std::to_string(to_col_end));
+    props.set("from row start", std::to_string(from_row_start));
+    props.set("from row end", std::to_string(from_row_end));
+    props.set("from column start", std::to_string(from_col_start));
+    props.set("from column end", std::to_string(from_col_end));
+    props.set("to row start", std::to_string(to_row_start));
+    props.set("to row end", std::to_string(to_row_end));
+    props.set("to column start", std::to_string(to_col_start));
+    props.set("to column end", std::to_string(to_col_end));
     return props;
 }
 
@@ -215,12 +227,12 @@ std::string SubsetConfig::str() const {
 }
 
 ConnectionConfig::ConnectionConfig(PropertyConfig *config)
-    : PropertyConfig(config),
-      plastic(config->get("plastic", "true") == "true"),
-      delay(std::stoi(config->get("delay", "0"))),
-      max_weight(std::stof(config->get("max", "1.0"))),
-      type(ConnectionTypes.at(config->get("type", "fully connected"))),
-      opcode(Opcodes.at(config->get("opcode", "add"))) { }
+        : PropertyConfig(config),
+          plastic(config->get("plastic", "true") == "true"),
+          delay(std::stoi(config->get("delay", "0"))),
+          max_weight(std::stof(config->get("max", "1.0"))),
+          type(get_connection_type(config->get("type", "fully connected"))),
+          opcode(get_opcode(config->get("opcode", "add"))) { }
 
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
@@ -229,17 +241,19 @@ ConnectionConfig::ConnectionConfig(
           delay(delay),
           max_weight(max_weight),
           type(type),
-          opcode(opcode) { }
+          opcode(opcode) {
+    this->set("plastic", (plastic) ? "true" : "false");
+    this->set("delay", std::to_string(delay));
+    this->set("max weight", std::to_string(max_weight));
+    this->set("type", ConnectionTypeStrings.at(type));
+    this->set("opcode", OpcodeStrings.at(opcode));
+}
 
 ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
     PropertyConfig *weight_config)
-        : plastic(plastic),
-          delay(delay),
-          max_weight(max_weight),
-          type(type),
-          opcode(opcode) {
+        : ConnectionConfig(plastic, delay, max_weight, type, opcode) {
     this->set_child("weight config", weight_config);
 }
 
@@ -269,7 +283,7 @@ ConnectionConfig* ConnectionConfig::set_arborized_config(
     } else {
         auto child = this->get_child("arborized config");
         for (auto pair : config->get())
-            child->set_value(pair.first, pair.second);
+            child->set(pair.first, pair.second);
     }
     return this;
 }
@@ -280,7 +294,7 @@ ConnectionConfig* ConnectionConfig::set_subset_config(PropertyConfig *config) {
     } else {
         auto child = this->get_child("subset config");
         for (auto pair : config->get())
-            child->set_value(pair.first, pair.second);
+            child->set(pair.first, pair.second);
     }
     return this;
 }
@@ -291,7 +305,7 @@ ConnectionConfig* ConnectionConfig::set_weight_config(PropertyConfig *config) {
     } else {
         auto child = this->get_child("weight config");
         for (auto pair :config->get())
-            child->set_value(pair.first, pair.second);
+            child->set(pair.first, pair.second);
     }
     return this;
 }

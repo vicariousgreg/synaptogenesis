@@ -2,7 +2,6 @@
 #define connection_config_h
 
 #include "util/property_config.h"
-#include "network/weight_config.h"
 #include "util/constants.h"
 
 class Connection;
@@ -108,7 +107,19 @@ class ConnectionConfig : public PropertyConfig {
 
         /* Setter that returns self pointer */
         ConnectionConfig *set(std::string key, std::string value) {
-            set_value(key, value);
+            PropertyConfig::set(key, value);
+            return this;
+        }
+        ConnectionConfig *set_child(std::string key, PropertyConfig* child) {
+            PropertyConfig::set_child(key, child);
+            return this;
+        }
+        ConnectionConfig *set_array(std::string key, ConfigArray array) {
+            PropertyConfig::set_array(key, array);
+            return this;
+        }
+        ConnectionConfig *add_to_array(std::string key, PropertyConfig* config) {
+            PropertyConfig::add_to_array(key, config);
             return this;
         }
 

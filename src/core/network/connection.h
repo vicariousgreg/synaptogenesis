@@ -56,9 +56,15 @@ class Connection {
         // Maximum for weights
         const float max_weight;
 
+        // Optional connection name
+        const std::string name;
+
         std::string str() const;
 
-    private:
+        // Connection config
+        const ConnectionConfig * const config;
+
+    protected:
         friend class Structure;
 
         Connection(Layer *from_layer, Layer *to_layer,
@@ -67,9 +73,6 @@ class Connection {
 
         // Number of weights in connection
         int num_weights;
-
-        // Connection config
-        const ConnectionConfig* config;
 };
 
 typedef std::vector<Connection*> ConnectionList;

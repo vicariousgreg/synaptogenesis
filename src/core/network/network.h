@@ -8,6 +8,7 @@
 #include "network/layer.h"
 #include "network/connection.h"
 #include "network/structure.h"
+#include "network/network_config.h"
 
 /* Represents a full neural network model.
  *
@@ -16,7 +17,8 @@
  */
 class Network {
     public:
-        Network() { }
+        Network() : config(new NetworkConfig()) { }
+        Network(NetworkConfig* config);
         virtual ~Network();
 
         /* Save or load model to/from JSON file */
@@ -25,7 +27,11 @@ class Network {
 
         /* Add or retrieve structure to/from model */
         void add_structure(Structure *structure);
+        void add_structure(StructureConfig *struct_config);
         Structure* get_structure(std::string name, bool log_error=true);
+
+        /* Add connections */
+        void add_connection(ConnectionConfig* conn_config);
 
         /* Getters */
         const StructureList& get_structures() const { return structures; }
@@ -37,8 +43,14 @@ class Network {
         int get_num_weights() const;
         int get_max_layer_size() const;
 
-    private:
+        // Network config
+        NetworkConfig * const config;
+
+    protected:
         StructureList structures;
+
+        void add_structure_internal(StructureConfig *struct_config);
+        void add_connection_internal(ConnectionConfig* conn_config);
 };
 
 #endif

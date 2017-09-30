@@ -2,6 +2,7 @@
 #define constants_h
 
 #include <map>
+#include "util/error_manager.h"
 
 /* Output type enumeration.
  * Different engines may use different output formats.
@@ -91,6 +92,15 @@ static std::map<std::string, ConnectionType> ConnectionTypes {
     {"divergent", DIVERGENT},
 };
 
+inline ConnectionType get_connection_type(std::string name) {
+    try {
+        return ConnectionTypes.at(name);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized ConnectionType: " + name);
+    }
+}
+
 /* Synaptic operation opcode.
  * Defines how activity across a connection interacts with the current state.
  * This allows for more complex synaptic functions.
@@ -125,6 +135,15 @@ static std::map<std::string, Opcode> Opcodes = {
     {"modulate", MODULATE}
 };
 
+inline Opcode get_opcode(std::string name) {
+    try {
+        return Opcodes.at(name);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized Opcode: " + name);
+    }
+}
+
 /* Enumeration of cluster types. */
 typedef enum {
     PARALLEL,
@@ -143,6 +162,15 @@ static std::map<std::string, ClusterType> ClusterTypes = {
     {"sequential", SEQUENTIAL},
     {"feedforward", FEEDFORWARD},
 };
+
+inline ClusterType get_cluster_type(std::string name) {
+    try {
+        return ClusterTypes.at(name);
+    } catch (...) {
+        ErrorManager::get_instance()->log_error(
+            "Unrecognized ClusterType: " + name);
+    }
+}
 
 /* Typedef for Device Identifier */
 typedef unsigned int DeviceID;

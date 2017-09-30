@@ -11,13 +11,29 @@ Layer::Layer(Structure *structure, LayerConfig *config)
           id(std::hash<std::string>()(structure->name + "/" + name)),
           neural_model(config->neural_model),
           structure(structure),
-          rows(config->rows),
-          columns(config->columns),
+          rows(config->get_rows()),
+          columns(config->get_columns()),
           size(rows * columns),
           plastic(config->plastic),
           global(config->global),
           dendritic_root(new DendriticNode(this)) {
-    config->add_dendrites(this);
+    add_dendrites("root", config->get_array("dendrites"));
+}
+
+void Layer::add_dendrites(std::string parent_name,
+        const ConfigArray& dendrites) {
+    auto parent = get_dendritic_node(parent_name);
+    for (auto dendrite : dendrites) {
+        if (not dendrite->has("name"))
+            ErrorManager::get_instance()->log_error(
+                "Attempted to dendrite without name to layer!");
+
+        bool second_order = dendrite->get("second order", "false") == "true";
+        auto child = parent->add_child(dendrite->get("name"), second_order);
+
+        add_dendrites(child->name,
+            dendrite->get_array("children"));
+    }
 }
 
 Layer::~Layer() {
@@ -29,15 +45,12 @@ const LayerConfig *Layer::get_config() const { return config; }
 
 std::string Layer::get_parameter(std::string key,
         std::string default_val) const {
-    try {
-        return this->get_config()->get(key);
-    } catch (std::out_of_range) {
+    if (not this->get_config()->has(key))
         ErrorManager::get_instance()->log_warning(
             "Error in " + this->str() + ":\n"
             "  Unspecified parameter: " + key
             + " -- using " + default_val + ".");
-        return default_val;
-    }
+    return this->get_config()->get(key, default_val);
 }
 
 const ConnectionList& Layer::get_input_connections() const

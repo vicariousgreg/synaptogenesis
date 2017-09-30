@@ -46,431 +46,47 @@ void print_network(Network *network, Environment *env=nullptr) {
     }
 }
 
-void old_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("old");
-    network->add_structure(structure);
-
-    std::string model_name = "leaky_izhikevich";
-
-    int resolution = 128;
-    // structure->add_layer((new LayerConfig(
-    //     "input_layer", model_name, 1, 10))
-    //        ->set(IZ_INIT, "default"));
-    structure->add_layer(
-        (new LayerConfig(
-            "exc_thalamus", model_name, resolution, resolution,
-            (new PropertyConfig())
-            ->set_value("type", "poisson")))
-        ->set(IZ_INIT, "thalamo_cortical"));
-    // structure->add_layer((new LayerConfig(
-    //     "inh_thalamus", model_name, resolution/2, resolution/2))
-    //         ->set("spacing", "0.2")
-    //         ->set(IZ_INIT, "random negative"));
-    structure->add_layer((new LayerConfig(
-        "exc_cortex", model_name, resolution, resolution))
-            ->set(IZ_INIT, "random positive"));
-    structure->add_layer((new LayerConfig(
-        "inh_cortex", model_name, resolution/2, resolution/2))
-            ->set("spacing", "0.2")
-            ->set(IZ_INIT, "random negative"));
-
-    /* Forward excitatory pathway */
-    // structure->connect_layers("input_layer", "exc_thalamus",
-    //     (new ConnectionConfig(false, 0, 5, FULLY_CONNECTED, ADD,
-    //         new RandomWeightConfig(1, 0.01)))
-    //     ->set("myelinated", "true"));
-    structure->connect_layers("exc_thalamus", "exc_cortex",
-        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set("myelinated", "false")
-        ->set_arborized_config(ArborizedConfig(15,1,true)));
-    structure->connect_layers("exc_cortex", "exc_cortex",
-        (new ConnectionConfig(true, 2, 5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set("myelinated", "false")
-        ->set_arborized_config(ArborizedConfig(31,1,true)));
-
-    /* Cortical inhibitory loop */
-    structure->connect_layers("exc_cortex", "inh_cortex",
-        (new ConnectionConfig(false, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set("myelinated", "false")
-        ->set_arborized_config(ArborizedConfig(31,2,true)));
-    structure->connect_layers("inh_cortex", "exc_cortex",
-        (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set("myelinated", "false")
-        ->set_arborized_config(ArborizedConfig(5,2,true)));
-
-    /* Cortico-thalamic inhibitory loop */
-    /*
-    structure->connect_layers("exc_cortex", "inh_thalamus",
-        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set("myelinated", "false")
-        ->set_arborized_config(ArborizedConfig(7,2,true)));
-    structure->connect_layers("inh_thalamus", "exc_thalamus",
-        (new ConnectionConfig(false, 0, 1, DIVERGENT, SUB,
-            new FlatWeightConfig(0.5, 0.1)))
-        ->set("myelinated", "false")
-        ->set_arborized_config(ArborizedConfig(5,2,true)));
-    */
-
-
-    // Modules
-    auto env = new Environment();
-
-    env->add_module(
-        (new ModuleConfig("visualizer"))
-        //->add_layer("old", "inh_thalamus")
-        //->add_layer("old", "inh_cortex")
-        ->add_layer("old", "exc_thalamus")
-        ->add_layer("old", "exc_cortex"));
-
-    env->add_module(
-        (new ModuleConfig("heatmap"))
-        //->add_layer("old", "inh_thalamus")
-        //->add_layer("old", "inh_cortex")
-        ->add_layer("old", "exc_thalamus")
-        ->add_layer("old", "exc_cortex"));
-
-    // env->add_module(
-    //     (new ModuleConfig("periodic_input", "old", "input_layer"))
-    //     ->set("max", "5")
-    //     ->set("random", "true")
-    //     ->set("rate", "1000000")
-    //     ->set("verbose", "true"));
-
-    print_network(network, env);
-    Engine engine(new Context(network, env));
-    delete engine.run(1000000, true);
-}
-
-void simple_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("simple");
-    network->add_structure(structure);
-
-    std::string model_name = "leaky_izhikevich";
-
-    int exc_field = 25;
-    int inh_field = 15;
-
-    int resolution = 96;
-    structure->add_layer((new LayerConfig(
-        "input_layer", model_name, 1, 10))
-            ->set(IZ_INIT, "regular"));
-    structure->add_layer(
-        (new LayerConfig(
-            "hid_1", model_name, resolution, resolution,
-            (new PropertyConfig())
-                ->set_value("type", "poisson")
-                ->set_value("value", "20")
-                ->set_value("rate", "1")))
-            ->set(IZ_INIT, "regular"));
-    structure->add_layer((new LayerConfig(
-        "hid_2", model_name, resolution, resolution))
-            ->set(IZ_INIT, "regular"));
-
-    /* Forward excitatory pathway */
-    /*
-    structure->connect_layers("input_layer", "hid_1",
-        (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, ADD,
-            new RandomWeightConfig(1, 0.05)))
-        ->set("myelinated", "true"));
-    */
-
-    structure->connect_layers("hid_1", "hid_2",
-        (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(exc_field,1,true)));
-    /*
-    structure->connect_layers("hid_1", "hid_2",
-        (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(inh_field,1,true)));
-    */
-
-    /* Recurrent self connectivity */
-    structure->connect_layers("hid_1", "hid_1",
-        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(exc_field,1,true)));
-    structure->connect_layers("hid_1", "hid_1",
-        (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(inh_field,1,true)));
-
-    structure->connect_layers("hid_2", "hid_2",
-        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(exc_field,1,true)));
-    structure->connect_layers("hid_2", "hid_2",
-        (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(inh_field,1,true)));
-
-    /* Feedback connectivity */
-    structure->connect_layers("hid_2", "hid_1",
-        (new ConnectionConfig(true, 10, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(exc_field,1,true)));
-    /*
-    structure->connect_layers("hid_2", "hid_1",
-        (new ConnectionConfig(false, 10, 0.5, CONVERGENT, SUB,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(
-            ArborizedConfig(inh_field,1,true)));
-    */
-
-    // Modules
-    auto env = new Environment();
-    env->add_module(
-        (new ModuleConfig("one_hot_random_input", "simple", "input_layer"))
-            ->set("max", "4")
-            ->set("rate", "1000000"));
-
-    env->add_module(
-        (new ModuleConfig("visualizer"))
-        ->add_layer("simple", "input_layer")
-        ->add_layer("simple", "hid_1")
-        ->add_layer("simple", "hid_2"));
-    env->add_module(
-        (new ModuleConfig("heatmap"))
-        ->add_layer("simple", "input_layer")
-        ->add_layer("simple", "hid_1")
-        ->add_layer("simple", "hid_2"));
-
-    auto c = new Context(network, env);
-
-    std::string filename = "simple.bin";
-
-    if (State::exists(filename)) {
-        print_network(network, env);
-        c->get_state()->load("simple.bin");
-        Engine engine(c, true);
-        delete engine.run(1000000, true);
-    } else {
-        print_network(network, env);
-        Engine engine(c, true);
-        engine.set_learning_flag(true);
-        engine.run(500000, true);
-        c->get_state()->save("simple.bin");
-        delete c;
-    }
-}
-
-void single_field_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("single field");
-    network->add_structure(structure);
-
-    std::string model_name = "leaky_izhikevich";
-
-    structure->add_layer((new LayerConfig(
-        "exc_field", model_name, 40, 40))
-            ->set(IZ_INIT, "random positive"));
-    structure->add_layer((new LayerConfig(
-        "inh_field", model_name, 10, 40))
-            ->set(IZ_INIT, "random negative"));
-
-    structure->connect_layers("exc_field", "exc_field",
-        (new ConnectionConfig(true, 0, 10, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(.6, 0.1)))
-        ->set("random delay", "20"));
-    structure->connect_layers("exc_field", "inh_field",
-        (new ConnectionConfig(true, 0, 10, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(.6, 0.1)))
-        ->set("random delay", "20"));
-
-    structure->connect_layers("inh_field", "inh_field",
-        (new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, SUB,
-            new FlatWeightConfig(.5, 0.1)))
-        ->set("myelinated", "true"));
-    structure->connect_layers("inh_field", "exc_field",
-        (new ConnectionConfig(false, 0, 10, FULLY_CONNECTED, SUB,
-            new FlatWeightConfig(.5, 0.1)))
-        ->set("myelinated", "true"));
-
-    // Modules
-    auto env = new Environment();
-    env->add_module(
-        (new ModuleConfig("one_hot_random_input", "single field", "exc_field"))
-            ->set("max", "20")
-            ->set("rate", "1")
-            ->set("verbose", "false"));
-    env->add_module(
-        (new ModuleConfig("visualizer"))
-        ->add_layer("single field", "exc_field")
-        ->add_layer("single field", "inh_field"));
-    env->add_module(
-        (new ModuleConfig("heatmap"))
-        ->add_layer("single field", "exc_field")
-        ->add_layer("single field", "inh_field"));
-
-    auto c = new Context(network, env);
-
-    print_network(network, env);
-    Engine engine(c);
-    delete engine.run(1000000, true);
-}
-
 void mnist_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("mnist");
-    network->add_structure(structure);
-
-    structure->add_layer((new LayerConfig("input_layer",
-        IZHIKEVICH, 28, 28))
-            ->set(IZ_INIT, "regular"));
-
-    // Hidden distributed layer
-    structure->add_layer(
-        (new LayerConfig("hidden",
-            "leaky_izhikevich", 28*3, 28*3))
-            ->set(IZ_INIT, "regular"));
-    structure->connect_layers("input_layer", "hidden",
-        (new ConnectionConfig(true, 0, 0.5, DIVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(ArborizedConfig(21,3,false))
-        ->set("myelinated", "false"));
-    /*
-    structure->connect_layers("hidden", "input_layer",
-        (new ConnectionConfig(true, 0, 0.5, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(ArborizedConfig(9,1,true))
-        ->set("myelinated", "true"));
-    */
-
-    structure->connect_layers("hidden", "hidden",
-        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(ArborizedConfig(25,1,false)));
-    structure->connect_layers("hidden", "hidden",
-        (new ConnectionConfig(false, 0, 1, CONVERGENT, SUB,
-            new SurroundWeightConfig(25, 25, new FlatWeightConfig(0.1, 0.1))))
-        ->set_arborized_config(ArborizedConfig(31,1,false)));
-
-    // Topological separation layer
-    /* ////////
-    structure->add_layer(
-        (new LayerConfig("separation",
-            "leaky_izhikevich", 10, 100))
-            ->set(IZ_INIT, "regular"));
-    structure->connect_layers("hidden", "separation",
-        (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(0.01, 0.1)))
-        ->set_arborized_config(ArborizedConfig(9,1,true))
-        ->set("myelinated", "true"));
-    structure->connect_layers("separation", "hidden",
-        (new ConnectionConfig(true, 10, 0.5, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(0.01, 0.1)))
-        ->set_arborized_config(ArborizedConfig(9,1,true))
-        ->set("myelinated", "true"));
-
-    / *
-    structure->connect_layers("separation", "separation",
-        (new ConnectionConfig(true, 0, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1, 0.1)))
-        ->set_arborized_config(ArborizedConfig(9,1,true)));
-    * /
-    structure->connect_layers("separation", "separation",
-        (new ConnectionConfig(false, 0, 1, FULLY_CONNECTED, SUB,
-            new FlatWeightConfig(0.01, 0.1)))
-        ->set_arborized_config(ArborizedConfig(11,1,true))
-        ->set("myelinated", "true"));
-    */ /////////////
-
-    // Discrete output layer
-    structure->add_layer((new LayerConfig("output_layer",
-        IZHIKEVICH, 1, 10))
-            ->set(IZ_INIT, "regular"));
-
-    /* //////////
-    for (int i = 0 ; i < 10 ; ++i) {
-        structure->connect_layers("output_layer", "separation",
-            (new ConnectionConfig(false, 0, 0.5, SUBSET, ADD,
-                new RandomWeightConfig(2)))
-            ->set("myelinated", "true")
-            ->set_subset_config(
-                SubsetConfig(
-                    0,1,
-                    i,i+1,
-                    0,10,
-                    10*i, 10*(i+1))));
-    }
-    */ ///////////
-
-    // Modules
-    std::string input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
-    std::string output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
-    auto env = new Environment();
-    env->add_module(
-        (new ModuleConfig("csv_input", "mnist", "input_layer"))
-        ->set("filename", input_file)
-        ->set("offset", "0")
-        ->set("exposure", "5000")
-        ->set("normalization", "25"));
-    env->add_module(
-        (new ModuleConfig("csv_input", "mnist", "output_layer"))
-        ->set("filename", output_file)
-        ->set("offset", "0")
-        ->set("exposure", "5000")
-        ->set("normalization", "0.2"));
-
-    env->add_module(
-        (new ModuleConfig("visualizer"))
-        ->add_layer("mnist", "input_layer")
-        ->add_layer("mnist", "hidden")
-        //->add_layer("mnist", "separation")
-        ->add_layer("mnist", "output_layer"));
-    env->add_module(
-        (new ModuleConfig("heatmap"))
-        ->add_layer("mnist", "input_layer")
-        ->add_layer("mnist", "hidden")
-        //->add_layer("mnist", "separation")
-        ->add_layer("mnist", "output_layer"));
-
-    std::cout << "MNIST test......\n";
-    print_network(network, env);
-
-    auto c = new Context(network, env);
-    Engine engine(c);
-    engine.run(1000000, true);
-    c->get_state()->save("mnist.bin");
-
-    delete c;
-    std::cout << "\n";
-}
-
-void mnist_perceptron_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("mnist", FEEDFORWARD);
-    network->add_structure(structure);
+    NetworkConfig *network_config = new NetworkConfig();
+    StructureConfig *structure = new StructureConfig("mnist", FEEDFORWARD);
 
     structure->add_layer(new LayerConfig("input_layer", "relay", 28, 28));
     structure->add_layer(new LayerConfig("output_layer", "perceptron", 1, 10));
     structure->add_layer(new LayerConfig("bias_layer", "relay", 1, 1));
+    network_config->add_structure(structure);
 
-    structure->connect_layers("input_layer", "output_layer",
-        new ConnectionConfig(true, 0, 1, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(0)));
-    structure->connect_layers("bias_layer", "output_layer",
-        new ConnectionConfig(true, 0, 1, FULLY_CONNECTED, ADD,
-            new FlatWeightConfig(0)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "fully connected")
+            ->set("opcode", "add")
+            ->set_child("weight config",
+                new FlatWeightConfig(0))
+            ->set("from structure", "mnist")
+            ->set("to structure", "mnist")
+            ->set("from layer", "input_layer")
+            ->set("to layer", "output_layer"));
+
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "fully connected")
+            ->set("opcode", "add")
+            ->set_child("weight config",
+                new FlatWeightConfig(0))
+            ->set("from structure", "mnist")
+            ->set("to structure", "mnist")
+            ->set("from layer", "bias_layer")
+            ->set("to layer", "output_layer"));
+
+    auto network = new Network(network_config);
+
+    save_network(network, "mnist_new.json");
+    network = load_network("mnist_new.json");
 
     // Modules for training
     std::string input_file = "/HDD/datasets/mnist/processed/mnist_train_input.csv";
@@ -478,16 +94,16 @@ void mnist_perceptron_test() {
     auto env = new Environment();
     env->add_module(
         (new ModuleConfig("csv_input", "mnist", "input_layer"))
-        ->set("filename", input_file)
-        ->set("offset", "0")
-        ->set("exposure", "1")
-        ->set("normalization", "255"));
+            ->set("filename", input_file)
+            ->set("offset", "0")
+            ->set("exposure", "1")
+            ->set("normalization", "255"));
     env->add_module(
         (new ModuleConfig("csv_evaluator", "mnist", "output_layer"))
-        ->set("filename", output_file)
-        ->set("offset", "0")
-        ->set("exposure", "1")
-        ->set("normalization", "1"));
+            ->set("filename", output_file)
+            ->set("offset", "0")
+            ->set("exposure", "1")
+            ->set("normalization", "1"));
     env->add_module(
         new ModuleConfig("periodic_input", "mnist", "bias_layer"));
 
@@ -526,11 +142,8 @@ void mnist_perceptron_test() {
 }
 
 void game_of_life_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("game_of_life");
-    network->add_structure(structure);
-    std::string model_name = "game_of_life";
+    NetworkConfig *network_config = new NetworkConfig();
+    StructureConfig *structure = new StructureConfig("game_of_life", PARALLEL);
 
     // Contour rules
     // R4,C0,M1,S41..81, B41..81,NM
@@ -546,57 +159,74 @@ void game_of_life_test() {
     int birth_max = 4; 225;
 
     // Input parameters
-    bool one_step = false;
-    float one_step_fraction = 0.5;
     float random_fraction = 0.5;
     float rate = 1000;
 
     structure->add_layer((new LayerConfig(
-        "board", model_name, board_dim, board_dim,
+        "board", "game_of_life", board_dim, board_dim,
         (new PropertyConfig())
-        ->set_value("type", "poisson")
-        ->set_value("value", std::to_string(birth_min))
-        ->set_value("rate", "0.5")))
+        ->set("type", "poisson")
+        ->set("value", std::to_string(birth_min))
+        ->set("rate", "0.5")))
             ->set("survival_min", std::to_string(survival_min))
             ->set("survival_max", std::to_string(survival_max))
             ->set("birth_min", std::to_string(birth_min))
             ->set("birth_max", std::to_string(birth_max)));
-    structure->connect_layers("board", "board",
-        (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, ADD,
-            new SurroundWeightConfig(1,1, new FlatWeightConfig(1))))
-        ->set_arborized_config(
-            ArborizedConfig(neighborhood_size, 1, -neighborhood_size/2, wrap)));
-    structure->connect_layers("board", "board",
-        (new ConnectionConfig(false, 0, 1.0, CONVOLUTIONAL, SUB,
-            new SurroundWeightConfig(neighborhood_size,neighborhood_size,
-                new FlatWeightConfig(1))))
-        ->set_arborized_config(
-            ArborizedConfig(neighborhood_size+2, 1, (-neighborhood_size+1)/2, wrap)));
+    network_config->add_structure(structure);
+
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "false")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "add")
+            ->set_child("weight config",
+                new SurroundWeightConfig(1,1, new FlatWeightConfig(1)))
+            ->set("from structure", "game_of_life")
+            ->set("to structure", "game_of_life")
+            ->set("from layer", "board")
+            ->set("to layer", "board")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", std::to_string(neighborhood_size))
+                    ->set("wrap", (wrap) ? "true" : "false")));
+
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "false")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "sub")
+            ->set_child("weight config",
+                new SurroundWeightConfig(
+                    neighborhood_size,
+                    neighborhood_size,
+                    new FlatWeightConfig(1)))
+            ->set("from structure", "game_of_life")
+            ->set("to structure", "game_of_life")
+            ->set("from layer", "board")
+            ->set("to layer", "board")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", std::to_string(neighborhood_size+2))
+                    ->set("offset", std::to_string((-neighborhood_size+1)/2))
+                    ->set("wrap", (wrap) ? "true" : "false")));
+
+    auto network = new Network(network_config);
 
     // Modules
     auto env = new Environment();
 
-    /*
-    if (one_step)
-        // Single Initial State
-        // Set the end to timestep 1
-        env->add_module(
-            (new ModuleConfig("periodic_input", "game_of_life", "board"))
-                ->set("end", "1")
-                ->set("max", std::to_string(birth_min))
-                ->set("random", "false")
-                ->set("verbose", "false")
-                ->set("fraction", std::to_string(one_step_fraction)));
-    else
-        // Refresh state
-        env->add_module(
-            (new ModuleConfig("periodic_input", "game_of_life", "board"))
-                ->set("max", std::to_string(birth_min))
-                ->set("rate", std::to_string(rate))
-                ->set("clear", "true")
-                ->set("verbose", "false")
-                ->set("fraction", std::to_string(random_fraction)));
-    */
+    // Refresh state
+    env->add_module(
+        (new ModuleConfig("periodic_input", "game_of_life", "board"))
+            ->set("max", std::to_string(birth_min))
+            ->set("rate", std::to_string(rate))
+            ->set("clear", "true")
+            ->set("verbose", "false")
+            ->set("fraction", std::to_string(random_fraction)));
 
     env->add_module(
         new ModuleConfig("visualizer", "game_of_life", "board"));
@@ -608,10 +238,8 @@ void game_of_life_test() {
 }
 
 void working_memory_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *main_structure = new Structure("working memory", PARALLEL);
-    network->add_structure(main_structure);
+    NetworkConfig *network_config = new NetworkConfig();
+    StructureConfig *main_structure = new StructureConfig("working memory", PARALLEL);
 
     bool wrap = true;
     int num_cortical_regions = 3;
@@ -631,8 +259,6 @@ void working_memory_test() {
     int ff_surround = 19;
     int intra_cortex_center = 15;
     int intra_cortex_surround = 19;
-    int gamma_center = 9;
-    int gamma_surround = 15;
 
     float fraction = 0.1;
 
@@ -641,7 +267,7 @@ void working_memory_test() {
         (new LayerConfig("feedforward",
             IZHIKEVICH, cortex_size, cortex_size,
             (new PropertyConfig())
-            ->set_value("type", "poisson")))
+            ->set("type", "poisson")))
         ->set(IZ_INIT, "regular"));
 
     // Thalamic relay
@@ -650,171 +276,196 @@ void working_memory_test() {
             IZHIKEVICH, 1, 1))
         ->set(IZ_INIT, "thalamo_cortical"));
 
-    std::vector<Structure*> sub_structures;
     for (int i = 0 ; i < num_cortical_regions ; ++i) {
-        Structure *sub_structure = new Structure(std::to_string(i), PARALLEL);
-
-        // Thalamic gamma nucleus
-        /*
-        sub_structure->add_layer(
-            (new LayerConfig("gamma_thalamus",
-                IZHIKEVICH, thal_size, thal_size))
-            ->set(IZ_INIT, "thalamo_cortical"));
-        */
+        StructureConfig *sub_structure = new StructureConfig(std::to_string(i), PARALLEL);
 
         // Cortical layers
         sub_structure->add_layer(
             (new LayerConfig("3_cortex",
                 IZHIKEVICH, cortex_size, cortex_size,
                 (new PropertyConfig())
-                ->set_value("type", "normal")
-                ->set_value("mean", std::to_string(cortex_noise))
-                ->set_value("std_dev", std::to_string(cortex_noise_stdev))))
-            ->set(IZ_INIT, "random positive"));
-        /*
-        sub_structure->add_layer(
-            (new LayerConfig("6_cortex",
-                IZHIKEVICH, cortex_size, cortex_size,
-                (new PropertyConfig())
                 ->set("type", "normal")
                 ->set("mean", std::to_string(cortex_noise))
                 ->set("std_dev", std::to_string(cortex_noise_stdev))))
-            ->set(IZ_INIT, "regular"));
-        */
+            ->set(IZ_INIT, "random positive"));
 
         // Cortico-cortical connectivity
-        /*
-        sub_structure->connect_layers("3_cortex", "6_cortex",
-            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
-                new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
-        */
-        sub_structure->connect_layers("3_cortex", "3_cortex",
-            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
-                new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
-        /*
-        sub_structure->connect_layers("6_cortex", "6_cortex",
-            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
-                new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
-        sub_structure->connect_layers("6_cortex", "3_cortex",
-            (new ConnectionConfig(exc_plastic, exc_delay, 0.5, CONVERGENT, ADD,
-                new FlatWeightConfig(0.1, fraction)))
-            ->set_arborized_config(ArborizedConfig(intra_cortex_center,1,wrap)));
-        */
+        network_config->add_connection(
+            (new PropertyConfig())
+                ->set("plastic", (exc_plastic) ? "true" : "false")
+                ->set("delay", std::to_string(exc_delay))
+                ->set("max weight", "0.5")
+                ->set("type", "convergent")
+                ->set("opcode", "add")
+                ->set_child("weight config",
+                    new FlatWeightConfig(0.1, fraction))
+                ->set("from structure", std::to_string(i))
+                ->set("to structure", std::to_string(i))
+                ->set("from layer", "3_cortex")
+                ->set("to layer", "3_cortex")
+                ->set_child("arborized config",
+                    (new PropertyConfig())
+                        ->set("field size", std::to_string(intra_cortex_center))
+                        ->set("wrap", (wrap) ? "true" : "false")));
 
         if (intra_cortex_surround > intra_cortex_center) {
-            /*
-            sub_structure->connect_layers("3_cortex", "6_cortex",
-                (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
-                    new SurroundWeightConfig(intra_cortex_center,
-                        new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
-            */
-            sub_structure->connect_layers("3_cortex", "3_cortex",
-                (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
-                    new SurroundWeightConfig(intra_cortex_center,
-                        new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
-            /*
-            sub_structure->connect_layers("6_cortex", "6_cortex",
-                (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
-                    new SurroundWeightConfig(intra_cortex_center,
-                        new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
-            sub_structure->connect_layers("6_cortex", "3_cortex",
-                (new ConnectionConfig(false, inh_delay, 0.5, CONVERGENT, SUB,
-                    new SurroundWeightConfig(intra_cortex_center,
-                        new FlatWeightConfig(0.1, fraction))))
-                ->set_arborized_config(ArborizedConfig(intra_cortex_surround,1,wrap)));
-            */
+            network_config->add_connection(
+                (new PropertyConfig())
+                    ->set("plastic", "false")
+                    ->set("delay", std::to_string(inh_delay))
+                    ->set("max weight", "0.5")
+                    ->set("type", "convergent")
+                    ->set("opcode", "sub")
+                    ->set_child("weight config",
+                        new SurroundWeightConfig(intra_cortex_center,
+                            new FlatWeightConfig(0.1, fraction)))
+                    ->set("from structure", std::to_string(i))
+                    ->set("to structure", std::to_string(i))
+                    ->set("from layer", "3_cortex")
+                    ->set("to layer", "3_cortex")
+                    ->set_child("arborized config",
+                        (new PropertyConfig())
+                            ->set("field size", std::to_string(intra_cortex_center))
+                            ->set("wrap", (wrap) ? "true" : "false")));
         }
-
-        // Gamma connectivity
-        /*
-        sub_structure->connect_layers("gamma_thalamus", "6_cortex",
-            (new ConnectionConfig(exc_plastic, 10 + exc_delay, 0.5, CONVERGENT, ADD,
-                new FlatWeightConfig(0.1*thal_ratio, fraction)))
-            ->set_arborized_config(ArborizedConfig(gamma_center,1,wrap)));
-        sub_structure->connect_layers("6_cortex", "gamma_thalamus",
-            (new ConnectionConfig(exc_plastic, 10 + exc_delay, 0.5, CONVERGENT, ADD,
-                new FlatWeightConfig(0.1*thal_ratio, fraction)))
-            ->set_arborized_config(ArborizedConfig(gamma_center,1,wrap)));
-
-        if (gamma_surround > gamma_center) {
-            sub_structure->connect_layers("gamma_thalamus", "6_cortex",
-                (new ConnectionConfig(false, 10 + inh_delay, 0.5, CONVERGENT, SUB,
-                    new SurroundWeightConfig(gamma_center,
-                        new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                ->set_arborized_config(ArborizedConfig(gamma_surround,1,wrap)));
-            sub_structure->connect_layers("6_cortex", "gamma_thalamus",
-                (new ConnectionConfig(false, 10 + inh_delay, 0.5, CONVERGENT, SUB,
-                    new SurroundWeightConfig(gamma_center,
-                        new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                ->set_arborized_config(ArborizedConfig(gamma_surround,1,wrap)));
-        }
-        */
 
         // Feedforward pathway
         if (i > 0) {
-            Structure::connect(sub_structures[i-1], "3_cortex",
-                sub_structure, "3_cortex",
-                (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
-                    new FlatWeightConfig(0.1*thal_ratio, fraction)))
-                ->set_arborized_config(ArborizedConfig(ff_center,1,wrap)));
-            Structure::connect(sub_structure, "3_cortex",
-                sub_structures[i-1], "3_cortex",
-                (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
-                    new FlatWeightConfig(0.1*thal_ratio, fraction)))
-                ->set_arborized_config(ArborizedConfig(ff_center,1,wrap)));
+            network_config->add_connection(
+                (new PropertyConfig())
+                    ->set("plastic", (exc_plastic) ? "true" : "false")
+                    ->set("delay", "0")
+                    ->set("max weight", "0.5")
+                    ->set("type", "convergent")
+                    ->set("opcode", "add")
+                    ->set_child("weight config",
+                        new FlatWeightConfig(0.1 * thal_ratio, fraction))
+                    ->set("from structure", std::to_string(i-1))
+                    ->set("to structure", std::to_string(i))
+                    ->set("from layer", "3_cortex")
+                    ->set("to layer", "3_cortex")
+                    ->set_child("arborized config",
+                        (new PropertyConfig())
+                            ->set("field size", std::to_string(ff_center))
+                            ->set("wrap", (wrap) ? "true" : "false")));
+            network_config->add_connection(
+                (new PropertyConfig())
+                    ->set("plastic", (exc_plastic) ? "true" : "false")
+                    ->set("delay", "0")
+                    ->set("max weight", "0.5")
+                    ->set("type", "convergent")
+                    ->set("opcode", "add")
+                    ->set_child("weight config",
+                        new FlatWeightConfig(0.1 * thal_ratio, fraction))
+                    ->set("from structure", std::to_string(i))
+                    ->set("to structure", std::to_string(i-1))
+                    ->set("from layer", "3_cortex")
+                    ->set("to layer", "3_cortex")
+                    ->set_child("arborized config",
+                        (new PropertyConfig())
+                            ->set("field size", std::to_string(ff_center))
+                            ->set("wrap", (wrap) ? "true" : "false")));
             if (ff_center > ff_surround) {
-                Structure::connect(sub_structures[i-1], "3_cortex",
-                    sub_structure, "3_cortex",
-                    (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
-                        new SurroundWeightConfig(ff_center,
-                            new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                    ->set_arborized_config(ArborizedConfig(ff_surround,1,wrap)));
-                Structure::connect(sub_structure, "3_cortex",
-                    sub_structures[i-1], "3_cortex",
-                    (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
-                        new SurroundWeightConfig(ff_center,
-                            new FlatWeightConfig(0.1*thal_ratio, fraction))))
-                    ->set_arborized_config(ArborizedConfig(ff_surround,1,wrap)));
+                network_config->add_connection(
+                    (new PropertyConfig())
+                        ->set("plastic", "false")
+                        ->set("delay", "0")
+                        ->set("max weight", "0.5")
+                        ->set("type", "convergent")
+                        ->set("opcode", "sub")
+                        ->set_child("weight config",
+                            new SurroundWeightConfig(ff_center,
+                                new FlatWeightConfig(0.1*thal_ratio, fraction)))
+                        ->set("from structure", std::to_string(i))
+                        ->set("to structure", std::to_string(i-1))
+                        ->set("from layer", "3_cortex")
+                        ->set("to layer", "3_cortex")
+                        ->set_child("arborized config",
+                            (new PropertyConfig())
+                                ->set("field size", std::to_string(ff_surround))
+                                ->set("wrap", (wrap) ? "true" : "false")));
+                network_config->add_connection(
+                    (new PropertyConfig())
+                        ->set("plastic", "false")
+                        ->set("delay", "0")
+                        ->set("max weight", "0.5")
+                        ->set("type", "convergent")
+                        ->set("opcode", "sub")
+                        ->set_child("weight config",
+                            new SurroundWeightConfig(ff_center,
+                                new FlatWeightConfig(0.1*thal_ratio, fraction)))
+                        ->set("from structure", std::to_string(i-1))
+                        ->set("to structure", std::to_string(i))
+                        ->set("from layer", "3_cortex")
+                        ->set("to layer", "3_cortex")
+                        ->set_child("arborized config",
+                            (new PropertyConfig())
+                                ->set("field size", std::to_string(ff_surround))
+                                ->set("wrap", (wrap) ? "true" : "false")));
             }
         }
 
         // Thalamocortical control connectivity
-        Structure::connect(main_structure, "tl1_thalamus",
-            sub_structure, "3_cortex",
-            (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
-                new FlatWeightConfig(0.1*thal_ratio)))
-            ->set("myelinated", "true"));
-        /*
-        Structure::connect(main_structure, "tl1_thalamus",
-            sub_structure, "6_cortex",
-            (new ConnectionConfig(false, 0, 0.5, FULLY_CONNECTED, MULT,
-                new FlatWeightConfig(0.1*thal_ratio)))
-            ->set("myelinated", "true"));
-        */
+        network_config->add_connection(
+            (new PropertyConfig())
+                ->set("plastic", "false")
+                ->set("delay", "0")
+                ->set("max weight", "0.5")
+                ->set("type", "fully connected")
+                ->set("opcode", "mult")
+                ->set_child("weight config",
+                    new FlatWeightConfig(0.1*thal_ratio))
+                ->set("from structure", "working memory")
+                ->set("to structure", std::to_string(i))
+                ->set("from layer", "tl1_thalamus")
+                ->set("to layer", "3_cortex")
+                ->set("myelinated", "true"));
 
 
-        network->add_structure(sub_structure);
-        sub_structures.push_back(sub_structure);
+        network_config->add_structure(sub_structure);
     }
 
     // Sensory relay to cortex
-    Structure::connect(main_structure, "feedforward",
-        sub_structures[0], "3_cortex",
-        (new ConnectionConfig(exc_plastic, 0, 0.5, CONVERGENT, ADD,
-            new FlatWeightConfig(0.1*thal_ratio, fraction)))
-        ->set_arborized_config(ArborizedConfig(ff_center,1,wrap)));
-    Structure::connect(main_structure, "feedforward",
-        sub_structures[0], "3_cortex",
-        (new ConnectionConfig(false, 0, 0.5, CONVERGENT, SUB,
-            new SurroundWeightConfig(ff_center,
-                new FlatWeightConfig(0.1*thal_ratio, fraction))))
-        ->set_arborized_config(ArborizedConfig(ff_surround,1,wrap)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", (exc_plastic) ? "true" : "false")
+            ->set("delay", "0")
+            ->set("max weight", "0.5")
+            ->set("type", "convergent")
+            ->set("opcode", "add")
+            ->set_child("weight config",
+                new FlatWeightConfig(0.1*thal_ratio, fraction))
+            ->set("from structure", "working memory")
+            ->set("to structure", "0")
+            ->set("from layer", "feedforward")
+            ->set("to layer", "3_cortex")
+            ->set("myelinated", "true")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", std::to_string(ff_center))
+                    ->set("wrap", (wrap) ? "true" : "false")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "false")
+            ->set("delay", "0")
+            ->set("max weight", "0.5")
+            ->set("type", "convergent")
+            ->set("opcode", "sub")
+            ->set_child("weight config",
+                new SurroundWeightConfig(ff_center,
+                    new FlatWeightConfig(0.1*thal_ratio, fraction)))
+            ->set("from structure", "working memory")
+            ->set("to structure", "0")
+            ->set("from layer", "feedforward")
+            ->set("to layer", "3_cortex")
+            ->set("myelinated", "true")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", std::to_string(ff_surround))
+                    ->set("wrap", (wrap) ? "true" : "false")));
+
+    network_config->add_structure(main_structure);
+    auto network = new Network(network_config);
 
     // Modules
     auto env = new Environment();
@@ -822,7 +473,6 @@ void working_memory_test() {
     for (int i = 0 ; i < num_cortical_regions ; ++i)
         vis_mod
             //->add_layer(std::to_string(i), "6_cortex")
-            //->add_layer(std::to_string(i), "gamma_thalamus")
             ->add_layer(std::to_string(i), "3_cortex");
 
     vis_mod->add_layer("working memory", "feedforward");
@@ -857,9 +507,8 @@ void dsst_test() {
     delete temp_config;
 
     /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("dsst", PARALLEL);
-    network->add_structure(structure);
+    NetworkConfig *network_config = new NetworkConfig();
+    StructureConfig *structure = new StructureConfig("dsst", PARALLEL);
 
     structure->add_layer(
         (new LayerConfig("vision",
@@ -869,7 +518,13 @@ void dsst_test() {
     structure->add_layer(
         (new LayerConfig("what",
             "relay", cell_rows, cell_cols))
-        ->set(IZ_INIT, "regular"));
+        ->set(IZ_INIT, "regular")
+        ->set_array("dendrites",
+            {
+                (new PropertyConfig())
+                    ->set("name", "fixation")
+                    ->set("second order", "true")
+            }));
 
     structure->add_layer(
         (new LayerConfig("focus",
@@ -882,20 +537,48 @@ void dsst_test() {
         ->set(IZ_INIT, "regular"));
 
     // Connect vision to what
-    structure->create_dendritic_node("what", "root", "fixation");
-    structure->set_second_order("what", "fixation");
-    structure->connect_layers("vision", "what",
-        (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            focus_rows,focus_cols,1,1,0,0)),
-            "fixation");
-    structure->connect_layers("focus", "what",
-        (new ConnectionConfig(false, 0, 1, CONVOLUTIONAL, MULT,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            focus_rows,focus_cols,0,0,0,0)),
-            "fixation");
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "false")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "add")
+            ->set_child("weight config",
+                new FlatWeightConfig(1))
+            ->set("from structure", "dsst")
+            ->set("to structure", "dsst")
+            ->set("from layer", "vision")
+            ->set("to layer", "what")
+            ->set("dendrite", "fixation")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("row field size", std::to_string(focus_rows))
+                    ->set("column field size", std::to_string(focus_cols))
+                    ->set("offset", "0")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "false")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "mult")
+            ->set_child("weight config",
+                new FlatWeightConfig(1))
+            ->set("from structure", "dsst")
+            ->set("to structure", "dsst")
+            ->set("from layer", "focus")
+            ->set("to layer", "what")
+            ->set("dendrite", "fixation")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("row field size", std::to_string(focus_rows))
+                    ->set("column field size", std::to_string(focus_cols))
+                    ->set("stride", "0")
+                    ->set("offset", "0")));
+
+    network_config->add_structure(structure);
+    auto network = new Network(network_config);
 
     auto env = new Environment();
     env->add_module(
@@ -921,10 +604,8 @@ void dsst_test() {
 }
 
 void debug_test() {
-    /* Construct the network */
-    Network *network = new Network();
-    Structure *structure = new Structure("debug", PARALLEL);
-    network->add_structure(structure);
+    NetworkConfig *network_config = new NetworkConfig();
+    StructureConfig *structure = new StructureConfig("debug", PARALLEL);
 
     int rows = 10;
     int cols = 20;
@@ -937,101 +618,295 @@ void debug_test() {
         new LayerConfig("dest",
             "debug", rows, cols));
 
+    network_config->add_structure(structure);
+
     // Check first order plastic connections
-    structure->connect_layers("source", "dest",
-        new ConnectionConfig(true, 0, 1, FULLY_CONNECTED, ADD));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "fully connected")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest"));
 
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, SUBSET, ADD))
-        ->set_subset_config(SubsetConfig(
-            rows / 4, 3 * rows / 4,
-            cols / 4, 3 * cols / 4,
-            rows / 4, 3 * rows / 4,
-            cols / 4, 3 * cols / 4)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "subset")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("subset config",
+                (new PropertyConfig())
+                    ->set("from row start", std::to_string(rows / 4))
+                    ->set("from row end",   std::to_string(3 * rows / 4))
+                    ->set("to row start",   std::to_string(rows / 4))
+                    ->set("to row end",     std::to_string(3 * rows / 4))
+                    ->set("from column start", std::to_string(cols / 4))
+                    ->set("from column end",   std::to_string(3 * cols / 4))
+                    ->set("to column start",   std::to_string(cols / 4))
+                    ->set("to column end",     std::to_string(3 * cols / 4))));
 
-    structure->connect_layers("source", "dest",
-        new ConnectionConfig(true, 0, 1, ONE_TO_ONE, ADD));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "one to one")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest"));
 
     // Non-wrapping standard arborized
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "divergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")));
 
     // Non-wrapping unshifted arborized
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,0,0)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,0,0)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,0,0)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("offset", "0")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("offset", "0")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "divergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("offset", "0")));
 
     // Wrapping standard arborized
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,true)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,true)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,true)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("wrap", "true")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("wrap", "true")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "divergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("wrap", "true")));
 
     // Wrapping unshifted arborized
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,0,0,true)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,0,0,true)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, DIVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(ArborizedConfig(
-            3,3,1,1,0,0,true)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("offset", "0")
+                    ->set("wrap", "true")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("offset", "0")
+                    ->set("wrap", "true")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "divergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("field size", "3")
+                    ->set("stride", "1")
+                    ->set("offset", "0")
+                    ->set("wrap", "true")));
 
     // Zero stride full size arborized
     // No divergent -- cannot have 0 stride
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVERGENT, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(
-            ArborizedConfig(rows,cols,0,0,0,0)));
-    structure->connect_layers("source", "dest",
-        (new ConnectionConfig(true, 0, 1, CONVOLUTIONAL, ADD,
-            new FlatWeightConfig(1.0)))
-        ->set_arborized_config(
-            ArborizedConfig(rows,cols,0,0,0,0)));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convergent")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("row field size", std::to_string(rows)) 
+                    ->set("column field size", std::to_string(cols)) 
+                    ->set("stride", "0")
+                    ->set("offset", "0")
+                    ->set("wrap", "true")));
+    network_config->add_connection(
+        (new PropertyConfig())
+            ->set("plastic", "true")
+            ->set("delay", "0")
+            ->set("max weight", "1")
+            ->set("type", "convolutional")
+            ->set("opcode", "add")
+            ->set("from structure", "debug")
+            ->set("to structure", "debug")
+            ->set("from layer", "source")
+            ->set("to layer", "dest")
+            ->set_child("arborized config",
+                (new PropertyConfig())
+                    ->set("row field size", std::to_string(rows)) 
+                    ->set("column field size", std::to_string(cols)) 
+                    ->set("stride", "0")
+                    ->set("offset", "0")
+                    ->set("wrap", "true")));
+
+    auto network = new Network(network_config);
 
     std::cout << "Debug test......\n";
     print_network(network);
@@ -1127,11 +1002,7 @@ int main(int argc, char *argv[]) {
 
     /*
     try {
-        //mnist_test();
-        mnist_perceptron_test();
-        //old_test();
-        //simple_test();
-        //single_field_test();
+        mnist_test();
         //game_of_life_test();
         //working_memory_test();
         //dsst_test();

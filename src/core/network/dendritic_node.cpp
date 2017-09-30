@@ -16,7 +16,7 @@ DendriticNode::DendriticNode(Layer *to_layer)
 
 /* Constructor for an internal node */
 DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
-    int register_index, std::string name)
+    int register_index, std::string name, bool second_order)
         : parent(parent),
           to_layer(to_layer),
           id(std::hash<std::string>()(
@@ -25,7 +25,7 @@ DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
           register_index(register_index),
           conn(nullptr),
           second_order_conn(nullptr),
-          second_order(false),
+          second_order(second_order),
           name(name) { }
 
 /* Constructor for a leaf node */
@@ -46,25 +46,8 @@ DendriticNode::~DendriticNode() {
     for (auto& child : children) delete child;
 }
 
-void DendriticNode::set_second_order() {
-    // Check if leaf node
-    if (is_leaf())
-        ErrorManager::get_instance()->log_error(
-            "Error in dendritic node of " + this->to_layer->str() + "\n"
-            "  Leaf dendritic nodes cannot be second order!");
-
-    // This must be set before children are added
-    if (children.size() > 1)
-        ErrorManager::get_instance()->log_error(
-            "Error in dendritic node of " + this->to_layer->str() + "\n"
-            "  Dendritic node must be set to second order "
-            "before adding children!");
-
-    second_order = true;
-}
-
 int DendriticNode::get_second_order_size() const {
-    if (not is_second_order())
+    if (not second_order)
         ErrorManager::get_instance()->log_error(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Requested second order size on non-second order node!");
@@ -75,7 +58,7 @@ int DendriticNode::get_second_order_size() const {
 }
 
 Connection* DendriticNode::get_second_order_connection() const {
-    if (not is_second_order())
+    if (not second_order)
         ErrorManager::get_instance()->log_error(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Requested second order host connection on non-second order node!");
@@ -83,14 +66,15 @@ Connection* DendriticNode::get_second_order_connection() const {
         return second_order_conn;
 }
 
-DendriticNode* DendriticNode::add_child(std::string name) {
+DendriticNode* DendriticNode::add_child(std::string name, bool second_order) {
     if (is_leaf())
         ErrorManager::get_instance()->log_error(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Dendritic node cannot have children if it has a connection!");
-    else if (is_second_order())
+    else if (this->second_order)
         ErrorManager::get_instance()->log_error(
-            "Error in dendritic node of " + this->to_layer->str() + "\n"
+            "Error in dendritic node " + name +
+            " of " + this->to_layer->str() + "\n"
             "  Second order dendritic nodes cannot have internal children!");
 
     // Ensure name is not a duplicate
@@ -101,7 +85,7 @@ DendriticNode* DendriticNode::add_child(std::string name) {
 
     int child_register = this->register_index;
     if (children.size() > 0) ++child_register;
-    auto child = new DendriticNode(this, to_layer, child_register, name);
+    auto child = new DendriticNode(this, to_layer, child_register, name, second_order);
     children.push_back(child);
     return child;
 }
@@ -109,7 +93,8 @@ DendriticNode* DendriticNode::add_child(std::string name) {
 DendriticNode* DendriticNode::add_child(Connection *conn) {
     if (is_leaf())
         ErrorManager::get_instance()->log_error(
-            "Error in dendritic node of " + this->to_layer->str() + "\n"
+            "Error in dendritic node " + name +
+            " of " + this->to_layer->str() + "\n"
             "  Dendritic node cannot have children if it has a connection!");
 
     DendriticNode *child;
@@ -117,7 +102,7 @@ DendriticNode* DendriticNode::add_child(Connection *conn) {
     // If adding a connection to a second order node...
     //   If this is the first connection, make it the second order host.
     //   Otherwise, ensure the weights check, and add new node to children.
-    if (is_second_order()) {
+    if (second_order) {
         if (second_order_conn == nullptr) {
             second_order_conn = conn;
             return this;

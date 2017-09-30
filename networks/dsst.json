@@ -46,57 +46,54 @@
 					"global": "false",
 					"init": "regular" 
 				} 
-			],
-			"connections": [
-				{
-					"from layer": "vision",
-					"to layer": "what",
-					"type": "convolutional",
-					"opcode": "add",
-					"max weight": "1.000000",
-					"delay": "0",
-					"plastic": "false",
-					"dendrite": "fixation",
-					"weight config": {
-						"type": "flat",
-						"weight": "1.000000",
-						"fraction": "1.000000" 
-					},
-					"arborized config": {
-						"row field size": "171",
-						"column field size": "170",
-						"row stride": "1",
-						"column stride": "1",
-						"row offset": "0",
-						"column offset": "0",
-						"wrap": "0" 
-					} 
-				},
-				{
-					"from layer": "focus",
-					"to layer": "what",
-					"type": "convolutional",
-					"opcode": "mult",
-					"max weight": "1.000000",
-					"delay": "0",
-					"plastic": "false",
-					"dendrite": "fixation",
-					"weight config": {
-						"type": "flat",
-						"weight": "1.000000",
-						"fraction": "1.000000" 
-					},
-					"arborized config": {
-						"row field size": "171",
-						"column field size": "170",
-						"row stride": "0",
-						"column stride": "0",
-						"row offset": "0",
-						"column offset": "0",
-						"wrap": "0" 
-					} 
-				} 
 			] 
+		} 
+	],
+	"connections": [
+		{
+			"plastic": "false",
+			"delay": "0",
+			"max weight": "1",
+			"type": "convolutional",
+			"opcode": "add",
+			"from structure": "dsst",
+			"to structure": "dsst",
+			"from layer": "vision",
+			"to layer": "what",
+			"dendrite": "fixation",
+			"weight config": {
+				"type": "flat",
+				"weight": "1.000000",
+				"fraction": "1.000000" 
+			},
+			"arborized config": {
+				"row field size": "171",
+				"column field size": "170",
+				"offset": "0" 
+			} 
+		},
+		{
+			"plastic": "false",
+			"delay": "0",
+			"max weight": "1",
+			"type": "convolutional",
+			"opcode": "mult",
+			"from structure": "dsst",
+			"to structure": "dsst",
+			"from layer": "focus",
+			"to layer": "what",
+			"dendrite": "fixation",
+			"weight config": {
+				"type": "flat",
+				"weight": "1.000000",
+				"fraction": "1.000000" 
+			},
+			"arborized config": {
+				"row field size": "171",
+				"column field size": "170",
+				"stride": "0",
+				"offset": "0" 
+			} 
 		} 
 	] 
 } 

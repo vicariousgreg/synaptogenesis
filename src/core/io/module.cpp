@@ -5,7 +5,10 @@
 #include "util/error_manager.h"
 
 ModuleConfig::ModuleConfig(PropertyConfig *config)
-    : PropertyConfig(config) { }
+    : PropertyConfig(config) {
+    for (auto layer : config->get_array("layers"))
+        add_layer_internal(layer);
+}
 
 ModuleConfig::ModuleConfig(std::string type) {
     this->set("type", type);
@@ -17,31 +20,33 @@ ModuleConfig::ModuleConfig(std::string type,
     this->add_layer(structure, layer);
 }
 
-ModuleConfig* ModuleConfig::add_layer(std::string structure, std::string layer) {
-    add_layer(new PropertyConfig(
-        { {"structure", structure},
-          {"layer", layer} }));
-    return this;
-}
-
 ModuleConfig* ModuleConfig::add_layer(std::string structure,
         std::string layer, std::string params) {
-    add_layer(new PropertyConfig(
+    auto props = new PropertyConfig(
         { {"structure", structure},
-          {"layer", layer},
-          {"params", params} }));
+          {"layer", layer} });
+    if (params != "") props->set("params", params);
+    add_layer(props);
+    delete props;
     return this;
 }
 
 ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
+    this->add_layer_internal(config);
+    return this;
+}
+
+void ModuleConfig::add_layer_internal(PropertyConfig *config) {
     if (not config->has("structure") or not config->has("layer"))
         ErrorManager::get_instance()->log_error(
             "Module layer config must have structure and layer name!");
 
+    // Adding to array makes a copy
+    // Retrieve that copy and add it to the layer map
     this->add_to_array("layers", config);
+    auto layers = get_array("layers");
     this->layer_map[config->get("structure")]
-                   [config->get("layer")] = config;
-    return this;
+                   [config->get("layer")] = layers.at(layers.size()-1);
 }
 
 const PropertyConfig* ModuleConfig::get_layer(Layer *layer) const

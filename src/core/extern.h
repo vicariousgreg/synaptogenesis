@@ -13,8 +13,6 @@ extern "C" NETWORK create_network();
 extern "C" STRUCTURE create_structure(char* name, char* type);
 extern "C" bool add_structure(NETWORK network, STRUCTURE structure);
 extern "C" bool add_layer(STRUCTURE structure, PROPS props);
-extern "C" bool add_dendrite(STRUCTURE structure,
-    char* layer, char* parent, char* child);
 extern "C" bool connect_layers(STRUCTURE from_structure, char* from_layer,
     STRUCTURE to_structure, char* to_layer, PROPS props);
 

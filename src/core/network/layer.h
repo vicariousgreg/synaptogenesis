@@ -51,8 +51,9 @@ class Layer {
         // Global flag
         const bool global;
 
-        // Root node of dendritic tree
-        DendriticNode* const dendritic_root;
+        // Gets the dendritic root
+        DendriticNode* get_dendritic_root() const
+            { return dendritic_root; }
 
         // Get a list of the dendritic nodes
         DendriticNodeList get_dendritic_nodes() const;
@@ -69,7 +70,10 @@ class Layer {
 
         std::string str() const;
 
-    private:
+        // Layer config
+        const LayerConfig * const config;
+
+    protected:
         friend class Network;
         friend class Structure;
         friend class Connection;
@@ -82,15 +86,19 @@ class Layer {
         void add_output_connection(Connection* connection);
         void add_to_root(Connection* connection);
 
+        // Helper Function
+        void add_dendrites(std::string parent_name,
+            const ConfigArray& dendrites);
+
+        // Root node of dendritic tree
+        DendriticNode* const dendritic_root;
+
         // Layer IO type mask
         IOTypeMask type;
 
         // Input and output connections
         ConnectionList input_connections;
         ConnectionList output_connections;
-
-        // Layer config
-        LayerConfig* const config;
 };
 
 typedef std::vector<Layer*> LayerList;

@@ -69,7 +69,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
     // Perform DFS on dendritic tree
     // Do this after so that the state learning instruction comes first
     //   in the update_instructions list
-    dendrite_DFS(to_layer->dendritic_root);
+    dendrite_DFS(to_layer->get_dendritic_root());
 
     // Add output transfer instruction
     if (this->is_output) {
@@ -96,7 +96,7 @@ ClusterNode::~ClusterNode() {
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     // Second order connections need a transfer to copy the host weights
-    if (curr->is_second_order())
+    if (curr->second_order)
         activate_instructions.push_back(
             new SecondOrderWeightTransferInstruction(
                 curr, state, compute_stream));
@@ -139,7 +139,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     //   connections operate on a copy of its weight matrix
     // The host connection will use this copy during its synaptic
     //   computations (see synapse_data.cpp)
-    if (curr->is_second_order()) {
+    if (curr->second_order) {
         Connection *conn = curr->get_second_order_connection();
 
         if (conn == nullptr)

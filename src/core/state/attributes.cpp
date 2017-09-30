@@ -72,7 +72,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
     //   based on the dendritic trees of the layers
     for (auto& layer : layers) {
         layer_sizes[layer->id] = layer->size;
-        int input_register_count = layer->dendritic_root->get_max_register_index() + 1;
+        int input_register_count = layer->get_dendritic_root()->get_max_register_index() + 1;
         int output_register_count = 1 +
             (layer->get_max_delay() / timesteps_per_output);
 
@@ -91,7 +91,7 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
 
         // Find any second order dendritic nodes
         second_order_size =
-            dendrite_DFS(layer->dendritic_root, second_order_size);
+            dendrite_DFS(layer->get_dendritic_root(), second_order_size);
     }
 
     // Set layer indices
@@ -128,8 +128,8 @@ Attributes::~Attributes() {
 #endif
 }
 
-int Attributes::dendrite_DFS(DendriticNode *curr, int second_order_size) {
-    if (curr->is_second_order()) {
+int Attributes::dendrite_DFS(const DendriticNode *curr, int second_order_size) {
+    if (curr->second_order) {
         second_order_indices[curr->id] = second_order_size;
         int size = curr->get_second_order_size();
         second_order_sizes[curr->id] = size;

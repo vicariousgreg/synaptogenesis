@@ -5,7 +5,7 @@
 
 PropertyConfig::PropertyConfig(PropertyConfig *other) {
     for (auto pair : other->get())
-        this->set_value(pair.first, pair.second);
+        this->set(pair.first, pair.second);
     for (auto pair : other->get_children())
         this->set_child(pair.first, pair.second);
     for (auto pair : other->get_arrays()) {
@@ -53,7 +53,7 @@ std::string PropertyConfig::get(std::string key, std::string def_val) const {
     else          return def_val;
 }
 
-PropertyConfig* PropertyConfig::set_value(std::string key, std::string value) {
+PropertyConfig* PropertyConfig::set(std::string key, std::string value) {
     properties[key] = value;
     if (std::find(keys.begin(), keys.end(), key) == keys.end())
         keys.push_back(key);
@@ -97,14 +97,12 @@ PropertyConfig* PropertyConfig::get_child(
     else                return def_val;
 }
 
-void PropertyConfig::set_child(std::string key, PropertyConfig child)
-    { set_child(key, &child); }
-
-void PropertyConfig::set_child(std::string key, PropertyConfig *child) {
+PropertyConfig *PropertyConfig::set_child(std::string key, PropertyConfig *child) {
     children[key] = new PropertyConfig(child);
     if (std::find(children_keys.begin(), children_keys.end(), key)
             == children_keys.end())
         children_keys.push_back(key);
+    return this;
 }
 
 PropertyConfig* PropertyConfig::remove_child(std::string key) {
@@ -144,20 +142,19 @@ const ConfigArray PropertyConfig::get_array(std::string key) const {
     else                return ConfigArray();
 }
 
-void PropertyConfig::set_array(std::string key, ConfigArray array) {
+PropertyConfig *PropertyConfig::set_array(std::string key, ConfigArray array) {
     arrays[key] = array;
     if (std::find(array_keys.begin(), array_keys.end(), key)
             == array_keys.end())
         array_keys.push_back(key);
+    return this;
 }
 
-void PropertyConfig::add_to_array(std::string key, PropertyConfig config)
-    { add_to_array(key, &config); }
-
-void PropertyConfig::add_to_array(std::string key, PropertyConfig* config) {
+PropertyConfig *PropertyConfig::add_to_array(std::string key, PropertyConfig* config) {
     if (not has_array(key))
         set_array(key, ConfigArray());
     arrays.at(key).push_back(new PropertyConfig(config));
+    return this;
 }
 
 ConfigArray PropertyConfig::remove_array(std::string key) {

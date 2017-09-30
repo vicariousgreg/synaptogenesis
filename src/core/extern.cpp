@@ -11,7 +11,7 @@ PROPS create_properties() {
 }
 
 void add_property(PROPS properties, char* key, char* val) {
-    ((PropertyConfig*)properties)->set_value(key, val);
+    ((PropertyConfig*)properties)->set(key, val);
 }
 
 void add_child(PROPS properties, char* key, PROPS child) {
@@ -38,15 +38,6 @@ bool add_structure(NETWORK network, STRUCTURE structure) {
 bool add_layer(STRUCTURE structure, PROPS props) {
     try {
         ((Structure*)structure)->add_layer(new LayerConfig((PropertyConfig*)props));
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
-bool add_dendrite(STRUCTURE structure, char* layer, char* parent, char* child) {
-    try {
-        ((Structure*)structure)->create_dendritic_node(layer, parent, child);
         return true;
     } catch (...) {
         return false;

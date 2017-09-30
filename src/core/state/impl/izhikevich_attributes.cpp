@@ -520,7 +520,7 @@ static void check_parameters(Layer *layer) {
 
     for (auto pair : layer->get_config()->get())
         if (valid_params.count(pair.first) == 0)
-            ErrorManager::get_instance()->log_error(
+            ErrorManager::get_instance()->log_warning(
                 "Unrecognized layer parameter: " + pair.first);
 }
 
@@ -536,7 +536,7 @@ static void check_parameters(Connection *conn) {
 
     for (auto pair : conn->get_config()->get())
         if (valid_params.count(pair.first) == 0)
-            ErrorManager::get_instance()->log_error(
+            ErrorManager::get_instance()->log_warning(
                 "Unrecognized connection parameter: " + pair.first);
 }
 

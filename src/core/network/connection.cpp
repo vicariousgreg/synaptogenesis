@@ -16,10 +16,11 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             opcode(config->opcode),
             type(config->type),
             convolutional(type == CONVOLUTIONAL),
-            second_order(node->is_second_order()),
+            second_order(node->second_order),
             second_order_host(second_order and
                 node->get_second_order_connection() == nullptr),
             second_order_slave(second_order and not second_order_host),
+            name(name),
             id(std::hash<std::string>()(
                 from_layer->structure->name + "/" + from_layer->name + "-" +
                 to_layer->structure->name + "/" + to_layer->name +
@@ -146,15 +147,12 @@ Connection::~Connection() {
 
 std::string Connection::get_parameter(std::string key,
         std::string default_val) const {
-    try {
-        return this->get_config()->get(key);
-    } catch (std::out_of_range) {
+    if (not this->get_config()->has(key))
         ErrorManager::get_instance()->log_warning(
             "Error in " + this->str() + ":\n"
             "  Unspecified parameter: " + key
             + " -- using " + default_val + ".");
-        return default_val;
-    }
+    return this->get_config()->get(key, default_val);
 }
 
 int Connection::get_num_weights() const { return num_weights; }
