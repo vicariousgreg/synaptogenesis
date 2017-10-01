@@ -45,6 +45,10 @@ ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
         ErrorManager::get_instance()->log_error(
             "Unspecified field size for arborized config!");
 
+    if (row_stride < 0 or column_stride < 0)
+        ErrorManager::get_instance()->log_error(
+            "Cannot have negative stride in arborized config!");
+
     // If offsets are not provided, use default
     if (not config->has("row offset") and not config->has("offset"))
         row_offset = -row_field_size/2;
@@ -157,6 +161,11 @@ SubsetConfig::SubsetConfig(PropertyConfig *config) {
     to_col_size = to_col_end - to_col_start;
     to_size = to_row_size * to_col_size;
     total_size = from_size * to_size;
+
+    if (from_row_size <= 0 or to_row_size <= 0 or
+        from_col_size <= 0 or to_col_size <= 0)
+        ErrorManager::get_instance()->log_error(
+            "Invalid subset dimensions!");
 }
 
 SubsetConfig::SubsetConfig(
@@ -245,6 +254,9 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
         ErrorManager::get_instance()->log_error(
             "Attempted to construct ConnectionConfig "
             "without destination layer!");
+    if (delay < 0)
+        ErrorManager::get_instance()->log_error(
+            "Attempted to construct ConnectionConfig with negative delay!");
 }
 
 ConnectionConfig::ConnectionConfig(
@@ -270,6 +282,10 @@ ConnectionConfig::ConnectionConfig(
     this->set("max weight", std::to_string(max_weight));
     this->set("type", ConnectionTypeStrings.at(type));
     this->set("opcode", OpcodeStrings.at(opcode));
+
+    if (delay < 0)
+        ErrorManager::get_instance()->log_error(
+            "Attempted to construct ConnectionConfig with negative delay!");
 }
 
 bool ConnectionConfig::validate(Connection *conn) const {

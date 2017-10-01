@@ -24,6 +24,11 @@ LayerConfig::LayerConfig(const PropertyConfig *config)
         this->rows = img.height();
         this->columns = img.width();
     }
+
+    if (rows <= 0 or columns <= 0)
+        ErrorManager::get_instance()->log_error(
+            "Invalid dimensions for " + this->str() +
+            "[" + std::to_string(rows) + "," + std::to_string(columns) + "]!");
 }
 
 LayerConfig::LayerConfig(
