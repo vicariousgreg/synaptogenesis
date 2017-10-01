@@ -81,18 +81,12 @@ class ConnectionConfig : public PropertyConfig {
             float max_weight,
             ConnectionType type,
             Opcode opcode,
+            PropertyConfig *specialized_config=nullptr,
+            PropertyConfig *weight_config=nullptr,
             std::string dendrite="root",
             std::string name="");
 
         bool validate(Connection *conn) const;
-
-        /* Specialized config setters */
-        ConnectionConfig *set_arborized_config(ArborizedConfig config);
-        ConnectionConfig *set_subset_config(SubsetConfig config);
-
-        ConnectionConfig *set_arborized_config(PropertyConfig *config);
-        ConnectionConfig *set_subset_config(PropertyConfig *config);
-        ConnectionConfig *set_weight_config(PropertyConfig *config);
 
         /* Specialized config getters */
         const ArborizedConfig get_arborized_config() const;

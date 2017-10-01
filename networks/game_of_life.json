@@ -2,7 +2,7 @@
 	"structures": [
 		{
 			"name": "game_of_life",
-			"cluster type": "parallel",
+			"type": "parallel",
 			"layers": [
 				{
 					"name": "board",

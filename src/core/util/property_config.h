@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <initializer_list>
 
 class PropertyConfig;
 
@@ -22,7 +23,7 @@ class PropertyConfig {
     public:
         PropertyConfig() { }
         PropertyConfig(const PropertyConfig *other);
-        PropertyConfig(StringPairList pairs);
+        PropertyConfig(std::initializer_list<StringPair> pairs);
 
         virtual ~PropertyConfig();
 

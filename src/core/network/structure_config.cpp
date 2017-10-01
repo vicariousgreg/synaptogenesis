@@ -6,7 +6,7 @@ StructureConfig::StructureConfig(const PropertyConfig *config)
         : PropertyConfig(config),
           name(config->get("name", "")),
           cluster_type(
-              get_cluster_type(config->get("cluster type", "parallel"))) {
+              get_cluster_type(config->get("type", "parallel"))) {
     // Check name
     if (not config->has("name"))
         ErrorManager::get_instance()->log_error(
@@ -20,7 +20,7 @@ StructureConfig::StructureConfig(const PropertyConfig *config)
 StructureConfig::StructureConfig(std::string name, ClusterType cluster_type)
         : name(name), cluster_type(cluster_type) {
     this->set("name", name);
-    this->set("cluster type", ClusterTypeStrings.at(cluster_type));
+    this->set("type", ClusterTypeStrings.at(cluster_type));
 }
 
 void StructureConfig::add_layer_internal(LayerConfig *config) {

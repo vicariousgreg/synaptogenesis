@@ -257,12 +257,30 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
     if (delay < 0)
         ErrorManager::get_instance()->log_error(
             "Attempted to construct ConnectionConfig with negative delay!");
+    switch (type) {
+        case SUBSET:
+            if (not has_child("subset config"))
+                ErrorManager::get_instance()->log_error(
+                    "Attempted to create SUBSET connection without "
+                    "specifying subset configuration!");
+            break;
+        case CONVERGENT:
+        case CONVOLUTIONAL:
+        case DIVERGENT:
+            if (not has_child("arborized config"))
+                ErrorManager::get_instance()->log_error(
+                    "Attempted to create arborized connection without "
+                    "specifying subset configuration!");
+            break;
+    }
 }
 
 ConnectionConfig::ConnectionConfig(
     std::string from_layer, std::string to_layer,
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
+    PropertyConfig *specialized_config,
+    PropertyConfig *weight_config,
     std::string dendrite, std::string name)
         : name(name),
           from_layer(from_layer),
@@ -286,57 +304,34 @@ ConnectionConfig::ConnectionConfig(
     if (delay < 0)
         ErrorManager::get_instance()->log_error(
             "Attempted to construct ConnectionConfig with negative delay!");
+
+    if (weight_config != nullptr)
+        this->set_child("weight config", weight_config);
+
+    switch (type) {
+        case SUBSET:
+            if (specialized_config == nullptr)
+                ErrorManager::get_instance()->log_error(
+                    "Attempted to create SUBSET connection without "
+                    "specifying subset configuration!");
+            this->set_child("subset config", specialized_config);
+            break;
+        case CONVERGENT:
+        case CONVOLUTIONAL:
+        case DIVERGENT:
+            if (specialized_config == nullptr)
+                ErrorManager::get_instance()->log_error(
+                    "Attempted to create arborized connection without "
+                    "specifying subset configuration!");
+            this->set_child("arborized config", specialized_config);
+            break;
+    }
 }
 
 bool ConnectionConfig::validate(Connection *conn) const {
     if (type == SUBSET)
         return get_subset_config().validate(conn);
     return true;
-}
-
-ConnectionConfig* ConnectionConfig::set_arborized_config(
-        ArborizedConfig config) {
-    auto props = config.to_property_config();
-    return this->set_arborized_config(&props);
-}
-
-ConnectionConfig* ConnectionConfig::set_subset_config(SubsetConfig config) {
-    auto props = config.to_property_config();
-    return this->set_subset_config(&props);
-}
-
-ConnectionConfig* ConnectionConfig::set_arborized_config(
-        PropertyConfig *config) {
-    if (not this->has_child("arborized config")) {
-        this->set_child("arborized config", config);
-    } else {
-        auto child = this->get_child("arborized config");
-        for (auto pair : config->get())
-            child->set(pair.first, pair.second);
-    }
-    return this;
-}
-
-ConnectionConfig* ConnectionConfig::set_subset_config(PropertyConfig *config) {
-    if (not this->has_child("subset config")) {
-        this->set_child("subset config", config);
-    } else {
-        auto child = this->get_child("subset config");
-        for (auto pair : config->get())
-            child->set(pair.first, pair.second);
-    }
-    return this;
-}
-
-ConnectionConfig* ConnectionConfig::set_weight_config(PropertyConfig *config) {
-    if (not this->has_child("weight config")) {
-        this->set_child("weight config", config);
-    } else {
-        auto child = this->get_child("weight config");
-        for (auto pair :config->get())
-            child->set(pair.first, pair.second);
-    }
-    return this;
 }
 
 /* Specialized config getters */

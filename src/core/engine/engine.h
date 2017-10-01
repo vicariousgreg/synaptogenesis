@@ -49,7 +49,7 @@ class Lock {
 
 class Engine {
     public:
-        Engine(Context *context, bool suppress_output=false);
+        Engine(Context *context);
         virtual ~Engine();
 
         // Clears the buffer, modules, cluster, and resources
@@ -60,16 +60,7 @@ class Engine {
         void rebuild();
 
         // Run the engine
-        Context* run(int iterations, bool verbose);
-
-        void set_learning_flag(bool status) { learning_flag = status; }
-        void set_suppress_output(bool status) { suppress_output = status; }
-        void set_calc_rate(bool status) { calc_rate = status; }
-        void set_environment_rate(int rate) { environment_rate = rate; }
-        void set_refresh_rate(float rate) {
-            refresh_rate = rate;
-            time_limit = 1.0 / refresh_rate;
-        }
+        Context* run(PropertyConfig args=PropertyConfig());
 
         Buffer* get_buffer() { return buffer; }
         IOTypeMask get_io_type(Layer *layer) { return io_types[layer]; }

@@ -10,9 +10,10 @@
 #include "io/impl/dsst_module.h"
 #include "io/environment.h"
 #include "engine/engine.h"
+#include "engine/context.h"
 #include "state/state.h"
 #include "util/tools.h"
-#include "engine/context.h"
+#include "util/property_config.h"
 
 #define IZHIKEVICH "izhikevich"
 #define HEBBIAN_RATE_ENCODING "hebbian_rate_encoding"
@@ -21,7 +22,7 @@
 
 #define IZ_INIT "init"
 
-void print_network(Network *network, Environment *env=nullptr) {
+void print_network(Network *network) {
     printf("Built network.\n");
     printf("  - neurons     : %10d\n", network->get_num_neurons());
     printf("  - layers      : %10d\n", network->get_num_layers());
@@ -30,16 +31,8 @@ void print_network(Network *network, Environment *env=nullptr) {
 
     for (auto structure : network->get_structures()) {
         for (auto layer : structure->get_layers()) {
-            printf("%-20s   ", (layer->structure->name + "->" + layer->name).c_str());
-            /*
-            if (env != nullptr) {
-                auto io_type = env->get_io_type(structure->name, layer->name);
-                std::cout << ((io_type & INPUT) ? "I " : "  ");
-                std::cout << ((io_type & OUTPUT) ? "O " : "  ");
-                std::cout << ((io_type & EXPECTED) ? "E " : "  ");
-            }
-            */
-            std::cout << std::endl;
+            printf("%-20s   \n",
+                (layer->structure->name + "->" + layer->name).c_str());
         }
         std::cout << std::endl;
     }
@@ -126,8 +119,9 @@ void mnist_test() {
     // Run training
     auto c = new Context(network, env);
     Engine engine(c);
-    engine.set_calc_rate(false);
-    engine.run(60000, true);
+    engine.run(PropertyConfig(
+        {{"iterations", "60000"},
+         {"calc rate", "false"}}));
 
     // Remove modules and replace for testing
     env->remove_modules();
@@ -151,8 +145,10 @@ void mnist_test() {
 
     // Run testing (disable learning)
     engine.rebuild();
-    engine.set_learning_flag(false);
-    engine.run(10000, true);
+    engine.run(PropertyConfig(
+        {{"iterations", "60000"},
+         {"calc rate", "false"},
+         {"learning flag", "false"}}));
 
     delete c;
 }
@@ -261,8 +257,8 @@ void game_of_life_test() {
 
     auto c = new Context(network, env);
     Engine engine(c);
-    print_network(network, env);
-    auto context = engine.run(500000, true);
+    print_network(network);
+    auto context = engine.run(PropertyConfig({{"iterations", "500000"}}));
     context->free();
     delete context;
 }
@@ -558,8 +554,8 @@ void working_memory_test() {
 
     auto c = new Context(network, env);
     Engine engine(c);
-    print_network(network, env);
-    auto context = engine.run(500000, true);
+    print_network(network);
+    auto context = engine.run(PropertyConfig({{"iterations", "500000"}}));
     context->free();
     delete context;
 }
@@ -682,11 +678,11 @@ void dsst_test() {
             ->set("rate", "10"));
 
     std::cout << "DSST test......\n";
-    print_network(network, env);
+    print_network(network);
     auto c = new Context(network, env);
     Engine engine(c);
 
-    auto context = engine.run(1000000, true);
+    auto context = engine.run(PropertyConfig({{"iterations", "1000000"}}));
     context->free();
     delete context;
 }
@@ -1005,7 +1001,7 @@ void debug_test() {
     print_network(network);
 
     Engine engine(new Context(network));
-    auto context = engine.run(1, true);
+    auto context = engine.run(PropertyConfig({{"iterations", "1"}}));
     context->free();
     delete context;
 }
@@ -1042,7 +1038,7 @@ int cli() {
                     quit = true;
                     break;
                 default:
-                    if (context == nullptr) throw std::runtime_error("");
+                    if (context == nullptr) throw std::invalid_argument("");
                     switch (input.at(0)) {
                         case 'e':
                         case 'E':
@@ -1065,11 +1061,10 @@ int cli() {
                         case 'R':
                             std::cout << "Number of iterations: ";
                             std::cin >> input;
-                            int iterations = stoi(input);
                             try {
                                 if (engine == nullptr)
                                     engine = new Engine(context);
-                                engine->run(iterations, true);
+                                engine->run(PropertyConfig({{"iterations", input}}));
                             } catch (std::runtime_error e) {
                                 printf("Fatal error -- exiting...\n");
                                 return 1;

@@ -1,0 +1,56 @@
+{
+	"connections": [
+		{
+			"opcode": "add",
+			"type": "fully connected",
+			"to layer": "dest",
+			"from layer": "source",
+			"plastic": "true" 
+		},
+		{
+			"to layer": "dest",
+			"from layer": "source",
+			"plastic": "true",
+			"opcode": "add",
+			"type": "subset",
+			"subset config": {
+				"to row start": "2",
+				"to column start": "2",
+				"from column end": "18",
+				"from row end": "8",
+				"to row end": "8",
+				"from column start": "2",
+				"to column end": "18",
+				"from row start": "2" 
+			} 
+		},
+		{
+			"opcode": "add",
+			"type": "one to one",
+			"to layer": "dest",
+			"from layer": "source",
+			"plastic": "true" 
+		} 
+	],
+	"structures": [
+		{
+			"type": "parallel",
+			"name": "debug",
+			"layers": [
+				{
+					"columns": "20",
+					"rows": "10",
+					"name": "source",
+					"neural model": "debug" 
+				},
+				{
+					"columns": "20",
+					"rows": "10",
+					"name": "dest",
+					"neural model": "debug" 
+				} 
+			] 
+		} 
+	] 
+} 
+

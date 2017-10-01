@@ -12,10 +12,10 @@
 #include "state/attributes.h"
 #include "gui_controller.h"
 
-Engine::Engine(Context *context, bool suppress_output)
+Engine::Engine(Context *context)
         : context(context),
           learning_flag(true),
-          suppress_output(suppress_output),
+          suppress_output(false),
           refresh_rate(FLT_MAX),
           time_limit(1.0 / refresh_rate),
           environment_rate(1),
@@ -265,13 +265,25 @@ void Engine::environment_loop(int iterations, bool verbose, Report** report) {
     GuiController::get_instance()->quit();
 }
 
-Context* Engine::run(int iterations, bool verbose) {
+Context* Engine::run(PropertyConfig args) {
+    // Extract parameters
+    int iterations = std::stoi(args.get("iterations", "1"));
+    bool verbose = args.get("verbose", "true") == "true";
+    this->learning_flag = args.get("learning flag", "true") == "true";
+    this->suppress_output = args.get("suppress output", "false") == "true";
+    this->calc_rate = args.get("calc rate", "true") == "true";
+    this->environment_rate = std::stoi(args.get("environment rate", "1"));
+    this->refresh_rate = std::stof(args.get("refresh rate", "1"));
+    this->time_limit = 1.0 / this->refresh_rate;
+
     // Initialize cuda random states
     init_rand(context->get_network()->get_max_layer_size());
 
     // Reset rate / time limit if calc_rate
-    if (calc_rate)
-        set_refresh_rate(FLT_MAX);
+    if (calc_rate) {
+        this->refresh_rate = FLT_MAX;
+        this->time_limit = 1.0 / FLT_MAX;
+    }
 
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT_THREAD);

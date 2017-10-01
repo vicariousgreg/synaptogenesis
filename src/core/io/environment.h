@@ -6,7 +6,7 @@
 class Environment : public PropertyConfig {
     public:
         Environment() { }
-        Environment(PropertyConfig *config);
+        Environment(PropertyConfig *config) : PropertyConfig(config) { }
 
         /* Save or load environment to/from JSON file */
         static Environment* load(std::string path);

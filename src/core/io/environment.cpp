@@ -1,10 +1,6 @@
 #include "io/environment.h"
 #include "builder.h"
 
-Environment::Environment(PropertyConfig *config)
-        : PropertyConfig(config) {
-}
-
 Environment* Environment::load(std::string path) {
     return load_environment(path);
 }

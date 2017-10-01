@@ -2,7 +2,7 @@
 	"structures": [
 		{
 			"name": "dsst",
-			"cluster type": "parallel",
+			"type": "parallel",
 			"layers": [
 				{
 					"name": "vision",

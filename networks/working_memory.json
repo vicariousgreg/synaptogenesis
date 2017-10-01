@@ -2,7 +2,7 @@
 	"structures": [
 		{
 			"name": "0",
-			"cluster type": "parallel",
+			"type": "parallel",
 			"layers": [
 				{
 					"name": "3_cortex",
@@ -22,7 +22,7 @@
 		},
 		{
 			"name": "1",
-			"cluster type": "parallel",
+			"type": "parallel",
 			"layers": [
 				{
 					"name": "3_cortex",
@@ -42,7 +42,7 @@
 		},
 		{
 			"name": "2",
-			"cluster type": "parallel",
+			"type": "parallel",
 			"layers": [
 				{
 					"name": "3_cortex",
@@ -62,7 +62,7 @@
 		},
 		{
 			"name": "working memory",
-			"cluster type": "parallel",
+			"type": "parallel",
 			"layers": [
 				{
 					"name": "feedforward",

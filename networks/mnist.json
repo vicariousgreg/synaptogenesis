@@ -2,7 +2,7 @@
 	"structures": [
 		{
 			"name": "mnist",
-			"cluster type": "feedforward",
+			"type": "feedforward",
 			"layers": [
 				{
 					"name": "input_layer",

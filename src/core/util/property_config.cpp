@@ -15,7 +15,7 @@ PropertyConfig::PropertyConfig(const PropertyConfig *other) {
     }
 }
 
-PropertyConfig::PropertyConfig(StringPairList pairs) {
+PropertyConfig::PropertyConfig(std::initializer_list<StringPair> pairs) {
     for (auto pair : pairs) {
         keys.push_back(pair.first);
         properties[pair.first] = pair.second;

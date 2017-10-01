@@ -22,6 +22,14 @@ find src/core | \
   xargs cloc
 
 echo
+echo ================
+echo === Python: ====
+echo ================
+find . | \
+  grep "\(\.py\)" | \
+  xargs cloc
+
+echo
 echo ===============
 echo ===============
 echo === Total: ====
