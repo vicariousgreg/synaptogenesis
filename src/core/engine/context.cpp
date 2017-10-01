@@ -6,12 +6,15 @@
 Context::Context(Network *network, Environment *env, State *st)
         : network(network), environment(env), state(st) { }
 
-Context::~Context() {
+void Context::free() {
+    delete network;
     delete environment;
     delete state;
-    delete network;
-    for (auto report : reports)
-        delete report;
+    for (auto report : reports) delete report;
+    network = nullptr;
+    environment = nullptr;
+    state = nullptr;
+    reports.clear();
 }
 
 void Context::set_network(Network *net) {
@@ -39,7 +42,11 @@ Environment* Context::get_environment() {
     return environment;
 }
 State* Context::get_state() {
-    if (state == nullptr)
+    if (state == nullptr) {
+        if (network == nullptr)
+            ErrorManager::get_instance()->log_error(
+                "Attempted to retrieve state from context without network!");
         state = new State(network);
+    }
     return state;
 }

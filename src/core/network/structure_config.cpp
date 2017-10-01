@@ -18,7 +18,7 @@ StructureConfig::StructureConfig(PropertyConfig *config)
 }
 
 StructureConfig::StructureConfig(std::string name, ClusterType cluster_type)
-    : name(name), cluster_type(cluster_type) {
+        : name(name), cluster_type(cluster_type) {
     this->set("name", name);
     this->set("cluster type", ClusterTypeStrings.at(cluster_type));
 }

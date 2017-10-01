@@ -15,7 +15,7 @@ class Context {
                 Environment *env = nullptr,
                 State *st = nullptr);
 
-        virtual ~Context();
+        void free();
 
         void set_network(Network *net);
         void set_environment(Environment *env);

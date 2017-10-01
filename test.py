@@ -2,42 +2,65 @@ import ctypes
 
 _syn = ctypes.CDLL('synaptogenesis.so')
 
-def create_properties(properties=dict()):
-    props = _syn.create_properties()
-    for k,v in properties.iteritems():
-        if type(v) is dict:
-            add_child(props, k, create_properties(v))
-        elif type(v) is list:
-            for x in v:
-                if type(x) is str:
-                    add_to_array(props, k, create_properties(x))
-        else:
-            add_property(props, k, str(v))
-    return props
+class CObject:
+    def __init(self):
+        self.obj = None
+    def __del__(self):
+        global _syn
+        if _syn is not None and self.obj is not None:
+            _syn.destroy(self.obj)
 
-def add_property(properties, key, val):
-    global _syn
-    _syn.add_property(properties, key, val);
+class Properties(CObject):
+    def __init__(self, props=dict()):
+        self.obj = _syn.create_properties()
 
-def add_child(properties, key, child):
-    global _syn
-    _syn.add_child(properties, key, child);
+        # Dictionaries of Property Objects
+        self.properties = dict()
+        self.children = dict()
+        self.arrays = dict()
 
-def add_to_array(properties, key, props):
-    global _syn
-    _syn.add_to_array(properties, key, props);
+        for k,v in props.iteritems():
+            if type(v) is dict:
+                self.add_child(k, v)
+            elif type(v) is list:
+                for x in v:
+                    if type(x) is dict:
+                        self.add_to_array(k, x)
+            else:
+                self.add_property(k, v)
 
-def create_network(properties):
-    global _syn
-    return _syn.create_network(create_properties(properties))
+    def add_property(self, key, val):
+        global _syn
+        self.properties[key] = val
+        _syn.add_property(self.obj, key, str(val));
 
-def save_network(structure, filename):
-    global _syn
-    return _syn.save_net(network, filename)
+    def add_child(self, key, child):
+        global _syn
+        child = Properties(child)
+        self.children[key] = child
+        _syn.add_child(self.obj, key, child.obj);
 
-def run(network, iterations, verbose):
-    global _syn
-    return _syn.run(network, ctypes.c_int(iterations), ctypes.c_bool(verbose))
+    def add_to_array(self, key, dictionary):
+        global _syn
+        props = Properties(dictionary)
+        if key not in self.arrays:
+            self.arrays[key] = []
+        self.arrays[key].append(props)
+        _syn.add_to_array(self.obj, key, props.obj);
+
+class Network(CObject):
+    def __init__(self, dictionary):
+        global _syn
+        self.properties = Properties(dictionary)
+        self.obj = _syn.create_network(self.properties.obj)
+
+    def save(self, filename):
+        global _syn
+        return _syn.save_net(self.obj, filename)
+
+    def run(self, iterations, verbose):
+        global _syn
+        return _syn.run(self.obj, ctypes.c_int(iterations), ctypes.c_bool(verbose))
 
 structure = {"name" : "debug", "type" : "parallel"}
 
@@ -89,9 +112,11 @@ connections = [
     }
 ]
 
-network = create_network(
+network = Network(
     {"structures" : [structure],
      "connections" : connections})
 
-save_network(network, "test.json")
-run(network, 1, True)
+network.save("test.json")
+network.run(1, True)
+
+del network

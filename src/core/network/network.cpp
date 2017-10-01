@@ -58,10 +58,10 @@ Structure* Network::get_structure(std::string name, bool log_error) {
 void Network::add_connection_internal(ConnectionConfig* conn_config) {
     std::string from_structure, to_structure;
 
+    // If there is one structure, omitted structures are fine
     if (structures.size() == 1)
         from_structure = to_structure = structures.at(0)->name;
     else {
-        // If there is one structure, omitted structures are fine
         if (not conn_config->has("from structure"))
             ErrorManager::get_instance()->log_error(
                 "Unspecified source structure for connection: "

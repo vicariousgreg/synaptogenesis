@@ -22,6 +22,7 @@ void add_to_array(PROPS properties, char* key, PROPS props) {
     ((PropertyConfig*)properties)->add_to_array(key, (PropertyConfig*)props);
 }
 
+
 NETWORK create_network(PROPS properties) {
     return new Network(new NetworkConfig((PropertyConfig*)properties));
 }
@@ -39,3 +40,9 @@ bool run(NETWORK network, int iterations, bool verbose) {
     Engine engine(new Context((Network*)network));
     delete engine.run(iterations, verbose);
 }
+
+
+void destroy(void* obj) {
+    delete obj;
+}
+

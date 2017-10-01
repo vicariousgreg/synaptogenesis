@@ -262,7 +262,9 @@ void game_of_life_test() {
     auto c = new Context(network, env);
     Engine engine(c);
     print_network(network, env);
-    delete engine.run(500000, true);
+    auto context = engine.run(500000, true);
+    context->free();
+    delete context;
 }
 
 void working_memory_test() {
@@ -557,7 +559,9 @@ void working_memory_test() {
     auto c = new Context(network, env);
     Engine engine(c);
     print_network(network, env);
-    delete engine.run(500000, true);
+    auto context = engine.run(500000, true);
+    context->free();
+    delete context;
 }
 
 void dsst_test() {
@@ -682,7 +686,9 @@ void dsst_test() {
     auto c = new Context(network, env);
     Engine engine(c);
 
-    delete engine.run(1000000, true);
+    auto context = engine.run(1000000, true);
+    context->free();
+    delete context;
 }
 
 void debug_test() {
@@ -999,7 +1005,9 @@ void debug_test() {
     print_network(network);
 
     Engine engine(new Context(network));
-    delete engine.run(1, true);
+    auto context = engine.run(1, true);
+    context->free();
+    delete context;
 }
 
 int cli() {
