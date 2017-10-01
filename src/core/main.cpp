@@ -1077,7 +1077,7 @@ int cli() {
                             break;
                     }
             }
-        } catch (...) {
+        } catch (std::invalid_argument) {
             std::cout << "Unrecognized input!" << std::endl;
         }
         std::cout << std::endl;

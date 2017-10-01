@@ -5,7 +5,7 @@
 
 class LayerConfig : public PropertyConfig {
     public:
-        LayerConfig(PropertyConfig *config);
+        LayerConfig(const PropertyConfig *config);
 
         LayerConfig(
                 std::string name,
@@ -30,10 +30,6 @@ class LayerConfig : public PropertyConfig {
 
         int get_rows() const { return rows; }
         int get_columns() const { return columns; }
-        LayerConfig* set_rows(int x)
-            { rows = x; return this; }
-        LayerConfig* set_columns(int x)
-            { columns = x; return this; }
 
         const std::string name;
         const std::string neural_model;

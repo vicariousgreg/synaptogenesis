@@ -23,6 +23,11 @@ Structure::~Structure() {
     delete config;
 }
 
+Layer* Structure::add_layer(const LayerConfig *layer_config) {
+    this->config->add_layer(layer_config);
+    return add_layer_internal(layer_config);
+}
+
 Layer* Structure::get_layer(std::string name, bool log_error) const {
     for (auto layer : layers)
         if (layer->name == name)
@@ -36,42 +41,30 @@ Layer* Structure::get_layer(std::string name, bool log_error) const {
 }
 
 Connection* Structure::connect(
-        Structure *from_structure, std::string from_layer_name,
-        Structure *to_structure, std::string to_layer_name,
-        ConnectionConfig *conn_config,
-        std::string node, std::string name) {
-    return to_structure->connect_layers(
-        from_structure->get_layer(from_layer_name),
-        to_structure->get_layer(to_layer_name),
-        conn_config, node, name);
-}
+        Structure *from_structure,
+        Structure *to_structure,
+        const ConnectionConfig *conn_config) {
+    auto from_layer = from_structure->get_layer(conn_config->from_layer);
+    auto to_layer = to_structure->get_layer(conn_config->to_layer);
 
-Connection* Structure::connect_layers(
-        Layer *from_layer, Layer *to_layer,
-        ConnectionConfig *conn_config,
-        std::string node, std::string name) {
     Connection *conn = new Connection(
-        from_layer, to_layer, conn_config,
-        to_layer->get_dendritic_node(node),
-        name);
-    this->connections.push_back(conn);
+        from_layer, to_layer, conn_config);
+    to_structure->connections.push_back(conn);
     return conn;
 }
 
-std::string Structure::get_parent_node_name(Connection *conn) const {
-    for (auto node : conn->to_layer->get_dendritic_nodes())
-        if (node->is_leaf() and conn == node->conn)
-            return node->parent->name;
-        else if (node->second_order
-                and conn == node->get_second_order_connection())
-            return node->name;
-
-    ErrorManager::get_instance()->log_error(
-        "Error in " + this->str() + ":\n"
-        "  Could not find parent node for connection: " + conn->str());
+bool Structure::contains(std::string neural_model) const {
+    return neural_model_flags.count(neural_model);
 }
 
-Layer* Structure::add_layer_internal(LayerConfig *layer_config) {
+int Structure::get_num_neurons() const {
+    int num_neurons = 0;
+    for (auto layer : layers)
+        num_neurons += layer->size;
+    return num_neurons;
+}
+
+Layer* Structure::add_layer_internal(const LayerConfig *layer_config) {
     if (get_layer(layer_config->name, false) != nullptr)
         ErrorManager::get_instance()->log_error(
             "Error in " + this->str() + ":\n"
@@ -81,9 +74,4 @@ Layer* Structure::add_layer_internal(LayerConfig *layer_config) {
     this->layers.push_back(layer);
     this->neural_model_flags.insert(layer_config->neural_model);
     return layer;
-}
-
-Layer* Structure::add_layer(LayerConfig *layer_config) {
-    this->config->add_layer(layer_config);
-    return add_layer_internal(layer_config);
 }

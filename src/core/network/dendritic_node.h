@@ -27,18 +27,18 @@ class DendriticNode {
     public:
         virtual ~DendriticNode();
 
+        /* Returns whether this node is a leaf node */
+        bool is_leaf() const { return not second_order and conn != nullptr; }
+
         /* Returns the size of the second order input buffer */
         int get_second_order_size() const;
 
         /* Returns the host connection for second order nodes */
         Connection* get_second_order_connection() const;
 
-        /* Returns whether this node is a leaf node */
-        bool is_leaf() const
-            { return not second_order and conn != nullptr; }
-
-        /* Constant getters */
+        /* Returns the max register index at or below this node */
         int get_max_register_index() const;
+
         const DendriticNodeList get_children() const;
 
         DendriticNode* const parent;
@@ -58,7 +58,6 @@ class DendriticNode {
 
     protected:
         friend class Layer;
-        friend class Connection;
 
         /* Constructor for a root node */
         DendriticNode(Layer *to_layer);
@@ -74,9 +73,13 @@ class DendriticNode {
         /* Add a child internal node */
         DendriticNode *add_child(std::string name, bool second_order=false);
 
+    protected:
+        friend class Connection;
+
         /* Add a child leaf node */
         DendriticNode *add_child(Connection *conn);
 
+    private:
         Connection* second_order_conn;
         DendriticNodeList children;
 };

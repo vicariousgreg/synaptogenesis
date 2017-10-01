@@ -3,7 +3,7 @@
 #include "util/property_config.h"
 #include "util/error_manager.h"
 
-PropertyConfig::PropertyConfig(PropertyConfig *other) {
+PropertyConfig::PropertyConfig(const PropertyConfig *other) {
     for (auto pair : other->get())
         this->set(pair.first, pair.second);
     for (auto pair : other->get_children())
@@ -108,7 +108,7 @@ PropertyConfig* PropertyConfig::get_child(
     else                return def_val;
 }
 
-PropertyConfig *PropertyConfig::set_child(std::string key, PropertyConfig *child) {
+PropertyConfig *PropertyConfig::set_child(std::string key, const PropertyConfig *child) {
     children[key] = new PropertyConfig(child);
     if (std::find(children_keys.begin(), children_keys.end(), key)
             == children_keys.end())
@@ -161,19 +161,23 @@ PropertyConfig *PropertyConfig::set_array(std::string key, ConfigArray array) {
     return this;
 }
 
-PropertyConfig *PropertyConfig::add_to_array(std::string key, PropertyConfig* config) {
+PropertyConfig *PropertyConfig::add_to_array(std::string key, const PropertyConfig* config) {
     if (not has_array(key))
         set_array(key, ConfigArray());
     arrays.at(key).push_back(new PropertyConfig(config));
     return this;
 }
 
-PropertyConfig *PropertyConfig::remove_from_array(std::string key, PropertyConfig* config) {
+PropertyConfig *PropertyConfig::remove_from_array(
+        std::string key, const PropertyConfig* config) {
     if (has_array(key)) {
         auto arr = arrays.at(key);
         auto it = std::find(arr.begin(), arr.end(), config);
-        if (it != arr.end()) arr.erase(it);
-        else
+        if (it != arr.end()) {
+            auto to_return = *it;
+            arr.erase(it);
+            return to_return;
+        } else
             ErrorManager::get_instance()->log_error(
                 "Attempted to remove non-existent property " + key
                 + " from PropertyConfig array " + key + "!");
@@ -182,7 +186,7 @@ PropertyConfig *PropertyConfig::remove_from_array(std::string key, PropertyConfi
             "Attempted to remove non-existent property " + key
             + " from PropertyConfig array " + key + "!");
     }
-    return config;
+    return nullptr;
 }
 
 PropertyConfig *PropertyConfig::remove_from_array(std::string key, int index) {

@@ -71,24 +71,18 @@ class ArborizedConfig {
 
 class ConnectionConfig : public PropertyConfig {
     public:
-        ConnectionConfig(PropertyConfig *config);
+        ConnectionConfig(const PropertyConfig *config);
 
         ConnectionConfig(
-            bool plastic,
-            int delay,
-            float max_weight,
-            ConnectionType type,
-            Opcode opcode);
-
-        ConnectionConfig(
+            std::string from_layer,
+            std::string to_layer,
             bool plastic,
             int delay,
             float max_weight,
             ConnectionType type,
             Opcode opcode,
-            PropertyConfig* weight_config);
-
-        virtual ~ConnectionConfig();
+            std::string dendrite="root",
+            std::string name="");
 
         bool validate(Connection *conn) const;
 
@@ -110,9 +104,13 @@ class ConnectionConfig : public PropertyConfig {
         /* Gets the expected row/col size of a destination layer given.
          * This function only returns meaningful values for connection types that
          *   are not FULLY_CONNECTED, because they can link layers of any sizes */
-        int get_expected_rows(int from_rows);
-        int get_expected_columns(int from_columns);
+        int get_expected_rows(int from_rows) const;
+        int get_expected_columns(int from_columns) const;
 
+        const std::string name;
+        const std::string from_layer;
+        const std::string to_layer;
+        const std::string dendrite;
         const bool plastic;
         const int delay;
         const float max_weight;

@@ -226,38 +226,51 @@ std::string SubsetConfig::str() const {
         std::to_string(to_col_end) + ")";
 }
 
-ConnectionConfig::ConnectionConfig(PropertyConfig *config)
+ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
         : PropertyConfig(config),
+          name(config->get("name", "")),
+          from_layer(config->get("from layer", "")),
+          to_layer(config->get("to layer", "")),
+          dendrite(config->get("dendrite", "root")),
           plastic(config->get("plastic", "true") == "true"),
           delay(std::stoi(config->get("delay", "0"))),
           max_weight(std::stof(config->get("max", "1.0"))),
           type(get_connection_type(config->get("type", "fully connected"))),
-          opcode(get_opcode(config->get("opcode", "add"))) { }
+          opcode(get_opcode(config->get("opcode", "add"))) {
+    if (not config->has("from layer"))
+        ErrorManager::get_instance()->log_error(
+            "Attempted to construct ConnectionConfig "
+            "without source layer!");
+    if (not config->has("to layer"))
+        ErrorManager::get_instance()->log_error(
+            "Attempted to construct ConnectionConfig "
+            "without destination layer!");
+}
 
 ConnectionConfig::ConnectionConfig(
+    std::string from_layer, std::string to_layer,
     bool plastic, int delay, float max_weight,
-    ConnectionType type, Opcode opcode)
-        : plastic(plastic),
+    ConnectionType type, Opcode opcode,
+    std::string dendrite, std::string name)
+        : name(name),
+          from_layer(from_layer),
+          to_layer(to_layer),
+          dendrite(dendrite),
+          plastic(plastic),
           delay(delay),
           max_weight(max_weight),
           type(type),
           opcode(opcode) {
+    this->set("name", name);
+    this->set("to layer", to_layer);
+    this->set("from layer", from_layer);
+    this->set("dendrite", dendrite);
     this->set("plastic", (plastic) ? "true" : "false");
     this->set("delay", std::to_string(delay));
     this->set("max weight", std::to_string(max_weight));
     this->set("type", ConnectionTypeStrings.at(type));
     this->set("opcode", OpcodeStrings.at(opcode));
 }
-
-ConnectionConfig::ConnectionConfig(
-    bool plastic, int delay, float max_weight,
-    ConnectionType type, Opcode opcode,
-    PropertyConfig *weight_config)
-        : ConnectionConfig(plastic, delay, max_weight, type, opcode) {
-    this->set_child("weight config", weight_config);
-}
-
-ConnectionConfig::~ConnectionConfig() { }
 
 bool ConnectionConfig::validate(Connection *conn) const {
     if (type == SUBSET)
@@ -355,7 +368,7 @@ std::string ConnectionConfig::str() const {
     return str + "]";
 }
 
-int ConnectionConfig::get_expected_rows(int rows) {
+int ConnectionConfig::get_expected_rows(int rows) const {
     switch (type) {
         case ONE_TO_ONE:
             return rows;
@@ -385,7 +398,7 @@ int ConnectionConfig::get_expected_rows(int rows) {
     }
 }
 
-int ConnectionConfig::get_expected_columns(int columns) {
+int ConnectionConfig::get_expected_columns(int columns) const {
     switch (type) {
         case ONE_TO_ONE:
             return columns;

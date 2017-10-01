@@ -8,11 +8,11 @@ class LayerConfig;
 
 class StructureConfig : public PropertyConfig {
     public:
-        StructureConfig(PropertyConfig *config);
+        StructureConfig(const PropertyConfig *config);
         StructureConfig(std::string name, ClusterType cluster_type);
 
         StructureConfig* add_layer(LayerConfig* config);
-        StructureConfig* add_layer(PropertyConfig* config);
+        StructureConfig* add_layer(const PropertyConfig* config);
         const std::vector<LayerConfig*> get_layers() const;
 
         const std::string name;

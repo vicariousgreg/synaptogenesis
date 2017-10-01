@@ -9,14 +9,14 @@ class ConnectionConfig;
 class NetworkConfig : public PropertyConfig {
     public:
         NetworkConfig() { }
-        NetworkConfig(PropertyConfig *config);
+        NetworkConfig(const PropertyConfig *config);
 
         NetworkConfig* add_structure(StructureConfig* config);
-        NetworkConfig* add_structure(PropertyConfig* config);
+        NetworkConfig* add_structure(const PropertyConfig* config);
         const std::vector<StructureConfig*> get_structures() const;
 
         NetworkConfig* add_connection(ConnectionConfig* config);
-        NetworkConfig* add_connection(PropertyConfig* config);
+        NetworkConfig* add_connection(const PropertyConfig* config);
         const std::vector<ConnectionConfig*> get_connections() const;
 
     protected:

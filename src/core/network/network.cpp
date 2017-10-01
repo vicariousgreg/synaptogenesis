@@ -22,23 +22,6 @@ void Network::save(std::string path) {
     save_network(this, path);
 }
 
-void Network::add_structure_internal(StructureConfig *struct_config) {
-    for (auto& st : this->structures)
-        if (st->name == struct_config->name)
-            ErrorManager::get_instance()->log_error(
-                "Repeated structure name: " + st->name);
-    this->structures.push_back(new Structure(struct_config));
-}
-
-void Network::add_structure(Structure *structure) {
-    for (auto& st : this->structures)
-        if (st->name == structure->name)
-            ErrorManager::get_instance()->log_error(
-                "Repeated structure name: " + st->name);
-    this->structures.push_back(structure);
-    this->config->add_structure(structure->config);
-}
-
 void Network::add_structure(StructureConfig *struct_config) {
     this->add_structure_internal(struct_config);
     this->config->add_structure(struct_config);
@@ -55,36 +38,7 @@ Structure* Network::get_structure(std::string name, bool log_error) {
     return structure;
 }
 
-void Network::add_connection_internal(ConnectionConfig* conn_config) {
-    std::string from_structure, to_structure;
-
-    // If there is one structure, omitted structures are fine
-    if (structures.size() == 1)
-        from_structure = to_structure = structures.at(0)->name;
-    else {
-        if (not conn_config->has("from structure"))
-            ErrorManager::get_instance()->log_error(
-                "Unspecified source structure for connection: "
-                + conn_config->get("name", ""));
-        if (not conn_config->has("to structure"))
-            ErrorManager::get_instance()->log_error(
-                "Unspecified destination structure for connection: "
-                + conn_config->get("name", ""));
-        from_structure = conn_config->get("from structure");
-        to_structure = conn_config->get("to structure");
-    }
-
-    Structure::connect(
-        get_structure(from_structure),
-        conn_config->get("from layer", ""),
-        get_structure(to_structure),
-        conn_config->get("to layer", ""),
-        conn_config,
-        conn_config->get("dendrite", "root"),
-        conn_config->get("name", ""));
-}
-
-void Network::add_connection(ConnectionConfig* conn_config) {
+void Network::add_connection(const ConnectionConfig* conn_config) {
     this->add_connection_internal(conn_config);
     this->config->add_connection(conn_config);
 }
@@ -104,6 +58,14 @@ const LayerList Network::get_layers(std::string neural_model) const {
             if (layer->neural_model == neural_model)
                 layers.push_back(layer);
     return layers;
+}
+
+const ConnectionList Network::get_connections() const {
+    ConnectionList connections;
+    for (auto& structure : structures)
+        for (auto& conn : structure->get_connections())
+            connections.push_back(conn);
+    return connections;
 }
 
 int Network::get_num_neurons() const {
@@ -141,4 +103,37 @@ int Network::get_max_layer_size() const {
         for (auto& layer : structure->get_layers())
             if (layer->size > max_size) max_size = layer->size;  
     return max_size;
+}
+
+void Network::add_structure_internal(StructureConfig *struct_config) {
+    for (auto& st : this->structures)
+        if (st->name == struct_config->name)
+            ErrorManager::get_instance()->log_error(
+                "Repeated structure name: " + st->name);
+    this->structures.push_back(new Structure(struct_config));
+}
+
+void Network::add_connection_internal(const ConnectionConfig* conn_config) {
+    std::string from_structure, to_structure;
+
+    // If there is one structure, omitted structures are fine
+    if (structures.size() == 1)
+        from_structure = to_structure = structures.at(0)->name;
+    else {
+        if (not conn_config->has("from structure"))
+            ErrorManager::get_instance()->log_error(
+                "Unspecified source structure for connection: "
+                + conn_config->get("name", ""));
+        if (not conn_config->has("to structure"))
+            ErrorManager::get_instance()->log_error(
+                "Unspecified destination structure for connection: "
+                + conn_config->get("name", ""));
+        from_structure = conn_config->get("from structure");
+        to_structure = conn_config->get("to structure");
+    }
+
+    Structure::connect(
+        get_structure(from_structure),
+        get_structure(to_structure),
+        conn_config);
 }

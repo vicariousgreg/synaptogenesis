@@ -21,7 +21,7 @@ typedef std::vector<ArrayPair> ArrayPairList;
 class PropertyConfig {
     public:
         PropertyConfig() { }
-        PropertyConfig(PropertyConfig *other);
+        PropertyConfig(const PropertyConfig *other);
         PropertyConfig(StringPairList pairs);
 
         virtual ~PropertyConfig();
@@ -49,7 +49,7 @@ class PropertyConfig {
         bool has_child(std::string key) const;
         PropertyConfig *get_child(
             std::string key, PropertyConfig* def_val=nullptr) const;
-        PropertyConfig *set_child(std::string key, PropertyConfig *child);
+        PropertyConfig *set_child(std::string key, const PropertyConfig *child);
         PropertyConfig *remove_child(std::string key);
 
         /* Get a set of key-array pairs */
@@ -60,8 +60,8 @@ class PropertyConfig {
         bool has_array(std::string key) const;
         const ConfigArray get_array(std::string key) const;
         PropertyConfig *set_array(std::string key, ConfigArray array);
-        PropertyConfig *add_to_array(std::string key, PropertyConfig* config);
-        PropertyConfig *remove_from_array(std::string key, PropertyConfig* config);
+        PropertyConfig *add_to_array(std::string key, const PropertyConfig* config);
+        PropertyConfig *remove_from_array(std::string key, const PropertyConfig* config);
         PropertyConfig *remove_from_array(std::string key, int index);
         ConfigArray remove_array(std::string key);
 

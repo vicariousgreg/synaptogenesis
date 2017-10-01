@@ -5,7 +5,7 @@
 #define cimg_display 0
 #include "CImg.h"
 
-LayerConfig::LayerConfig(PropertyConfig *config)
+LayerConfig::LayerConfig(const PropertyConfig *config)
         : PropertyConfig(config),
           name(config->get("name", "")),
           neural_model(config->get("neural model", "")),

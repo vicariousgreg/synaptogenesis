@@ -2,7 +2,7 @@
 #include "network/layer_config.h"
 #include "util/error_manager.h"
 
-StructureConfig::StructureConfig(PropertyConfig *config)
+StructureConfig::StructureConfig(const PropertyConfig *config)
         : PropertyConfig(config),
           name(config->get("name", "")),
           cluster_type(
@@ -33,7 +33,7 @@ StructureConfig* StructureConfig::add_layer(LayerConfig* config) {
     return this;
 }
 
-StructureConfig* StructureConfig::add_layer(PropertyConfig* config) {
+StructureConfig* StructureConfig::add_layer(const PropertyConfig* config) {
     return this->add_layer(new LayerConfig(config));
 }
 

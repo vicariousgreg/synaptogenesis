@@ -21,82 +21,52 @@ class Layer {
     public:
         virtual ~Layer();
 
-        /* Constant getters */
-        const LayerConfig* get_config() const;
-
-        std::string get_parameter(
-            std::string key, std::string default_val) const;
+        /* Getters */
+        const LayerConfig* get_config() const { return config; }
 
         const ConnectionList& get_input_connections() const;
         const ConnectionList& get_output_connections() const;
 
-        // Layer name
-        const std::string name;
-
-        // Layer ID
-        const size_t id;
-
-        // Neural model
-        const std::string neural_model;
-
-        // Housing structure
-        Structure* const structure;
-
-        // Layer rows, columns, and total size
-        const int rows, columns, size;
-
-        // Plasticity flag
-        const bool plastic;
-
-        // Global flag
-        const bool global;
-
-        // Gets the dendritic root
-        DendriticNode* get_dendritic_root() const
-            { return dendritic_root; }
-
-        // Get a list of the dendritic nodes
         DendriticNodeList get_dendritic_nodes() const;
-
-        // Get dendritic node by name
+        DendriticNode* get_dendritic_root() const { return dendritic_root; }
         DendriticNode* get_dendritic_node(std::string name,
             bool log_error=false) const;
 
-        // Gets the maximum delay for all outgoing connections
+        std::string get_parameter( std::string key, std::string dev_val) const;
+
+        /* Gets the maximum delay for all outgoing connections */
         int get_max_delay() const;
 
-        // Gets the total number of incoming weights
+        /* Gets the total number of incoming weights */
         int get_num_weights() const;
 
         std::string str() const;
 
-        // Layer config
         const LayerConfig * const config;
+        const std::string name;
+        const size_t id;
+        const std::string neural_model;
+        Structure* const structure;
+        const int rows, columns, size;
+        const bool plastic;
+        const bool global;
 
     protected:
-        friend class Network;
         friend class Structure;
+
+        Layer(Structure *structure, const LayerConfig *config);
+
+    protected:
         friend class Connection;
-        friend class DendriticNode;
 
-        Layer(Structure *structure, LayerConfig *config);
-
-        // Methods for adding connections
         void add_input_connection(Connection* connection);
         void add_output_connection(Connection* connection);
-        void add_to_root(Connection* connection);
 
-        // Helper Function
+    private:
         void add_dendrites(std::string parent_name,
             const ConfigArray& dendrites);
 
-        // Root node of dendritic tree
         DendriticNode* const dendritic_root;
-
-        // Layer IO type mask
-        IOTypeMask type;
-
-        // Input and output connections
         ConnectionList input_connections;
         ConnectionList output_connections;
 };
@@ -104,20 +74,9 @@ class Layer {
 typedef std::vector<Layer*> LayerList;
 
 /* Counts the number of connections in a layer list */
-inline int get_num_connections(const LayerList& layers) {
-    int num_connections = 0;
-    for (auto& layer : layers)
-        num_connections += layer->get_input_connections().size();
-    return num_connections;
-}
+int get_num_connections(const LayerList& layers);
 
 /* Checks if layers in a list are the same size */
-inline bool check_equal_sizes(const LayerList& layers) {
-    if (layers.size() == 0) return true;
-    int size = layers.at(0)->size;
-    for (auto& layer : layers)
-        if (layer->size != size) return false;
-    return true;
-}
+bool check_equal_sizes(const LayerList& layers);
 
 #endif

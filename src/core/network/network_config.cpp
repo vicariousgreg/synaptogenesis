@@ -3,7 +3,7 @@
 #include "network/connection_config.h"
 #include "util/error_manager.h"
 
-NetworkConfig::NetworkConfig(PropertyConfig *config)
+NetworkConfig::NetworkConfig(const PropertyConfig *config)
         : PropertyConfig(config) {
     for (auto structure : config->get_array("structures"))
         this->add_structure_internal(new StructureConfig(structure));
@@ -22,7 +22,7 @@ NetworkConfig* NetworkConfig::add_structure(StructureConfig* config) {
     return this;
 }
 
-NetworkConfig* NetworkConfig::add_structure(PropertyConfig* config) {
+NetworkConfig* NetworkConfig::add_structure(const PropertyConfig* config) {
     return this->add_structure(new StructureConfig(config));
 }
 
@@ -40,7 +40,7 @@ NetworkConfig* NetworkConfig::add_connection(ConnectionConfig* config) {
     return this;
 }
 
-NetworkConfig* NetworkConfig::add_connection(PropertyConfig* config) {
+NetworkConfig* NetworkConfig::add_connection(const PropertyConfig* config) {
     return this->add_connection(new ConnectionConfig(config));
 }
 

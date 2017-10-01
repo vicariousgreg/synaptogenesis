@@ -24,8 +24,25 @@ class Connection {
         std::string get_parameter(
             std::string key, std::string default_val) const;
 
-        // Connection ID
-        const size_t id;
+        // Connection config
+        const ConnectionConfig * const config;
+
+        // Connected layers
+        Layer* const from_layer;
+        Layer* const to_layer;
+        DendriticNode* const node;
+
+        // Flag for whether matrix can change via learning
+        const bool plastic;
+
+        // Connection delay
+        const int delay;
+
+        // Maximum for weights
+        const float max_weight;
+
+        // Connection operation code
+        const Opcode opcode;
 
         // Matrix type
         const ConnectionType type;
@@ -38,39 +55,21 @@ class Connection {
         const bool second_order_host;
         const bool second_order_slave;
 
-        // Connected layers
-        Layer* const from_layer;
-        Layer* const to_layer;
-        DendriticNode* const node;
-
-        // Connection delay
-        const int delay;
-
-        // Connection operation code
-        const Opcode opcode;
-
-        // Flag for whether matrix can change via learning
-        const bool plastic;
-
-        // Maximum for weights
-        const float max_weight;
-
         // Optional connection name
         const std::string name;
 
-        std::string str() const;
+        // Connection ID
+        const size_t id;
 
-        // Connection config
-        const ConnectionConfig * const config;
+        std::string str() const;
 
     protected:
         friend class Structure;
 
         Connection(Layer *from_layer, Layer *to_layer,
-            ConnectionConfig *config, DendriticNode *node,
-            std::string name="");
+            const ConnectionConfig *config);
 
-        // Number of weights in connection
+    private:
         int num_weights;
 };
 

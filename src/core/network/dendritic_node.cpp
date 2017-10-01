@@ -67,6 +67,7 @@ Connection* DendriticNode::get_second_order_connection() const {
 }
 
 DendriticNode* DendriticNode::add_child(std::string name, bool second_order) {
+    // Verify that this node is not a leaf or a second order node
     if (is_leaf())
         ErrorManager::get_instance()->log_error(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
@@ -83,19 +84,31 @@ DendriticNode* DendriticNode::add_child(std::string name, bool second_order) {
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Duplicate dendritic node name: " + name + "!");
 
+    // The child's register index is bumped up if it's not the first child
     int child_register = this->register_index;
     if (children.size() > 0) ++child_register;
-    auto child = new DendriticNode(this, to_layer, child_register, name, second_order);
+
+    auto child =
+        new DendriticNode(this, to_layer, child_register, name, second_order);
     children.push_back(child);
     return child;
 }
 
 DendriticNode* DendriticNode::add_child(Connection *conn) {
+    // Verify that this node is not a leaf
     if (is_leaf())
         ErrorManager::get_instance()->log_error(
             "Error in dendritic node " + name +
             " of " + this->to_layer->str() + "\n"
             "  Dendritic node cannot have children if it has a connection!");
+
+    // Verify that the connection targets this node's layer
+    if (conn->to_layer != this->to_layer)
+        ErrorManager::get_instance()->log_error(
+            "Error in dendritic node " + name +
+            " of " + this->to_layer->str() + "\n"
+            "  Attempted to add connection to dendritic tree"
+            "of the wrong neuron!");
 
     DendriticNode *child;
 

@@ -5,7 +5,7 @@
 #include "network/connection.h"
 #include "util/error_manager.h"
 
-Layer::Layer(Structure *structure, LayerConfig *config)
+Layer::Layer(Structure *structure, const LayerConfig *config)
         : config(config),
           name(config->name),
           id(std::hash<std::string>()(structure->name + "/" + name)),
@@ -20,37 +20,9 @@ Layer::Layer(Structure *structure, LayerConfig *config)
     add_dendrites("root", config->get_array("dendrites"));
 }
 
-void Layer::add_dendrites(std::string parent_name,
-        const ConfigArray& dendrites) {
-    auto parent = get_dendritic_node(parent_name);
-    for (auto dendrite : dendrites) {
-        if (not dendrite->has("name"))
-            ErrorManager::get_instance()->log_error(
-                "Attempted to dendrite without name to layer!");
-
-        bool second_order = dendrite->get("second order", "false") == "true";
-        auto child = parent->add_child(dendrite->get("name"), second_order);
-
-        add_dendrites(child->name,
-            dendrite->get_array("children"));
-    }
-}
-
 Layer::~Layer() {
     delete dendritic_root;
     delete config;
-}
-
-const LayerConfig *Layer::get_config() const { return config; }
-
-std::string Layer::get_parameter(std::string key,
-        std::string default_val) const {
-    if (not this->get_config()->has(key))
-        ErrorManager::get_instance()->log_warning(
-            "Error in " + this->str() + ":\n"
-            "  Unspecified parameter: " + key
-            + " -- using " + default_val + ".");
-    return this->get_config()->get(key, default_val);
 }
 
 const ConnectionList& Layer::get_input_connections() const
@@ -87,9 +59,19 @@ DendriticNode* Layer::get_dendritic_node(std::string name,
     return nullptr;
 }
 
+std::string Layer::get_parameter(std::string key, std::string def_val) const {
+    if (not this->get_config()->has(key))
+        ErrorManager::get_instance()->log_warning(
+            "Error in " + this->str() + ":\n"
+            "  Unspecified parameter: " + key
+            + " -- using " + def_val + ".");
+    return this->get_config()->get(key, def_val);
+}
+
 int Layer::get_max_delay() const {
-    // Determine max delay for output connections
     int max_delay = 0;
+
+    // Determine max delay for output connections
     for (auto& conn : get_output_connections()) {
         int delay = conn->delay;
         if (delay > max_delay)
@@ -113,10 +95,37 @@ void Layer::add_output_connection(Connection* connection) {
     this->output_connections.push_back(connection);
 }
 
-void Layer::add_to_root(Connection* connection) {
-    this->dendritic_root->add_child(connection);
-}
-
 std::string Layer::str() const {
     return "[Layer: " + name + " (" + structure->name + ")]";
+}
+
+void Layer::add_dendrites(std::string parent_name,
+        const ConfigArray& dendrites) {
+    auto parent = get_dendritic_node(parent_name);
+    for (auto dendrite : dendrites) {
+        if (not dendrite->has("name"))
+            ErrorManager::get_instance()->log_error(
+                "Attempted to dendrite without name to layer!");
+
+        bool second_order = dendrite->get("second order", "false") == "true";
+        auto child = parent->add_child(dendrite->get("name"), second_order);
+
+        add_dendrites(child->name,
+            dendrite->get_array("children"));
+    }
+}
+
+int get_num_connections(const LayerList& layers) {
+    int num_connections = 0;
+    for (auto& layer : layers)
+        num_connections += layer->get_input_connections().size();
+    return num_connections;
+}
+
+bool check_equal_sizes(const LayerList& layers) {
+    if (layers.size() == 0) return true;
+    int size = layers.at(0)->size;
+    for (auto& layer : layers)
+        if (layer->size != size) return false;
+    return true;
 }

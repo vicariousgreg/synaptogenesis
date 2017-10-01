@@ -5,11 +5,11 @@
 #include "util/error_manager.h"
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,
-        ConnectionConfig *config, DendriticNode* node, std::string name) :
+        const ConnectionConfig *config) :
             config(config),
             from_layer(from_layer),
             to_layer(to_layer),
-            node(node),
+            node(to_layer->get_dendritic_node(config->dendrite, true)),
             plastic(config->plastic),
             delay(config->delay),
             max_weight(config->max_weight),
@@ -20,13 +20,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             second_order_host(second_order and
                 node->get_second_order_connection() == nullptr),
             second_order_slave(second_order and not second_order_host),
-            name(name),
-            id(std::hash<std::string>()(
-                from_layer->structure->name + "/" + from_layer->name + "-" +
-                to_layer->structure->name + "/" + to_layer->name +
-                node->name + "/" +
-                (name != "" ? name : config->str()))) {
-
+            name(config->name),
+            id(std::hash<std::string>()(this->str())) {
     // Check for plastic second order connection
     if (second_order and plastic)
         ErrorManager::get_instance()->log_error(

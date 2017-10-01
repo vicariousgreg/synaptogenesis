@@ -73,7 +73,7 @@ Network* load_network(std::string path) {
 
 void save_network(Network *network, std::string path) {
     std::ofstream file("networks/" + path);
-	file << write_properties(network->config).json() << std::endl;
+	file << write_properties(network->get_config()).json() << std::endl;
 	file.close();
 }
 
