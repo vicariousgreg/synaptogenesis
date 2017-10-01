@@ -39,7 +39,12 @@ class Structure {
         }
 
         /* Gets the total neuron count */
-        int get_num_neurons() const { return total_neurons; }
+        int get_num_neurons() const {
+            int num_neurons = 0;
+            for (auto layer : layers)
+                num_neurons += layer->size;
+            return num_neurons;
+        }
 
 
         /*******************************/
@@ -47,7 +52,6 @@ class Structure {
         /*******************************/
         const LayerList& get_layers() const { return layers; }
         Layer* add_layer(LayerConfig *layer_config);
-        Layer* add_layer_from_image(std::string path, LayerConfig *layer_config);
 
         /*******************************/
         /********* CONNECTIONS *********/
@@ -62,27 +66,8 @@ class Structure {
             std::string node="root",
             std::string name="");
 
-        Connection* connect_layers(
-            std::string from_layer_name,
-            std::string to_layer_name,
-            ConnectionConfig *conn_config,
-            std::string node="root",
-            std::string name="");
-
-        Connection* connect_layers_expected(
-            std::string from_layer_name,
-            LayerConfig *layer_config,
-            ConnectionConfig *conn_config,
-            std::string node="root",
-            std::string name="");
-
-        Connection* connect_layers_matching(
-            std::string from_layer_name,
-            LayerConfig *layer_config,
-            ConnectionConfig *conn_config,
-            std::string node="root",
-            std::string name="");
-
+        // Gets the name of the internal node above the
+        //   connection's leaf dendritic node
         std::string get_parent_node_name(Connection *conn) const;
 
         // Structure name
@@ -95,7 +80,7 @@ class Structure {
 
         /* Find a layer
          * If not found, logs an error or returns nullptr */
-        Layer* get_layer(std::string name, bool log_error=true);
+        Layer* get_layer(std::string name, bool log_error=true) const;
 
         // Structure config
         StructureConfig* const config;
@@ -112,13 +97,9 @@ class Structure {
 
         // Layers
         LayerList layers;
-        std::map<std::string, Layer*> layers_by_name;
 
         // Connections
         ConnectionList connections;
-
-        // Number of neurons
-        int total_neurons;
 
         // Neural models used in this structure
         std::set<std::string> neural_model_flags;

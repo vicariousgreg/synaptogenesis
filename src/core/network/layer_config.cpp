@@ -2,6 +2,9 @@
 #include "network/layer.h"
 #include "util/error_manager.h"
 
+#define cimg_display 0
+#include "CImg.h"
+
 LayerConfig::LayerConfig(PropertyConfig *config)
         : PropertyConfig(config),
           name(config->get("name", "")),
@@ -16,6 +19,11 @@ LayerConfig::LayerConfig(PropertyConfig *config)
     if (not config->has("neural model"))
         ErrorManager::get_instance()->log_error(
             "Attempted to construct LayerConfig without neural model!");
+    if (config->has("image")) {
+        cimg_library::CImg<unsigned char> img(config->get("image").c_str());
+        this->rows = img.height();
+        this->columns = img.width();
+    }
 }
 
 LayerConfig::LayerConfig(

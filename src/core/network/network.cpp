@@ -56,19 +56,28 @@ Structure* Network::get_structure(std::string name, bool log_error) {
 }
 
 void Network::add_connection_internal(ConnectionConfig* conn_config) {
-    if (not conn_config->has("from structure"))
-        ErrorManager::get_instance()->log_error(
-            "Unspecified source structure for connection: "
-            + conn_config->get("name", ""));
-    if (not conn_config->has("to structure"))
-        ErrorManager::get_instance()->log_error(
-            "Unspecified destination structure for connection: "
-            + conn_config->get("name", ""));
+    std::string from_structure, to_structure;
+
+    if (structures.size() == 1)
+        from_structure = to_structure = structures.at(0)->name;
+    else {
+        // If there is one structure, omitted structures are fine
+        if (not conn_config->has("from structure"))
+            ErrorManager::get_instance()->log_error(
+                "Unspecified source structure for connection: "
+                + conn_config->get("name", ""));
+        if (not conn_config->has("to structure"))
+            ErrorManager::get_instance()->log_error(
+                "Unspecified destination structure for connection: "
+                + conn_config->get("name", ""));
+        from_structure = conn_config->get("from structure");
+        to_structure = conn_config->get("to structure");
+    }
 
     Structure::connect(
-        get_structure(conn_config->get("from structure")),
+        get_structure(from_structure),
         conn_config->get("from layer", ""),
-        get_structure(conn_config->get("to structure")),
+        get_structure(to_structure),
         conn_config->get("to layer", ""),
         conn_config,
         conn_config->get("dendrite", "root"),
