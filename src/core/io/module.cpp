@@ -48,6 +48,16 @@ Module::Module(LayerList layers) : layers(layers) {
         output_types[layer] = Attributes::get_output_type(layer);
 }
 
+IOTypeMask Module::get_io_type(Layer *layer) const {
+    try {
+        return io_types.at(layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to retrieve IO type from Module for "
+            "unrepresented layer: " + layer->str());
+    }
+}
+
 Module* Module::build_module(Network *network, ModuleConfig *config) {
     // Check type
     auto type = config->get_type();
@@ -112,5 +122,11 @@ void Module::set_io_type(Layer *layer, IOTypeMask io_type) {
 }
 
 OutputType Module::get_output_type(Layer *layer) {
-    return output_types.at(layer);
+    try {
+        return output_types.at(layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to retrieve output type from Module for "
+            "unrepresented layer: " + layer->str());
+    }
 }

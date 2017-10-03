@@ -5,6 +5,7 @@ _syn = ctypes.CDLL('synaptogenesis.so')
 class CObject:
     def __init(self):
         self.obj = None
+
     def __del__(self):
         global _syn
         if _syn is not None and self.obj is not None:

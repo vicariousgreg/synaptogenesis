@@ -149,3 +149,7 @@ int DendriticNode::get_max_register_index() const {
 const DendriticNodeList DendriticNode::get_children() const {
     return children;
 }
+
+std::string DendriticNode::str() const {
+    return "[Dendrite: " + name + " (" + to_layer->name + ")]";
+}

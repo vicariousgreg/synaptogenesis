@@ -41,6 +41,8 @@ class DendriticNode {
 
         const DendriticNodeList get_children() const;
 
+        std::string str() const;
+
         DendriticNode* const parent;
         Connection* const conn;
         Layer* const to_layer;

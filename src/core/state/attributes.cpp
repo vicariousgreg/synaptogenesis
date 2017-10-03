@@ -224,33 +224,79 @@ void Attributes::register_layer_variable(std::string key, BasePointer* ptr) {
 }
 
 int Attributes::get_layer_index(size_t id) const {
-    return layer_indices.at(id);
+    try {
+        return layer_indices.at(id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve layer index in Attributes for "
+            "layer ID: " + std::to_string(id));
+    }
 }
 
 int Attributes::get_other_start_index(size_t id) const {
-    return other_start_indices.at(id);
+    try {
+        return other_start_indices.at(id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve 'other start index' in Attributes for "
+            "layer ID: " + std::to_string(id));
+    }
 }
 
 Pointer<float> Attributes::get_input(size_t id, int register_index) const {
-    int size = layer_sizes.at(id);
-    return input.slice(input_start_indices.at(id) + (register_index * size), size);
+    try {
+        int size = layer_sizes.at(id);
+        return input.slice(
+            input_start_indices.at(id) + (register_index * size), size);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve input data in Attributes for "
+            "layer ID: " + std::to_string(id)
+            + ", index: " + std::to_string(register_index));
+    }
 }
 
 Pointer<float> Attributes::get_second_order_weights(size_t id) const {
-    int size = second_order_sizes.at(id);
-    return second_order_weights.slice(second_order_indices.at(id), size);
+    try {
+        int size = second_order_sizes.at(id);
+        return second_order_weights.slice(second_order_indices.at(id), size);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve second order weights in Attributes for "
+            "layer ID: " + std::to_string(id));
+    }
 }
 
 Pointer<Output> Attributes::get_expected(size_t id) const {
-    int size = layer_sizes.at(id);
-    return expected.slice(other_start_indices.at(id), size);
+    try {
+        int size = layer_sizes.at(id);
+        return expected.slice(other_start_indices.at(id), size);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve expected data in Attributes for "
+            "layer ID: " + std::to_string(id));
+    }
 }
 
 Pointer<Output> Attributes::get_output(size_t id, int word_index) const {
-    int size = layer_sizes.at(id);
-    return output.slice(output_start_indices.at(id) + (word_index * size), size);
+    try {
+        int size = layer_sizes.at(id);
+        return output.slice(
+            output_start_indices.at(id) + (word_index * size), size);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve output data in Attributes for "
+            "layer ID: " + std::to_string(id)
+            + ", index: " + std::to_string(word_index));
+    }
 }
 
 int Attributes::get_connection_index(size_t id) const {
-    return connection_indices.at(id);
+    try {
+        return connection_indices.at(id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve connection index in Attributes for "
+            "connection ID: " + std::to_string(id));
+    }
 }

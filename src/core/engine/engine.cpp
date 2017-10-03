@@ -30,7 +30,7 @@ void Engine::build_environment() {
 
     for (auto config : context->get_environment()->get_modules()) {
         // Skip if necessary
-        if (config->get("skip", "false") == "true") continue;
+        if (config->get_bool("skip", false)) continue;
 
         // Build module
         Module *module = Module::build_module(
@@ -267,13 +267,13 @@ void Engine::environment_loop(int iterations, bool verbose, Report** report) {
 
 Context* Engine::run(PropertyConfig args) {
     // Extract parameters
-    int iterations = std::stoi(args.get("iterations", "1"));
-    bool verbose = args.get("verbose", "true") == "true";
-    this->learning_flag = args.get("learning flag", "true") == "true";
-    this->suppress_output = args.get("suppress output", "false") == "true";
-    this->calc_rate = args.get("calc rate", "true") == "true";
-    this->environment_rate = std::stoi(args.get("environment rate", "1"));
-    this->refresh_rate = std::stof(args.get("refresh rate", "1"));
+    int iterations = args.get_int("iterations", 1);
+    bool verbose = args.get_bool("verbose", true);
+    this->learning_flag = args.get_bool("learning flag", true);
+    this->suppress_output = args.get_bool("suppress output", false);
+    this->calc_rate = args.get_bool("calc rate", true);
+    this->environment_rate = args.get_int("environment rate", 1);
+    this->refresh_rate = args.get_float("refresh rate", 1.0);
     this->time_limit = 1.0 / this->refresh_rate;
 
     // Initialize cuda random states

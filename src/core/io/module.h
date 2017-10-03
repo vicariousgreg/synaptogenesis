@@ -54,7 +54,7 @@ class Module {
         /* Override to indicate IO type
          * This is used by the environment to determine which hooks to call
          */
-        IOTypeMask get_io_type(Layer *layer) { return io_types.at(layer); }
+        IOTypeMask get_io_type(Layer *layer) const;
 
         /* Gets the name of a module */
         virtual std::string get_name() = 0;

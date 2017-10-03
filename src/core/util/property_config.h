@@ -42,6 +42,11 @@ class PropertyConfig {
         PropertyConfig *set(std::string key, bool val);
         std::string remove_property(std::string key);
 
+        /* Special typed getters */
+        int get_int(std::string key, int def_val) const;
+        float get_float(std::string key, float def_val) const;
+        bool get_bool(std::string key, bool def_val) const;
+
         /* Get a set of key-child pairs */
         const PropertyPairList get_children() const;
         const PropertyPairList get_children_alphabetical() const;

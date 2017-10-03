@@ -4,6 +4,7 @@
 #include "io/buffer.h"
 #include "network/network.h"
 #include "network/structure.h"
+#include "util/error_manager.h"
 
 Buffer *build_buffer(DeviceID device_id, LayerList input_layers,
         LayerList output_layers, LayerList expected_layers) {
@@ -71,6 +72,13 @@ Buffer::~Buffer() {
     this->expected.free();
 }
 
+std::vector<BasePointer*> Buffer::get_pointers() {
+    std::vector<BasePointer*> pointers = {
+        &input, &output, &expected
+    };
+    return pointers;
+}
+
 void Buffer::set_input(Layer* layer, Pointer<float> source) {
     source.copy_to(this->get_input(layer));
     dirty_map[layer] = true;
@@ -85,20 +93,44 @@ void Buffer::set_expected(Layer* layer, Pointer<Output> source) {
 }
 
 Pointer<float> Buffer::get_input(Layer *layer) {
-    return input.slice(input_map[layer], layer->size);
+    try {
+        return input.slice(input_map.at(layer), layer->size);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to retrieve input from Buffer for "
+            "unrepresented layer: " + layer->str());
+    }
 }
 
 Pointer<Output> Buffer::get_output(Layer *layer) {
-    return output.slice(output_map[layer], layer->size);
+    try {
+        return output.slice(output_map.at(layer), layer->size);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to retrieve output from Buffer for "
+            "unrepresented layer: " + layer->str());
+    }
 }
 
 Pointer<Output> Buffer::get_expected(Layer *layer) {
-    return expected.slice(expected_map[layer], layer->size);
+    try {
+        return expected.slice(expected_map.at(layer), layer->size);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to retrieve expected data from Buffer for "
+            "unrepresented layer: " + layer->str());
+    }
 }
 
-std::vector<BasePointer*> Buffer::get_pointers() {
-    std::vector<BasePointer*> pointers = {
-        &input, &output, &expected
-    };
-    return pointers;
+bool Buffer::get_dirty(Layer *layer) const {
+    try {
+        return dirty_map.at(layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to retrieve dirty flag from Buffer for "
+            "unrepresented layer: " + layer->str());
+    }
+}
+bool Buffer::set_dirty(Layer *layer, bool dirty) {
+    dirty_map[layer] = dirty;
 }

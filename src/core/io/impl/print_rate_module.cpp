@@ -13,7 +13,7 @@ PrintRateModule::PrintRateModule(LayerList layers, ModuleConfig *config)
           timesteps(0) {
     set_io_type(OUTPUT);
 
-    this->rate = std::stoi(config->get("rate", "100"));
+    this->rate = config->get_int("rate", 100);
 
     if (this->rate <= 0)
         ErrorManager::get_instance()->log_error(

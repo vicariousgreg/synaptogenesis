@@ -59,7 +59,10 @@ void ResourceManager::flush(DeviceID device_id) {
         }
 #endif
         managed_pointers.erase(device_id);
-    } catch (std::out_of_range) { }
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Attempted to flush invalid device ID!");
+    }
 }
 
 void* ResourceManager::allocate_host(size_t count, size_t size) {

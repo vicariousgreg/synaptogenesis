@@ -6,42 +6,22 @@
 #include "util/error_manager.h"
 
 ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
-    row_field_size = -1;
-    column_field_size = -1;
-    row_stride = 1;
-    column_stride = 1;
-    row_offset = -1;
-    column_offset = -1;
-    wrap = false;
+    row_field_size = config->get_int("row field size", 0);
+    column_field_size = config->get_int("column field size", 0);
+    row_stride = config->get_int("row stride", 1);
+    column_stride = config->get_int("column stride", 1);
+    row_offset = config->get_int("row offset", 0);
+    column_offset = config->get_int("row offset", 0);
+    wrap = config->get_bool("wrap", false);
 
-    for (auto pair : config->get()) {
-        if (pair.first == "row field size")
-            row_field_size = std::stoi(pair.second);
-        else if (pair.first == "column field size")
-            column_field_size = std::stoi(pair.second);
-        else if (pair.first == "field size")
-            row_field_size = column_field_size =
-                std::stoi(pair.second);
-        else if (pair.first == "row stride")
-            row_stride = std::stoi(pair.second);
-        else if (pair.first == "column stride")
-            column_stride = std::stoi(pair.second);
-        else if (pair.first == "stride")
-            row_stride = column_stride = std::stoi(pair.second);
-        else if (pair.first == "row offset")
-            row_offset = std::stoi(pair.second);
-        else if (pair.first == "column offset")
-            column_offset = std::stoi(pair.second);
-        else if (pair.first == "offset")
-            row_offset = column_offset = std::stoi(pair.second);
-        else if (pair.first == "wrap")
-            wrap = pair.second == "true";
-        else
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized arborized config property: " + pair.first);
-    }
+    if (config->has("field size"))
+        row_field_size = column_field_size = config->get_int("field size", 0);
+    if (config->has("stride"))
+        row_stride = column_stride = config->get_int("stride", 0);
+    if (config->has("offset"))
+        row_offset = column_offset = config->get_int("offset", 0);
 
-    if (row_field_size < 0 or column_field_size < 0)
+    if (row_field_size <= 0 or column_field_size <= 0)
         ErrorManager::get_instance()->log_error(
             "Unspecified field size for arborized config!");
 
@@ -127,32 +107,14 @@ PropertyConfig ArborizedConfig::to_property_config() const {
 }
 
 SubsetConfig::SubsetConfig(PropertyConfig *config) {
-    from_row_start = from_row_end =
-        from_col_start = from_col_end =
-        to_row_start = to_row_end =
-        to_col_start = to_col_end = 0;
-
-    for (auto pair : config->get()) {
-        if (pair.first == "from row start")
-            from_row_start = std::stoi(pair.second);
-        else if (pair.first == "from row end")
-            from_row_end = std::stoi(pair.second);
-        else if (pair.first == "from column start")
-            from_col_start = std::stoi(pair.second);
-        else if (pair.first == "from column end")
-            from_col_end = std::stoi(pair.second);
-        else if (pair.first == "to row start")
-            to_row_start = std::stoi(pair.second);
-        else if (pair.first == "to row end")
-            to_row_end = std::stoi(pair.second);
-        else if (pair.first == "to column start")
-            to_col_start = std::stoi(pair.second);
-        else if (pair.first == "to column end")
-            to_col_end = std::stoi(pair.second);
-        else
-            ErrorManager::get_instance()->log_error(
-                "Unrecognized subset config property: " + pair.first);
-    }
+    from_row_start = config->get_int("from row start", 0);
+    from_row_end = config->get_int("from row end", 0);
+    to_row_start = config->get_int("to row start", 0);
+    to_row_end = config->get_int("to row end", 0);
+    from_col_start = config->get_int("from column start", 0);
+    from_col_end = config->get_int("from column end", 0);
+    to_col_start = config->get_int("to column start", 0);
+    to_col_end = config->get_int("to column end", 0);
 
     from_row_size = from_row_end - from_row_start;
     from_col_size = from_col_end - from_col_start;
@@ -241,9 +203,9 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
           from_layer(config->get("from layer", "")),
           to_layer(config->get("to layer", "")),
           dendrite(config->get("dendrite", "root")),
-          plastic(config->get("plastic", "true") == "true"),
-          delay(std::stoi(config->get("delay", "0"))),
-          max_weight(std::stof(config->get("max", "1.0"))),
+          plastic(config->get_bool("plastic", true)),
+          delay(config->get_int("delay", 0)),
+          max_weight(config->get_float("max", 1.0)),
           type(get_connection_type(config->get("type", "fully connected"))),
           opcode(get_opcode(config->get("opcode", "add"))) {
     if (not config->has("from layer"))

@@ -14,15 +14,15 @@ PeriodicInputModule::PeriodicInputModule(LayerList layers, ModuleConfig *config)
     enforce_equal_layer_sizes("periodic_input");
     set_io_type(INPUT);
 
-    this->value = std::stof(config->get("val", "1.0"));
-    this->min_value = std::stof(config->get("min", "0.0"));
-    this->max_value = std::stof(config->get("max", "1.0"));
-    this->rate = std::stoi(config->get("rate", "1"));
-    this->end = std::stoi(config->get("end", "0"));
-    this->fraction = std::stof(config->get("fraction", "1.0"));
-    this->random = config->get("random", "false") == "true";
-    this->clear = config->get("clear", "false") == "true";
-    this->verbose = config->get("verbose", "false") == "true";
+    this->value = config->get_float("val", 1.0);
+    this->min_value = config->get_float("min", 0.0);
+    this->max_value = config->get_float("max", 1.0);
+    this->rate = config->get_int("rate", 1);
+    this->end = config->get_int("end", 0);
+    this->fraction = config->get_float("fraction", 1.0);
+    this->random = config->get_bool("random", false);
+    this->clear = config->get_bool("clear", false);
+    this->verbose = config->get_bool("verbose", false);
 
     if (this->min_value > this->max_value)
         ErrorManager::get_instance()->log_error(

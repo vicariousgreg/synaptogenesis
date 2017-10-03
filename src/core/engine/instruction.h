@@ -155,10 +155,10 @@ class NormalNoiseInstruction : public InitializeInstruction {
             Stream *stream, bool init)
                 : InitializeInstruction(layer, state, stream),
                   init(init),
-                  mean(std::stof(layer->get_config()->get_child("noise config")
-                      ->get("mean", "1.0"))),
-                  std_dev(std::stof(layer->get_config()->get_child("noise config")
-                      ->get("std_dev", "0.1"))) { }
+                  mean(layer->get_config()->get_child("noise config")
+                      ->get_float("mean", 1.0)),
+                  std_dev(layer->get_config()->get_child("noise config")
+                      ->get_float("std_dev", 0.1)) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
@@ -182,10 +182,10 @@ class PoissonNoiseInstruction : public InitializeInstruction {
             Stream *stream, bool init)
                 : InitializeInstruction(layer, state, stream),
                   init(init),
-                  val(std::stof(layer->get_config()->get_child("noise config")
-                      ->get("value", "20"))),
-                  rate(0.001 * std::stof(layer->get_config()->get_child("noise config")
-                      ->get("rate", "1"))) { }
+                  val(layer->get_config()->get_child("noise config")
+                      ->get_float("value", 20)),
+                  rate(0.001 * layer->get_config()->get_child("noise config")
+                      ->get_float("rate", 1)) { }
 
         void activate() {
             Instruction::wait_for_dependencies();

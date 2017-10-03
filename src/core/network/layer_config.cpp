@@ -14,12 +14,12 @@ LayerConfig::LayerConfig(const PropertyConfig *config)
           neural_model(config->get("neural model", "")),
           rows((config->has("image"))
               ? GET_IMAGE(config->get("image")).height()
-              : std::stoi(config->get("rows", "0"))),
+              : config->get_int("rows", 0)),
           columns((config->has("image"))
               ? GET_IMAGE(config->get("image")).width()
-              : std::stoi(config->get("columns", "0"))),
-          plastic(config->get("plastic", "false") == "true"),
-          global(config->get("global", "false") == "true") {
+              : config->get_int("columns", 0)),
+          plastic(config->get_bool("plastic", false)),
+          global(config->get_bool("global", false)) {
     if (not config->has("name"))
         ErrorManager::get_instance()->log_error(
             "Attempted to construct LayerConfig without name!");

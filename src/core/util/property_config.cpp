@@ -83,6 +83,34 @@ std::string PropertyConfig::remove_property(std::string key) {
         + " from PropertyConfig!");
 }
 
+int PropertyConfig::get_int(std::string key, int def_val) const {
+    try {
+        if (has(key)) return std::stoi(get(key));
+        else          return def_val;
+    } catch (std::invalid_argument) {
+        ErrorManager::get_instance()->log_error(
+            "Could not convert property \""
+            + key + "\" (" + get(key) + ") to integer!");
+    }
+}
+
+float PropertyConfig::get_float(std::string key, float def_val) const {
+    try {
+        if (has(key)) return std::stof(get(key));
+        else          return def_val;
+    } catch (std::invalid_argument) {
+        ErrorManager::get_instance()->log_error(
+            "Could not convert property \""
+            + key + "\" (" + get(key) + ") to float!");
+    }
+}
+
+bool PropertyConfig::get_bool(std::string key, bool def_val) const {
+    if (has(key)) return get(key) == "true";
+    else          return def_val;
+}
+
+
 
 const PropertyPairList PropertyConfig::get_children() const {
     PropertyPairList pairs;

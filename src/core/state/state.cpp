@@ -347,96 +347,214 @@ bool State::check_compatibility(Structure *structure) {
 
 /* Zoo of Getters */
 Pointer<float> State::get_input(Layer *layer, int register_index) const {
-    return attributes[layer_devices.at(layer)].at(layer->neural_model)
-        ->get_input(layer->id, register_index);
+    try {
+        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
+            ->get_input(layer->id, register_index);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get input data in State for "
+            "layer: " + layer->str()
+            + ", index: " + std::to_string(register_index));
+    }
 }
 
 Pointer<float> State::get_second_order_weights(DendriticNode *node) const {
-    return attributes[layer_devices.at(node->to_layer)]
-        .at(node->to_layer->neural_model)->get_second_order_weights(node->id);
+    try {
+        return attributes.at(layer_devices.at(node->to_layer))
+            .at(node->to_layer->neural_model)->get_second_order_weights(node->id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get second order weights in State for "
+            "Dendritic Node: " + node->str());
+    }
 }
 
 Pointer<Output> State::get_expected(Layer *layer) const {
-    return attributes[layer_devices.at(layer)].at(layer->neural_model)
-        ->get_expected(layer->id);
+    try {
+        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
+            ->get_expected(layer->id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get expected data in State for "
+            "layer: " + layer->str());
+    }
 }
 
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
-    return attributes[layer_devices.at(layer)].at(layer->neural_model)
-        ->get_output(layer->id, word_index);
+    try {
+        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
+            ->get_output(layer->id, word_index);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get output data in State for "
+            "layer: " + layer->str());
+    }
 }
 
 Pointer<float> State::get_buffer_input(Layer *layer) const {
-    return internal_buffers.at(layer_devices.at(layer))->get_input(layer);
+    try {
+        return internal_buffers.at(layer_devices.at(layer))->get_input(layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get buffer input data in State for "
+            "layer: " + layer->str());
+    }
 }
 
 Pointer<Output> State::get_buffer_expected(Layer *layer) const {
-    return internal_buffers.at(layer_devices.at(layer))->get_expected(layer);
+    try {
+        return internal_buffers.at(layer_devices.at(layer))
+            ->get_expected(layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get buffer expected data in State for "
+            "unrepresented layer: " + layer->str());
+    }
 }
 
 DeviceID State::get_device_id(Layer *layer) const {
-    return layer_devices.at(layer);
+    try {
+        return layer_devices.at(layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get device ID in State for "
+            "layer: " + layer->str());
+    }
 }
 
 int State::get_layer_index(Layer *layer) const {
-    return attributes[layer_devices.at(layer)].at(layer->neural_model)
-        ->get_layer_index(layer->id);
+    try {
+        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
+            ->get_layer_index(layer->id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get layer index in State for "
+            "layer: " + layer->str());
+    }
 }
 
 int State::get_other_start_index(Layer *layer) const {
-    return attributes[layer_devices.at(layer)].at(layer->neural_model)
-        ->get_other_start_index(layer->id);
+    try {
+        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
+            ->get_other_start_index(layer->id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get 'other start index' in State for "
+            "layer: " + layer->str());
+    }
 }
 
 const Attributes* State::get_attributes_pointer(Layer *layer) const {
-    return attributes[layer_devices.at(layer)].at(layer->neural_model)->pointer;
+    try {
+        return attributes.at(layer_devices.at(layer))
+                         .at(layer->neural_model)->pointer;
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get Attributes pointer in State for "
+            "layer: " + layer->str());
+    }
 }
 
 Kernel<ATTRIBUTE_ARGS> State::get_attribute_kernel(Layer *layer) const {
-    return attributes[layer_devices.at(layer)]
-                     .at(layer->neural_model)->get_kernel();
+    try {
+        return attributes.at(layer_devices.at(layer))
+                         .at(layer->neural_model)->get_kernel();
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get Attribute kernel in State for "
+            "layer: " + layer->str());
+    }
 }
 
 Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
-    return attributes[layer_devices.at(layer)]
-                     .at(layer->neural_model)->get_learning_kernel();
+    try {
+        return attributes.at(layer_devices.at(layer))
+                         .at(layer->neural_model)->get_learning_kernel();
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get Attribute learning kernel in State for "
+            "layer: " + layer->str());
+    }
 }
 
 int State::get_connection_index(Connection *conn) const {
-    return attributes[layer_devices.at(conn->to_layer)]
-                     .at(conn->to_layer->neural_model)
-                     ->get_connection_index(conn->id);
+    try {
+        return attributes.at(layer_devices.at(conn->to_layer))
+                         .at(conn->to_layer->neural_model)
+                         ->get_connection_index(conn->id);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get connection index in State for "
+            "connection: " + conn->str());
+    }
 }
 
 Pointer<float> State::get_matrix(Connection* conn) const {
-    return weight_matrices.at(conn)->get_data();
+    try {
+        return weight_matrices.at(conn)->get_data();
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get weight matrix in State for "
+            "conn: " + conn->str());
+    }
 }
 
 EXTRACTOR State::get_extractor(Connection *conn) const {
-    return attributes[layer_devices.at(conn->from_layer)]
-                     .at(conn->from_layer->neural_model)->extractor;
+    try {
+        return attributes.at(layer_devices.at(conn->from_layer))
+                         .at(conn->from_layer->neural_model)->extractor;
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get extractor in State for "
+            "connection: " + conn->str());
+    }
 }
 
 Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
-    return attributes[layer_devices.at(conn->to_layer)]
-                     .at(conn->to_layer->neural_model)
-                     ->get_activator(conn);
+    try {
+        return attributes.at(layer_devices.at(conn->to_layer))
+                         .at(conn->to_layer->neural_model)
+                         ->get_activator(conn);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get activator in State for "
+            "connection: " + conn->str());
+    }
 }
 
 Kernel<SYNAPSE_ARGS> State::get_updater(Connection *conn) const {
-    return attributes[layer_devices.at(conn->to_layer)]
-                     .at(conn->to_layer->neural_model)
-                     ->get_updater(conn);
+    try {
+        return attributes.at(layer_devices.at(conn->to_layer))
+                         .at(conn->to_layer->neural_model)
+                         ->get_updater(conn);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get updater in State for "
+            "connection: " + conn->str());
+    }
 }
 
 Pointer<Output> State::get_device_output_buffer(
         Connection *conn, int word_index) const {
-    return inter_device_buffers
-        .at(layer_devices.at(conn->to_layer)).at(word_index)
-        ->get_output(conn->from_layer);
+    try {
+        return inter_device_buffers
+            .at(layer_devices.at(conn->to_layer)).at(word_index)
+            ->get_output(conn->from_layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve device buffer output in State for "
+            "connection: " + conn->str()
+            + ", index: " + std::to_string(word_index));
+    }
 }
 
 bool State::is_inter_device(Connection *conn) const {
-    return layer_devices.at(conn->from_layer)
-        != layer_devices.at(conn->to_layer);
+    try {
+        return layer_devices.at(conn->from_layer)
+            != layer_devices.at(conn->to_layer);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to check inter-device status in State for "
+            "connection: " + conn->str());
+    }
 }

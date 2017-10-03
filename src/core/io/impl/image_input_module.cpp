@@ -13,7 +13,7 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
     set_io_type(INPUT);
 
     std::string filename = config->get("filename", "");
-    float scale = std::stoi(config->get("scale", "1"));
+    float scale = config->get_float("scale", 1);
 
     if (filename == "")
         ErrorManager::get_instance()->log_error(

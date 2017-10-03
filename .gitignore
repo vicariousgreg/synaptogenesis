@@ -7,3 +7,7 @@
 .*.swo
 test
 parallel_test
+tags
+cscope.out
+synaptogenesis.so
+synaptogenesis.nvvp

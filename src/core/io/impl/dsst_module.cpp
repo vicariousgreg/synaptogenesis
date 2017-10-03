@@ -7,9 +7,9 @@ REGISTER_MODULE(DSSTModule, "dsst");
 DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
         : Module(layers) {
     // Extract primary values, or use defaults
-    this->num_cols = std::stoi(config->get("columns", "18"));
-    this->num_rows = std::stoi(config->get("rows", "8"));
-    this->cell_cols = std::stoi(config->get("cell size", "8"));
+    this->num_cols = config->get_int("columns", 18);
+    this->num_rows = config->get_int("rows", 8);
+    this->cell_cols = config->get_int("cell size", 8);
 
     // Set secondary values
     this->cell_rows = 1+2*cell_cols;
@@ -60,11 +60,11 @@ void DSSTModule::input_symbol(int index) {
 }
 
 int DSSTModule::get_num_rows(ModuleConfig *config) {
-    return std::stoi(config->get("rows", "8"));
+    return config->get_int("rows", 8);
 }
 
 int DSSTModule::get_num_columns(ModuleConfig *config) {
-    return std::stoi(config->get("columns", "18"));
+    return config->get_int("columns", 18);
 }
 
 int DSSTModule::get_cell_rows(ModuleConfig *config) {
@@ -72,7 +72,7 @@ int DSSTModule::get_cell_rows(ModuleConfig *config) {
 }
 
 int DSSTModule::get_cell_columns(ModuleConfig *config) {
-    return std::stoi(config->get("cell size", "8"));
+    return config->get_int("cell size", 8);
 }
 
 int DSSTModule::get_cell_size(ModuleConfig *config) {

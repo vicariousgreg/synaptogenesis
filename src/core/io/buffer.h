@@ -29,10 +29,8 @@ class Buffer {
         Pointer<Output> get_expected(Layer *layer);
 
         /* Dirty */
-        bool get_dirty(Layer *layer) const { return dirty_map.at(layer); }
-        bool set_dirty(Layer *layer, bool dirty=true) {
-            dirty_map[layer] = dirty;
-        }
+        bool get_dirty(Layer *layer) const;
+        bool set_dirty(Layer *layer, bool dirty=true);
 
         const DeviceID device_id;
 
