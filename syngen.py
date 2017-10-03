@@ -93,5 +93,4 @@ class Network(CObject):
             args = Properties(args)
 
         self.state = _syn.run(self.obj, environment.obj, self.state, args.obj);
-
         if self.state is None: print("Failed to run network!")

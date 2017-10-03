@@ -14,11 +14,24 @@ void BasePointer::free() {
             else std::free(ptr);           // unpinned host memory
         } else {
             cudaFree(this->ptr);           // cuda device memory
+            device_check_error(nullptr);
         }
 #else
         if (local) std::free(ptr);         // unpinned host memory (default)
 #endif
+        ResourceManager::get_instance()->drop_pointer(ptr, device_id);
     }
+}
+
+BasePointer* BasePointer::slice(size_t offset, size_t new_size) const {
+    return new BasePointer(
+        ((char*)ptr) + (offset * unit_size),
+        new_size,
+        unit_size,
+        device_id,
+        local,
+        pinned,
+        false);
 }
 
 void BasePointer::transfer(DeviceID new_device, void* destination,

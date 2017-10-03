@@ -52,6 +52,17 @@ Pointer<T>::Pointer(T* ptr, size_t size, bool local, DeviceID device_id)
           false) { }
 
 template<typename T>
+Pointer<T>::Pointer(const Pointer<T>& other)
+    : BasePointer(
+          other.ptr,
+          other.size,
+          sizeof(T),
+          other.device_id,
+          other.local,
+          other.pinned,
+          false) { }
+
+template<typename T>
 template<typename S>
 Pointer<S> Pointer<T>::cast() const {
     return Pointer<S>((S*)ptr, size, local, device_id);

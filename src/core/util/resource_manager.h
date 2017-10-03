@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <vector>
+#include <set>
 #include <map>
 
 #include "util/parallel.h"
@@ -35,8 +36,9 @@ class ResourceManager {
         void* allocate_host(size_t count, size_t size);
         void* allocate_device(size_t count, size_t size,
             void* source_data, DeviceID device_id=0);
+        void drop_pointer(void* ptr, DeviceID device_id);
 
-        void transfer(DeviceID device_id, std::vector<BasePointer*> ptrs);
+        BasePointer* transfer(DeviceID device_id, std::vector<BasePointer*> ptrs);
 
         Stream *get_default_stream(DeviceID id);
         Stream *get_inter_device_stream(DeviceID id);
@@ -69,7 +71,7 @@ class ResourceManager {
 
         int num_cores;
         std::vector<Device*> devices;
-        std::map<DeviceID, std::vector<void*>> managed_pointers;
+        std::map<DeviceID, std::set<void*>> managed_pointers;
 };
 
 #endif

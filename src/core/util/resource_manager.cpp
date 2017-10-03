@@ -59,6 +59,8 @@ void ResourceManager::flush(DeviceID device_id) {
         }
 #endif
         managed_pointers.erase(device_id);
+        devices.at(device_id)->delete_streams();
+        devices.at(device_id)->delete_events();
     } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Attempted to flush invalid device ID!");
@@ -72,6 +74,7 @@ void* ResourceManager::allocate_host(size_t count, size_t size) {
     if (ptr == nullptr)
         ErrorManager::get_instance()->log_error(
             "Failed to allocate space on host for neuron state!");
+    managed_pointers[get_host_id()].insert(ptr);
     return ptr;
 }
 
@@ -82,33 +85,40 @@ void* ResourceManager::allocate_device(size_t count, size_t size,
     if (device_id >= get_num_devices())
         ErrorManager::get_instance()->log_error(
             "Attempted to allocate memory on non-existent device.");
-    return cuda_allocate_device(device_id, count, size, source_data);
+    void* ptr = cuda_allocate_device(device_id, count, size, source_data);
+    managed_pointers[device_id].insert(ptr);
+    return ptr;
 }
 
-void ResourceManager::transfer(DeviceID device_id, std::vector<BasePointer*> ptrs) {
+void ResourceManager::drop_pointer(void* ptr, DeviceID device_id) {
+    if (device_id >= get_num_devices())
+        ErrorManager::get_instance()->log_error(
+            "Attempted to drop pointer from non-existent device.");
+    managed_pointers[device_id].erase(ptr);
+}
+
+BasePointer* ResourceManager::transfer(DeviceID device_id, std::vector<BasePointer*> ptrs) {
+    char* data = nullptr;
     size_t size = 0;
     for (auto ptr : ptrs)
         size += ptr->size * ptr->unit_size;
 
     if (size > 0) {
-        char* data;
-
         if (is_host(device_id))
             data = (char*)this->allocate_host(size, 1);
         else
             data = (char*)this->allocate_device(size, 1, nullptr, device_id);
 
-        // Maintain ownership of block
-        // Pointers cannot free it, so the Resource Manager has to handle it
-        this->managed_pointers[device_id].push_back(data);
-
+        char* it = data;
         for (auto ptr : ptrs) {
             if (ptr->size > 0) {
-                ptr->transfer(device_id, data, false);
-                data += ptr->size * ptr->unit_size;
+                ptr->transfer(device_id, it, false);
+                it += ptr->size * ptr->unit_size;
             }
         }
     }
+    return new BasePointer(
+        data, size, 1, device_id, is_host(device_id), false, true);
 }
 
 Stream *ResourceManager::get_default_stream(DeviceID device_id) {

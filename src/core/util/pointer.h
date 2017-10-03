@@ -35,6 +35,10 @@ class BasePointer {
         // Frees the encapsulated pointer if this is the owner
         void free();
 
+        // Slice the pointer, creating a new pointer that represents
+        //   a piece of the old pointer with a new size
+        BasePointer* slice(size_t offset, size_t new_size) const;
+
         // Transfer data to a device
         void transfer(DeviceID new_device, void* destination,
             bool transfer_ownership);
@@ -83,6 +87,7 @@ class Pointer : public BasePointer {
         // Container constructor
         // Encapsulates the pointer but does not claim ownership
         Pointer(T* ptr, size_t size, bool local, DeviceID device_id);
+        Pointer(const Pointer<T>& other);
 
 
         /*****************************/

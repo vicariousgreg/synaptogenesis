@@ -1,5 +1,6 @@
 #include "gui_controller.h"
 #include "gui.h"
+#include "engine/engine.h"
 
 GuiController *GuiController::instance = new GuiController();
 
@@ -13,6 +14,10 @@ GuiController *GuiController::get_instance() {
     return GuiController::instance;
 }
 
+void GuiController::init(Engine *engine) {
+    gui->init(engine);
+}
+
 void GuiController::launch() {
     gui->launch();
 }
@@ -22,5 +27,5 @@ void GuiController::update() {
 }
 
 void GuiController::quit() {
-    gui->get_instance()->quit();
+    gui->signal_quit();
 }

@@ -3,15 +3,6 @@
 
 #include "state/attributes.h"
 
-/* Neuron parameters class.
- * Contains a,b,c,d parameters for Izhikevich model */
-class IzhikevichParameters {
-    public:
-        IzhikevichParameters(float a, float b, float c, float d) :
-                a(a), b(b), c(c), d(d) {}
-        float a, b, c, d;
-};
-
 class IzhikevichAttributes : public Attributes {
     public:
         IzhikevichAttributes(LayerList &layers);
@@ -67,7 +58,10 @@ class IzhikevichAttributes : public Attributes {
         Pointer<float> postsyn_trace;
 
         // Neuron parameters
-        Pointer<IzhikevichParameters> neuron_parameters;
+        Pointer<float> as;
+        Pointer<float> bs;
+        Pointer<float> cs;
+        Pointer<float> ds;
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

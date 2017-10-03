@@ -62,6 +62,8 @@ class Engine {
         // Run the engine
         Context* run(PropertyConfig args=PropertyConfig());
 
+        void interrupt();
+
         Buffer* get_buffer() { return buffer; }
         IOTypeMask get_io_type(Layer *layer) { return io_types[layer]; }
         bool is_input(Layer *layer) { return get_io_type(layer) & INPUT; }
@@ -72,6 +74,7 @@ class Engine {
 
     protected:
         Context *context;
+        bool running;
 
         void build_environment();
         void build_clusters();
@@ -97,9 +100,13 @@ class Engine {
         int environment_rate;
         bool learning_flag;
 
+        int iterations;
+        bool verbose;
+        Report *report;
+
         // Thread loops
-        void network_loop(int iterations, bool verbose);
-        void environment_loop(int iterations, bool verbose, Report** report);
+        void network_loop();
+        void environment_loop();
 };
 
 #endif

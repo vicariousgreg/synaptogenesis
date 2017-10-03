@@ -63,6 +63,11 @@ class State {
             Connection *conn, int word_index) const;
         bool is_inter_device(Connection *conn) const;
 
+        /* Getters for external use */
+        BasePointer* get_neuron_data(Layer *layer, std::string key);
+        BasePointer* get_layer_data(Layer *layer, std::string key);
+        BasePointer* get_connection_data(Connection *conn, std::string key);
+
         Network* const network;
 
     private:
@@ -79,6 +84,10 @@ class State {
         std::vector<std::vector<BasePointer*>> buffer_pointers;
 
         std::map<PointerKey, BasePointer*> pointer_map;
+
+        // Pointers to blocks of data returned by ResourceManager
+        // Transfers combine all pointers to one block that needs to be freed
+        std::set<BasePointer*> data_block_pointers;
 };
 
 #endif

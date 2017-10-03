@@ -14,15 +14,17 @@
 
 Engine::Engine(Context *context)
         : context(context),
+          running(false),
           learning_flag(true),
           suppress_output(false),
           refresh_rate(FLT_MAX),
           time_limit(1.0 / refresh_rate),
           environment_rate(1),
+          iterations(0),
           calc_rate(true),
-          buffer(nullptr) {
-    rebuild();
-}
+          verbose(false),
+          buffer(nullptr),
+          report(nullptr) { }
 
 void Engine::build_environment() {
     /* Build environmental buffer */
@@ -154,7 +156,6 @@ void Engine::clear() {
     // Clear resources
     ResourceManager::get_instance()->delete_streams();
     ResourceManager::get_instance()->delete_events();
-
 }
 
 Engine::~Engine() {
@@ -168,7 +169,7 @@ size_t Engine::get_buffer_bytes() const {
     return size;
 }
 
-void Engine::network_loop(int iterations, bool verbose) {
+void Engine::network_loop() {
     run_timer.reset();
 
     for (int i = 0 ; i < iterations; ++i) {
@@ -219,13 +220,20 @@ void Engine::network_loop(int iterations, bool verbose) {
 
         // Check for errors
         device_check_error(nullptr);
+
+        // If engine gets interrupted, pass the locks over and break
+        if (not this->running) {
+            sensory_lock.pass(ENVIRONMENT_THREAD);
+            motor_lock.pass(ENVIRONMENT_THREAD);
+            break;
+        }
     }
 
     // Final synchronize
     device_synchronize();
 }
 
-void Engine::environment_loop(int iterations, bool verbose, Report** report) {
+void Engine::environment_loop() {
     for (int i = 0; i < iterations; ++i) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT_THREAD);
@@ -248,33 +256,52 @@ void Engine::environment_loop(int iterations, bool verbose, Report** report) {
 
         // Cycle modules
         for (auto& module : this->modules) module->cycle();
+
+        // If engine gets interrupted, pass the locks over and break
+        if (not this->running) {
+            iterations = i;
+            sensory_lock.pass(NETWORK_THREAD);
+            motor_lock.pass(NETWORK_THREAD);
+            break;
+        }
     }
 
     // Create report
-    *report = new Report(this, this->context->get_state(),
+    this->report = new Report(this, this->context->get_state(),
         iterations, run_timer.query(nullptr));
 
     // Allow modules to modify report
     for (auto& module : this->modules)
-        module->report(*report);
+        module->report(report);
 
     // Report report if verbose
-    if (verbose) (*report)->print();
+    if (verbose) report->print();
 
-    // TODO: handle race conditions here
+    // Shutdown the GUI
     GuiController::get_instance()->quit();
 }
 
 Context* Engine::run(PropertyConfig args) {
     // Extract parameters
-    int iterations = args.get_int("iterations", 1);
-    bool verbose = args.get_bool("verbose", true);
+    this->iterations = args.get_int("iterations", 1);
+    this->verbose = args.get_bool("verbose", true);
     this->learning_flag = args.get_bool("learning flag", true);
     this->suppress_output = args.get_bool("suppress output", false);
     this->calc_rate = args.get_bool("calc rate", true);
     this->environment_rate = args.get_int("environment rate", 1);
     this->refresh_rate = args.get_float("refresh rate", 1.0);
     this->time_limit = 1.0 / this->refresh_rate;
+    running = true;
+
+    // Initialize the GUI
+    // Do this before rebuilding so that modules can attach
+    GuiController::get_instance()->init(this);
+
+    // Transfer state to device
+    // This renders the pointers in the engine outdated,
+    //   so the engine must be rebuilt
+    context->get_state()->transfer_to_device();
+    rebuild();
 
     // Initialize cuda random states
     init_rand(context->get_network()->get_max_layer_size());
@@ -295,13 +322,11 @@ Context* Engine::run(PropertyConfig args) {
     if (verbose) device_check_memory();
 
     // Create
-    Report *report = nullptr;
-
     // Launch threads
     std::thread network_thread(
-        &Engine::network_loop, this, iterations, verbose);
+        &Engine::network_loop, this);
     std::thread environment_thread(
-        &Engine::environment_loop, this, iterations, verbose, &report);
+        &Engine::environment_loop, this);
 
     // Launch UI on main thread
     GuiController::get_instance()->launch();
@@ -311,10 +336,17 @@ Context* Engine::run(PropertyConfig args) {
     environment_thread.join();
 
     // Add report to context
-    context->add_report(report);
+    context->add_report(this->report);
+    this->report = nullptr;
 
     // Clean up
     free_rand();
+    running = false;
 
     return context;
+}
+
+void Engine::interrupt() {
+    if (this->verbose) printf("Interrupting engine...\n");
+    this->running = false;
 }

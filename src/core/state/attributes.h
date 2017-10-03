@@ -72,6 +72,11 @@ class Attributes {
         // Connection data retrieval
         int get_connection_index(size_t id) const;
 
+        // Getters for external use
+        BasePointer* get_neuron_data(size_t id, std::string key);
+        BasePointer* get_layer_data(size_t id, std::string key);
+        BasePointer* get_connection_data(size_t id, std::string key);
+
         // Neuron IO data
         EXTRACTOR extractor;
         const OutputType output_type;
@@ -123,17 +128,27 @@ class Attributes {
         // Gets the name of the neural model
         virtual std::string get_neural_model() = 0;
 
-        // Registers a variable to be handled by the superclass
-        void register_neuron_variable(std::string key, BasePointer *pointer);
-        void register_connection_variable(std::string key, BasePointer *pointer);
-        void register_layer_variable(std::string key, BasePointer *pointer);
+        // Methods for creating and registering variables
+        //   to be handled by the superclass
+        template<class T> Pointer<T> create_neuron_variable();
+        template<class T> Pointer<T> create_connection_variable();
+        template<class T> Pointer<T> create_layer_variable();
+
+        template<class T> Pointer<T> create_neuron_variable(T val);
+        template<class T> Pointer<T> create_connection_variable(T val);
+        template<class T> Pointer<T> create_layer_variable(T val);
+
+        void register_neuron_variable(std::string key, BasePointer* ptr);
+        void register_connection_variable(std::string key, BasePointer* ptr);
+        void register_layer_variable(std::string key, BasePointer* ptr);
 
         // Traverse the dendritic tree and find second order nodes
         int dendrite_DFS(const DendriticNode *curr, int second_order_size);
 
-        // Number of neurons and layers
+        // Number of neurons, layers, and connections
         int total_neurons;
         int total_layers;
+        int total_connections;
 
         DeviceID device_id;
         int object_size;

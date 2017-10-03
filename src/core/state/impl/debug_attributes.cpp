@@ -148,14 +148,12 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
 
 DebugAttributes::DebugAttributes(LayerList &layers)
         : Attributes(layers, FLOAT) {
-    int num_connections = get_num_connections(layers);
+    this->connection_variable = Attributes::create_connection_variable<float>(DUMMY_VAL);
+    Attributes::register_connection_variable("conn_var", &connection_variable);
 
-    this->connection_variable = Pointer<float>(num_connections, DUMMY_VAL);
-    Attributes::register_connection_variable("conn_var", &this->connection_variable);
+    this->layer_variable = Attributes::create_layer_variable<float>(DUMMY_VAL);
+    Attributes::register_layer_variable("layer_var", &layer_variable);
 
-    this->layer_variable = Pointer<float>(layers.size(), DUMMY_VAL);
-    Attributes::register_layer_variable("layer_var", &this->layer_variable);
-
-    this->neuron_variable = Pointer<float>(total_neurons, DUMMY_VAL);
-    Attributes::register_neuron_variable("neuron_var", &this->neuron_variable);
+    this->neuron_variable = Attributes::create_neuron_variable<float>(DUMMY_VAL);
+    Attributes::register_neuron_variable("neuron_var", &neuron_variable);
 }

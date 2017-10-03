@@ -12,6 +12,15 @@ REGISTER_ATTRIBUTES(IzhikevichAttributes, "izhikevich", BIT)
 /******************************** PARAMS **************************************/
 /******************************************************************************/
 
+/* Neuron parameters class.
+ * Contains a,b,c,d parameters for Izhikevich model */
+class IzhikevichParameters {
+    public:
+        IzhikevichParameters(float a, float b, float c, float d) :
+                a(a), b(b), c(c), d(d) {}
+        float a, b, c, d;
+};
+
 #define DEF_PARAM(name, a,b,c,d) \
     static const IzhikevichParameters name = IzhikevichParameters(a,b,c,d);
 
@@ -25,41 +34,50 @@ DEF_PARAM(LOW_THRESHOLD    , 0.02, 0.25, -65.0, 2   ); // Low Threshold
 DEF_PARAM(THALAMO_CORTICAL , 0.02, 0.25, -65.0, 0.05); // Thalamo-cortical
 DEF_PARAM(RESONATOR        , 0.1 , 0.26, -65.0, 2   ); // Resonator
 
-static IzhikevichParameters create_parameters(std::string str) {
+static void create_parameters(std::string str,
+        float* as, float* bs, float* cs, float* ds, int offset, int size) {
     if (str == "random positive") {
         // (ai; bi) = (0:02; 0:2) and (ci; di) = (-65; 8) + (15;-6)r2
-        float a = 0.02;
-        float b = 0.2; // increase for higher frequency oscillations
+        for (int i = offset ; i < offset+size ; ++i) as[i] = 0.02;
 
-        float rand = fRand();
-        float c = -65.0 + (15.0 * rand * rand);
+        // increase for higher frequency oscillations
+        for (int i = offset ; i < offset+size ; ++i) bs[i] = 0.2;
 
-        rand = fRand();
-        float d = 8.0 - (6.0 * (rand * rand));
-        return IzhikevichParameters(a,b,c,d);
+        for (int i = offset ; i < offset+size ; ++i)
+            cs[i] = -65.0 + (15.0 * pow(fRand(), 2));
+
+        for (int i = offset ; i < offset+size ; ++i) 
+            ds[i] = 8.0 - (6.0 * pow(fRand(), 2));
     } else if (str == "random negative") {
         //(ai; bi) = (0:02; 0:25) + (0:08;-0:05)ri and (ci; di)=(-65; 2).
-        float rand = fRand();
-        float a = 0.02 + (0.08 * rand);
+        for (int i = offset ; i < offset+size ; ++i)
+            as[i] = 0.02 + (0.08 * fRand());
 
-        rand = fRand();
-        float b = 0.25 - (0.05 * rand);
+        for (int i = offset ; i < offset+size ; ++i)
+            bs[i] = 0.25 - (0.05 * fRand());
 
-        float c = -65.0;
-        float d = 2.0;
-        return IzhikevichParameters(a,b,c,d);
+        for (int i = offset ; i < offset+size ; ++i) cs[i] = -65.0;
+        for (int i = offset ; i < offset+size ; ++i) ds[i] = 2.0;
+    } else {
+        IzhikevichParameters params(0,0,0,0);
+        if (str == "default")                 params = DEFAULT;
+        else if (str == "regular")            params = REGULAR;
+        else if (str == "bursting")           params = BURSTING;
+        else if (str == "chattering")         params = CHATTERING;
+        else if (str == "fast")               params = FAST;
+        else if (str == "low_threshold")      params = LOW_THRESHOLD;
+        else if (str == "thalamo_cortical")   params = THALAMO_CORTICAL;
+        else if (str == "resonator")          params = RESONATOR;
+        else
+            ErrorManager::get_instance()->log_error(
+                "Unrecognized parameter string: " + str);
+
+
+        for (int i = offset ; i < offset+size ; ++i) as[i] = params.a;
+        for (int i = offset ; i < offset+size ; ++i) bs[i] = params.b;
+        for (int i = offset ; i < offset+size ; ++i) cs[i] = params.c;
+        for (int i = offset ; i < offset+size ; ++i) ds[i] = params.d;
     }
-    else if (str == "default")            return DEFAULT;
-    else if (str == "regular")            return REGULAR;
-    else if (str == "bursting")           return BURSTING;
-    else if (str == "chattering")         return CHATTERING;
-    else if (str == "fast")               return FAST;
-    else if (str == "low_threshold")      return LOW_THRESHOLD;
-    else if (str == "thalamo_cortical")   return THALAMO_CORTICAL;
-    else if (str == "resonator")          return RESONATOR;
-    else
-        ErrorManager::get_instance()->log_error(
-            "Unrecognized parameter string: " + str);
 }
 
 /******************************************************************************/
@@ -103,7 +121,10 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *recoveries = iz_att->recovery.get(other_start_index);
     float *postsyn_traces = iz_att->postsyn_trace.get(other_start_index);
     unsigned int *spikes = (unsigned int*)outputs;
-    IzhikevichParameters *params = iz_att->neuron_parameters.get(other_start_index);
+    float *as = iz_att->as.get(other_start_index);
+    float *bs = iz_att->bs.get(other_start_index);
+    float *cs = iz_att->cs.get(other_start_index);
+    float *ds = iz_att->ds.get(other_start_index);
 
     ,
 
@@ -120,8 +141,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float recovery = recoveries[nid];
     float base_current = inputs[nid];
 
-    float a = params[nid].a;
-    float b = params[nid].b;
+    float a = as[nid];
+    float b = bs[nid];
 
     // Euler's method for voltage/recovery update
     // If the voltage exceeds the spiking threshold, break
@@ -157,11 +178,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         recovery += a * ((b * voltage) - recovery) * IZ_EULER_RES_INV;
     }
 
-    /*
-    if (nid == 0 and (acetylcholines[nid] > 0.1 or dopamines[nid] > 0.1))
-        printf("(%f  %f)\n", acetylcholines[nid], dopamines[nid]);
-    */
-
     ampa_conductances[nid] = 0.0;
     nmda_conductances[nid] = 0.0;
     gabaa_conductances[nid] = 0.0;
@@ -196,8 +212,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
     // Update trace, voltage, recovery
     postsyn_traces[nid] = (spike) ? STDP_A : (postsyn_traces[nid] * TRACE_TAU);
-    voltages[nid] = (spike) ? params[nid].c : voltage;
-    recoveries[nid] = recovery + (spike * params[nid].d);
+    voltages[nid] = (spike) ? cs[nid] : voltage;
+    recoveries[nid] = recovery + (spike * ds[nid]);
 )
 
 /******************************************************************************/
@@ -542,47 +558,53 @@ static void check_parameters(Connection *conn) {
 
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : Attributes(layers, BIT) {
-    int num_connections = get_num_connections(layers);
-
     // Baseline conductances
-    this->baseline_conductance = Pointer<float>(num_connections);
-    Attributes::register_connection_variable("baseline conductance", &this->baseline_conductance);
+    this->baseline_conductance =
+        Attributes::create_connection_variable<float>();
+    Attributes::register_connection_variable(
+        "baseline conductance", &baseline_conductance);
 
     // Learning rate
-    this->learning_rate = Pointer<float>(num_connections);
-    Attributes::register_connection_variable("learning rate", &this->learning_rate);
+    this->learning_rate = Attributes::create_connection_variable<float>();
+    Attributes::register_connection_variable("learning rate", &learning_rate);
 
     // Short term plasticity flag
-    this->stp_flag = Pointer<int>(num_connections);
-    Attributes::register_connection_variable("stp flag", &this->stp_flag);
+    this->stp_flag = Attributes::create_connection_variable<int>();
+    Attributes::register_connection_variable("stp flag", &stp_flag);
 
     // Conductances
-    this->ampa_conductance = Pointer<float>(total_neurons);
-    this->nmda_conductance = Pointer<float>(total_neurons);
-    this->gabaa_conductance = Pointer<float>(total_neurons);
-    this->gabab_conductance = Pointer<float>(total_neurons);
-    this->multiplicative_factor = Pointer<float>(total_neurons);
-    this->dopamine = Pointer<float>(total_neurons);
-    this->acetylcholine = Pointer<float>(total_neurons);
-    Attributes::register_neuron_variable("ampa", &this->ampa_conductance);
-    Attributes::register_neuron_variable("nmda", &this->nmda_conductance);
-    Attributes::register_neuron_variable("gabaa", &this->gabaa_conductance);
-    Attributes::register_neuron_variable("gabab", &this->gabab_conductance);
-    Attributes::register_neuron_variable("mult", &this->multiplicative_factor);
-    Attributes::register_neuron_variable("dopamine", &this->dopamine);
-    Attributes::register_neuron_variable("acetylcholine", &this->acetylcholine);
+    this->ampa_conductance = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("ampa", &ampa_conductance);
+    this->nmda_conductance = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("nmda", &nmda_conductance);
+    this->gabaa_conductance = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("gabaa", &gabaa_conductance);
+    this->gabab_conductance = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("gabab", &gabab_conductance);
+    this->multiplicative_factor = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("mult", &multiplicative_factor);
+    this->dopamine = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("dopamine", &dopamine);
+    this->acetylcholine = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("acetylcholine", &acetylcholine);
 
     // Neuron variables
-    this->voltage = Pointer<float>(total_neurons);
-    this->recovery = Pointer<float>(total_neurons);
-    this->postsyn_trace = Pointer<float>(total_neurons);
-    Attributes::register_neuron_variable("recorvery", &this->recovery);
-    Attributes::register_neuron_variable("voltage", &this->voltage);
-    Attributes::register_neuron_variable("post trace", &this->postsyn_trace);
+    this->voltage = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("voltage", &voltage);
+    this->recovery = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("recovery", &recovery);
+    this->postsyn_trace = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("post trace", &postsyn_trace);
 
     // Neuron parameters
-    this->neuron_parameters = Pointer<IzhikevichParameters>(total_neurons);
-    Attributes::register_neuron_variable("params", &this->neuron_parameters);
+    this->as = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("a", &as);
+    this->bs = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("b", &bs);
+    this->cs = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("c", &cs);
+    this->ds = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("d", &ds);
 
     // Fill in table
     int start_index = 0;
@@ -590,22 +612,23 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         // Check layer parameters
         check_parameters(layer);
 
-        IzhikevichParameters params = create_parameters(
-            layer->get_parameter("init", "regular"));
+        create_parameters(layer->get_parameter("init", "regular"),
+            this->as, this->bs, this->cs, this->ds, start_index, layer->size);
         for (int j = 0 ; j < layer->size ; ++j) {
-            neuron_parameters[start_index+j] = params;
             postsyn_trace[start_index+j] = 0.0;
 
             // Run simulation to stable point
-            float v = params.c;
-            float r = params.b * params.c;
+            float v = this->cs[start_index+j];
+            float r = this->bs[start_index+j] * this->cs[start_index+j];
             float delta_v;
             float delta_r;
+            float a = this->as[start_index+j];
+            float b = this->bs[start_index+j];
             do {
                 delta_v = (0.04 * v * v) + (5*v) + 140 - r;
                 v += delta_v;
 
-                delta_r = params.a * ((params.b * v) - r);
+                delta_r = a * ((b * v) - r);
                 r += delta_r;
             } while (abs(delta_v) > 0.001 and abs(delta_r) > 0.001);
 

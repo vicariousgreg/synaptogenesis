@@ -4,17 +4,6 @@
 #include "util/error_manager.h"
 
 /******************************************************************************/
-/******************************** PARAMS **************************************/
-/******************************************************************************/
-
-static RateEncodingParameters create_parameters(std::string str) {
-    return RateEncodingParameters(0.0);
-
-    //ErrorManager::get_instance()->log_error(
-    //    "Unrecognized parameter string: " + str);
-}
-
-/******************************************************************************/
 /******************************** KERNEL **************************************/
 /******************************************************************************/
 
@@ -44,17 +33,4 @@ BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
 /******************************************************************************/
 
 RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT) {
-    this->neuron_parameters = Pointer<RateEncodingParameters>(total_neurons);
-    Attributes::register_neuron_variable("params", &this->neuron_parameters);
-
-    // Fill in table
-    int start_index = 0;
-    for (auto& layer : layers) {
-        RateEncodingParameters params =
-            create_parameters(layer->get_parameter("init", ""));
-        for (int j = 0 ; j < layer->size ; ++j)
-            neuron_parameters[start_index+j] = params;
-        start_index += layer->size;
-    }
-}
+        : Attributes(layers, FLOAT) { }

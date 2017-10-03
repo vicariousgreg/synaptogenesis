@@ -41,6 +41,7 @@ void Report::print() {
                     pair.second.c_str());
         }
     }
+    printf("\n");
 }
 
 void Report::add_report(Module *module, Layer *layer, PropertyConfig *props) {

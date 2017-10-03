@@ -111,7 +111,8 @@ Attributes::Attributes(LayerList &layers, OutputType output_type)
     this->expected = Pointer<Output>(other_size);
     this->second_order_weights = Pointer<float>(second_order_size, 0.0);
     this->total_neurons = other_size;
-    this->total_layers = layers.size();;
+    this->total_layers = layers.size();
+    this->total_connections = get_num_connections(layers);
 }
 
 Attributes::~Attributes() {
@@ -159,7 +160,8 @@ void Attributes::transfer_to_device() {
         cudaSetDevice(device_id);
 
         // If already transfered, free old copy
-        if (this->pointer != this) cudaFree(this->pointer);
+        if (this->pointer != this)
+            cudaFree(this->pointer);
 
         // Transfer to device
         this->pointer = (Attributes*)
@@ -202,26 +204,105 @@ std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
     return pointers;
 }
 
-void Attributes::register_neuron_variable(std::string key, BasePointer* ptr) {
+template Pointer<float> Attributes::create_neuron_variable();
+template Pointer<float> Attributes::create_connection_variable();
+template Pointer<float> Attributes::create_layer_variable();
+template Pointer<int> Attributes::create_neuron_variable();
+template Pointer<int> Attributes::create_connection_variable();
+template Pointer<int> Attributes::create_layer_variable();
+
+template Pointer<float> Attributes::create_neuron_variable(float val);
+template Pointer<float> Attributes::create_connection_variable(float val);
+template Pointer<float> Attributes::create_layer_variable(float val);
+template Pointer<int> Attributes::create_neuron_variable(int val);
+template Pointer<int> Attributes::create_connection_variable(int val);
+template Pointer<int> Attributes::create_layer_variable(int val);
+
+template<class T>
+Pointer<T> Attributes::create_neuron_variable() {
+    return Pointer<T>(total_neurons);
+}
+
+template<class T>
+Pointer<T> Attributes::create_connection_variable() {
+    return Pointer<T>(total_connections);
+}
+
+template<class T>
+Pointer<T> Attributes::create_layer_variable() {
+    return Pointer<T>(total_layers);
+}
+
+template<class T>
+Pointer<T> Attributes::create_neuron_variable(T val) {
+    return Pointer<T>(total_neurons, val);
+}
+
+template<class T>
+Pointer<T> Attributes::create_connection_variable(T val) {
+    return Pointer<T>(total_connections, val);
+}
+
+template<class T>
+Pointer<T> Attributes::create_layer_variable(T val) {
+    return Pointer<T>(total_layers, val);
+}
+
+void Attributes::register_neuron_variable(
+        std::string key, BasePointer* ptr) {
     if (this->neuron_variables.count(key) > 0)
         ErrorManager::get_instance()->log_error(
             "Repeated neuron variable key: " + key);
     this->neuron_variables[key] = ptr;
 }
 
-void Attributes::register_connection_variable(std::string key, BasePointer* ptr) {
+void Attributes::register_connection_variable(
+        std::string key, BasePointer* ptr) {
     if (this->connection_variables.count(key) > 0)
         ErrorManager::get_instance()->log_error(
             "Repeated connection variable key: " + key);
     this->connection_variables[key] = ptr;
 }
 
-void Attributes::register_layer_variable(std::string key, BasePointer* ptr) {
+void Attributes::register_layer_variable(
+        std::string key, BasePointer* ptr) {
     if (this->layer_variables.count(key) > 0)
         ErrorManager::get_instance()->log_error(
             "Repeated layer variable key: " + key);
     this->layer_variables[key] = ptr;
 }
+
+BasePointer* Attributes::get_neuron_data(size_t id, std::string key) {
+    try {
+        return neuron_variables.at(key)->slice(
+            get_other_start_index(id), layer_sizes.at(id));
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve neuron data \"" + key + "\" in Attributes for "
+            "layer ID: " + std::to_string(id));
+    }
+}
+
+BasePointer* Attributes::get_layer_data(size_t id, std::string key) {
+    try {
+        return layer_variables.at(key)->slice(get_layer_index(id), 1);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve layer data \"" + key + "\" in Attributes for "
+            "layer ID: " + std::to_string(id));
+    }
+}
+
+BasePointer* Attributes::get_connection_data(size_t id, std::string key) {
+    try {
+        return connection_variables.at(key)->slice(get_connection_index(id), 1);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to retrieve connection data \"" + key + "\" in Attributes "
+            "for connection ID: " + std::to_string(id));
+    }
+}
+
 
 int Attributes::get_layer_index(size_t id) const {
     try {

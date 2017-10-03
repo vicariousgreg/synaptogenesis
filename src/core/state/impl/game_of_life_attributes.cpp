@@ -56,14 +56,14 @@ BUILD_ATTRIBUTE_KERNEL(GameOfLifeAttributes, gol_attribute_kernel,
 
 GameOfLifeAttributes::GameOfLifeAttributes(LayerList &layers)
         : Attributes(layers, BIT) {
-    this->survival_mins = Pointer<int>(layers.size());
-    this->survival_maxs = Pointer<int>(layers.size());
-    this->birth_mins = Pointer<int>(layers.size());
-    this->birth_maxs = Pointer<int>(layers.size());
-    Attributes::register_layer_variable("survival mins", &this->survival_mins);
-    Attributes::register_layer_variable("survival maxs", &this->survival_maxs);
-    Attributes::register_layer_variable("birth mins", &this->birth_mins);
-    Attributes::register_layer_variable("birth maxs", &this->birth_maxs);
+    this->survival_mins = Attributes::create_layer_variable<int>();
+    Attributes::register_layer_variable("survival mins", &survival_mins);
+    this->survival_maxs = Attributes::create_layer_variable<int>();
+    Attributes::register_layer_variable("survival maxs", &survival_maxs);
+    this->birth_mins = Attributes::create_layer_variable<int>();
+    Attributes::register_layer_variable("birth mins", &birth_mins);
+    this->birth_maxs = Attributes::create_layer_variable<int>();
+    Attributes::register_layer_variable("birth maxs", &birth_maxs);
 
     for (auto& layer : layers) {
         size_t layer_id = layer_indices[layer->id];

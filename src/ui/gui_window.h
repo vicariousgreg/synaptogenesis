@@ -11,6 +11,7 @@ class GuiWindow : public Gtk::Window {
         GuiWindow();
         virtual void add_layer(Layer *layer, IOTypeMask io_type) = 0;
         virtual void update() = 0;
+        virtual bool on_delete_event(GdkEventAny* any_event);
 
         std::vector<Layer*> layers;
 };

@@ -152,9 +152,6 @@ State::State(Network *network) : network(network), on_host(true) {
         // Set the inter device buffer
         inter_device_buffers.push_back(buffer_map);
     }
-
-    // Finally, transfer data
-    this->transfer_to_device();
 }
 
 State::~State() {
@@ -167,6 +164,10 @@ State::~State() {
     for (auto map : inter_device_buffers)
         for (auto pair : map)
             delete pair.second;
+    for (auto ptr : data_block_pointers) {
+        ptr->free();
+        delete ptr;
+    }
 }
 
 void State::transfer_to_device() {
@@ -176,15 +177,20 @@ void State::transfer_to_device() {
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
+    // Accumulate new data block pointers
+    std::set<BasePointer*> new_data_block_pointers;
+
     // Transfer network pointers
     for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
         if (device_id != host_id)
-            res_man->transfer(device_id, network_pointers[device_id]);
+            new_data_block_pointers.insert(
+                res_man->transfer(device_id, network_pointers[device_id]));
 
     // Transfer buffer pointers
     for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
         if (device_id != host_id)
-            res_man->transfer(device_id, buffer_pointers[device_id]);
+            new_data_block_pointers.insert(
+                res_man->transfer(device_id, buffer_pointers[device_id]));
 
     // Transfer attributes
     for (auto n : Attributes::get_neural_models())
@@ -192,7 +198,14 @@ void State::transfer_to_device() {
             if (attributes[i][n] != nullptr)
                 attributes[i][n]->transfer_to_device();
 
-    on_host = true;
+    // Free old data block pointers and replace with new ones
+    for (auto ptr : data_block_pointers) {
+        // ptr->free();
+        // delete ptr;
+    }
+    data_block_pointers = new_data_block_pointers;
+
+    on_host = false;
 #endif
 }
 
@@ -200,30 +213,39 @@ void State::transfer_to_host() {
 #ifdef __CUDACC__
     if (on_host) return;
 
+    // Accumulate new data block pointers
+    std::set<BasePointer*> new_data_block_pointers;
+
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
     // Transfer network pointers
     for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
         if (device_id != host_id)
-            res_man->transfer(host_id, network_pointers[device_id]);
+            new_data_block_pointers.insert(
+                res_man->transfer(host_id, network_pointers[device_id]));
 
     // Transfer buffer pointers
     for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
         if (device_id != host_id)
-            res_man->transfer(host_id, buffer_pointers[device_id]);
+            new_data_block_pointers.insert(
+                res_man->transfer(host_id, buffer_pointers[device_id]));
+
+    // Free old data block pointers and replace with new ones
+    for (auto ptr : data_block_pointers) {
+        // ptr->free();
+        // delete ptr;
+    }
+    data_block_pointers = new_data_block_pointers;
 
     on_host = true;
 #endif
 }
 
 void State::copy_to(State* other) {
-    // Transfer states to the host temporarily if necessary
-    bool this_on_host = this->on_host;
-    if (not this_on_host) this->transfer_to_host();
-
-    bool other_on_host = other->on_host;
-    if (not other_on_host) other->transfer_to_host();
+    // Transfer states to the host if necessary
+    if (not this->on_host) this->transfer_to_host();
+    if (not other->on_host) other->transfer_to_host();
 
     // Copy over any matching pointers
     for (auto pair : this->pointer_map) {
@@ -234,10 +256,6 @@ void State::copy_to(State* other) {
                 this_ptr->copy_to(other_ptr);
         }
     }
-
-    // Transfer back to device if necessary
-    if (not this_on_host) this->transfer_to_device();
-    if (not other_on_host) other->transfer_to_device();
 }
 
 size_t State::get_network_bytes() const {
@@ -329,9 +347,6 @@ void State::load(std::string file_name, bool verbose) {
 
     // Close file stream
     input_file.close();
-
-    // Transfer to device
-    this->transfer_to_device();
 }
 
 bool State::check_compatibility(Structure *structure) {
@@ -555,6 +570,43 @@ bool State::is_inter_device(Connection *conn) const {
     } catch (std::out_of_range) {
         ErrorManager::get_instance()->log_error(
             "Failed to check inter-device status in State for "
+            "connection: " + conn->str());
+    }
+}
+
+BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
+    transfer_to_host();
+    try {
+        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
+            ->get_neuron_data(layer->id, key);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get neuron \"" + key + "\" data in State for "
+            "layer: " + layer->str());
+    }
+}
+
+BasePointer* State::get_layer_data(Layer *layer, std::string key) {
+    transfer_to_host();
+    try {
+        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
+            ->get_layer_data(layer->id, key);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get layer \"" + key + "\" data in State for "
+            "layer: " + layer->str());
+    }
+}
+
+BasePointer* State::get_connection_data(Connection *conn, std::string key) {
+    transfer_to_host();
+    try {
+        return attributes.at(layer_devices.at(conn->to_layer))
+                         .at(conn->to_layer->neural_model)
+                         ->get_connection_data(conn->id, key);
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get connection \"" + key + "\" data in State for "
             "connection: " + conn->str());
     }
 }
