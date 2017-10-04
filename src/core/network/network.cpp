@@ -68,6 +68,17 @@ const ConnectionList Network::get_connections() const {
     return connections;
 }
 
+Connection* Network::get_connection(std::string name, bool log_error) {
+    Connection *conn = nullptr;
+    for (auto c : this->get_connections())
+        if (c->name == name)
+            conn = c;
+    if (conn == nullptr and log_error)
+            ErrorManager::get_instance()->log_error(
+                "Could not find connection: " + name);
+    return conn;
+}
+
 int Network::get_num_neurons() const {
     int num_neurons = 0;
     for (auto structure : structures)

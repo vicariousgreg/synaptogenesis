@@ -37,6 +37,7 @@ class Network {
         const LayerList get_layers() const;
         const LayerList get_layers(std::string neural_model) const;
         const ConnectionList get_connections() const;
+        Connection* get_connection(std::string name, bool log_error=true);
 
         int get_num_neurons() const;
         int get_num_layers() const;

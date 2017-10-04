@@ -1,7 +1,9 @@
 from syngen import Network, Environment
 
+# Create main structure (feedforward engine)
 structure = {"name" : "mnist", "type" : "feedforward"}
 
+# Add layers (represent bias as a layer)
 input_layer = {
     "name" : "input_layer",
     "neural model" : "relay",
@@ -18,9 +20,13 @@ bias_layer = {
     "rows" : 1,
     "columns" : 1}
 
+# Add layers to structure
 structure["layers"] = [input_layer, output_layer, bias_layer]
+
+# Create connections
 connections = [
     {
+        "name" : "main matrix",
         "from layer" : "input_layer",
         "to layer" : "output_layer",
         "type" : "fully connected",
@@ -32,6 +38,7 @@ connections = [
         }
     },
     {
+        "name" : "bias matrix",
         "from layer" : "bias_layer",
         "to layer" : "output_layer",
         "type" : "fully connected",
@@ -44,6 +51,9 @@ connections = [
     }
 ]
 
+# Create environment modules
+# Loads training MNIST CSV files
+# One for input, one for expected output
 modules = [
     {
         "type" : "csv_input",
@@ -83,22 +93,37 @@ modules = [
     }
 ]
 
+# Create training environment
 train_env = Environment({"modules" : modules})
 
+# Replace files with test set and create new test environment
 modules[0]["filename"] = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
 modules[1]["filename"] = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
 test_env = Environment({"modules" : modules})
 
+# Create network
 network = Network(
     {"structures" : [structure],
      "connections" : connections})
 
+# Run training
 network.run(train_env,
     {"iterations" : "60000",
      "verbose" : "true"})
+
+# Save the state and load it back up
+network.save_state("mnist.bin")
+network.load_state("mnist.bin")
+
+# Retrieve main weight matrix
+matrix = network.get_weight_matrix("main matrix")
+
+# Run test
 network.run(test_env,
     {"iterations" : "10000",
      "verbose" : "true",
      "learning flag" : "false"})
 
+# Delete the objects
 del network
+del environment

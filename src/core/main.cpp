@@ -146,7 +146,7 @@ void mnist_test() {
     // Run testing (disable learning)
     engine.rebuild();
     engine.run(PropertyConfig(
-        {{"iterations", "60000"},
+        {{"iterations", "10000"},
          {"calc rate", "false"},
          {"learning flag", "false"}}));
 

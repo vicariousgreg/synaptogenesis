@@ -1,6 +1,7 @@
 #include "extern.h"
 #include "builder.h"
 #include "network/network.h"
+#include "state/state.h"
 #include "io/environment.h"
 #include "engine/engine.h"
 #include "engine/context.h"
@@ -66,7 +67,72 @@ bool save_net(NETWORK network, char* filename) {
     }
 }
 
-STATE run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
+STATE build_state(NETWORK net) {
+    return new State((Network*)net);
+}
+
+bool load_state(STATE state, char* filename) {
+    try {
+        ((State*)state)->load(filename);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool save_state(STATE state, char* filename) {
+    try {
+        ((State*)state)->save(filename);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+ARRAY get_neuron_data(STATE state, char* structure_name,
+        char* layer_name, char* key) {
+    try {
+        auto layer = ((State*)state)->network
+            ->get_structure(structure_name)->get_layer(layer_name);
+        auto ptr = ((State*)state)->get_neuron_data(layer, key);
+        return ARRAY{ ptr->get_size(), (float*)ptr->get() };
+    } catch (...) {
+        return ARRAY{ 0, (float*)nullptr };
+    }
+}
+
+float get_layer_data(STATE state, char* structure_name,
+        char* layer_name, char* key) {
+    try {
+        auto layer = ((State*)state)->network
+            ->get_structure(structure_name)->get_layer(layer_name);
+        return *(float*)((State*)state)->get_layer_data(layer, key)->get();
+    } catch (...) {
+        return 0.0;
+    }
+}
+
+float get_connection_data(STATE state, char* conn_name, char* key) {
+    try {
+        auto conn = ((State*)state)->network->get_connection(conn_name);
+        return *(float*)((State*)state)->get_connection_data(conn, key)->get();
+    } catch (...) {
+        return 0.0;
+    }
+}
+
+ARRAY get_weight_matrix(STATE state, char* conn_name) {
+    try {
+        auto conn = ((State*)state)->network->get_connection(conn_name);
+        auto ptr = ((State*)state)->get_weight_matrix(conn);
+        return ARRAY{ ptr->get_size(), (float*)ptr->get() };
+    } catch (...) {
+        return ARRAY{ 0, (float*)nullptr };
+    }
+}
+
+
+bool run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
     try {
         Engine engine(
             new Context((Network*)net, (Environment*)env, (State*)state));
@@ -74,9 +140,9 @@ STATE run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
         auto context = engine.run(*((PropertyConfig*)args));
         auto state = context->get_state();
         delete context;
-        return state;
+        return true;
     } catch(...) {
-        return nullptr;
+        return false;
     }
 }
 
@@ -84,4 +150,3 @@ STATE run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
 void destroy(void* obj) {
     delete obj;
 }
-

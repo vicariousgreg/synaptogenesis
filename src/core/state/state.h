@@ -67,6 +67,7 @@ class State {
         BasePointer* get_neuron_data(Layer *layer, std::string key);
         BasePointer* get_layer_data(Layer *layer, std::string key);
         BasePointer* get_connection_data(Connection *conn, std::string key);
+        BasePointer* get_weight_matrix(Connection *conn);
 
         Network* const network;
 

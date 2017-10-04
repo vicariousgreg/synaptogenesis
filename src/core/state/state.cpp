@@ -610,3 +610,14 @@ BasePointer* State::get_connection_data(Connection *conn, std::string key) {
             "connection: " + conn->str());
     }
 }
+
+BasePointer* State::get_weight_matrix(Connection *conn) {
+    transfer_to_host();
+    try {
+        return weight_matrices.at(conn)->get_pointer();
+    } catch (std::out_of_range) {
+        ErrorManager::get_instance()->log_error(
+            "Failed to get weight matrix data in State for "
+            "connection: " + conn->str());
+    }
+}
