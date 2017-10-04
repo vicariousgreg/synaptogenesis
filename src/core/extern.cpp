@@ -7,6 +7,19 @@
 #include "engine/context.h"
 #include "util/constants.h"
 
+ARRAY build_array(BasePointer* ptr) {
+    ARRAY arr;
+    arr.size = ptr->get_size();
+    arr.data = ptr->get();
+    if (ptr->get_type() == std::type_index(typeid(float)))
+        arr.type = FLOAT_POINTER;
+    else if (ptr->get_type() == std::type_index(typeid(int)))
+        arr.type = INT_POINTER;
+    else if (ptr->get_type() == std::type_index(typeid(void)))
+        arr.type = VOID_POINTER;
+    return arr;
+}
+
 PROPS create_properties() {
     return new PropertyConfig();
 }
@@ -95,29 +108,31 @@ ARRAY get_neuron_data(STATE state, char* structure_name,
         auto layer = ((State*)state)->network
             ->get_structure(structure_name)->get_layer(layer_name);
         auto ptr = ((State*)state)->get_neuron_data(layer, key);
-        return ARRAY{ ptr->get_size(), (float*)ptr->get() };
+        return build_array(ptr);
     } catch (...) {
-        return ARRAY{ 0, (float*)nullptr };
+        return ARRAY{ 0, VOID_POINTER, nullptr };
     }
 }
 
-float get_layer_data(STATE state, char* structure_name,
+ARRAY get_layer_data(STATE state, char* structure_name,
         char* layer_name, char* key) {
     try {
         auto layer = ((State*)state)->network
             ->get_structure(structure_name)->get_layer(layer_name);
-        return *(float*)((State*)state)->get_layer_data(layer, key)->get();
+        auto ptr = ((State*)state)->get_layer_data(layer, key);
+        return build_array(ptr);
     } catch (...) {
-        return 0.0;
+        return ARRAY{ 0, VOID_POINTER, nullptr };
     }
 }
 
-float get_connection_data(STATE state, char* conn_name, char* key) {
+ARRAY get_connection_data(STATE state, char* conn_name, char* key) {
     try {
         auto conn = ((State*)state)->network->get_connection(conn_name);
-        return *(float*)((State*)state)->get_connection_data(conn, key)->get();
+        auto ptr = ((State*)state)->get_connection_data(conn, key);
+        return build_array(ptr);
     } catch (...) {
-        return 0.0;
+        return ARRAY{ 0, VOID_POINTER, nullptr };
     }
 }
 
@@ -125,9 +140,9 @@ ARRAY get_weight_matrix(STATE state, char* conn_name) {
     try {
         auto conn = ((State*)state)->network->get_connection(conn_name);
         auto ptr = ((State*)state)->get_weight_matrix(conn);
-        return ARRAY{ ptr->get_size(), (float*)ptr->get() };
+        return build_array(ptr);
     } catch (...) {
-        return ARRAY{ 0, (float*)nullptr };
+        return ARRAY{ 0, VOID_POINTER, nullptr };
     }
 }
 

@@ -1,13 +1,34 @@
 from ctypes import *
 
-class Array(Structure):
-    _fields_=[("size",c_int), ("data",POINTER(c_float))]
+class BaseArray(Structure):
+    _fields_=[("size",c_int), ("type",c_uint), ("data",c_void_p)]
+
+class FloatArray(Structure):
+    def __init__(self, base_array):
+        self.size = base_array.size
+        self.data = cast(base_array.data, POINTER(c_float))
+
+class IntArray(Structure):
+    def __init__(self, base_array):
+        self.size = base_array.size
+        self.data = cast(base_array.data, POINTER(c_int))
+
+def build_array(base_array):
+    # See POINTER_TYPE in extern.h
+    (F_P, I_P, V_P) = (1,2,3)
+
+    if base_array.type == F_P:
+        return FloatArray(base_array)
+    elif base_array.type == I_P:
+        return IntArray(base_array)
+    elif base_array.type == V_P:
+        raise ValueError
 
 _syn = CDLL('synaptogenesis.so')
-_syn.get_neuron_data.restype = Array
-_syn.get_layer_data.restype = c_float
-_syn.get_connection_data.restype = c_float
-_syn.get_weight_matrix.restype = Array
+_syn.get_neuron_data.restype = BaseArray
+_syn.get_layer_data.restype = BaseArray
+_syn.get_connection_data.restype = BaseArray
+_syn.get_weight_matrix.restype = BaseArray
 
 class CObject:
     def __init(self):
@@ -96,19 +117,23 @@ class Network(CObject):
 
     def get_neuron_data(self, structure, layer, key):
         if self.state is None: self.build_state()
-        return _syn.get_neuron_data(self.state, structure, layer, key)
+        return build_array(
+            _syn.get_neuron_data(self.state, structure, layer, key))
 
     def get_layer_data(self, structure, layer, key):
         if self.state is None: self.build_state()
-        return _syn.get_layer_data(self.state, structure, layer, key)
+        return build_array(
+            _syn.get_layer_data(self.state, structure, layer, key))
 
     def get_connection_data(self, structure, connection, key):
         if self.state is None: self.build_state()
-        return _syn.get_connection_data(self.state, connection, key)
+        return build_array(
+            _syn.get_connection_data(self.state, connection, key))
 
     def get_weight_matrix(self, connection):
         if self.state is None: self.build_state()
-        return _syn.get_weight_matrix(self.state, connection)
+        return build_array(
+            _syn.get_weight_matrix(self.state, connection))
 
     def run(self, environment, args):
         # Build state

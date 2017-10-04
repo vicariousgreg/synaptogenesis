@@ -1,10 +1,21 @@
 #ifndef extern_h
 #define extern_h
 
+class BasePointer;
+
+typedef enum {
+    FLOAT_POINTER=1,
+    INT_POINTER=2,
+    VOID_POINTER=3
+} POINTER_TYPE;
+
 typedef struct ARRAY {
     int size;
-    float* data;
+    POINTER_TYPE type;
+    void* data;
 } ARRAY;
+
+ARRAY build_array(BasePointer* ptr);
 
 typedef void* NETWORK;
 typedef void* ENVIRONMENT;
@@ -30,9 +41,9 @@ extern "C" bool save_state(STATE state, char* filename);
 
 extern "C" ARRAY get_neuron_data(
     STATE state, char* structure_name, char* layer_name, char* key);
-extern "C" float get_layer_data(
+extern "C" ARRAY get_layer_data(
     STATE state, char* structure_name, char* layer_name, char* key);
-extern "C" float get_connection_data(STATE state, char* conn_name, char* key);
+extern "C" ARRAY get_connection_data(STATE state, char* conn_name, char* key);
 extern "C" ARRAY get_weight_matrix(STATE state, char* conn_name);
 
 extern "C" bool run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args);

@@ -15,6 +15,7 @@
 template<typename T>
 Pointer<T>::Pointer()
     : BasePointer(
+          std::type_index(typeid(T)),
           nullptr,
           0,
           sizeof(T),
@@ -26,6 +27,7 @@ Pointer<T>::Pointer()
 template<typename T>
 Pointer<T>::Pointer(size_t size)
     : BasePointer(
+          std::type_index(typeid(T)),
           ResourceManager::get_instance()->allocate_host(size, sizeof(T)),
           size,
           sizeof(T),
@@ -43,6 +45,7 @@ Pointer<T>::Pointer(size_t size, T val)
 template<typename T>
 Pointer<T>::Pointer(T* ptr, size_t size, bool local, DeviceID device_id)
     : BasePointer(
+          std::type_index(typeid(T)),
           ptr,
           size,
           sizeof(T),
@@ -54,6 +57,7 @@ Pointer<T>::Pointer(T* ptr, size_t size, bool local, DeviceID device_id)
 template<typename T>
 Pointer<T>::Pointer(const Pointer<T>& other)
     : BasePointer(
+          std::type_index(typeid(T)),
           other.ptr,
           other.size,
           sizeof(T),

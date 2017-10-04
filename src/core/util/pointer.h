@@ -1,6 +1,9 @@
 #ifndef pointer_h
 #define pointer_h
 
+#include <typeinfo>
+#include <typeindex>
+
 #include "util/parallel.h"
 #include "util/stream.h"
 
@@ -31,6 +34,7 @@ class BasePointer {
         HOST DEVICE size_t get_unit_size() { return unit_size; }
         HOST DEVICE size_t get_bytes() { return size * unit_size; }
         HOST DEVICE DeviceID get_device_id() { return device_id; }
+        std::type_index get_type() { return type; }
 
         // Frees the encapsulated pointer if this is the owner
         void free();
@@ -48,9 +52,11 @@ class BasePointer {
         void copy_to(BasePointer* other);
 
     protected:
-        BasePointer(void* ptr, size_t size, size_t unit_size, DeviceID device_id,
-            bool local, bool pinned, bool owner)
-                : ptr(ptr),
+        BasePointer(std::type_index type, void* ptr,
+            size_t size, size_t unit_size,
+            DeviceID device_id, bool local, bool pinned, bool owner)
+                : type(type),
+                  ptr(ptr),
                   size(size),
                   unit_size(unit_size),
                   device_id(device_id),
@@ -60,6 +66,7 @@ class BasePointer {
 
         friend class ResourceManager;
 
+        std::type_index type;
         void* ptr;
         size_t size;
         size_t unit_size;
@@ -127,7 +134,6 @@ class Pointer : public BasePointer {
         }
 
         bool operator!=(const Pointer<T> &other) const { !(*this == other); }
-
 
 
         /*************************/

@@ -25,6 +25,7 @@ void BasePointer::free() {
 
 BasePointer* BasePointer::slice(size_t offset, size_t new_size) const {
     return new BasePointer(
+        type,
         ((char*)ptr) + (offset * unit_size),
         new_size,
         unit_size,
