@@ -126,4 +126,5 @@ network.run(test_env,
 
 # Delete the objects
 del network
-del environment
+del train_env
+del test_env
