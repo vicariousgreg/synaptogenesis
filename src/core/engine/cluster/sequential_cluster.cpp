@@ -19,15 +19,10 @@ SequentialCluster::SequentialCluster(Structure *structure,
     std::set<Layer*> visited;
 
     // Create queue and push output layers
-    // Add formal output layers, and any layers that project
-    //   to another structure
+    // Add layers any layers that project to another structure
     std::queue<Layer*> queue;
     for (auto& layer : structure->get_layers())
-        if (engine->is_output(layer)) queue.push(layer);
-        else
-            for (auto& conn : layer->get_output_connections())
-                if (conn->to_layer->structure != structure)
-                    queue.push(layer);
+        if (layer->is_structure_output()) queue.push(layer);
 
     /* Do breadth first search backwards on the network and create nodes */
     while (not queue.empty()) {

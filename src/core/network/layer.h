@@ -27,6 +27,10 @@ class Layer {
         const ConnectionList& get_input_connections() const;
         const ConnectionList& get_output_connections() const;
 
+        /* Checks if layer is an input or output layer within its structure */
+        bool is_structure_input() const;
+        bool is_structure_output() const;
+
         DendriticNodeList get_dendritic_nodes() const;
         DendriticNode* get_dendritic_root() const { return dendritic_root; }
         DendriticNode* get_dendritic_node(std::string name,
