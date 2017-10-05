@@ -23,20 +23,20 @@ DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
     this->window = DSSTWindow::build(this);
 
     for (auto layer : layers) {
-        auto param = config->get_layer(layer)->get("params", "input");
-        params[layer] = param;
+        auto layer_config = config->get_layer(layer);
 
-        if (param == "input") {
-            set_io_type(layer, INPUT);
-            window->add_layer(layer, INPUT);
-        } else if (param == "output") {
+        if (layer_config->get_bool("input", false))
+            set_io_type(layer, get_io_type(layer) | INPUT);
+
+        if (layer_config->get_bool("expected", false))
+            set_io_type(layer, get_io_type(layer) | EXPECTED);
+
+        if (layer_config->get_bool("output", false))
+            set_io_type(layer, get_io_type(layer) | OUTPUT);
+
+        // Use output as default
+        if (get_io_type(layer) == 0)
             set_io_type(layer, OUTPUT);
-            window->add_layer(layer, OUTPUT);
-        } else {
-            LOG_ERROR(
-                "Unrecognized layer type: " + param
-                + " in VisualizerModule!");
-        }
     }
 }
 

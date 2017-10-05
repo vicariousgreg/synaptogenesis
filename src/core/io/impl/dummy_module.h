@@ -8,17 +8,20 @@ class DummyModule : public Module {
         DummyModule(LayerList layers, ModuleConfig *config)
                 : Module(layers) {
             for (auto layer : layers) {
-                auto params =
-                    config->get_layer(layer)->get("params", "output");
+                auto layer_config = config->get_layer(layer);
 
-                if (params == "input")
-                    set_io_type(layer, INPUT);
-                else if (params == "output")
+                if (layer_config->get_bool("input", false))
+                    set_io_type(layer, get_io_type(layer) | INPUT);
+
+                if (layer_config->get_bool("expected", false))
+                    set_io_type(layer, get_io_type(layer) | EXPECTED);
+
+                if (layer_config->get_bool("output", false))
+                    set_io_type(layer, get_io_type(layer) | OUTPUT);
+
+                // Use output as default
+                if (get_io_type(layer) == 0)
                     set_io_type(layer, OUTPUT);
-                else
-                    LOG_ERROR(
-                        "Unrecognized layer type: " + params
-                        + " in DummyModule!");
             }
         }
 

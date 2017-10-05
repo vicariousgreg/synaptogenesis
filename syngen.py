@@ -271,3 +271,8 @@ class Network(CObject):
         report = _syn.run(self.obj, environment.obj, self.state, args.obj)
         if report is None: print("Failed to run network!")
         return Properties(report)
+
+
+def create_callback(f):
+    cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
+    return (cb, cast(cb, c_void_p).value)

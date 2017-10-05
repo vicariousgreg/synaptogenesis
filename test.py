@@ -1,5 +1,10 @@
-from syngen import Network, Environment
-from pprint import pprint
+from syngen import Network, Environment, create_callback
+
+# Create test callback
+def callback(ID, size, ptr):
+    pass
+
+cb,addr = create_callback(callback)
 
 # Create main structure (feedforward engine)
 structure = {"name" : "mnist", "type" : "feedforward"}
@@ -91,6 +96,18 @@ modules = [
                 "layer" : "bias_layer"
             }
         ]
+    },
+    {
+        "type" : "callback",
+        "layers" : [
+            {
+                "structure" : "mnist",
+                "layer" : "output_layer",
+                "params" : "output",
+                "function" : addr,
+                "id" : 0
+            }
+        ]
     }
 ]
 
@@ -111,8 +128,7 @@ train = True
 if (train):
     # Run training
     report = network.run(train_env,
-                    {"calc rate" : "false",
-                     "multithreaded" : "false"})
+                    {"calc rate" : "false"})
     print(report)
 
     # Save the state and load it back up
@@ -126,7 +142,6 @@ matrix = network.get_weight_matrix("main matrix")
 # Run test
 report = network.run(test_env,
     {"calc rate" : "false",
-     "multithreaded" : "false",
      "learning flag" : "false"})
 print(report)
 

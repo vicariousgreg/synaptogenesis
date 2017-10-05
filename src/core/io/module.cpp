@@ -52,9 +52,7 @@ IOTypeMask Module::get_io_type(Layer *layer) const {
     try {
         return io_types.at(layer);
     } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Attempted to retrieve IO type from Module for "
-            "unrepresented layer: " + layer->str());
+        return 0;
     }
 }
 
