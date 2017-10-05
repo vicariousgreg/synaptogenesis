@@ -38,7 +38,8 @@ class ResourceManager {
             void* source_data, DeviceID device_id=0);
         void drop_pointer(void* ptr, DeviceID device_id);
 
-        BasePointer* transfer(DeviceID device_id, std::vector<BasePointer*> ptrs);
+        BasePointer* transfer(DeviceID device_id,
+            std::vector<BasePointer*> ptrs);
 
         Stream *get_default_stream(DeviceID id);
         Stream *get_inter_device_stream(DeviceID id);

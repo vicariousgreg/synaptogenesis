@@ -170,6 +170,91 @@ size_t Engine::get_buffer_bytes() const {
     return size;
 }
 
+void Engine::single_thread_loop() {
+    run_timer.reset();
+
+    for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
+        // Wait for timer, then start clearing inputs
+        iteration_timer.reset();
+
+        // Launch pre-input calculations
+        for (auto& cluster : clusters)
+            cluster->launch_pre_input_calculations();
+
+        /**************************/
+        /*** Read sensory input ***/
+        /**************************/
+        for (auto& module : this->modules) {
+            module->feed_input(buffer);
+            module->feed_expected(buffer);
+        }
+        for (auto& cluster : clusters) cluster->launch_input();
+        for (auto& cluster : clusters) cluster->wait_for_input();
+
+        /****************************/
+        /*** Perform computations ***/
+        /****************************/
+        for (auto& cluster : clusters) {
+            cluster->launch_post_input_calculations();
+            cluster->launch_state_update();
+            if (learning_flag) cluster->launch_weight_update();
+        }
+
+        /**************************/
+        /*** Write motor output ***/
+        /**************************/
+        if (i % environment_rate == 0) {
+            for (auto& cluster : clusters) cluster->launch_output();
+            for (auto& cluster : clusters) cluster->wait_for_output();
+        }
+
+        if (i % environment_rate == 0) {
+            // Stream output and update UI
+            if (not suppress_output)
+                for (auto& module : this->modules)
+                    module->report_output(buffer);
+            GuiController::get_instance()->update();
+        }
+
+        // Cycle modules
+        for (auto& module : this->modules) module->cycle();
+
+        // Check for errors
+        device_check_error(nullptr);
+
+        // If engine gets interrupted, pass the locks over and break
+        if (not this->running) break;
+
+        // Set the refresh rate if calc_rate is true
+        if (calc_rate and i == 999) {
+            time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
+            refresh_rate = 1.0 / time_limit;
+            if (verbose)
+                printf("Updated refresh rate to %.2f fps\n", refresh_rate);
+        }
+
+        // Synchronize with the clock
+        iteration_timer.wait(time_limit);
+    }
+
+    // Final synchronize
+    device_synchronize();
+
+    // Create report
+    this->report = new Report(this, this->context.state,
+        iterations, run_timer.query(nullptr));
+
+    // Allow modules to modify report
+    for (auto& module : this->modules)
+        module->report(report);
+
+    // Report report if verbose
+    if (verbose) report->print();
+
+    // Shutdown the GUI
+    GuiController::get_instance()->quit();
+}
+
 void Engine::network_loop() {
     run_timer.reset();
 
@@ -297,7 +382,7 @@ Report* Engine::run(PropertyConfig args) {
     init_rand(context.network->get_max_layer_size());
 
     // Extract parameters
-    this->verbose = args.get_bool("verbose", true);
+    this->verbose = args.get_bool("verbose", false);
     this->learning_flag = args.get_bool("learning flag", true);
     this->suppress_output = args.get_bool("suppress output", false);
     this->calc_rate = args.get_bool("calc rate", false);
@@ -336,19 +421,24 @@ Report* Engine::run(PropertyConfig args) {
     device_check_error("Clock device synchronization failed!");
     if (verbose) device_check_memory();
 
-    // Create
     // Launch threads
-    std::thread network_thread(
-        &Engine::network_loop, this);
-    std::thread environment_thread(
-        &Engine::environment_loop, this);
+    std::vector<std::thread> threads;
+    if (args.get_bool("multithreaded", true)) {
+        threads.push_back(std::thread(
+            &Engine::network_loop, this));
+        threads.push_back(std::thread(
+            &Engine::environment_loop, this));
+    } else {
+        threads.push_back(std::thread(
+            &Engine::single_thread_loop, this));
+    }
 
     // Launch UI on main thread
     GuiController::get_instance()->launch();
 
     // Wait for threads
-    network_thread.join();
-    environment_thread.join();
+    for (auto& thread : threads)
+        thread.join();
 
     // Clean up
     free_rand();
@@ -357,6 +447,7 @@ Report* Engine::run(PropertyConfig args) {
     auto report = this->report;
     this->report = nullptr;
 
+    report->set_child("args", &args);
     return report;
 }
 

@@ -84,7 +84,7 @@ void* ResourceManager::allocate_device(size_t count, size_t size,
 
     if (device_id >= get_num_devices())
         LOG_ERROR(
-            "Attempted to allocate memory on non-existent device.");
+            "Attempted to allocate memory on non-existent device!");
     void* ptr = cuda_allocate_device(device_id, count, size, source_data);
     managed_pointers[device_id].insert(ptr);
     return ptr;
@@ -93,15 +93,18 @@ void* ResourceManager::allocate_device(size_t count, size_t size,
 void ResourceManager::drop_pointer(void* ptr, DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
-            "Attempted to drop pointer from non-existent device.");
-    managed_pointers[device_id].erase(ptr);
+            "Attempted to drop pointer from non-existent device!");
+    if (managed_pointers[device_id].erase(ptr) == 0)
+        LOG_ERROR(
+            "Attempted to drop unmanaged pointer!");
 }
 
-BasePointer* ResourceManager::transfer(DeviceID device_id, std::vector<BasePointer*> ptrs) {
+BasePointer* ResourceManager::transfer(DeviceID device_id,
+        std::vector<BasePointer*> ptrs) {
     char* data = nullptr;
     size_t size = 0;
     for (auto ptr : ptrs)
-        size += ptr->size * ptr->unit_size;
+        size += ptr->get_bytes();
 
     if (size > 0) {
         if (is_host(device_id))
@@ -125,28 +128,29 @@ BasePointer* ResourceManager::transfer(DeviceID device_id, std::vector<BasePoint
 Stream *ResourceManager::get_default_stream(DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
-            "Attempted to retrieve default stream for non-existent device.");
+            "Attempted to retrieve default stream for non-existent device!");
     return devices[device_id]->default_stream;
 }
 
 Stream *ResourceManager::get_inter_device_stream(DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
-            "Attempted to retrieve inter-device stream for non-existent device.");
+            "Attempted to retrieve inter-device stream"
+            " for non-existent device!");
     return devices[device_id]->inter_device_stream;
 }
 
 Stream *ResourceManager::create_stream(DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
-            "Attempted to create stream on non-existent device.");
+            "Attempted to create stream on non-existent device!");
     return devices[device_id]->create_stream();
 }
 
 Event *ResourceManager::create_event(DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
-            "Attempted to create event on non-existent device.");
+            "Attempted to create event on non-existent device!");
     return devices[device_id]->create_event();
 }
 

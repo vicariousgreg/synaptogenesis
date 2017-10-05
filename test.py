@@ -110,9 +110,10 @@ network = Network(
 train = True
 if (train):
     # Run training
-    network.run(train_env,
-        {"verbose" : "true",
-         "calc rate" : "false"})
+    report = network.run(train_env,
+                    {"calc rate" : "false",
+                     "multithreaded" : "false"})
+    print(report)
 
     # Save the state and load it back up
     network.save_state("mnist.bin")
@@ -124,8 +125,8 @@ matrix = network.get_weight_matrix("main matrix")
 
 # Run test
 report = network.run(test_env,
-    {"verbose" : "true",
-     "calc rate" : "false",
+    {"calc rate" : "false",
+     "multithreaded" : "false",
      "learning flag" : "false"})
 print(report)
 

@@ -8,24 +8,14 @@
 #include "io/buffer.h"
 #include "util/tools.h"
 
-State::State(Network *network) : network(network), on_host(true) {
-    // Determine number of non-host devices
-    // Subtract one if cuda is enabled to avoid distribution to the host
-    this->num_devices = ResourceManager::get_instance()->get_num_devices();
-#ifdef __CUDACC__
-    --this->num_devices;
-#endif
-
-    // Add pointer vectors for each device
-    for (int i = 0 ; i < num_devices ; ++i) {
-        network_pointers.push_back(std::vector<BasePointer*>());
-        buffer_pointers.push_back(std::vector<BasePointer*>());
-    }
+static std::map<Layer*, DeviceID> distribute_layers(
+        const LayerList& layers, int num_devices) {
+    std::map<Layer*, DeviceID> layer_devices;
 
     // Distribute layers
     // Count up weights
     std::map<Layer*, int> num_weights;
-    for (auto layer : network->get_layers()) {
+    for (auto layer : layers) {
         num_weights[layer] = 0;
         for (auto& conn : layer->get_input_connections())
             num_weights[layer] += conn->get_compute_weights();
@@ -41,7 +31,7 @@ State::State(Network *network) : network(network), on_host(true) {
     for (int i = 0; num_weights.size() > 0; ++i) {
         // Typically display device is 0, so start at the other end
         // This helps avoid burdening the display device in some situations
-        int next_device = this->num_devices - 1;
+        int next_device = num_devices - 1;
         for (int i = 0 ; i < device_weights.size(); ++i)
             if (device_weights[i] < device_weights[next_device])
                 next_device = i;
@@ -58,6 +48,26 @@ State::State(Network *network) : network(network), on_host(true) {
         layer_devices[biggest] = next_device;
         device_weights[next_device] += size;
     }
+
+    return layer_devices;
+}
+
+State::State(Network *network) : network(network), on_host(true) {
+    // Determine number of non-host devices
+    // Subtract one if cuda is enabled to avoid distribution to the host
+    this->num_devices = ResourceManager::get_instance()->get_num_devices();
+#ifdef __CUDACC__
+    --this->num_devices;
+#endif
+
+    // Add pointer vectors for each device
+    for (int i = 0 ; i < num_devices ; ++i) {
+        network_pointers.push_back(std::vector<BasePointer*>());
+        buffer_pointers.push_back(std::vector<BasePointer*>());
+    }
+
+    // Distribute layers
+    this->layer_devices = distribute_layers(network->get_layers(), num_devices);
 
     // Validate neural model strings
     for (auto layer : network->get_layers())
@@ -87,7 +97,7 @@ State::State(Network *network) : network(network), on_host(true) {
                 for (auto pair : att->get_pointer_map())
                     pointer_map[pair.first] = pair.second;
 
-                /* Set up weight matrices */
+                // Set up weight matrices
                 for (auto& layer : layers) {
                     for (auto& conn : layer->get_input_connections()) {
                         WeightMatrix* matrix = new WeightMatrix(conn,
@@ -182,13 +192,13 @@ void State::transfer_to_device() {
 
     // Transfer network pointers
     for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
-        if (device_id != host_id)
+        if (device_id != host_id and network_pointers[device_id].size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(device_id, network_pointers[device_id]));
 
     // Transfer buffer pointers
     for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
-        if (device_id != host_id)
+        if (device_id != host_id and buffer_pointers[device_id].size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(device_id, buffer_pointers[device_id]));
 
@@ -198,11 +208,8 @@ void State::transfer_to_device() {
             if (attributes[i][n] != nullptr)
                 attributes[i][n]->transfer_to_device();
 
-    // Free old data block pointers and replace with new ones
-    for (auto ptr : data_block_pointers) {
-        // ptr->free();
-        // delete ptr;
-    }
+    // Replace data block pointers
+    // No need to free because transferring already does this
     data_block_pointers = new_data_block_pointers;
 
     on_host = false;
@@ -221,21 +228,18 @@ void State::transfer_to_host() {
 
     // Transfer network pointers
     for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
-        if (device_id != host_id)
+        if (device_id != host_id and network_pointers[device_id].size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(host_id, network_pointers[device_id]));
 
     // Transfer buffer pointers
     for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
-        if (device_id != host_id)
+        if (device_id != host_id and buffer_pointers[device_id].size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(host_id, buffer_pointers[device_id]));
 
-    // Free old data block pointers and replace with new ones
-    for (auto ptr : data_block_pointers) {
-        // ptr->free();
-        // delete ptr;
-    }
+    // Replace data block pointers
+    // No need to free because transferring already does this
     data_block_pointers = new_data_block_pointers;
 
     on_host = true;

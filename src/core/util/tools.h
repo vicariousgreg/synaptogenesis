@@ -101,12 +101,7 @@ class Timer {
 
         /* Waits until the duration exceeds the given limit */
         void wait(float limit) {
-            float total;
-            Time_point curr_time;
-            do {
-                curr_time = CClock::now();
-                total = get_diff(curr_time, this->start_time);
-            } while (total < limit);
+            while (get_diff(CClock::now(), this->start_time) < limit);
         }
 
     private:

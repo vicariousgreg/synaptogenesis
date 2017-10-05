@@ -106,6 +106,7 @@ class Engine {
         Report *report;
 
         // Thread loops
+        void single_thread_loop();
         void network_loop();
         void environment_loop();
 };
