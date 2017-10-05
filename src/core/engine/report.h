@@ -12,37 +12,16 @@ class State;
 class Engine;
 class Module;
 
-class Report {
+class Report : public PropertyConfig {
     public:
-        Report(Engine* engine, State* state, int iterations, float total_time);
-        virtual ~Report();
+        Report(Engine* engine, State* state,
+            size_t iterations, float total_time);
 
         void print();
-        void add_report(Module *module, Layer *layer, PropertyConfig *props);
-
-        const int iterations;
-        const float total_time;
-        const float average_time;
-        const size_t network_bytes;
-        const size_t state_buffer_bytes;
-        const size_t engine_buffer_bytes;
-
-        class LayerReport {
-            public:
-                LayerReport(std::string module, std::string structure,
-                    std::string layer, PropertyConfig *properties)
-                        : module(module),
-                          structure(structure),
-                          layer(layer),
-                          properties(properties) { }
-                virtual ~LayerReport() { delete properties; }
-
-                const std::string module, structure, layer;
-                PropertyConfig * const properties;
-        };
+        void add_report(Module *module, Layer *layer, PropertyConfig props);
 
     protected:
-        std::map<Layer*, std::vector<Report::LayerReport*>> layer_reports;
+        std::map<Layer*, std::vector<int>> layer_indices;
 };
 
 #endif

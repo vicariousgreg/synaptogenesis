@@ -107,9 +107,7 @@ network = Network(
      "connections" : connections})
 
 # Run training
-network.run(train_env,
-    {"iterations" : "60000",
-     "verbose" : "true"})
+network.run(train_env, {"verbose" : "true"})
 
 # Save the state and load it back up
 network.save_state("mnist.bin")
@@ -119,12 +117,14 @@ network.load_state("mnist.bin")
 matrix = network.get_weight_matrix("main matrix")
 
 # Run test
-network.run(test_env,
-    {"iterations" : "10000",
-     "verbose" : "true",
+report = network.run(test_env,
+    {"verbose" : "true",
+     "iterations" : "1",
      "learning flag" : "false"})
+print(report.to_dict())
 
 # Delete the objects
 del network
 del train_env
 del test_env
+del report

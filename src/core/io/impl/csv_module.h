@@ -9,6 +9,9 @@ class CSVReaderModule : public Module {
         CSVReaderModule(LayerList layers, ModuleConfig *config);
         virtual ~CSVReaderModule();
 
+        virtual size_t get_expected_iterations() const
+            { return exposure * data.size(); }
+
         void cycle();
 
     protected:

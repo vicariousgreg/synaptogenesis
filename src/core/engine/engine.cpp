@@ -172,7 +172,7 @@ size_t Engine::get_buffer_bytes() const {
 void Engine::network_loop() {
     run_timer.reset();
 
-    for (int i = 0 ; i < iterations; ++i) {
+    for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
         iteration_timer.reset();
 
@@ -234,7 +234,7 @@ void Engine::network_loop() {
 }
 
 void Engine::environment_loop() {
-    for (int i = 0; i < iterations; ++i) {
+    for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT_THREAD);
         for (auto& module : this->modules) {
@@ -282,17 +282,6 @@ void Engine::environment_loop() {
 }
 
 Context* Engine::run(PropertyConfig args) {
-    // Extract parameters
-    this->iterations = args.get_int("iterations", 1);
-    this->verbose = args.get_bool("verbose", true);
-    this->learning_flag = args.get_bool("learning flag", true);
-    this->suppress_output = args.get_bool("suppress output", false);
-    this->calc_rate = args.get_bool("calc rate", true);
-    this->environment_rate = args.get_int("environment rate", 1);
-    this->refresh_rate = args.get_float("refresh rate", 1.0);
-    this->time_limit = 1.0 / this->refresh_rate;
-    running = true;
-
     // Initialize the GUI
     // Do this before rebuilding so that modules can attach
     GuiController::get_instance()->init(this);
@@ -305,6 +294,31 @@ Context* Engine::run(PropertyConfig args) {
 
     // Initialize cuda random states
     init_rand(context->get_network()->get_max_layer_size());
+
+    // Extract parameters
+    this->verbose = args.get_bool("verbose", true);
+    this->learning_flag = args.get_bool("learning flag", true);
+    this->suppress_output = args.get_bool("suppress output", false);
+    this->calc_rate = args.get_bool("calc rate", true);
+    this->environment_rate = args.get_int("environment rate", 1);
+    this->refresh_rate = args.get_float("refresh rate", 1.0);
+    this->time_limit = 1.0 / this->refresh_rate;
+
+    // If iterations is explicitly provided, use it
+    if (args.has("iterations"))
+        this->iterations = args.get_int("iterations", 1);
+    else {
+        // Otherwise, use the max of the expected iterations
+        this->iterations = 0;
+        for (auto module : modules)
+            this->iterations =
+                std::max(this->iterations, module->get_expected_iterations());
+        if (this->iterations == 0)
+            ErrorManager::get_instance()->log_warning(
+                "Unspecified number of iterations -- running indefinitely.");
+    }
+
+    running = true;
 
     // Reset rate / time limit if calc_rate
     if (calc_rate) {

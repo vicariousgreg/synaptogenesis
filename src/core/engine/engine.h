@@ -100,7 +100,7 @@ class Engine {
         int environment_rate;
         bool learning_flag;
 
-        int iterations;
+        size_t iterations;
         bool verbose;
         Report *report;
 

@@ -223,8 +223,8 @@ void CSVEvaluatorModule::report(Report *report) {
         auto corr = correct[layer];
         auto percentage = 100.0 * corr / samples;
         report->add_report(this, layer,
-            new PropertyConfig({
-                { "Filename", this->filename },
+            PropertyConfig({
+                { "Filename", std::string(this->filename) },
                 { "Samples", std::to_string(samples) },
                 { "Correct", std::to_string(corr) },
                 { "Percentage", std::to_string(percentage) },

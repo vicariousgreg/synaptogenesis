@@ -30,10 +30,13 @@ class PropertyConfig {
         /* Get set of key-value pairs */
         const StringPairList get() const;
         const StringPairList get_alphabetical() const;
+        const std::vector<std::string> get_keys() const
+            { return keys; }
 
         /* Single property functions */
         bool has(std::string key) const;
         std::string get(std::string key, std::string def_val="") const;
+        const char* get_c_str(std::string key) const;
         PropertyConfig *set(std::string key, std::string val);
         PropertyConfig *set(std::string key, char* val);
         PropertyConfig *set(std::string key, int val);
@@ -50,6 +53,8 @@ class PropertyConfig {
         /* Get a set of key-child pairs */
         const PropertyPairList get_children() const;
         const PropertyPairList get_children_alphabetical() const;
+        const std::vector<std::string> get_child_keys() const
+            { return children_keys; }
 
         /* Single child functions */
         bool has_child(std::string key) const;
@@ -61,6 +66,8 @@ class PropertyConfig {
         /* Get a set of key-array pairs */
         const ArrayPairList get_arrays() const;
         const ArrayPairList get_arrays_alphabetical() const;
+        const std::vector<std::string> get_array_keys() const
+            { return array_keys; }
 
         /* Single array functions */
         bool has_array(std::string key) const;

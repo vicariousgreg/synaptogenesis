@@ -555,7 +555,7 @@ void working_memory_test() {
     auto c = new Context(network, env);
     Engine engine(c);
     print_network(network);
-    auto context = engine.run(PropertyConfig({{"iterations", "500000"}}));
+    auto context = engine.run();
     context->free();
     delete context;
 }

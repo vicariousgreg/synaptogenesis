@@ -6,7 +6,9 @@ class BasePointer;
 typedef enum {
     FLOAT_POINTER=1,
     INT_POINTER=2,
-    VOID_POINTER=3
+    STRING_POINTER=3,
+    PROPS_POINTER=4,
+    VOID_POINTER=5
 } POINTER_TYPE;
 
 typedef struct ARRAY {
@@ -16,6 +18,9 @@ typedef struct ARRAY {
 } ARRAY;
 
 ARRAY build_array(BasePointer* ptr);
+ARRAY null_array();
+extern "C" void free_array(ARRAY arr);
+extern "C" void free_array_deep(ARRAY arr);
 
 typedef void* NETWORK;
 typedef void* ENVIRONMENT;
@@ -26,6 +31,15 @@ extern "C" PROPS create_properties();
 extern "C" void add_property(PROPS properties, char* key, char* val);
 extern "C" void add_child(PROPS properties, char* key, PROPS child);
 extern "C" void add_to_array(PROPS properties, char* key, PROPS props);
+
+extern "C" ARRAY get_keys(PROPS properties);
+extern "C" ARRAY get_child_keys(PROPS properties);
+extern "C" ARRAY get_array_keys(PROPS properties);
+
+/* Use the return value immediately, because it's unstable */
+extern "C" const char* get_property(PROPS properties, char* key);
+extern "C" PROPS get_child(PROPS properties, char* key);
+extern "C" ARRAY get_array(PROPS properties, char* key);
 
 extern "C" ENVIRONMENT create_environment(PROPS properties);
 extern "C" ENVIRONMENT load_env(char* filename);
@@ -46,7 +60,7 @@ extern "C" ARRAY get_layer_data(
 extern "C" ARRAY get_connection_data(STATE state, char* conn_name, char* key);
 extern "C" ARRAY get_weight_matrix(STATE state, char* conn_name);
 
-extern "C" bool run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args);
+extern "C" PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args);
 
 extern "C" void destroy(void* obj);
 

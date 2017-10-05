@@ -38,8 +38,9 @@ class ModuleConfig : public PropertyConfig {
 
 class Module {
     public:
-        Module(LayerList layers);
         virtual ~Module() {}
+
+        static Module* build_module(Network *network, ModuleConfig *config);
 
         /* Override to implement IO functionality and module state cycling.
          * If unused, do not override */
@@ -56,14 +57,18 @@ class Module {
          */
         IOTypeMask get_io_type(Layer *layer) const;
 
+        /* Get the expected number of iterations according to a module
+         * If the module is agnostic, it will return 0 */
+        virtual size_t get_expected_iterations() const { return 0; }
+
         /* Gets the name of a module */
-        virtual std::string get_name() = 0;
+        virtual std::string get_name() const = 0;
 
         const LayerList layers;
 
-        static Module* build_module(Network *network, ModuleConfig *config);
-
     protected:
+        Module(LayerList layers);
+
         class ModuleBank {
             public:
                 // Set of module implementations
@@ -95,14 +100,14 @@ int CLASS_NAME::module_id = \
 Module *CLASS_NAME::build(LayerList layers, ModuleConfig *config) { \
     return new CLASS_NAME(layers, config); \
 } \
-std::string CLASS_NAME::get_name() { return STRING; }
+std::string CLASS_NAME::get_name() const { return STRING; }
 
 // Put this one in .h at bottom of class definition
 #define MODULE_MEMBERS \
     protected: \
         static Module *build(LayerList layers, ModuleConfig *config); \
         static int module_id; \
-        virtual std::string get_name();
+        virtual std::string get_name() const;
 
 
 typedef std::vector<Module*> ModuleList;

@@ -9,7 +9,6 @@ PropertyConfig::PropertyConfig(const PropertyConfig *other) {
     for (auto pair : other->get_children())
         this->set_child(pair.first, pair.second);
     for (auto pair : other->get_arrays()) {
-        this->set_array(pair.first, ConfigArray());
         for (auto config : pair.second)
             this->add_to_array(pair.first, config);
     }
@@ -51,6 +50,11 @@ bool PropertyConfig::has(std::string key) const
 std::string PropertyConfig::get(std::string key, std::string def_val) const {
     if (has(key)) return properties.at(key);
     else          return def_val;
+}
+
+const char* PropertyConfig::get_c_str(std::string key) const {
+    if (has(key)) return properties.at(key).c_str();
+    else          return nullptr;
 }
 
 PropertyConfig* PropertyConfig::set(std::string key, std::string value) {
@@ -190,8 +194,7 @@ PropertyConfig *PropertyConfig::set_array(std::string key, ConfigArray array) {
 }
 
 PropertyConfig *PropertyConfig::add_to_array(std::string key, const PropertyConfig* config) {
-    if (not has_array(key))
-        set_array(key, ConfigArray());
+    if (not has_array(key)) set_array(key, ConfigArray());
     arrays.at(key).push_back(new PropertyConfig(config));
     return this;
 }
