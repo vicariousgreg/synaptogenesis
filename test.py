@@ -107,7 +107,9 @@ network = Network(
      "connections" : connections})
 
 # Run training
-network.run(train_env, {"verbose" : "true"})
+network.run(train_env,
+    {"verbose" : "true",
+     "calc rate" : "false"})
 
 # Save the state and load it back up
 network.save_state("mnist.bin")
@@ -119,7 +121,7 @@ matrix = network.get_weight_matrix("main matrix")
 # Run test
 report = network.run(test_env,
     {"verbose" : "true",
-     "iterations" : "1",
+     "calc rate" : "false",
      "learning flag" : "false"})
 print(report.to_dict())
 

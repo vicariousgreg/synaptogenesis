@@ -53,10 +53,8 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
             ErrorManager::get_instance()->log_error("Bad CSV file!");
 
         float *ptr = data[data.size()-1].get();
-        for (int i = 0 ; i < layers.at(0)->size ; i++) {
-            std::stringstream(rowFields[i+offset]) >> ptr[i];
-            ptr[i] /= normalization;
-        }
+        for (int i = 0 ; i < layers.at(0)->size ; i++)
+            ptr[i] = std::atof(rowFields[i+offset]) / normalization;
         CsvParser_destroy_row(row);
     }
     CsvParser_destroy(csvparser);

@@ -207,17 +207,6 @@ void Engine::network_loop() {
         }
         motor_lock.pass(ENVIRONMENT_THREAD);
 
-        // Synchronize with the clock
-        iteration_timer.wait(time_limit);
-
-        // Set the refresh rate if calc_rate is true
-        if (calc_rate and i == 999) {
-            time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
-            refresh_rate = 1.0 / time_limit;
-            if (verbose)
-                printf("Updated refresh rate to %.2f fps\n", refresh_rate);
-        }
-
         // Check for errors
         device_check_error(nullptr);
 
@@ -227,6 +216,17 @@ void Engine::network_loop() {
             motor_lock.pass(ENVIRONMENT_THREAD);
             break;
         }
+
+        // Set the refresh rate if calc_rate is true
+        if (calc_rate and i == 999) {
+            time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
+            refresh_rate = 1.0 / time_limit;
+            if (verbose)
+                printf("Updated refresh rate to %.2f fps\n", refresh_rate);
+        }
+
+        // Synchronize with the clock
+        iteration_timer.wait(time_limit);
     }
 
     // Final synchronize
@@ -299,9 +299,9 @@ Context* Engine::run(PropertyConfig args) {
     this->verbose = args.get_bool("verbose", true);
     this->learning_flag = args.get_bool("learning flag", true);
     this->suppress_output = args.get_bool("suppress output", false);
-    this->calc_rate = args.get_bool("calc rate", true);
+    this->calc_rate = args.get_bool("calc rate", false);
     this->environment_rate = args.get_int("environment rate", 1);
-    this->refresh_rate = args.get_float("refresh rate", 1.0);
+    this->refresh_rate = args.get_float("refresh rate", FLT_MAX);
     this->time_limit = 1.0 / this->refresh_rate;
 
     // If iterations is explicitly provided, use it
