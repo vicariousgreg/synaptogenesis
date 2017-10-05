@@ -223,13 +223,15 @@ ARRAY get_weight_matrix(STATE state, char* conn_name) {
 
 PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
     try {
-        Engine engine(
-            new Context((Network*)net, (Environment*)env, (State*)state));
+        if (net == nullptr or state == nullptr) return nullptr;
 
-        auto context = engine.run(*((PropertyConfig*)args));
-        auto report = context->get_last_report();
-        delete context;
-        return report;
+        return Engine(Context(
+                        (Network*)net,
+                        (Environment*)env,
+                        (State*)state))
+                      .run((args == nullptr)
+                              ? PropertyConfig()
+                              : *((PropertyConfig*)args));
     } catch(...) {
         return nullptr;
     }

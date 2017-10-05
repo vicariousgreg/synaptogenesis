@@ -117,8 +117,8 @@ void mnist_test() {
         new ModuleConfig("periodic_input", "mnist", "bias_layer"));
 
     // Run training
-    auto c = new Context(network, env);
-    Engine engine(c);
+    auto state = new State(network);
+    Engine engine(Context(network, env, state));
     engine.run(PropertyConfig(
         {{"iterations", "60000"},
          {"calc rate", "false"}}));
@@ -149,8 +149,6 @@ void mnist_test() {
         {{"iterations", "10000"},
          {"calc rate", "false"},
          {"learning flag", "false"}}));
-
-    delete c;
 }
 
 void game_of_life_test() {
@@ -255,12 +253,13 @@ void game_of_life_test() {
     env->add_module(
         new ModuleConfig("visualizer", "game_of_life", "board"));
 
-    auto c = new Context(network, env);
-    Engine engine(c);
+    auto state = new State(network);
+    Engine engine(Context(network, env, state));
     print_network(network);
-    auto context = engine.run(PropertyConfig({{"iterations", "500000"}}));
-    context->free();
-    delete context;
+    engine.run(PropertyConfig({{"iterations", "500000"}}));
+    delete network;
+    delete env;
+    delete state;
 }
 
 void working_memory_test() {
@@ -552,12 +551,13 @@ void working_memory_test() {
         ->set("rate", "500")
         ->set("verbose", "true"));
 
-    auto c = new Context(network, env);
-    Engine engine(c);
+    auto state = new State(network);
+    Engine engine(Context(network, env, state));
     print_network(network);
     auto context = engine.run();
-    context->free();
-    delete context;
+    delete network;
+    delete env;
+    delete state;
 }
 
 void dsst_test() {
@@ -678,13 +678,13 @@ void dsst_test() {
             ->set("rate", "10"));
 
     std::cout << "DSST test......\n";
+    auto state = new State(network);
+    Engine engine(Context(network, env, state));
     print_network(network);
-    auto c = new Context(network, env);
-    Engine engine(c);
-
     auto context = engine.run(PropertyConfig({{"iterations", "1000000"}}));
-    context->free();
-    delete context;
+    delete network;
+    delete env;
+    delete state;
 }
 
 void debug_test() {
@@ -1000,21 +1000,25 @@ void debug_test() {
     std::cout << "Debug test......\n";
     print_network(network);
 
-    Engine engine(new Context(network));
+    auto state = new State(network);
+    Engine engine(Context(network, nullptr, state));
+    print_network(network);
     auto context = engine.run(PropertyConfig({{"iterations", "1"}}));
-    context->free();
-    delete context;
+    delete network;
+    delete state;
 }
 
 int cli() {
     bool quit = false;
+    Network *network = nullptr;
+    Environment *environment = nullptr;
+    State *state = nullptr;
     Engine *engine = nullptr;
-    Context *context = nullptr;
 
     while (not quit) {
         std::cout << "Options:" << std::endl;
         std::cout << "Load (N)etwork" << std::endl;
-        if (context != nullptr) {
+        if (network != nullptr) {
             std::cout << "Load (E)nvironment" << std::endl;
             std::cout << "Load (S)tate" << std::endl;
             std::cout << "(R)un Engine" << std::endl;
@@ -1031,21 +1035,21 @@ int cli() {
                 case 'N':
                     std::cout << "Enter network name: ";
                     std::cin >> input;
-                    context = new Context(load_network(input + ".json"));
+                    network = load_network(input + ".json");
+                    state = new State(network);
                     break;
                 case 'q':
                 case 'Q':
                     quit = true;
                     break;
                 default:
-                    if (context == nullptr) throw std::invalid_argument("");
+                    if (network == nullptr) throw std::invalid_argument("");
                     switch (input.at(0)) {
                         case 'e':
                         case 'E':
                             std::cout << "Enter environment name: ";
                             std::cin >> input;
-                            context->set_environment(
-                                load_environment(input + ".json"));
+                            environment = load_environment(input + ".json");
                             if (engine != nullptr)
                                 engine->rebuild();
                             break;
@@ -1053,7 +1057,7 @@ int cli() {
                         case 'S':
                             std::cout << "Enter state name: ";
                             std::cin >> input;
-                            context->get_state()->load(input + ".bin");
+                            state->load(input + ".bin");
                             if (engine != nullptr)
                                 engine->rebuild();
                             break;
@@ -1063,7 +1067,7 @@ int cli() {
                             std::cin >> input;
                             try {
                                 if (engine == nullptr)
-                                    engine = new Engine(context);
+                                    engine = new Engine(Context(network, environment, state));
                                 engine->run(PropertyConfig({{"iterations", input}}));
                             } catch (std::runtime_error e) {
                                 printf("Fatal error -- exiting...\n");
@@ -1077,7 +1081,9 @@ int cli() {
         }
         std::cout << std::endl;
     }
-    if (context != nullptr) delete context;
+    if (network != nullptr) delete network;
+    if (environment != nullptr) delete environment;
+    if (state != nullptr) delete state;
     if (engine != nullptr) delete engine;
     return 0;
 }

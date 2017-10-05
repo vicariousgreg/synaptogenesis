@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 
+#include "engine/context.h"
 #include "io/buffer.h"
 #include "io/module.h"
 #include "util/constants.h"
@@ -49,7 +50,7 @@ class Lock {
 
 class Engine {
     public:
-        Engine(Context *context);
+        Engine(Context context);
         virtual ~Engine();
 
         // Clears the buffer, modules, cluster, and resources
@@ -60,7 +61,7 @@ class Engine {
         void rebuild();
 
         // Run the engine
-        Context* run(PropertyConfig args=PropertyConfig());
+        Report* run(PropertyConfig args=PropertyConfig());
 
         void interrupt();
 
@@ -73,7 +74,7 @@ class Engine {
         size_t get_buffer_bytes() const;
 
     protected:
-        Context *context;
+        Context context;
         bool running;
 
         void build_environment();

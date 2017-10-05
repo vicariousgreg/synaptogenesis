@@ -1,7 +1,6 @@
 #include <cfloat>
 
 #include "engine/engine.h"
-#include "engine/context.h"
 #include "engine/report.h"
 #include "engine/instruction.h"
 #include "engine/cluster/cluster.h"
@@ -12,7 +11,7 @@
 #include "state/attributes.h"
 #include "gui_controller.h"
 
-Engine::Engine(Context *context)
+Engine::Engine(Context context)
         : context(context),
           running(false),
           learning_flag(true),
@@ -27,16 +26,18 @@ Engine::Engine(Context *context)
           report(nullptr) { }
 
 void Engine::build_environment() {
+    if (context.environment == nullptr) return;
+
     /* Build environmental buffer */
     LayerList input_layers, expected_layers, output_layers;
 
-    for (auto config : context->get_environment()->get_modules()) {
+    for (auto config : context.environment->get_modules()) {
         // Skip if necessary
         if (config->get_bool("skip", false)) continue;
 
         // Build module
         Module *module = Module::build_module(
-            context->get_network(), new ModuleConfig(config));
+            context.network, new ModuleConfig(config));
         modules.push_back(module);
 
         // Update io_types for all layers attached to the module
@@ -84,7 +85,7 @@ void Engine::build_environment() {
 
 void Engine::build_clusters() {
     /* Build clusters */
-    auto state = context->get_state();
+    auto state = context.state;
 
     // Create the clusters and gather their nodes
     for (auto& structure : state->network->get_structures()) {
@@ -267,7 +268,7 @@ void Engine::environment_loop() {
     }
 
     // Create report
-    this->report = new Report(this, this->context->get_state(),
+    this->report = new Report(this, this->context.state,
         iterations, run_timer.query(nullptr));
 
     // Allow modules to modify report
@@ -281,7 +282,7 @@ void Engine::environment_loop() {
     GuiController::get_instance()->quit();
 }
 
-Context* Engine::run(PropertyConfig args) {
+Report* Engine::run(PropertyConfig args) {
     // Initialize the GUI
     // Do this before rebuilding so that modules can attach
     GuiController::get_instance()->init(this);
@@ -289,11 +290,11 @@ Context* Engine::run(PropertyConfig args) {
     // Transfer state to device
     // This renders the pointers in the engine outdated,
     //   so the engine must be rebuilt
-    context->get_state()->transfer_to_device();
+    context.state->transfer_to_device();
     rebuild();
 
     // Initialize cuda random states
-    init_rand(context->get_network()->get_max_layer_size());
+    init_rand(context.network->get_max_layer_size());
 
     // Extract parameters
     this->verbose = args.get_bool("verbose", true);
@@ -349,15 +350,14 @@ Context* Engine::run(PropertyConfig args) {
     network_thread.join();
     environment_thread.join();
 
-    // Add report to context
-    context->add_report(this->report);
-    this->report = nullptr;
-
     // Clean up
     free_rand();
     running = false;
 
-    return context;
+    auto report = this->report;
+    this->report = nullptr;
+
+    return report;
 }
 
 void Engine::interrupt() {

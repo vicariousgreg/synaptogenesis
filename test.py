@@ -1,4 +1,5 @@
 from syngen import Network, Environment
+from pprint import pprint
 
 # Create main structure (feedforward engine)
 structure = {"name" : "mnist", "type" : "feedforward"}
@@ -106,14 +107,17 @@ network = Network(
     {"structures" : [structure],
      "connections" : connections})
 
-# Run training
-network.run(train_env,
-    {"verbose" : "true",
-     "calc rate" : "false"})
+train = True
+if (train):
+    # Run training
+    network.run(train_env,
+        {"verbose" : "true",
+         "calc rate" : "false"})
 
-# Save the state and load it back up
-network.save_state("mnist.bin")
-network.load_state("mnist.bin")
+    # Save the state and load it back up
+    network.save_state("mnist.bin")
+else:
+    network.load_state("mnist.bin")
 
 # Retrieve main weight matrix
 matrix = network.get_weight_matrix("main matrix")
@@ -123,7 +127,7 @@ report = network.run(test_env,
     {"verbose" : "true",
      "calc rate" : "false",
      "learning flag" : "false"})
-print(report.to_dict())
+print(report)
 
 # Delete the objects
 del network

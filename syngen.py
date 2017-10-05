@@ -1,5 +1,6 @@
 from ctypes import *
 from collections import OrderedDict
+from json import dumps
 
 class BaseArray(Structure):
     _fields_=[("size",c_int), ("type",c_uint), ("data",c_void_p)]
@@ -175,6 +176,9 @@ class Properties(CObject):
         for k,v in self.arrays.iteritems():
             out[k] = [p.to_dict() for p in v]
         return out
+
+    def __str__(self):
+        return dumps(self.to_dict(), indent=4)
 
     def add_property(self, key, val):
         self.properties[key] = val
