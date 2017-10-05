@@ -42,7 +42,7 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
 
     if (local) {
         if (host_dest)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Attempted to transfer host pointer to host!");
 
         cudaSetDevice(new_device);
@@ -56,7 +56,7 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
         this->device_id = new_device;
     } else {
         if (not host_dest)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Attempted to transfer device pointer to device!");
 
         cudaSetDevice(this->device_id);
@@ -74,13 +74,13 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
 
 void BasePointer::copy_to(BasePointer* other) {
     if (other->size != this->size or other->unit_size != this->unit_size)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to copy memory between pointers of different sizes!");
 
     if (this->local and other->local)
         memcpy(other->ptr, this->ptr, this->size * this->unit_size);
     else
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to copy memory between base pointers "
             "that aren't on the host!");
 }

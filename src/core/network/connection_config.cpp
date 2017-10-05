@@ -22,11 +22,11 @@ ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
         row_offset = column_offset = config->get_int("offset", 0);
 
     if (row_field_size <= 0 or column_field_size <= 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unspecified field size for arborized config!");
 
     if (row_stride < 0 or column_stride < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Cannot have negative stride in arborized config!");
 
     // If offsets are not provided, use default
@@ -126,7 +126,7 @@ SubsetConfig::SubsetConfig(PropertyConfig *config) {
 
     if (from_row_size <= 0 or to_row_size <= 0 or
         from_col_size <= 0 or to_col_size <= 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Invalid subset dimensions!");
 }
 
@@ -152,12 +152,12 @@ SubsetConfig::SubsetConfig(
           total_size(from_size * to_size) {
         if (from_row_start < 0 or from_col_start < 0
                 or to_row_start < 0 or to_col_start < 0)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "SubsetConfig Connected Config cannot have"
                 " negative start indices!");
         if (from_row_start > from_row_end or from_col_start > from_col_end
                 or to_row_start > to_row_end or to_col_start > to_col_end)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "SubsetConfig Connected Config cannot have start indices"
                 " greater than end indices!");
 }
@@ -209,20 +209,20 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
           type(get_connection_type(config->get("type", "fully connected"))),
           opcode(get_opcode(config->get("opcode", "add"))) {
     if (not config->has("from layer"))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to construct ConnectionConfig "
             "without source layer!");
     if (not config->has("to layer"))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to construct ConnectionConfig "
             "without destination layer!");
     if (delay < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to construct ConnectionConfig with negative delay!");
     switch (type) {
         case SUBSET:
             if (not has_child("subset config"))
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Attempted to create SUBSET connection without "
                     "specifying subset configuration!");
             break;
@@ -230,7 +230,7 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
         case CONVOLUTIONAL:
         case DIVERGENT:
             if (not has_child("arborized config"))
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Attempted to create arborized connection without "
                     "specifying subset configuration!");
             break;
@@ -264,7 +264,7 @@ ConnectionConfig::ConnectionConfig(
     this->set("opcode", OpcodeStrings.at(opcode));
 
     if (delay < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to construct ConnectionConfig with negative delay!");
 
     if (weight_config != nullptr)
@@ -273,7 +273,7 @@ ConnectionConfig::ConnectionConfig(
     switch (type) {
         case SUBSET:
             if (specialized_config == nullptr)
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Attempted to create SUBSET connection without "
                     "specifying subset configuration!");
             this->set_child("subset config", specialized_config);
@@ -282,7 +282,7 @@ ConnectionConfig::ConnectionConfig(
         case CONVOLUTIONAL:
         case DIVERGENT:
             if (specialized_config == nullptr)
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Attempted to create arborized connection without "
                     "specifying subset configuration!");
             this->set_child("arborized config", specialized_config);
@@ -365,7 +365,7 @@ int ConnectionConfig::get_expected_rows(int rows) const {
                     return std::max(1,
                         row_field_size + (row_stride * (rows - 1)));
                 default:
-                    ErrorManager::get_instance()->log_error(
+                    LOG_ERROR(
                         "Invalid call to get_expected_rows!");
             }
     }
@@ -395,7 +395,7 @@ int ConnectionConfig::get_expected_columns(int columns) const {
                     return std::max(1,
                         column_field_size + (column_stride * (columns - 1)));
                 default:
-                    ErrorManager::get_instance()->log_error(
+                    LOG_ERROR(
                         "Invalid call to get_expected_columns!");
             }
     }

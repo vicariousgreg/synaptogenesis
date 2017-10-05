@@ -24,7 +24,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             id(std::hash<std::string>()(this->str())) {
     // Check for plastic second order connection
     if (second_order and plastic)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in " + this->str() + ":\n"
             "  Plastic second order connections are not supported!");
 
@@ -42,7 +42,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     and from_layer->columns == to_layer->columns)
                 this->num_weights = to_layer->size;
             else
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error in " + this->str() + ":\n"
                     "  Cannot connect differently sized layers one-to-one!");
             break;
@@ -57,7 +57,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                 or
                 (to_layer->columns != from_layer->columns
                     and to_layer->columns != expected_columns))
-                ErrorManager::get_instance()->log_warning(
+                LOG_WARNING(
                     "Error in " + this->str() + ":\n"
                     "Unexpected destination layer size for arborized connection"
                     " (" + std::to_string(to_layer->rows)
@@ -86,12 +86,12 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                     //   the stride to non-zero values (division)
                     if (arborized_config.row_stride == 0 or
                         arborized_config.column_stride == 0)
-                        ErrorManager::get_instance()->log_error(
+                        LOG_ERROR(
                             "Error in " + this->str() + ":\n"
                             "  Divergent connections cannot have zero stride!");
                     break;
                 default:
-                    ErrorManager::get_instance()->log_error(
+                    LOG_ERROR(
                         "Error in " + this->str() + ":\n"
                         "  Unknown layer connection type!");
             }
@@ -103,7 +103,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
         auto second_order_conn = node->get_second_order_connection();
         if (this->type != second_order_conn->type or
             this->num_weights != second_order_conn->get_num_weights())
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error in " + this->str() + ":\n"
                 "  Second order connection does not match host connection!");
 
@@ -118,7 +118,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             (arborized_config.get_total_field_size() != from_layer->size
                 or arborized_config.row_stride != 0
                 or arborized_config.column_stride != 0))
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error in " + this->str() + ":\n"
                 "  Second order convolutional connections must have fields"
                 " that are the size of the input layer, and must have 0 stride!");
@@ -126,7 +126,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
 
     // Validate the config
     if (not config->validate(this))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in " + this->str() + ":\n"
             "  Invalid connection config!");
 
@@ -143,7 +143,7 @@ Connection::~Connection() {
 std::string Connection::get_parameter(std::string key,
         std::string default_val) const {
     if (not this->get_config()->has(key))
-        ErrorManager::get_instance()->log_warning(
+        LOG_WARNING(
             "Error in " + this->str() + ":\n"
             "  Unspecified parameter: " + key
             + " -- using " + default_val + ".");

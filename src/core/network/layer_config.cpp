@@ -21,14 +21,14 @@ LayerConfig::LayerConfig(const PropertyConfig *config)
           plastic(config->get_bool("plastic", false)),
           global(config->get_bool("global", false)) {
     if (not config->has("name"))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to construct LayerConfig without name!");
     if (not config->has("neural model"))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to construct LayerConfig without neural model!");
 
     if (rows <= 0 or columns <= 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Invalid dimensions for " + this->str() +
             "[" + std::to_string(rows) + "," + std::to_string(columns) + "]!");
 }
@@ -89,7 +89,7 @@ LayerConfig* LayerConfig::add_dendrite(std::string parent,
     } else {
         auto node = get_dendrite(this->get_array("dendrites"), parent);
         if (node == nullptr)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Could not find dendrite " + parent
                 + "in layer " + name + "!");
         node->add_to_array("children", config);

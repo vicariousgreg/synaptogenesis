@@ -82,7 +82,7 @@ std::string PropertyConfig::remove_property(std::string key) {
         keys.erase(std::find(keys.begin(), keys.end(), key));
         return value;
     }
-    ErrorManager::get_instance()->log_error(
+    LOG_ERROR(
         "Attempted to remove non-existent property " + key
         + " from PropertyConfig!");
 }
@@ -92,7 +92,7 @@ int PropertyConfig::get_int(std::string key, int def_val) const {
         if (has(key)) return std::stoi(get(key));
         else          return def_val;
     } catch (std::invalid_argument) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Could not convert property \""
             + key + "\" (" + get(key) + ") to integer!");
     }
@@ -103,7 +103,7 @@ float PropertyConfig::get_float(std::string key, float def_val) const {
         if (has(key)) return std::stof(get(key));
         else          return def_val;
     } catch (std::invalid_argument) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Could not convert property \""
             + key + "\" (" + get(key) + ") to float!");
     }
@@ -156,7 +156,7 @@ PropertyConfig* PropertyConfig::remove_child(std::string key) {
             std::find(children_keys.begin(), children_keys.end(), key));
         return child;
     }
-    ErrorManager::get_instance()->log_error(
+    LOG_ERROR(
         "Attempted to remove non-existent property " + key
         + " from PropertyConfig!");
 }
@@ -209,11 +209,11 @@ PropertyConfig *PropertyConfig::remove_from_array(
             arr.erase(it);
             return to_return;
         } else
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Attempted to remove non-existent property " + key
                 + " from PropertyConfig array " + key + "!");
     } else {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to remove non-existent property " + key
             + " from PropertyConfig array " + key + "!");
     }
@@ -225,7 +225,7 @@ PropertyConfig *PropertyConfig::remove_from_array(std::string key, int index) {
     if (arr.size() > index)
         return remove_from_array(key, arr.at(index));
     else
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to remove non-existent property " + key
             + " from PropertyConfig array " + key + "!");
 }
@@ -238,7 +238,7 @@ ConfigArray PropertyConfig::remove_array(std::string key) {
             std::find(array_keys.begin(), array_keys.end(), key));
         return array;
     }
-    ErrorManager::get_instance()->log_error(
+    LOG_ERROR(
         "Attempted to remove non-existent property " + key
         + " from PropertyConfig!");
 }

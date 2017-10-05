@@ -25,16 +25,16 @@ PeriodicInputModule::PeriodicInputModule(LayerList layers, ModuleConfig *config)
     this->verbose = config->get_bool("verbose", false);
 
     if (this->min_value > this->max_value)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Invalid min/max value for periodic input generator!");
     if (this->rate <= 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Invalid rate for periodic input generator!");
     if (this->fraction <= 0.0 or this->fraction > 1.0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Invalid fraction for periodic input generator!");
     if (this->end < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Invalid shuffle rate for random input generator!");
 
     this->values = Pointer<float>(layers.at(0)->size, 0.0);

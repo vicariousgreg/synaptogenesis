@@ -32,15 +32,15 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
 
     // Check if file exists
     if (filename == "" or not std::ifstream(filename.c_str()).good())
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Could not open CSV file!");
 
     if (offset < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Bad offset in CSV input module!");
 
     if (exposure < 1)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Bad exposure length in CSV input module!");
 
     CsvParser *csvparser = CsvParser_new(filename.c_str(), ",", 0);
@@ -50,7 +50,7 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
         data.push_back(Pointer<float>(layers.at(0)->size));
         const char **rowFields = CsvParser_getFields(row);
         if (layers.at(0)->size > CsvParser_getNumFields(row) - offset)
-            ErrorManager::get_instance()->log_error("Bad CSV file!");
+            LOG_ERROR("Bad CSV file!");
 
         float *ptr = data[data.size()-1].get();
         for (int i = 0 ; i < layers.at(0)->size ; i++)
@@ -98,7 +98,7 @@ CSVExpectedModule::CSVExpectedModule(LayerList layers, ModuleConfig *config)
     set_io_type(EXPECTED);
     for (auto layer : layers)
         if (output_types[layer] != FLOAT)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "CSVExpectedModule currently only supports FLOAT output type.");
 }
 

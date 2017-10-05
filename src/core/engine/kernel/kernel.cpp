@@ -174,7 +174,7 @@ Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn) {
                 ? get_activate_base_second_order_divergent()
                 : get_activate_base_divergent();
         default:
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Attempted to retrieve base activator kernel for "
                 "unimplemented connection type!");
     }

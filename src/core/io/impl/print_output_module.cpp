@@ -17,7 +17,7 @@ PrintOutputModule::PrintOutputModule(LayerList layers, ModuleConfig *config)
     this->history_length = config->get_int("history_length", 1);
 
     if (this->history_length <= 0 or this->history_length > 8 * sizeof(Output))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Bad history length parameter for PrintOutputModule!");
 
     this->maximum = (1 << this->history_length) - 1;

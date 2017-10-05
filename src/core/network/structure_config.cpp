@@ -9,7 +9,7 @@ StructureConfig::StructureConfig(const PropertyConfig *config)
               get_cluster_type(config->get("type", "parallel"))) {
     // Check name
     if (not config->has("name"))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unspecified name for structure!");
 
     // Add layers

@@ -33,7 +33,7 @@ void get_extractor(EXTRACTOR *dest, OutputType output_type, DeviceID device_id) 
             case BIT:   cudaMemcpyFromSymbol(dest, x_bit, sizeof(void *));   break;
         }
 #else
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Tried to retrieve device extractor in serial build!");
 #endif
 }

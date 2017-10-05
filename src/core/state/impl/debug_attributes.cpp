@@ -114,7 +114,7 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
     try {
         return funcs.at(conn->type);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
     }
 }
@@ -137,7 +137,7 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
     try {
         return funcs.at(conn->type);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
     }
 }

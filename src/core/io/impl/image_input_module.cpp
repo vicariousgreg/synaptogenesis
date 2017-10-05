@@ -16,7 +16,7 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
     float scale = config->get_float("scale", 1);
 
     if (filename == "")
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unspecified filename for image input module!");
 
     try {
@@ -27,7 +27,7 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
         // Check layer rows/columns and assign channels
         for (auto layer : layers) {
             if (width != layer->columns or height != layer->rows)
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Image size does not match layer size!");
             auto channel =
                 config->get_layer(layer)->get("channel", "gray");
@@ -36,7 +36,7 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
             else if (channel == "green") channel_map[layer] = GREEN;
             else if (channel == "blue")  channel_map[layer] = BLUE;
             else
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Unrecognized image channel: " + channel);
         }
 
@@ -60,7 +60,7 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
             }
         }
     } catch (cimg_library::CImgIOException e) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Image " + filename + " could not be opened!\n");
     }
 }

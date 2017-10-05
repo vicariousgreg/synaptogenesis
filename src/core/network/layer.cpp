@@ -52,7 +52,7 @@ DendriticNode* Layer::get_dendritic_node(std::string name,
         if (node->name == name) return node;
 
     if (log_error)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in " + this->str() + ":\n"
             "  Cannot find Dendritic Node " + name + "!");
 
@@ -61,7 +61,7 @@ DendriticNode* Layer::get_dendritic_node(std::string name,
 
 std::string Layer::get_parameter(std::string key, std::string def_val) const {
     if (not this->get_config()->has(key))
-        ErrorManager::get_instance()->log_warning(
+        LOG_WARNING(
             "Error in " + this->str() + ":\n"
             "  Unspecified parameter: " + key
             + " -- using " + def_val + ".");
@@ -104,7 +104,7 @@ void Layer::add_dendrites(std::string parent_name,
     auto parent = get_dendritic_node(parent_name);
     for (auto dendrite : dendrites) {
         if (not dendrite->has("name"))
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Attempted to dendrite without name to layer!");
 
         bool second_order = dendrite->get_bool("second order", false);

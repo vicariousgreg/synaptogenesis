@@ -87,7 +87,7 @@ CALC_ALL(update_liz_add,
 
 Kernel<SYNAPSE_ARGS> LeakyIzhikevichAttributes::get_updater(Connection *conn) {
     if (conn->second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
 
     std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
@@ -100,7 +100,7 @@ Kernel<SYNAPSE_ARGS> LeakyIzhikevichAttributes::get_updater(Connection *conn) {
     try {
         return funcs.at(conn->type).at(conn->opcode);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
     }
 }

@@ -48,14 +48,14 @@ MazeModule::MazeModule(LayerList layers, ModuleConfig *config)
             config->get_layer(layer)->get("params", "");
         params[layer] = param;
         if (param == "")
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Unspecified MazeModule layer parameter!");
 
         if (param == "input") {
             // Check layer size
             // Should be the size of the board
             if (layer->size != input_data[param].get_size())
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Mismatched MazeModule input layer size!");
 
             set_io_type(layer, INPUT);
@@ -64,13 +64,13 @@ MazeModule::MazeModule(LayerList layers, ModuleConfig *config)
             // Check layer size
             // Should be 4 for output layer
             if (layer->size != 4)
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Mismatched MazeModule output layer size!");
 
             set_io_type(layer, OUTPUT);
             window->add_layer(layer, OUTPUT);
         } else {
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Unrecognized layer type: " + param
                 + " in VisualizerModule!");
         }
@@ -149,7 +149,7 @@ bool MazeModule::is_dirty(std::string params) {
     try {
         return dirty.at(params);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unrecognized params in maze_game " + params);
     }
 }
@@ -177,7 +177,7 @@ Pointer<float> MazeModule::get_input(std::string params) {
         }
         return input_data.at(params);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unrecognized params in maze_game " + params);
     }
 }

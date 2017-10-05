@@ -69,7 +69,7 @@ void transfer_weights(float* from, float* to, int size) {
 /* Clears the diagonal of a weight matrix */
 void clear_diagonal(float *arr, int rows, int cols) {
     if (rows != cols)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to clear diagonal of non-square weight matrix!");
 
     for (int i = 0 ; i < rows ; ++i)
@@ -88,7 +88,7 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
     // If parallel, it will be copied below
     mData = Pointer<float>(matrix_size);
     if (mData.get() == nullptr)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to allocate space for weight matrices on host!");
 
     // If parameter is specified, interpret it for initialization
@@ -132,7 +132,7 @@ static void gaussian_config(const PropertyConfig& config, float* target_matrix,
     float fraction = config.get_float("fraction", 1.0);
 
     if (std_dev < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Gaussian weight config std_dev must be positive!");
 
@@ -147,7 +147,7 @@ static void log_normal_config(const PropertyConfig& config, float* target_matrix
     float fraction = config.get_float("fraction", 1.0);
 
     if (std_dev < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Log normal weight config std_dev must be positive!");
 
@@ -162,7 +162,7 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
         case CONVOLUTIONAL:
             break;
         default:
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error in weight config for " + conn->str() + ":\n"
                 "  SurroundWeightConfig can only be used "
                 "on convergent/convolutional arborized connections!");
@@ -175,7 +175,7 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
     if (size_param >= 0)
         rows = cols = size_param;
     if (rows < 0 or cols < 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Surround weight config rows/cols must be positive!");
 
@@ -231,7 +231,7 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
     std::string weight_string = config.get("weight string", "");
     if (weight_string == "")
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Missing weight string for specified weight config!");
 
@@ -265,7 +265,7 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
     for (int row = 0 ; row < rows ; ++row) {
         for (int col = 0 ; col < cols ; ++col) {
             if (row != rows-1 and col != cols-1 and stream.eof())
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error in weight config for " + conn->str() + ":\n"
                     "  Insufficient number of weights specified!");
             else stream >> value;
@@ -284,7 +284,7 @@ static void initialize_weights(const PropertyConfig config,
     if (config.has("fraction")) {
         float fraction = config.get_float("fraction", 1.0);
         if (fraction < 0 or fraction > 1.0)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error in weight config for " + conn->str() + ":\n"
                 "  Weight config fraction must be between 0 and 1!");
     }
@@ -295,7 +295,7 @@ static void initialize_weights(const PropertyConfig config,
     bool surround = type == "surround";
     if (surround) {
         if (not config.has("child type"))
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error in weight config for " + conn->str() + ":\n"
                 "  Missing child weight config for surround weight config!");
         type = config.get("child type");
@@ -312,11 +312,11 @@ static void initialize_weights(const PropertyConfig config,
     else if (type == "specified")
         specified_config(config, target_matrix, conn, is_host);
     else if (type == "surround")
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Surround weight configs cannot be nested!");
     else
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Unrecognized weight config type: " + type);
 
@@ -351,11 +351,11 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset) {
     if (output_type != BIT)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Only BIT output connections can have variable delays!");
     int base_delay = conn->delay;
 
-    ErrorManager::get_instance()->log_debug(
+    LOG_DEBUG(
         conn->from_layer->name + " -> " +
         conn->to_layer->name + "delay initialization...\n");
 
@@ -404,7 +404,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                                 0.5);
                             int delay = base_delay + (distance / velocity);
                             if (delay > 31)
-                                ErrorManager::get_instance()->log_error(
+                                LOG_ERROR(
                                     "Error initializing delays for "
                                     + conn->str() + "\n"
                                     "  Unmyelinated axons cannot have delays "
@@ -428,7 +428,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
 
             if (ac.row_stride != ac.column_stride
                 or (int(to_spacing / from_spacing) != ac.row_stride))
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error initializing delays for " + conn->str() + "\n"
                     "  Spacing and strides must match up for "
                     "convergent connection!");
@@ -444,7 +444,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                         0.5);
                     int delay = base_delay + (distance / velocity);
                     if (delay > 31)
-                        ErrorManager::get_instance()->log_error(
+                        LOG_ERROR(
                             "Error initializing delays for " + conn->str() + "\n"
                             "  Unmyelinated axons cannot have delays "
                             "greater than 31!");
@@ -472,7 +472,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
 
             if (ac.row_stride != ac.column_stride
                 or (int(from_spacing / to_spacing) != ac.row_stride))
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error initializing delays for " + conn->str() + "\n"
                     "  Spacing and strides must match up for "
                     "divergent connection!");
@@ -524,7 +524,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                                 0.5);
                             int delay = base_delay + (distance / velocity);
                             if (delay > 31)
-                                ErrorManager::get_instance()->log_error(
+                                LOG_ERROR(
                                     "Error initializing delays for "
                                     + conn->str() + "\n"
                                     "  Unmyelinated axons cannot have delays "

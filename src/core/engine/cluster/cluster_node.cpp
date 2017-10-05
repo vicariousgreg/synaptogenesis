@@ -46,7 +46,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
                     to_layer, state, compute_stream,
                     not engine->is_input(to_layer)));
         else
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error building cluster node for " + layer->str() + ":\n"
                 "  Unrecognized noise type: " + type);
     } else if (not this->is_input) {
@@ -143,7 +143,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         Connection *conn = curr->get_second_order_connection();
 
         if (conn == nullptr)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error building cluster node for " + curr->to_layer->str() + ":\n"
                 "  Missing host connection for second order node!");
 

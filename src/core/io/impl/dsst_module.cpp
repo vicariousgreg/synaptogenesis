@@ -33,7 +33,7 @@ DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
             set_io_type(layer, OUTPUT);
             window->add_layer(layer, OUTPUT);
         } else {
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Unrecognized layer type: " + param
                 + " in VisualizerModule!");
         }

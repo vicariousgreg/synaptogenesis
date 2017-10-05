@@ -31,6 +31,6 @@ FeedforwardCluster::FeedforwardCluster(Structure *structure,
     std::set<Layer*> visited;
     for (auto& layer : structure->get_layers())
         if (engine->is_input(layer) and not DFS(layer, visited))
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Feedforward engine requires a structure with no cycles!");
 }

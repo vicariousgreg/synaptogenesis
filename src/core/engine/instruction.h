@@ -75,7 +75,7 @@ class InterDeviceTransferInstruction : public Instruction {
             Connection *conn, State *state)
                 : Instruction(conn->to_layer, nullptr) {
             if (not state->is_inter_device(conn))
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error creating instruction for " + conn->str() + ":\n"
                     "  InterDeviceTransferInstruction should only be used with"
                     " inter-device synaptic connections!");

@@ -56,7 +56,7 @@ CALC_CONVOLUTIONAL_BY_WEIGHT(update_hebbian_convolutional,
 Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
         Connection *conn) {
     if (conn->second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Second order plastic connections not supported!");
 
     switch (conn->type) {
@@ -73,7 +73,7 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
         case DIVERGENT:
             return get_update_hebbian_divergent();
         default:
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Unimplemented connection type!");
     }
 }

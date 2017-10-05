@@ -16,7 +16,7 @@ class DummyModule : public Module {
                 else if (params == "output")
                     set_io_type(layer, OUTPUT);
                 else
-                    ErrorManager::get_instance()->log_error(
+                    LOG_ERROR(
                         "Unrecognized layer type: " + params
                         + " in DummyModule!");
             }

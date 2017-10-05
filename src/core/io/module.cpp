@@ -30,7 +30,7 @@ ModuleConfig* ModuleConfig::add_layer(std::string structure,
 
 ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
     if (not config->has("structure") or not config->has("layer"))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Module layer config must have structure and layer name!");
     this->add_to_array("layers", config);
     return this;
@@ -52,7 +52,7 @@ IOTypeMask Module::get_io_type(Layer *layer) const {
     try {
         return io_types.at(layer);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to retrieve IO type from Module for "
             "unrepresented layer: " + layer->str());
     }
@@ -63,7 +63,7 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
     auto type = config->get_type();
     auto bank = Module::get_module_bank();
     if (bank->modules.count(type) == 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unrecognized module: " + type + "!");
 
     // Extract layers
@@ -75,7 +75,7 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
 
     // Ensure there are layers in the set
     if (layers.size() == 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to build " + type + " module with 0 layers!");
 
     // Build using structure and layer name
@@ -91,7 +91,7 @@ int Module::register_module(std::string module_type,
         MODULE_BUILD_PTR build_ptr) {
     auto bank = Module::get_module_bank();
     if (bank->modules.count(module_type) == 1)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Duplicate module type: " + module_type + "!");
     bank->modules.insert(module_type);
     bank->build_pointers[module_type] = build_ptr;
@@ -102,13 +102,13 @@ int Module::register_module(std::string module_type,
 
 void Module::enforce_single_layer(std::string type) {
     if (layers.size() > 1)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             type + " module only supports a single layer!");
 }
 
 void Module::enforce_equal_layer_sizes(std::string type) {
     if (not check_equal_sizes(layers))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Layers in " + type + " module must be of equal sizes!");
 }
 
@@ -125,7 +125,7 @@ OutputType Module::get_output_type(Layer *layer) {
     try {
         return output_types.at(layer);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to retrieve output type from Module for "
             "unrepresented layer: " + layer->str());
     }

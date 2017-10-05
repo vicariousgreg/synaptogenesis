@@ -16,7 +16,7 @@ PrintRateModule::PrintRateModule(LayerList layers, ModuleConfig *config)
     this->rate = config->get_int("rate", 100);
 
     if (this->rate <= 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Invalid rate for print rate module!");
 
     this->totals = (float*) malloc(layers.at(0)->size * sizeof(float));

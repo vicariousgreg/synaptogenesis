@@ -57,7 +57,7 @@ void Cluster::wait_for_output() {
 Cluster *build_cluster(Structure *structure,
         State *state, Engine *engine) {
     if (not state->check_compatibility(structure))
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error building cluster for " + structure->str() + ":\n"
             "  Cluster compatibility conflict detected!");
 
@@ -69,7 +69,7 @@ Cluster *build_cluster(Structure *structure,
         case FEEDFORWARD:
             return new FeedforwardCluster(structure, state, engine);
         default:
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error building cluster for " + structure->str() + ":\n"
                 "  Unrecognized stream cluster type!");
     }

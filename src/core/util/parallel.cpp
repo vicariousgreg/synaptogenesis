@@ -29,7 +29,7 @@ void gpuAssert(const char* file, int line, const char* msg) {
         printf("Cuda failure (%s: %d): '%s'\n", file, line,
             cudaGetErrorString(e));
         if (msg == nullptr) msg = "";
-        ErrorManager::get_instance()->log_error(msg);
+        LOG_ERROR(msg);
     }
 }
 

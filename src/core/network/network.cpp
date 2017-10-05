@@ -33,7 +33,7 @@ Structure* Network::get_structure(std::string name, bool log_error) {
         if (s->name == name)
             structure = s;
     if (structure == nullptr and log_error)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Could not find structure: " + name);
     return structure;
 }
@@ -74,7 +74,7 @@ Connection* Network::get_connection(std::string name, bool log_error) {
         if (c->name == name)
             conn = c;
     if (conn == nullptr and log_error)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Could not find connection: " + name);
     return conn;
 }
@@ -119,7 +119,7 @@ int Network::get_max_layer_size() const {
 void Network::add_structure_internal(StructureConfig *struct_config) {
     for (auto& st : this->structures)
         if (st->name == struct_config->name)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Repeated structure name: " + st->name);
     this->structures.push_back(new Structure(struct_config));
 }
@@ -132,11 +132,11 @@ void Network::add_connection_internal(const ConnectionConfig* conn_config) {
         from_structure = to_structure = structures.at(0)->name;
     else {
         if (not conn_config->has("from structure"))
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Unspecified source structure for connection: "
                 + conn_config->get("name", ""));
         if (not conn_config->has("to structure"))
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Unspecified destination structure for connection: "
                 + conn_config->get("name", ""));
         from_structure = conn_config->get("from structure");

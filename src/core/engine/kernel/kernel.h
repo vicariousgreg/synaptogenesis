@@ -21,7 +21,7 @@ class Kernel {
             if (not stream->is_host()) {
                 cudaSetDevice(stream->get_device_id());
                 if (parallel_kernel == nullptr)
-                    ErrorManager::get_instance()->log_error(
+                    LOG_ERROR(
                         "Attempted to run nullptr kernel!");
                 else
                     parallel_kernel
@@ -30,7 +30,7 @@ class Kernel {
             } else
 #endif
                 if (serial_kernel == nullptr)
-                    ErrorManager::get_instance()->log_error(
+                    LOG_ERROR(
                         "Attempted to run nullptr kernel!");
                 else
                     serial_kernel(args...);

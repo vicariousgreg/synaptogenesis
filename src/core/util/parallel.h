@@ -28,7 +28,7 @@ inline int calc_blocks(int computations, int threads=0) { return 0; }
 inline void device_check_memory() { }
 inline void* cuda_allocate_device(int device_id, size_t count,
         size_t size, void* source_data) {
-    ErrorManager::get_instance()->log_error(
+    LOG_ERROR(
         "Attempted to allocate device memory in non-parallel build.");
     return nullptr;
 }

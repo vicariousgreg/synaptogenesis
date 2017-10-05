@@ -96,7 +96,7 @@ Pointer<float> Buffer::get_input(Layer *layer) {
     try {
         return input.slice(input_map.at(layer), layer->size);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to retrieve input from Buffer for "
             "unrepresented layer: " + layer->str());
     }
@@ -106,7 +106,7 @@ Pointer<Output> Buffer::get_output(Layer *layer) {
     try {
         return output.slice(output_map.at(layer), layer->size);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to retrieve output from Buffer for "
             "unrepresented layer: " + layer->str());
     }
@@ -116,7 +116,7 @@ Pointer<Output> Buffer::get_expected(Layer *layer) {
     try {
         return expected.slice(expected_map.at(layer), layer->size);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to retrieve expected data from Buffer for "
             "unrepresented layer: " + layer->str());
     }
@@ -126,7 +126,7 @@ bool Buffer::get_dirty(Layer *layer) const {
     try {
         return dirty_map.at(layer);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to retrieve dirty flag from Buffer for "
             "unrepresented layer: " + layer->str());
     }

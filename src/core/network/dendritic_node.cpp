@@ -48,7 +48,7 @@ DendriticNode::~DendriticNode() {
 
 int DendriticNode::get_second_order_size() const {
     if (not second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Requested second order size on non-second order node!");
     else if (second_order_conn == nullptr)
@@ -59,7 +59,7 @@ int DendriticNode::get_second_order_size() const {
 
 Connection* DendriticNode::get_second_order_connection() const {
     if (not second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Requested second order host connection on non-second order node!");
     else
@@ -69,18 +69,18 @@ Connection* DendriticNode::get_second_order_connection() const {
 DendriticNode* DendriticNode::add_child(std::string name, bool second_order) {
     // Verify that this node is not a leaf or a second order node
     if (is_leaf())
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Dendritic node cannot have children if it has a connection!");
     else if (this->second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in dendritic node " + name +
             " of " + this->to_layer->str() + "\n"
             "  Second order dendritic nodes cannot have internal children!");
 
     // Ensure name is not a duplicate
     if (this->to_layer->get_dendritic_node(name, false) != nullptr)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Duplicate dendritic node name: " + name + "!");
 
@@ -97,14 +97,14 @@ DendriticNode* DendriticNode::add_child(std::string name, bool second_order) {
 DendriticNode* DendriticNode::add_child(Connection *conn) {
     // Verify that this node is not a leaf
     if (is_leaf())
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in dendritic node " + name +
             " of " + this->to_layer->str() + "\n"
             "  Dendritic node cannot have children if it has a connection!");
 
     // Verify that the connection targets this node's layer
     if (conn->to_layer != this->to_layer)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in dendritic node " + name +
             " of " + this->to_layer->str() + "\n"
             "  Attempted to add connection to dendritic tree"
@@ -120,7 +120,7 @@ DendriticNode* DendriticNode::add_child(Connection *conn) {
             second_order_conn = conn;
             return this;
         } else if (conn->get_num_weights() != second_order_conn->get_num_weights()) {
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Error in dendritic node of " + this->to_layer->str() + "\n"
                 "  Second order connections must have identical sizes!");
         } else {

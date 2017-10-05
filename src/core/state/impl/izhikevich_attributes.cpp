@@ -69,7 +69,7 @@ static void create_parameters(std::string str,
         else if (str == "thalamo_cortical")   params = THALAMO_CORTICAL;
         else if (str == "resonator")          params = RESONATOR;
         else
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Unrecognized parameter string: " + str);
 
 
@@ -395,7 +395,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     // Currently, this only copies the first matrix in the stack, and this
     //   attribute set uses auxiliary data
     if (conn->second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
 
     std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
@@ -420,7 +420,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     try {
         return funcs.at(conn->type).at(conn->opcode);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
     }
 }
@@ -507,7 +507,7 @@ CALC_ALL(update_iz_add,
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
     if (conn->second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
 
     std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
@@ -520,7 +520,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
     try {
         return funcs.at(conn->type).at(conn->opcode);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
     }
 }
@@ -536,7 +536,7 @@ static void check_parameters(Layer *layer) {
 
     for (auto pair : layer->get_config()->get())
         if (valid_params.count(pair.first) == 0)
-            ErrorManager::get_instance()->log_warning(
+            LOG_WARNING(
                 "Unrecognized layer parameter: " + pair.first);
 }
 
@@ -552,7 +552,7 @@ static void check_parameters(Connection *conn) {
 
     for (auto pair : conn->get_config()->get())
         if (valid_params.count(pair.first) == 0)
-            ErrorManager::get_instance()->log_warning(
+            LOG_WARNING(
                 "Unrecognized connection parameter: " + pair.first);
 }
 
@@ -705,7 +705,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         int max_delay = std::stoi(
             conn->get_parameter("random delay", "0"));
         if (max_delay > 31)
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Randomized axons cannot have delays greater than 31!");
         iRand(delays, num_weights, 0, max_delay);
     } else {

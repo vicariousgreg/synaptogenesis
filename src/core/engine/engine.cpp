@@ -46,7 +46,7 @@ void Engine::build_environment() {
             auto module_io_type = module->get_io_type(layer);
 
             if (module_io_type == 0)
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error in environment model:\n"
                     "  Error adding module " + config->get("type") +
                     "to: " + layer->str() + "\n" +
@@ -54,13 +54,13 @@ void Engine::build_environment() {
 
             // Check for duplicate input/expected modules
             if (module_io_type & INPUT & layer_io_type)
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error in environment model:\n"
                     "  Error adding module " + config->get("type") +
                     "to: " + layer->str() + "\n" +
                     "    Layer cannot have more than one input module!");
             if (module_io_type & EXPECTED & layer_io_type)
-                ErrorManager::get_instance()->log_error(
+                LOG_ERROR(
                     "Error in environment model:\n"
                     "  Error adding module " + config->get("type") +
                     "to: " + layer->str() + "\n" +
@@ -315,7 +315,7 @@ Report* Engine::run(PropertyConfig args) {
             this->iterations =
                 std::max(this->iterations, module->get_expected_iterations());
         if (this->iterations == 0)
-            ErrorManager::get_instance()->log_warning(
+            LOG_WARNING(
                 "Unspecified number of iterations -- running indefinitely.");
     }
 

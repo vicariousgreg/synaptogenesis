@@ -106,7 +106,7 @@ HOST DEVICE T* Pointer<T>::get(size_t offset) const {
     return ((T*)ptr) + offset;
 #else
     if (not local)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to dereference device pointer from host!");
     return ((T*)ptr) + offset;
 #endif
@@ -115,25 +115,25 @@ HOST DEVICE T* Pointer<T>::get(size_t offset) const {
 template<typename T>
 void Pointer<T>::copy_to(Pointer<T> dst) const {
     if (dst.size != this->size)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to copy memory between pointers of different sizes!");
     if (local and dst.local)
         memcpy(dst.ptr, ptr, size * sizeof(T));
     else
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Non-local transfers must be handled by a Stream!");
 }
 
 template<typename T>
 void Pointer<T>::copy_to(Pointer<T> dst, Stream *stream) const {
     if (dst.size != this->size)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to copy memory between pointers of different sizes!");
 #ifdef __CUDACC__
     if (this->local and dst.local) memcpy(dst.ptr, this->ptr, this->size * sizeof(T));
     else {
         if (stream->is_host())
-            ErrorManager::get_instance()->log_error(
+            LOG_ERROR(
                 "Attempted to copy memory between devices using host stream!");
         cudaSetDevice(stream->get_device_id());
 
@@ -167,7 +167,7 @@ void Pointer<T>::set(T val, bool async) {
         if (async) cuMemsetD32Async((CUdeviceptr)ptr,val,size, 0);
         else cuMemsetD32((CUdeviceptr)ptr,val,size);
     } else {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Attempted to set memory of non-primitive device array!");
 #endif
     }

@@ -42,7 +42,7 @@ CALC_ALL(activate_perceptron,
 
 Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
     if (conn->second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
 
     std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
@@ -55,7 +55,7 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
     try {
         return funcs.at(conn->type);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
     }
 }
@@ -75,7 +75,7 @@ CALC_ALL(update_perceptron,
 
 Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
     if (conn->second_order)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
 
     std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
@@ -88,7 +88,7 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
     try {
         return funcs.at(conn->type);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unimplemented connection type!");
     }
 }

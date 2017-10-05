@@ -5,7 +5,7 @@ Attributes* Attributes::build_attributes(LayerList &layers,
         std::string neural_model, DeviceID device_id) {
     auto bank = Attributes::get_neural_model_bank();
     if (bank->neural_models.count(neural_model) == 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unrecognized neural model string: " + neural_model + "!");
 
     Attributes *attributes =
@@ -45,7 +45,7 @@ int Attributes::register_neural_model(std::string neural_model,
         int object_size, OutputType output_type, ATT_BUILD_PTR build_ptr) {
     auto bank = Attributes::get_neural_model_bank();
     if (bank->neural_models.count(neural_model) == 1)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Duplicate neural model string: " + neural_model + "!");
     bank->neural_models.insert(neural_model);
     bank->build_pointers[neural_model] = build_ptr;
@@ -251,7 +251,7 @@ Pointer<T> Attributes::create_layer_variable(T val) {
 void Attributes::register_neuron_variable(
         std::string key, BasePointer* ptr) {
     if (this->neuron_variables.count(key) > 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Repeated neuron variable key: " + key);
     this->neuron_variables[key] = ptr;
 }
@@ -259,7 +259,7 @@ void Attributes::register_neuron_variable(
 void Attributes::register_connection_variable(
         std::string key, BasePointer* ptr) {
     if (this->connection_variables.count(key) > 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Repeated connection variable key: " + key);
     this->connection_variables[key] = ptr;
 }
@@ -267,7 +267,7 @@ void Attributes::register_connection_variable(
 void Attributes::register_layer_variable(
         std::string key, BasePointer* ptr) {
     if (this->layer_variables.count(key) > 0)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Repeated layer variable key: " + key);
     this->layer_variables[key] = ptr;
 }
@@ -277,7 +277,7 @@ BasePointer* Attributes::get_neuron_data(size_t id, std::string key) {
         return neuron_variables.at(key)->slice(
             get_other_start_index(id), layer_sizes.at(id));
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve neuron data \"" + key + "\" in Attributes for "
             "layer ID: " + std::to_string(id));
     }
@@ -287,7 +287,7 @@ BasePointer* Attributes::get_layer_data(size_t id, std::string key) {
     try {
         return layer_variables.at(key)->slice(get_layer_index(id), 1);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve layer data \"" + key + "\" in Attributes for "
             "layer ID: " + std::to_string(id));
     }
@@ -297,7 +297,7 @@ BasePointer* Attributes::get_connection_data(size_t id, std::string key) {
     try {
         return connection_variables.at(key)->slice(get_connection_index(id), 1);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve connection data \"" + key + "\" in Attributes "
             "for connection ID: " + std::to_string(id));
     }
@@ -308,7 +308,7 @@ int Attributes::get_layer_index(size_t id) const {
     try {
         return layer_indices.at(id);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve layer index in Attributes for "
             "layer ID: " + std::to_string(id));
     }
@@ -318,7 +318,7 @@ int Attributes::get_other_start_index(size_t id) const {
     try {
         return other_start_indices.at(id);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve 'other start index' in Attributes for "
             "layer ID: " + std::to_string(id));
     }
@@ -330,7 +330,7 @@ Pointer<float> Attributes::get_input(size_t id, int register_index) const {
         return input.slice(
             input_start_indices.at(id) + (register_index * size), size);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve input data in Attributes for "
             "layer ID: " + std::to_string(id)
             + ", index: " + std::to_string(register_index));
@@ -342,7 +342,7 @@ Pointer<float> Attributes::get_second_order_weights(size_t id) const {
         int size = second_order_sizes.at(id);
         return second_order_weights.slice(second_order_indices.at(id), size);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve second order weights in Attributes for "
             "layer ID: " + std::to_string(id));
     }
@@ -353,7 +353,7 @@ Pointer<Output> Attributes::get_expected(size_t id) const {
         int size = layer_sizes.at(id);
         return expected.slice(other_start_indices.at(id), size);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve expected data in Attributes for "
             "layer ID: " + std::to_string(id));
     }
@@ -365,7 +365,7 @@ Pointer<Output> Attributes::get_output(size_t id, int word_index) const {
         return output.slice(
             output_start_indices.at(id) + (word_index * size), size);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve output data in Attributes for "
             "layer ID: " + std::to_string(id)
             + ", index: " + std::to_string(word_index));
@@ -376,7 +376,7 @@ int Attributes::get_connection_index(size_t id) const {
     try {
         return connection_indices.at(id);
     } catch (std::out_of_range) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Failed to retrieve connection index in Attributes for "
             "connection ID: " + std::to_string(id));
     }

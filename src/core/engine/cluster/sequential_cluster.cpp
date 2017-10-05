@@ -60,7 +60,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
     }
 
     if (visited.size() < structure->get_layers().size())
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Sequential cluster failed to process all layers!");
 }
 

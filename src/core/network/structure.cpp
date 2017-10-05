@@ -34,7 +34,7 @@ Layer* Structure::get_layer(std::string name, bool log_error) const {
             return layer;
 
     if (log_error)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in " + this->str() + ":\n"
             "  Could not find layer \"" + name + "\"");
     else return nullptr;
@@ -66,7 +66,7 @@ int Structure::get_num_neurons() const {
 
 Layer* Structure::add_layer_internal(const LayerConfig *layer_config) {
     if (get_layer(layer_config->name, false) != nullptr)
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Error in " + this->str() + ":\n"
             "  Repeated layer name : \"" + layer_config->name + "\"");
 

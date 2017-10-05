@@ -96,7 +96,7 @@ inline ConnectionType get_connection_type(std::string name) {
     try {
         return ConnectionTypes.at(name);
     } catch (...) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unrecognized ConnectionType: " + name);
     }
 }
@@ -139,7 +139,7 @@ inline Opcode get_opcode(std::string name) {
     try {
         return Opcodes.at(name);
     } catch (...) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unrecognized Opcode: " + name);
     }
 }
@@ -167,7 +167,7 @@ inline ClusterType get_cluster_type(std::string name) {
     try {
         return ClusterTypes.at(name);
     } catch (...) {
-        ErrorManager::get_instance()->log_error(
+        LOG_ERROR(
             "Unrecognized ClusterType: " + name);
     }
 }

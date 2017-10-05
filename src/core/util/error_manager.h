@@ -3,6 +3,10 @@
 
 #include <string>
 
+#define LOG_ERROR ErrorManager::get_instance()->log_error
+#define LOG_WARNING ErrorManager::get_instance()->log_warning
+#define LOG_DEBUG ErrorManager::get_instance()->log_debug
+
 class DebugError : public std::exception { };
 
 class ErrorManager {
