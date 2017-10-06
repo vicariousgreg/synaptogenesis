@@ -20,7 +20,6 @@ Engine::Engine(Context context)
           time_limit(0),
           environment_rate(1),
           iterations(0),
-          calc_rate(true),
           verbose(false),
           buffer(nullptr),
           report(nullptr) { }
@@ -225,13 +224,10 @@ void Engine::single_thread_loop() {
         // If engine gets interrupted, pass the locks over and break
         if (not this->running) break;
 
-        // Set the refresh rate if calc_rate is true
-        if (calc_rate and i == 999) {
-            time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
-            refresh_rate = 1.0 / time_limit;
-            if (verbose)
-                printf("Updated refresh rate to %.2f fps\n", refresh_rate);
-        }
+        // Print refresh rate if verbose
+        if (verbose and i == 999)
+                printf("Measured refresh rate: %.2f fps\n",
+                    1000 / (run_timer.query(nullptr)));
 
         // Synchronize with the clock
         if (time_limit > 0) iteration_timer.wait(time_limit);
@@ -303,13 +299,11 @@ void Engine::network_loop() {
             break;
         }
 
-        // Set the refresh rate if calc_rate is true
-        if (calc_rate and i == 999) {
-            time_limit = (run_timer.query(nullptr)*1.1) / (i+1);
-            refresh_rate = 1.0 / time_limit;
-            if (verbose)
-                printf("Updated refresh rate to %.2f fps\n", refresh_rate);
-        }
+        // Print refresh rate if verbose
+        if (verbose and i == 999)
+                printf("Measured refresh rate: %.2f fps\n",
+                    1000 / (run_timer.query(nullptr)));
+
 
         // Synchronize with the clock
         if (time_limit > 0) iteration_timer.wait(time_limit);
@@ -385,7 +379,6 @@ Report* Engine::run(PropertyConfig args) {
     this->verbose = args.get_bool("verbose", false);
     this->learning_flag = args.get_bool("learning flag", true);
     this->suppress_output = args.get_bool("suppress output", false);
-    this->calc_rate = args.get_bool("calc rate", false);
     this->environment_rate = args.get_int("environment rate", 1);
     this->refresh_rate = args.get_float("refresh rate", FLT_MAX);
     this->time_limit = (refresh_rate == FLT_MAX)
@@ -407,12 +400,6 @@ Report* Engine::run(PropertyConfig args) {
 
     running = true;
 
-    // Reset rate / time limit if calc_rate
-    if (calc_rate) {
-        this->refresh_rate = FLT_MAX;
-        this->time_limit = 0;
-    }
-
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT_THREAD);
     motor_lock.set_owner(NETWORK_THREAD);
@@ -425,11 +412,13 @@ Report* Engine::run(PropertyConfig args) {
     // Launch threads
     std::vector<std::thread> threads;
     if (args.get_bool("multithreaded", true)) {
+        if (verbose) printf("\nLaunching multithreaded...\n\n");
         threads.push_back(std::thread(
             &Engine::network_loop, this));
         threads.push_back(std::thread(
             &Engine::environment_loop, this));
     } else {
+        if (verbose) printf("\nLaunching single threaded...\n\n");
         threads.push_back(std::thread(
             &Engine::single_thread_loop, this));
     }

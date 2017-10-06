@@ -256,7 +256,7 @@ class Network(CObject):
         return build_array(
             _syn.get_weight_matrix(self.state, connection))
 
-    def run(self, environment, args):
+    def run(self, environment, args=dict()):
         # Build state
         if self.state is None: self.build_state()
 

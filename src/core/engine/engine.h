@@ -97,7 +97,6 @@ class Engine {
         Timer run_timer;
         Timer iteration_timer;
         float refresh_rate, time_limit;
-        bool calc_rate;
         int environment_rate;
         bool learning_flag;
 

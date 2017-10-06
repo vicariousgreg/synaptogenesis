@@ -119,9 +119,7 @@ void mnist_test() {
     // Run training
     auto state = new State(network);
     Engine engine(Context(network, env, state));
-    engine.run(PropertyConfig(
-        {{"iterations", "60000"},
-         {"calc rate", "false"}}));
+    engine.run(PropertyConfig({{"iterations", "60000"}}));
 
     // Remove modules and replace for testing
     env->remove_modules();
@@ -147,7 +145,6 @@ void mnist_test() {
     engine.rebuild();
     engine.run(PropertyConfig(
         {{"iterations", "10000"},
-         {"calc rate", "false"},
          {"learning flag", "false"}}));
 }
 
@@ -554,7 +551,7 @@ void working_memory_test() {
     auto state = new State(network);
     Engine engine(Context(network, env, state));
     print_network(network);
-    auto context = engine.run();
+    auto context = engine.run(PropertyConfig({{"verbose", "true"}}));
     delete network;
     delete env;
     delete state;

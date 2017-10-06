@@ -127,8 +127,7 @@ network = Network(
 train = True
 if (train):
     # Run training
-    print(network.run(train_env,
-                    {"calc rate" : "false"}))
+    print(network.run(train_env, {"multithreaded" : "false"}))
 
     # Save the state and load it back up
     network.save_state("mnist.bin")
@@ -139,9 +138,7 @@ else:
 matrix = network.get_weight_matrix("main matrix")
 
 # Run test
-print(network.run(test_env,
-    {"calc rate" : "false",
-     "learning flag" : "false"}))
+print(network.run(test_env, {"multithreaded" : "false", "learning flag" : "false"}))
 
 # Delete the objects
 del network
