@@ -60,6 +60,23 @@ void randomize_weights_lognormal(float* arr, int size,
         }
     }
 }
+void randomize_weights_powerlaw(float* arr, int size,
+        float exponent, float max, float fraction) {
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+
+    float coeff = pow(max, exponent+1);
+    float pow_exp = 1.0 / (exponent+1);
+
+    if (fraction == 1.0) {
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = pow(coeff * dist(generator), pow_exp);
+    } else {
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = (dist(generator) < fraction)
+                ? pow(coeff * dist(generator), pow_exp)
+                : 0.0;
+    }
+}
 
 /* Transfers the values from one array to another */
 void transfer_weights(float* from, float* to, int size) {
@@ -153,6 +170,22 @@ static void log_normal_config(const PropertyConfig& config, float* target_matrix
 
     randomize_weights_lognormal(target_matrix, conn->get_num_weights(),
         mean, std_dev, conn->max_weight, fraction);
+}
+
+static void power_law_config(const PropertyConfig& config, float* target_matrix,
+        Connection* conn, bool is_host) {
+    float exponent = config.get_float("exponent", 1.5);
+    float fraction = config.get_float("fraction", 1.0);
+
+    exponent = abs(exponent);
+
+    if (conn->max_weight < 0)
+        LOG_ERROR(
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Power law config max must be positive!");
+
+    randomize_weights_powerlaw(target_matrix, conn->get_num_weights(),
+        exponent, conn->max_weight, fraction);
 }
 
 static void surround_config(const PropertyConfig& config, float* target_matrix,
@@ -309,6 +342,8 @@ static void initialize_weights(const PropertyConfig config,
         gaussian_config(config, target_matrix, conn, is_host);
     else if (type == "log normal")
         log_normal_config(config, target_matrix, conn, is_host);
+    else if (type == "power law")
+        power_law_config(config, target_matrix, conn, is_host);
     else if (type == "specified")
         specified_config(config, target_matrix, conn, is_host);
     else if (type == "surround")

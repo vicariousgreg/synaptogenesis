@@ -1,5 +1,5 @@
 #include "io/impl/dsst_module.h"
-#include "util/error_manager.h"
+
 #include "dsst_window.h"
 
 REGISTER_MODULE(DSSTModule, "dsst");
@@ -36,7 +36,8 @@ DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
 
         // Use output as default
         if (get_io_type(layer) == 0)
-            set_io_type(layer, OUTPUT);
+            set_io_type(layer, INPUT);
+        window->add_layer(layer, get_io_type(layer));
     }
 }
 

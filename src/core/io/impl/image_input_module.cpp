@@ -1,6 +1,6 @@
 #include "io/impl/image_input_module.h"
 #include "util/tools.h"
-#include "util/error_manager.h"
+
 
 #define cimg_display 0
 #include "CImg.h"

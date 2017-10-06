@@ -205,7 +205,7 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
           dendrite(config->get("dendrite", "root")),
           plastic(config->get_bool("plastic", true)),
           delay(config->get_int("delay", 0)),
-          max_weight(config->get_float("max", 1.0)),
+          max_weight(config->get_float("max weight", 1.0)),
           type(get_connection_type(config->get("type", "fully connected"))),
           opcode(get_opcode(config->get("opcode", "add"))) {
     if (not config->has("from layer"))

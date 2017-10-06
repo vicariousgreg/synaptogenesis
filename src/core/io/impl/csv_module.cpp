@@ -6,7 +6,6 @@
 
 #include "io/impl/csv_module.h"
 #include "util/tools.h"
-#include "util/error_manager.h"
 #include "csvparser.h"
 
 

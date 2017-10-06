@@ -2,8 +2,6 @@
 #define callback_module_h
 
 #include "io/module.h"
-#include "util/error_manager.h"
-#include "visualizer_window.h"
 
 class CallbackModule : public Module {
     public:

@@ -5,7 +5,7 @@
 
 #include "io/impl/print_output_module.h"
 #include "util/tools.h"
-#include "util/error_manager.h"
+
 
 REGISTER_MODULE(PrintOutputModule, "print_output");
 

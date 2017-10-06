@@ -2,7 +2,6 @@
 #include "network/network.h"
 #include "network/structure.h"
 #include "network/layer.h"
-#include "util/error_manager.h"
 
 ModuleConfig::ModuleConfig(PropertyConfig *config)
     : PropertyConfig(config) { }

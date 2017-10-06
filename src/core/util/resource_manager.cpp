@@ -94,9 +94,7 @@ void ResourceManager::drop_pointer(void* ptr, DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
             "Attempted to drop pointer from non-existent device!");
-    if (managed_pointers[device_id].erase(ptr) == 0)
-        LOG_ERROR(
-            "Attempted to drop unmanaged pointer!");
+    managed_pointers[device_id].erase(ptr);
 }
 
 BasePointer* ResourceManager::transfer(DeviceID device_id,

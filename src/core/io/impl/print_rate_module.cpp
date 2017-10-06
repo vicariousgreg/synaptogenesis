@@ -4,7 +4,7 @@
 
 #include "io/impl/print_rate_module.h"
 #include "util/tools.h"
-#include "util/error_manager.h"
+
 
 REGISTER_MODULE(PrintRateModule, "print_rate");
 

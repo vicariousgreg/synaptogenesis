@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include "io/impl/maze_module.h"
-#include "util/error_manager.h"
+
 
 REGISTER_MODULE(MazeModule, "maze_game");
 
