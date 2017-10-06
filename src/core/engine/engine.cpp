@@ -17,7 +17,7 @@ Engine::Engine(Context context)
           learning_flag(true),
           suppress_output(false),
           refresh_rate(FLT_MAX),
-          time_limit(1.0 / refresh_rate),
+          time_limit(0),
           environment_rate(1),
           iterations(0),
           calc_rate(true),
@@ -175,7 +175,7 @@ void Engine::single_thread_loop() {
 
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
-        iteration_timer.reset();
+        if (time_limit > 0) iteration_timer.reset();
 
         // Launch pre-input calculations
         for (auto& cluster : clusters)
@@ -234,7 +234,7 @@ void Engine::single_thread_loop() {
         }
 
         // Synchronize with the clock
-        iteration_timer.wait(time_limit);
+        if (time_limit > 0) iteration_timer.wait(time_limit);
     }
 
     // Final synchronize
@@ -260,7 +260,7 @@ void Engine::network_loop() {
 
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
-        iteration_timer.reset();
+        if (time_limit > 0) iteration_timer.reset();
 
         // Launch pre-input calculations
         for (auto& cluster : clusters)
@@ -312,7 +312,7 @@ void Engine::network_loop() {
         }
 
         // Synchronize with the clock
-        iteration_timer.wait(time_limit);
+        if (time_limit > 0) iteration_timer.wait(time_limit);
     }
 
     // Final synchronize
@@ -388,7 +388,8 @@ Report* Engine::run(PropertyConfig args) {
     this->calc_rate = args.get_bool("calc rate", false);
     this->environment_rate = args.get_int("environment rate", 1);
     this->refresh_rate = args.get_float("refresh rate", FLT_MAX);
-    this->time_limit = 1.0 / this->refresh_rate;
+    this->time_limit = (refresh_rate == FLT_MAX)
+        ? 0 : (1.0 / this->refresh_rate);
 
     // If iterations is explicitly provided, use it
     if (args.has("iterations"))
@@ -409,7 +410,7 @@ Report* Engine::run(PropertyConfig args) {
     // Reset rate / time limit if calc_rate
     if (calc_rate) {
         this->refresh_rate = FLT_MAX;
-        this->time_limit = 1.0 / FLT_MAX;
+        this->time_limit = 0;
     }
 
     // Set locks

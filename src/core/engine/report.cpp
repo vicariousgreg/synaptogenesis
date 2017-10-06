@@ -19,7 +19,7 @@ void Report::print() {
     const size_t iterations = std::stoll(get("iterations"));
     const float total_time = get_float("total time", 0.0);
     const float average_time = get_float("average time", 0.0);
-    const float fps = get_float("average time", 0.0);
+    const float fps = get_float("fps", 0.0);
     const size_t network_bytes = std::stoll(get("network bytes"));
     const size_t state_buffer_bytes = std::stoll(get("state buffer bytes"));
     const size_t engine_buffer_bytes = std::stoll(get("engine buffer bytes"));
@@ -27,7 +27,7 @@ void Report::print() {
     printf("\n\n* Engine Report:\n\n");
     printf("Total time: %fs\n", total_time);
     printf("Time averaged over %d iterations: %fs (%6.2ffps)\n",
-           iterations, average_time);
+           iterations, average_time, fps);
     printf("Network state size: %12zu bytes    (%12f MB)\n",
         network_bytes, (float)network_bytes / (1024 * 1024));
     printf("State  buffer size: %12zu bytes    (%12f MB)\n",

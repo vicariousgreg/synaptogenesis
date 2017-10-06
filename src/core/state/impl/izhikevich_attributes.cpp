@@ -91,9 +91,6 @@ static void create_parameters(std::string str,
 #define IZ_EULER_RES 10
 #define IZ_EULER_RES_INV 0.1
 
-/* Milliseconds per timestep */
-#define IZ_TIMESTEP_MS 1
-
 /* Time dynamics of postsynaptic spikes */
 #define TRACE_TAU 0.933  // 15
 
@@ -146,8 +143,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
     // Euler's method for voltage/recovery update
     // If the voltage exceeds the spiking threshold, break
-    for (int i = 0 ; (i < IZ_TIMESTEP_MS * IZ_EULER_RES)
-            and (voltage < IZ_SPIKE_THRESH) ; ++i) {
+    for (int i = 0 ; (i < IZ_EULER_RES) and (voltage < IZ_SPIKE_THRESH) ; ++i) {
         // Start with AMPA conductance
         float current = -ampa_conductance * voltage;
 
@@ -174,8 +170,12 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         //   set it to threshold before it corrupts the recovery variable
         voltage = (voltage != voltage) ? IZ_SPIKE_THRESH : voltage;
 
+        float adjusted_tau = (voltage > IZ_SPIKE_THRESH)
+            ? delta_v / (IZ_SPIKE_THRESH - voltage + delta_v)
+            : IZ_EULER_RES_INV;
+
         // Update recovery variable
-        recovery += a * ((b * voltage) - recovery) * IZ_EULER_RES_INV;
+        recovery += a * ((b * voltage) - recovery) * adjusted_tau;
     }
 
     ampa_conductances[nid] = 0.0;
@@ -491,12 +491,6 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
         /* Ensure weight stays within boundaries */ \
         weights[weight_index] = weight = \
             MAX(MIN_WEIGHT, MIN(max_weight, weight)); \
-\
-        /*
-        float change = learning_rate * weight_delta; \
-        if (change > 0.05 or change < -0.05) \
-            printf("(%8d w=%7.5f delt=%8.5f c=%9.4f rew=%7.4f change=%8.5f)\n", \
-                weight_index, weight, weight_delta, c, dopamine, change); */ \
     }
 
 CALC_ALL(update_iz_add,
