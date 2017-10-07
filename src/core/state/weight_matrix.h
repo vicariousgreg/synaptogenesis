@@ -12,6 +12,7 @@ class WeightMatrix {
         virtual ~WeightMatrix();
 
         Pointer<float> get_data() const { return mData; }
+        Pointer<float> get_layer(int index) const;
 
         BasePointer* get_pointer();
 
@@ -20,6 +21,8 @@ class WeightMatrix {
 
     private:
         Pointer<float> mData;
+        int num_weights;
+        int depth;
         int matrix_size;
 };
 

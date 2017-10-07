@@ -97,8 +97,11 @@ static void initialize_weights(const PropertyConfig config,
     float* target_matrix, Connection* conn, bool is_host);
 
 WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
-        DeviceID device_id) : connection(conn), device_id(device_id) {
-    int num_weights = conn->get_num_weights();
+        DeviceID device_id)
+    : connection(conn),
+      depth(matrix_depth),
+      num_weights(conn->get_num_weights()),
+      device_id(device_id) {
     matrix_size = num_weights * matrix_depth;
 
     // Allocate matrix on host
@@ -116,6 +119,14 @@ WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
 
 WeightMatrix::~WeightMatrix() {
     this->mData.free();
+}
+
+Pointer<float> WeightMatrix::get_layer(int index) const {
+    if (index < 0 or index >= depth)
+        LOG_ERROR(
+            "Attempted to access out of bounds Weight Matrix layer : "
+            + std::to_string(index) + " on connection: " + connection->str());
+    return mData.slice(num_weights * index, num_weights);
 }
 
 BasePointer* WeightMatrix::get_pointer() {
