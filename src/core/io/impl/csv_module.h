@@ -10,7 +10,7 @@ class CSVReaderModule : public Module {
         virtual ~CSVReaderModule();
 
         virtual size_t get_expected_iterations() const
-            { return exposure * data.size(); }
+            { return epochs * exposure * data.size(); }
 
         void cycle();
 
@@ -19,6 +19,7 @@ class CSVReaderModule : public Module {
         bool verbose;
         int age;
         int exposure;
+        int epochs;
         int curr_row;
 
         std::vector<Pointer<float>> data;

@@ -27,6 +27,7 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
     this->verbose = config->get_bool("verbose", false);
     float normalization = config->get_float("normalization", 1);
     this->exposure = config->get_int("exposure", 1);
+    this->epochs = config->get_int("epochs", 1);
     this->age = 0;
 
     // Check if file exists
