@@ -4,14 +4,14 @@
 #include <ctime>
 #include <string>
 
-#include "network/network.h"
 #include "builder.h"
+#include "context.h"
+#include "network/network.h"
+#include "state/state.h"
 #include "io/module.h"
 #include "io/impl/dsst_module.h"
 #include "io/environment.h"
 #include "engine/engine.h"
-#include "engine/context.h"
-#include "state/state.h"
 #include "util/tools.h"
 #include "util/property_config.h"
 

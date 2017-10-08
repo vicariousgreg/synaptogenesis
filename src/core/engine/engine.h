@@ -6,13 +6,12 @@
 #include <thread>
 #include <mutex>
 
-#include "engine/context.h"
+#include "context.h"
 #include "io/buffer.h"
 #include "io/module.h"
 #include "util/constants.h"
 
 class Layer;
-class Context;
 class Report;
 class State;
 class Cluster;

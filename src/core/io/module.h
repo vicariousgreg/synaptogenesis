@@ -5,9 +5,9 @@
 #include <vector>
 
 #include "state/attributes.h"
-#include "engine/report.h"
 #include "io/buffer.h"
 #include "util/property_config.h"
+#include "report.h"
 
 class Network;
 class Layer;

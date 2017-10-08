@@ -1,7 +1,6 @@
 #include <cfloat>
 
 #include "engine/engine.h"
-#include "engine/report.h"
 #include "engine/instruction.h"
 #include "engine/cluster/cluster.h"
 #include "network/network.h"
@@ -9,6 +8,7 @@
 #include "io/environment.h"
 #include "state/state.h"
 #include "state/attributes.h"
+#include "report.h"
 #include "gui_controller.h"
 
 Engine::Engine(Context context)

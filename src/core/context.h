@@ -1,10 +1,6 @@
 #ifndef context_h
 #define context_h
 
-#include <vector>
-
-#include "engine/report.h"
-
 class Network;
 class State;
 class Environment;
