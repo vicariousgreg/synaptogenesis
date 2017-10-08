@@ -1,0 +1,132 @@
+NETWORK
+  structures
+    name
+    cluster type : parallel
+
+    layers
+      name
+      neural model
+      columns : 0
+      rows : 0
+      plastic : false
+      global : false
+      image
+
+      noise config
+        type
+        mean
+        std_dev
+        rate
+        value
+
+      dendrites
+        second order : false
+        children : RECURSIVE
+
+  CONNECTION
+      from structure
+      from layer
+      to structure
+      to layer
+      max
+      delay : 0
+      dendrite : root
+      type : fully connected
+      opcode : add
+      plastic : true
+
+      weight config
+        type
+
+      arborized config
+        field size
+        stride
+        offset
+        wrap
+
+      subset config
+        indices
+
+WEIGHT CONFIG
+flat
+  weight : 1
+  fraction : 1
+
+random
+  max weight : 1
+  fraction : 1
+
+gaussian
+  mean : 1
+  std dev : 0.3
+  fraction : 1
+
+log normal
+  mean : 1
+  std_dev : 0.3
+  fractionx : 1
+
+surround
+  child type
+  rows : 0
+  columns : 0
+  size : -1
+
+specified
+  weight string
+
+
+ENVIRONMENT
+  modules
+    type
+    skip : false
+
+    layers
+      structure
+      layer
+      params
+
+IO
+csv_module.cpp
+  filename
+  offset : 0
+  verbose : false
+  normalization : 1
+  exposure : 1
+
+dsst_module.cpp
+  columns : 18
+  rows : 8
+  cell size : 8
+    params : input
+
+dummy_module.h
+  params : output
+
+image_input_module.cpp
+  filename
+  scale : 1
+  channel : gray
+
+maze_module.cpp
+  params
+
+periodic_input_module.cpp
+  val : 1
+  min : 0
+  max : 1
+  rate : 1
+  end : 0
+  fraction : 1
+  random : false
+  clear : false
+  verbose : false
+
+print_output_module.cpp
+  history_length : 1
+
+print_rate_module.cpp
+  rate : 100
+
+visualizer_module.cpp
+  params : output
