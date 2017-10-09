@@ -1,11 +1,13 @@
-from syngen import Network, Environment, create_callback
+from syngen import Network, Environment, create_callback, FloatArray
 from ctypes import cast, POINTER, c_float
+
+data_path = "/HDD/datasets/iris/"
+# data_path = "./resources"
 
 # Create test callback
 def callback(ID, size, ptr):
-    vals = [float(y) for y in cast(ptr, POINTER(c_float))[:size]]
-    print(" ".join(("%6.4f" % x) for x in vals))
-    print(max(vals), vals.index(max(vals)))
+    arr = FloatArray(size, ptr)
+    for x in arr: print(x)
 
 cb,addr = create_callback(callback)
 
@@ -54,7 +56,7 @@ connections = [
 modules = [
     {
         "type" : "csv_input",
-        "filename" : "/HDD/datasets/iris/iris_input.csv",
+        "filename" : data_path + "/iris_input.csv",
         "offset" : 0,
         "exposure" : 1,
         "normalization" : 8,
@@ -80,7 +82,7 @@ modules = [
 #    }
 #    {
 #        "type" : "csv_evaluator",
-#        "filename" : "/HDD/datasets/iris/iris_output.csv",
+#        "filename" : data_path + "/iris_output.csv",
 #        "offset" : 0,
 #        "exposure" : 1,
 #        "epochs" : 1000,
@@ -115,8 +117,11 @@ else:
 
 # Retrieve main weight matrix
 matrix = network.get_weight_matrix("main matrix")
+for x in matrix:
+    print(x)
+
 for i in range(som_dim * som_dim):
-    print(matrix.data[(i*4):(i*4+4)])
+    print(matrix[(i*4):(i*4+4)])
 
 # Delete the objects
 del network

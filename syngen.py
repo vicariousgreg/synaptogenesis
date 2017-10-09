@@ -2,48 +2,62 @@ from ctypes import *
 from collections import OrderedDict
 from json import dumps
 
-class BaseArray(Structure):
+class CArray(Structure):
     _fields_=[("size",c_int), ("type",c_uint), ("data",c_void_p)]
 
-class FloatArray(Structure):
-    def __init__(self, base_array):
-        self.size = base_array.size
-        self.data = cast(base_array.data, POINTER(c_float))
+class PArray:
+    def __init__(self, size, ptr):
+        self.size = size
+        self.data = ptr
 
-class IntArray(Structure):
-    def __init__(self, base_array):
-        self.size = base_array.size
-        self.data = cast(base_array.data, POINTER(c_int))
+    def __getitem__(self, index):
+        return self.data[index]
 
-class StringArray(Structure):
-    def __init__(self, base_array):
-        self.size = base_array.size
-        self.data = cast(base_array.data, POINTER(POINTER(c_char)))
+    def __iter__(self):
+        curr = 0
+        while (curr < self.size):
+            yield self.data[curr]
+            curr += 1
 
-class VoidArray(Structure):
-    def __init__(self, base_array):
-        self.size = base_array.size
-        self.data = cast(base_array.data, POINTER(c_void_p))
+class FloatArray(PArray):
+    def __init__(self, size, ptr):
+        self.size = size
+        self.data = cast(ptr, POINTER(c_float))
+
+class IntArray(PArray):
+    def __init__(self, size, ptr):
+        self.size = size
+        self.data = cast(ptr, POINTER(c_int))
+
+class StringArray(PArray):
+    def __init__(self, size, ptr):
+        self.size = size
+        self.data = cast(ptr, POINTER(POINTER(c_char)))
+
+class VoidArray(PArray):
+    def __init__(self, size, ptr):
+        self.size = size
+        self.data = cast(ptr, POINTER(c_void_p))
 
 def build_array(base_array):
     # See POINTER_TYPE in extern.h
     (F_P, I_P, S_P, P_P, V_P) = (1,2,3,4,5)
 
     if base_array.type == F_P:
-        return FloatArray(base_array)
+        return FloatArray(base_array.size, base_array.data)
     elif base_array.type == I_P:
-        return IntArray(base_array)
+        return IntArray(base_array.size, base_array.data)
     elif base_array.type == S_P:
-        return StringArray(base_array)
+        return StringArray(base_array.size, base_array.data)
     elif base_array.type == P_P:
-        return VoidArray(base_array)
+        return VoidArray(base_array.size, base_array.data)
     elif base_array.type == V_P:
-        return VoidArray(base_array)
+        return VoidArray(base_array.size, base_array.data)
 
 _syn = CDLL('synaptogenesis.so')
 
-_syn.free_array.argtypes = (BaseArray, )
-_syn.free_array_deep.argtypes = (BaseArray, )
+_syn.free_array.argtypes = (CArray, )
+_syn.free_array_deep.argtypes = (CArray, )
 
 _syn.create_properties.restype = c_void_p
 _syn.add_property.argtypes = (c_void_p, c_char_p, c_char_p)
@@ -51,17 +65,17 @@ _syn.add_child.argtypes = (c_void_p, c_char_p, c_void_p)
 _syn.add_to_array.argtypes = (c_void_p, c_char_p, c_void_p)
 
 _syn.get_keys.argtypes = (c_void_p,)
-_syn.get_keys.restype = BaseArray
+_syn.get_keys.restype = CArray
 _syn.get_child_keys.argtypes = (c_void_p,)
-_syn.get_child_keys.restype = BaseArray
+_syn.get_child_keys.restype = CArray
 _syn.get_array_keys.argtypes = (c_void_p,)
-_syn.get_array_keys.restype = BaseArray
+_syn.get_array_keys.restype = CArray
 
 _syn.get_property.restype = c_char_p
 _syn.get_property.argtypes = (c_void_p, c_char_p)
 _syn.get_child.restype = c_void_p
 _syn.get_child.argtypes = (c_void_p, c_char_p)
-_syn.get_array.restype = BaseArray
+_syn.get_array.restype = CArray
 _syn.get_array.argtypes = (c_void_p, c_char_p)
 
 _syn.create_environment.restype = c_void_p
@@ -85,13 +99,13 @@ _syn.load_state.argtypes = (c_void_p, c_char_p)
 _syn.save_state.restype = c_bool
 _syn.save_state.argtypes = (c_void_p, c_char_p)
 
-_syn.get_neuron_data.restype = BaseArray
+_syn.get_neuron_data.restype = CArray
 _syn.get_neuron_data.argtypes = (c_void_p, c_char_p, c_char_p, c_char_p)
-_syn.get_layer_data.restype = BaseArray
+_syn.get_layer_data.restype = CArray
 _syn.get_layer_data.argtypes = (c_void_p, c_char_p, c_char_p, c_char_p)
-_syn.get_connection_data.restype = BaseArray
+_syn.get_connection_data.restype = CArray
 _syn.get_connection_data.argtypes = (c_void_p, c_char_p, c_char_p)
-_syn.get_weight_matrix.restype = BaseArray
+_syn.get_weight_matrix.restype = CArray
 _syn.get_weight_matrix.argtypes = (c_void_p, c_char_p)
 
 _syn.run.restype = c_void_p
