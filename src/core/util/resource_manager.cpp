@@ -185,6 +185,14 @@ void ResourceManager::delete_events() {
     for (auto device : devices) device->delete_events();
 }
 
+const std::vector<DeviceID> ResourceManager::get_active_devices() {
+    std::vector<DeviceID> active;
+    for (auto device : devices)
+        if (devices.size() == 1 or not device->is_host())
+            active.push_back(device->device_id);
+    return active;
+}
+
 
 ResourceManager::Device::Device(DeviceID device_id, bool host_flag, bool solo)
         : device_id(device_id),

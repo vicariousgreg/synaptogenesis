@@ -9,7 +9,7 @@
 #include "util/tools.h"
 
 static std::map<Layer*, DeviceID> distribute_layers(
-        const LayerList& layers, int num_devices) {
+        const LayerList& layers, std::vector<DeviceID> devices) {
     std::map<Layer*, DeviceID> layer_devices;
 
     // Distribute layers
@@ -23,7 +23,7 @@ static std::map<Layer*, DeviceID> distribute_layers(
 
     // Keep track of weight distribution to devices
     std::vector<int> device_weights;
-    for (int i = 0 ; i < num_devices ; ++i)
+    for (auto device : devices)
         device_weights.push_back(0);
 
     // Give the next biggest layer to the device with the least weight
@@ -31,7 +31,7 @@ static std::map<Layer*, DeviceID> distribute_layers(
     for (int i = 0; num_weights.size() > 0; ++i) {
         // Typically display device is 0, so start at the other end
         // This helps avoid burdening the display device in some situations
-        int next_device = num_devices - 1;
+        int next_device = devices[devices.size()-1];
         for (int i = 0 ; i < device_weights.size(); ++i)
             if (device_weights[i] < device_weights[next_device])
                 next_device = i;
@@ -55,19 +55,16 @@ static std::map<Layer*, DeviceID> distribute_layers(
 State::State(Network *network) : network(network), on_host(true) {
     // Determine number of non-host devices
     // Subtract one if cuda is enabled to avoid distribution to the host
-    this->num_devices = ResourceManager::get_instance()->get_num_devices();
-#ifdef __CUDACC__
-    --this->num_devices;
-#endif
+    this->active_devices = ResourceManager::get_instance()->get_active_devices();
 
     // Add pointer vectors for each device
-    for (int i = 0 ; i < num_devices ; ++i) {
-        network_pointers.push_back(std::vector<BasePointer*>());
-        buffer_pointers.push_back(std::vector<BasePointer*>());
+    for (auto device : active_devices) {
+        network_pointers[device] = std::vector<BasePointer*>();
+        buffer_pointers[device] = std::vector<BasePointer*>();
     }
 
     // Distribute layers
-    this->layer_devices = distribute_layers(network->get_layers(), num_devices);
+    this->layer_devices = distribute_layers(network->get_layers(), active_devices);
 
     // Validate neural model strings
     for (auto layer : network->get_layers())
@@ -77,8 +74,8 @@ State::State(Network *network) : network(network), on_host(true) {
                 "\" in " + layer->str());
 
     // Create attributes and weight matrices
-    for (DeviceID device_id = 0 ; device_id < num_devices ; ++device_id) {
-        attributes.push_back(std::map<std::string, Attributes*>());
+    for (auto device_id : active_devices) {
+        attributes[device_id] = std::map<std::string, Attributes*>();
         for (auto neural_model : Attributes::get_neural_models()) {
             LayerList layers;
             for (auto layer : network->get_layers(neural_model))
@@ -115,7 +112,7 @@ State::State(Network *network) : network(network), on_host(true) {
     }
 
     // Create buffers
-    for (DeviceID device_id = 0; device_id < num_devices; ++device_id) {
+    for (auto device_id : active_devices) {
         // Set up internal buffer
         LayerList device_layers;
 
@@ -128,7 +125,7 @@ State::State(Network *network) : network(network), on_host(true) {
         // No need for output, which is streamed straight off device
         auto buffer =
             build_buffer(device_id, device_layers, LayerList(), device_layers);
-        internal_buffers.push_back(buffer);
+        internal_buffers[device_id] = buffer;
 
         // Retrieve pointers
         for (auto ptr : buffer->get_pointers())
@@ -160,19 +157,19 @@ State::State(Network *network) : network(network), on_host(true) {
         }
 
         // Set the inter device buffer
-        inter_device_buffers.push_back(buffer_map);
+        inter_device_buffers[device_id] = buffer_map;
     }
 }
 
 State::~State() {
-    for (int i = 0; i < num_devices; ++i)
+    for (auto pair : attributes)
         for (auto neural_model : Attributes::get_neural_models())
-            if (attributes[i][neural_model] != nullptr)
-                delete attributes[i][neural_model];
+            if (pair.second[neural_model] != nullptr)
+                delete pair.second[neural_model];
     for (auto matrix : weight_matrices) delete matrix.second;
-    for (auto buffer : internal_buffers) delete buffer;
+    for (auto buffer : internal_buffers) delete buffer.second;
     for (auto map : inter_device_buffers)
-        for (auto pair : map)
+        for (auto pair : map.second)
             delete pair.second;
     for (auto ptr : data_block_pointers) {
         ptr->free();
@@ -191,22 +188,26 @@ void State::transfer_to_device() {
     std::set<BasePointer*> new_data_block_pointers;
 
     // Transfer network pointers
-    for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
-        if (device_id != host_id and network_pointers[device_id].size() > 0)
+    for (auto pair : network_pointers) {
+        auto device_id = pair.first;
+        if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
-                res_man->transfer(device_id, network_pointers[device_id]));
+                res_man->transfer(device_id, pair.second));
+    }
 
     // Transfer buffer pointers
-    for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
-        if (device_id != host_id and buffer_pointers[device_id].size() > 0)
+    for (auto pair : buffer_pointers) {
+        auto device_id = pair.first;
+        if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
-                res_man->transfer(device_id, buffer_pointers[device_id]));
+                res_man->transfer(device_id, pair.second));
+    }
 
     // Transfer attributes
     for (auto n : Attributes::get_neural_models())
-        for (int i = 0; i < num_devices; ++i)
-            if (attributes[i][n] != nullptr)
-                attributes[i][n]->transfer_to_device();
+        for (auto pair : attributes)
+            if (pair.second[n] != nullptr)
+                pair.second[n]->transfer_to_device();
 
     // Replace data block pointers
     // No need to free because transferring already does this
@@ -227,16 +228,20 @@ void State::transfer_to_host() {
     DeviceID host_id = res_man->get_host_id();
 
     // Transfer network pointers
-    for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
-        if (device_id != host_id and network_pointers[device_id].size() > 0)
+    for (auto pair : network_pointers) {
+        auto device_id = pair.first;
+        if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
-                res_man->transfer(host_id, network_pointers[device_id]));
+                res_man->transfer(host_id, pair.second));
+    }
 
     // Transfer buffer pointers
-    for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
-        if (device_id != host_id and buffer_pointers[device_id].size() > 0)
+    for (auto pair : buffer_pointers) {
+        auto device_id = pair.first;
+        if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
-                res_man->transfer(host_id, buffer_pointers[device_id]));
+                res_man->transfer(host_id, pair.second));
+    }
 
     // Replace data block pointers
     // No need to free because transferring already does this
@@ -264,16 +269,16 @@ void State::copy_to(State* other) {
 
 size_t State::get_network_bytes() const {
     size_t size = 0;
-    for (int device_id = 0 ; device_id < network_pointers.size() ; ++device_id)
-        for (auto ptr : network_pointers[device_id])
+    for (auto pair : network_pointers)
+        for (auto ptr : pair.second)
             size += ptr->get_bytes();
     return size;
 }
 
 size_t State::get_buffer_bytes() const {
     size_t size = 0;
-    for (int device_id = 0 ; device_id < buffer_pointers.size() ; ++device_id)
-        for (auto ptr : buffer_pointers[device_id])
+    for (auto pair : buffer_pointers)
+        for (auto ptr : pair.second)
             size += ptr->get_bytes();
     return size;
 }
@@ -356,9 +361,9 @@ void State::load(std::string file_name, bool verbose) {
 bool State::check_compatibility(Structure *structure) {
     // Check relevant attributes for compatibility
     for (auto n : Attributes::get_neural_models())
-        for (int i = 0; i < num_devices; ++i)
-            if (structure->contains(n) and attributes[i][n] and not
-                    attributes[i][n]->check_compatibility(
+        for (auto pair : attributes)
+            if (structure->contains(n) and pair.second[n] and not
+                    pair.second[n]->check_compatibility(
                         structure->cluster_type))
                 return false;
     return true;
@@ -518,15 +523,10 @@ Pointer<float> State::get_matrix(Connection* conn) const {
     }
 }
 
-EXTRACTOR State::get_extractor(Connection *conn) const {
-    try {
-        return attributes.at(layer_devices.at(conn->from_layer))
-                         .at(conn->from_layer->neural_model)->extractor;
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to get extractor in State for "
-            "connection: " + conn->str());
-    }
+EXTRACTOR State::get_connection_extractor(Connection *conn) const {
+    return get_extractor(
+        Attributes::get_output_type(conn->from_layer),
+        layer_devices.at(conn->to_layer));
 }
 
 Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {

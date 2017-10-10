@@ -132,21 +132,27 @@ void Pointer<T>::copy_to(Pointer<T> dst, Stream *stream) const {
 #ifdef __CUDACC__
     if (this->local and dst.local) memcpy(dst.ptr, this->ptr, this->size * sizeof(T));
     else {
-        if (stream->is_host())
+        if (stream->is_host() and not this->local)
             LOG_ERROR(
                 "Attempted to copy memory between devices using host stream!");
-        cudaSetDevice(stream->get_device_id());
+
+        if (stream->is_host())
+            cudaSetDevice(dst.get_device_id());
+        else
+            cudaSetDevice(stream->get_device_id());
 
         if (not this->local and not dst.local) {
             cudaMemcpyPeerAsync(dst.ptr, dst.device_id,
                 this->ptr, this->device_id, this->size * sizeof(T),
                 stream->get_cuda_stream());
         } else {
-            auto kind = cudaMemcpyDeviceToHost;
-            if (this->local) kind = cudaMemcpyHostToDevice;
+            if (this->local)
+                cudaMemcpy(dst.ptr, this->ptr, this->size * sizeof(T),
+                    cudaMemcpyHostToDevice);
+            else
+                cudaMemcpyAsync(dst.ptr, this->ptr, this->size * sizeof(T),
+                    cudaMemcpyDeviceToHost, stream->get_cuda_stream());
 
-            cudaMemcpyAsync(dst.ptr, this->ptr, this->size * sizeof(T),
-                kind, stream->get_cuda_stream());
         }
     }
 #else

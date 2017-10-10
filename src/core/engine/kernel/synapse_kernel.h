@@ -27,7 +27,7 @@
  * SUB represent traditional inhibitory input
  * MULT and DIV represent modulatory input that can be used for gating
  * */
-inline DEVICE float calc(Opcode opcode, float prior, float input) {
+inline HOST DEVICE float calc(Opcode opcode, float prior, float input) {
     switch (opcode) {
         case ADD:  return prior + input;
         case SUB:  return prior - input;
@@ -96,7 +96,7 @@ inline DEVICE float calc(Opcode opcode, float prior, float input) {
 
 
 #define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -131,7 +131,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 
 
 #define SUBSET_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const int from_row_start = synapse_data.subset_config.from_row_start; \
     const int from_row_end = synapse_data.subset_config.from_row_end; \
@@ -208,7 +208,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 
 
 #define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
@@ -239,7 +239,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 
 
 #define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const bool convolutional = synapse_data.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
@@ -373,7 +373,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 
 
 #define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
@@ -500,7 +500,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 
 // Special Convolutional by weight Kernel
 #define CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \

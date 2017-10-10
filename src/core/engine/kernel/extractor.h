@@ -6,6 +6,6 @@
 /* Extractors are responsible for extracting values from output */
 typedef float(*EXTRACTOR)(Output&, int delay);
 
-void get_extractor(EXTRACTOR *dest, OutputType output_type, DeviceID device_id);
+EXTRACTOR get_extractor(OutputType output_type, DeviceID device_id);
 
 #endif

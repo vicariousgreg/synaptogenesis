@@ -78,7 +78,6 @@ class Attributes {
         BasePointer* get_connection_data(size_t id, std::string key);
 
         // Neuron IO data
-        EXTRACTOR extractor;
         const OutputType output_type;
         Pointer<Output> output;
         Pointer<Output> expected;
@@ -217,7 +216,7 @@ Attributes *CLASS_NAME::build(LayerList &layers) { \
 
 // Skeletons -- don't use this directly
 #define DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
-GLOBAL void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
+HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
@@ -253,7 +252,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
 
 // Skeletons -- don't use this directly
 #define DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
-GLOBAL void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
+HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \

@@ -56,7 +56,7 @@ class State {
         /* Getters for connection related data */
         int get_connection_index(Connection *conn) const;
         Pointer<float> get_matrix(Connection *conn) const;
-        EXTRACTOR get_extractor(Connection *conn) const;
+        EXTRACTOR get_connection_extractor(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) const;
         Pointer<Output> get_device_output_buffer(
@@ -71,18 +71,22 @@ class State {
 
         Network* const network;
 
+        const std::vector<DeviceID> get_active_devices()
+            { return active_devices; }
+
     private:
-        int num_devices;
+        std::vector<DeviceID> active_devices;
+
         bool on_host;
-        std::vector<Buffer*> internal_buffers;
-        std::vector<std::map<int, Buffer*>> inter_device_buffers;
-        std::vector<std::map<std::string, Attributes*>> attributes;
+        std::map<DeviceID, Buffer*> internal_buffers;
+        std::map<DeviceID, std::map<int, Buffer*>> inter_device_buffers;
+        std::map<DeviceID, std::map<std::string, Attributes*>> attributes;
         std::map<Connection*, WeightMatrix*> weight_matrices;
         std::map<Layer*, DeviceID> layer_devices;
 
         // Keep track of all pointers
-        std::vector<std::vector<BasePointer*>> network_pointers;
-        std::vector<std::vector<BasePointer*>> buffer_pointers;
+        std::map<DeviceID, std::vector<BasePointer*>> network_pointers;
+        std::map<DeviceID, std::vector<BasePointer*>> buffer_pointers;
 
         std::map<PointerKey, BasePointer*> pointer_map;
 

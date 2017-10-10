@@ -21,7 +21,6 @@ class Kernel {
         void run(Stream *stream, int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
             if (not stream->is_host()) {
-                cudaSetDevice(stream->get_device_id());
                 if (parallel_kernel == nullptr)
                     LOG_ERROR(
                         "Attempted to run nullptr kernel!");
@@ -48,6 +47,7 @@ class Kernel {
 #ifdef __CUDACC__
         void parallel_wrapper(Stream *stream, int blocks, int threads,
                 void(*f)(ARGS...), ARGS... args) {
+            cudaSetDevice(stream->get_device_id());
             f
             <<<blocks, threads, 0, stream->get_cuda_stream()>>>
                 (args...);

@@ -12,11 +12,11 @@ SequentialCluster::SequentialCluster(Structure *structure,
         : Cluster(state, engine, args) {
     // Create compute streams
     auto res_man = ResourceManager::get_instance();
-    for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
+    for (auto device_id : state->get_active_devices())
         compute_streams.push_back(
             (this->multithreaded)
-                ? res_man->create_stream(i)
-                : res_man->get_default_stream(i));
+                ? res_man->create_stream(device_id)
+                : res_man->get_default_stream(device_id));
 
     // Keep track of visited layers;
     std::set<Layer*> visited;

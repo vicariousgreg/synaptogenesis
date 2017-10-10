@@ -125,7 +125,10 @@ Attributes::~Attributes() {
     for (auto pair : layer_variables) pair.second->free();
 
 #ifdef __CUDACC__
-    cudaFree(this->pointer);
+    if (this->pointer != pointer and
+            not ResourceManager::get_instance()->is_host(device_id)) {
+        cudaFree(this->pointer);
+    }
 #endif
 }
 
@@ -147,10 +150,6 @@ int Attributes::dendrite_DFS(const DendriticNode *curr, int second_order_size) {
 
 void Attributes::set_device_id(DeviceID device_id) {
     this->device_id = device_id;
-
-    // Retrieve extractor
-    // This has to wait until device_id is set
-    get_extractor(&this->extractor, get_output_type(), device_id);
 }
 
 void Attributes::transfer_to_device() {

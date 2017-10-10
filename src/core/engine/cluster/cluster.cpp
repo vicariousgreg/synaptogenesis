@@ -11,12 +11,18 @@ Cluster::Cluster(State *state, Engine *engine, PropertyConfig args)
           engine(engine) {
     this->multithreaded = args.get_bool("multithreaded", true);
 
+    auto active_devices = state->get_active_devices();
+    if (not this->multithreaded and active_devices.size() > 1)
+        LOG_ERROR(
+            "Attempted to initialize single threaded cluster for state"
+            " with multiple active devices!");
+
     auto res_man = ResourceManager::get_instance();
-    for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
+    for (auto device_id : active_devices)
         io_streams.push_back(
             (multithreaded)
-                ? res_man->create_stream(i)
-                : res_man->get_default_stream(i));
+                ? res_man->create_stream(device_id)
+                : res_man->get_default_stream(device_id));
 }
 
 Cluster::~Cluster() {
