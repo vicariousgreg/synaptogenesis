@@ -1,5 +1,8 @@
 from syngen import Network, Environment, create_callback
 
+data_path = "/HDD/datasets/mnist/processed/"
+# data_path = "./resources"
+
 # Create test callback
 def callback(ID, size, ptr):
     pass
@@ -63,7 +66,7 @@ connections = [
 modules = [
     {
         "type" : "csv_input",
-        "filename" : "/HDD/datasets/mnist/processed/mnist_train_input.csv",
+        "filename" : data_path + "/mnist_train_input.csv",
         "offset" : 0,
         "exposure" : 1,
         "normalization" : "255",
@@ -76,7 +79,7 @@ modules = [
     },
     {
         "type" : "csv_evaluator",
-        "filename" : "/HDD/datasets/mnist/processed/mnist_train_output.csv",
+        "filename" : data_path + "/mnist_train_output.csv",
         "offset" : 0,
         "exposure" : 1,
         "normalization" : "1",
@@ -115,8 +118,8 @@ modules = [
 train_env = Environment({"modules" : modules})
 
 # Replace files with test set and create new test environment
-modules[0]["filename"] = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
-modules[1]["filename"] = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
+modules[0]["filename"] = data_path + "/mnist_test_input.csv";
+modules[1]["filename"] = data_path + "/mnist_test_output.csv";
 test_env = Environment({"modules" : modules})
 
 # Create network
