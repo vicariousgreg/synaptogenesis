@@ -6,12 +6,17 @@
 #include "engine/engine.h"
 #include "util/resource_manager.h"
 
-Cluster::Cluster(State *state, Engine *engine)
+Cluster::Cluster(State *state, Engine *engine, PropertyConfig args)
         : state(state),
           engine(engine) {
+    this->multithreaded = args.get_bool("multithreaded", true);
+
     auto res_man = ResourceManager::get_instance();
     for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
-        io_streams.push_back(res_man->create_stream(i));
+        io_streams.push_back(
+            (multithreaded)
+                ? res_man->create_stream(i)
+                : res_man->get_default_stream(i));
 }
 
 Cluster::~Cluster() {
@@ -45,17 +50,19 @@ void Cluster::launch_output() {
 }
 
 void Cluster::wait_for_input() {
-    for (auto& node : nodes)
-        node->synchronize_input();
+    if (this->multithreaded)
+        for (auto& node : nodes)
+            node->synchronize_input();
 }
 
 void Cluster::wait_for_output() {
-    for (auto& node : nodes)
-        node->synchronize_output();
+    if (this->multithreaded)
+        for (auto& node : nodes)
+            node->synchronize_output();
 }
 
 Cluster *build_cluster(Structure *structure,
-        State *state, Engine *engine) {
+        State *state, Engine *engine, PropertyConfig args) {
     if (not state->check_compatibility(structure))
         LOG_ERROR(
             "Error building cluster for " + structure->str() + ":\n"
@@ -63,11 +70,11 @@ Cluster *build_cluster(Structure *structure,
 
     switch (structure->cluster_type) {
         case PARALLEL:
-            return new ParallelCluster(structure, state, engine);
+            return new ParallelCluster(structure, state, engine, args);
         case SEQUENTIAL:
-            return new SequentialCluster(structure, state, engine);
+            return new SequentialCluster(structure, state, engine, args);
         case FEEDFORWARD:
-            return new FeedforwardCluster(structure, state, engine);
+            return new FeedforwardCluster(structure, state, engine, args);
         default:
             LOG_ERROR(
                 "Error building cluster for " + structure->str() + ":\n"

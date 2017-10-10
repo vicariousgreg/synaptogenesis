@@ -6,6 +6,7 @@
 
 #include "engine/cluster/cluster_node.h"
 #include "util/constants.h"
+#include "util/property_config.h"
 #include "util/stream.h"
 
 class Layer;
@@ -17,7 +18,7 @@ typedef std::vector<Instruction*> InstructionList;
 
 class Cluster {
     public:
-        Cluster(State *state, Engine *engine);
+        Cluster(State *state, Engine *engine, PropertyConfig args);
         virtual ~Cluster();
 
         void add_external_dependencies(
@@ -45,12 +46,14 @@ class Cluster {
         Engine *engine;
         std::vector<Stream*> io_streams;
         std::vector<ClusterNode*> nodes;
+
+        bool multithreaded;
 };
 
 class ParallelCluster : public Cluster {
     public:
         ParallelCluster(Structure *structure, State *state,
-            Engine *engine);
+            Engine *engine, PropertyConfig args);
 
         virtual void add_inter_device_instruction(
             Instruction *synapse_instruction,
@@ -75,7 +78,7 @@ class ParallelCluster : public Cluster {
 class SequentialCluster : public Cluster {
     public:
         SequentialCluster(Structure *structure, State *state,
-            Engine *engine);
+            Engine *engine, PropertyConfig args);
 
         virtual void add_inter_device_instruction(
             Instruction *synapse_instruction,
@@ -91,10 +94,10 @@ class SequentialCluster : public Cluster {
 class FeedforwardCluster : public SequentialCluster {
     public:
         FeedforwardCluster(Structure *structure, State *state,
-            Engine *engine);
+            Engine *engine, PropertyConfig args);
 };
 
 Cluster *build_cluster(Structure *structure,
-        State *state, Engine *engine);
+        State *state, Engine *engine, PropertyConfig args=PropertyConfig());
 
 #endif

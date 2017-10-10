@@ -57,7 +57,7 @@ class Engine {
 
         // Rebuilds the engine
         // Necessary after changes to network or environment
-        void rebuild();
+        void rebuild(PropertyConfig args=PropertyConfig());
 
         // Run the engine
         Report* run(PropertyConfig args=PropertyConfig());
@@ -76,8 +76,8 @@ class Engine {
         Context context;
         bool running;
 
-        void build_environment();
-        void build_clusters();
+        void build_environment(PropertyConfig args);
+        void build_clusters(PropertyConfig args);
 
         // Cluster data
         std::vector<Cluster*> clusters;
@@ -93,6 +93,7 @@ class Engine {
         // Running data
         Lock sensory_lock;
         Lock motor_lock;
+        Lock term_lock;
         Timer run_timer;
         Timer iteration_timer;
         float refresh_rate, time_limit;

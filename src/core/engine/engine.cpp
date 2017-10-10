@@ -24,7 +24,7 @@ Engine::Engine(Context context)
           buffer(nullptr),
           report(nullptr) { }
 
-void Engine::build_environment() {
+void Engine::build_environment(PropertyConfig args) {
     if (context.environment == nullptr) return;
 
     /* Build environmental buffer */
@@ -82,14 +82,14 @@ void Engine::build_environment() {
             input_layers, output_layers, expected_layers);
 }
 
-void Engine::build_clusters() {
+void Engine::build_clusters(PropertyConfig args) {
     /* Build clusters */
     auto state = context.state;
 
     // Create the clusters and gather their nodes
     for (auto& structure : state->network->get_structures()) {
         auto cluster = build_cluster(
-            structure, state, this);
+            structure, state, this, args);
         clusters.push_back(cluster);
         for (auto& node : cluster->get_nodes())
             cluster_nodes[node->to_layer] = node;
@@ -130,10 +130,10 @@ void Engine::build_clusters() {
     }
 }
 
-void Engine::rebuild() {
+void Engine::rebuild(PropertyConfig args) {
     clear();
-    build_environment();
-    build_clusters();
+    build_environment(args);
+    build_clusters(args);
 }
 
 void Engine::clear() {
@@ -221,13 +221,13 @@ void Engine::single_thread_loop() {
         // Check for errors
         device_check_error(nullptr);
 
-        // If engine gets interrupted, pass the locks over and break
+        // If engine gets interrupted, break
         if (not this->running) break;
 
         // Print refresh rate if verbose
         if (verbose and i == 999)
-                printf("Measured refresh rate: %.2f fps\n",
-                    1000 / (run_timer.query(nullptr)));
+            printf("Measured refresh rate: %.2f fps\n",
+                1000 / (run_timer.query(nullptr)));
 
         // Synchronize with the clock
         if (time_limit > 0) iteration_timer.wait(time_limit);
@@ -292,8 +292,10 @@ void Engine::network_loop() {
         // Check for errors
         device_check_error(nullptr);
 
-        // If engine gets interrupted, pass the locks over and break
+        // If engine gets interrupted, halt streams, pass locks, and break
         if (not this->running) {
+            iterations = i;
+            ResourceManager::get_instance()->halt_streams();
             sensory_lock.pass(ENVIRONMENT_THREAD);
             motor_lock.pass(ENVIRONMENT_THREAD);
             break;
@@ -301,16 +303,33 @@ void Engine::network_loop() {
 
         // Print refresh rate if verbose
         if (verbose and i == 999)
-                printf("Measured refresh rate: %.2f fps\n",
-                    1000 / (run_timer.query(nullptr)));
+            printf("Measured refresh rate: %.2f fps\n",
+                1000 / (run_timer.query(nullptr)));
 
 
         // Synchronize with the clock
         if (time_limit > 0) iteration_timer.wait(time_limit);
     }
 
+    // Wait for environment to terminate first
+    term_lock.wait(NETWORK_THREAD);
+
     // Final synchronize
     device_synchronize();
+
+    // Create report
+    this->report = new Report(this, this->context.state,
+        iterations, run_timer.query(nullptr));
+
+    // Allow modules to modify report
+    for (auto& module : this->modules)
+        module->report(report);
+
+    // Report report if verbose
+    if (verbose) report->print();
+
+    // Shutdown the GUI
+    GuiController::get_instance()->quit();
 }
 
 void Engine::environment_loop() {
@@ -337,28 +356,16 @@ void Engine::environment_loop() {
         // Cycle modules
         for (auto& module : this->modules) module->cycle();
 
-        // If engine gets interrupted, pass the locks over and break
+        // If engine gets interrupted, pass the locks and break
         if (not this->running) {
-            iterations = i;
             sensory_lock.pass(NETWORK_THREAD);
             motor_lock.pass(NETWORK_THREAD);
             break;
         }
     }
 
-    // Create report
-    this->report = new Report(this, this->context.state,
-        iterations, run_timer.query(nullptr));
-
-    // Allow modules to modify report
-    for (auto& module : this->modules)
-        module->report(report);
-
-    // Report report if verbose
-    if (verbose) report->print();
-
-    // Shutdown the GUI
-    GuiController::get_instance()->quit();
+    // Pass the termination lock
+    term_lock.pass(NETWORK_THREAD);
 }
 
 Report* Engine::run(PropertyConfig args) {
@@ -370,7 +377,7 @@ Report* Engine::run(PropertyConfig args) {
     // This renders the pointers in the engine outdated,
     //   so the engine must be rebuilt
     context.state->transfer_to_device();
-    rebuild();
+    rebuild(args);
 
     // Initialize cuda random states
     init_rand(context.network->get_max_layer_size());
@@ -403,6 +410,7 @@ Report* Engine::run(PropertyConfig args) {
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT_THREAD);
     motor_lock.set_owner(NETWORK_THREAD);
+    term_lock.set_owner(ENVIRONMENT_THREAD);
 
     // Ensure device is synchronized without errors
     device_synchronize();

@@ -60,44 +60,44 @@ void DSSTModule::input_symbol(int index) {
     window->input_symbol(index);
 }
 
-int DSSTModule::get_num_rows(ModuleConfig *config) {
+int DSSTModule::get_num_rows(PropertyConfig *config) {
     return config->get_int("rows", 8);
 }
 
-int DSSTModule::get_num_columns(ModuleConfig *config) {
+int DSSTModule::get_num_columns(PropertyConfig *config) {
     return config->get_int("columns", 18);
 }
 
-int DSSTModule::get_cell_rows(ModuleConfig *config) {
+int DSSTModule::get_cell_rows(PropertyConfig *config) {
     return 1+2*get_cell_columns(config);
 }
 
-int DSSTModule::get_cell_columns(ModuleConfig *config) {
+int DSSTModule::get_cell_columns(PropertyConfig *config) {
     return config->get_int("cell size", 8);
 }
 
-int DSSTModule::get_cell_size(ModuleConfig *config) {
+int DSSTModule::get_cell_size(PropertyConfig *config) {
     return get_cell_rows(config) * get_cell_columns(config);
 }
 
-int DSSTModule::get_spacing(ModuleConfig *config) {
+int DSSTModule::get_spacing(PropertyConfig *config) {
     return get_cell_columns(config) / 4;
 }
 
-int DSSTModule::get_input_rows(ModuleConfig *config) {
+int DSSTModule::get_input_rows(PropertyConfig *config) {
     int num_rows = get_num_rows(config);
     int cell_rows = get_cell_rows(config);
     int spacing = get_spacing(config);
     return (num_rows + 2) * (cell_rows + spacing) - spacing;
 }
 
-int DSSTModule::get_input_columns(ModuleConfig *config) {
+int DSSTModule::get_input_columns(PropertyConfig *config) {
     int num_cols = get_num_columns(config);
     int cell_cols = get_cell_columns(config);
     int spacing = get_spacing(config);
     return num_cols * (cell_cols + spacing) - spacing;
 }
 
-int DSSTModule::get_input_size(ModuleConfig *config) {
+int DSSTModule::get_input_size(PropertyConfig *config) {
     return get_input_rows(config) * get_input_columns(config);
 }

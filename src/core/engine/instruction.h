@@ -36,7 +36,7 @@ class Instruction {
                     stream->get_device_id());
         }
         void record_event() { if (event != nullptr) stream->record(event); }
-        void synchronize() { if (event != nullptr) event->synchronize(); }
+        void synchronize() { if (event != nullptr) event->wait(nullptr); }
 
         void add_dependency(Instruction *inst) {
             inst->add_event();

@@ -24,8 +24,8 @@ static bool DFS(Layer* curr_layer, std::set<Layer*>& visited) {
 }
 
 FeedforwardCluster::FeedforwardCluster(Structure *structure,
-        State *state, Engine *engine)
-        : SequentialCluster(structure, state, engine) {
+    State *state, Engine *engine, PropertyConfig args)
+        : SequentialCluster(structure, state, engine, args) {
     // Determine if there are any cycles
     // Perform DFS on all input layers
     std::set<Layer*> visited;

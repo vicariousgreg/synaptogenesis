@@ -19,10 +19,10 @@ ResourceManager::ResourceManager() {
 
     // Create CUDA devices (GPUs)
     for (int i = 0 ; i < get_num_cuda_devices() ; ++i)
-        devices.push_back(new Device(devices.size(), false));
+        devices.push_back(new Device(devices.size(), false, false));
 
     // Create host device (CPU)
-    devices.push_back(new Device(devices.size(), true));
+    devices.push_back(new Device(devices.size(), true, devices.size() == 0));
 }
 
 ResourceManager::~ResourceManager() {
@@ -152,6 +152,31 @@ Event *ResourceManager::create_event(DeviceID device_id) {
     return devices[device_id]->create_event();
 }
 
+void ResourceManager::halt_streams() {
+    // Flush the stream queues
+    for (auto device : devices) {
+        auto ids = device->inter_device_stream;
+        if (ids != nullptr) ids->flush();
+
+        for (auto stream : device->streams)
+            stream->flush();
+    }
+
+    // Mark all events to release locks
+    for (auto device : devices)
+        for (auto event : device->events)
+            event->mark_done();
+
+    // Sync threads
+    for (auto device : devices) {
+        auto ids = device->inter_device_stream;
+        if (ids != nullptr) ids->synchronize();
+
+        for (auto stream : device->streams)
+            stream->synchronize();
+    }
+}
+
 void ResourceManager::delete_streams() {
     for (auto device : devices) device->delete_streams();
 }
@@ -161,15 +186,17 @@ void ResourceManager::delete_events() {
 }
 
 
-ResourceManager::Device::Device(DeviceID device_id, bool host_flag)
+ResourceManager::Device::Device(DeviceID device_id, bool host_flag, bool solo)
         : device_id(device_id),
           host_flag(host_flag),
           default_stream(new DefaultStream(device_id, host_flag)),
-          inter_device_stream(new Stream(device_id, host_flag)) { }
+          inter_device_stream((solo)
+              ? nullptr
+              : new Stream(device_id, host_flag)) { }
 
 ResourceManager::Device::~Device() {
     delete default_stream;
-    delete inter_device_stream;
+    if (inter_device_stream != nullptr) delete inter_device_stream;
     delete_streams();
     delete_events();
 }

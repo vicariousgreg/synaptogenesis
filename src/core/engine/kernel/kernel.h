@@ -1,6 +1,8 @@
 #ifndef kernel_h
 #define kernel_h
 
+#include <functional>
+
 #include "engine/kernel/synapse_data.h"
 #include "network/connection.h"
 #include "network/dendritic_node.h"
@@ -24,17 +26,33 @@ class Kernel {
                     LOG_ERROR(
                         "Attempted to run nullptr kernel!");
                 else
-                    parallel_kernel
-                    <<<blocks, threads, 0, stream->get_cuda_stream()>>>
-                        (args...);
+                    stream->schedule(
+                        std::bind(&Kernel::parallel_wrapper,
+                            this, stream, blocks, threads, parallel_kernel,
+                            args...));
             } else
 #endif
                 if (serial_kernel == nullptr)
                     LOG_ERROR(
                         "Attempted to run nullptr kernel!");
                 else
-                    serial_kernel(args...);
+                    stream->schedule(
+                        std::bind(&Kernel::wrapper,
+                            this, stream, serial_kernel, args...));
         }
+
+        void wrapper(Stream *stream, void(*f)(ARGS...), ARGS... args) {
+            f(args...);
+        }
+
+#ifdef __CUDACC__
+        void parallel_wrapper(Stream *stream, int blocks, int threads,
+                void(*f)(ARGS...), ARGS... args) {
+            f
+            <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+                (args...);
+        }
+#endif
 
         bool is_null() { return serial_kernel == nullptr; }
 

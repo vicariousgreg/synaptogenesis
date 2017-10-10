@@ -46,13 +46,15 @@ class ResourceManager {
         Stream *create_stream(DeviceID id);
         Event *create_event(DeviceID id);
 
+        void halt_streams();
+
     private:
         ResourceManager();
         static ResourceManager *instance;
 
         class Device {
             public:
-                Device(DeviceID device_id, bool host_flag);
+                Device(DeviceID device_id, bool host_flag, bool solo);
                 virtual ~Device();
 
                 bool is_host() { return host_flag; }

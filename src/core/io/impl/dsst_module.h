@@ -27,15 +27,15 @@ class DSSTModule : public Module {
         int get_input_size()    { return input_size; }
 
         // Useful for determining layer properties before construction
-        static int get_num_rows(ModuleConfig *config);
-        static int get_num_columns(ModuleConfig *config);
-        static int get_cell_rows(ModuleConfig *config);
-        static int get_cell_columns(ModuleConfig *config);
-        static int get_cell_size(ModuleConfig *config);
-        static int get_spacing(ModuleConfig *config);
-        static int get_input_rows(ModuleConfig *config);
-        static int get_input_columns(ModuleConfig *config);
-        static int get_input_size(ModuleConfig *config);
+        static int get_num_rows(PropertyConfig *config);
+        static int get_num_columns(PropertyConfig *config);
+        static int get_cell_rows(PropertyConfig *config);
+        static int get_cell_columns(PropertyConfig *config);
+        static int get_cell_size(PropertyConfig *config);
+        static int get_spacing(PropertyConfig *config);
+        static int get_input_rows(PropertyConfig *config);
+        static int get_input_columns(PropertyConfig *config);
+        static int get_input_size(PropertyConfig *config);
 
     private:
         std::map<Layer*, std::string> params;

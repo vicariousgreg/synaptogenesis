@@ -7,14 +7,18 @@
 #include "util/resource_manager.h"
 
 ParallelCluster::ParallelCluster(Structure *structure,
-        State *state, Engine *engine)
-        : Cluster(state, engine) {
+    State *state, Engine *engine, PropertyConfig args)
+        : Cluster(state, engine, args) {
+    auto res_man = ResourceManager::get_instance();
+
     // Build instructions
     for (auto& layer : structure->get_layers()) {
         auto device_id = state->get_device_id(layer);
         auto node = new ClusterNode(
             layer, state, engine, io_streams[device_id],
-            ResourceManager::get_instance()->create_stream(device_id));
+            (this->multithreaded)
+                ? res_man->create_stream(device_id)
+                : res_man->get_default_stream(device_id));
         nodes.push_back(node);
     }
 

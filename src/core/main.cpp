@@ -678,7 +678,7 @@ void dsst_test() {
     auto state = new State(network);
     Engine engine(Context(network, env, state));
     print_network(network);
-    auto context = engine.run(PropertyConfig({{"iterations", "1000000"}}));
+    auto context = engine.run(PropertyConfig({{"verbose", "true"}}));
     delete network;
     delete env;
     delete state;

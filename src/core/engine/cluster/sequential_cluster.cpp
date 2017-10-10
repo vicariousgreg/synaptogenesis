@@ -8,12 +8,15 @@
 #include "util/resource_manager.h"
 
 SequentialCluster::SequentialCluster(Structure *structure,
-        State *state, Engine *engine)
-        : Cluster(state, engine) {
+    State *state, Engine *engine, PropertyConfig args)
+        : Cluster(state, engine, args) {
     // Create compute streams
     auto res_man = ResourceManager::get_instance();
     for (DeviceID i = 0 ; i < res_man->get_num_devices(); ++i)
-        compute_streams.push_back(res_man->create_stream(i));
+        compute_streams.push_back(
+            (this->multithreaded)
+                ? res_man->create_stream(i)
+                : res_man->get_default_stream(i));
 
     // Keep track of visited layers;
     std::set<Layer*> visited;
