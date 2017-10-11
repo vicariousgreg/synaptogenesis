@@ -10,6 +10,7 @@
 #include "engine/engine.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
+#include "util/scheduler.h"
 
 class Instruction {
     public:
@@ -36,7 +37,10 @@ class Instruction {
                     stream->get_device_id());
         }
         void record_event() { if (event != nullptr) stream->record(event); }
-        void synchronize() { if (event != nullptr) event->wait(nullptr); }
+        void synchronize() {
+            if (event != nullptr)
+                Scheduler::get_instance()->synchronize(event);
+        }
 
         void add_dependency(Instruction *inst) {
             inst->add_event();

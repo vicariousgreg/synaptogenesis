@@ -193,11 +193,13 @@ void Engine::single_thread_loop() {
         /****************************/
         /*** Perform computations ***/
         /****************************/
-        for (auto& cluster : clusters) {
+        for (auto& cluster : clusters)
             cluster->launch_post_input_calculations();
+        for (auto& cluster : clusters)
             cluster->launch_state_update();
-            if (learning_flag) cluster->launch_weight_update();
-        }
+        if (learning_flag)
+            for (auto& cluster : clusters)
+                cluster->launch_weight_update();
 
         /**************************/
         /*** Write motor output ***/
@@ -273,11 +275,13 @@ void Engine::network_loop() {
         /****************************/
         /*** Perform computations ***/
         /****************************/
-        for (auto& cluster : clusters) {
+        for (auto& cluster : clusters)
             cluster->launch_post_input_calculations();
+        for (auto& cluster : clusters)
             cluster->launch_state_update();
-            if (learning_flag) cluster->launch_weight_update();
-        }
+        if (learning_flag)
+            for (auto& cluster : clusters)
+                cluster->launch_weight_update();
 
         /**************************/
         /*** Write motor output ***/
@@ -295,7 +299,7 @@ void Engine::network_loop() {
         // If engine gets interrupted, halt streams, pass locks, and break
         if (not this->running) {
             iterations = i;
-            ResourceManager::get_instance()->halt_streams();
+            Scheduler::get_instance()->shutdown();
             sensory_lock.pass(ENVIRONMENT_THREAD);
             motor_lock.pass(ENVIRONMENT_THREAD);
             break;
@@ -377,6 +381,11 @@ Report* Engine::run(PropertyConfig args) {
     // This renders the pointers in the engine outdated,
     //   so the engine must be rebuilt
     context.state->transfer_to_device();
+
+    // Launch threads
+    Scheduler::get_instance()->start(4);
+
+    // Rebuild engine
     rebuild(args);
 
     // Initialize cuda random states
@@ -417,7 +426,6 @@ Report* Engine::run(PropertyConfig args) {
     device_check_error("Clock device synchronization failed!");
     if (verbose) device_check_memory();
 
-    // Launch threads
     std::vector<std::thread> threads;
     if (args.get_bool("multithreaded", true)) {
         if (verbose) printf("\nLaunching multithreaded...\n\n");

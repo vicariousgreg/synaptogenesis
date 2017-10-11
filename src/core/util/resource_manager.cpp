@@ -152,31 +152,6 @@ Event *ResourceManager::create_event(DeviceID device_id) {
     return devices[device_id]->create_event();
 }
 
-void ResourceManager::halt_streams() {
-    // Flush the stream queues
-    for (auto device : devices) {
-        auto ids = device->inter_device_stream;
-        if (ids != nullptr) ids->flush();
-
-        for (auto stream : device->streams)
-            stream->flush();
-    }
-
-    // Mark all events to release locks
-    for (auto device : devices)
-        for (auto event : device->events)
-            event->mark_done();
-
-    // Sync threads
-    for (auto device : devices) {
-        auto ids = device->inter_device_stream;
-        if (ids != nullptr) ids->synchronize();
-
-        for (auto stream : device->streams)
-            stream->synchronize();
-    }
-}
-
 void ResourceManager::delete_streams() {
     for (auto device : devices) device->delete_streams();
 }
