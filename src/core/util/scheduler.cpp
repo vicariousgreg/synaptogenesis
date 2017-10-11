@@ -28,6 +28,11 @@ void Scheduler::enqueue(Event *event) {
 void Scheduler::dequeue(Event *event) {
     std::unique_lock<std::mutex> lock(event_mutex);
     enq.erase(event);
+    for (auto s : frozen_streams[event]) {
+        mark_available(s);
+    }
+    frozen_streams[event].clear();
+    notify_main(event);
 }
 
 void Scheduler::push(Stream *stream, std::function<void()> f) {
@@ -47,14 +52,6 @@ bool Scheduler::freeze(Stream *stream, Event* event) {
         return true;
     }
     return false;
-}
-
-void Scheduler::thaw(Event* event) {
-    std::unique_lock<std::mutex> lock(event_mutex);
-    for (auto s : frozen_streams[event]) {
-        mark_available(s);
-    }
-    frozen_streams[event].clear();
 }
 
 void Scheduler::mark_available(Stream *stream) {
@@ -101,21 +98,37 @@ void Scheduler::add(Stream *stream) {
 }
 
 void Scheduler::enqueue_wait(Stream *stream, Event *event) {
-    if (enqueued(event)) {
-        notify_dormant();
-        push(stream, std::bind(&Scheduler::wait, this, event, stream));
+    if (single_thread) {
+        synchronize(event);
+    } else {
+        if (enqueued(event)) {
+            notify_dormant();
+            push(stream, std::bind(&Scheduler::wait, this, event, stream));
+        }
     }
 }
 
 void Scheduler::enqueue_record(Stream *stream, Event *event) {
-    enqueue(event);
-    notify_dormant();
-    push(stream, std::bind(&Scheduler::record, this, event, stream));
+    if (single_thread) {
+#ifdef __CUDACC__
+        if (not event->is_host()) {
+            cudaEventRecord(event->cuda_event, stream->cuda_stream);
+        }
+#endif
+    } else {
+        enqueue(event);
+        notify_dormant();
+        push(stream, std::bind(&Scheduler::record, this, event, stream));
+    }
 }
 
 void Scheduler::enqueue_compute(Stream *stream, std::function<void()> f) {
-    notify_dormant();
-    push(stream, std::bind(&Scheduler::compute, this, f, stream));
+    if (single_thread) {
+        f();
+    } else {
+        notify_dormant();
+        push(stream, std::bind(&Scheduler::compute, this, f, stream));
+    }
 }
 
 void Scheduler::synchronize(Event* event) {
@@ -163,10 +176,11 @@ void Scheduler::wait(Event* event, Stream* stream) {
 
 void Scheduler::record(Event* event, Stream* stream) {
     pop(stream);
+#ifdef __CUDACC__
+    if (not event->is_host())
+        cudaEventRecord(event->cuda_event, stream->cuda_stream);
+#endif
     dequeue(event);
-
-    thaw(event);
-    notify_main(event);
     mark_available(stream);
 }
 
@@ -178,9 +192,13 @@ void Scheduler::compute(std::function<void()> f, Stream* stream) {
 
 void Scheduler::start(int size) {
     if (running) shutdown();
-    running = true;
-    for (int i = 0 ; i < size ; ++i) {
-        threads.push_back(std::thread(&Scheduler::worker_loop, this));
+    if (size == 0) {
+        single_thread = true;
+    } else {
+        running = true;
+        for (int i = 0 ; i < size ; ++i) {
+            threads.push_back(std::thread(&Scheduler::worker_loop, this));
+        }
     }
 }
 

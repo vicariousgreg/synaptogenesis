@@ -31,7 +31,11 @@ class Scheduler {
         static Scheduler *instance;
 
         Scheduler()
-            : index(0), main_blocked_on(nullptr), running(false), dormant(false) { }
+            : index(0),
+              main_blocked_on(nullptr),
+              running(false),
+              dormant(false),
+              single_thread(false) { }
         virtual ~Scheduler() { shutdown(); }
 
         int index;
@@ -55,6 +59,7 @@ class Scheduler {
         std::condition_variable dormant_cv;
         std::condition_variable main_cv;
         bool running;
+        bool single_thread;
 
         void wait(Event* event, Stream* stream);
         void record(Event* event, Stream* stream);
@@ -62,12 +67,10 @@ class Scheduler {
 
         bool enqueued(Event *event);
         void enqueue(Event *event);
-        void enqueue_and_thaw(Event *event);
         void dequeue(Event *event);
         void push(Stream *stream, std::function<void()> f);
         void pop(Stream *stream);
         bool freeze(Stream *stream, Event *event);
-        void thaw(Event *event);
         void mark_available(Stream *stream);
         bool try_take(Stream *stream);
         void release(Stream *stream);
