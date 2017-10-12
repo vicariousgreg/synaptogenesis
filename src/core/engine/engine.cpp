@@ -239,6 +239,9 @@ void Engine::single_thread_loop() {
         if (time_limit > 0) iteration_timer.wait(time_limit);
     }
 
+    // Set term lock owner to ensure interrupt doesn't hang
+    term_lock.set_owner(NETWORK_THREAD);
+
     // Final synchronize
     device_synchronize();
 
@@ -429,7 +432,7 @@ Report* Engine::run(PropertyConfig args) {
     if (verbose) device_check_memory();
 
     std::vector<std::thread> threads;
-    if (args.get_bool("multithreaded", true)) {
+    if (args.get_bool("multithreaded", false)) {
         if (verbose) printf("\nLaunching multithreaded...\n\n");
         threads.push_back(std::thread(
             &Engine::network_loop, this));
@@ -481,8 +484,15 @@ void Engine::interrupt() {
     for (auto engine : active_engines) {
         if (engine->verbose) printf("Interrupting engine...\n");
 
-        // Shutdown environment, which will shutdown network
+        // Stop the environment
         engine->environment_running = false;
+
+        // Wait for term lock
+        while (engine->term_lock.get_owner() != NETWORK_THREAD);
+
+        // Ensure network thread gets locks
+        engine->sensory_lock.set_owner(NETWORK_THREAD);
+        engine->motor_lock.set_owner(NETWORK_THREAD);
     }
     active_engines.clear();
 }
