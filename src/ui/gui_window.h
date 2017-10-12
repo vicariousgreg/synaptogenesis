@@ -6,7 +6,10 @@
 #include "network/layer.h"
 #include "util/constants.h"
 
-class GuiWindow : public Gtk::Window {
+/* Wrapper class that ensures GUI is initialized */
+class GuiObject { public: GuiObject(); };
+
+class GuiWindow : public GuiObject, public Gtk::Window {
     public:
         GuiWindow();
         virtual void add_layer(Layer *layer, IOTypeMask io_type) = 0;

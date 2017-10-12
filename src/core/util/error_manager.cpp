@@ -3,7 +3,9 @@
 #include <iostream>
 #include <stdexcept>
 
-ErrorManager *ErrorManager::instance = 0;
+bool ErrorManager::suppress_output = false;
+bool ErrorManager::warnings = true;
+bool ErrorManager::debug = false;
 
 void ErrorManager::log_warning(std::string error) {
     if (warnings and not suppress_output)
@@ -21,10 +23,4 @@ void ErrorManager::log_error(std::string error) {
 void ErrorManager::log_debug(std::string error) {
     if (debug and not suppress_output)
         std::cout << "DEBUG: \n" << error << "\n";
-}
-
-ErrorManager* ErrorManager::get_instance() {
-    if (ErrorManager::instance == nullptr)
-        ErrorManager::instance = new ErrorManager();
-    return ErrorManager::instance;
 }

@@ -5,7 +5,6 @@
 #include <gtkmm.h>
 
 class GuiWindow;
-class Engine;
 
 class GUI {
     public:
@@ -14,12 +13,10 @@ class GUI {
 
         bool is_active() { return active; }
         void add_window(GuiWindow *window);
-        void init(Engine *engine);
+        void init();
         void launch();
         void signal_update();
         void signal_quit();
-
-        void interrupt_engine();
 
         Glib::Dispatcher quit_dispatcher;
         Glib::Dispatcher update_dispatcher;
@@ -27,8 +24,6 @@ class GUI {
     private:
         static GUI *instance;
         GUI();
-
-        Engine *engine;
 
         void update();
         void quit();

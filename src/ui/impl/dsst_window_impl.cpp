@@ -170,8 +170,7 @@ void DSSTWindowImpl::feed_input(Layer *layer, float *input) {
 
 void DSSTWindowImpl::add_digit(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
     if (index < 1 or index > 9)
-        ErrorManager::get_instance()->log_error(
-            "Attempted to add out of bounds digit to DSST!");
+        LOG_ERROR("Attempted to add out of bounds digit to DSST!");
 
     auto digit_data = digit_pixbufs[index-1]->get_pixels();
     auto box_data = pix->get_pixels();
@@ -186,8 +185,7 @@ void DSSTWindowImpl::add_digit(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
 
 void DSSTWindowImpl::add_symbol(int index, Glib::RefPtr<Gdk::Pixbuf> pix) {
     if (index < 1 or index > 9)
-        ErrorManager::get_instance()->log_error(
-            "Attempted to add out of bounds symbol to DSST!");
+        LOG_ERROR("Attempted to add out of bounds symbol to DSST!");
 
     auto symbol_data = symbol_pixbufs[index-1]->get_pixels();
     auto box_data = pix->get_pixels();

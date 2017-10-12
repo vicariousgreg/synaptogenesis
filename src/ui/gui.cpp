@@ -2,7 +2,6 @@
 
 #include "gui.h"
 #include "gui_window.h"
-#include "engine/engine.h"
 
 GUI *GUI::instance = nullptr;
 
@@ -12,7 +11,7 @@ GUI *GUI::get_instance() {
     return GUI::instance;
 }
 
-GUI::GUI() : active(false), engine(nullptr) {
+GUI::GUI() : active(false), argv(nullptr) {
     update_dispatcher.connect(sigc::mem_fun(*this, &GUI::update));
     quit_dispatcher.connect(sigc::mem_fun(*this, &GUI::quit));
 }
@@ -23,12 +22,11 @@ GUI::~GUI() {
 }
 
 void GUI::add_window(GuiWindow *window) {
-    active = true;
     this->windows.push_back(window);
 }
 
-void GUI::init(Engine *engine) {
-    this->engine = engine;
+void GUI::init() {
+    active = true;
 
     // Mock arguments
     int argc = 1;
@@ -42,9 +40,11 @@ void GUI::init(Engine *engine) {
 }
 
 void GUI::launch() {
-    for (auto window : windows) window->show();
-    if (windows.size() > 0)
-        app->run(*windows[0]);
+    if (active) {
+        for (auto window : windows) window->show();
+        if (windows.size() > 0)
+            app->run(*windows[0]);
+    }
 }
 
 void GUI::signal_update() {
@@ -52,7 +52,9 @@ void GUI::signal_update() {
 }
 
 void GUI::update() {
-    for (auto window : windows) window->update();
+    if (active)
+        for (auto window : windows)
+            window->update();
 }
 
 void GUI::signal_quit() {
@@ -60,15 +62,13 @@ void GUI::signal_quit() {
 }
 
 void GUI::quit() {
-    for (auto window : windows) {
-        window->close();
-        delete window;
+    if (active) {
+        for (auto window : windows) {
+            window->close();
+            delete window;
+        }
+        windows.clear();
+        active = false;
+        app.reset();
     }
-    windows.clear();
-    active = false;
-}
-
-void GUI::interrupt_engine() {
-    if (engine != nullptr) engine->interrupt();
-    engine = nullptr;
 }

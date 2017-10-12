@@ -3,31 +3,21 @@
 
 #include <string>
 
-#define LOG_ERROR ErrorManager::get_instance()->log_error
-#define LOG_WARNING ErrorManager::get_instance()->log_warning
-#define LOG_DEBUG ErrorManager::get_instance()->log_debug
+#define LOG_ERROR ErrorManager::log_error
+#define LOG_WARNING ErrorManager::log_warning
+#define LOG_DEBUG ErrorManager::log_debug
 
 class DebugError : public std::exception { };
 
 class ErrorManager {
     public:
-        static ErrorManager *get_instance();
+        static void log_warning(std::string error);
+        static void log_error(std::string error);
+        static void log_debug(std::string error);
 
-        void set_warnings(bool warnings) { this->warnings = warnings; }
-        void set_debug(bool debug) { this->debug = debug; }
-        void set_suppress_output(bool supp) { this->suppress_output = supp; }
-
-        void log_warning(std::string error);
-        void log_error(std::string error);
-        void log_debug(std::string error);
-
-    private:
-        static ErrorManager *instance;
-        ErrorManager() : warnings(true), debug(false) { }
-
-        bool suppress_output;
-        bool warnings;
-        bool debug;
+        static bool suppress_output;
+        static bool warnings;
+        static bool debug;
 };
 
 #endif

@@ -215,7 +215,7 @@ void Engine::single_thread_loop() {
             if (not suppress_output)
                 for (auto& module : this->modules)
                     module->report_output(buffer);
-            GuiController::get_instance()->update();
+            GuiController::update();
         }
 
         // Cycle modules
@@ -224,10 +224,9 @@ void Engine::single_thread_loop() {
         // Check for errors
         device_check_error(nullptr);
 
-        // If engine gets interrupted, shutdown and break
+        // If engine gets interrupted, break
         if (not this->environment_running) {
             iterations = i;
-            Scheduler::get_instance()->shutdown();
             break;
         }
 
@@ -254,8 +253,8 @@ void Engine::single_thread_loop() {
     // Report report if verbose
     if (verbose) report->print();
 
-    // Shutdown the GUI
-    GuiController::get_instance()->quit();
+    // Shutdown GUI
+    GuiController::quit();
 }
 
 void Engine::network_loop() {
@@ -304,7 +303,6 @@ void Engine::network_loop() {
         // If engine gets interrupted, halt streams and break
         if (not this->network_running) {
             iterations = i;
-            Scheduler::get_instance()->shutdown();
             break;
         }
 
@@ -335,8 +333,8 @@ void Engine::network_loop() {
     // Report report if verbose
     if (verbose) report->print();
 
-    // Shutdown the GUI
-    GuiController::get_instance()->quit();
+    // Shutdown GUI
+    GuiController::quit();
 }
 
 void Engine::environment_loop() {
@@ -356,7 +354,7 @@ void Engine::environment_loop() {
             if (not suppress_output)
                 for (auto& module : this->modules)
                     module->report_output(buffer);
-            GuiController::get_instance()->update();
+            GuiController::update();
         }
         motor_lock.pass(NETWORK_THREAD);
 
@@ -377,9 +375,8 @@ void Engine::environment_loop() {
 }
 
 Report* Engine::run(PropertyConfig args) {
-    // Initialize the GUI
-    // Do this before rebuilding so that modules can attach
-    GuiController::get_instance()->init(this);
+    // Set engine to active
+    Engine::activate(this);
 
     // Transfer state to device
     // This renders the pointers in the engine outdated,
@@ -445,11 +442,17 @@ Report* Engine::run(PropertyConfig args) {
     }
 
     // Launch UI on main thread
-    GuiController::get_instance()->launch();
+    GuiController::launch();
 
     // Wait for threads
     for (auto& thread : threads)
         thread.join();
+
+    // Shutdown the Scheduler
+    Scheduler::get_instance()->shutdown();
+
+    // Set engine to inactive
+    Engine::deactivate(this);
 
     // Clean up
     free_rand();
@@ -463,9 +466,23 @@ Report* Engine::run(PropertyConfig args) {
     return report;
 }
 
-void Engine::interrupt() {
-    if (this->verbose) printf("Interrupting engine...\n");
+std::set<Engine*> Engine::active_engines;
 
-    // Shutdown environment, which will shutdown network
-    this->environment_running = false;
+void Engine::activate(Engine* engine) {
+    active_engines.insert(engine);
+}
+
+void Engine::deactivate(Engine* engine) {
+    if (active_engines.count(engine))
+        active_engines.erase(engine);
+}
+
+void Engine::interrupt() {
+    for (auto engine : active_engines) {
+        if (engine->verbose) printf("Interrupting engine...\n");
+
+        // Shutdown environment, which will shutdown network
+        engine->environment_running = false;
+    }
+    active_engines.clear();
 }

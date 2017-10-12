@@ -1,24 +1,11 @@
 #ifndef gui_controller_h
 #define gui_controller_h
 
-class GUI;
-class Engine;
-
 class GuiController {
     public:
-        static GuiController *get_instance();
-        virtual ~GuiController();
-
-        void init(Engine *engine);
-        void launch();
-        void update();
-        void quit();
-
-    private:
-        static GuiController *instance;
-        GuiController();
-
-        GUI *gui;
+        static void launch();
+        static void update();
+        static void quit();
 };
 
 #endif

@@ -1093,7 +1093,7 @@ int main(int argc, char *argv[]) {
     srand(time(nullptr));
 
     // Suppress warnings
-    ErrorManager::get_instance()->set_warnings(false);
+    ErrorManager::warnings = false;
 
     working_memory_test();
     return cli();

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <thread>
 #include <mutex>
 
@@ -63,8 +64,6 @@ class Engine {
         // Run the engine
         Report* run(PropertyConfig args=PropertyConfig());
 
-        void interrupt();
-
         Buffer* get_buffer() { return buffer; }
         IOTypeMask get_io_type(Layer *layer) { return io_types[layer]; }
         bool is_input(Layer *layer) { return get_io_type(layer) & INPUT; }
@@ -72,6 +71,9 @@ class Engine {
         bool is_expected(Layer *layer) { return get_io_type(layer) & EXPECTED; }
 
         size_t get_buffer_bytes() const;
+
+        // Interrupts all active engines
+        static void interrupt();
 
     protected:
         Context context;
@@ -110,6 +112,11 @@ class Engine {
         void single_thread_loop();
         void network_loop();
         void environment_loop();
+
+        // Static infrastructure for interruption
+        static std::set<Engine*> active_engines;
+        static void activate(Engine* engine);
+        static void deactivate(Engine* engine);
 };
 
 #endif
