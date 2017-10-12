@@ -38,13 +38,19 @@ class Scheduler {
               single_thread(false) { }
         virtual ~Scheduler() { shutdown(); }
 
+        typedef enum {
+            CONTINUE,
+            STOP_POP,
+            STOP_NO_POP
+        } QueueSignal;
+
         int index;
         std::vector<Stream*> streams;
 
         // Mutexed variables
         std::map<Stream*, bool> available_streams;
         std::map<Event*, std::vector<Stream*>> frozen_streams;
-        std::map<Stream*, std::queue<std::function<void()>>> queues;
+        std::map<Stream*, std::queue<std::function<QueueSignal()>>> queues;
         std::set<Event*> enq;
         Event* main_blocked_on;
         bool dormant;
@@ -55,25 +61,27 @@ class Scheduler {
         std::mutex event_mutex;
         std::mutex main_mutex;
         std::mutex dormant_mutex;
+        std::mutex worker_mutex;
 
         std::condition_variable dormant_cv;
         std::condition_variable main_cv;
         bool running;
         bool single_thread;
 
-        void wait(Event* event, Stream* stream);
-        void record(Event* event, Stream* stream);
-        void compute(std::function<void()> f, Stream* stream);
+        QueueSignal wait(Event* event, Stream* stream);
+        QueueSignal record(Event* event, Stream* stream);
+        QueueSignal compute(std::function<void()> f, Stream* stream);
 
         bool enqueued(Event *event);
         void enqueue(Event *event);
         void dequeue(Event *event);
-        void push(Stream *stream, std::function<void()> f);
+        void push(Stream *stream, std::function<QueueSignal()> f);
         void pop(Stream *stream);
         bool freeze(Stream *stream, Event *event);
         void mark_available(Stream *stream);
         bool try_take(Stream *stream);
-        void release(Stream *stream);
+        void lock(Stream *stream);
+        void unlock(Stream *stream);
         void notify_dormant();
         void notify_main(Event *event);
 

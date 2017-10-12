@@ -25,6 +25,7 @@ enum Thread_ID {
 
 class Lock {
     public:
+        Thread_ID get_owner() { return owner; }
         void set_owner(Thread_ID new_owner)
             { owner = new_owner; }
 
@@ -74,7 +75,8 @@ class Engine {
 
     protected:
         Context context;
-        bool running;
+        bool network_running;
+        bool environment_running;
 
         void build_environment(PropertyConfig args);
         void build_clusters(PropertyConfig args);

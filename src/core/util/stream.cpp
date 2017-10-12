@@ -11,13 +11,15 @@ Stream::Stream(DeviceID device_id, bool host_flag)
     if (not host_flag) {
         cudaSetDevice(device_id);
         cudaStreamCreate(&this->cuda_stream);
+    } else {
+        this->cuda_stream = 0;
     }
 #endif
 }
 
 Stream::~Stream() {
 #ifdef __CUDACC__
-    if (cuda_stream != 0) {
+    if (not host_flag and cuda_stream != 0) {
         cudaSetDevice(device_id);
         cudaStreamDestroy(this->cuda_stream);
     }

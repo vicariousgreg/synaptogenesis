@@ -35,7 +35,7 @@ void Scheduler::dequeue(Event *event) {
     notify_main(event);
 }
 
-void Scheduler::push(Stream *stream, std::function<void()> f) {
+void Scheduler::push(Stream *stream, std::function<Scheduler::QueueSignal()> f) {
     std::unique_lock<std::mutex> lock(stream_mutex[stream]);
     queues[stream].push(f);
 }
@@ -49,9 +49,9 @@ bool Scheduler::freeze(Stream *stream, Event* event) {
     std::unique_lock<std::mutex> lock(event_mutex);
     if (enq.count(event)) {
         frozen_streams[event].push_back(stream);
-        return true;
+        return false;
     }
-    return false;
+    return true;
 }
 
 void Scheduler::mark_available(Stream *stream) {
@@ -60,16 +60,19 @@ void Scheduler::mark_available(Stream *stream) {
 }
 
 bool Scheduler::try_take(Stream *stream) {
-    stream_mutex[stream].lock();
+    std::unique_lock<std::mutex> lock(stream_mutex[stream]);
     if (available_streams[stream] and queues[stream].size() != 0) {
         available_streams[stream] = false;
         return true;
     }
-    stream_mutex[stream].unlock();
     return false;
 }
 
-void Scheduler::release(Stream *stream) {
+void Scheduler::lock(Stream *stream) {
+    stream_mutex[stream].lock();
+}
+
+void Scheduler::unlock(Stream *stream) {
     stream_mutex[stream].unlock();
 }
 
@@ -94,7 +97,7 @@ void Scheduler::add(Stream *stream) {
     streams.push_back(stream);
     stream_mutex[stream];
     available_streams[stream] = true;
-    queues[stream] = std::queue<std::function<void()>>();
+    queues[stream];
 }
 
 void Scheduler::enqueue_wait(Stream *stream, Event *event) {
@@ -102,8 +105,8 @@ void Scheduler::enqueue_wait(Stream *stream, Event *event) {
         synchronize(event);
     } else {
         if (enqueued(event)) {
-            notify_dormant();
             push(stream, std::bind(&Scheduler::wait, this, event, stream));
+            notify_dormant();
         }
     }
 }
@@ -117,8 +120,8 @@ void Scheduler::enqueue_record(Stream *stream, Event *event) {
 #endif
     } else {
         enqueue(event);
-        notify_dormant();
         push(stream, std::bind(&Scheduler::record, this, event, stream));
+        notify_dormant();
     }
 }
 
@@ -126,8 +129,8 @@ void Scheduler::enqueue_compute(Stream *stream, std::function<void()> f) {
     if (single_thread) {
         f();
     } else {
-        notify_dormant();
         push(stream, std::bind(&Scheduler::compute, this, f, stream));
+        notify_dormant();
     }
 }
 
@@ -149,45 +152,39 @@ void Scheduler::synchronize(Event* event) {
 #endif
 }
 
-void Scheduler::wait(Event* event, Stream* stream) {
+Scheduler::QueueSignal Scheduler::wait(Event* event, Stream* stream) {
     if (event->is_host()) {
-        pop(stream);
-
-        if (not freeze(stream, event))
-            mark_available(stream);
+        return (freeze(stream, event)) ? CONTINUE : STOP_POP;
     }
 #ifdef __CUDACC__
     else if (stream->is_host()) {
         cudaSetDevice(event->get_device_id());
-        if (cudaEventQuery(event->cuda_event)) {
-            pop(stream);
-        }
-        mark_available(stream);
+        return
+            (cudaEventQuery(event->cuda_event) == cudaSuccess)
+                ? CONTINUE
+                : STOP_NO_POP;
     } else {
         // Devices wait on CUDA events using CUDA API
         cudaSetDevice(event->get_device_id());
         cudaStreamWaitEvent(stream->cuda_stream, event->cuda_event, 0);
 
-        pop(stream);
-        mark_available(stream);
+        return CONTINUE;
     }
 #endif
 }
 
-void Scheduler::record(Event* event, Stream* stream) {
-    pop(stream);
+Scheduler::QueueSignal Scheduler::record(Event* event, Stream* stream) {
 #ifdef __CUDACC__
     if (not event->is_host())
         cudaEventRecord(event->cuda_event, stream->cuda_stream);
 #endif
     dequeue(event);
-    mark_available(stream);
+    return CONTINUE;
 }
 
-void Scheduler::compute(std::function<void()> f, Stream* stream) {
-    pop(stream);
+Scheduler::QueueSignal Scheduler::compute(std::function<void()> f, Stream* stream) {
     f();
-    mark_available(stream);
+    return CONTINUE;
 }
 
 void Scheduler::start(int size) {
@@ -219,22 +216,55 @@ void Scheduler::shutdown() {
 void Scheduler::worker_loop() {
     while (running) {
         int size = streams.size();
-        bool noop = true;
 
-        for (int i = 0 ;  i < size; ++i) {
-            auto stream = streams[i];
+        worker_mutex.lock();
+        int i = 0;
+        for ( ; i < size; ++i) {
+            auto stream = streams[index];
+            index = (index + 1) % size;
+
             if (try_take(stream)) {
-                auto f = queues[stream].front();
-                release(stream);
-                noop = false;
-                f();
+                worker_mutex.unlock();
+
+                bool active = true;
+                while (active) {
+                    lock(stream);
+                    if (queues[stream].size() == 0) {
+                        available_streams[stream] = true;
+                        unlock(stream);
+                        active = false;
+                    } else {
+                        auto f = queues[stream].front();
+                        unlock(stream);
+
+                        switch(f()) {
+                            case STOP_POP:
+                                active = false;
+                            case CONTINUE:
+                                pop(stream);
+                                break;
+                            case STOP_NO_POP:
+                                active = false;
+                                mark_available(stream);
+                                break;
+                        }
+                    }
+                }
                 break;
             }
         }
-        if (noop) {
+
+        // Couldn't get a stream -- go dormant
+        if (i == size) {
+            worker_mutex.unlock();
             std::unique_lock<std::mutex> lock(dormant_mutex);
-            this->dormant = true;
-            dormant_cv.wait(lock, [this](){return not this->dormant;});
+
+            // If not running, a shutdown has been issued
+            // This is necessary to avoid race conditions
+            if (running) {
+                this->dormant = true;
+                dormant_cv.wait(lock, [this](){return not this->dormant;});
+            }
         }
     }
 }

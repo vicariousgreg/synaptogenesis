@@ -13,7 +13,8 @@
 
 Engine::Engine(Context context)
         : context(context),
-          running(false),
+          network_running(false),
+          environment_running(false),
           learning_flag(true),
           suppress_output(false),
           refresh_rate(FLT_MAX),
@@ -223,8 +224,12 @@ void Engine::single_thread_loop() {
         // Check for errors
         device_check_error(nullptr);
 
-        // If engine gets interrupted, break
-        if (not this->running) break;
+        // If engine gets interrupted, shutdown and break
+        if (not this->environment_running) {
+            iterations = i;
+            Scheduler::get_instance()->shutdown();
+            break;
+        }
 
         // Print refresh rate if verbose
         if (verbose and i == 999)
@@ -296,12 +301,10 @@ void Engine::network_loop() {
         // Check for errors
         device_check_error(nullptr);
 
-        // If engine gets interrupted, halt streams, pass locks, and break
-        if (not this->running) {
+        // If engine gets interrupted, halt streams and break
+        if (not this->network_running) {
             iterations = i;
             Scheduler::get_instance()->shutdown();
-            sensory_lock.pass(ENVIRONMENT_THREAD);
-            motor_lock.pass(ENVIRONMENT_THREAD);
             break;
         }
 
@@ -361,9 +364,10 @@ void Engine::environment_loop() {
         for (auto& module : this->modules) module->cycle();
 
         // If engine gets interrupted, pass the locks and break
-        if (not this->running) {
+        if (not this->environment_running) {
             sensory_lock.pass(NETWORK_THREAD);
             motor_lock.pass(NETWORK_THREAD);
+            this->network_running = false;
             break;
         }
     }
@@ -414,7 +418,8 @@ Report* Engine::run(PropertyConfig args) {
                 "Unspecified number of iterations -- running indefinitely.");
     }
 
-    running = true;
+    network_running = true;
+    environment_running = true;
 
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT_THREAD);
@@ -448,7 +453,8 @@ Report* Engine::run(PropertyConfig args) {
 
     // Clean up
     free_rand();
-    running = false;
+    network_running = false;
+    environment_running = false;
 
     auto report = this->report;
     this->report = nullptr;
@@ -459,5 +465,7 @@ Report* Engine::run(PropertyConfig args) {
 
 void Engine::interrupt() {
     if (this->verbose) printf("Interrupting engine...\n");
-    this->running = false;
+
+    // Shutdown environment, which will shutdown network
+    this->environment_running = false;
 }
