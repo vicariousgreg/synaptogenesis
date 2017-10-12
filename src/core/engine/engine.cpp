@@ -432,7 +432,7 @@ Report* Engine::run(PropertyConfig args) {
     if (verbose) device_check_memory();
 
     std::vector<std::thread> threads;
-    if (args.get_bool("multithreaded", false)) {
+    if (args.get_bool("multithreaded", true)) {
         if (verbose) printf("\nLaunching multithreaded...\n\n");
         threads.push_back(std::thread(
             &Engine::network_loop, this));
