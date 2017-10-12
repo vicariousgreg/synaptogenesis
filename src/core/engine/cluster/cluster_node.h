@@ -10,6 +10,7 @@ class Layer;
 class DendriticNode;
 class Connection;
 class State;
+class Buffer;
 class Engine;
 class Instruction;
 class SynapseInstruction;
@@ -22,7 +23,7 @@ class ClusterNode {
             Stream *io_stream, Stream *compute_stream);
         virtual ~ClusterNode();
 
-        void activate_input();
+        void activate_input(Buffer *buffer);
         void activate_state();
         void activate_output();
 

@@ -8,6 +8,7 @@
 #include "state/attributes.h"
 #include "io/buffer.h"
 #include "engine/engine.h"
+#include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
 #include "util/scheduler.h"
@@ -98,7 +99,8 @@ class InterDeviceTransferInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            src.copy_to(dst, stream);
+            get_copy_pointer_kernel<Output>().run(
+                stream, 0, 0, src, dst, stream);
             Instruction::record_event();
         }
 
@@ -313,7 +315,8 @@ class TransferInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            src.copy_to(dst, stream);
+            get_copy_pointer_kernel<T>().run(
+                stream, 0, 0, src, dst, stream);
             Instruction::record_event();
         }
 
@@ -326,30 +329,23 @@ template<class T>
 class BufferedTransferInstruction : public Instruction {
     public:
         BufferedTransferInstruction(Layer *layer, Stream *stream,
-            Pointer<T> src, Pointer<T> inter, Pointer<T> dst,
-            Buffer *buffer, bool check_dirty=false)
+            Pointer<T> src, Pointer<T> inter, Pointer<T> dst)
                 : Instruction(layer, stream),
-                  src(src), inter(inter), dst(dst),
-                  buffer(buffer) {
+                  src(src), inter(inter), dst(dst) {
             this->add_event();
         }
 
         void activate() {
             Instruction::wait_for_dependencies();
-
-            if (not check_dirty or buffer->get_dirty(to_layer)) {
-                buffer->set_dirty(to_layer, false);
-                src.copy_to(inter, stream);
-            }
-            inter.copy_to(dst, stream);
-
+            get_copy_pointer_kernel<T>().run(
+                stream, 0, 0, src, inter, stream);
+            get_copy_pointer_kernel<T>().run(
+                stream, 0, 0, inter, dst, stream);
             Instruction::record_event();
         }
 
     protected:
         Pointer<T> src, inter, dst;
-        Buffer* buffer;
-        bool check_dirty;
 };
 
 /* Transfers weights intradevice for second order connections */
@@ -373,8 +369,7 @@ class InputTransferInstruction : public BufferedTransferInstruction<float> {
                 : BufferedTransferInstruction(layer, stream,
                       engine->get_buffer()->get_input(layer),
                       state->get_buffer_input(layer),
-                      state->get_input(layer),
-                      engine->get_buffer()) { }
+                      state->get_input(layer)) { }
 };
 
 /* Transfers expected data */
@@ -385,8 +380,7 @@ class ExpectedTransferInstruction : public BufferedTransferInstruction<Output> {
                 : BufferedTransferInstruction(layer, stream,
                       engine->get_buffer()->get_expected(layer),
                       state->get_buffer_expected(layer),
-                      state->get_expected(layer),
-                      engine->get_buffer()) { }
+                      state->get_expected(layer)) { }
 };
 
 /* Transfers output data */

@@ -147,6 +147,13 @@ class Pointer : public BasePointer {
         void set(T val, bool async=true);
 };
 
+/* Wrapper function for copy_to using stream
+ * This can be wrapped in a Kernel object */
+template<typename T>
+void copy_pointer(Pointer<T> src, Pointer<T> dst, Stream* stream) {
+    src.copy_to(dst, stream);
+}
+
 #ifndef pointer_cpp
 #include "util/pointer.cpp"
 #endif

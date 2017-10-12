@@ -81,7 +81,6 @@ std::vector<BasePointer*> Buffer::get_pointers() {
 
 void Buffer::set_input(Layer* layer, Pointer<float> source) {
     source.copy_to(this->get_input(layer));
-    dirty_map[layer] = true;
 }
 
 void Buffer::set_output(Layer* layer, Pointer<Output> source) {
@@ -94,6 +93,8 @@ void Buffer::set_expected(Layer* layer, Pointer<Output> source) {
 
 Pointer<float> Buffer::get_input(Layer *layer) {
     try {
+        // Assume that the input is dirty if pointer is retrieved
+        dirty_map[layer] = true;
         return input.slice(input_map.at(layer), layer->size);
     } catch (std::out_of_range) {
         LOG_ERROR(

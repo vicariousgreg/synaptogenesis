@@ -48,8 +48,8 @@ class ResourceManager {
         Event *create_event(DeviceID id);
 
     private:
-        ResourceManager();
         static ResourceManager *instance;
+        ResourceManager();
 
         class Device {
             public:

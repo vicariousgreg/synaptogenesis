@@ -18,6 +18,7 @@ Stream::Stream(DeviceID device_id, bool host_flag)
 }
 
 Stream::~Stream() {
+    Scheduler::get_instance()->remove(this);
 #ifdef __CUDACC__
     if (not host_flag and cuda_stream != 0) {
         cudaSetDevice(device_id);

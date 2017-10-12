@@ -12,6 +12,7 @@ class DebugError : public std::exception { };
 class ErrorManager {
     public:
         static ErrorManager *get_instance();
+
         void set_warnings(bool warnings) { this->warnings = warnings; }
         void set_debug(bool debug) { this->debug = debug; }
         void set_suppress_output(bool supp) { this->suppress_output = supp; }

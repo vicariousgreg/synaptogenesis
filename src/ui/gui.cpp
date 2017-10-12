@@ -19,6 +19,7 @@ GUI::GUI() : active(false), engine(nullptr) {
 
 GUI::~GUI() {
     free(this->argv);
+    GUI::instance = nullptr;
 }
 
 void GUI::add_window(GuiWindow *window) {

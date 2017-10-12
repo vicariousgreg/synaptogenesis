@@ -10,8 +10,6 @@ class Engine;
 class GUI {
     public:
         static GUI *get_instance();
-
-        GUI();
         virtual ~GUI();
 
         bool is_active() { return active; }
@@ -28,6 +26,8 @@ class GUI {
 
     private:
         static GUI *instance;
+        GUI();
+
         Engine *engine;
 
         void update();

@@ -37,9 +37,10 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
 
 void CallbackModule::feed_input(Buffer *buffer) {
     for (auto layer : layers)
-        if (get_io_type(layer) & INPUT)
+        if (get_io_type(layer) & INPUT) {
             callbacks[layer](ids[layer], layer->size,
                 (void*)buffer->get_input(layer).get());
+        }
 }
 
 void CallbackModule::feed_expected(Buffer *buffer) {

@@ -2,10 +2,6 @@
 #define stream_h
 
 #include <functional>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <queue>
 
 #include "util/parallel.h"
 

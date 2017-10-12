@@ -42,12 +42,9 @@ DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
 }
 
 void DSSTModule::feed_input(Buffer *buffer) {
-    for (auto layer : layers) {
-        if (get_io_type(layer) & INPUT) {
+    for (auto layer : layers)
+        if (get_io_type(layer) & INPUT)
             window->feed_input(layer, buffer->get_input(layer));
-            buffer->set_dirty(layer, true);
-        }
-    }
 }
 
 void DSSTModule::report_output(Buffer *buffer) {

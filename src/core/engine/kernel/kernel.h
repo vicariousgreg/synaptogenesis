@@ -12,32 +12,58 @@
 template<typename... ARGS>
 class Kernel {
     public:
-        Kernel() : serial_kernel(nullptr), parallel_kernel(nullptr) { }
+        /* Null kernel */
+        Kernel()
+            : serial_kernel(nullptr),
+              parallel_kernel(nullptr),
+              run_all_serial(false) { }
+
+        /* Use this constructor to create kernels that run on the host,
+         *   regardless of the stream device.  This is useful for transfer
+         *   instructions, which are initiated by the host. */
+        Kernel(void(*serial_kernel)(ARGS...), bool run_all_serial)
+                : serial_kernel(serial_kernel),
+                  parallel_kernel(nullptr),
+                  run_all_serial(run_all_serial) { }
+
+        /* Typical constructor.  Provide serial and parallel versions. */
         Kernel(void(*serial_kernel)(ARGS...),
                void (*parallel_kernel)(ARGS...)=nullptr)
                 : serial_kernel(serial_kernel),
-                  parallel_kernel(parallel_kernel) { }
+                  parallel_kernel(parallel_kernel),
+                  run_all_serial(false) { }
 
         void run(Stream *stream, int blocks, int threads, ARGS... args) {
+            if (run_all_serial or stream->is_host())
+                run_serial(stream, args...);
+            else
+                run_parallel(stream, blocks, threads, args...);
+        }
+
+        void run_serial(Stream *stream, ARGS... args) {
+            if (serial_kernel == nullptr)
+                LOG_ERROR(
+                    "Attempted to run nullptr kernel!");
+            else
+                stream->schedule(
+                    std::bind(&Kernel::wrapper,
+                        this, stream, serial_kernel, args...));
+        }
+
+        void run_parallel(Stream *stream, int blocks, int threads, ARGS... args) {
 #ifdef __CUDACC__
-            if (not stream->is_host()) {
-                if (parallel_kernel == nullptr)
-                    LOG_ERROR(
-                        "Attempted to run nullptr kernel!");
-                else
-                    stream->schedule(
-                        std::bind(&Kernel::parallel_wrapper,
-                            this, stream, blocks, threads, parallel_kernel,
-                            args...));
-            } else
+            if (parallel_kernel == nullptr)
+                LOG_ERROR(
+                    "Attempted to run nullptr kernel!");
+            else
+                stream->schedule(
+                    std::bind(&Kernel::parallel_wrapper,
+                        this, stream, blocks, threads, parallel_kernel,
+                        args...));
+#else
+            LOG_ERROR(
+                "Attempted to run parallel kernel on serial build!");
 #endif
-                if (serial_kernel == nullptr)
-                    LOG_ERROR(
-                        "Attempted to run nullptr kernel!");
-                else
-                    stream->schedule(
-                        std::bind(&Kernel::wrapper,
-                            this, stream, serial_kernel, args...));
         }
 
         void wrapper(Stream *stream, void(*f)(ARGS...), ARGS... args) {
@@ -57,6 +83,7 @@ class Kernel {
         bool is_null() { return serial_kernel == nullptr; }
 
     protected:
+        bool run_all_serial;
         void (*serial_kernel)(ARGS...);
         void (*parallel_kernel)(ARGS...);
 };
@@ -75,5 +102,13 @@ get_calc_internal_second_order();
 
 /* Base activator kernel */
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn);
+
+/* Wraps a pointer copying operation
+ * Sets run_all_serial to true,
+ *   since device transfers are initiated by the host. */
+template<typename T>
+inline Kernel<Pointer<T>, Pointer<T>, Stream*> get_copy_pointer_kernel() {
+    return Kernel<Pointer<T>, Pointer<T>, Stream*>(copy_pointer, true);
+}
 
 #endif

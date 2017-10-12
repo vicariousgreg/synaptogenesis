@@ -7,6 +7,7 @@ class Engine;
 class GuiController {
     public:
         static GuiController *get_instance();
+        virtual ~GuiController();
 
         void init(Engine *engine);
         void launch();

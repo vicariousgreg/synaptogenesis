@@ -188,7 +188,7 @@ void Engine::single_thread_loop() {
             module->feed_input(buffer);
             module->feed_expected(buffer);
         }
-        for (auto& cluster : clusters) cluster->launch_input();
+        for (auto& cluster : clusters) cluster->launch_input(buffer);
         for (auto& cluster : clusters) cluster->wait_for_input();
 
         /****************************/
@@ -273,7 +273,7 @@ void Engine::network_loop() {
         /*** Read sensory input ***/
         /**************************/
         sensory_lock.wait(NETWORK_THREAD);
-        for (auto& cluster : clusters) cluster->launch_input();
+        for (auto& cluster : clusters) cluster->launch_input(buffer);
         for (auto& cluster : clusters) cluster->wait_for_input();
         sensory_lock.pass(ENVIRONMENT_THREAD);
 

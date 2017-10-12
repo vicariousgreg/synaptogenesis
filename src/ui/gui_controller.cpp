@@ -8,6 +8,10 @@ GuiController::GuiController() {
     this->gui = GUI::get_instance();
 }
 
+GuiController::~GuiController() {
+    GuiController::instance = nullptr;
+}
+
 GuiController *GuiController::get_instance() {
     if (GuiController::instance == nullptr)
         GuiController::instance = new GuiController();

@@ -264,7 +264,7 @@ void working_memory_test() {
     StructureConfig *main_structure = new StructureConfig("working memory", PARALLEL);
 
     bool wrap = true;
-    int num_cortical_regions = 3;
+    int num_cortical_regions = 1;
 
     int thal_ratio = 1;
     int cortex_size = 128;
@@ -293,10 +293,12 @@ void working_memory_test() {
             ->set("columns", cortex_size)
             ->set_child("noise config",
                 (new PropertyConfig())
-                    ->set("type", "poisson"))
+                    ->set("type", "poisson")
+                    ->set("rate", 1))
             ->set(IZ_INIT, "regular"));
 
     // Thalamic relay
+    /*
     main_structure->add_layer(
         (new PropertyConfig())
             ->set("name", "tl1_thalamus")
@@ -304,6 +306,7 @@ void working_memory_test() {
             ->set("rows", "1")
             ->set("columns", "1")
             ->set(IZ_INIT, "thalamo_cortical"));
+    */
 
     for (int i = 0 ; i < num_cortical_regions ; ++i) {
         StructureConfig *sub_structure = new StructureConfig(std::to_string(i), PARALLEL);
@@ -315,11 +318,6 @@ void working_memory_test() {
                 ->set("neural model", IZHIKEVICH)
                 ->set("rows", cortex_size)
                 ->set("columns", cortex_size)
-                ->set_child("noise config",
-                    (new PropertyConfig())
-                        ->set("type", "normal")
-                        ->set("mean", cortex_noise)
-                        ->set("std_dev", cortex_noise_stdev))
                 ->set(IZ_INIT, "random positive"));
 
         // Cortico-cortical connectivity
@@ -460,6 +458,7 @@ void working_memory_test() {
         }
 
         // Thalamocortical control connectivity
+        /*
         network_config->add_connection(
             (new PropertyConfig())
                 ->set("plastic", "false")
@@ -476,6 +475,7 @@ void working_memory_test() {
                 ->set("from layer", "tl1_thalamus")
                 ->set("to layer", "3_cortex")
                 ->set("myelinated", "true"));
+        */
 
 
         network_config->add_structure(sub_structure);
@@ -541,12 +541,14 @@ void working_memory_test() {
     vis_mod->add_layer("working memory", "feedforward");
     env->add_module(vis_mod);
 
+    /*
     env->add_module(
         (new ModuleConfig("periodic_input", "working memory", "tl1_thalamus"))
         ->set("random", "true")
         ->set("max", "3")
         ->set("rate", "500")
         ->set("verbose", "true"));
+    */
 
     auto state = new State(network);
     Engine engine(Context(network, env, state));
@@ -1093,6 +1095,7 @@ int main(int argc, char *argv[]) {
     // Suppress warnings
     ErrorManager::get_instance()->set_warnings(false);
 
+    working_memory_test();
     return cli();
 
     /*

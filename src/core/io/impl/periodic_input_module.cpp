@@ -46,10 +46,8 @@ PeriodicInputModule::~PeriodicInputModule() {
 
 void PeriodicInputModule::feed_input(Buffer *buffer) {
     if (dirty) {
-        for (auto layer : layers) {
+        for (auto layer : layers)
             this->values.copy_to(buffer->get_input(layer));
-            buffer->set_dirty(layer);
-        }
         dirty = false;
     }
 }

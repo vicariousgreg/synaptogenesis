@@ -28,12 +28,9 @@ VisualizerModule::VisualizerModule(LayerList layers, ModuleConfig *config)
 }
 
 void VisualizerModule::feed_input(Buffer *buffer) {
-    for (auto layer : layers) {
-        if (get_io_type(layer) & INPUT) {
-            buffer->set_dirty(layer);
+    for (auto layer : layers)
+        if (get_io_type(layer) & INPUT)
             window->feed_input(layer, buffer->get_input(layer));
-        }
-    }
 }
 
 void VisualizerModule::report_output(Buffer *buffer) {

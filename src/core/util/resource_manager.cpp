@@ -28,6 +28,7 @@ ResourceManager::ResourceManager() {
 ResourceManager::~ResourceManager() {
     for (auto device : devices) delete device;
     this->flush();
+    ResourceManager::instance = nullptr;
 }
 
 void ResourceManager::flush() {
