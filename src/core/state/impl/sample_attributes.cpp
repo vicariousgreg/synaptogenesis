@@ -256,6 +256,13 @@ CALC_ONE_TO_ONE(activate_sample_second_order_convolutional,
 Kernel<SYNAPSE_ARGS> SampleAttributes::get_activator(Connection *conn) {
     bool second_order = conn->second_order;
 
+    if (conn->convolutional and conn->second_order) {
+        // Typically convolutional connections just use the convergent kernel
+        // Second order convolutional connections are special because they iterate
+        //   once over the weights (see above)
+        return get_activate_sample_second_order_convolutional();
+    }
+
     // The functions are retrieved using functions named after the argument
     //   passed to CALC_ALL, with prefixes corresponding to the connection types
     switch (conn->type) {
@@ -269,18 +276,9 @@ Kernel<SYNAPSE_ARGS> SampleAttributes::get_activator(Connection *conn) {
             if (second_order) return get_activate_sample_second_order_one_to_one();
             else              return get_activate_sample_one_to_one();
         case CONVERGENT:
-            if (second_order) return get_activate_sample_second_order_convergent();
-            else              return get_activate_sample_convergent();
+            return get_activate_sample_convergent();
         case DIVERGENT:
-            if (second_order) return get_activate_sample_second_order_divergent();
-            else              return get_activate_sample_divergent();
-
-        // Typically convolutional connections just use the convergent kernel
-        // Second order convolutional connections are special because they iterate
-        //   once over the weights (see above)
-        case CONVOLUTIONAL:
-            if (second_order) return get_activate_sample_second_order_convolutional();
-            else              return get_activate_sample_convergent();
+            return get_activate_sample_divergent();
     }
 
     // Log an error if the connection type is unimplemented
@@ -320,12 +318,30 @@ CALC_ALL(update_sample,
 );
 
 /* As before, convolutional kernels are updated differently.
+ * This time, convergent and divergent kernels are different.
  * This macro defines a special kernel that iterates over all weights, and then
  *   over all from_neurons associated with that weight in an inner loop. */
-CALC_CONVOLUTIONAL_BY_WEIGHT(update_sample_convolutional,
+CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_sample_convergent_convolutional,
     EXTRACT,
 
-    /* For each weight, initialize a sum to aggregate the input 
+    /* For each weight, initialize a sum to aggregate the input
+     * from neurons that use it. */
+    float weight_delta = 0.0;
+    float old_weight = weights[weight_index];,
+
+    /* Aggregate */
+    float from_out = extractor(outputs[from_index], delay); \
+    float to_out = extractor(destination_outputs[to_index], 0);
+    weight_delta += from_out * (to_out - (from_out * old_weight));,
+
+    /* Update the weight by averaging and using conn_var as learning rate */
+    weights[weight_index] = old_weight
+        + (conn_var * weight_delta / num_weights);
+);
+CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_sample_divergent_convolutional,
+    EXTRACT,
+
+    /* For each weight, initialize a sum to aggregate the input
      * from neurons that use it. */
     float weight_delta = 0.0;
     float old_weight = weights[weight_index];,
@@ -355,11 +371,13 @@ Kernel<SYNAPSE_ARGS> SampleAttributes::get_updater(Connection *conn) {
         case ONE_TO_ONE:
             return get_update_sample_one_to_one();
         case CONVERGENT:
-            return get_update_sample_convergent();
+            return (conn->convolutional)
+                ? get_update_sample_convergent_convolutional()
+                : get_update_sample_convergent();
         case DIVERGENT:
-            return get_update_sample_divergent();
-        case CONVOLUTIONAL:
-            return get_update_sample_convolutional();
+            return (conn->convolutional)
+                ? get_update_sample_divergent_convolutional()
+                : get_update_sample_divergent();
     }
 
     // Log an error if the connection type is unimplemented

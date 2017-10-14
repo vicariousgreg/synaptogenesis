@@ -162,17 +162,23 @@ Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn) {
                 ? get_activate_base_second_order_one_to_one()
                 : get_activate_base_one_to_one();
         case CONVERGENT:
-            return (conn->second_order_slave)
-                ? get_activate_base_second_order_convergent()
-                : get_activate_base_convergent();
-        case CONVOLUTIONAL:
-            return (conn->second_order_slave)
-                ? get_activate_base_second_order_convolutional()
-                : get_activate_base_convergent();
+            if (conn->convolutional)
+                return (conn->second_order_slave)
+                    ? get_activate_base_second_order_convergent_convolutional()
+                    : get_activate_base_convergent();
+            else
+                return (conn->second_order_slave)
+                    ? get_activate_base_second_order_convergent()
+                    : get_activate_base_convergent();
         case DIVERGENT:
-            return (conn->second_order_slave)
-                ? get_activate_base_second_order_divergent()
-                : get_activate_base_divergent();
+            if (conn->convolutional)
+                return (conn->second_order_slave)
+                    ? get_activate_base_second_order_divergent_convolutional()
+                    : get_activate_base_convergent();
+            else
+                return (conn->second_order_slave)
+                    ? get_activate_base_second_order_divergent()
+                    : get_activate_base_divergent();
         default:
             LOG_ERROR(
                 "Attempted to retrieve base activator kernel for "

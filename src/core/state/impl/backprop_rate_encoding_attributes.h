@@ -11,8 +11,7 @@ class BackpropRateEncodingAttributes : public RateEncodingAttributes {
             return cluster_type == FEEDFORWARD;
         }
 
-        virtual Kernel<SYNAPSE_ARGS> get_updater(
-            ConnectionType type, DendriticNode *node);
+        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection* conn);
 
         Pointer<float> error_deltas;
 

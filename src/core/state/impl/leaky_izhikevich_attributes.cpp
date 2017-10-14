@@ -86,7 +86,8 @@ CALC_ALL(update_liz_add,
 ; );
 
 Kernel<SYNAPSE_ARGS> LeakyIzhikevichAttributes::get_updater(Connection *conn) {
-    if (conn->second_order)
+    // Second order and convolutional updaters are not currently supported
+    if (conn->second_order or conn->convolutional)
         LOG_ERROR(
             "Unimplemented connection type!");
 

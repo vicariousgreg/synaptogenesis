@@ -41,7 +41,7 @@ CALC_ALL(activate_perceptron,
 ; );
 
 Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
-    if (conn->second_order)
+    if (conn->second_order or conn->convolutional)
         LOG_ERROR(
             "Unimplemented connection type!");
 
@@ -74,7 +74,7 @@ CALC_ALL(update_perceptron,
 ; );
 
 Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
-    if (conn->second_order)
+    if (conn->second_order or conn->convolutional)
         LOG_ERROR(
             "Unimplemented connection type!");
 

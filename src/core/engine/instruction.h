@@ -216,10 +216,8 @@ class SynapseInstruction : public Instruction {
             State *state, Stream *stream)
                 : Instruction(conn->to_layer, stream),
                   connection(conn),
-                  synapse_data(parent_node, conn, state),
-                  type(conn->type) { }
+                  synapse_data(parent_node, conn, state) { }
 
-        const ConnectionType type;
         Connection* const connection;
 
     protected:
@@ -235,7 +233,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
                   activator(state->get_activator(conn)) {
             // Convolutional activate instructions iterate over weights
             // This is because of special conditions (see connection.cpp)
-            if (conn->second_order_slave and conn->type == CONVOLUTIONAL) {
+            if (conn->second_order_slave and conn->convolutional) {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
                 this->blocks = calc_blocks(num_weights);
@@ -262,7 +260,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
                 : SynapseInstruction(parent_node, conn, state, stream),
                   updater(state->get_updater(conn)) {
             // Convolutional update instructions iterate over weights
-            if (conn->type == CONVOLUTIONAL) {
+            if (conn->convolutional) {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
                 this->blocks = calc_blocks(num_weights);

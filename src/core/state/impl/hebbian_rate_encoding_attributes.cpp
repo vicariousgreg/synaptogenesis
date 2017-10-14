@@ -43,7 +43,16 @@ CALC_ALL(update_hebbian,
 #define UPDATE_WEIGHT_CONVOLUTIONAL \
     weights[weight_index] = old_weight + (LEARNING_RATE * weight_delta);
 
-CALC_CONVOLUTIONAL_BY_WEIGHT(update_hebbian_convolutional,
+CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_hebbian_convergent_convolutional,
+    ; ,
+
+    INIT_WEIGHT_DELTA;,
+
+    UPDATE_WEIGHT_DELTA;,
+
+    UPDATE_WEIGHT_CONVOLUTIONAL;
+);
+CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_hebbian_divergent_convolutional,
     ; ,
 
     INIT_WEIGHT_DELTA;,
@@ -67,11 +76,13 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
         case ONE_TO_ONE:
             return get_update_hebbian_one_to_one();
         case CONVERGENT:
-            return get_update_hebbian_convergent();
-        case CONVOLUTIONAL:
-            return get_update_hebbian_convolutional();
+            return (conn->convolutional)
+                ? get_update_hebbian_convergent_convolutional()
+                : get_update_hebbian_convergent();
         case DIVERGENT:
-            return get_update_hebbian_divergent();
+            return (conn->convolutional)
+                ? get_update_hebbian_divergent_convolutional()
+                : get_update_hebbian_divergent();
         default:
             LOG_ERROR(
                 "Unimplemented connection type!");

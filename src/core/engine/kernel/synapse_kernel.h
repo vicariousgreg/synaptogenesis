@@ -265,7 +265,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
  \
             /* Row of matrix is either the first column (convolutional) */ \
             /*   or the index of the destination neuron otherwise */ \
-            int weight_offset = (convolutional) ? 0 : to_index * kernel_size; \
+            int weight_offset = (convolutional) ? 0 : (to_index * kernel_size); \
  \
             /* Run the kernel */ \
             int k_index = 0; \
@@ -379,6 +379,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
+    const bool convolutional = synapse_data.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
@@ -400,10 +401,10 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             /* Determine range of source neurons for divergent kernel */ \
             int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride; \
             int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride; \
-            int end_s_row = start_s_row + (row_spacing * (row_field_size + row_stride) / row_stride); \
-            int end_s_col = start_s_col + (column_spacing * (column_field_size + column_stride) / column_stride); \
+            int end_s_row = start_s_row + (row_spacing * (row_field_size - row_stride) / row_stride); \
+            int end_s_col = start_s_col + (column_spacing * (column_field_size - column_stride) / column_stride); \
 \
-            int weight_offset = to_index * num_weights / to_size; \
+            int weight_offset = (convolutional) ? 0 : (to_index * num_weights / to_size); \
 \
             /* Iterate over relevant source neurons... */ \
             int k_index = 0; \
@@ -442,6 +443,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
+    const bool convolutional = synapse_data.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
@@ -462,12 +464,10 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         /* Determine range of source neurons for divergent kernel */ \
         int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride; \
         int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride; \
-        int end_s_row = start_s_row + (row_spacing * (row_field_size + row_stride) / row_stride); \
-        int end_s_col = start_s_col + (column_spacing * (column_field_size + column_stride) / column_stride); \
-\
-        /* Kernels are organized into columns
-           One kernel per source neuron */ \
-        int kernel_size = row_field_size * column_field_size; \
+        int end_s_row = start_s_row + \
+            (row_spacing * (row_field_size - row_stride) / row_stride); \
+        int end_s_col = start_s_col + \
+            (column_spacing * (column_field_size - column_stride) / column_stride); \
 \
         /* Iterate over relevant source neurons... */ \
         int k_index = 0; \
@@ -497,7 +497,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 /* Row of matrix is the kernel index * row size (see above)
                    Column of matrix is the index of the source neuron */ \
-                int weight_index = to_index + (k_index * to_size); \
+                int weight_index = (convolutional) ? k_index : (to_index + (k_index * to_size)); \
                 WEIGHT_OP; \
             } \
         } \
@@ -506,8 +506,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 }
 
 
-// Special Convolutional by weight Kernel
-#define CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+// Special Convergent Convolutional by weight Kernel
+#define CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
 HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
@@ -565,10 +565,9 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     } \
 }
 
-#define CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+#define CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const bool convolutional = synapse_data.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
@@ -626,6 +625,122 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 }
 
 
+#define DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    const int row_field_size = synapse_data.arborized_config.row_field_size; \
+    const int column_field_size = synapse_data.arborized_config.column_field_size; \
+    const int row_stride = synapse_data.arborized_config.row_stride; \
+    const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
+    const int row_offset = synapse_data.arborized_config.row_offset; \
+    const int column_offset = synapse_data.arborized_config.column_offset; \
+    const int kernel_size = row_field_size * column_field_size; \
+    const bool wrap = synapse_data.arborized_config.wrap; \
+    EXTRACTIONS; \
+\
+    int weight_index = 0; \
+    for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
+        for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++weight_index)) { \
+            WEIGHT_PRE; \
+\
+            for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
+                for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
+                    int to_index = d_row * to_columns + d_col; \
+\
+                    int s_row = ((d_row - row_offset - row_field_size + row_stride) / row_stride); \
+                    int s_col = ((d_col - column_offset - column_field_size + column_stride) / column_stride); \
+\
+                    int k_s_row = s_row + (k_row * row_spacing); \
+                    int k_s_col = s_col + (k_col * column_spacing); \
+\
+                    /* If wrapping, adjust out of bounds indices accordingly */ \
+                    if (wrap) { \
+                        k_s_row = (k_s_row < 0) \
+                            ? k_s_row + from_rows \
+                            : (k_s_row >= from_rows) \
+                                ? k_s_row - from_rows : k_s_row; \
+\
+                        k_s_col = (k_s_col < 0) \
+                            ? k_s_col + from_columns \
+                            : (k_s_col >= from_columns) \
+                                ? k_s_col - from_columns : k_s_col; \
+                    /* Avoid making connections with non-existent neurons */ \
+                    } else if (k_s_row < 0 or k_s_row >= from_rows \
+                        or k_s_col < 0 or k_s_col >= from_columns) { \
+                        continue; \
+                    } \
+\
+                    int from_index = (k_s_row * from_columns) + k_s_col; \
+\
+                    NEURON_OP; \
+                } \
+                WEIGHT_POST; \
+            } \
+        } \
+    } \
+}
+
+#define DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    const int row_field_size = synapse_data.arborized_config.row_field_size; \
+    const int column_field_size = synapse_data.arborized_config.column_field_size; \
+    const int row_stride = synapse_data.arborized_config.row_stride; \
+    const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
+    const int row_offset = synapse_data.arborized_config.row_offset; \
+    const int column_offset = synapse_data.arborized_config.column_offset; \
+    const int kernel_size = row_field_size * column_field_size; \
+    const bool wrap = synapse_data.arborized_config.wrap; \
+    EXTRACTIONS; \
+\
+    int weight_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (weight_index < (row_field_size * column_field_size)) { \
+        int k_row = weight_index / column_field_size; \
+        int k_col = weight_index % column_field_size; \
+\
+        WEIGHT_PRE; \
+\
+        for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
+            for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
+                int to_index = d_row * to_columns + d_col; \
+\
+                int s_row = ((d_row - row_offset - row_field_size + row_stride) / row_stride); \
+                int s_col = ((d_col - column_offset - column_field_size + column_stride) / column_stride); \
+\
+                int k_s_row = s_row + (k_row * row_spacing); \
+                int k_s_col = s_col + (k_col * column_spacing); \
+\
+                /* If wrapping, adjust out of bounds indices accordingly */ \
+                if (wrap) { \
+                    k_s_row = (k_s_row < 0) \
+                        ? k_s_row + from_rows \
+                        : (k_s_row >= from_rows) \
+                            ? k_s_row - from_rows : k_s_row; \
+\
+                    k_s_col = (k_s_col < 0) \
+                        ? k_s_col + from_columns \
+                        : (k_s_col >= from_columns) \
+                            ? k_s_col - from_columns : k_s_col; \
+                /* Avoid making connections with non-existent neurons */ \
+                } else if (k_s_row < 0 or k_s_row >= from_rows \
+                    or k_s_col < 0 or k_s_col >= from_columns) { \
+                    continue; \
+                } \
+\
+                int from_index = (k_s_row * from_columns) + k_s_col; \
+\
+                NEURON_OP; \
+            } \
+            WEIGHT_POST; \
+        } \
+    } \
+}
+
+
 
 
 
@@ -667,9 +782,15 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
 }
 
 // Special Convolutional by weight Kernel
-#define CALC_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+#define CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
+#define CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
@@ -708,9 +829,14 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
-// Special Convolutional by weight Kernel
-#define CALC_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+// Special Convergent Convolutional by weight Kernel
+#define CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
+}
+#define CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
@@ -810,7 +936,22 @@ CALC_ALL(FUNC_NAME, \
  \
     /* NEURON_POST */ \
 ) \
-CALC_ONE_TO_ONE(FUNC_NAME##_convolutional, \
+CALC_ONE_TO_ONE(FUNC_NAME##_convergent_convolutional, \
+    /* EXTRACTIONS */ \
+    EXTRACT_SECOND_ORDER; \
+    UPDATE_EXT;, \
+ \
+    /* NEURON_PRE */ \
+    , \
+ \
+    /* WEIGHT_OP
+     * Calculate weight input, aggregate to second order buffer */ \
+    CALC_VAL_SECOND_ORDER; \
+    UPDATE_CALC;, \
+ \
+    /* NEURON_POST */ \
+) \
+CALC_ONE_TO_ONE(FUNC_NAME##_divergent_convolutional, \
     /* EXTRACTIONS */ \
     EXTRACT_SECOND_ORDER; \
     UPDATE_EXT;, \

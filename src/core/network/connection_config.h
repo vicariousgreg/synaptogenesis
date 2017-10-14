@@ -70,6 +70,7 @@ class ConnectionConfig : public PropertyConfig {
             float max_weight,
             ConnectionType type,
             Opcode opcode,
+            bool convolutional=false,
             PropertyConfig *specialized_config=nullptr,
             PropertyConfig *weight_config=nullptr,
             std::string dendrite="root",
@@ -93,6 +94,7 @@ class ConnectionConfig : public PropertyConfig {
         const float max_weight;
         const ConnectionType type;
         const Opcode opcode;
+        const bool convolutional;
 };
 
 #endif

@@ -192,7 +192,8 @@ void game_of_life_test() {
             ->set("plastic", "false")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "add")
             ->set_child("weight config",
                 (new PropertyConfig())
@@ -214,7 +215,8 @@ void game_of_life_test() {
             ->set("plastic", "false")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "sub")
             ->set_child("weight config",
                 (new PropertyConfig())
@@ -619,7 +621,8 @@ void dsst_test() {
             ->set("plastic", "false")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "add")
             ->set_child("weight config",
                 (new PropertyConfig())
@@ -640,7 +643,8 @@ void dsst_test() {
             ->set("plastic", "false")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "mult")
             ->set_child("weight config",
                 (new PropertyConfig())
@@ -776,7 +780,8 @@ void debug_test() {
             ->set("plastic", "true")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "add")
             ->set("from structure", "debug")
             ->set("to structure", "debug")
@@ -824,7 +829,8 @@ void debug_test() {
             ->set("plastic", "true")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "add")
             ->set("from structure", "debug")
             ->set("to structure", "debug")
@@ -874,7 +880,8 @@ void debug_test() {
             ->set("plastic", "true")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "add")
             ->set("from structure", "debug")
             ->set("to structure", "debug")
@@ -925,7 +932,8 @@ void debug_test() {
             ->set("plastic", "true")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "add")
             ->set("from structure", "debug")
             ->set("to structure", "debug")
@@ -980,7 +988,8 @@ void debug_test() {
             ->set("plastic", "true")
             ->set("delay", "0")
             ->set("max weight", "1")
-            ->set("type", "convolutional")
+            ->set("type", "convergent")
+            ->set("convolutional", true)
             ->set("opcode", "add")
             ->set("from structure", "debug")
             ->set("to structure", "debug")
@@ -1001,7 +1010,6 @@ void debug_test() {
 
     auto state = new State(network);
     Engine engine(Context(network, nullptr, state));
-    print_network(network);
     auto context = engine.run(PropertyConfig({{"iterations", "1"}}));
     delete network;
     delete state;
@@ -1095,7 +1103,7 @@ int main(int argc, char *argv[]) {
     // Suppress warnings
     ErrorManager::warnings = false;
 
-    working_memory_test();
+    dsst_test();
     return cli();
 
     /*

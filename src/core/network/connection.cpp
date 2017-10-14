@@ -15,7 +15,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             max_weight(config->max_weight),
             opcode(config->opcode),
             type(config->type),
-            convolutional(type == CONVOLUTIONAL),
+            convolutional(config->convolutional),
             second_order(node->second_order),
             second_order_host(second_order and
                 node->get_second_order_connection() == nullptr),
@@ -50,21 +50,25 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             auto arborized_config = config->get_arborized_config();
 
             switch (type) {
-                case CONVOLUTIONAL:
-                    // Convolutional connections use a shared weight kernel
-                    this->num_weights = arborized_config.get_total_field_size();
-                    break;
                 case CONVERGENT:
+                    // Convolutional connections use a shared weight kernel
+                    if (convolutional)
+                        this->num_weights = arborized_config.get_total_field_size();
                     // Convergent connections use unshared mini weight matrices
                     // Each destination neuron connects to field_size squared neurons
-                    this->num_weights =
-                        arborized_config.get_total_field_size() * to_layer->size;
+                    else
+                        this->num_weights =
+                            arborized_config.get_total_field_size() * to_layer->size;
                     break;
                 case DIVERGENT:
+                    // Convolutional connections use a shared weight kernel
+                    if (convolutional)
+                        this->num_weights = arborized_config.get_total_field_size();
                     // Divergent connections use unshared mini weight matrices
                     // Each source neuron connects to field_size squared neurons
-                    this->num_weights =
-                        arborized_config.get_total_field_size() * to_layer->size;
+                    else
+                        this->num_weights =
+                            arborized_config.get_total_field_size() * to_layer->size;
 
                     // Arithmetic operations for the divergent kernel constrain
                     //   the stride to non-zero values (division)
@@ -86,6 +90,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
     if (second_order_slave) {
         auto second_order_conn = node->get_second_order_connection();
         if (this->type != second_order_conn->type or
+            this->convolutional != second_order_conn->convolutional or
             this->num_weights != second_order_conn->get_num_weights())
             LOG_ERROR(
                 "Error in " + this->str() + ":\n"
@@ -98,7 +103,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
         // Ensure that each convolution uses the same source set, since these
         //   connections are computed like one-to-one connections.
         auto arborized_config = config->get_arborized_config();
-        if (this->type == CONVOLUTIONAL and
+        if (this->convolutional and
             (arborized_config.get_total_field_size() != from_layer->size
                 or arborized_config.row_spacing != 1
                 or arborized_config.column_spacing != 1
@@ -107,7 +112,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             LOG_ERROR(
                 "Error in " + this->str() + ":\n"
                 "  Second order convolutional connections must have fields"
-                " that are the size of the input layer, and must have 0 stride!");
+                " that are the size of the input layer, and must have 0 stride"
+                " and 1 spacing!");
     }
 
     // Validate the config
@@ -138,9 +144,8 @@ std::string Connection::get_parameter(std::string key,
 
 int Connection::get_num_weights() const { return num_weights; }
 int Connection::get_compute_weights() const {
-    if (type == CONVOLUTIONAL)
-        if (second_order_host) return num_weights;
-        else return num_weights * to_layer->size;
+    if (convolutional and not second_order_slave)
+        return num_weights * to_layer->size;
     else return num_weights;
 }
 const ConnectionConfig* Connection::get_config() const { return config; }

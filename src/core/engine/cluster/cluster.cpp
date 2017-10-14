@@ -36,8 +36,9 @@ void Cluster::add_external_dependencies(
 }
 
 void Cluster::launch_input(Buffer* buffer) {
-    for (auto& node : nodes)
-        node->activate_input(buffer);
+    if (buffer != nullptr)
+        for (auto& node : nodes)
+            node->activate_input(buffer);
 }
 
 void Cluster::launch_output() {

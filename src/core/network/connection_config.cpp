@@ -199,7 +199,8 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
           delay(config->get_int("delay", 0)),
           max_weight(config->get_float("max weight", 1.0)),
           type(get_connection_type(config->get("type", "fully connected"))),
-          opcode(get_opcode(config->get("opcode", "add"))) {
+          opcode(get_opcode(config->get("opcode", "add"))),
+          convolutional(config->get_bool("convolutional", false)) {
     if (not config->has("from layer"))
         LOG_ERROR(
             "Attempted to construct ConnectionConfig "
@@ -211,6 +212,11 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
     if (delay < 0)
         LOG_ERROR(
             "Attempted to construct ConnectionConfig with negative delay!");
+
+    if (convolutional and type != CONVERGENT and type != DIVERGENT)
+        LOG_ERROR(
+            "Only convergent/divergent connections can be convolutional!");
+
     switch (type) {
         case SUBSET:
             if (not has_child("subset config"))
@@ -219,7 +225,6 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
                     "specifying subset configuration!");
             break;
         case CONVERGENT:
-        case CONVOLUTIONAL:
         case DIVERGENT:
             if (not has_child("arborized config"))
                 LOG_ERROR(
@@ -233,6 +238,7 @@ ConnectionConfig::ConnectionConfig(
     std::string from_layer, std::string to_layer,
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
+    bool convolutional,
     PropertyConfig *specialized_config,
     PropertyConfig *weight_config,
     std::string dendrite, std::string name)
@@ -244,7 +250,8 @@ ConnectionConfig::ConnectionConfig(
           delay(delay),
           max_weight(max_weight),
           type(type),
-          opcode(opcode) {
+          opcode(opcode),
+          convolutional(convolutional) {
     this->set("name", name);
     this->set("to layer", to_layer);
     this->set("from layer", from_layer);
@@ -254,6 +261,7 @@ ConnectionConfig::ConnectionConfig(
     this->set("max weight", std::to_string(max_weight));
     this->set("type", ConnectionTypeStrings.at(type));
     this->set("opcode", OpcodeStrings.at(opcode));
+    this->set("convolutional", (convolutional) ? "true" : "false");
 
     if (delay < 0)
         LOG_ERROR(
@@ -261,6 +269,10 @@ ConnectionConfig::ConnectionConfig(
 
     if (weight_config != nullptr)
         this->set_child("weight config", weight_config);
+
+    if (convolutional and type != CONVERGENT and type != DIVERGENT)
+        LOG_ERROR(
+            "Only convergent/divergent connections can be convolutional!");
 
     switch (type) {
         case SUBSET:
@@ -271,7 +283,6 @@ ConnectionConfig::ConnectionConfig(
             this->set_child("subset config", specialized_config);
             break;
         case CONVERGENT:
-        case CONVOLUTIONAL:
         case DIVERGENT:
             if (specialized_config == nullptr)
                 LOG_ERROR(
@@ -324,7 +335,6 @@ std::string ConnectionConfig::str() const {
             str += get_subset_config().str();
             break;
         case CONVERGENT:
-        case CONVOLUTIONAL:
         case DIVERGENT:
             str += get_arborized_config().str();
             break;

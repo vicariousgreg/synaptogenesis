@@ -203,7 +203,6 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn, bool is_host) {
     switch (conn->type) {
         case CONVERGENT:
-        case CONVOLUTIONAL:
             break;
         default:
             LOG_ERROR(
@@ -233,11 +232,12 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
     int col_offset = (col_field_size - cols) / 2;
 
     // Convolutional connections are unique in that there is only one kernel.
-    //   All other connection types organize based on the
     int size;
     switch (conn->type) {
-        case CONVERGENT: size = conn->to_layer->size; break;
-        case CONVOLUTIONAL: size = 1; break;
+        case CONVERGENT:
+            if (conn->convolutional) size = 1;
+            else size = conn->to_layer->size;
+            break;
     }
 
     if (is_host) {
@@ -288,17 +288,23 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
     int row_field_size = ac.row_field_size;
     int column_field_size = ac.column_field_size;
     switch (conn->type) {
-        case CONVOLUTIONAL:
-            rows = 1;
-            cols = row_field_size * column_field_size;
-            break;
         case CONVERGENT:
-            rows = conn->to_layer->size;
-            cols = row_field_size * column_field_size;
+            if (conn->convolutional) {
+                rows = 1;
+                cols = row_field_size * column_field_size;
+            } else {
+                rows = conn->to_layer->size;
+                cols = row_field_size * column_field_size;
+            }
             break;
         case DIVERGENT:
-            rows = conn->from_layer->size;
-            cols = row_field_size * column_field_size;
+            if (conn->convolutional) {
+                rows = 1;
+                cols = row_field_size * column_field_size;
+            } else {
+                rows = conn->from_layer->size;
+                cols = row_field_size * column_field_size;
+            }
             break;
         case ONE_TO_ONE:
             rows = 1;

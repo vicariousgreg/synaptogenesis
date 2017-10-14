@@ -75,6 +75,7 @@ CALC_ONE_TO_ONE(activate_debug_convolutional_second_order,
     CHECK_WEIGHT,
 );
 
+
 CALC_ALL(update_debug,
     CHECK_ATT,
 
@@ -83,7 +84,16 @@ CALC_ALL(update_debug,
     CHECK_FROM
     CHECK_WEIGHT,
 );
-CALC_CONVOLUTIONAL_BY_WEIGHT(update_debug_convolutional,
+CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_debug_convergent_convolutional,
+    CHECK_ATT
+    assert(synapse_data.convolutional);,
+
+    CHECK_WEIGHT,
+
+    CHECK_FROM
+    CHECK_TO,
+);
+CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_debug_divergent_convolutional,
     CHECK_ATT
     assert(synapse_data.convolutional);,
 
@@ -93,21 +103,24 @@ CALC_CONVOLUTIONAL_BY_WEIGHT(update_debug_convolutional,
     CHECK_TO,
 );
 
+
 Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
     std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     if (conn->second_order) {
         funcs[FULLY_CONNECTED]      = get_update_debug_fully_connected();
         funcs[SUBSET]               = get_update_debug_subset();
         funcs[ONE_TO_ONE]           = get_update_debug_one_to_one();
-        funcs[CONVERGENT]           = get_update_debug_convergent();
-        funcs[CONVOLUTIONAL]        = get_update_debug_convolutional();
-        funcs[DIVERGENT]            = get_update_debug_divergent();
+        funcs[CONVERGENT]           = (conn->convolutional)
+                                          ? get_activate_debug_convolutional_second_order()
+                                          : get_update_debug_convergent();
+        funcs[DIVERGENT]            = (conn->convolutional)
+                                          ? get_activate_debug_convolutional_second_order()
+                                          : get_update_debug_divergent();
     } else {
         funcs[FULLY_CONNECTED]      = get_activate_debug_fully_connected();
         funcs[SUBSET]               = get_activate_debug_subset();
         funcs[ONE_TO_ONE]           = get_activate_debug_one_to_one();
         funcs[CONVERGENT]           = get_activate_debug_convergent();
-        funcs[CONVOLUTIONAL]        = get_activate_debug_convergent();
         funcs[DIVERGENT]            = get_activate_debug_divergent();
     }
 
@@ -122,16 +135,18 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 /************************** DEBUG UPDATER KERNELS *****************************/
 /******************************************************************************/
-
 Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
     std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     if (not conn->second_order) {
-        funcs[FULLY_CONNECTED]      = get_update_debug_fully_connected();
-        funcs[SUBSET]               = get_update_debug_subset();
-        funcs[ONE_TO_ONE]           = get_update_debug_one_to_one();
-        funcs[CONVERGENT]           = get_update_debug_convergent();
-        funcs[CONVOLUTIONAL]        = get_update_debug_convolutional();
-        funcs[DIVERGENT]            = get_update_debug_divergent();
+        funcs[FULLY_CONNECTED] = get_update_debug_fully_connected();
+        funcs[SUBSET]          = get_update_debug_subset();
+        funcs[ONE_TO_ONE]      = get_update_debug_one_to_one();
+        funcs[CONVERGENT]      = (conn->convolutional)
+                                     ? get_update_debug_convergent_convolutional()
+                                     : get_update_debug_convergent();
+        funcs[DIVERGENT]       = (conn->convolutional)
+                                     ? get_update_debug_divergent_convolutional()
+                                     : get_update_debug_divergent();
     }
 
     try {

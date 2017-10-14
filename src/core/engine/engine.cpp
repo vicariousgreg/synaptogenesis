@@ -165,8 +165,9 @@ Engine::~Engine() {
 
 size_t Engine::get_buffer_bytes() const {
     size_t size = 0;
-    for (auto ptr : buffer->get_pointers())
-        size += ptr->get_bytes();
+    if (buffer != nullptr)
+        for (auto ptr : buffer->get_pointers())
+            size += ptr->get_bytes();
     return size;
 }
 

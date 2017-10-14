@@ -70,7 +70,6 @@ typedef enum {
     SUBSET,
     ONE_TO_ONE,
     CONVERGENT,
-    CONVOLUTIONAL,
     DIVERGENT
 } ConnectionType;
 
@@ -79,7 +78,6 @@ static std::map<ConnectionType, std::string> ConnectionTypeStrings = {
     {SUBSET, "subset"},
     {ONE_TO_ONE, "one to one"},
     {CONVERGENT, "convergent"},
-    {CONVOLUTIONAL, "convolutional"},
     {DIVERGENT, "divergent"}
 };
 
@@ -88,7 +86,6 @@ static std::map<std::string, ConnectionType> ConnectionTypes {
     {"subset", SUBSET},
     {"one to one", ONE_TO_ONE},
     {"convergent", CONVERGENT},
-    {"convolutional", CONVOLUTIONAL},
     {"divergent", DIVERGENT},
 };
 
