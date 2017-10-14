@@ -46,14 +46,26 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
     CsvParser *csvparser = CsvParser_new(filename.c_str(), ",", 0);
     CsvRow *row;
 
-    while ((row = CsvParser_getRow(csvparser)) ) {
-        data.push_back(Pointer<float>(layers.at(0)->size));
+    std::vector<CsvRow*> rows;
+    while ((row = CsvParser_getRow(csvparser)) )
+        rows.push_back(row);
+
+    this->num_rows = rows.size();
+    int layer_size = layers.at(0)->size;
+    this->data = Pointer<float>(layer_size * num_rows);
+
+    int pointer_offset = 0;
+    for (auto row : rows) {
+        Pointer<float> pointer = data.slice(pointer_offset, layer_size);
+        pointers.push_back(pointer);
+        pointer_offset += layer_size;
+
         const char **rowFields = CsvParser_getFields(row);
-        if (layers.at(0)->size > CsvParser_getNumFields(row) - offset)
+        if (layer_size > CsvParser_getNumFields(row) - offset)
             LOG_ERROR("Bad CSV file!");
 
-        float *ptr = data[data.size()-1].get();
-        for (int i = 0 ; i < layers.at(0)->size ; i++)
+        float *ptr = pointer.get();
+        for (int i = 0 ; i < layer_size ; i++)
             ptr[i] = std::atof(rowFields[i+offset]) / normalization;
         CsvParser_destroy_row(row);
     }
@@ -62,13 +74,13 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
 }
 
 CSVReaderModule::~CSVReaderModule() {
-    for (auto pointer : data) pointer.free();
+    data.free();
 }
 
 void CSVReaderModule::cycle() {
     if (++age >= exposure) {
         this->age = 0;
-        if (++curr_row >= this->data.size()) curr_row = 0;
+        if (++curr_row >= this->num_rows) curr_row = 0;
     }
 }
 
@@ -86,7 +98,7 @@ CSVInputModule::CSVInputModule(LayerList layers, ModuleConfig *config)
 void CSVInputModule::feed_input(Buffer *buffer) {
     if (age == 0)
         for (auto layer : layers)
-            buffer->set_input(layer, this->data[curr_row]);
+            buffer->set_input(layer, this->pointers[curr_row]);
 }
 
 /******************************************************************************/
@@ -105,7 +117,7 @@ CSVExpectedModule::CSVExpectedModule(LayerList layers, ModuleConfig *config)
 void CSVExpectedModule::feed_expected(Buffer *buffer) {
     if (age == 0)
         for (auto layer : layers)
-            buffer->set_expected(layer, this->data[curr_row].cast<Output>());
+            buffer->set_expected(layer, this->pointers[curr_row].cast<Output>());
 }
 
 /******************************************************************************/
@@ -168,9 +180,7 @@ void CSVEvaluatorModule::report_output(Buffer *buffer) {
         int max_output_index = 0;
         float SSE = 0.0;
 
-        // Get expected one row back since the expected module will increment
-        //   before this function is called during an iteration
-        Output* expected = (Output*)this->data[curr_row].get();
+        Output* expected = (Output*)this->pointers[curr_row].get();
         float max_expected = FLT_MIN;
         int max_expected_index = 0;
 
@@ -206,24 +216,23 @@ void CSVEvaluatorModule::report_output(Buffer *buffer) {
         int corr = (correct[layer] += (max_output_index == max_expected_index));
         float sse = (total_SSE[layer] += SSE);
 
-        // If we hit the end of the CSV file, print stats and reset
-        if (verbose and this->curr_row == this->data.size() - 1)
+        // If we hit the end of the CSV file, print stats
+        if (verbose and this->curr_row == this->num_rows - 1)
             printf("Correct: %9d / %9d [ %9.6f%% ]    SSE: %f\n",
-                corr, this->data.size(),
-                100.0 * float(corr) / this->data.size(),
+                corr, this->num_rows,
+                100.0 * float(corr) / this->num_rows,
                 sse);
     }
 }
 
 void CSVEvaluatorModule::report(Report *report) {
     for (auto layer : layers) {
-        auto samples = this->data.size();
         auto corr = correct[layer];
-        auto percentage = 100.0 * corr / samples;
+        auto percentage = 100.0 * corr / num_rows;
         report->add_report(this, layer,
             PropertyConfig({
                 { "Filename", std::string(this->filename) },
-                { "Samples", std::to_string(samples) },
+                { "Samples", std::to_string(num_rows) },
                 { "Correct", std::to_string(corr) },
                 { "Percentage", std::to_string(percentage) },
                 { "SSE", std::to_string(total_SSE[layer]) }
