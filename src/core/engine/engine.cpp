@@ -1,4 +1,5 @@
 #include <cfloat>
+#include <csignal>
 
 #include "engine/engine.h"
 #include "engine/instruction.h"
@@ -23,7 +24,9 @@ Engine::Engine(Context context)
           iterations(0),
           verbose(false),
           buffer(nullptr),
-          report(nullptr) { }
+          report(nullptr),
+          multithreaded(false),
+          killed(false) { }
 
 void Engine::build_environment(PropertyConfig args) {
     if (context.environment == nullptr) return;
@@ -174,6 +177,9 @@ size_t Engine::get_buffer_bytes() const {
 void Engine::single_thread_loop() {
     run_timer.reset();
 
+    this->environment_running = true;
+    this->network_running = true;
+
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
         if (time_limit > 0) iteration_timer.reset();
@@ -259,10 +265,14 @@ void Engine::single_thread_loop() {
 
     // Shutdown GUI
     GuiController::quit();
+
+    this->network_running = false;
+    this->environment_running = false;
 }
 
 void Engine::network_loop() {
     run_timer.reset();
+    this->network_running = true;
 
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
@@ -339,9 +349,13 @@ void Engine::network_loop() {
 
     // Shutdown GUI
     GuiController::quit();
+
+    this->network_running = false;
 }
 
 void Engine::environment_loop() {
+    this->environment_running = true;
+
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT_THREAD);
@@ -376,6 +390,7 @@ void Engine::environment_loop() {
 
     // Pass the termination lock
     term_lock.pass(NETWORK_THREAD);
+    this->environment_running = false;
 }
 
 Report* Engine::run(PropertyConfig args) {
@@ -387,7 +402,7 @@ Report* Engine::run(PropertyConfig args) {
     //   so the engine must be rebuilt
     context.state->transfer_to_device();
 
-    bool multithreaded = args.get_bool("multithreaded", true);
+    multithreaded = args.get_bool("multithreaded", true);
 
     // Launch Scheduler thread pool
     if (multithreaded)
@@ -423,9 +438,6 @@ Report* Engine::run(PropertyConfig args) {
                 "Unspecified number of iterations -- running indefinitely.");
     }
 
-    network_running = true;
-    environment_running = true;
-
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT_THREAD);
     motor_lock.set_owner(NETWORK_THREAD);
@@ -436,25 +448,27 @@ Report* Engine::run(PropertyConfig args) {
     device_check_error("Clock device synchronization failed!");
     if (verbose) device_check_memory();
 
-    std::vector<std::thread> threads;
-    if (multithreaded) {
-        if (verbose) printf("\nLaunching multithreaded...\n\n");
-        threads.push_back(std::thread(
-            &Engine::network_loop, this));
-        threads.push_back(std::thread(
-            &Engine::environment_loop, this));
-    } else {
-        if (verbose) printf("\nLaunching single threaded...\n\n");
-        threads.push_back(std::thread(
-            &Engine::single_thread_loop, this));
+    if (not killed) {
+        std::vector<std::thread> threads;
+        if (multithreaded) {
+            if (verbose) printf("\nLaunching multithreaded...\n\n");
+            threads.push_back(std::thread(
+                &Engine::network_loop, this));
+            threads.push_back(std::thread(
+                &Engine::environment_loop, this));
+        } else {
+            if (verbose) printf("\nLaunching single threaded...\n\n");
+            threads.push_back(std::thread(
+                &Engine::single_thread_loop, this));
+        }
+
+        // Launch UI on main thread
+        GuiController::launch();
+
+        // Wait for threads
+        for (auto& thread : threads)
+            thread.join();
     }
-
-    // Launch UI on main thread
-    GuiController::launch();
-
-    // Wait for threads
-    for (auto& thread : threads)
-        thread.join();
 
     // Shutdown the Scheduler thread pool
     Scheduler::get_instance()->shutdown_thread_pool();
@@ -464,19 +478,28 @@ Report* Engine::run(PropertyConfig args) {
 
     // Clean up
     free_rand();
-    network_running = false;
-    environment_running = false;
 
-    auto report = this->report;
-    this->report = nullptr;
+    if (killed) {
+        killed = false;
+        return new Report(this, this->context.state, 0, 0.0);
+    } else {
+        auto r = this->report;
+        this->report = nullptr;
 
-    report->set_child("args", &args);
-    return report;
+        r->set_child("args", &args);
+        return r;
+    }
+}
+
+static void handle_interrupt(int param) {
+    Engine::interrupt();
 }
 
 std::set<Engine*> Engine::active_engines;
 
 void Engine::activate(Engine* engine) {
+    if (active_engines.empty())
+        signal(SIGINT, handle_interrupt);
     active_engines.insert(engine);
 }
 
@@ -488,16 +511,19 @@ void Engine::deactivate(Engine* engine) {
 void Engine::interrupt() {
     for (auto engine : active_engines) {
         if (engine->verbose) printf("Interrupting engine...\n");
+        engine->killed = true;
 
         // Stop the environment
         engine->environment_running = false;
 
-        // Wait for term lock
-        while (engine->term_lock.get_owner() != NETWORK_THREAD);
+        if (engine->multithreaded and engine->network_running) {
+            // Wait for term lock
+            while (engine->term_lock.get_owner() != NETWORK_THREAD);
 
-        // Ensure network thread gets locks
-        engine->sensory_lock.set_owner(NETWORK_THREAD);
-        engine->motor_lock.set_owner(NETWORK_THREAD);
+            // Ensure network thread gets locks
+            engine->sensory_lock.set_owner(NETWORK_THREAD);
+            engine->motor_lock.set_owner(NETWORK_THREAD);
+        }
     }
     active_engines.clear();
 }
