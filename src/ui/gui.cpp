@@ -41,10 +41,21 @@ void GUI::init() {
 
 void GUI::launch() {
     if (active) {
-        for (auto window : windows) window->show();
-        if (windows.size() > 0)
-            app->run(*windows[0]);
+        for (auto window : windows) window->show_now();
+
+        if (windows.size() > 0) app->run(*windows[0]);
+
+        active = false;
+        for (auto window : windows) {
+            window->close();
+            delete window;
+        }
+        windows.clear();
     }
+}
+
+void GUI::hide_windows() {
+    for (auto window : windows) window->hide();
 }
 
 void GUI::signal_update() {
@@ -62,13 +73,5 @@ void GUI::signal_quit() {
 }
 
 void GUI::quit() {
-    if (active) {
-        for (auto window : windows) {
-            window->close();
-            delete window;
-        }
-        windows.clear();
-        active = false;
-        app.reset();
-    }
+    if (active and windows.size() > 0) windows[0]->close();
 }

@@ -1103,7 +1103,7 @@ int main(int argc, char *argv[]) {
     // Suppress warnings
     ErrorManager::warnings = false;
 
-    dsst_test();
+    working_memory_test();
     return cli();
 
     /*

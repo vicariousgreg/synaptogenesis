@@ -17,6 +17,7 @@ class GUI {
         void launch();
         void signal_update();
         void signal_quit();
+        void hide_windows();
 
         Glib::Dispatcher quit_dispatcher;
         Glib::Dispatcher update_dispatcher;
@@ -32,6 +33,8 @@ class GUI {
         char** argv;
         Glib::RefPtr<Gtk::Application> app;
         std::vector<GuiWindow*> windows;
+
+        Gtk::Window *dummy_window;
 };
 
 #endif
