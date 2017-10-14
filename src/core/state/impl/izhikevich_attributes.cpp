@@ -526,7 +526,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
 static void check_parameters(Layer *layer) {
     std::set<std::string> valid_params;
     valid_params.insert("init");
-    valid_params.insert("spacing");
+    valid_params.insert("neuron spacing");
 
     for (auto pair : layer->get_config()->get())
         if (valid_params.count(pair.first) == 0)
@@ -704,8 +704,8 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         iRand(delays, num_weights, 0, max_delay);
     } else {
         set_delays(get_device_id(), BIT, conn, delays, 0.15,
-            std::stof(conn->from_layer->get_parameter("spacing", "0.1")),
-            std::stof(conn->to_layer->get_parameter("spacing", "0.1")),
+            std::stof(conn->from_layer->get_parameter("neuron spacing", "0.1")),
+            std::stof(conn->to_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->get_parameter("x offset", "0.0")),
             std::stof(conn->get_parameter("y offset", "0.0")));
     }
