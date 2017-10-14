@@ -386,8 +386,12 @@ Report* Engine::run(PropertyConfig args) {
     //   so the engine must be rebuilt
     context.state->transfer_to_device();
 
-    // Launch threads
-    Scheduler::get_instance()->start(4);
+    bool multithreaded = args.get_bool("multithreaded", true);
+
+    // Launch Scheduler thread pool
+    if (multithreaded)
+        Scheduler::get_instance()->start_thread_pool(
+            std::max(0, args.get_int("worker threads", 4)));
 
     // Rebuild engine
     rebuild(args);
@@ -432,7 +436,7 @@ Report* Engine::run(PropertyConfig args) {
     if (verbose) device_check_memory();
 
     std::vector<std::thread> threads;
-    if (args.get_bool("multithreaded", true)) {
+    if (multithreaded) {
         if (verbose) printf("\nLaunching multithreaded...\n\n");
         threads.push_back(std::thread(
             &Engine::network_loop, this));
@@ -451,8 +455,8 @@ Report* Engine::run(PropertyConfig args) {
     for (auto& thread : threads)
         thread.join();
 
-    // Shutdown the Scheduler
-    Scheduler::get_instance()->shutdown();
+    // Shutdown the Scheduler thread pool
+    Scheduler::get_instance()->shutdown_thread_pool();
 
     // Set engine to inactive
     Engine::deactivate(this);

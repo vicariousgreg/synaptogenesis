@@ -209,8 +209,8 @@ void State::transfer_to_device() {
             if (pair.second[n] != nullptr)
                 pair.second[n]->transfer_to_device();
 
-    // Replace data block pointers
-    // No need to free because transferring already does this
+    // Free old data block pointers and replace with new ones
+    for (auto ptr : data_block_pointers) ptr->free();
     data_block_pointers = new_data_block_pointers;
 
     on_host = false;
@@ -243,8 +243,8 @@ void State::transfer_to_host() {
                 res_man->transfer(host_id, pair.second));
     }
 
-    // Replace data block pointers
-    // No need to free because transferring already does this
+    // Free old data block pointers and replace with new ones
+    for (auto ptr : data_block_pointers) ptr->free();
     data_block_pointers = new_data_block_pointers;
 
     on_host = true;

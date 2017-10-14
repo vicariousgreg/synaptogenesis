@@ -9,20 +9,10 @@
 Cluster::Cluster(State *state, Engine *engine, PropertyConfig args)
         : state(state),
           engine(engine) {
-    this->multithreaded = args.get_bool("multithreaded", true);
-
     auto active_devices = state->get_active_devices();
-    if (not this->multithreaded and active_devices.size() > 1)
-        LOG_ERROR(
-            "Attempted to initialize single threaded cluster for state"
-            " with multiple active devices!");
-
     auto res_man = ResourceManager::get_instance();
     for (auto device_id : active_devices)
-        io_streams.push_back(
-            (multithreaded)
-                ? res_man->create_stream(device_id)
-                : res_man->get_default_stream(device_id));
+        io_streams.push_back(res_man->create_stream(device_id));
 }
 
 Cluster::~Cluster() {
@@ -56,15 +46,13 @@ void Cluster::launch_output() {
 }
 
 void Cluster::wait_for_input() {
-    if (this->multithreaded)
-        for (auto& node : nodes)
-            node->synchronize_input();
+    for (auto& node : nodes)
+        node->synchronize_input();
 }
 
 void Cluster::wait_for_output() {
-    if (this->multithreaded)
-        for (auto& node : nodes)
-            node->synchronize_output();
+    for (auto& node : nodes)
+        node->synchronize_output();
 }
 
 Cluster *build_cluster(Structure *structure,

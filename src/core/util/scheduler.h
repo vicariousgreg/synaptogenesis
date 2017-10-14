@@ -22,10 +22,10 @@ class Scheduler {
          *
          * If size is 0, the scheduler will immediately run operations
          * Otherwise, they will be performed by worker threads */
-        void start(unsigned int size);
+        void start_thread_pool(unsigned int size);
 
         /* Shuts down the thread pool if it is running */
-        void shutdown();
+        void shutdown_thread_pool();
 
         /* Enqueue operations on the provided stream */
         void enqueue_wait(Stream *stream, Event *event);
@@ -103,7 +103,7 @@ class Scheduler {
         std::mutex client_mutex;
         std::condition_variable client_cv;
         Event* client_blocked_on;
-        void block_client(Event *event);
+        void maybe_block_client(Event *event);
         void notify_client(Event *event);
 
         /* Dormant variables

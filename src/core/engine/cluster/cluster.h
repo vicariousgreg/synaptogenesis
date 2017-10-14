@@ -48,7 +48,6 @@ class Cluster {
         std::vector<Stream*> io_streams;
         std::vector<ClusterNode*> nodes;
 
-        bool multithreaded;
 };
 
 class ParallelCluster : public Cluster {

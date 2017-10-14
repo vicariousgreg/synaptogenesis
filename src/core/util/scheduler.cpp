@@ -11,15 +11,15 @@ Scheduler* Scheduler::get_instance() {
 }
 
 Scheduler::~Scheduler() {
-    shutdown();
+    shutdown_thread_pool();
     Scheduler::instance = nullptr;
 }
 
 /******************************************************************************/
 /*************************** CLIENT INTERFACE *********************************/
 /******************************************************************************/
-void Scheduler::start(unsigned int size) {
-    if (pool_running) shutdown();
+void Scheduler::start_thread_pool(unsigned int size) {
+    if (pool_running) shutdown_thread_pool();
 
     if (size == 0) {
         pool_running = false;
@@ -33,7 +33,7 @@ void Scheduler::start(unsigned int size) {
     }
 }
 
-void Scheduler::shutdown() {
+void Scheduler::shutdown_thread_pool() {
     if (this->pool_running) {
         {
             std::unique_lock<std::mutex> lock(worker_mutex);
@@ -89,7 +89,7 @@ void Scheduler::enqueue_compute(Stream *stream, std::function<void()> f) {
 
 void Scheduler::synchronize(Event* event) {
     if (event->is_host()) {
-        if (active(event)) block_client(event);
+        maybe_block_client(event);
     }
 #ifdef __CUDACC__
     else  {
@@ -147,7 +147,6 @@ void Scheduler::worker_run_stream(Stream *stream) {
         lock_stream(stream);
         if (queues[stream].size() == 0) {
             available_streams[stream] = true;
-            unlock_stream(stream);
             active = false;
         }
         unlock_stream(stream);
@@ -243,12 +242,9 @@ bool Scheduler::active(Event *event) {
 }
 
 void Scheduler::activate(Event *event) {
+    maybe_block_client(event);
+
     std::unique_lock<std::mutex> e_lock(event_mutex);
-    if (active_events[event]) {
-        e_lock.unlock();
-        block_client(event);
-        e_lock.lock();
-    }
     active_events[event] = true;
 }
 
@@ -276,9 +272,17 @@ void Scheduler::thaw(Event *event) {
 }
 
 
-void Scheduler::block_client(Event *event) {
+void Scheduler::maybe_block_client(Event *event) {
+    std::unique_lock<std::mutex> e_lock(event_mutex);
+    if (not active_events[event]) return;
+
+    notify_dormant();
+
     std::unique_lock<std::mutex> lock(client_mutex);
+
     client_blocked_on = event;
+    e_lock.unlock();
+
     client_cv.wait(lock, [this, event]()
         {return client_blocked_on == nullptr;});
 }

@@ -16,9 +16,7 @@ ParallelCluster::ParallelCluster(Structure *structure,
         auto device_id = state->get_device_id(layer);
         auto node = new ClusterNode(
             layer, state, engine, io_streams[device_id],
-            (this->multithreaded)
-                ? res_man->create_stream(device_id)
-                : res_man->get_default_stream(device_id));
+            res_man->create_stream(device_id));
         nodes.push_back(node);
     }
 
