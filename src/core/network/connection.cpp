@@ -49,22 +49,6 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
         default:
             auto arborized_config = config->get_arborized_config();
 
-            // Because of checks in the kernels, mismatched layers will not cause
-            //     problems.  Therefore, we only log a warning for this.
-            int expected_rows = config->get_expected_rows(from_layer->rows);
-            int expected_columns = config->get_expected_columns(from_layer->columns);
-            if ((to_layer->rows != from_layer->rows and to_layer->rows != expected_rows)
-                or
-                (to_layer->columns != from_layer->columns
-                    and to_layer->columns != expected_columns))
-                LOG_WARNING(
-                    "Error in " + this->str() + ":\n"
-                    "Unexpected destination layer size for arborized connection"
-                    " (" + std::to_string(to_layer->rows)
-                        + ", " + std::to_string(to_layer->columns) + ") vs (" +
-                    std::to_string(expected_rows) + ", "
-                        + std::to_string(expected_columns) + ")!");
-
             switch (type) {
                 case CONVOLUTIONAL:
                     // Convolutional connections use a shared weight kernel
@@ -116,6 +100,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
         auto arborized_config = config->get_arborized_config();
         if (this->type == CONVOLUTIONAL and
             (arborized_config.get_total_field_size() != from_layer->size
+                or arborized_config.row_spacing != 1
+                or arborized_config.column_spacing != 1
                 or arborized_config.row_stride != 0
                 or arborized_config.column_stride != 0))
             LOG_ERROR(

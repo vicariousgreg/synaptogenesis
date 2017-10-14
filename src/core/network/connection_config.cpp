@@ -10,6 +10,8 @@ ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
     column_field_size = config->get_int("column field size", 0);
     row_stride = config->get_int("row stride", 1);
     column_stride = config->get_int("column stride", 1);
+    row_spacing = config->get_int("row spacing", 1);
+    column_spacing = config->get_int("column spacing", 1);
     row_offset = config->get_int("row offset", 0);
     column_offset = config->get_int("row offset", 0);
     wrap = config->get_bool("wrap", false);
@@ -18,6 +20,8 @@ ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
         row_field_size = column_field_size = config->get_int("field size", 0);
     if (config->has("stride"))
         row_stride = column_stride = config->get_int("stride", 0);
+    if (config->has("spacing"))
+        row_spacing = column_spacing = config->get_int("spacing", 0);
     if (config->has("offset"))
         row_offset = column_offset = config->get_int("offset", 0);
 
@@ -29,6 +33,10 @@ ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
         LOG_ERROR(
             "Cannot have negative stride in arborized config!");
 
+    if (row_spacing < 1 or column_spacing < 1)
+        LOG_ERROR(
+            "Cannot have zero or negative spacing in arborized config!");
+
     // If offsets are not provided, use default
     if (not config->has("row offset") and not config->has("offset"))
         row_offset = -row_field_size/2;
@@ -36,40 +44,16 @@ ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
         column_offset = -row_field_size/2;
 }
 
-ArborizedConfig::ArborizedConfig(
-    int row_field_size, int column_field_size,
-    int row_stride, int column_stride,
-    bool wrap)
-        : ArborizedConfig(row_field_size, column_field_size,
-                          row_stride, column_stride,
-                          -row_field_size/2, -column_field_size/2,
-                          wrap) { }
-
-ArborizedConfig::ArborizedConfig(
-    int row_field_size, int column_field_size,
-    int row_stride, int column_stride,
-    int row_offset, int column_offset,
-    bool wrap)
-        : row_field_size(row_field_size),
-          column_field_size(column_field_size),
-          row_stride(row_stride),
-          column_stride(column_stride),
-          row_offset(row_offset),
-          column_offset(column_offset),
+ArborizedConfig::ArborizedConfig()
+        : row_field_size(0),
+          column_field_size(0),
+          row_stride(0),
+          column_stride(0),
+          row_spacing(0),
+          column_spacing(0),
+          row_offset(0),
+          column_offset(0),
           wrap(wrap) { }
-
-ArborizedConfig::ArborizedConfig(int field_size, int stride, bool wrap)
-    : ArborizedConfig(field_size, field_size,
-                      stride, stride,
-                      -field_size/2, -field_size/2,
-                      wrap) { }
-
-ArborizedConfig::ArborizedConfig(int field_size,
-        int stride, int offset, bool wrap)
-    : ArborizedConfig(field_size, field_size,
-                      stride, stride,
-                      offset, offset,
-                      wrap) { }
 
 std::string ArborizedConfig::str() const {
     return "(" +
@@ -77,6 +61,8 @@ std::string ArborizedConfig::str() const {
         std::to_string(column_field_size) + "-" +
         std::to_string(row_stride) + "-" +
         std::to_string(column_stride) + "-" +
+        std::to_string(row_spacing) + "-" +
+        std::to_string(column_spacing) + "-" +
         std::to_string(row_offset) + "-" +
         std::to_string(column_offset) + "-" +
         std::to_string(wrap) + ")";
@@ -95,6 +81,12 @@ PropertyConfig ArborizedConfig::to_property_config() const {
     } else {
         props.set("row stride", std::to_string(row_stride));
         props.set("column stride", std::to_string(column_stride));
+    }
+    if (row_spacing == column_spacing) {
+        props.set("spacing", std::to_string(row_spacing));
+    } else {
+        props.set("row spacing", std::to_string(row_spacing));
+        props.set("column spacing", std::to_string(column_spacing));
     }
     if (row_offset == column_offset) {
         props.set("offset", std::to_string(row_offset));
@@ -339,64 +331,4 @@ std::string ConnectionConfig::str() const {
     }
 
     return str + "]";
-}
-
-int ConnectionConfig::get_expected_rows(int rows) const {
-    switch (type) {
-        case ONE_TO_ONE:
-            return rows;
-        case FULLY_CONNECTED:
-            return rows;
-        case SUBSET: {
-            auto subset_config = get_subset_config();
-            return subset_config.to_row_end - subset_config.to_row_start;
-        }
-        default:
-            auto arborized_config = get_arborized_config();
-            int row_field_size = arborized_config.row_field_size;
-            int row_stride = arborized_config.row_stride;
-            switch(type) {
-                case CONVERGENT:
-                case CONVOLUTIONAL:
-                    if (row_stride == 0) return rows;
-                    return std::max(1,
-                        1 + ((rows - row_field_size) / row_stride));
-                case DIVERGENT:
-                    return std::max(1,
-                        row_field_size + (row_stride * (rows - 1)));
-                default:
-                    LOG_ERROR(
-                        "Invalid call to get_expected_rows!");
-            }
-    }
-}
-
-int ConnectionConfig::get_expected_columns(int columns) const {
-    switch (type) {
-        case ONE_TO_ONE:
-            return columns;
-        case FULLY_CONNECTED:
-            return columns;
-        case SUBSET: {
-            auto subset_config = get_subset_config();
-            return subset_config.to_col_end - subset_config.to_col_start;
-        }
-        default:
-            auto arborized_config = get_arborized_config();
-            int column_field_size = arborized_config.column_field_size;
-            int column_stride = arborized_config.column_stride;
-            switch(type) {
-                case CONVERGENT:
-                case CONVOLUTIONAL:
-                    if (column_stride == 0) return columns;
-                    return std::max(1,
-                        1 + ((columns - column_field_size) / column_stride));
-                case DIVERGENT:
-                    return std::max(1,
-                        column_field_size + (column_stride * (columns - 1)));
-                default:
-                    LOG_ERROR(
-                        "Invalid call to get_expected_columns!");
-            }
-    }
 }

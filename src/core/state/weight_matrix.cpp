@@ -480,10 +480,10 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                     "convergent connection!");
 
             for (int f_row = 0; f_row < ac.row_field_size; ++f_row) {
-                float f_y = (f_row + ac.row_offset) * to_spacing;
+                float f_y = (f_row*ac.row_spacing + ac.row_offset) * to_spacing;
 
                 for (int f_col = 0; f_col < ac.column_field_size; ++f_col) {
-                    float f_x = (f_col + ac.column_offset) * to_spacing;
+                    float f_x = ((f_col*ac.column_spacing) + ac.column_offset) * to_spacing;
 
                     float distance = pow(
                         pow(f_x, 2) + pow(f_y, 2),
@@ -528,6 +528,8 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
             int column_field_size = ac.column_field_size;
             int row_stride = ac.row_stride;
             int column_stride = ac.column_stride;
+            int row_spacing = ac.row_spacing;
+            int column_spacing = ac.column_spacing;
             int row_offset = ac.row_offset;
             int column_offset = ac.column_offset;
             int kernel_size = row_field_size * column_field_size;
@@ -539,8 +541,8 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                     /* Determine range of source neurons for divergent kernel */
                     int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride;
                     int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride;
-                    int end_s_row = (d_row - row_offset) / row_stride;
-                    int end_s_col = (d_col - column_offset) / column_stride;
+                    int end_s_row = start_s_row + (row_spacing * (row_field_size + row_stride) / row_stride);
+                    int end_s_col = start_s_col + (column_spacing * (column_field_size + column_stride) / column_stride);
 
                     // SERIAL
                     int weight_offset = to_index * num_weights / to_size;
@@ -549,8 +551,8 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
 
                     /* Iterate over relevant source neurons... */
                     int k_index = 0;
-                    for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) {
-                        for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) {
+                    for (int s_row = start_s_row ; s_row <= end_s_row ; (s_row += row_spacing)) {
+                        for (int s_col = start_s_col ; s_col <= end_s_col ; (s_col += column_spacing, ++k_index)) {
                             /* Avoid making connections with non-existent neurons! */
                             if (s_row < 0 or s_row >= from_rows
                                 or s_col < 0 or s_col >= from_columns)

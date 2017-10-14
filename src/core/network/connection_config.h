@@ -35,20 +35,7 @@ class SubsetConfig {
 class ArborizedConfig {
     public:
         ArborizedConfig(PropertyConfig *config);
-        ArborizedConfig() : ArborizedConfig(0,0,0,0,0,0) { }
-
-        ArborizedConfig(
-            int row_field_size, int column_field_size,
-            int row_stride, int column_stride,
-            bool wrap=false);
-        ArborizedConfig(
-            int row_field_size, int column_field_size,
-            int row_stride, int column_stride,
-            int row_offset, int column_offset,
-            bool wrap=false);
-
-        ArborizedConfig(int field_size, int stride=1, bool wrap=false);
-        ArborizedConfig(int field_size, int stride, int offset, bool wrap=false);
+        ArborizedConfig();
 
         int get_total_field_size() const
             { return row_field_size * column_field_size; }
@@ -56,7 +43,8 @@ class ArborizedConfig {
         int is_regular() const {
             return (row_stride == column_stride == 1)
                 and (row_field_size == column_field_size)
-                and (row_offset == column_offset == -row_field_size/2);
+                and (row_offset == column_offset == -row_field_size/2)
+                and (row_spacing == column_spacing == 1);
         }
 
         PropertyConfig to_property_config() const;
@@ -66,6 +54,7 @@ class ArborizedConfig {
         int row_field_size, column_field_size;
         int row_stride, column_stride;
         int row_offset, column_offset;
+        int row_spacing, column_spacing;
         bool wrap;
 };
 
@@ -94,12 +83,6 @@ class ConnectionConfig : public PropertyConfig {
         const PropertyConfig get_weight_config() const;
 
         std::string str() const;
-
-        /* Gets the expected row/col size of a destination layer given.
-         * This function only returns meaningful values for connection types that
-         *   are not FULLY_CONNECTED, because they can link layers of any sizes */
-        int get_expected_rows(int from_rows) const;
-        int get_expected_columns(int from_columns) const;
 
         const std::string name;
         const std::string from_layer;

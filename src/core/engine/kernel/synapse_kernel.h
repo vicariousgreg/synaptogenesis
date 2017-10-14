@@ -246,6 +246,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
     const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
@@ -269,8 +271,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             int k_index = 0; \
             for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
                 for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++k_index)) { \
-                    int k_s_row = s_row + k_row; \
-                    int k_s_col = s_col + k_col; \
+                    int k_s_row = s_row + (k_row * row_spacing); \
+                    int k_s_col = s_col + (k_col * column_spacing); \
  \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
@@ -310,6 +312,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
     const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
@@ -338,8 +342,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int k_index = 0; \
         for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
             for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++k_index)) { \
-                int k_s_row = s_row + k_row; \
-                int k_s_col = s_col + k_col; \
+                int k_s_row = s_row + (k_row * row_spacing); \
+                int k_s_col = s_col + (k_col * column_spacing); \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
@@ -379,6 +383,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
     const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
@@ -394,15 +400,15 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             /* Determine range of source neurons for divergent kernel */ \
             int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride; \
             int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride; \
-            int end_s_row = (d_row - row_offset) / row_stride; \
-            int end_s_col = (d_col - column_offset) / column_stride; \
+            int end_s_row = start_s_row + (row_spacing * (row_field_size + row_stride) / row_stride); \
+            int end_s_col = start_s_col + (column_spacing * (column_field_size + column_stride) / column_stride); \
 \
             int weight_offset = to_index * num_weights / to_size; \
 \
             /* Iterate over relevant source neurons... */ \
             int k_index = 0; \
-            for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
-                for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
+            for (int s_row = start_s_row ; s_row <= end_s_row ; (s_row += row_spacing)) { \
+                for (int s_col = start_s_col ; s_col <= end_s_col ; (s_col += column_spacing, ++k_index)) { \
                     int k_s_row = s_row; \
                     int k_s_col = s_col; \
 \
@@ -440,6 +446,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
     const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const bool wrap = synapse_data.arborized_config.wrap; \
@@ -454,8 +462,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         /* Determine range of source neurons for divergent kernel */ \
         int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride; \
         int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride; \
-        int end_s_row = (d_row - row_offset) / row_stride; \
-        int end_s_col = (d_col - column_offset) / column_stride; \
+        int end_s_row = start_s_row + (row_spacing * (row_field_size + row_stride) / row_stride); \
+        int end_s_col = start_s_col + (column_spacing * (column_field_size + column_stride) / column_stride); \
 \
         /* Kernels are organized into columns
            One kernel per source neuron */ \
@@ -463,8 +471,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
         /* Iterate over relevant source neurons... */ \
         int k_index = 0; \
-        for (int s_row = start_s_row ; s_row <= end_s_row ; ++s_row) { \
-            for (int s_col = start_s_col ; s_col <= end_s_col ; (++s_col, ++k_index)) { \
+        for (int s_row = start_s_row ; s_row <= end_s_row ; (s_row += row_spacing)) { \
+            for (int s_col = start_s_col ; s_col <= end_s_col ; (s_col += column_spacing, ++k_index)) { \
                 int k_s_row = s_row; \
                 int k_s_col = s_col; \
 \
@@ -506,6 +514,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
     const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
@@ -525,8 +535,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
                     int s_row = d_row * row_stride + row_offset; \
                     int s_col = d_col * column_stride + column_offset; \
  \
-                    int k_s_row = s_row + k_row; \
-                    int k_s_col = s_col + k_col; \
+                    int k_s_row = s_row + (k_row * row_spacing); \
+                    int k_s_col = s_col + (k_col * column_spacing); \
  \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
@@ -563,6 +573,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
     const int column_stride = synapse_data.arborized_config.column_stride; \
+    const int row_spacing = synapse_data.arborized_config.row_spacing; \
+    const int column_spacing = synapse_data.arborized_config.column_spacing; \
     const int row_offset = synapse_data.arborized_config.row_offset; \
     const int column_offset = synapse_data.arborized_config.column_offset; \
     const int kernel_size = row_field_size * column_field_size; \
@@ -584,8 +596,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                 int s_row = d_row * row_stride + row_offset; \
                 int s_col = d_col * column_stride + column_offset; \
 \
-                int k_s_row = s_row + k_row; \
-                int k_s_col = s_col + k_col; \
+                int k_s_row = s_row + (k_row * row_spacing); \
+                int k_s_col = s_col + (k_col * column_spacing); \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
