@@ -479,7 +479,7 @@ Report* Engine::run(PropertyConfig args) {
     // Clean up
     free_rand();
 
-    if (killed) {
+    if (killed and this->report == nullptr) {
         killed = false;
         return new Report(this, this->context.state, 0, 0.0);
     } else {
@@ -516,10 +516,10 @@ void Engine::interrupt() {
         // Stop the environment
         engine->environment_running = false;
 
-        if (engine->multithreaded and engine->network_running) {
-            // Wait for term lock
-            while (engine->term_lock.get_owner() != NETWORK_THREAD);
+        // Wait for term lock
+        while (engine->term_lock.get_owner() != NETWORK_THREAD);
 
+        if (engine->multithreaded and engine->network_running) {
             // Ensure network thread gets locks
             engine->sensory_lock.set_owner(NETWORK_THREAD);
             engine->motor_lock.set_owner(NETWORK_THREAD);

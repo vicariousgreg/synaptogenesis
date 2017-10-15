@@ -399,7 +399,7 @@ static void initialize_weights(const PropertyConfig config,
 /**************************** DELAY INITIALIZATION ****************************/
 /******************************************************************************/
 void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
-        int* delays, float velocity,
+        int* delays, float velocity, bool cap_delay,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset) {
     if (output_type != BIT)
@@ -456,11 +456,13 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                                 0.5);
                             int delay = base_delay + (distance / velocity);
                             if (delay > 31)
-                                LOG_ERROR(
-                                    "Error initializing delays for "
-                                    + conn->str() + "\n"
-                                    "  Unmyelinated axons cannot have delays "
-                                    "greater than 31!");
+                                if (cap_delay) delay = 31;
+                                else
+                                    LOG_ERROR(
+                                        "Error initializing delays for "
+                                        + conn->str() + "\n"
+                                        "  Unmyelinated axons cannot have delays "
+                                        "greater than 31!");
                             delays[weight_index] = delay;
                             ++weight_index;
                         }
@@ -483,7 +485,8 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                 LOG_ERROR(
                     "Error initializing delays for " + conn->str() + "\n"
                     "  Spacing and strides must match up for "
-                    "convergent connection!");
+                    "convergent connection (got " + std::to_string(to_spacing)
+                    + ", " + std::to_string(from_spacing) + "!");
 
             for (int f_row = 0; f_row < ac.row_field_size; ++f_row) {
                 float f_y = (f_row*ac.row_spacing + ac.row_offset) * to_spacing;
@@ -496,10 +499,12 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                         0.5);
                     int delay = base_delay + (distance / velocity);
                     if (delay > 31)
-                        LOG_ERROR(
-                            "Error initializing delays for " + conn->str() + "\n"
-                            "  Unmyelinated axons cannot have delays "
-                            "greater than 31!");
+                        if (cap_delay) delay = 31;
+                        else
+                            LOG_ERROR(
+                                "Error initializing delays for " + conn->str()
+                                + "\n  Unmyelinated axons cannot have delays "
+                                "greater than 31!");
 
                     int f_index = (f_row * ac.column_field_size) + f_col;
 
@@ -527,7 +532,8 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                 LOG_ERROR(
                     "Error initializing delays for " + conn->str() + "\n"
                     "  Spacing and strides must match up for "
-                    "divergent connection!");
+                    "convergent connection (got " + std::to_string(to_spacing)
+                    + ", " + std::to_string(from_spacing) + "!");
 
 
             int row_field_size = ac.row_field_size;
@@ -559,30 +565,34 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                     int k_index = 0;
                     for (int s_row = start_s_row ; s_row <= end_s_row ; (s_row += row_spacing)) {
                         for (int s_col = start_s_col ; s_col <= end_s_col ; (s_col += column_spacing, ++k_index)) {
-                            /* Avoid making connections with non-existent neurons! */
-                            if (s_row < 0 or s_row >= from_rows
-                                or s_col < 0 or s_col >= from_columns)
+                            /* If wrapping, adjust out of bounds indices accordingly */
+                            if (not ac.wrap and
+                                (s_row < 0 or s_row >= from_rows
+                                or s_col < 0 or s_col >= from_columns)) {
                                 continue;
+                            }
 
                             int from_index = (s_row * from_columns) + s_col;
 
                             float d_x = abs(
-                                ((d_row + ac.row_offset) * to_spacing)
-                                - (s_row * from_spacing));
-                            float d_y = abs(
                                 ((d_col + ac.column_offset) * to_spacing)
                                 - (s_col * from_spacing));
+                            float d_y = abs(
+                                ((d_row + ac.row_offset) * to_spacing)
+                                - (s_row * from_spacing));
 
                             float distance = pow(
                                 pow(d_x, 2) + pow(d_y, 2),
                                 0.5);
                             int delay = base_delay + (distance / velocity);
                             if (delay > 31)
-                                LOG_ERROR(
-                                    "Error initializing delays for "
-                                    + conn->str() + "\n"
-                                    "  Unmyelinated axons cannot have delays "
-                                    "greater than 31!");
+                                if (cap_delay) delay = 31;
+                                else
+                                    LOG_ERROR(
+                                        "Error initializing delays for "
+                                        + conn->str() + "\n"
+                                        "  Unmyelinated axons cannot have "
+                                        "delays greater than 31!");
                             int weight_index = (is_host)
                                 ? weight_offset + k_index
                                 : to_index + (k_index * kernel_row_size);

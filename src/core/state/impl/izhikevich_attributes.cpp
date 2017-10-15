@@ -541,6 +541,7 @@ static void check_parameters(Connection *conn) {
     valid_params.insert("learning rate");
     valid_params.insert("myelinated");
     valid_params.insert("random delay");
+    valid_params.insert("cap delay");
     valid_params.insert("x offset");
     valid_params.insert("y offset");
     valid_params.insert("short term plasticity");
@@ -705,6 +706,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         iRand(delays, num_weights, 0, max_delay);
     } else {
         set_delays(get_device_id(), BIT, conn, delays, 0.15,
+            conn->get_parameter("cap delay", "false") == "true",
             std::stof(conn->from_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->to_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->get_parameter("x offset", "0.0")),
