@@ -327,23 +327,32 @@ template<class T>
 class BufferedTransferInstruction : public Instruction {
     public:
         BufferedTransferInstruction(Layer *layer, Stream *stream,
-            Pointer<T> src, Pointer<T> inter, Pointer<T> dst)
+            Pointer<T> src, Pointer<T> inter, Pointer<T> dst,
+            Buffer *source_buffer)
                 : Instruction(layer, stream),
-                  src(src), inter(inter), dst(dst) {
+                  src(src), inter(inter), dst(dst),
+                  source_buffer(source_buffer) {
             this->add_event();
         }
 
+        virtual bool is_dirty() = 0;
+
         void activate() {
             Instruction::wait_for_dependencies();
-            get_copy_pointer_kernel<T>().run(
-                stream, 0, 0, src, inter, stream);
+
+            if (is_dirty())
+                get_copy_pointer_kernel<T>().run(
+                    stream, 0, 0, src, inter, stream);
+
             get_copy_pointer_kernel<T>().run(
                 stream, 0, 0, inter, dst, stream);
+
             Instruction::record_event();
         }
 
     protected:
         Pointer<T> src, inter, dst;
+        Buffer *source_buffer;
 };
 
 /* Transfers weights intradevice for second order connections */
@@ -367,7 +376,14 @@ class InputTransferInstruction : public BufferedTransferInstruction<float> {
                 : BufferedTransferInstruction(layer, stream,
                       engine->get_buffer()->get_input(layer),
                       state->get_buffer_input(layer),
-                      state->get_input(layer)) { }
+                      state->get_input(layer),
+                      engine->get_buffer()) { }
+
+        virtual bool is_dirty() {
+            bool dirty = source_buffer->get_input_dirty(to_layer);
+            if (dirty) source_buffer->set_input_dirty(to_layer, false);
+            return dirty;
+        }
 };
 
 /* Transfers expected data */
@@ -378,7 +394,14 @@ class ExpectedTransferInstruction : public BufferedTransferInstruction<Output> {
                 : BufferedTransferInstruction(layer, stream,
                       engine->get_buffer()->get_expected(layer),
                       state->get_buffer_expected(layer),
-                      state->get_expected(layer)) { }
+                      state->get_expected(layer),
+                      engine->get_buffer()) { }
+
+        virtual bool is_dirty() {
+            bool dirty = source_buffer->get_expected_dirty(to_layer);
+            if (dirty) source_buffer->set_expected_dirty(to_layer, false);
+            return dirty;
+        }
 };
 
 /* Transfers output data */

@@ -20,11 +20,11 @@ Buffer::Buffer(LayerList input_layers, LayerList output_layers, LayerList expect
     input_size = output_size = expected_size = 0;
     for (auto layer : input_layers) {
         input_size += layer->size;
-        dirty_map[layer] = false;
+        input_dirty_map[layer] = false;
     }
     for (auto layer : expected_layers) {
         expected_size += layer->size;
-        dirty_map[layer] = false;
+        expected_dirty_map[layer] = false;
     }
     for (auto layer : output_layers)
         output_size += layer->size;
@@ -94,7 +94,7 @@ void Buffer::set_expected(Layer* layer, Pointer<Output> source) {
 Pointer<float> Buffer::get_input(Layer *layer) {
     try {
         // Assume that the input is dirty if pointer is retrieved
-        dirty_map[layer] = true;
+        input_dirty_map[layer] = true;
         return input.slice(input_map.at(layer), layer->size);
     } catch (std::out_of_range) {
         LOG_ERROR(
@@ -105,6 +105,8 @@ Pointer<float> Buffer::get_input(Layer *layer) {
 
 Pointer<Output> Buffer::get_output(Layer *layer) {
     try {
+        // Assume that the input is dirty if pointer is retrieved
+        expected_dirty_map[layer] = true;
         return output.slice(output_map.at(layer), layer->size);
     } catch (std::out_of_range) {
         LOG_ERROR(
@@ -123,15 +125,28 @@ Pointer<Output> Buffer::get_expected(Layer *layer) {
     }
 }
 
-bool Buffer::get_dirty(Layer *layer) const {
+bool Buffer::get_input_dirty(Layer *layer) const {
     try {
-        return dirty_map.at(layer);
+        return input_dirty_map.at(layer);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Attempted to retrieve dirty flag from Buffer for "
             "unrepresented layer: " + layer->str());
     }
 }
-bool Buffer::set_dirty(Layer *layer, bool dirty) {
-    dirty_map[layer] = dirty;
+bool Buffer::set_input_dirty(Layer *layer, bool dirty) {
+    input_dirty_map[layer] = dirty;
+}
+
+bool Buffer::get_expected_dirty(Layer *layer) const {
+    try {
+        return expected_dirty_map.at(layer);
+    } catch (std::out_of_range) {
+        LOG_ERROR(
+            "Attempted to retrieve dirty flag from Buffer for "
+            "unrepresented layer: " + layer->str());
+    }
+}
+bool Buffer::set_expected_dirty(Layer *layer, bool dirty) {
+    expected_dirty_map[layer] = dirty;
 }

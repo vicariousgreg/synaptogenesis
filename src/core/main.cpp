@@ -1,7 +1,6 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
-#include <ctime>
 #include <string>
 
 #include "builder.h"
@@ -21,22 +20,6 @@
 #define RELAY "relay"
 
 #define IZ_INIT "init"
-
-void print_network(Network *network) {
-    printf("Built network.\n");
-    printf("  - neurons     : %10d\n", network->get_num_neurons());
-    printf("  - layers      : %10d\n", network->get_num_layers());
-    printf("  - connections : %10d\n", network->get_num_connections());
-    printf("  - weights     : %10d\n", network->get_num_weights());
-
-    for (auto structure : network->get_structures()) {
-        for (auto layer : structure->get_layers()) {
-            printf("%-20s   \n",
-                (layer->structure->name + "->" + layer->name).c_str());
-        }
-        std::cout << std::endl;
-    }
-}
 
 void mnist_test() {
     NetworkConfig *network_config = new NetworkConfig();
@@ -254,7 +237,7 @@ void game_of_life_test() {
 
     auto state = new State(network);
     Engine engine(Context(network, env, state));
-    print_network(network);
+    network->print();
     engine.run(PropertyConfig({{"iterations", "500000"}}));
     delete network;
     delete env;
@@ -554,7 +537,7 @@ void working_memory_test() {
 
     auto state = new State(network);
     Engine engine(Context(network, env, state));
-    print_network(network);
+    network->print();
     auto context = engine.run(PropertyConfig({{"verbose", "true"}}));
     delete network;
     delete env;
@@ -683,7 +666,7 @@ void dsst_test() {
     std::cout << "DSST test......\n";
     auto state = new State(network);
     Engine engine(Context(network, env, state));
-    print_network(network);
+    network->print();
     auto context = engine.run(PropertyConfig({{"verbose", "true"}}));
     delete network;
     delete env;
@@ -1006,7 +989,7 @@ void debug_test() {
     auto network = new Network(network_config);
 
     std::cout << "Debug test......\n";
-    print_network(network);
+    network->print();
 
     auto state = new State(network);
     Engine engine(Context(network, nullptr, state));
@@ -1097,9 +1080,6 @@ int cli() {
 
 
 int main(int argc, char *argv[]) {
-    // Seed random number generator
-    srand(time(nullptr));
-
     // Suppress warnings
     ErrorManager::warnings = false;
 

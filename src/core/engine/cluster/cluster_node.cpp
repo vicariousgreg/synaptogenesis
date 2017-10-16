@@ -2,7 +2,6 @@
 #include "network/layer.h"
 #include "engine/engine.h"
 #include "engine/instruction.h"
-#include "io/buffer.h"
 #include "util/error_manager.h"
 
 ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
@@ -165,8 +164,8 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     }
 }
 
-void ClusterNode::activate_input(Buffer *buffer) {
-    if (this->is_input and buffer->get_dirty(to_layer))
+void ClusterNode::activate_input() {
+    if (this->is_input)
         input_instruction->activate();
     if (this->is_expected)
         expected_instruction->activate();

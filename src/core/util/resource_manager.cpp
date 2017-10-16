@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <ctime>
 
 #include "util/resource_manager.h"
 #include "util/error_manager.h"
@@ -9,8 +10,11 @@
 ResourceManager *ResourceManager::instance = nullptr;
 
 ResourceManager *ResourceManager::get_instance() {
-    if (ResourceManager::instance == nullptr)
+    if (ResourceManager::instance == nullptr) {
+        // Take opportunity to seed random generator
+        srand(time(nullptr));
         ResourceManager::instance = new ResourceManager();
+    }
     return ResourceManager::instance;
 }
 

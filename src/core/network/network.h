@@ -45,6 +45,8 @@ class Network {
         int get_num_weights() const;
         int get_max_layer_size() const;
 
+        void print() const;
+
     private:
         void add_structure_internal(StructureConfig *struct_config);
         void add_connection_internal(const ConnectionConfig* conn_config);

@@ -526,6 +526,11 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
 
 static void check_parameters(Layer *layer) {
     std::set<std::string> valid_params;
+    valid_params.insert("name");
+    valid_params.insert("neural model");
+    valid_params.insert("rows");
+    valid_params.insert("columns");
+
     valid_params.insert("init");
     valid_params.insert("neuron spacing");
 
@@ -537,6 +542,15 @@ static void check_parameters(Layer *layer) {
 
 static void check_parameters(Connection *conn) {
     std::set<std::string> valid_params;
+    valid_params.insert("from layer");
+    valid_params.insert("from structure");
+    valid_params.insert("to layer");
+    valid_params.insert("to structure");
+    valid_params.insert("max");
+    valid_params.insert("plastic");
+    valid_params.insert("opcode");
+    valid_params.insert("type");
+
     valid_params.insert("conductance");
     valid_params.insert("learning rate");
     valid_params.insert("myelinated");
@@ -693,11 +707,11 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     // Delays
     // Myelinated connections use the base delay only
     int *delays = (int*)(mData + 7*num_weights);
-    if (conn->get_parameter("myelinated", "") != "") {
+    if (conn->get_parameter("myelinated", "false") == "true") {
         int delay = conn->delay;
         for (int i = 0 ; i < num_weights ; ++i)
             delays[i] = delay;
-    } else if (conn->get_parameter("random delay", "") != "") {
+    } else if (conn->get_parameter("random delay", "false") == "true") {
         int max_delay = std::stoi(
             conn->get_parameter("random delay", "0"));
         if (max_delay > 31)

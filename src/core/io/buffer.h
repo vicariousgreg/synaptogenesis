@@ -29,8 +29,10 @@ class Buffer {
         Pointer<Output> get_expected(Layer *layer);
 
         /* Dirty */
-        bool get_dirty(Layer *layer) const;
-        bool set_dirty(Layer *layer, bool dirty=true);
+        bool get_input_dirty(Layer *layer) const;
+        bool set_input_dirty(Layer *layer, bool dirty=true);
+        bool get_expected_dirty(Layer *layer) const;
+        bool set_expected_dirty(Layer *layer, bool dirty=true);
 
         const DeviceID device_id;
 
@@ -43,7 +45,8 @@ class Buffer {
         int output_size;
         int expected_size;
 
-        std::map<Layer*, bool> dirty_map;
+        std::map<Layer*, bool> input_dirty_map;
+        std::map<Layer*, bool> expected_dirty_map;
         std::map<Layer*, int> input_map;
         std::map<Layer*, int> output_map;
         std::map<Layer*, int> expected_map;

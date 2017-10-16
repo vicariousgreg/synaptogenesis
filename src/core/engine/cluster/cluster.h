@@ -13,7 +13,6 @@ class Layer;
 class Structure;
 class State;
 class Engine;
-class Buffer;
 class Instruction;
 typedef std::vector<Instruction*> InstructionList;
 
@@ -29,7 +28,7 @@ class Cluster {
             Instruction *inter_device_instruction,
             bool new_transfer) = 0;
 
-        void launch_input(Buffer *buffer);
+        void launch_input();
         void launch_output();
 
         virtual void launch_pre_input_calculations() { };

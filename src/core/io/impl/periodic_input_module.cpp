@@ -85,7 +85,7 @@ void BasicPeriodicInputModule::update() {
 
 void OneHotRandomInputModule::update() {
     /*  Randomly selects one input to activate */
-    int random_index = rand() % values.get_size();
+    int random_index = iRand(0, values.get_size()-1);
 
     if (random)
         for (int nid = 0 ; nid < values.get_size(); ++nid)

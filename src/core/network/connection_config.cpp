@@ -229,7 +229,7 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
             if (not has_child("arborized config"))
                 LOG_ERROR(
                     "Attempted to create arborized connection without "
-                    "specifying subset configuration!");
+                    "specifying arborized configuration!");
             break;
     }
 }

@@ -59,24 +59,16 @@ REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich", BIT)
                 - (src_spike  * dest_trace); \
 \
         float c = eligibilities[weight_index] + (learning_rate * c_delta); \
-        /* if (weight_index == 500) printf("(%2.12f  %2.12f  %2.12f)\n", c, c-(c-C_A)*C_TAU, weight+c); */ \
 \
         /* Update eligibility trace */ \
         eligibilities[weight_index] -= (c - C_A) * C_TAU; \
 \
         /* Calculate new weight */ \
         weight += c; \
-        /* if (to_index == 0 and (c > 100*C_A or c < -C_A)) printf("(%f %f)  ", c, weight); */ \
 \
         /* Ensure weight stays within boundaries */ \
         weights[weight_index] = weight = \
             MAX(MIN_WEIGHT, MIN(max_weight, weight)); \
-\
-        /*
-        float change = learning_rate * weight_delta; \
-        if (change > 0.05 or change < -0.05) \
-            printf("(%8d w=%7.5f delt=%8.5f c=%9.4f rew=%7.4f change=%8.5f)\n", \
-                weight_index, weight, weight_delta, c, dopamine, change); */ \
     }
 
 CALC_ALL(update_liz_add,
