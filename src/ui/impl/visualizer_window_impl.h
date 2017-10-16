@@ -9,10 +9,10 @@ class VisualizerWindowImpl : public VisualizerWindow, public GuiWindow {
         VisualizerWindowImpl();
         virtual ~VisualizerWindowImpl();
 
-        void update();
-        void add_layer(Layer *layer, IOTypeMask io_type);
-        void feed_input(Layer *layer, float *input);
-        void report_output(Layer *layer,
+        virtual void update();
+        virtual void add_layer(Layer *layer, IOTypeMask io_type);
+        virtual void feed_input(Layer *layer, float *input);
+        virtual void report_output(Layer *layer,
             Output *output, OutputType output_type);
 
     protected:
@@ -24,17 +24,20 @@ class VisualizerWindowImpl : public VisualizerWindow, public GuiWindow {
 
 class HeatmapWindowImpl : public VisualizerWindowImpl {
     public:
-        HeatmapWindowImpl();
+        HeatmapWindowImpl(int rate, bool linear);
         virtual ~HeatmapWindowImpl();
 
-        void add_layer(Layer *layer, IOTypeMask io_type);
-        void feed_input(Layer *layer, float *input);
-        void report_output(Layer *layer,
+        virtual void add_layer(Layer *layer, IOTypeMask io_type);
+        virtual void feed_input(Layer *layer, float *input);
+        virtual void report_output(Layer *layer,
             Output *output, OutputType output_type);
+        void cycle();
 
     protected:
         int iterations;
-        std::map<int, float*> spike_count_map;
+        int rate;
+        bool linear;
+        std::map<int, float*> output_count_map;
 };
 
 #endif

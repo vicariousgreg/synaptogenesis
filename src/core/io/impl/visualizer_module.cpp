@@ -50,7 +50,10 @@ void VisualizerModule::report_output(Buffer *buffer) {
 REGISTER_MODULE(HeatmapModule, "heatmap");
 
 HeatmapModule::HeatmapModule(LayerList layers, ModuleConfig *config)
-        : Module(layers), window(VisualizerWindow::build_heatmap()) {
+        : Module(layers),
+          window(VisualizerWindow::build_heatmap(
+              config->get_int("rate", 1000),
+              config->get_bool("linear", false))) {
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
 
@@ -78,4 +81,8 @@ void HeatmapModule::report_output(Buffer *buffer) {
             window->report_output(layer, output, output_type);
         }
     }
+}
+
+void HeatmapModule::cycle() {
+    window->cycle();
 }

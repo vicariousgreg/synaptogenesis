@@ -94,15 +94,16 @@ void VisualizerWindowImpl::report_output(Layer *layer,
     }
 }
 
-HeatmapWindowImpl::HeatmapWindowImpl() : iterations(0) { }
+HeatmapWindowImpl::HeatmapWindowImpl(int rate, bool linear)
+    : iterations(1), rate(rate), linear(linear) { }
 
 HeatmapWindowImpl::~HeatmapWindowImpl() {
-    for (auto pair : spike_count_map) free(pair.second);
+    for (auto pair : output_count_map) free(pair.second);
 }
 
 void HeatmapWindowImpl::add_layer(Layer *layer, IOTypeMask io_type) {
     VisualizerWindowImpl::add_layer(layer, io_type);
-    this->spike_count_map[layer->id] = (float*) calloc(layer->size, sizeof(float));
+    this->output_count_map[layer->id] = (float*) calloc(layer->size, sizeof(float));
 }
 
 void HeatmapWindowImpl::feed_input(Layer *layer, float *input) {
@@ -110,37 +111,39 @@ void HeatmapWindowImpl::feed_input(Layer *layer, float *input) {
 
 void HeatmapWindowImpl::report_output(Layer *layer,
         Output *output, OutputType output_type) {
-    ++iterations;
-    int reset_iteration = 2500;
     bool verbose = false;
 
     // Copy data over
     guint8* data = this->pixbufs[layer_indices[layer]]->get_pixels();
 
-    float* spike_count = spike_count_map[layer->id];
+    float* output_count = output_count_map[layer->id];
     int max = 0;
     int min = -1;
     float avg = 0;
     int num_spiked = 0;
 
-    if (iterations % reset_iteration == 0)
+    if (iterations % rate == 0)
         for (int j = 0; j < layer->size; ++j)
-            spike_count[j] = 0;
+            output_count[j] = 0;
 
     for (int j = 0; j < layer->size; ++j) {
-        if (output[j].i & (1 << 31)) ++spike_count[j];
-        if (spike_count[j] > 0) {
-            if (spike_count[j] > max) max = spike_count[j];
-            if ((min == -1) or (spike_count[j] < min)) min = spike_count[j];
+        switch (output_type) {
+            case FLOAT: output_count[j] += output[j].f; break;
+            case BIT: if (output[j].i & (1 << 31)) ++output_count[j]; break;
+            case INT: output_count[j] += output[j].i; break;
+        }
+        if (output_count[j] > 0) {
+            if (output_count[j] > max) max = output_count[j];
+            if ((min == -1) or (output_count[j] < min)) min = output_count[j];
             ++num_spiked;
         }
-        avg += spike_count[j];
+        avg += output_count[j];
     }
     avg /= layer->size;
 
     float std_dev = 0.0;
     for (int j = 0; j < layer->size; ++j)
-        std_dev += pow((spike_count[j] - avg), 2);
+        std_dev += pow((output_count[j] - avg), 2);
     std_dev = pow((std_dev / layer->size), 0.5);
 
     if (verbose and max != min)
@@ -151,14 +154,16 @@ void HeatmapWindowImpl::report_output(Layer *layer,
             max, min, num_spiked, avg, std_dev / avg);
 
     for (int j = 0; j < layer->size; ++j) {
-        if (spike_count[j] == 0) {
+        if (output_count[j] == 0) {
             data[j*4 + 0] = 0.0;
             data[j*4 + 1] = 0.0;
             data[j*4 + 2] = 0.0;
         } else {
-            float val = (max == min) ? 0.5 : (spike_count[j]-min) / (max-min);
-            //val = 255.0 * val * val;  // nonlinear heatmap
-            val = 255.0 * val;
+            float val = 
+                (linear)
+                    ? ((max == min) ? 0.5 : ((output_count[j]-min) / (max-min)));
+                    : 255.0 * val * val;  // nonlinear heatmap
+            //val = 255.0 * val;
             data[j*4 + 0] = val;
             data[j*4 + 1] = 0.0;
             data[j*4 + 2] = 255.0 - val;
@@ -174,4 +179,8 @@ void HeatmapWindowImpl::report_output(Layer *layer,
                 data[index + (k*4 + 2)] = data[k*4 + 2];
             }
         }
+}
+
+void HeatmapWindowImpl::cycle() {
+    ++iterations;
 }

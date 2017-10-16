@@ -23,6 +23,7 @@ class HeatmapModule : public Module {
         HeatmapModule(LayerList layers, ModuleConfig *config);
 
         void report_output(Buffer *buffer);
+        void cycle();
 
     protected:
         VisualizerWindow *window;

@@ -5,6 +5,9 @@ VisualizerWindow* VisualizerWindow::build_visualizer() {
     return new VisualizerWindowImpl();
 }
 
-VisualizerWindow* VisualizerWindow::build_heatmap() {
-    return new HeatmapWindowImpl();
+VisualizerWindow* VisualizerWindow::build_heatmap(int rate, bool linear) {
+    if (rate < 1)
+        LOG_ERROR("Invalid rate in HeatmapModule: " + std::to_string(rate));
+
+    return new HeatmapWindowImpl(rate, linear);
 }
