@@ -159,14 +159,11 @@ void HeatmapWindowImpl::report_output(Layer *layer,
             data[j*4 + 1] = 0.0;
             data[j*4 + 2] = 0.0;
         } else {
-            float val = 
-                (linear)
-                    ? ((max == min) ? 0.5 : ((output_count[j]-min) / (max-min)));
-                    : 255.0 * val * val;  // nonlinear heatmap
-            //val = 255.0 * val;
-            data[j*4 + 0] = val;
+            float val = (max == min) ? 0.5 : ((output_count[j]-min) / (max-min));
+            if (not linear) val *= val; // nonlinear heatmap
+            data[j*4 + 0] = 255 * val;
             data[j*4 + 1] = 0.0;
-            data[j*4 + 2] = 255.0 - val;
+            data[j*4 + 2] = 255.0 * (1.0 - val);
         }
     }
 
