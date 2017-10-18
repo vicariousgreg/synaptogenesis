@@ -64,4 +64,11 @@ extern "C" PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args);
 
 extern "C" void destroy(void* obj);
 
+extern "C" int get_num_gpus();
+extern "C" bool set_cpu();
+extern "C" bool set_gpu(int index=0);
+extern "C" bool set_multi_gpu(int num=2);
+extern "C" bool set_all_devices();
+
+
 #endif

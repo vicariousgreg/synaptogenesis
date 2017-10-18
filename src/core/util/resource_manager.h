@@ -34,6 +34,12 @@ class ResourceManager {
         DeviceID get_host_id() { return devices.size()-1; }
         bool is_host(DeviceID device_id) { return device_id == get_host_id(); }
 
+        int get_num_gpus();
+        void set_cpu();
+        void set_gpu(int index=0);
+        void set_multi_gpu(int num=2);
+        void set_all();
+
         void* allocate_host(size_t count, size_t size);
         void* allocate_device(size_t count, size_t size,
             void* source_data, DeviceID device_id=0);
@@ -56,7 +62,10 @@ class ResourceManager {
                 Device(DeviceID device_id, bool host_flag, bool solo);
                 virtual ~Device();
 
-                bool is_host() { return host_flag; }
+                bool is_host() const { return host_flag; }
+                void set_active(bool x) { active = x; }
+                bool is_active() const { return active; };
+
                 Stream *create_stream();
                 Event *create_event();
 
@@ -65,10 +74,14 @@ class ResourceManager {
 
                 const DeviceID device_id;
                 const bool host_flag;
+
                 Stream* const default_stream;
                 Stream* const inter_device_stream;
                 std::vector<Stream*> streams;
                 std::vector<Event*> events;
+
+            protected:
+                bool active;
         };
 
         int num_cores;

@@ -27,6 +27,9 @@ ResourceManager::ResourceManager() {
 
     // Create host device (CPU)
     devices.push_back(new Device(devices.size(), true, devices.size() == 0));
+
+    // Host or First GPU
+    devices[0]->set_active(true);
 }
 
 ResourceManager::~ResourceManager() {
@@ -71,6 +74,33 @@ void ResourceManager::flush(DeviceID device_id) {
             "Attempted to flush invalid device ID!");
     }
 }
+
+int ResourceManager::get_num_gpus() {
+    return get_num_cuda_devices();
+}
+
+void ResourceManager::set_cpu() {
+    for (auto device : devices)
+        device->set_active(false);
+    devices[devices.size()-1]->set_active(true);
+}
+
+void ResourceManager::set_gpu(int index) {
+    if (index > get_num_cuda_devices())
+        LOG_ERROR("Could not find GPU " + std::to_string(index));
+    for (auto device : devices)
+        device->set_active(false);
+    devices[index]->set_active(true);
+}
+
+void ResourceManager::set_multi_gpu(int num) {
+    for (auto device : devices) device->set_active(not device->is_host());
+}
+
+void ResourceManager::set_all() {
+    for (auto device : devices) device->set_active(true);
+}
+
 
 void* ResourceManager::allocate_host(size_t count, size_t size) {
     if (count == 0) return nullptr;
@@ -168,7 +198,7 @@ void ResourceManager::delete_events() {
 const std::vector<DeviceID> ResourceManager::get_active_devices() {
     std::vector<DeviceID> active;
     for (auto device : devices)
-        if (devices.size() == 1 or not device->is_host())
+        if (device->is_active())
             active.push_back(device->device_id);
     return active;
 }
@@ -177,6 +207,7 @@ const std::vector<DeviceID> ResourceManager::get_active_devices() {
 ResourceManager::Device::Device(DeviceID device_id, bool host_flag, bool solo)
         : device_id(device_id),
           host_flag(host_flag),
+          active(false),
           default_stream(new DefaultStream(device_id, host_flag)),
           inter_device_stream((solo)
               ? nullptr

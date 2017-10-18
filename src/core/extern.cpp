@@ -241,3 +241,43 @@ PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
 void destroy(void* obj) {
     delete obj;
 }
+
+int get_num_gpus() {
+    return ResourceManager::get_instance()->get_num_gpus();
+}
+
+bool set_cpu() {
+    try {
+        ResourceManager::get_instance()->set_cpu();
+        return true;
+    } catch (...) {
+        return true;
+    }
+}
+
+bool set_gpu(int index) {
+    try {
+        ResourceManager::get_instance()->set_gpu();
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool set_multi_gpu(int num) {
+    try {
+        ResourceManager::get_instance()->set_multi_gpu(num);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+bool set_all_devices() {
+    try {
+        ResourceManager::get_instance()->set_all();
+        return true;
+    } catch (...) {
+        return false;
+    }
+}

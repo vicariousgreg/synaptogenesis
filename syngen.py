@@ -24,10 +24,16 @@ class FloatArray(PArray):
         self.size = size
         self.data = cast(ptr, POINTER(c_float))
 
+    def to_list(self):
+        return [float(x) for x in self]
+
 class IntArray(PArray):
     def __init__(self, size, ptr):
         self.size = size
         self.data = cast(ptr, POINTER(c_int))
+
+    def to_list(self):
+        return [int(x) for x in self]
 
 class StringArray(PArray):
     def __init__(self, size, ptr):
@@ -106,12 +112,34 @@ _syn.get_layer_data.argtypes = (c_void_p, c_char_p, c_char_p, c_char_p)
 _syn.get_connection_data.restype = CArray
 _syn.get_connection_data.argtypes = (c_void_p, c_char_p, c_char_p)
 _syn.get_weight_matrix.restype = CArray
-_syn.get_weight_matrix.argtypes = (c_void_p, c_char_p)
+_syn.get_weight_matrix.argtypes = (c_void_p, c_char_p, c_int)
 
 _syn.run.restype = c_void_p
 _syn.run.argtypes = (c_void_p, c_void_p, c_void_p, c_void_p)
 
 _syn.destroy.argtypes = (c_void_p,)
+_syn.get_num_gpus.restype = c_int
+_syn.set_cpu.restype = c_bool
+_syn.set_gpu.restype = c_bool
+_syn.set_gpu.argtypes = (c_int,)
+_syn.set_multi_gpu.restype = c_bool
+_syn.set_multi_gpu.argtypes = (c_int,)
+_syn.set_all_devices.restype = c_bool
+
+def get_num_gpus():
+    return _syn.get_num_gpus()
+
+def set_cpu():
+    return _syn.set_cpu()
+
+def set_gpu(index=0):
+    return _syn.set_gpu(index)
+
+def set_multi_gpu(count=0):
+    return _syn.set_multi_gpu(count)
+
+def set_all_devices():
+    return _syn.set_all_devices()
 
 class CObject:
     def __init(self):
@@ -265,10 +293,10 @@ class Network(CObject):
         return build_array(
             _syn.get_connection_data(self.state, connection, key))
 
-    def get_weight_matrix(self, connection):
+    def get_weight_matrix(self, connection, index=0):
         if self.state is None: self.build_state()
         return build_array(
-            _syn.get_weight_matrix(self.state, connection))
+            _syn.get_weight_matrix(self.state, connection, index))
 
     def run(self, environment, args=dict()):
         # Build state
