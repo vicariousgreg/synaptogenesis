@@ -68,6 +68,7 @@ class State {
         BasePointer* get_layer_data(Layer *layer, std::string key);
         BasePointer* get_connection_data(Connection *conn, std::string key);
         BasePointer* get_weight_matrix(Connection *conn);
+        Pointer<float> get_weight_matrix(Connection *conn, int layer);
 
         Network* const network;
 

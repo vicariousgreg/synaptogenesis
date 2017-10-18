@@ -109,7 +109,8 @@ typedef enum {
     DIV,
     POOL,
     REWARD,
-    MODULATE
+    MODULATE,
+    GAP
 } Opcode;
 
 static std::map<Opcode, std::string> OpcodeStrings = {
@@ -119,7 +120,8 @@ static std::map<Opcode, std::string> OpcodeStrings = {
     {DIV, "div"},
     {POOL, "pool"},
     {REWARD, "reward"},
-    {MODULATE, "modulate"}
+    {MODULATE, "modulate"},
+    {GAP, "gap"}
 };
 
 static std::map<std::string, Opcode> Opcodes = {
@@ -129,7 +131,8 @@ static std::map<std::string, Opcode> Opcodes = {
     {"div", DIV},
     {"pool", POOL},
     {"reward", REWARD},
-    {"modulate", MODULATE}
+    {"modulate", MODULATE},
+    {"gap", GAP},
 };
 
 inline Opcode get_opcode(std::string name) {

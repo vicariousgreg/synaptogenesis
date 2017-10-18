@@ -46,7 +46,7 @@ static void create_parameters(std::string str,
         for (int i = offset ; i < offset+size ; ++i)
             cs[i] = -65.0 + (15.0 * pow(fRand(), 2));
 
-        for (int i = offset ; i < offset+size ; ++i) 
+        for (int i = offset ; i < offset+size ; ++i)
             ds[i] = 8.0 - (6.0 * pow(fRand(), 2));
     } else if (str == "random negative") {
         //(ai; bi) = (0:02; 0:25) + (0:08;-0:05)ri and (ci; di)=(-65; 2).
@@ -389,6 +389,20 @@ CALC_ALL(activate_iz_modulate,
     AGGREGATE_SHORT
 );
 
+CALC_ALL(activate_iz_gap,
+    IzhikevichAttributes *att =
+        (IzhikevichAttributes*)synapse_data.attributes;
+    float *voltage = att->voltage.get();,
+
+    float v = voltage[to_index];
+    float sum = 0.0;,
+
+    float weight = weights[weight_index];
+    sum += (voltage[from_index] - v) * weight;,
+
+    inputs[to_index] += sum;
+);
+
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     // These are not supported because of the change of weight matrix pointer
     // Second order host connections require their weight matrices to be copied
@@ -413,6 +427,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     funcs[CONVERGENT][ADD]           = get_activate_iz_add_convergent();
     funcs[CONVERGENT][SUB]           = get_activate_iz_sub_convergent();
     funcs[CONVERGENT][MULT]          = get_activate_iz_mult_convergent();
+    funcs[CONVERGENT][GAP]           = get_activate_iz_gap_convergent();
     funcs[DIVERGENT][ADD]            = get_activate_iz_add_divergent();
     funcs[DIVERGENT][SUB]            = get_activate_iz_sub_divergent();
     funcs[DIVERGENT][MULT]           = get_activate_iz_mult_divergent();
@@ -651,6 +666,12 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         for (auto& conn : layer->get_input_connections()) {
             // Check connection parameters
             check_parameters(conn);
+
+            // Ensure gap junctions are self-connections
+            if (conn->type == GAP and conn->from_layer != conn->to_layer)
+                LOG_ERROR(
+                    "Error " + conn->str() + "\n"
+                    "Gap junctions must be between neurons of the same layer.");
 
             // Retrieve baseline conductance
             baseline_conductance[connection_indices[conn->id]] =

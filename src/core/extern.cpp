@@ -210,11 +210,11 @@ ARRAY get_connection_data(STATE state, char* conn_name, char* key) {
     }
 }
 
-ARRAY get_weight_matrix(STATE state, char* conn_name) {
+ARRAY get_weight_matrix(STATE state, char* conn_name, int layer) {
     try {
         auto conn = ((State*)state)->network->get_connection(conn_name);
-        auto ptr = ((State*)state)->get_weight_matrix(conn);
-        return build_array(ptr);
+        auto ptr = ((State*)state)->get_weight_matrix(conn, layer);
+        return build_array(&ptr);
     } catch (...) {
         return null_array();
     }
