@@ -22,9 +22,9 @@ static std::map<Layer*, DeviceID> distribute_layers(
     }
 
     // Keep track of weight distribution to devices
-    std::vector<int> device_weights;
+    std::map<DeviceID, int> device_weights;
     for (auto device : devices)
-        device_weights.push_back(0);
+        device_weights[device] = 0;
 
     // Give the next biggest layer to the device with the least weight
     //   until no layers are left to distribute
@@ -32,9 +32,9 @@ static std::map<Layer*, DeviceID> distribute_layers(
         // Typically display device is 0, so start at the other end
         // This helps avoid burdening the display device in some situations
         int next_device = devices[devices.size()-1];
-        for (int i = 0 ; i < device_weights.size(); ++i)
-            if (device_weights[i] < device_weights[next_device])
-                next_device = i;
+        for (auto pair : device_weights)
+            if (pair.second < device_weights.at(next_device))
+                next_device = pair.first;
 
         Layer *biggest;
         int size = -1;

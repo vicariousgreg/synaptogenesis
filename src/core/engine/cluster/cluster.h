@@ -44,7 +44,7 @@ class Cluster {
     protected:
         State *state;
         Engine *engine;
-        std::vector<Stream*> io_streams;
+        std::map<DeviceID, Stream*> io_streams;
         std::vector<ClusterNode*> nodes;
 
 };

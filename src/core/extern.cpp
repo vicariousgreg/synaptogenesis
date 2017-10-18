@@ -257,7 +257,7 @@ bool set_cpu() {
 
 bool set_gpu(int index) {
     try {
-        ResourceManager::get_instance()->set_gpu();
+        ResourceManager::get_instance()->set_gpu(index);
         return true;
     } catch (...) {
         return false;

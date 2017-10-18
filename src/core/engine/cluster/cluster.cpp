@@ -12,7 +12,7 @@ Cluster::Cluster(State *state, Engine *engine, PropertyConfig args)
     auto active_devices = state->get_active_devices();
     auto res_man = ResourceManager::get_instance();
     for (auto device_id : active_devices)
-        io_streams.push_back(res_man->create_stream(device_id));
+        io_streams[device_id] = res_man->create_stream(device_id);
 }
 
 Cluster::~Cluster() {
