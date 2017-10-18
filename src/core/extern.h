@@ -70,5 +70,9 @@ extern "C" bool set_gpu(int index=0);
 extern "C" bool set_multi_gpu(int num=2);
 extern "C" bool set_all_devices();
 
+extern "C" void set_suppress_output(bool val);
+extern "C" void set_warnings(bool val);
+extern "C" void set_debug(bool val);
+
 
 #endif

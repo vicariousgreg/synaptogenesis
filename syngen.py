@@ -126,6 +126,10 @@ _syn.set_multi_gpu.restype = c_bool
 _syn.set_multi_gpu.argtypes = (c_int,)
 _syn.set_all_devices.restype = c_bool
 
+_syn.set_suppress_output.argtypes = (c_bool,)
+_syn.set_warnings.argtypes = (c_bool,)
+_syn.set_debug.argtypes = (c_bool,)
+
 def get_num_gpus():
     return _syn.get_num_gpus()
 
@@ -140,6 +144,15 @@ def set_multi_gpu(count=0):
 
 def set_all_devices():
     return _syn.set_all_devices()
+
+def set_suppress_output(val):
+    _syn.set_suppress_output(val)
+
+def set_warnings(val):
+    _syn.set_warnings(val)
+
+def set_debug(val):
+    _syn.set_debug(val)
 
 class CObject:
     def __init(self):

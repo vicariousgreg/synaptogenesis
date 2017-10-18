@@ -281,3 +281,15 @@ bool set_all_devices() {
         return false;
     }
 }
+
+void set_suppress_output(bool val) {
+    ErrorManager::suppress_output = val;
+}
+
+void set_warnings(bool val) {
+    ErrorManager::warnings = val;
+}
+
+void set_debug(bool val) {
+    ErrorManager::debug = val;
+}

@@ -316,14 +316,18 @@ void State::save(std::string file_name, bool verbose) {
 }
 
 void State::load(std::string file_name, bool verbose) {
-    // Transfer to host
-    this->transfer_to_host();
+    if (not State::exists(file_name))
+        LOG_ERROR("Could not open file: ./states/" + file_name);
 
     // Open file stream
     std::string path = "./states/" + file_name;
+
     std::ifstream input_file(path, std::ifstream::binary);
     if (verbose)
         printf("Loading network state from %s ...\n", path.c_str());
+
+    // Transfer to host
+    this->transfer_to_host();
 
     // Determine file length
     input_file.seekg (0, input_file.end);
@@ -344,6 +348,8 @@ void State::load(std::string file_name, bool verbose) {
         } catch (...) {
             LOG_WARNING(
                 "Error retrieving pointer -- continuing...");
+            input_file.ignore(key.bytes);
+            read += sizeof(PointerKey) + key.bytes;
             continue;
         }
 
