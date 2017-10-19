@@ -1083,8 +1083,11 @@ int main(int argc, char *argv[]) {
     // Suppress warnings
     ErrorManager::warnings = false;
 
+    // Set single GPU
+    //ResourceManager::get_instance()->set_gpu(0);
+
     working_memory_test();
-    return cli();
+    //return cli();
 
     /*
     try {
