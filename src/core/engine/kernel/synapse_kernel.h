@@ -404,7 +404,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             int end_s_row = start_s_row + (row_spacing * (row_field_size - row_stride) / row_stride); \
             int end_s_col = start_s_col + (column_spacing * (column_field_size - column_stride) / column_stride); \
 \
-            int weight_offset = (convolutional) ? 0 : (to_index * num_weights / to_size); \
+            int weight_offset = (convolutional) ? 0 : (to_index * (num_weights / to_size)); \
 \
             /* Iterate over relevant source neurons... */ \
             int k_index = 0; \
