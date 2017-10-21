@@ -5,9 +5,11 @@ VisualizerWindow* VisualizerWindow::build_visualizer() {
     return new VisualizerWindowImpl();
 }
 
-VisualizerWindow* VisualizerWindow::build_heatmap(int rate, bool linear) {
-    if (rate < 1)
-        LOG_ERROR("Invalid rate in HeatmapModule: " + std::to_string(rate));
+VisualizerWindow* VisualizerWindow::build_heatmap(
+        int integration_window, bool linear) {
+    if (integration_window < 1)
+        LOG_ERROR("Invalid integrationwindow in HeatmapModule: "
+            + std::to_string(integration_window));
 
-    return new HeatmapWindowImpl(rate, linear);
+    return new HeatmapWindowImpl(integration_window, linear);
 }

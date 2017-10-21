@@ -3,7 +3,7 @@
 REGISTER_MODULE(CallbackModule, "callback");
 
 CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
-        : Module(layers) {
+        : Module(layers, config) {
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
 
@@ -35,7 +35,7 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
     }
 }
 
-void CallbackModule::feed_input(Buffer *buffer) {
+void CallbackModule::feed_input_impl(Buffer *buffer) {
     for (auto layer : layers)
         if (get_io_type(layer) & INPUT) {
             callbacks[layer](ids[layer], layer->size,
@@ -43,14 +43,14 @@ void CallbackModule::feed_input(Buffer *buffer) {
         }
 }
 
-void CallbackModule::feed_expected(Buffer *buffer) {
+void CallbackModule::feed_expected_impl(Buffer *buffer) {
     for (auto layer : layers)
         if (get_io_type(layer) & EXPECTED)
             callbacks[layer](ids[layer], layer->size,
                 (void*)buffer->get_expected(layer).get());
 }
 
-void CallbackModule::report_output(Buffer *buffer) {
+void CallbackModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers)
         if (get_io_type(layer) & OUTPUT)
             callbacks[layer](ids[layer], layer->size,

@@ -42,9 +42,68 @@ const PropertyConfig* ModuleConfig::get_layer(Layer *layer) const {
             return config;
 }
 
-Module::Module(LayerList layers) : layers(layers) {
+Module::Module(LayerList layers, ModuleConfig *config)
+        : layers(layers), config(config), curr_iteration(0) {
     for (auto layer : layers)
         output_types[layer] = Attributes::get_output_type(layer);
+    this->verbose = config->get_bool("verbose", false);
+    this->start_delay = config->get_int("delay", 0);
+    this->cutoff = config->get_int("cutoff", 0);
+    this->rate = config->get_int("rate", 1);
+
+    if (this->start_delay < 0)
+        LOG_ERROR("Error in Module : " + config->get("type") + "\n"
+            " Module start delay must be >= 0!");
+
+    if (this->cutoff < 0)
+        LOG_ERROR("Error in Module : " + config->get("type") + "\n"
+            " Module cutoff must be >= 0!");
+
+    if (this->rate < 1)
+        LOG_ERROR("Error in Module : " + config->get("type") + "\n"
+            " Module rate must be >= 1!");
+}
+
+void Module::feed_input(Buffer *buffer) {
+    if (start_delay <= 0) {
+        if (cutoff == 0 or curr_iteration < cutoff) {
+            if (curr_iteration % rate == 0)
+                feed_input_impl(buffer);
+        } else if (curr_iteration == cutoff) {
+            for (auto layer : layers)
+                fSet(buffer->get_input(layer), layer->size, 0.0);
+        }
+    }
+}
+
+void Module::feed_expected(Buffer *buffer) {
+    if (start_delay <= 0) {
+        if (cutoff == 0 or curr_iteration < cutoff) {
+            if (curr_iteration % rate == 0)
+                feed_expected_impl(buffer);
+        } else if (curr_iteration == cutoff) {
+            for (auto layer : layers)
+                fSet((float*)buffer->get_expected(layer).get(), layer->size, 0.0);
+        }
+    }
+}
+
+void Module::report_output(Buffer *buffer) {
+    if (start_delay <= 0
+            and (cutoff == 0 or curr_iteration < cutoff)
+            and (curr_iteration % rate == 0))
+        report_output_impl(buffer);
+}
+
+void Module::cycle() {
+    if (start_delay <= 0) {
+        if (cutoff == 0 or curr_iteration < cutoff) {
+            ++curr_iteration;
+            cycle_impl();
+        } else if (cutoff != 0 and curr_iteration == cutoff) {
+            ++curr_iteration;
+        }
+    } else --start_delay;
 }
 
 IOTypeMask Module::get_io_type(Layer *layer) const {

@@ -94,8 +94,8 @@ void VisualizerWindowImpl::report_output(Layer *layer,
     }
 }
 
-HeatmapWindowImpl::HeatmapWindowImpl(int rate, bool linear)
-    : iterations(1), rate(rate), linear(linear) { }
+HeatmapWindowImpl::HeatmapWindowImpl(int integration_window, bool linear)
+    : iterations(1), integration_window(integration_window), linear(linear) { }
 
 HeatmapWindowImpl::~HeatmapWindowImpl() {
     for (auto pair : output_count_map) free(pair.second);
@@ -122,7 +122,7 @@ void HeatmapWindowImpl::report_output(Layer *layer,
     float avg = 0;
     int num_spiked = 0;
 
-    if (iterations % rate == 0)
+    if (iterations % integration_window == 0)
         for (int j = 0; j < layer->size; ++j)
             output_count[j] = 0;
 

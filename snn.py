@@ -334,7 +334,7 @@ modules = [
     },
     {
         "type" : "heatmap",
-        "rate" : 1000000, # Long term
+        "window" : 1000000, # Long term
         "linear" : "true",
         "layers" : [
             { "structure" : "snn", "layer" : "layer_a" },
@@ -351,7 +351,7 @@ modules = [
     },
     {
         "type" : "heatmap",
-        "rate" : change_rate, # Short term
+        "window" : change_rate, # Short term
         "linear" : "false",
         "layers" : [
             { "structure" : "snn", "layer" : "layer_a" },

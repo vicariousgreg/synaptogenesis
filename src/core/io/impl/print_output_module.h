@@ -7,7 +7,7 @@ class PrintOutputModule : public Module {
     public:
         PrintOutputModule(LayerList layers, ModuleConfig *config);
 
-        void report_output(Buffer *buffer);
+        void report_output_impl(Buffer *buffer);
 
     private:
         int history_length;

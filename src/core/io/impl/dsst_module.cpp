@@ -5,7 +5,7 @@
 REGISTER_MODULE(DSSTModule, "dsst");
 
 DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
-        : Module(layers) {
+        : Module(layers, config) {
     // Extract primary values, or use defaults
     this->num_cols = config->get_int("columns", 18);
     this->num_rows = config->get_int("rows", 8);
@@ -41,13 +41,13 @@ DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
     }
 }
 
-void DSSTModule::feed_input(Buffer *buffer) {
+void DSSTModule::feed_input_impl(Buffer *buffer) {
     for (auto layer : layers)
         if (get_io_type(layer) & INPUT)
             window->feed_input(layer, buffer->get_input(layer));
 }
 
-void DSSTModule::report_output(Buffer *buffer) {
+void DSSTModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers)
         if (get_io_type(layer) & OUTPUT) ;
             // Add output processing here

@@ -22,7 +22,7 @@ class ImageInputModule : public Module {
             this->blue.free();
         }
 
-        void feed_input(Buffer *buffer);
+        void feed_input_impl(Buffer *buffer);
 
     private:
         bool transferred;

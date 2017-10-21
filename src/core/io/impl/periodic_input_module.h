@@ -9,22 +9,18 @@ class PeriodicInputModule : public Module {
         PeriodicInputModule(LayerList layers, ModuleConfig *config);
         virtual ~PeriodicInputModule();
 
-        void feed_input(Buffer *buffer);
-        void cycle();
+        void feed_input_impl(Buffer *buffer);
+        void cycle_impl();
 
     protected:
         virtual void update() = 0;
 
         Pointer<float> values;
 
-        int timesteps;
-        int rate;
-        int end;
         float value;
         float min_value;
         float max_value;
         float fraction;
-        bool verbose;
         bool clear;
         bool random;
         bool dirty;

@@ -6,7 +6,7 @@
 class DummyModule : public Module {
     public:
         DummyModule(LayerList layers, ModuleConfig *config)
-                : Module(layers) {
+                : Module(layers, config) {
             for (auto layer : layers) {
                 auto layer_config = config->get_layer(layer);
 

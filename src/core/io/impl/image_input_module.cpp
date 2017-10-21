@@ -8,7 +8,7 @@
 REGISTER_MODULE(ImageInputModule, "image_input");
 
 ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
-        : Module(layers), transferred(false) {
+        : Module(layers, config), transferred(false) {
     enforce_equal_layer_sizes("image_input");
     set_io_type(INPUT);
 
@@ -65,7 +65,7 @@ ImageInputModule::ImageInputModule(LayerList layers, ModuleConfig *config)
     }
 }
 
-void ImageInputModule::feed_input(Buffer *buffer) {
+void ImageInputModule::feed_input_impl(Buffer *buffer) {
     if (not this->transferred) {
         for (auto layer : layers) {
             switch (channel_map[layer]) {

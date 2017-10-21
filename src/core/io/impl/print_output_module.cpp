@@ -10,7 +10,7 @@
 REGISTER_MODULE(PrintOutputModule, "print_output");
 
 PrintOutputModule::PrintOutputModule(LayerList layers, ModuleConfig *config)
-        : Module(layers),
+        : Module(layers, config),
           counter(0) {
     set_io_type(OUTPUT);
 
@@ -24,7 +24,7 @@ PrintOutputModule::PrintOutputModule(LayerList layers, ModuleConfig *config)
     this->shift = (8 * sizeof(int)) - this->history_length;
 }
 
-void PrintOutputModule::report_output(Buffer *buffer) {
+void PrintOutputModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers) {
         Output* output = buffer->get_output(layer);
 

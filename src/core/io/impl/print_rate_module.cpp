@@ -9,22 +9,22 @@
 REGISTER_MODULE(PrintRateModule, "print_rate");
 
 PrintRateModule::PrintRateModule(LayerList layers, ModuleConfig *config)
-        : Module(layers),
+        : Module(layers, config),
           timesteps(0) {
     set_io_type(OUTPUT);
 
-    this->rate = config->get_int("rate", 100);
+    this->window = config->get_int("window", 100);
 
-    if (this->rate <= 0)
+    if (this->window <= 0)
         LOG_ERROR(
-            "Invalid rate for print rate module!");
+            "Invalid window for print rate module!");
 
     this->totals = (float*) malloc(layers.at(0)->size * sizeof(float));
     for (int index = 0 ; index < this->layers.at(0)->size; ++index)
         totals[index] = 0.0;
 }
 
-void PrintRateModule::report_output(Buffer *buffer) {
+void PrintRateModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers) {
         Output* output = buffer->get_output(layer);
 
@@ -56,7 +56,7 @@ void PrintRateModule::report_output(Buffer *buffer) {
                         totals[index] += (out_value.i >> 31);
                         break;
                 }
-                if ((timesteps+1) % this->rate == 0) {
+                if ((timesteps+1) % this->window == 0) {
                     printf("%d\n", (unsigned int) this->totals[index]);
                     this->totals[index] = 0.0;
                 }
@@ -66,6 +66,6 @@ void PrintRateModule::report_output(Buffer *buffer) {
     }
 }
 
-void PrintRateModule::cycle() {
+void PrintRateModule::cycle_impl() {
     ++timesteps;
 }

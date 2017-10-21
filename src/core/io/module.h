@@ -42,12 +42,12 @@ class Module {
 
         static Module* build_module(Network *network, ModuleConfig *config);
 
-        /* Override to implement IO functionality and module state cycling.
-         * If unused, do not override */
-        virtual void feed_input(Buffer *buffer) { }
-        virtual void feed_expected(Buffer *buffer) { }
-        virtual void report_output(Buffer *buffer) { }
-        virtual void cycle() { };
+        /* Module API
+         * These functions call subclass implementations (see below) */
+        void feed_input(Buffer *buffer);
+        void feed_expected(Buffer *buffer);
+        void report_output(Buffer *buffer);
+        void cycle();
 
         /* Adds properties to an engine report */
         virtual void report(Report* report) { }
@@ -65,9 +65,17 @@ class Module {
         virtual std::string get_name() const = 0;
 
         const LayerList layers;
+        ModuleConfig* const config;
 
     protected:
-        Module(LayerList layers);
+        Module(LayerList layers, ModuleConfig *config);
+
+        /* Override to implement IO functionality and module state cycling.
+         * If unused, do not override */
+        virtual void feed_input_impl(Buffer *buffer) { }
+        virtual void feed_expected_impl(Buffer *buffer) { }
+        virtual void report_output_impl(Buffer *buffer) { }
+        virtual void cycle_impl() { }
 
         class ModuleBank {
             public:
@@ -88,6 +96,11 @@ class Module {
 
         std::map<Layer*, OutputType> output_types;
         std::map<Layer*, IOTypeMask> io_types;
+        bool verbose;
+        int start_delay;
+        int cutoff;
+        int curr_iteration;
+        int rate;
 };
 
 

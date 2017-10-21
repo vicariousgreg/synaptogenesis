@@ -9,13 +9,13 @@ class MazeModule : public Module {
         MazeModule(LayerList layers, ModuleConfig *config);
         virtual ~MazeModule();
 
-        void feed_input(Buffer *buffer);
-        void report_output(Buffer *buffer);
+        void feed_input_impl(Buffer *buffer);
+        void report_output_impl(Buffer *buffer);
 
         void init();
         bool add_input_layer(Layer *layer, std::string params);
         bool add_output_layer(Layer *layer, std::string params);
-        void cycle();
+        void cycle_impl();
 
         Pointer<float> get_input(std::string params);
         bool is_dirty(std::string params);

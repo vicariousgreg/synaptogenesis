@@ -9,8 +9,8 @@ class VisualizerModule : public Module {
     public:
         VisualizerModule(LayerList layers, ModuleConfig *config);
 
-        void feed_input(Buffer *buffer);
-        void report_output(Buffer *buffer);
+        void feed_input_impl(Buffer *buffer);
+        void report_output_impl(Buffer *buffer);
 
     protected:
         VisualizerWindow *window;
@@ -22,8 +22,8 @@ class HeatmapModule : public Module {
     public:
         HeatmapModule(LayerList layers, ModuleConfig *config);
 
-        void report_output(Buffer *buffer);
-        void cycle();
+        void report_output_impl(Buffer *buffer);
+        void cycle_impl();
 
     protected:
         VisualizerWindow *window;

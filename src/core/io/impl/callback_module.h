@@ -7,9 +7,9 @@ class CallbackModule : public Module {
     public:
         CallbackModule(LayerList layers, ModuleConfig *config);
 
-        void feed_input(Buffer *buffer);
-        void feed_expected(Buffer *buffer);
-        void report_output(Buffer *buffer);
+        void feed_input_impl(Buffer *buffer);
+        void feed_expected_impl(Buffer *buffer);
+        void report_output_impl(Buffer *buffer);
 
     protected:
         std::map<Layer*, void (*)(int, int, void*)> callbacks;

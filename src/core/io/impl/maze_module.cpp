@@ -6,7 +6,7 @@
 REGISTER_MODULE(MazeModule, "maze_game");
 
 MazeModule::MazeModule(LayerList layers, ModuleConfig *config)
-        : Module(layers), threshold(1), wait(0) {
+        : Module(layers, config), threshold(1), wait(0) {
     this->input_strength = 5.0;
     this->window = MazeGameWindow::build();
 
@@ -90,7 +90,7 @@ MazeModule::~MazeModule() {
     input_data["wall_down"].free();
 }
 
-void MazeModule::feed_input(Buffer *buffer) {
+void MazeModule::feed_input_impl(Buffer *buffer) {
     for (auto layer : layers) {
         if (is_dirty(params[layer])) {
             Pointer<float> input = get_input(params[layer]);
@@ -106,7 +106,7 @@ static float convert_spikes(unsigned int spikes) {
     return count;
 }
 
-void MazeModule::report_output(Buffer *buffer) {
+void MazeModule::report_output_impl(Buffer *buffer) {
     if (wait > 0) {
         --wait;
         return;
@@ -303,7 +303,7 @@ bool MazeModule::move_right() {
     return false;
 }
 
-void MazeModule::cycle() {
+void MazeModule::cycle_impl() {
     ++iterations;
     ++time_to_reward;
 

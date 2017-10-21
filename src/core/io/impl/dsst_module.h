@@ -9,8 +9,8 @@ class DSSTModule : public Module {
     public:
         DSSTModule(LayerList layers, ModuleConfig *config);
 
-        void feed_input(Buffer *buffer);
-        void report_output(Buffer *buffer);
+        void feed_input_impl(Buffer *buffer);
+        void report_output_impl(Buffer *buffer);
 
         void init();
         void update(Buffer *buffer);

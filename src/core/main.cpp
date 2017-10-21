@@ -228,7 +228,6 @@ void game_of_life_test() {
         (new ModuleConfig("periodic_input", "game_of_life", "board"))
             ->set("max", birth_min)
             ->set("rate", rate)
-            ->set("clear", "true")
             ->set("verbose", "false")
             ->set("fraction", random_fraction));
 

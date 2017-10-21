@@ -24,7 +24,7 @@ class VisualizerWindowImpl : public VisualizerWindow, public GuiWindow {
 
 class HeatmapWindowImpl : public VisualizerWindowImpl {
     public:
-        HeatmapWindowImpl(int rate, bool linear);
+        HeatmapWindowImpl(int integration_window, bool linear);
         virtual ~HeatmapWindowImpl();
 
         virtual void add_layer(Layer *layer, IOTypeMask io_type);
@@ -35,7 +35,7 @@ class HeatmapWindowImpl : public VisualizerWindowImpl {
 
     protected:
         int iterations;
-        int rate;
+        int integration_window;
         bool linear;
         std::map<int, float*> output_count_map;
 };

@@ -12,12 +12,10 @@ class CSVReaderModule : public Module {
         virtual size_t get_expected_iterations() const
             { return epochs * exposure * num_rows; }
 
-        void cycle();
+        void cycle_impl();
 
     protected:
         std::string filename;
-        bool verbose;
-        int age;
         int exposure;
         int epochs;
         int curr_row;
@@ -33,7 +31,7 @@ class CSVInputModule : public CSVReaderModule {
     public:
         CSVInputModule(LayerList layers, ModuleConfig *config);
 
-        void feed_input(Buffer *buffer);
+        void feed_input_impl(Buffer *buffer);
 
     MODULE_MEMBERS
 };
@@ -42,7 +40,7 @@ class CSVExpectedModule : public CSVReaderModule {
     public:
         CSVExpectedModule(LayerList layers, ModuleConfig *config);
 
-        void feed_expected(Buffer *buffer);
+        void feed_expected_impl(Buffer *buffer);
 
     MODULE_MEMBERS
 };
@@ -52,7 +50,7 @@ class CSVOutputModule : public Module {
         CSVOutputModule(LayerList layers, ModuleConfig *config);
         virtual ~CSVOutputModule();
 
-        void report_output(Buffer *buffer);
+        void report_output_impl(Buffer *buffer);
 
     MODULE_MEMBERS
 };
@@ -61,7 +59,7 @@ class CSVEvaluatorModule : public CSVExpectedModule {
     public:
         CSVEvaluatorModule(LayerList layers, ModuleConfig *config);
 
-        void report_output(Buffer *buffer);
+        void report_output_impl(Buffer *buffer);
         void report(Report *report);
 
     private:

@@ -19,16 +19,14 @@ REGISTER_MODULE(CSVEvaluatorModule, "csv_evaluator");
 /******************************************************************************/
 
 CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
-        : Module(layers) {
+        : Module(layers, config) {
     enforce_equal_layer_sizes("csv_reader");
 
     this->filename = config->get("filename", "");
     int offset = config->get_int("offset", 0);
-    this->verbose = config->get_bool("verbose", false);
     float normalization = config->get_float("normalization", 1);
     this->exposure = config->get_int("exposure", 1);
     this->epochs = config->get_int("epochs", 1);
-    this->age = 0;
 
     // Check if file exists
     if (filename == "" or not std::ifstream(filename.c_str()).good())
@@ -77,11 +75,10 @@ CSVReaderModule::~CSVReaderModule() {
     data.free();
 }
 
-void CSVReaderModule::cycle() {
-    if (++age >= exposure) {
-        this->age = 0;
-        if (++curr_row >= this->num_rows) curr_row = 0;
-    }
+void CSVReaderModule::cycle_impl() {
+    if ((curr_iteration % exposure == 0)
+            and (++curr_row >= this->num_rows))
+        curr_row = 0;
 }
 
 /******************************************************************************/
@@ -95,8 +92,8 @@ CSVInputModule::CSVInputModule(LayerList layers, ModuleConfig *config)
     set_io_type(INPUT);
 }
 
-void CSVInputModule::feed_input(Buffer *buffer) {
-    if (age == 0)
+void CSVInputModule::feed_input_impl(Buffer *buffer) {
+    if (curr_iteration % exposure == 0)
         for (auto layer : layers)
             buffer->set_input(layer, this->pointers[curr_row]);
 }
@@ -114,8 +111,8 @@ CSVExpectedModule::CSVExpectedModule(LayerList layers, ModuleConfig *config)
                 "CSVExpectedModule currently only supports FLOAT output type.");
 }
 
-void CSVExpectedModule::feed_expected(Buffer *buffer) {
-    if (age == 0)
+void CSVExpectedModule::feed_expected_impl(Buffer *buffer) {
+    if (curr_iteration % exposure == 0)
         for (auto layer : layers)
             buffer->set_expected(layer, this->pointers[curr_row].cast<Output>());
 }
@@ -125,13 +122,13 @@ void CSVExpectedModule::feed_expected(Buffer *buffer) {
 /******************************************************************************/
 
 CSVOutputModule::CSVOutputModule(LayerList layers, ModuleConfig *config)
-        : Module(layers) {
+        : Module(layers, config) {
     set_io_type(OUTPUT);
 }
 
 CSVOutputModule::~CSVOutputModule() { }
 
-void CSVOutputModule::report_output(Buffer *buffer) {
+void CSVOutputModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers) {
         Output* output = buffer->get_output(layer);
 
@@ -173,7 +170,7 @@ CSVEvaluatorModule::CSVEvaluatorModule(LayerList layers, ModuleConfig *config)
     }
 }
 
-void CSVEvaluatorModule::report_output(Buffer *buffer) {
+void CSVEvaluatorModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers) {
         Output* output = buffer->get_output(layer);
         float max_output = FLT_MIN;

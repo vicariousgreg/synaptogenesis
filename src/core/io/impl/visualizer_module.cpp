@@ -7,7 +7,7 @@
 REGISTER_MODULE(VisualizerModule, "visualizer");
 
 VisualizerModule::VisualizerModule(LayerList layers, ModuleConfig *config)
-        : Module(layers), window(VisualizerWindow::build_visualizer()) {
+        : Module(layers, config), window(VisualizerWindow::build_visualizer()) {
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
 
@@ -27,13 +27,13 @@ VisualizerModule::VisualizerModule(LayerList layers, ModuleConfig *config)
     }
 }
 
-void VisualizerModule::feed_input(Buffer *buffer) {
+void VisualizerModule::feed_input_impl(Buffer *buffer) {
     for (auto layer : layers)
         if (get_io_type(layer) & INPUT)
             window->feed_input(layer, buffer->get_input(layer));
 }
 
-void VisualizerModule::report_output(Buffer *buffer) {
+void VisualizerModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers) {
         if (get_io_type(layer) & OUTPUT) {
             Output *output = buffer->get_output(layer);
@@ -50,9 +50,9 @@ void VisualizerModule::report_output(Buffer *buffer) {
 REGISTER_MODULE(HeatmapModule, "heatmap");
 
 HeatmapModule::HeatmapModule(LayerList layers, ModuleConfig *config)
-        : Module(layers),
+        : Module(layers, config),
           window(VisualizerWindow::build_heatmap(
-              config->get_int("rate", 1000),
+              config->get_int("window", 1000),
               config->get_bool("linear", false))) {
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
@@ -73,7 +73,7 @@ HeatmapModule::HeatmapModule(LayerList layers, ModuleConfig *config)
     }
 }
 
-void HeatmapModule::report_output(Buffer *buffer) {
+void HeatmapModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers) {
         if (get_io_type(layer) & OUTPUT) {
             Output *output = buffer->get_output(layer);
@@ -83,6 +83,6 @@ void HeatmapModule::report_output(Buffer *buffer) {
     }
 }
 
-void HeatmapModule::cycle() {
+void HeatmapModule::cycle_impl() {
     window->cycle();
 }

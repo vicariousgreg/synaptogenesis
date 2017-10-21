@@ -6,7 +6,8 @@ from os import path
 leaky = False
 visualizer = False
 
-set_gpu(0 if leaky else 1)
+if get_num_gpus() > 0:
+    set_gpu(0 if leaky else 1)
 
 set_suppress_output(False)
 set_warnings(False)
@@ -145,7 +146,7 @@ if visualizer:
         },
         {
             "type" : "heatmap",
-            "rate" : 1000000, # Long term
+            "window" : 1000000, # Long term
             "linear" : "true",
             "layers" : [
                 { "structure" : "snn", "layer" : "exc" },
@@ -154,7 +155,7 @@ if visualizer:
         },
         {
             "type" : "heatmap",
-            "rate" : 1000, # Short term
+            "window" : 1000, # Short term
             "linear" : "false",
             "layers" : [
                 { "structure" : "snn", "layer" : "exc" },
