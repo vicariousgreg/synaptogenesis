@@ -95,7 +95,7 @@ void clear_diagonal(float *arr, int rows, int cols) {
 }
 
 static void initialize_weights(const PropertyConfig config,
-    float* target_matrix, Connection* conn, bool is_host);
+    float* target_matrix, Connection* conn);
 
 WeightMatrix::WeightMatrix(Attributes *att, Connection* conn)
     : attributes(att),
@@ -105,14 +105,35 @@ WeightMatrix::WeightMatrix(Attributes *att, Connection* conn)
       num_weights(conn->get_num_weights()) {
     // Allocate matrix on host
     // If parallel, it will be copied below
-    mData = Pointer<float>(num_weights);
-    if (mData.get() == nullptr)
+    weights = Pointer<float>(num_weights);
+    if (weights.get() == nullptr)
         LOG_ERROR(
             "Failed to allocate space for weight matrices on host!");
 }
 
 WeightMatrix::~WeightMatrix() {
-    this->mData.free();
+    this->weights.free();
+}
+
+void WeightMatrix::transpose(bool to_device) {
+    // If num_weights == to_layer size, transposition is a no-op.
+    if (num_weights == connection->to_layer->size) return;
+
+    // If the matrix is bound for the device, rows correspond to destination
+    //   neurons.  Otherwise, the transposition has already been carried out,
+    //   so the rows/columns need to be switched.
+    int original_rows, original_cols;
+    if (to_device) {
+        original_rows = connection->to_layer->size;
+        original_cols = num_weights / original_rows;
+    } else {
+        original_cols = connection->to_layer->size;
+        original_rows = num_weights / original_cols;
+    }
+
+    transpose_matrix<float>(this->weights.get(), original_rows, original_cols);
+    for (auto pair : variables)
+        transpose_matrix<float>((float*)pair.second->get(), original_rows, original_cols);
 }
 
 void WeightMatrix::transfer_to_device() {
@@ -134,7 +155,7 @@ void WeightMatrix::transfer_to_device() {
 }
 
 BasePointer* WeightMatrix::get_layer(std::string key) {
-    if (key == "weights") return &mData;
+    if (key == "weights") return &weights;
     try {
         return variables.at(key);
     } catch (std::out_of_range) {
@@ -145,14 +166,14 @@ BasePointer* WeightMatrix::get_layer(std::string key) {
 }
 
 std::vector<BasePointer*> WeightMatrix::get_pointers() {
-    std::vector<BasePointer*> pointers = { &mData };
+    std::vector<BasePointer*> pointers = { &weights };
     for (auto pair : variables) pointers.push_back(pair.second);
     return pointers;
 }
 
 std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
     std::map<PointerKey, BasePointer*> pointers;
-    pointers[PointerKey(connection->id, "weights", mData.get_bytes(), 0)] = &mData;
+    pointers[PointerKey(connection->id, "weights", weights.get_bytes(), 0)] = &weights;
 
     for (auto pair : variables)
         pointers[PointerKey(
@@ -168,9 +189,8 @@ WeightMatrix *WeightMatrix::build(Attributes *att, Connection *conn, DeviceID de
 }
 
 void WeightMatrix::init(DeviceID device_id) {
-    this->device_id = device_id;
-    initialize_weights(connection->get_config()->get_weight_config(),
-        mData, connection, ResourceManager::get_instance()->is_host(device_id));
+    initialize_weights(
+        connection->get_config()->get_weight_config(), weights, connection);
     register_variables();
     attributes->process_weight_matrix(this);
 }
@@ -194,7 +214,7 @@ void WeightMatrix::register_variable(
 /**************************** WEIGHT INITIALIZATION ***************************/
 /******************************************************************************/
 static void flat_config(const PropertyConfig& config, float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn) {
     float weight = config.get_float("weight", 1.0);
     float fraction = config.get_float("fraction", 1.0);
 
@@ -202,7 +222,7 @@ static void flat_config(const PropertyConfig& config, float* target_matrix,
 }
 
 static void random_config(const PropertyConfig& config, float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn) {
     float max_weight = config.get_float("max weight", 1.0);
     float fraction = config.get_float("fraction", 1.0);
 
@@ -211,7 +231,7 @@ static void random_config(const PropertyConfig& config, float* target_matrix,
 }
 
 static void gaussian_config(const PropertyConfig& config, float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn) {
     float mean = config.get_float("mean", 1.0);
     float std_dev = config.get_float("std dev", 0.3);
     float fraction = config.get_float("fraction", 1.0);
@@ -226,7 +246,7 @@ static void gaussian_config(const PropertyConfig& config, float* target_matrix,
 }
 
 static void log_normal_config(const PropertyConfig& config, float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn) {
     float mean = config.get_float("mean", 1.0);
     float std_dev = config.get_float("std dev", 0.3);
     float fraction = config.get_float("fraction", 1.0);
@@ -241,7 +261,7 @@ static void log_normal_config(const PropertyConfig& config, float* target_matrix
 }
 
 static void power_law_config(const PropertyConfig& config, float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn) {
     float exponent = config.get_float("exponent", 1.5);
     float fraction = config.get_float("fraction", 1.0);
 
@@ -257,7 +277,7 @@ static void power_law_config(const PropertyConfig& config, float* target_matrix,
 }
 
 static void surround_config(const PropertyConfig& config, float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn) {
     switch (conn->type) {
         case CONVERGENT:
             break;
@@ -297,39 +317,23 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
             break;
     }
 
-    if (is_host) {
-        for (int index = 0 ; index < size ; ++index) {
-            int weight_offset = (conn->convolutional)
-                ? 0 : (index * kernel_size);
+    for (int index = 0 ; index < size ; ++index) {
+        int weight_offset = (conn->convolutional)
+            ? 0 : (index * kernel_size);
 
-            for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
-                for (int k_col = col_offset ;
-                        k_col < col_offset + cols ; ++k_col) {
-                    int weight_index = weight_offset +
-                        (k_row * col_field_size) + k_col;
-                    target_matrix[weight_index] = 0.0;
-                }
-            }
-        }
-    } else {
-        for (int index = 0 ; index < size ; ++index) {
-            int weight_col = (conn->convolutional) ? 0 : index;
-            int kernel_row_size = (conn->convolutional) ? 1 : size;
-
-            for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
-                for (int k_col = col_offset ;
-                        k_col < col_offset + cols ; ++k_col) {
-                    int weight_index = weight_col +
-                        ((k_row * col_field_size) + k_col) * kernel_row_size;
-                    target_matrix[weight_index] = 0.0;
-                }
+        for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
+            for (int k_col = col_offset ;
+                    k_col < col_offset + cols ; ++k_col) {
+                int weight_index = weight_offset +
+                    (k_row * col_field_size) + k_col;
+                target_matrix[weight_index] = 0.0;
             }
         }
     }
 }
 
 static void specified_config(const PropertyConfig& config, float* target_matrix,
-        Connection* conn, bool is_host) {
+        Connection* conn) {
     std::string weight_string = config.get("weight string", "");
     if (weight_string == "")
         LOG_ERROR(
@@ -376,18 +380,13 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
                     "Error in weight config for " + conn->str() + ":\n"
                     "  Insufficient number of weights specified!");
             else stream >> value;
-
-            // If parallel, transpose the input (rows <-> cols)
-            // Parallel convergent matrices are laid out such that each
-            //   kernel is in a column
-            if (is_host) target_matrix[row * cols + col] = value;
-            else         target_matrix[col * rows + row] = value;
+            target_matrix[row * cols + col] = value;
         }
     }
 }
 
 static void initialize_weights(const PropertyConfig config,
-        float* target_matrix, Connection* conn, bool is_host) {
+        float* target_matrix, Connection* conn) {
     if (config.has("fraction")) {
         float fraction = config.get_float("fraction", 1.0);
         if (fraction < 0 or fraction > 1.0)
@@ -409,17 +408,17 @@ static void initialize_weights(const PropertyConfig config,
     }
 
     if (type == "flat")
-        flat_config(config, target_matrix, conn, is_host);
+        flat_config(config, target_matrix, conn);
     else if (type == "random")
-        random_config(config, target_matrix, conn, is_host);
+        random_config(config, target_matrix, conn);
     else if (type == "gaussian")
-        gaussian_config(config, target_matrix, conn, is_host);
+        gaussian_config(config, target_matrix, conn);
     else if (type == "log normal")
-        log_normal_config(config, target_matrix, conn, is_host);
+        log_normal_config(config, target_matrix, conn);
     else if (type == "power law")
-        power_law_config(config, target_matrix, conn, is_host);
+        power_law_config(config, target_matrix, conn);
     else if (type == "specified")
-        specified_config(config, target_matrix, conn, is_host);
+        specified_config(config, target_matrix, conn);
     else if (type == "surround")
         LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
@@ -431,7 +430,7 @@ static void initialize_weights(const PropertyConfig config,
 
     // Now do surround processing
     if (surround)
-        surround_config(config, target_matrix, conn, is_host);
+        surround_config(config, target_matrix, conn);
 
     if (not config.get_bool("diagonal", true)) {
         switch(conn->type) {
@@ -467,8 +466,6 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
     LOG_DEBUG(
         conn->from_layer->name + " -> " +
         conn->to_layer->name + "delay initialization...\n");
-
-    bool is_host = ResourceManager::get_instance()->is_host(device_id);
 
     switch(conn->type) {
         case FULLY_CONNECTED:
@@ -564,13 +561,8 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                                 "greater than 31!");
 
                     int f_index = (f_row * ac.column_field_size) + f_col;
-
-                    if (is_host)
-                        for (int i = 0 ; i < to_size ; ++i)
-                            delays[(i * field_size) + f_index] = delay;
-                    else
-                        for (int i = 0 ; i < to_size ; ++i)
-                            delays[(f_index * to_size) + i] = delay;
+                    for (int i = 0 ; i < to_size ; ++i)
+                        delays[(i * field_size) + f_index] = delay;
                 }
             }
             break;
@@ -614,7 +606,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                     int end_s_col = start_s_col + (column_spacing * (column_field_size + column_stride) / column_stride);
 
                     // SERIAL
-                    int weight_offset = to_index * num_weights / to_size;
+                    int weight_offset = to_index * (num_weights / to_size);
                     // PARALLEL
                     int kernel_row_size = num_weights / to_size;
 
@@ -650,9 +642,7 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
                                         + conn->str() + "\n"
                                         "  Unmyelinated axons cannot have "
                                         "delays greater than 31!");
-                            int weight_index = (is_host)
-                                ? weight_offset + k_index
-                                : to_index + (k_index * kernel_row_size);
+                            int weight_index = weight_offset + k_index;
                             delays[weight_index] = delay;
                         }
                     }
@@ -661,4 +651,39 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
             break;
         }
     }
+}
+
+/******************************************************************************/
+/**************************** MATRIX TRANSPOSITION ****************************/
+/******************************************************************************/
+
+/* Adapted from StackOverflow implementation of "Following the cycles" in-place
+ *  transpose algorithm by Christian Ammer:
+ * https://stackoverflow.com/questions/9227747/in-place-transposition-of-a-matrix
+ */
+
+template<class RandomIterator>
+static void transpose_impl(RandomIterator first, RandomIterator last,
+        long desired_rows) {
+    const long mn1 = (last - first - 1);
+    const long n   = (last - first) / desired_rows;
+    std::vector<bool> visited(last - first);
+    RandomIterator cycle = first;
+    while (++cycle != last) {
+        if (visited[cycle - first]) continue;
+        long a = cycle - first;
+        do {
+            a = a == mn1 ? mn1 : (n * a) % mn1;
+            std::swap(*(first + a), *cycle);
+            visited[a] = true;
+        } while ((first + a) != cycle);
+    }
+}
+
+template void transpose_matrix<float>(float* data, int original_rows, int original_cols);
+template void transpose_matrix<int>(int* data, int original_rows, int original_cols);
+
+template <typename T>
+void transpose_matrix(T* data, int original_rows, int original_cols) {
+    transpose_impl(data, data + (original_rows * original_cols), original_cols);
 }

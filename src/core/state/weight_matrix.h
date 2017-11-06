@@ -13,13 +13,14 @@ class WeightMatrix {
         virtual ~WeightMatrix();
 
         // Getters
-        Pointer<float> get_data() const { return mData; }
+        Pointer<float> get_data() const { return weights; }
         BasePointer* get_layer(std::string key);
         DeviceID get_device_id() { return device_id; }
 
         // Pointers and transfer function
         std::vector<BasePointer*> get_pointers();
         std::map<PointerKey, BasePointer*> get_pointer_map();
+        void transpose(bool to_device);
         void transfer_to_device();
 
         // Subclasses implement this for variable registration
@@ -42,12 +43,11 @@ class WeightMatrix {
         void register_variable(std::string key, BasePointer* ptr);
         std::map<std::string, BasePointer*> variables;
 
-        Pointer<float> mData;
+        Pointer<float> weights;
         int num_weights;
         DeviceID device_id;
 
         // Initialization
-        // TODO: get rid of this, do transpositions after transfer
         void init(DeviceID device_id);
 
         virtual int get_object_size() { return sizeof(WeightMatrix); }
@@ -103,5 +103,9 @@ void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
     int* delays, float velocity, bool cap_delay,
     float from_spacing, float to_spacing,
     float x_offset, float y_offset);
+
+/* Transposes a matrix in place */
+template <typename T>
+void transpose_matrix(T* data, int original_rows, int original_cols);
 
 #endif
