@@ -87,7 +87,7 @@ class SequentialCluster : public Cluster {
         virtual void launch_post_input_calculations();
         virtual void launch_weight_update();
 
-        std::vector<Stream*> compute_streams;
+        std::map<DeviceID, Stream*> compute_streams;
 };
 
 class FeedforwardCluster : public SequentialCluster {
