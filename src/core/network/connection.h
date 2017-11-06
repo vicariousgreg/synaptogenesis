@@ -15,6 +15,7 @@ class DendriticNode;
  */
 class Connection {
     public:
+        Connection(const Connection& other);
         virtual ~Connection();
 
         /* Constant getters */
@@ -61,6 +62,9 @@ class Connection {
         // Connection ID
         const size_t id;
 
+        // Number of weights
+        const int num_weights;
+
         std::string str() const;
 
     protected:
@@ -68,9 +72,6 @@ class Connection {
 
         Connection(Layer *from_layer, Layer *to_layer,
             const ConnectionConfig *config);
-
-    private:
-        int num_weights;
 };
 
 typedef std::vector<Connection*> ConnectionList;

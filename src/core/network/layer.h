@@ -19,6 +19,7 @@ typedef std::vector<Connection*> ConnectionList;
  */
 class Layer {
     public:
+        Layer(const Layer& other);
         virtual ~Layer();
 
         /* Getters */

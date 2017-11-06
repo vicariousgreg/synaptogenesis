@@ -2,6 +2,7 @@
 #define synapse_data_h
 
 #include "network/connection.h"
+#include "network/layer.h"
 #include "network/dendritic_node.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/extractor.h"
@@ -23,26 +24,21 @@ class SynapseData {
         const EXTRACTOR extractor;
 
         /* Connection attributes */
-        int connection_index;
-        Opcode opcode;
-        bool convolutional;
         const SubsetConfig subset_config;
         const ArborizedConfig arborized_config;
-        int delay;
+        const Connection connection;
+        int connection_index;
 
         /* Weight attributes */
         const WeightMatrix* matrix;
         Pointer<float> weights;
         Pointer<float> second_order_weights;
-        int num_weights;
-        bool plastic;
-        float max_weight;
 
         /* Layer attributes */
         int to_layer_index;
         int to_start_index;
-        int from_size, from_rows, from_columns;
-        int to_size, to_rows, to_columns;
+        const Layer from_layer;
+        const Layer to_layer;
 
         /* IO attributes */
         OutputType output_type;

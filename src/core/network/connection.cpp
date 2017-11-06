@@ -4,6 +4,93 @@
 #include "network/structure.h"
 #include "util/error_manager.h"
 
+static int compute_num_weights(Layer *from_layer, Layer *to_layer,
+        const ConnectionConfig *config) {
+    // Compute this for error reporting
+    auto node = to_layer->get_dendritic_node(config->dendrite, true);
+    std::string str = "[Connection: "
+        + from_layer->name
+        + " (" + from_layer->structure->name + ") -> "
+        + to_layer->name
+        + " (" + to_layer->structure->name + ") {Node: " + node->name + "}]";
+
+    switch (config->type) {
+        case FULLY_CONNECTED: {
+            return from_layer->size * to_layer->size;
+            break;
+        }
+        case SUBSET: {
+            return config->get_subset_config().total_size;
+            break;
+        }
+        case ONE_TO_ONE:
+            if (from_layer->rows == to_layer->rows
+                    and from_layer->columns == to_layer->columns)
+                return to_layer->size;
+            else
+                LOG_ERROR(
+                    "Error in " + str + ":\n"
+                    "  Cannot connect differently sized layers one-to-one!");
+            break;
+        default:
+            auto arborized_config = config->get_arborized_config();
+
+            switch (config->type) {
+                case CONVERGENT:
+                    // Convolutional connections use a shared weight kernel
+                    if (config->convolutional)
+                        return arborized_config.get_total_field_size();
+                    // Convergent connections use unshared mini weight matrices
+                    // Each destination neuron connects to field_size squared neurons
+                    else
+                        return arborized_config.get_total_field_size() * to_layer->size;
+                    break;
+                case DIVERGENT:
+                    // Convolutional connections use a shared weight kernel
+                    if (config->convolutional)
+                        return arborized_config.get_total_field_size();
+                    // Divergent connections use unshared mini weight matrices
+                    // Each source neuron connects to field_size squared neurons
+                    else
+                        return arborized_config.get_total_field_size() * to_layer->size;
+
+                    // Arithmetic operations for the divergent kernel constrain
+                    //   the stride to non-zero values (division)
+                    if (arborized_config.row_stride == 0 or
+                        arborized_config.column_stride == 0)
+                        LOG_ERROR(
+                            "Error in " + str + ":\n"
+                            "  Divergent connections cannot have zero stride!");
+                    break;
+                default:
+                    LOG_ERROR(
+                        "Error in " + str + ":\n"
+                        "  Unknown layer connection type!");
+            }
+    }
+}
+
+/* Copy constructor is meant for synapse_data, which can be sent to devices.
+ * This will render pointers invalid, so they are set to nullptr when copied.
+ * In addition, this ensures there are no double frees of pointers. */
+Connection::Connection(const Connection& other)
+    : config(nullptr),
+      from_layer(nullptr),
+      to_layer(nullptr),
+      node(other.node),
+      plastic(other.plastic),
+      delay(other.delay),
+      max_weight(other.max_weight),
+      opcode(other.opcode),
+      type(other.type),
+      convolutional(other.convolutional),
+      second_order(other.second_order),
+      second_order_host(other.second_order_host),
+      second_order_slave(other.second_order_slave),
+      name(other.name),
+      num_weights(num_weights),
+      id(other.id) { }
+
 Connection::Connection(Layer *from_layer, Layer *to_layer,
         const ConnectionConfig *config) :
             config(config),
@@ -21,69 +108,13 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
                 node->get_second_order_connection() == nullptr),
             second_order_slave(second_order and not second_order_host),
             name(config->name),
+            num_weights(compute_num_weights(from_layer, to_layer, config)),
             id(std::hash<std::string>()(this->str())) {
     // Check for plastic second order connection
     if (second_order and plastic)
         LOG_ERROR(
             "Error in " + this->str() + ":\n"
             "  Plastic second order connections are not supported!");
-
-    switch (type) {
-        case FULLY_CONNECTED: {
-            this->num_weights = from_layer->size * to_layer->size;
-            break;
-        }
-        case SUBSET: {
-            this->num_weights = config->get_subset_config().total_size;
-            break;
-        }
-        case ONE_TO_ONE:
-            if (from_layer->rows == to_layer->rows
-                    and from_layer->columns == to_layer->columns)
-                this->num_weights = to_layer->size;
-            else
-                LOG_ERROR(
-                    "Error in " + this->str() + ":\n"
-                    "  Cannot connect differently sized layers one-to-one!");
-            break;
-        default:
-            auto arborized_config = config->get_arborized_config();
-
-            switch (type) {
-                case CONVERGENT:
-                    // Convolutional connections use a shared weight kernel
-                    if (convolutional)
-                        this->num_weights = arborized_config.get_total_field_size();
-                    // Convergent connections use unshared mini weight matrices
-                    // Each destination neuron connects to field_size squared neurons
-                    else
-                        this->num_weights =
-                            arborized_config.get_total_field_size() * to_layer->size;
-                    break;
-                case DIVERGENT:
-                    // Convolutional connections use a shared weight kernel
-                    if (convolutional)
-                        this->num_weights = arborized_config.get_total_field_size();
-                    // Divergent connections use unshared mini weight matrices
-                    // Each source neuron connects to field_size squared neurons
-                    else
-                        this->num_weights =
-                            arborized_config.get_total_field_size() * to_layer->size;
-
-                    // Arithmetic operations for the divergent kernel constrain
-                    //   the stride to non-zero values (division)
-                    if (arborized_config.row_stride == 0 or
-                        arborized_config.column_stride == 0)
-                        LOG_ERROR(
-                            "Error in " + this->str() + ":\n"
-                            "  Divergent connections cannot have zero stride!");
-                    break;
-                default:
-                    LOG_ERROR(
-                        "Error in " + this->str() + ":\n"
-                        "  Unknown layer connection type!");
-            }
-    }
 
     // If this is a non-host second order connection, match it to the weights
     //   of the host, not the size of the to_layer
@@ -129,7 +160,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
 }
 
 Connection::~Connection() {
-    delete config;
+    if (config != nullptr)
+        delete config;
 }
 
 std::string Connection::get_parameter(std::string key,

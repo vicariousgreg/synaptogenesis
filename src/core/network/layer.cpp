@@ -5,6 +5,22 @@
 #include "network/connection.h"
 #include "util/error_manager.h"
 
+/* Copy constructor is meant for synapse_data, which can be sent to devices.
+ * This will render pointers invalid, so they are set to nullptr when copied.
+ * In addition, this ensures there are no double frees of pointers. */
+Layer::Layer(const Layer& other)
+    : config(nullptr),
+      name(other.name),
+      id(other.id),
+      neural_model(other.neural_model),
+      structure(nullptr),
+      rows(other.rows),
+      columns(other.columns),
+      size(other.size),
+      plastic(other.plastic),
+      global(other.global),
+      dendritic_root(nullptr) { }
+
 Layer::Layer(Structure *structure, const LayerConfig *config)
         : config(config),
           name(config->name),
@@ -21,8 +37,10 @@ Layer::Layer(Structure *structure, const LayerConfig *config)
 }
 
 Layer::~Layer() {
-    delete dendritic_root;
-    delete config;
+    if (dendritic_root != nullptr)
+        delete dendritic_root;
+    if (config != nullptr)
+        delete config;
 }
 
 const ConnectionList& Layer::get_input_connections() const

@@ -66,7 +66,7 @@ CALC_ALL(activate_debug,
 );
 CALC_ONE_TO_ONE(activate_debug_convolutional_second_order,
     CHECK_ATT
-    assert(synapse_data.convolutional),
+    assert(synapse_data.connection.convolutional),
 
     /* Don't check to_index for convolutional second order kernel */
     ,
@@ -86,7 +86,7 @@ CALC_ALL(update_debug,
 );
 CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_debug_convergent_convolutional,
     CHECK_ATT
-    assert(synapse_data.convolutional);,
+    assert(synapse_data.connection.convolutional);,
 
     CHECK_WEIGHT,
 
@@ -95,7 +95,7 @@ CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_debug_convergent_convolutional,
 );
 CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_debug_divergent_convolutional,
     CHECK_ATT
-    assert(synapse_data.convolutional);,
+    assert(synapse_data.connection.convolutional);,
 
     CHECK_WEIGHT,
 

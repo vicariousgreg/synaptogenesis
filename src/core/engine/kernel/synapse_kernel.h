@@ -76,18 +76,18 @@ inline HOST DEVICE float calc(Opcode opcode, float prior, float input) {
 // This makes a surprising difference in runtime
 // This macro only contains extractions relevant to all connection kernels
 #define SYNAPSE_PREAMBLE \
-    const Opcode opcode = synapse_data.opcode; \
-    const int delay = synapse_data.delay; \
+    const Opcode opcode = synapse_data.connection.opcode; \
+    const int delay = synapse_data.connection.delay; \
     float * const weights = synapse_data.weights.get(); \
-    const int num_weights = synapse_data.num_weights; \
-    const bool plastic = synapse_data.plastic; \
-    const float max_weight = synapse_data.max_weight; \
-    const int from_size = synapse_data.from_size; \
-    const int from_rows = synapse_data.from_rows; \
-    const int from_columns = synapse_data.from_columns; \
-    const int to_size = synapse_data.to_size; \
-    const int to_rows = synapse_data.to_rows; \
-    const int to_columns = synapse_data.to_columns; \
+    const int num_weights = synapse_data.connection.num_weights; \
+    const bool plastic = synapse_data.connection.plastic; \
+    const float max_weight = synapse_data.connection.max_weight; \
+    const int from_size = synapse_data.from_layer.size; \
+    const int from_rows = synapse_data.from_layer.rows; \
+    const int from_columns = synapse_data.from_layer.columns; \
+    const int to_size = synapse_data.to_layer.size; \
+    const int to_rows = synapse_data.to_layer.rows; \
+    const int to_columns = synapse_data.to_layer.columns; \
     Output * const outputs = synapse_data.outputs.get(); \
     Output * const destination_outputs = synapse_data.destination_outputs.get(); \
     float * const inputs = synapse_data.inputs.get(); \
@@ -241,7 +241,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 #define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const bool convolutional = synapse_data.convolutional; \
+    const bool convolutional = synapse_data.connection.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
@@ -307,7 +307,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 #define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const bool convolutional = synapse_data.convolutional; \
+    const bool convolutional = synapse_data.connection.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
@@ -379,7 +379,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const bool convolutional = synapse_data.convolutional; \
+    const bool convolutional = synapse_data.connection.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
@@ -443,7 +443,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 #define DIVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
-    const bool convolutional = synapse_data.convolutional; \
+    const bool convolutional = synapse_data.connection.convolutional; \
     const int row_field_size = synapse_data.arborized_config.row_field_size; \
     const int column_field_size = synapse_data.arborized_config.column_field_size; \
     const int row_stride = synapse_data.arborized_config.row_stride; \
