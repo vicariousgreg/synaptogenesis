@@ -189,6 +189,7 @@ WeightMatrix *WeightMatrix::build(Attributes *att, Connection *conn, DeviceID de
 }
 
 void WeightMatrix::init(DeviceID device_id) {
+    this->device_id = device_id;
     initialize_weights(
         connection->get_config()->get_weight_config(), weights, connection);
     register_variables();
