@@ -55,7 +55,8 @@ class State {
 
         /* Getters for connection related data */
         int get_connection_index(Connection *conn) const;
-        Pointer<float> get_matrix(Connection *conn) const;
+        Pointer<float> get_weights(Connection *conn) const;
+        const WeightMatrix* get_matrix_pointer(Connection *conn) const;
         EXTRACTOR get_connection_extractor(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) const;
@@ -67,8 +68,7 @@ class State {
         BasePointer* get_neuron_data(Layer *layer, std::string key);
         BasePointer* get_layer_data(Layer *layer, std::string key);
         BasePointer* get_connection_data(Connection *conn, std::string key);
-        BasePointer* get_weight_matrix(Connection *conn);
-        Pointer<float> get_weight_matrix(Connection *conn, int layer);
+        BasePointer* get_weight_matrix(Connection *conn, std::string key="weights");
 
         Network* const network;
 

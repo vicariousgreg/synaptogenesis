@@ -1,59 +1,16 @@
 #include "state/attributes.h"
 #include "state/state.h"
 
-Attributes* Attributes::build_attributes(LayerList &layers,
-        std::string neural_model, DeviceID device_id) {
-    auto bank = Attributes::get_neural_model_bank();
-    if (bank->neural_models.count(neural_model) == 0)
-        LOG_ERROR(
-            "Unrecognized neural model string: " + neural_model + "!");
-
-    Attributes *attributes =
-        bank->build_pointers[neural_model](layers);
-    attributes->object_size =
-        bank->sizes[neural_model];
-
-    // Copy attributes to device and set the pointer
-    attributes->set_device_id(device_id);
-    return attributes;
-}
-
-Attributes::NeuralModelBank* Attributes::get_neural_model_bank() {
-    static Attributes::NeuralModelBank* bank = new NeuralModelBank();
-    return bank;
-}
-
-const std::set<std::string> Attributes::get_neural_models() {
-    return Attributes::get_neural_model_bank()->neural_models;
-}
-
 OutputType Attributes::get_output_type() {
-    return Attributes::get_neural_model_bank()
-        ->output_types[get_neural_model()];
+    return NeuralModelBank::get_output_type(get_neural_model());
 }
 
 OutputType Attributes::get_output_type(std::string neural_model) {
-    return Attributes::get_neural_model_bank()
-        ->output_types[neural_model];
+    return NeuralModelBank::get_output_type(neural_model);
 }
 
 OutputType Attributes::get_output_type(Layer *layer) {
-    return Attributes::get_output_type(layer->neural_model);
-}
-
-int Attributes::register_neural_model(std::string neural_model,
-        int object_size, OutputType output_type, ATT_BUILD_PTR build_ptr) {
-    auto bank = Attributes::get_neural_model_bank();
-    if (bank->neural_models.count(neural_model) == 1)
-        LOG_ERROR(
-            "Duplicate neural model string: " + neural_model + "!");
-    bank->neural_models.insert(neural_model);
-    bank->build_pointers[neural_model] = build_ptr;
-    bank->sizes[neural_model] = object_size;
-    bank->output_types[neural_model] = output_type;
-
-    // Return index as an identifier
-    return bank->neural_models.size() - 1;
+    return NeuralModelBank::get_output_type(layer->neural_model);
 }
 
 Attributes::Attributes(LayerList &layers, OutputType output_type)
@@ -148,10 +105,6 @@ int Attributes::dendrite_DFS(const DendriticNode *curr, int second_order_size) {
     return second_order_size;
 }
 
-void Attributes::set_device_id(DeviceID device_id) {
-    this->device_id = device_id;
-}
-
 void Attributes::transfer_to_device() {
 #ifdef __CUDACC__
     // Copy attributes to device and set the pointer
@@ -165,7 +118,7 @@ void Attributes::transfer_to_device() {
         // Transfer to device
         this->pointer = (Attributes*)
             ResourceManager::get_instance()->allocate_device(
-                1, object_size, this, device_id);
+                1, get_object_size(), this, device_id);
     }
 #endif
 }
@@ -186,20 +139,25 @@ std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
     for (auto pair : input_start_indices)
         pointers[PointerKey(
             pair.first, "input",
-            layer_sizes[pair.first], pair.second)] = &input;
+            layer_sizes[pair.first] * input.get_unit_size(), pair.second)] = &input;
     for (auto pair : output_start_indices)
         pointers[PointerKey(
             pair.first, "output",
-            layer_sizes[pair.first], pair.second)] = &output;
+            layer_sizes[pair.first] * output.get_unit_size(), pair.second)] = &output;
     for (auto pair : other_start_indices)
         pointers[PointerKey(
             pair.first, "expected",
-            layer_sizes[pair.first], pair.second)] = &expected;
+            layer_sizes[pair.first] * expected.get_unit_size(), pair.second)] = &expected;
+    for (auto pair : second_order_indices)
+        pointers[PointerKey(
+            pair.first, "second order weights",
+            layer_sizes[pair.first] * input.get_unit_size(), pair.second)] = &second_order_weights;
     for (auto var_pair : neuron_variables)
         for (auto l_pair : other_start_indices)
             pointers[PointerKey(
                 l_pair.first, var_pair.first,
-                layer_sizes[l_pair.first], l_pair.second)] = var_pair.second;
+                layer_sizes[l_pair.first] * var_pair.second->get_unit_size(),
+                l_pair.second)] = var_pair.second;
     return pointers;
 }
 

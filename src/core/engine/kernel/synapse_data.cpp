@@ -24,7 +24,8 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         to_layer_index(state->get_layer_index(conn->to_layer)),
         num_weights(conn->get_num_weights()),
         output_type(Attributes::get_output_type(conn->from_layer)),
-        weights(state->get_matrix(conn)) {
+        matrix(state->get_matrix_pointer(conn)),
+        weights(state->get_weights(conn)) {
     destination_outputs = state->get_output(conn->to_layer);
 
     if (state->is_inter_device(conn))

@@ -7,6 +7,7 @@
 #include "util/tools.h"
 
 REGISTER_ATTRIBUTES(IzhikevichAttributes, "izhikevich", BIT)
+REGISTER_WEIGHT_MATRIX(IzhikevichWeightMatrix, "izhikevich")
 
 /******************************************************************************/
 /******************************** PARAMS **************************************/
@@ -242,23 +243,25 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define ACTIV_EXTRACTIONS \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.attributes; \
+    IzhikevichWeightMatrix *matrix = \
+        (IzhikevichWeightMatrix*)synapse_data.matrix; \
     float baseline_conductance = \
         att->baseline_conductance.get()[synapse_data.connection_index]; \
     bool stp_flag = att->stp_flag.get()[synapse_data.connection_index]; \
 \
-    float *stds   = weights + (4*num_weights); \
-    float *stps   = weights + (5*num_weights); \
-    int   *delays = (int*)weights + (7*num_weights);
+    float *stds   = matrix->stds.get(); \
+    float *stps   = matrix->stps.get(); \
+    int   *delays = matrix->delays.get();
 
 #define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
     float *short_conductances = att->SHORT_NAME.get(synapse_data.to_start_index); \
     float short_tau = SHORT_TAU; \
-    float *short_traces = weights + (1*num_weights);
+    float *short_traces   = matrix->short_traces.get();
 
 #define ACTIV_EXTRACTIONS_LONG(LONG_NAME, LONG_TAU) \
     float *long_conductances = att->LONG_NAME.get(synapse_data.to_start_index); \
     float long_tau = LONG_TAU; \
-    float *long_traces  = weights + (2*num_weights); \
+    float *long_traces   = matrix->long_traces.get();
 
 // Neuron Pre Operation
 #define INIT_SUM \
@@ -445,9 +448,11 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 
 #define UPDATE_EXTRACTIONS \
-    float *presyn_traces = weights + (3*num_weights); \
-    float *eligibilities = weights + (6*num_weights); \
-    int   *delays        = (int*)weights + (7*num_weights); \
+    IzhikevichWeightMatrix *matrix = \
+        (IzhikevichWeightMatrix*)synapse_data.matrix; \
+    float *presyn_traces   = matrix->presyn_traces.get(); \
+    float *eligibilities   = matrix->eligibilities.get(); \
+    int   *delays = matrix->delays.get(); \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.attributes; \
@@ -688,46 +693,78 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     }
 }
 
+void IzhikevichWeightMatrix::register_variables() {
+    // Short term (AMPA/GABAA) conductance trace
+    this->short_traces = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("short trace", &short_traces);
+
+    // Long term (NMDA/GABAA) conductance trace
+    this->long_traces = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("long trace", &long_traces);
+
+    // Presynaptic trace
+    this->presyn_traces = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("presyn trace", &presyn_traces);
+
+    // Short Term Depression
+    this->stds = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("short term depression", &stds);
+
+    // Short Term Potentiation
+    this->stps = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("short term potentiation", &stps);
+
+    // Long term eligibility trace
+    this->eligibilities = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("eligibilities", &eligibilities);
+
+    // Delay
+    this->delays = WeightMatrix::create_variable<int>();
+    WeightMatrix::register_variable("delays", &delays);
+}
+
 void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Connection *conn = matrix->connection;
     Pointer<float> mData = matrix->get_data();
 
     int num_weights = conn->get_num_weights();
 
+    auto iz_mat = (IzhikevichWeightMatrix*)matrix;
+
     // Short term trace
-    clear_weights(mData + 1*num_weights, num_weights);
+    clear_weights(iz_mat->short_traces, num_weights);
 
     // Long term trace
-    clear_weights(mData + 2*num_weights, num_weights);
+    clear_weights(iz_mat->long_traces, num_weights);
 
     // Plasticity trace
-    clear_weights(mData + 3*num_weights, num_weights);
+    clear_weights(iz_mat->presyn_traces, num_weights);
 
     // Short Term Depression
-    set_weights(mData + 4*num_weights, num_weights, 1.0);
+    set_weights(iz_mat->stds, num_weights, 1.0);
 
     // Short Term Potentiation
     if (stp_flag[connection_indices[conn->id]])
-        set_weights(mData + 5*num_weights, num_weights, 1.0);
+        set_weights(iz_mat->stps, num_weights, 1.0);
     else
         switch(conn->opcode) {
             case ADD:
             case MULT:
             case REWARD:
             case MODULATE:
-                set_weights(mData + 5*num_weights, num_weights, U_DEPRESS);
+                set_weights(iz_mat->stps, num_weights, U_DEPRESS);
                 break;
             case SUB:
-                set_weights(mData + 5*num_weights, num_weights, U_POTENTIATE);
+                set_weights(iz_mat->stps, num_weights, U_POTENTIATE);
                 break;
         }
 
     // Long term eligibiity trace
-    set_weights(mData + 6*num_weights, num_weights, 0.0);
+    set_weights(iz_mat->eligibilities, num_weights, 0.0);
 
     // Delays
     // Myelinated connections use the base delay only
-    int *delays = (int*)(mData + 7*num_weights);
+    int *delays = iz_mat->delays.get();
     if (conn->get_parameter("myelinated", "false") == "true") {
         int delay = conn->delay;
         for (int i = 0 ; i < num_weights ; ++i)

@@ -3,6 +3,7 @@
 
 #include "network/connection.h"
 #include "network/dendritic_node.h"
+#include "state/weight_matrix.h"
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
 #include "util/pointer.h"
@@ -30,6 +31,7 @@ class SynapseData {
         int delay;
 
         /* Weight attributes */
+        const WeightMatrix* matrix;
         Pointer<float> weights;
         Pointer<float> second_order_weights;
         int num_weights;

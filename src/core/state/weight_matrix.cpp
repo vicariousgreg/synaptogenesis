@@ -2,6 +2,7 @@
 #include <sstream>
 
 #include "state/weight_matrix.h"
+#include "state/attributes.h"
 #include "network/layer.h"
 #include "network/connection.h"
 #include "util/error_manager.h"
@@ -96,41 +97,97 @@ void clear_diagonal(float *arr, int rows, int cols) {
 static void initialize_weights(const PropertyConfig config,
     float* target_matrix, Connection* conn, bool is_host);
 
-WeightMatrix::WeightMatrix(Connection* conn, int matrix_depth,
-        DeviceID device_id)
-    : connection(conn),
-      depth(matrix_depth),
-      num_weights(conn->get_num_weights()),
-      device_id(device_id) {
-    matrix_size = num_weights * matrix_depth;
-
+WeightMatrix::WeightMatrix(Attributes *att, Connection* conn)
+    : attributes(att),
+      connection(conn),
+      device_id(0),
+      pointer(this),
+      num_weights(conn->get_num_weights()) {
     // Allocate matrix on host
     // If parallel, it will be copied below
-    mData = Pointer<float>(matrix_size);
+    mData = Pointer<float>(num_weights);
     if (mData.get() == nullptr)
         LOG_ERROR(
             "Failed to allocate space for weight matrices on host!");
-
-    // If parameter is specified, interpret it for initialization
-    // Otherwise, perform randomization
-    initialize_weights(conn->get_config()->get_weight_config(),
-        mData, conn, ResourceManager::get_instance()->is_host(device_id));
 }
 
 WeightMatrix::~WeightMatrix() {
     this->mData.free();
 }
 
-Pointer<float> WeightMatrix::get_layer(int index) const {
-    if (index < 0 or index >= depth)
-        LOG_ERROR(
-            "Attempted to access out of bounds Weight Matrix layer : "
-            + std::to_string(index) + " on connection: " + connection->str());
-    return mData.slice(num_weights * index, num_weights);
+void WeightMatrix::transfer_to_device() {
+#ifdef __CUDACC__
+    // Copy attributes to device and set the pointer
+    if (not ResourceManager::get_instance()->is_host(device_id)) {
+        cudaSetDevice(device_id);
+
+        // If already transfered, free old copy
+        if (this->pointer != this)
+            cudaFree(this->pointer);
+
+        // Transfer to device
+        this->pointer = (WeightMatrix*)
+            ResourceManager::get_instance()->allocate_device(
+                1, get_object_size(), this, device_id);
+    }
+#endif
 }
 
-BasePointer* WeightMatrix::get_pointer() {
-    return &this->mData;
+BasePointer* WeightMatrix::get_layer(std::string key) {
+    if (key == "weights") return &mData;
+    try {
+        return variables.at(key);
+    } catch (std::out_of_range) {
+        LOG_ERROR(
+            "Failed to retrieve data \"" + key + "\" in WeightMatrix for "
+            "connection:" + connection->str());
+    }
+}
+
+std::vector<BasePointer*> WeightMatrix::get_pointers() {
+    std::vector<BasePointer*> pointers = { &mData };
+    for (auto pair : variables) pointers.push_back(pair.second);
+    return pointers;
+}
+
+std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
+    std::map<PointerKey, BasePointer*> pointers;
+    pointers[PointerKey(connection->id, "weights", mData.get_bytes(), 0)] = &mData;
+
+    for (auto pair : variables)
+        pointers[PointerKey(
+            connection->id, pair.first,
+            pair.second->get_bytes(), 0)] = pair.second;
+    return pointers;
+}
+
+WeightMatrix *WeightMatrix::build(Attributes *att, Connection *conn, DeviceID device_id) {
+    auto mat = new WeightMatrix(att, conn);
+    mat->init(device_id);
+    return mat;
+}
+
+void WeightMatrix::init(DeviceID device_id) {
+    this->device_id = device_id;
+    initialize_weights(connection->get_config()->get_weight_config(),
+        mData, connection, ResourceManager::get_instance()->is_host(device_id));
+    register_variables();
+    attributes->process_weight_matrix(this);
+}
+
+template Pointer<float> WeightMatrix::create_variable();
+template Pointer<int> WeightMatrix::create_variable();
+template <class T>
+Pointer<T> WeightMatrix::create_variable() {
+    return Pointer<T>(num_weights);
+}
+
+void WeightMatrix::register_variable(
+        std::string key, BasePointer* ptr) {
+    if (this->variables.count(key) > 0)
+        LOG_ERROR(
+            "Repeated weight matrix variable key: " + key);
+    this->variables[key] = ptr;
 }
 
 /******************************************************************************/

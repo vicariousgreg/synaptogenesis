@@ -9,19 +9,6 @@ class IzhikevichAttributes : public Attributes {
 
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
-        virtual int get_matrix_depth(Connection* conn) {
-            /*
-             Weight
-             Short term (AMPA/GABAA) conductance trace
-             Long term (NMDA/GABAA) conductance trace
-             Presynaptic trace
-             Short Term Depression
-             Short Term Potentiation
-             Long term eligibility trace
-             Delay
-            */
-            return 8;
-        }
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
         /* Connection Attributes */
@@ -65,6 +52,20 @@ class IzhikevichAttributes : public Attributes {
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
+};
+
+class IzhikevichWeightMatrix : public WeightMatrix {
+    public:
+        Pointer<float> short_traces;
+        Pointer<float> long_traces;
+        Pointer<float> presyn_traces;
+        Pointer<float> stds;
+        Pointer<float> stps;
+        Pointer<float> eligibilities;
+        Pointer<int> delays;
+
+    WEIGHT_MATRIX_MEMBERS(IzhikevichWeightMatrix);
+    virtual void register_variables();
 };
 
 #endif

@@ -363,7 +363,7 @@ class SecondOrderWeightTransferInstruction : public TransferInstruction<float> {
                 : TransferInstruction(
                       node->get_second_order_connection()->to_layer,
                       stream,
-                      state->get_matrix(node->get_second_order_connection()),
+                      state->get_weights(node->get_second_order_connection()),
                       state->get_second_order_weights(node)) { }
 };
 

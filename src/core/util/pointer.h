@@ -19,11 +19,17 @@ class PointerKey {
         const size_t offset;
 
         bool operator <(const PointerKey& other) const {
-            if (hash == other.hash) return type < other.type;
-            else return hash < other.hash;
+            if (hash == other.hash) {
+                if (type == other.type) return bytes < other.bytes;
+                else return type < other.type;
+            } else {
+                return hash < other.hash;
+            }
         }
         bool operator ==(const PointerKey& other) const {
-            return hash == other.hash and type == other.type;
+            return hash == other.hash
+                and type == other.type
+                and bytes == other.bytes;
         }
 };
 

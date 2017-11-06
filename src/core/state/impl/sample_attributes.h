@@ -2,6 +2,7 @@
 #define sample_attributes_h
 
 #include "state/attributes.h"
+#include "state/weight_matrix.h"
 
 class SampleAttributes : public Attributes {
     public:
@@ -12,7 +13,6 @@ class SampleAttributes : public Attributes {
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
 
-        virtual int get_matrix_depth(Connection* conn);
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
         Pointer<float> connection_variable;
@@ -21,6 +21,15 @@ class SampleAttributes : public Attributes {
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
+};
+
+class SampleWeightMatrix : public WeightMatrix {
+    public:
+        Pointer<float> var1;
+        Pointer<float> var2;
+
+    WEIGHT_MATRIX_MEMBERS(SampleWeightMatrix);
+    virtual void register_variables();
 };
 
 #endif

@@ -58,7 +58,7 @@ extern "C" ARRAY get_neuron_data(
 extern "C" ARRAY get_layer_data(
     STATE state, char* structure_name, char* layer_name, char* key);
 extern "C" ARRAY get_connection_data(STATE state, char* conn_name, char* key);
-extern "C" ARRAY get_weight_matrix(STATE state, char* conn_name, int layer=0);
+extern "C" ARRAY get_weight_matrix(STATE state, char* conn_name, char* key=nullptr);
 
 extern "C" PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args);
 

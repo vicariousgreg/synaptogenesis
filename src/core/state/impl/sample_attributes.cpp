@@ -6,7 +6,11 @@
 #include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"
 
+/* These macros register the Attributes and WeightMatrix subclasses, associating
+ *   them with the neural model named "sample".
+ */
 REGISTER_ATTRIBUTES(SampleAttributes, "sample", FLOAT)
+REGISTER_WEIGHT_MATRIX(SampleWeightMatrix, "sample")
 
 /******************************************************************************/
 /************************** CLASS FUNCTIONS ***********************************/
@@ -52,12 +56,12 @@ SampleAttributes::SampleAttributes(LayerList &layers)
     }
 }
 
-/* This function is used during WeightMatrix construction to determine how many
- *   layers the weight matrices should have.  These additional layers can be
- *   used to keep track of weight variables (ie activity traces).
- */
-int SampleAttributes::get_matrix_depth(Connection* conn) {
-    return 3;
+void SampleWeightMatrix::register_variables() {
+    this->var1 = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("var1", &var1);
+
+    this->var2 = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("var2", &var2);
 }
 
 /* WeightMatrices call this function once they're done initializing the first
@@ -66,14 +70,16 @@ int SampleAttributes::get_matrix_depth(Connection* conn) {
  *   retrieved from the WeightMatrix.
  */
 void SampleAttributes::process_weight_matrix(WeightMatrix* matrix) {
+    SampleWeightMatrix *s_mat = (SampleWeightMatrix*)matrix;
+
     // Retrieve connection and matrix data pointer
     Connection *conn = matrix->connection;
     Pointer<float> mData = matrix->get_data();
     int num_weights = conn->get_num_weights();
 
     // Accessing second and third layers
-    Pointer<float> second_weights = matrix->get_layer(1);
-    Pointer<float> third_weights = matrix->get_layer(2);
+    Pointer<float> second_weights = s_mat->var1;
+    Pointer<float> third_weights = s_mat->var2;
 
     // The first layer is initialized according to the noise config.
     // Sometimes it's useful to differentially initialize
@@ -86,7 +92,7 @@ void SampleAttributes::process_weight_matrix(WeightMatrix* matrix) {
                 "  Val cannot be negative!");
 
         for (int wid = 0 ; wid < num_weights ; ++wid)
-            second_weights = mData[wid] * val;
+            second_weights[wid] = mData[wid] * val;
     }
 
     // Or with more basic connection properties.

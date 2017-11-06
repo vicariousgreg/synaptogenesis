@@ -2,11 +2,11 @@
 #define attributes_h
 
 #include <map>
-#include <set>
 #include <vector>
 
 #include "network/layer.h"
 #include "state/weight_matrix.h"
+#include "state/neural_model_bank.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
@@ -20,18 +20,10 @@ class Attributes;
 typedef AttributeData ATTRIBUTE_ARGS;
 typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
 
-/* Typedef for subclass build method
- * This can't be virtual because it's a class method */
-typedef Attributes* (*ATT_BUILD_PTR)(LayerList &layers);
-
 class Attributes {
     public:
         Attributes(LayerList &layers, OutputType output_type);
         virtual ~Attributes();
-
-        /* Assigns the attributes to a device
-         * This must be done prior to use */
-        void set_device_id(DeviceID device_id);
 
         /* Checks whether these attributes are compatible
          *   with the given cluster_type */
@@ -54,9 +46,6 @@ class Attributes {
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) {
             return Kernel<SYNAPSE_ARGS> ();
         }
-
-        // Depth of weight matrices
-        virtual int get_matrix_depth(Connection *conn) { return 1; }
 
         // Weight matrix processor
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
@@ -96,36 +85,17 @@ class Attributes {
 
         DeviceID get_device_id() { return device_id; }
 
-        // Get the set of neural model strings
-        static const std::set<std::string> get_neural_models();
-
         // Gets the output type of a layer based on its neural model
         OutputType get_output_type();
         static OutputType get_output_type(std::string neural_model);
         static OutputType get_output_type(Layer *layer);
 
-        static Attributes *build_attributes(LayerList &layers,
-            std::string neural_model, DeviceID device_id);
-
     protected:
-        class NeuralModelBank {
-            public:
-                // Set of neural model implementations
-                std::set<std::string> neural_models;
-                std::map<std::string, ATT_BUILD_PTR> build_pointers;
-                std::map<std::string, int> sizes;
-                std::map<std::string, OutputType> output_types;
-        };
-
-        // Registers a subclass neural model name with the state
-        static int register_neural_model(std::string neural_model,
-            int object_size, OutputType output_type, ATT_BUILD_PTR build_ptr);
-
-        // Set of neural model implementations
-        static NeuralModelBank* get_neural_model_bank();
-
         // Gets the name of the neural model
         virtual std::string get_neural_model() = 0;
+
+        // Gets size of subclass object
+        virtual int get_object_size() = 0;
 
         // Methods for creating and registering variables
         //   to be handled by the superclass
@@ -150,7 +120,6 @@ class Attributes {
         int total_connections;
 
         DeviceID device_id;
-        int object_size;
 
         // Managed pointers
         std::map<std::string, BasePointer*> neuron_variables;
@@ -172,22 +141,25 @@ class Attributes {
 /* Macros for Attribute subclass Registry */
 // Put this one in .cpp
 #define REGISTER_ATTRIBUTES(CLASS_NAME, STRING, OUTPUT_TYPE) \
-int CLASS_NAME::neural_model_id = \
-    Attributes::register_neural_model(STRING, \
-        sizeof(CLASS_NAME), OUTPUT_TYPE, CLASS_NAME::build); \
-std::string CLASS_NAME::neural_model = STRING; \
+static bool __att_dummy = \
+    NeuralModelBank::register_attributes( \
+        STRING, OUTPUT_TYPE, CLASS_NAME::build); \
+std::string CLASS_NAME::get_neural_model() {return STRING; } \
+int CLASS_NAME::get_object_size() { return sizeof(CLASS_NAME); } \
 \
-Attributes *CLASS_NAME::build(LayerList &layers) { \
-    return new CLASS_NAME(layers); \
+Attributes *CLASS_NAME::build(LayerList &layers, DeviceID device_id) { \
+    auto att = new CLASS_NAME(layers); \
+    att->device_id = device_id; \
+    return att; \
 }
 
 // Put this one in .h at bottom of class definition
 #define ATTRIBUTE_MEMBERS \
+    public: \
+        static Attributes *build(LayerList &layers, DeviceID device_id); \
     protected: \
-        static Attributes *build(LayerList &layers); \
-        static int neural_model_id; \
-        static std::string neural_model; \
-        virtual std::string get_neural_model() { return neural_model; }
+        virtual std::string get_neural_model(); \
+        virtual int get_object_size();
 
 // Put this one in .h if the class implements the attribute kernel
 #define GET_KERNEL_DEF \

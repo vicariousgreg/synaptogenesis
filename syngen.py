@@ -112,7 +112,7 @@ _syn.get_layer_data.argtypes = (c_void_p, c_char_p, c_char_p, c_char_p)
 _syn.get_connection_data.restype = CArray
 _syn.get_connection_data.argtypes = (c_void_p, c_char_p, c_char_p)
 _syn.get_weight_matrix.restype = CArray
-_syn.get_weight_matrix.argtypes = (c_void_p, c_char_p, c_int)
+_syn.get_weight_matrix.argtypes = (c_void_p, c_char_p, c_char_p)
 
 _syn.run.restype = c_void_p
 _syn.run.argtypes = (c_void_p, c_void_p, c_void_p, c_void_p)
@@ -306,10 +306,10 @@ class Network(CObject):
         return build_array(
             _syn.get_connection_data(self.state, connection, key))
 
-    def get_weight_matrix(self, connection, index=0):
+    def get_weight_matrix(self, connection, key="weights"):
         if self.state is None: self.build_state()
         return build_array(
-            _syn.get_weight_matrix(self.state, connection, index))
+            _syn.get_weight_matrix(self.state, connection, key))
 
     def run(self, environment, args=dict()):
         # Build state

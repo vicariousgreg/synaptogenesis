@@ -7,6 +7,7 @@
 #include "util/tools.h"
 
 REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich", BIT)
+bool __mat_dummy = NeuralModelBank::register_weight_matrix("leaky_izhikevich", IzhikevichWeightMatrix::build);
 
 /******************************************************************************/
 /************************** TRACE UPDATER KERNELS *****************************/
@@ -18,9 +19,11 @@ REGISTER_ATTRIBUTES(LeakyIzhikevichAttributes, "leaky_izhikevich", BIT)
 #define PLASTIC_TAU       0.95   // tau = 20
 
 #define UPDATE_EXTRACTIONS \
-    float *presyn_traces = weights + (3*num_weights); \
-    float *eligibilities = weights + (6*num_weights); \
-    int   *delays        = (int*)weights + (7*num_weights); \
+    IzhikevichWeightMatrix *matrix = \
+        (IzhikevichWeightMatrix*)synapse_data.matrix; \
+    float *presyn_traces   = matrix->presyn_traces.get(); \
+    float *eligibilities   = matrix->eligibilities.get(); \
+    int   *delays = matrix->delays.get(); \
 \
     LeakyIzhikevichAttributes *att = \
         (LeakyIzhikevichAttributes*)synapse_data.attributes; \
