@@ -57,11 +57,6 @@ void Cluster::wait_for_output() {
 
 Cluster *build_cluster(Structure *structure,
         State *state, Engine *engine, PropertyConfig args) {
-    if (not state->check_compatibility(structure))
-        LOG_ERROR(
-            "Error building cluster for " + structure->str() + ":\n"
-            "  Cluster compatibility conflict detected!");
-
     switch (structure->cluster_type) {
         case PARALLEL:
             return new ParallelCluster(structure, state, engine, args);

@@ -5,7 +5,7 @@
 
 class PerceptronAttributes : public Attributes {
     public:
-        PerceptronAttributes(LayerList &layers);
+        PerceptronAttributes(Layer *layer);
 
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);

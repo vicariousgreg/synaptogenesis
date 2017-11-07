@@ -75,47 +75,23 @@ State::State(Network *network) : network(network), on_host(true) {
                 "\" in " + layer->str());
 
     // Create attributes and weight matrices
-    for (auto device_id : active_devices) {
-        attributes[device_id] = std::map<std::string, Attributes*>();
-        for (auto neural_model : NeuralModelBank::get_neural_models()) {
-            LayerList layers;
-            for (auto layer : network->get_layers(neural_model))
-                if (layer_devices[layer] == device_id)
-                    layers.push_back(layer);
+    for (auto pair : this->layer_devices) {
+        auto layer = pair.first;
+        auto device_id = pair.second;
 
-            if (layers.size() == 0) {
-                attributes[device_id][neural_model] = nullptr;
-            } else {
-                auto att = NeuralModelBank::build_attributes(
-                    layers, neural_model);
-                att->set_device_id(device_id);
-                attributes[device_id][neural_model] = att;
+        auto att = NeuralModelBank::build_attributes(layer);
+        if (not att->check_compatibility(layer->structure->cluster_type))
+            LOG_ERROR(
+                "Error building attributes for " + layer->str() + ":\n"
+                "  Cluster compatibility conflict detected!");
+        att->process_weight_matrices();
+        attributes[layer] = att;
 
-                // Retrieve pointers
-                for (auto ptr : att->get_pointers())
-                    network_pointers[device_id].push_back(ptr);
-                for (auto pair : att->get_pointer_map())
-                    pointer_map[pair.first] = pair.second;
-
-                // Set up weight matrices
-                for (auto& layer : layers) {
-                    for (auto& conn : layer->get_input_connections()) {
-                        WeightMatrix* matrix =
-                            NeuralModelBank::build_weight_matrix(
-                                conn, neural_model);
-                        matrix->set_device_id(device_id);
-                        att->process_weight_matrix(matrix);
-                        this->weight_matrices[conn] = matrix;
-
-                        // Retrieve pointers
-                        for (auto ptr : matrix->get_pointers())
-                            network_pointers[device_id].push_back(ptr);
-                        for (auto pair : matrix->get_pointer_map())
-                            pointer_map[pair.first] = pair.second;
-                    }
-                }
-            }
-        }
+        // Retrieve pointers
+        for (auto ptr : att->get_pointers())
+            network_pointers[device_id].push_back(ptr);
+        for (auto pair : att->get_pointer_map())
+            pointer_map[pair.first] = pair.second;
     }
 
     // Create buffers
@@ -169,11 +145,7 @@ State::State(Network *network) : network(network), on_host(true) {
 }
 
 State::~State() {
-    for (auto pair : attributes)
-        for (auto neural_model : NeuralModelBank::get_neural_models())
-            if (pair.second[neural_model] != nullptr)
-                delete pair.second[neural_model];
-    for (auto matrix : weight_matrices) delete matrix.second;
+    for (auto pair : attributes) delete pair.second;
     for (auto buffer : internal_buffers) delete buffer.second;
     for (auto map : inter_device_buffers)
         for (auto pair : map.second)
@@ -192,10 +164,8 @@ void State::transfer_to_device() {
     DeviceID host_id = res_man->get_host_id();
 
     // Transpose device-bound matrices
-    for (auto pair : weight_matrices)
-        if (not ResourceManager::get_instance()
-                ->is_host(pair.second->get_device_id()))
-            pair.second->transpose(true);
+    for (auto pair : attributes)
+        pair.second->transpose_weight_matrices(layer_devices.at(pair.first));
 
     // Accumulate new data block pointers
     std::set<BasePointer*> new_data_block_pointers;
@@ -217,14 +187,8 @@ void State::transfer_to_device() {
     }
 
     // Transfer attributes
-    for (auto n : NeuralModelBank::get_neural_models())
-        for (auto pair : attributes)
-            if (pair.second[n] != nullptr)
-                pair.second[n]->transfer_to_device();
-
-    // Transfer weight matrices
-    for (auto pair : weight_matrices)
-        pair.second->transfer_to_device();
+    for (auto pair : attributes)
+        pair.second->transfer(layer_devices.at(pair.first));
 
     // Free old data block pointers and replace with new ones
     for (auto ptr : data_block_pointers) ptr->free();
@@ -238,21 +202,14 @@ void State::transfer_to_host() {
 #ifdef __CUDACC__
     if (on_host) return;
 
-    // Transfer attributes
-    for (auto n : NeuralModelBank::get_neural_models())
-        for (auto pair : attributes)
-            if (pair.second[n] != nullptr)
-                pair.second[n]->transfer_to_host();
+    auto res_man = ResourceManager::get_instance();
+    DeviceID host_id = res_man->get_host_id();
 
-    // Transfer weight matrices
-    for (auto pair : weight_matrices)
-        pair.second->transfer_to_host();
+    // Transfer attributes
+    for (auto pair : attributes) pair.second->transfer(host_id);
 
     // Accumulate new data block pointers
     std::set<BasePointer*> new_data_block_pointers;
-
-    auto res_man = ResourceManager::get_instance();
-    DeviceID host_id = res_man->get_host_id();
 
     // Transfer network pointers
     for (auto pair : network_pointers) {
@@ -275,10 +232,8 @@ void State::transfer_to_host() {
     data_block_pointers = new_data_block_pointers;
 
     // Transpose device-bound matrices
-    for (auto pair : weight_matrices)
-        if (not ResourceManager::get_instance()
-                ->is_host(pair.second->get_device_id()))
-            pair.second->transpose(false);
+    for (auto pair : attributes)
+        pair.second->transpose_weight_matrices(host_id);
 
     on_host = true;
 #endif
@@ -333,8 +288,7 @@ void State::save(std::string file_name, bool verbose) {
 
     for (auto pair : pointer_map) {
         size_t bytes = pair.first.bytes;
-        size_t offset = pair.first.offset;
-        const char* data = (const char*)pair.second->get(offset);
+        const char* data = (const char*)pair.second->get();
 
         if (not output_file.write((const char*)&pair.first, sizeof(PointerKey)))
             LOG_ERROR(
@@ -370,14 +324,14 @@ void State::load(std::string file_name, bool verbose) {
     unsigned long read = 0;
 
     while (read < length) {
-        PointerKey key(0,0,0,0);
+        PointerKey key(0,0,0);
         if (not input_file.read((char*)&key, sizeof(PointerKey)))
             LOG_ERROR(
                 "Error reading pointer key from file!");
 
         char* ptr;
         try {
-            ptr = (char*) pointer_map.at(key)->get(key.offset);
+            ptr = (char*) pointer_map.at(key)->get();
         } catch (...) {
             LOG_WARNING(
                 "Error retrieving pointer -- continuing...");
@@ -397,22 +351,10 @@ void State::load(std::string file_name, bool verbose) {
     input_file.close();
 }
 
-bool State::check_compatibility(Structure *structure) {
-    // Check relevant attributes for compatibility
-    for (auto n : NeuralModelBank::get_neural_models())
-        for (auto pair : attributes)
-            if (structure->contains(n) and pair.second[n] and not
-                    pair.second[n]->check_compatibility(
-                        structure->cluster_type))
-                return false;
-    return true;
-}
-
 /* Zoo of Getters */
 Pointer<float> State::get_input(Layer *layer, int register_index) const {
     try {
-        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
-            ->get_input(layer->id, register_index);
+        return attributes.at(layer)->get_input(register_index);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get input data in State for "
@@ -423,7 +365,8 @@ Pointer<float> State::get_input(Layer *layer, int register_index) const {
 
 Pointer<float> State::get_second_order_weights(DendriticNode *node) const {
     try {
-        return weight_matrices.at(node->get_second_order_connection())
+        return attributes.at(node->to_layer)
+            ->get_weight_matrix(node->get_second_order_connection())
             ->get_second_order_weights();
     } catch (std::out_of_range) {
         LOG_ERROR(
@@ -434,8 +377,7 @@ Pointer<float> State::get_second_order_weights(DendriticNode *node) const {
 
 Pointer<Output> State::get_expected(Layer *layer) const {
     try {
-        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
-            ->get_expected(layer->id);
+        return attributes.at(layer)->get_expected();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get expected data in State for "
@@ -445,8 +387,7 @@ Pointer<Output> State::get_expected(Layer *layer) const {
 
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
     try {
-        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
-            ->get_output(layer->id, word_index);
+        return attributes.at(layer)->get_output(word_index);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get output data in State for "
@@ -485,32 +426,9 @@ DeviceID State::get_device_id(Layer *layer) const {
     }
 }
 
-int State::get_layer_index(Layer *layer) const {
-    try {
-        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
-            ->get_layer_index(layer->id);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to get layer index in State for "
-            "layer: " + layer->str());
-    }
-}
-
-int State::get_other_start_index(Layer *layer) const {
-    try {
-        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
-            ->get_other_start_index(layer->id);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to get 'other start index' in State for "
-            "layer: " + layer->str());
-    }
-}
-
 const Attributes* State::get_attributes_pointer(Layer *layer) const {
     try {
-        return attributes.at(layer_devices.at(layer))
-                         .at(layer->neural_model)->pointer;
+        return attributes.at(layer)->pointer;
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get Attributes pointer in State for "
@@ -520,8 +438,7 @@ const Attributes* State::get_attributes_pointer(Layer *layer) const {
 
 Kernel<ATTRIBUTE_ARGS> State::get_attribute_kernel(Layer *layer) const {
     try {
-        return attributes.at(layer_devices.at(layer))
-                         .at(layer->neural_model)->get_kernel();
+        return attributes.at(layer)->get_kernel();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get Attribute kernel in State for "
@@ -531,8 +448,7 @@ Kernel<ATTRIBUTE_ARGS> State::get_attribute_kernel(Layer *layer) const {
 
 Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
     try {
-        return attributes.at(layer_devices.at(layer))
-                         .at(layer->neural_model)->get_learning_kernel();
+        return attributes.at(layer)->get_learning_kernel();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get Attribute learning kernel in State for "
@@ -542,7 +458,7 @@ Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
 
 Pointer<float> State::get_weights(Connection* conn) const {
     try {
-        return weight_matrices.at(conn)->get_weights();
+        return attributes.at(conn->to_layer)->get_weight_matrix(conn)->get_weights();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get weight matrix in State for "
@@ -551,7 +467,7 @@ Pointer<float> State::get_weights(Connection* conn) const {
 }
 const WeightMatrix* State::get_matrix_pointer(Connection* conn) const {
     try {
-        return weight_matrices.at(conn)->pointer;
+        return attributes.at(conn->to_layer)->get_weight_matrix(conn)->pointer;
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get weight matrix in State for "
@@ -567,9 +483,7 @@ EXTRACTOR State::get_connection_extractor(Connection *conn) const {
 
 Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
     try {
-        return attributes.at(layer_devices.at(conn->to_layer))
-                         .at(conn->to_layer->neural_model)
-                         ->get_activator(conn);
+        return attributes.at(conn->to_layer)->get_activator(conn);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get activator in State for "
@@ -579,9 +493,7 @@ Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
 
 Kernel<SYNAPSE_ARGS> State::get_updater(Connection *conn) const {
     try {
-        return attributes.at(layer_devices.at(conn->to_layer))
-                         .at(conn->to_layer->neural_model)
-                         ->get_updater(conn);
+        return attributes.at(conn->to_layer)->get_updater(conn);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get updater in State for "
@@ -621,8 +533,7 @@ BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
 
     /*
     try {
-        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
-            ->get_neuron_data(layer->id, key);
+        return attributes.at(layer)->get_neuron_data(layer->id, key);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get neuron \"" + key + "\" data in State for "
@@ -638,8 +549,7 @@ BasePointer* State::get_layer_data(Layer *layer, std::string key) {
 
     /*
     try {
-        return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
-            ->get_layer_data(layer->id, key);
+        return attributes.at(layer)->get_layer_data(layer->id, key);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get layer \"" + key + "\" data in State for "
@@ -655,9 +565,7 @@ BasePointer* State::get_connection_data(Connection *conn, std::string key) {
 
     /*
     try {
-        return attributes.at(layer_devices.at(conn->to_layer))
-                         .at(conn->to_layer->neural_model)
-                         ->get_connection_data(conn->id, key);
+        return attributes.at(layer)->get_connection_data(conn->id, key);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get connection \"" + key + "\" data in State for "
@@ -669,7 +577,7 @@ BasePointer* State::get_connection_data(Connection *conn, std::string key) {
 BasePointer* State::get_weight_matrix(Connection *conn, std::string key) {
     transfer_to_host();
     try {
-        return weight_matrices.at(conn)->get_layer(key);
+        return attributes.at(conn->to_layer)->get_weight_matrix(conn)->get_layer(key);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get weight matrix data in State for "

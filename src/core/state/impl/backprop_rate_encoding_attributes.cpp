@@ -12,8 +12,8 @@ Kernel<SYNAPSE_ARGS> BackpropRateEncodingAttributes::get_updater(
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-BackpropRateEncodingAttributes::BackpropRateEncodingAttributes(LayerList &layers)
-        : RateEncodingAttributes(layers) {
+BackpropRateEncodingAttributes::BackpropRateEncodingAttributes(Layer *layer)
+        : RateEncodingAttributes(layer) {
     this->error_deltas = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("error deltas", &error_deltas);
 }

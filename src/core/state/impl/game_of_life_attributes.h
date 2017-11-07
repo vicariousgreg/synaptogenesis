@@ -5,12 +5,12 @@
 
 class GameOfLifeAttributes : public Attributes {
     public:
-        GameOfLifeAttributes(LayerList &layers);
+        GameOfLifeAttributes(Layer *layer);
 
-    Pointer<int> survival_mins;
-    Pointer<int> survival_maxs;
-    Pointer<int> birth_mins;
-    Pointer<int> birth_maxs;
+    int survival_min;
+    int survival_max;
+    int birth_min;
+    int birth_max;
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

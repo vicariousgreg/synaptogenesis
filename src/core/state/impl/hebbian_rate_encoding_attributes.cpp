@@ -93,5 +93,5 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-HebbianRateEncodingAttributes::HebbianRateEncodingAttributes(LayerList &layers)
-        : RateEncodingAttributes(layers) { }
+HebbianRateEncodingAttributes::HebbianRateEncodingAttributes(Layer *layer)
+        : RateEncodingAttributes(layer) { }

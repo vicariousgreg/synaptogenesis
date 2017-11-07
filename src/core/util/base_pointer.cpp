@@ -51,24 +51,26 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
 
         if (this->owner) std::free(this->ptr);
         this->ptr = destination;
-        this->local = false;
         this->owner = transfer_ownership;
         this->device_id = new_device;
     } else {
-        if (not host_dest)
-            LOG_ERROR(
-                "Attempted to transfer device pointer to device!");
-
         cudaSetDevice(this->device_id);
-        cudaMemcpy(destination, this->ptr, this->size * this->unit_size,
-            cudaMemcpyDeviceToHost);
+        if (host_dest) {
+            cudaMemcpy(destination, this->ptr, this->size * this->unit_size,
+                cudaMemcpyDeviceToHost);
+        } else {
+            cudaMemcpyPeer(destination, new_device,
+                this->ptr, this->device_id,
+                this->size * this->unit_size);
+            device_synchronize();
+        }
 
         if (this->owner) cudaFree(this->ptr);
         this->ptr = destination;
-        this->local = true;
         this->owner = transfer_ownership;
         this->device_id = new_device;
     }
+    this->local = host_dest;
 #endif
 }
 

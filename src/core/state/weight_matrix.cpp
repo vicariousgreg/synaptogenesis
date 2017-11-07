@@ -99,6 +99,7 @@ static void initialize_weights(const PropertyConfig config,
 WeightMatrix::WeightMatrix(Connection* conn)
     : connection(conn),
       device_id(ResourceManager::get_instance()->get_host_id()),
+      transposed(false),
       pointer(this),
       num_weights(conn->get_num_weights()),
       weights(Pointer<float>(num_weights)),
@@ -121,56 +122,58 @@ WeightMatrix::~WeightMatrix() {
 #endif
 }
 
-void WeightMatrix::transpose(bool to_device) {
-    // If num_weights == to_layer size, transposition is a no-op.
-    if (num_weights == connection->to_layer->size) return;
+void WeightMatrix::transpose(DeviceID dest_device) {
+    bool dest_host = ResourceManager::get_instance()->is_host(dest_device);
 
-    // If the matrix is bound for the device, rows correspond to destination
+    // Only transpose if necessary
+    // If num_weights == to_layer size, transposition is a no-op.
+    if ((dest_host and not transposed)
+        or (not dest_host and transposed)
+        or (num_weights == connection->to_layer->size)) return;
+
+    // If the matrix is bound for a device, rows correspond to destination
     //   neurons.  Otherwise, the transposition has already been carried out,
     //   so the rows/columns need to be switched.
     int original_rows, original_cols;
-    if (to_device) {
-        original_rows = connection->to_layer->size;
-        original_cols = num_weights / original_rows;
-    } else {
+    if (dest_host) {
         original_cols = connection->to_layer->size;
         original_rows = num_weights / original_cols;
+    } else {
+        original_rows = connection->to_layer->size;
+        original_cols = num_weights / original_rows;
     }
 
     transpose_matrix<float>(this->weights.get(), original_rows, original_cols);
     for (auto pair : variables)
         transpose_matrix<float>((float*)pair.second->get(), original_rows, original_cols);
+    this->transposed = not this->transposed;
 }
 
-void WeightMatrix::transfer_to_device() {
+void WeightMatrix::transfer(DeviceID new_device) {
 #ifdef __CUDACC__
-    // Copy attributes to device and set the pointer
-    if (not ResourceManager::get_instance()->is_host(device_id)) {
-        cudaSetDevice(device_id);
+    if (device_id == new_device) return;
 
-        // Transfer to device
-        this->pointer = (WeightMatrix*)
-            ResourceManager::get_instance()->allocate_device(
-                1, get_object_size(), this, device_id);
-    }
-#endif
-}
+    auto host_id = ResourceManager::get_instance()->get_host_id();
+    if (device_id != host_id and new_device != host_id)
+        LOG_ERROR("Cannot transfer attributes directly between devices!");
 
-void WeightMatrix::transfer_to_host() {
-#ifdef __CUDACC__
-    // Copy attributes to device and set the pointer
-    if (not ResourceManager::get_instance()->is_host(device_id)
-            and this != this->pointer) {
-        cudaSetDevice(device_id);
-
+    if (new_device == host_id) {
         // Transfer to host
         cudaMemcpy(this, this->pointer, get_object_size(), cudaMemcpyDeviceToHost);
 
-        // If previously transferred, free old copy
-        if (this->pointer != this)
-            cudaFree(this->pointer);
+        // Free old device copy
+        cudaSetDevice(device_id);
+        cudaFree(this->pointer);
         this->pointer = this;
+    } else {
+        // Transfer to device
+        cudaSetDevice(new_device);
+        this->pointer = (WeightMatrix*)
+            ResourceManager::get_instance()->allocate_device(
+                1, get_object_size(), this, new_device);
     }
+
+    device_check_error("Failed to transfer attributes to device!");
 #endif
 }
 
@@ -195,15 +198,15 @@ std::vector<BasePointer*> WeightMatrix::get_pointers() {
 
 std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
     std::map<PointerKey, BasePointer*> pointers;
-    pointers[PointerKey(connection->id, "weights", weights.get_bytes(), 0)] = &weights;
+    pointers[PointerKey(connection->id, "weights", weights.get_bytes())] = &weights;
     if (connection->second_order_host)
         pointers[PointerKey(connection->id, "second order weights",
-            second_order_weights.get_bytes(), 0)] = &second_order_weights;
+            second_order_weights.get_bytes())] = &second_order_weights;
 
     for (auto pair : variables)
         pointers[PointerKey(
             connection->id, pair.first,
-            pair.second->get_bytes(), 0)] = pair.second;
+            pair.second->get_bytes())] = pair.second;
     return pointers;
 }
 

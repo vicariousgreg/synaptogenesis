@@ -5,7 +5,7 @@
 
 class IzhikevichAttributes : public Attributes {
     public:
-        IzhikevichAttributes(LayerList &layers);
+        IzhikevichAttributes(Layer *layer);
 
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);

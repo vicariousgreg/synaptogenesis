@@ -13,7 +13,7 @@ class WeightMatrix;
 
 /* Typedef for subclass build method
  * This can't be virtual because it's a class method */
-typedef Attributes* (*ATT_BUILD_PTR)(LayerList &layers);
+typedef Attributes* (*ATT_BUILD_PTR)(Layer *layer);
 typedef WeightMatrix* (*MAT_BUILD_PTR)(Connection *conn);
 
 class NeuralModelBank {
@@ -32,12 +32,10 @@ class NeuralModelBank {
             MAT_BUILD_PTR build_ptr);
 
         // Builds an instance of an Attributes subclass by name
-        static Attributes *build_attributes(
-            LayerList &layers, std::string neural_model);
+        static Attributes *build_attributes(Layer *layer);
 
         // Builds an instance of a WeightMatrix subclass by name
-        static WeightMatrix *build_weight_matrix(
-            Connection *conn, std::string neural_model);
+        static WeightMatrix *build_weight_matrix(Connection *conn);
 
     protected:
         static NeuralModelBank *instance;

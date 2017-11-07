@@ -5,7 +5,7 @@
 
 class RelayAttributes : public Attributes {
     public:
-        RelayAttributes(LayerList &layers);
+        RelayAttributes(Layer *layer);
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

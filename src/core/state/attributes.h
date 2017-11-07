@@ -22,7 +22,7 @@ typedef void(*ATTRIBUTE_KERNEL)(ATTRIBUTE_ARGS);
 
 class Attributes {
     public:
-        Attributes(LayerList &layers, OutputType output_type);
+        Attributes(Layer *layer, OutputType output_type);
         virtual ~Attributes();
 
         /* Checks whether these attributes are compatible
@@ -34,8 +34,7 @@ class Attributes {
         // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
         std::map<PointerKey, BasePointer*> get_pointer_map();
-        void transfer_to_device();
-        void transfer_to_host();
+        void transfer(DeviceID new_device);
 
         /* Learning Rule functions */
         // Activator Kernel
@@ -49,24 +48,27 @@ class Attributes {
         }
 
         // Weight matrix processor
+        void process_weight_matrices();
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
+        void transpose_weight_matrices(DeviceID dest_device);
+        WeightMatrix *get_weight_matrix(Connection *conn)
+            { return weight_matrices.at(conn); }
 
         // Layer data retrieval
-        int get_layer_index(size_t id) const;
-        int get_other_start_index(size_t id) const;
-        Pointer<float> get_input(size_t id, int register_index = 0) const;
-        Pointer<Output> get_output(size_t id, int word_index = 0) const;
-        Pointer<Output> get_expected(size_t id) const;
+        Pointer<float> get_input(int register_index = 0) const;
+        Pointer<Output> get_output(int word_index = 0) const;
+        Pointer<Output> get_expected() const;
 
         // Getters for external use
-        BasePointer* get_neuron_data(size_t id, std::string key);
-        BasePointer* get_layer_data(size_t id, std::string key);
+        BasePointer* get_neuron_data(std::string key);
 
         // Neuron IO data
         const OutputType output_type;
         Pointer<Output> output;
         Pointer<Output> expected;
         Pointer<float> input;
+
+        Layer * const layer;
 
         // Pointer to this object
         // If parallel, this will point to the device copy
@@ -78,7 +80,6 @@ class Attributes {
             return Kernel<ATTRIBUTE_ARGS>(nullptr, nullptr);
         }
 
-        void set_device_id(DeviceID id) { this->device_id = id; }
         DeviceID get_device_id() { return device_id; }
 
         // Gets the output type of a layer based on its neural model
@@ -104,22 +105,13 @@ class Attributes {
         void register_neuron_variable(std::string key, BasePointer* ptr);
         void register_layer_variable(std::string key, BasePointer* ptr);
 
-        // Number of neurons, layers, and connections
-        int total_neurons;
-        int total_layers;
-        int total_connections;
-
         DeviceID device_id;
 
         // Managed pointers
         std::map<std::string, BasePointer*> neuron_variables;
-        std::map<std::string, BasePointer*> layer_variables;
 
-        std::map<size_t, int> layer_indices;
-        std::map<size_t, int> other_start_indices;
-        std::map<size_t, int> input_start_indices;
-        std::map<size_t, int> output_start_indices;
-        std::map<size_t, int> layer_sizes;
+        // Weight Matrices
+        std::map<Connection*, WeightMatrix*> weight_matrices;
 };
 
 /* Macros for Attribute subclass Registry */
@@ -131,14 +123,14 @@ static bool __att_dummy = \
 std::string CLASS_NAME::get_neural_model() {return STRING; } \
 int CLASS_NAME::get_object_size() { return sizeof(CLASS_NAME); } \
 \
-Attributes *CLASS_NAME::build(LayerList &layers) { \
-    return new CLASS_NAME(layers); \
+Attributes *CLASS_NAME::build(Layer *layer) { \
+    return new CLASS_NAME(layer); \
 }
 
 // Put this one in .h at bottom of class definition
 #define ATTRIBUTE_MEMBERS \
     public: \
-        static Attributes *build(LayerList &layers); \
+        static Attributes *build(Layer *layer); \
     protected: \
         virtual std::string get_neural_model(); \
         virtual int get_object_size();
@@ -160,8 +152,6 @@ Attributes *CLASS_NAME::build(LayerList &layers) { \
     const Attributes *att = attribute_data.attributes; \
     float *inputs = attribute_data.input.get(); \
     Output *outputs = attribute_data.output.get(); \
-    int layer_index = attribute_data.layer_index; \
-    int other_start_index = attribute_data.other_start_index; \
     int size = attribute_data.size; \
     int history_size = attribute_data.history_size; \
     bool plastic = attribute_data.plastic;

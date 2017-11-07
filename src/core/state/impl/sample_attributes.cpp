@@ -22,29 +22,18 @@ REGISTER_WEIGHT_MATRIX(SampleWeightMatrix, "sample")
  * The output type (ie BIT for spiking or FLOAT for rate encoding) is passed
  *   to the Attributes superclass constructor.
  */
-SampleAttributes::SampleAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT) {  // FLOAT indicates the output type
+SampleAttributes::SampleAttributes(Layer *layer)
+        : Attributes(layer, FLOAT) {  // FLOAT indicates the output type
 
-    // Here's where you construct and register variables
-    this->layer_variable = create_layer_variable<float>(0.0);
-    register_layer_variable("layer_var", &layer_variable);
+    /* Here's where you construct, register, and initialize variables */
+    // Layer Variables
+    this->layer_variable = 0.0;
 
+    // Neuron Variables
     this->neuron_variable = create_neuron_variable<float>(0.0);
     register_neuron_variable("neuron_var", &neuron_variable);
-
-    // Here's where you initialize variables
-    int start_index = 0;
-    for (auto& layer : layers) {
-        // Layer Variables
-        layer_variable[layer_indices[layer->id]] = 0.0;
-
-        // Neuron Variables
-        for (int nid = 0 ; nid < layer->size ; ++nid) {
-            neuron_variable[start_index + nid] = 0.0;
-        }
-
-        start_index += layer->size;
-    }
+    for (int nid = 0 ; nid < layer->size ; ++nid)
+        neuron_variable[nid] = 0.0;
 }
 
 void SampleWeightMatrix::register_variables() {
@@ -131,11 +120,8 @@ BUILD_ATTRIBUTE_KERNEL(SampleAttributes, sample_attribute_kernel,
     // Cast the attributes pointer to the subclass type
     SampleAttributes *sample_att = (SampleAttributes*)att;
 
-    // Layer index can be used to index into layer variables
-    float layer_var = *sample_att->layer_variable.get(layer_index);
-
-    // other_start_index is used to index into neuron variables
-    float* neuron_var = sample_att->neuron_variable.get(other_start_index);
+    float layer_var = sample_att->layer_variable;
+    float* neuron_var = sample_att->neuron_variable.get();
 
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience

@@ -36,29 +36,29 @@ DEF_PARAM(THALAMO_CORTICAL , 0.02, 0.25, -65.0, 0.05); // Thalamo-cortical
 DEF_PARAM(RESONATOR        , 0.1 , 0.26, -65.0, 2   ); // Resonator
 
 static void create_parameters(std::string str,
-        float* as, float* bs, float* cs, float* ds, int offset, int size) {
+        float* as, float* bs, float* cs, float* ds, int size) {
     if (str == "random positive") {
         // (ai; bi) = (0:02; 0:2) and (ci; di) = (-65; 8) + (15;-6)r2
-        for (int i = offset ; i < offset+size ; ++i) as[i] = 0.02;
+        for (int i = 0 ; i < size ; ++i) as[i] = 0.02;
 
         // increase for higher frequency oscillations
-        for (int i = offset ; i < offset+size ; ++i) bs[i] = 0.2;
+        for (int i = 0 ; i < size ; ++i) bs[i] = 0.2;
 
-        for (int i = offset ; i < offset+size ; ++i)
+        for (int i = 0 ; i < size ; ++i)
             cs[i] = -65.0 + (15.0 * pow(fRand(), 2));
 
-        for (int i = offset ; i < offset+size ; ++i)
+        for (int i = 0 ; i < size ; ++i)
             ds[i] = 8.0 - (6.0 * pow(fRand(), 2));
     } else if (str == "random negative") {
         //(ai; bi) = (0:02; 0:25) + (0:08;-0:05)ri and (ci; di)=(-65; 2).
-        for (int i = offset ; i < offset+size ; ++i)
+        for (int i = 0 ; i < size ; ++i)
             as[i] = 0.02 + (0.08 * fRand());
 
-        for (int i = offset ; i < offset+size ; ++i)
+        for (int i = 0 ; i < size ; ++i)
             bs[i] = 0.25 - (0.05 * fRand());
 
-        for (int i = offset ; i < offset+size ; ++i) cs[i] = -65.0;
-        for (int i = offset ; i < offset+size ; ++i) ds[i] = 2.0;
+        for (int i = 0 ; i < size ; ++i) cs[i] = -65.0;
+        for (int i = 0 ; i < size ; ++i) ds[i] = 2.0;
     } else {
         IzhikevichParameters params(0,0,0,0);
         if (str == "default")                 params = DEFAULT;
@@ -74,10 +74,10 @@ static void create_parameters(std::string str,
                 "Unrecognized parameter string: " + str);
 
 
-        for (int i = offset ; i < offset+size ; ++i) as[i] = params.a;
-        for (int i = offset ; i < offset+size ; ++i) bs[i] = params.b;
-        for (int i = offset ; i < offset+size ; ++i) cs[i] = params.c;
-        for (int i = offset ; i < offset+size ; ++i) ds[i] = params.d;
+        for (int i = 0 ; i < size ; ++i) as[i] = params.a;
+        for (int i = 0 ; i < size ; ++i) bs[i] = params.b;
+        for (int i = 0 ; i < size ; ++i) cs[i] = params.c;
+        for (int i = 0 ; i < size ; ++i) ds[i] = params.d;
     }
 }
 
@@ -107,22 +107,22 @@ static void create_parameters(std::string str,
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
 
-    float *ampa_conductances = iz_att->ampa_conductance.get(other_start_index);
-    float *nmda_conductances = iz_att->nmda_conductance.get(other_start_index);
-    float *gabaa_conductances = iz_att->gabaa_conductance.get(other_start_index);
-    float *gabab_conductances = iz_att->gabab_conductance.get(other_start_index);
-    float *multiplicative_factors = iz_att->multiplicative_factor.get(other_start_index);
-    float *dopamines = iz_att->dopamine.get(other_start_index);
-    float *acetylcholines = iz_att->acetylcholine.get(other_start_index);
+    float *ampa_conductances = iz_att->ampa_conductance.get();
+    float *nmda_conductances = iz_att->nmda_conductance.get();
+    float *gabaa_conductances = iz_att->gabaa_conductance.get();
+    float *gabab_conductances = iz_att->gabab_conductance.get();
+    float *multiplicative_factors = iz_att->multiplicative_factor.get();
+    float *dopamines = iz_att->dopamine.get();
+    float *acetylcholines = iz_att->acetylcholine.get();
 
-    float *voltages = iz_att->voltage.get(other_start_index);
-    float *recoveries = iz_att->recovery.get(other_start_index);
-    float *postsyn_traces = iz_att->postsyn_trace.get(other_start_index);
+    float *voltages = iz_att->voltage.get();
+    float *recoveries = iz_att->recovery.get();
+    float *postsyn_traces = iz_att->postsyn_trace.get();
     unsigned int *spikes = (unsigned int*)outputs;
-    float *as = iz_att->as.get(other_start_index);
-    float *bs = iz_att->bs.get(other_start_index);
-    float *cs = iz_att->cs.get(other_start_index);
-    float *ds = iz_att->ds.get(other_start_index);
+    float *as = iz_att->as.get();
+    float *bs = iz_att->bs.get();
+    float *cs = iz_att->cs.get();
+    float *ds = iz_att->ds.get();
 
     ,
 
@@ -253,12 +253,12 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     int   *delays = matrix->delays.get();
 
 #define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
-    float *short_conductances = att->SHORT_NAME.get(synapse_data.to_start_index); \
+    float *short_conductances = att->SHORT_NAME.get(); \
     float short_tau = SHORT_TAU; \
     float *short_traces   = matrix->short_traces.get();
 
 #define ACTIV_EXTRACTIONS_LONG(LONG_NAME, LONG_TAU) \
-    float *long_conductances = att->LONG_NAME.get(synapse_data.to_start_index); \
+    float *long_conductances = att->LONG_NAME.get(); \
     float long_tau = LONG_TAU; \
     float *long_traces   = matrix->long_traces.get();
 
@@ -455,9 +455,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.attributes; \
-    float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
-    float *dopamines = att->dopamine.get(synapse_data.to_start_index); \
-    float *acetylcholines = att->acetylcholine.get(synapse_data.to_start_index); \
+    float *to_traces = att->postsyn_trace.get(); \
+    float *dopamines = att->dopamine.get(); \
+    float *acetylcholines = att->acetylcholine.get(); \
     float learning_rate = matrix->learning_rate; \
 
 #define GET_DEST_ACTIVITY \
@@ -584,8 +584,8 @@ static void check_parameters(Connection *conn) {
                 "Unrecognized connection parameter: " + pair.first);
 }
 
-IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
-        : Attributes(layers, BIT) {
+IzhikevichAttributes::IzhikevichAttributes(Layer *layer)
+        : Attributes(layer, BIT) {
     // Conductances
     this->ampa_conductance = Attributes::create_neuron_variable<float>();
     Attributes::register_neuron_variable("ampa", &ampa_conductance);
@@ -620,48 +620,43 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
     this->ds = Attributes::create_neuron_variable<float>();
     Attributes::register_neuron_variable("d", &ds);
 
-    // Fill in table
-    int start_index = 0;
-    for (auto& layer : layers) {
-        // Check layer parameters
-        check_parameters(layer);
+    // Check layer parameters
+    check_parameters(layer);
 
-        create_parameters(layer->get_parameter("init", "regular"),
-            this->as, this->bs, this->cs, this->ds, start_index, layer->size);
-        for (int j = 0 ; j < layer->size ; ++j) {
-            postsyn_trace[start_index+j] = 0.0;
+    create_parameters(layer->get_parameter("init", "regular"),
+        this->as, this->bs, this->cs, this->ds, layer->size);
+    for (int j = 0 ; j < layer->size ; ++j) {
+        postsyn_trace[j] = 0.0;
 
-            // Run simulation to stable point
-            float v = this->cs[start_index+j];
-            float r = this->bs[start_index+j] * this->cs[start_index+j];
-            float delta_v;
-            float delta_r;
-            float a = this->as[start_index+j];
-            float b = this->bs[start_index+j];
-            do {
-                delta_v = (0.04 * v * v) + (5*v) + 140 - r;
-                v += delta_v;
+        // Run simulation to stable point
+        float v = this->cs[j];
+        float r = this->bs[j] * this->cs[j];
+        float delta_v;
+        float delta_r;
+        float a = this->as[j];
+        float b = this->bs[j];
+        do {
+            delta_v = (0.04 * v * v) + (5*v) + 140 - r;
+            v += delta_v;
 
-                delta_r = a * ((b * v) - r);
-                r += delta_r;
-            } while (abs(delta_v) > 0.001 and abs(delta_r) > 0.001);
+            delta_r = a * ((b * v) - r);
+            r += delta_r;
+        } while (abs(delta_v) > 0.001 and abs(delta_r) > 0.001);
 
-            voltage[start_index+j] = v;
-            recovery[start_index+j] = r;
-        }
-        start_index += layer->size;
+        voltage[j] = v;
+        recovery[j] = r;
+    }
 
-        // Connection properties
-        for (auto& conn : layer->get_input_connections()) {
-            // Check connection parameters
-            check_parameters(conn);
+    // Connection properties
+    for (auto& conn : layer->get_input_connections()) {
+        // Check connection parameters
+        check_parameters(conn);
 
-            // Ensure gap junctions are self-connections
-            if (conn->type == GAP and conn->from_layer != conn->to_layer)
-                LOG_ERROR(
-                    "Error " + conn->str() + "\n"
-                    "Gap junctions must be between neurons of the same layer.");
-        }
+        // Ensure gap junctions are self-connections
+        if (conn->type == GAP and conn->from_layer != conn->to_layer)
+            LOG_ERROR(
+                "Error " + conn->str() + "\n"
+                "Gap junctions must be between neurons of the same layer.");
     }
 }
 

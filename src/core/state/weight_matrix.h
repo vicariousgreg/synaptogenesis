@@ -16,15 +16,13 @@ class WeightMatrix {
         Pointer<float> get_second_order_weights() const
             { return second_order_weights; }
         BasePointer* get_layer(std::string key);
-        void set_device_id(DeviceID id) { this->device_id = id; }
         DeviceID get_device_id() { return device_id; }
 
         // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
         std::map<PointerKey, BasePointer*> get_pointer_map();
-        void transpose(bool to_device);
-        void transfer_to_device();
-        void transfer_to_host();
+        void transpose(DeviceID dest_device);
+        void transfer(DeviceID new_device);
 
         // Subclasses implement this for variable registration
         virtual void register_variables() { }
@@ -49,6 +47,7 @@ class WeightMatrix {
         std::map<std::string, BasePointer*> variables;
 
         DeviceID device_id;
+        bool transposed;
 
         // Initialization
         void init();

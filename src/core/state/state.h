@@ -36,13 +36,8 @@ class State {
         void save(std::string file_name, bool verbose=false);
         void load(std::string file_name, bool verbose=false);
 
-        /* Checks if a structure's layers are compatible with its stream type */
-        bool check_compatibility(Structure *structure);
-
         /* Getters for layer related data */
         DeviceID get_device_id(Layer *layer) const;
-        int get_layer_index(Layer *layer) const;
-        int get_other_start_index(Layer *layer) const;
         Pointer<float> get_input(Layer *layer, int register_index = 0) const;
         Pointer<float> get_second_order_weights(DendriticNode *node) const;
         Pointer<Output> get_expected(Layer *layer) const;
@@ -80,8 +75,7 @@ class State {
         bool on_host;
         std::map<DeviceID, Buffer*> internal_buffers;
         std::map<DeviceID, std::map<int, Buffer*>> inter_device_buffers;
-        std::map<DeviceID, std::map<std::string, Attributes*>> attributes;
-        std::map<Connection*, WeightMatrix*> weight_matrices;
+        std::map<Layer*, Attributes*> attributes;
         std::map<Layer*, DeviceID> layer_devices;
 
         // Keep track of all pointers

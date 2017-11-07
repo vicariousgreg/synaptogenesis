@@ -5,7 +5,7 @@
 
 class DebugAttributes : public Attributes {
     public:
-        DebugAttributes(LayerList &layers);
+        DebugAttributes(Layer *layer);
 
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
@@ -13,8 +13,9 @@ class DebugAttributes : public Attributes {
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
         Pointer<float> connection_variable;
-        Pointer<float> layer_variable;
         Pointer<float> neuron_variable;
+
+        float layer_variable;
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

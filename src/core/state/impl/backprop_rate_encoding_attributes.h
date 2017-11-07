@@ -5,7 +5,7 @@
 
 class BackpropRateEncodingAttributes : public RateEncodingAttributes {
     public:
-        BackpropRateEncodingAttributes(LayerList &layers);
+        BackpropRateEncodingAttributes(Layer *layer);
 
         virtual bool check_compatibility(ClusterType cluster_type) {
             return cluster_type == FEEDFORWARD;

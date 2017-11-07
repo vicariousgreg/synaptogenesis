@@ -64,8 +64,7 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
 
 CALC_ALL(update_perceptron,
     float* expecteds =
-        (float*)(synapse_data.attributes
-            ->expected.get(synapse_data.to_start_index));
+        (float*)(synapse_data.attributes->expected.get());
     ,
     float delta = expecteds[to_index] - destination_outputs[to_index].f;
     ,
@@ -97,5 +96,5 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-PerceptronAttributes::PerceptronAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT) { }
+PerceptronAttributes::PerceptronAttributes(Layer *layer)
+        : Attributes(layer, FLOAT) { }

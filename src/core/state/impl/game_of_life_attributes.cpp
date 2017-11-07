@@ -14,10 +14,10 @@ REGISTER_ATTRIBUTES(GameOfLifeAttributes, "game_of_life", BIT)
 
 BUILD_ATTRIBUTE_KERNEL(GameOfLifeAttributes, gol_attribute_kernel,
     GameOfLifeAttributes *gol_att = (GameOfLifeAttributes*)att;
-    int survival_min = *gol_att->survival_mins.get(layer_index);
-    int survival_max = *gol_att->survival_maxs.get(layer_index);
-    int birth_min = *gol_att->birth_mins.get(layer_index);
-    int birth_max = *gol_att->birth_maxs.get(layer_index);
+    int survival_min = gol_att->survival_min;
+    int survival_max = gol_att->survival_max;
+    int birth_min = gol_att->birth_min;
+    int birth_max = gol_att->birth_max;
 
     ,
 
@@ -54,27 +54,10 @@ BUILD_ATTRIBUTE_KERNEL(GameOfLifeAttributes, gol_attribute_kernel,
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-GameOfLifeAttributes::GameOfLifeAttributes(LayerList &layers)
-        : Attributes(layers, BIT) {
-    this->survival_mins = Attributes::create_layer_variable<int>();
-    Attributes::register_layer_variable("survival mins", &survival_mins);
-    this->survival_maxs = Attributes::create_layer_variable<int>();
-    Attributes::register_layer_variable("survival maxs", &survival_maxs);
-    this->birth_mins = Attributes::create_layer_variable<int>();
-    Attributes::register_layer_variable("birth mins", &birth_mins);
-    this->birth_maxs = Attributes::create_layer_variable<int>();
-    Attributes::register_layer_variable("birth maxs", &birth_maxs);
-
-    for (auto& layer : layers) {
-        size_t layer_id = layer_indices[layer->id];
-
-        survival_mins[layer_id] =
-            std::stoi(layer->get_parameter("survival_min", "2"));
-        survival_maxs[layer_id] =
-            std::stoi(layer->get_parameter("survival_max", "3"));
-        birth_mins[layer_id] =
-            std::stoi(layer->get_parameter("birth_min", "3"));
-        birth_maxs[layer_id] =
-            std::stoi(layer->get_parameter("birth_max", "3"));
-    }
+GameOfLifeAttributes::GameOfLifeAttributes(Layer *layer)
+        : Attributes(layer, BIT) {
+    this->survival_min = std::stoi(layer->get_parameter("survival_min", "2"));
+    this->survival_max = std::stoi(layer->get_parameter("survival_max", "3"));
+    this->birth_min = std::stoi(layer->get_parameter("birth_min", "3"));
+    this->birth_max = std::stoi(layer->get_parameter("birth_max", "3"));
 }

@@ -18,8 +18,7 @@ REGISTER_WEIGHT_MATRIX(SOMWeightMatrix, "som")
 BUILD_ATTRIBUTE_KERNEL(SOMAttributes, som_attribute_kernel,
     SOMAttributes *som_att = (SOMAttributes*)att;
     float *f_outputs = (float*)outputs;
-    int *winner = som_att->winner.get(layer_index);
-    float rbf_scale = *som_att->rbf_scale.get(layer_index);
+    float rbf_scale = som_att->rbf_scale;
 
     float min = inputs[0];
     int min_node = 0;
@@ -29,7 +28,7 @@ BUILD_ATTRIBUTE_KERNEL(SOMAttributes, som_attribute_kernel,
             min_node = i;
         }
     }
-    *winner = min_node;
+    som_att->winner = min_node;
 
     ,
 
@@ -65,7 +64,7 @@ CALC_ALL(update_som,
     float learning_rate = som_mat->learning_rate;
     float neighbor_learning_rate = som_mat->neighbor_learning_rate;
     int neighborhood_size = som_mat->neighborhood_size;
-    int winner = *som_att->winner.get(synapse_data.to_layer_index);
+    int winner = som_att->winner;
 
     int winner_row = winner / to_columns;
     int winner_col = winner % to_columns;,
@@ -117,18 +116,10 @@ Kernel<SYNAPSE_ARGS> SOMAttributes::get_updater(Connection *conn) {
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-SOMAttributes::SOMAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT) {
-    this->winner = Attributes::create_layer_variable<int>(0.0);
-    Attributes::register_layer_variable("winner", &winner);
-
-    this->rbf_scale = Attributes::create_layer_variable<float>(0.0);
-    Attributes::register_layer_variable("rbf scale", &rbf_scale);
-
-    for (auto layer : layers) {
-        rbf_scale[layer_indices[layer->id]] =
-            std::stof(layer->get_parameter("rbf scale", "1"));
-    }
+SOMAttributes::SOMAttributes(Layer *layer)
+        : Attributes(layer, FLOAT) {
+    this->winner = 0;
+    this->rbf_scale = std::stof(layer->get_parameter("rbf scale", "1"));
 }
 
 void SOMAttributes::process_weight_matrix(WeightMatrix* matrix) {

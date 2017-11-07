@@ -43,18 +43,18 @@ bool NeuralModelBank::register_weight_matrix(std::string neural_model,
     return true;
 }
 
-Attributes* NeuralModelBank::build_attributes(LayerList &layers,
-        std::string neural_model) {
+Attributes* NeuralModelBank::build_attributes(Layer *layer) {
+    auto neural_model = layer->neural_model;
     try {
         return get_instance()
-            ->att_build_pointers.at(neural_model)(layers);
+            ->att_build_pointers.at(neural_model)(layer);
     } catch (std::out_of_range) {
         LOG_ERROR("Unrecognized neural model string: " + neural_model + "!");
     }
 }
 
-WeightMatrix* NeuralModelBank::build_weight_matrix(
-        Connection *conn, std::string neural_model) {
+WeightMatrix* NeuralModelBank::build_weight_matrix(Connection *conn) {
+    auto neural_model = conn->to_layer->neural_model;
     try {
         return get_instance()
             ->mat_build_pointers.at(neural_model)(conn);

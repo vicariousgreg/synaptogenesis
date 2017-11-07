@@ -13,51 +13,27 @@ OutputType Attributes::get_output_type(Layer *layer) {
     return NeuralModelBank::get_output_type(layer->neural_model);
 }
 
-Attributes::Attributes(LayerList &layers, OutputType output_type)
-        : output_type(output_type),
+Attributes::Attributes(Layer *layer, OutputType output_type)
+        : layer(layer),
+          output_type(output_type),
           device_id(ResourceManager::get_instance()->get_host_id()),
           pointer(this) {
-    // Keep track of register sizes
-    int input_size = 0;
-    int output_size = 0;
-    int other_size = 0;
-
-    int timesteps_per_output = get_timesteps_per_output(output_type);
-
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
-    for (auto& layer : layers) {
-        layer_sizes[layer->id] = layer->size;
-        int input_register_count = layer->get_dendritic_root()->get_max_register_index() + 1;
-        int output_register_count = 1 +
-            (layer->get_max_delay() / timesteps_per_output);
+    int input_register_count = layer->get_dendritic_root()->get_max_register_index() + 1;
+    int output_register_count = 1 +
+        (layer->get_max_delay() / get_timesteps_per_output(output_type));
 
-        // Set start indices and update size
-        input_start_indices[layer->id] = input_size;
-        input_size += input_register_count * layer->size;
+    this->input = Pointer<float>(input_register_count * layer->size, 0.0);
+    this->expected = Pointer<Output>(layer->size);
+    this->output = Pointer<Output>(output_register_count * layer->size);
 
-        // Set start index, shift by layer size multiplied by
-        //   number of registers for connection delays
-        output_start_indices[layer->id] = output_size;
-        output_size += output_register_count * layer->size;
-
-        // Add other (expected uses this too)
-        other_start_indices[layer->id] = other_size;
-        other_size += layer->size;
+    // Set up weight matrices
+    for (auto& conn : layer->get_input_connections()) {
+        WeightMatrix* matrix =
+            NeuralModelBank::build_weight_matrix(conn);
+        this->weight_matrices[conn] = matrix;
     }
-
-    // Set layer indices
-    int layer_index = 0;
-    for (auto& layer : layers)
-        layer_indices[layer->id] = layer_index++;
-
-    // Allocate space for input and output
-    this->input = Pointer<float>(input_size, 0.0);
-    this->output = Pointer<Output>(output_size);
-    this->expected = Pointer<Output>(other_size);
-    this->total_neurons = other_size;
-    this->total_layers = layers.size();
-    this->total_connections = get_num_connections(layers);
 }
 
 Attributes::~Attributes() {
@@ -65,50 +41,45 @@ Attributes::~Attributes() {
     this->output.free();
     this->expected.free();
     for (auto pair : neuron_variables) pair.second->free();
-    for (auto pair : layer_variables) pair.second->free();
+    for (auto matrix : weight_matrices) delete matrix.second;
 
 #ifdef __CUDACC__
-    if (this != this->pointer and
-            not ResourceManager::get_instance()->is_host(device_id)) {
+    if (not ResourceManager::get_instance()->is_host(device_id)) {
         cudaSetDevice(device_id);
         cudaFree(this->pointer);
     }
 #endif
 }
 
-void Attributes::transfer_to_device() {
+void Attributes::transfer(DeviceID new_device) {
 #ifdef __CUDACC__
-    // Copy attributes to device and set the pointer
-    if (not ResourceManager::get_instance()->is_host(device_id)) {
-        cudaSetDevice(device_id);
+    if (device_id == new_device) return;
 
-        // If already transferred, free old copy
-        if (this->pointer != this)
-            cudaFree(this->pointer);
+    auto host_id = ResourceManager::get_instance()->get_host_id();
+    if (device_id != host_id and new_device != host_id)
+        LOG_ERROR("Cannot transfer attributes directly between devices!");
 
-        // Transfer to device
-        this->pointer = (Attributes*)
-            ResourceManager::get_instance()->allocate_device(
-                1, get_object_size(), this, device_id);
-    }
-#endif
-}
-
-void Attributes::transfer_to_host() {
-#ifdef __CUDACC__
-    // Copy attributes to device and set the pointer
-    if (not ResourceManager::get_instance()->is_host(device_id)
-            and this != this->pointer) {
-        cudaSetDevice(device_id);
-
+    if (new_device == host_id) {
         // Transfer to host
         cudaMemcpy(this, this->pointer, get_object_size(), cudaMemcpyDeviceToHost);
 
-        // If previously transferred, free old copy
-        if (this->pointer != this)
-            cudaFree(this->pointer);
+        // Free old device copy
+        cudaSetDevice(device_id);
+        cudaFree(this->pointer);
         this->pointer = this;
+    } else {
+        // Transfer to device
+        cudaSetDevice(new_device);
+        this->pointer = (Attributes*)
+            ResourceManager::get_instance()->allocate_device(
+                1, get_object_size(), this, new_device);
     }
+
+    // Transfer weight matrices
+    for (auto pair : weight_matrices)
+        pair.second->transfer(new_device);
+
+    device_check_error("Failed to transfer attributes to device!");
 #endif
 }
 
@@ -117,154 +88,94 @@ std::vector<BasePointer*> Attributes::get_pointers() {
         &input, &output, &expected
     };
     for (auto pair : neuron_variables) pointers.push_back(pair.second);
-    for (auto pair : layer_variables) pointers.push_back(pair.second);
+    for (auto pair : weight_matrices)
+        for (auto ptr : pair.second->get_pointers())
+            pointers.push_back(ptr);
     return pointers;
 }
 
 std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
     std::map<PointerKey, BasePointer*> pointers;
 
-    for (auto pair : input_start_indices)
+    pointers[PointerKey(
+        layer->id, "input", input.get_bytes())] = &input;
+    pointers[PointerKey(
+        layer->id, "output", output.get_bytes())] = &output;
+    pointers[PointerKey(
+        layer->id, "expected", expected.get_bytes())] = &expected;
+    for (auto pair : neuron_variables)
         pointers[PointerKey(
-            pair.first, "input",
-            layer_sizes[pair.first] * input.get_unit_size(), pair.second)] = &input;
-    for (auto pair : output_start_indices)
-        pointers[PointerKey(
-            pair.first, "output",
-            layer_sizes[pair.first] * output.get_unit_size(), pair.second)] = &output;
-    for (auto pair : other_start_indices)
-        pointers[PointerKey(
-            pair.first, "expected",
-            layer_sizes[pair.first] * expected.get_unit_size(), pair.second)] = &expected;
-    for (auto var_pair : neuron_variables)
-        for (auto l_pair : other_start_indices)
-            pointers[PointerKey(
-                l_pair.first, var_pair.first,
-                layer_sizes[l_pair.first] * var_pair.second->get_unit_size(),
-                l_pair.second)] = var_pair.second;
+            layer->id, pair.first,
+            pair.second->get_bytes())] = pair.second;
+
+    for (auto wm_pair : weight_matrices)
+        for (auto pair : wm_pair.second->get_pointer_map())
+            pointers[pair.first] = pair.second;
     return pointers;
 }
 
+void Attributes::process_weight_matrices() {
+    for (auto pair : weight_matrices)
+        process_weight_matrix(pair.second);
+}
+
+void Attributes::transpose_weight_matrices(DeviceID dest_device) {
+    for (auto pair : weight_matrices)
+        pair.second->transpose(dest_device);
+}
+
 template Pointer<float> Attributes::create_neuron_variable();
-template Pointer<float> Attributes::create_layer_variable();
 template Pointer<int> Attributes::create_neuron_variable();
-template Pointer<int> Attributes::create_layer_variable();
 
 template Pointer<float> Attributes::create_neuron_variable(float val);
-template Pointer<float> Attributes::create_layer_variable(float val);
 template Pointer<int> Attributes::create_neuron_variable(int val);
-template Pointer<int> Attributes::create_layer_variable(int val);
 
 template<class T>
 Pointer<T> Attributes::create_neuron_variable() {
-    return Pointer<T>(total_neurons);
-}
-
-template<class T>
-Pointer<T> Attributes::create_layer_variable() {
-    return Pointer<T>(total_layers);
+    return Pointer<T>(layer->size);
 }
 
 template<class T>
 Pointer<T> Attributes::create_neuron_variable(T val) {
-    return Pointer<T>(total_neurons, val);
-}
-
-template<class T>
-Pointer<T> Attributes::create_layer_variable(T val) {
-    return Pointer<T>(total_layers, val);
+    return Pointer<T>(layer->size, val);
 }
 
 void Attributes::register_neuron_variable(
         std::string key, BasePointer* ptr) {
     if (this->neuron_variables.count(key) > 0)
-        LOG_ERROR(
-            "Repeated neuron variable key: " + key);
+        LOG_ERROR("Repeated neuron variable key: " + key);
     this->neuron_variables[key] = ptr;
 }
 
-void Attributes::register_layer_variable(
-        std::string key, BasePointer* ptr) {
-    if (this->layer_variables.count(key) > 0)
-        LOG_ERROR(
-            "Repeated layer variable key: " + key);
-    this->layer_variables[key] = ptr;
-}
-
-BasePointer* Attributes::get_neuron_data(size_t id, std::string key) {
+BasePointer* Attributes::get_neuron_data(std::string key) {
     try {
-        return neuron_variables.at(key)->slice(
-            get_other_start_index(id), layer_sizes.at(id));
+        return neuron_variables.at(key);
     } catch (std::out_of_range) {
         LOG_ERROR(
-            "Failed to retrieve neuron data \"" + key + "\" in Attributes for "
-            "layer ID: " + std::to_string(id));
+            "Failed to retrieve neuron data \"" + key + "\" in Attributes!");
     }
 }
 
-BasePointer* Attributes::get_layer_data(size_t id, std::string key) {
+Pointer<float> Attributes::get_input(int register_index) const {
     try {
-        return layer_variables.at(key)->slice(get_layer_index(id), 1);
+        return input.slice(register_index * layer->size, layer->size);
     } catch (std::out_of_range) {
         LOG_ERROR(
-            "Failed to retrieve layer data \"" + key + "\" in Attributes for "
-            "layer ID: " + std::to_string(id));
+            "Failed to retrieve input data in Attributes for index: "
+            + std::to_string(register_index));
     }
 }
 
-int Attributes::get_layer_index(size_t id) const {
-    try {
-        return layer_indices.at(id);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to retrieve layer index in Attributes for "
-            "layer ID: " + std::to_string(id));
-    }
+Pointer<Output> Attributes::get_expected() const {
+    return expected;
 }
 
-int Attributes::get_other_start_index(size_t id) const {
+Pointer<Output> Attributes::get_output(int word_index) const {
     try {
-        return other_start_indices.at(id);
+        return output.slice(word_index * layer->size, layer->size);
     } catch (std::out_of_range) {
         LOG_ERROR(
-            "Failed to retrieve 'other start index' in Attributes for "
-            "layer ID: " + std::to_string(id));
-    }
-}
-
-Pointer<float> Attributes::get_input(size_t id, int register_index) const {
-    try {
-        int size = layer_sizes.at(id);
-        return input.slice(
-            input_start_indices.at(id) + (register_index * size), size);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to retrieve input data in Attributes for "
-            "layer ID: " + std::to_string(id)
-            + ", index: " + std::to_string(register_index));
-    }
-}
-
-Pointer<Output> Attributes::get_expected(size_t id) const {
-    try {
-        int size = layer_sizes.at(id);
-        return expected.slice(other_start_indices.at(id), size);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to retrieve expected data in Attributes for "
-            "layer ID: " + std::to_string(id));
-    }
-}
-
-Pointer<Output> Attributes::get_output(size_t id, int word_index) const {
-    try {
-        int size = layer_sizes.at(id);
-        return output.slice(
-            output_start_indices.at(id) + (word_index * size), size);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to retrieve output data in Attributes for "
-            "layer ID: " + std::to_string(id)
-            + ", index: " + std::to_string(word_index));
+            "Failed to retrieve output data in Attributes for index:"
+            + std::to_string(word_index));
     }
 }

@@ -27,7 +27,7 @@ bool __mat_dummy = NeuralModelBank::register_weight_matrix("leaky_izhikevich", I
 \
     LeakyIzhikevichAttributes *att = \
         (LeakyIzhikevichAttributes*)synapse_data.attributes; \
-    float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
+    float *to_traces = att->postsyn_trace.get(); \
     float learning_rate = matrix->learning_rate; \
 
 #define GET_DEST_ACTIVITY \

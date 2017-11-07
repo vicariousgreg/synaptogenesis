@@ -32,5 +32,5 @@ BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-RateEncodingAttributes::RateEncodingAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT) { }
+RateEncodingAttributes::RateEncodingAttributes(Layer *layer)
+        : Attributes(layer, FLOAT) { }

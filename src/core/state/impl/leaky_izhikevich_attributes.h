@@ -5,8 +5,8 @@
 
 class LeakyIzhikevichAttributes : public IzhikevichAttributes {
     public:
-        LeakyIzhikevichAttributes(LayerList &layers)
-            : IzhikevichAttributes(layers) { }
+        LeakyIzhikevichAttributes(Layer *layer)
+            : IzhikevichAttributes(layer) { }
 
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
 

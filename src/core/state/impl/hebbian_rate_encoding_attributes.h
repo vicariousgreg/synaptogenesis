@@ -5,7 +5,7 @@
 
 class HebbianRateEncodingAttributes : public RateEncodingAttributes {
     public:
-        HebbianRateEncodingAttributes(LayerList &layers);
+        HebbianRateEncodingAttributes(Layer *layer);
 
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
 

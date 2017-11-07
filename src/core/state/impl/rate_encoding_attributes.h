@@ -5,7 +5,7 @@
 
 class RateEncodingAttributes : public Attributes {
     public:
-        RateEncodingAttributes(LayerList &layers);
+        RateEncodingAttributes(Layer *layer);
 
     GET_KERNEL_DEF
 };

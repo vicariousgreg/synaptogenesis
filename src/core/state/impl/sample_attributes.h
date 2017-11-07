@@ -6,7 +6,7 @@
 
 class SampleAttributes : public Attributes {
     public:
-        SampleAttributes(LayerList &layers);
+        SampleAttributes(Layer *layer);
 
         virtual bool check_compatibility(ClusterType cluster_type);
 
@@ -15,8 +15,7 @@ class SampleAttributes : public Attributes {
 
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
-        Pointer<float> connection_variable;
-        Pointer<float> layer_variable;
+        float layer_variable;
         Pointer<float> neuron_variable;
 
     GET_KERNEL_DEF

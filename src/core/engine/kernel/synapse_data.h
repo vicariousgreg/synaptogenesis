@@ -1,9 +1,7 @@
 #ifndef synapse_data_h
 #define synapse_data_h
 
-#include "network/connection.h"
 #include "network/layer.h"
-#include "network/dendritic_node.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
@@ -11,6 +9,8 @@
 
 class State;
 class Attributes;
+class DendriticNode;
+class Connection;
 
 /* Data package that is passed into synaptic kernel functions */
 class SynapseData {
@@ -32,13 +32,10 @@ class SynapseData {
         const WeightMatrix* matrix;
 
         /* Layer attributes */
-        int to_layer_index;
-        int to_start_index;
         const Layer from_layer;
         const Layer to_layer;
 
         /* IO attributes */
-        OutputType output_type;
         Pointer<Output> outputs;
         Pointer<Output> destination_outputs;
         Pointer<float> inputs;

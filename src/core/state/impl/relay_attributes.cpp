@@ -29,5 +29,5 @@ BUILD_ATTRIBUTE_KERNEL(RelayAttributes, relay_attribute_kernel,
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-RelayAttributes::RelayAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT) { }
+RelayAttributes::RelayAttributes(Layer *layer)
+        : Attributes(layer, FLOAT) { }

@@ -9,14 +9,13 @@
 
 class PointerKey {
     public:
-        PointerKey(size_t hash, size_t type, size_t bytes, size_t offset)
-            : hash(hash), type(type), bytes(bytes), offset(offset) { }
-        PointerKey(size_t hash, std::string type, size_t bytes, size_t offset)
-            : PointerKey(hash, std::hash<std::string>()(type), bytes, offset) { }
+        PointerKey(size_t hash, size_t type, size_t bytes)
+            : hash(hash), type(type), bytes(bytes) { }
+        PointerKey(size_t hash, std::string type, size_t bytes)
+            : PointerKey(hash, std::hash<std::string>()(type), bytes) { }
         const size_t hash;
         const size_t type;
         const size_t bytes;
-        const size_t offset;
 
         bool operator <(const PointerKey& other) const {
             if (hash == other.hash) {

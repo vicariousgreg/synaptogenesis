@@ -18,13 +18,10 @@ REGISTER_WEIGHT_MATRIX(DebugWeightMatrix, "debug")
 BUILD_ATTRIBUTE_KERNEL(DebugAttributes, debug_attribute_kernel,
     DebugAttributes *debug_att = (DebugAttributes*)att;
 
-    assert(layer_index < debug_att->layer_variable.get_size());
-    float layer_var = *debug_att->layer_variable.get(layer_index);
+    float layer_var = debug_att->layer_variable;
     assert(layer_var == DUMMY_VAL);
 
-    assert(other_start_index < debug_att->neuron_variable.get_size());
-    assert((other_start_index + size) <= debug_att->neuron_variable.get_size());
-    float *neuron_var = debug_att->neuron_variable.get(other_start_index);
+    float *neuron_var = debug_att->neuron_variable.get();
 
     ,
 
@@ -161,10 +158,9 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-DebugAttributes::DebugAttributes(LayerList &layers)
-        : Attributes(layers, FLOAT) {
-    this->layer_variable = Attributes::create_layer_variable<float>(DUMMY_VAL);
-    Attributes::register_layer_variable("layer_var", &layer_variable);
+DebugAttributes::DebugAttributes(Layer *layer)
+        : Attributes(layer, FLOAT) {
+    this->layer_variable = DUMMY_VAL;
 
     this->neuron_variable = Attributes::create_neuron_variable<float>(DUMMY_VAL);
     Attributes::register_neuron_variable("neuron_var", &neuron_variable);
