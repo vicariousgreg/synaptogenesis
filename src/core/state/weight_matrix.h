@@ -13,15 +13,18 @@ class WeightMatrix {
         virtual ~WeightMatrix();
 
         // Getters
-        Pointer<float> get_data() const { return weights; }
+        Pointer<float> get_weights() const { return weights; }
+        Pointer<float> get_second_order_weights() const
+            { return second_order_weights; }
         BasePointer* get_layer(std::string key);
         DeviceID get_device_id() { return device_id; }
 
-        // Pointers and transfer function
+        // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
         std::map<PointerKey, BasePointer*> get_pointer_map();
         void transpose(bool to_device);
         void transfer_to_device();
+        void transfer_to_host();
 
         // Subclasses implement this for variable registration
         virtual void register_variables() { }
@@ -44,6 +47,7 @@ class WeightMatrix {
         std::map<std::string, BasePointer*> variables;
 
         Pointer<float> weights;
+        Pointer<float> second_order_weights;
         int num_weights;
         DeviceID device_id;
 

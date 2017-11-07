@@ -235,6 +235,16 @@ void State::transfer_to_host() {
 #ifdef __CUDACC__
     if (on_host) return;
 
+    // Transfer attributes
+    for (auto n : NeuralModelBank::get_neural_models())
+        for (auto pair : attributes)
+            if (pair.second[n] != nullptr)
+                pair.second[n]->transfer_to_host();
+
+    // Transfer weight matrices
+    for (auto pair : weight_matrices)
+        pair.second->transfer_to_host();
+
     // Accumulate new data block pointers
     std::set<BasePointer*> new_data_block_pointers;
 
@@ -410,8 +420,8 @@ Pointer<float> State::get_input(Layer *layer, int register_index) const {
 
 Pointer<float> State::get_second_order_weights(DendriticNode *node) const {
     try {
-        return attributes.at(layer_devices.at(node->to_layer))
-            .at(node->to_layer->neural_model)->get_second_order_weights(node->id);
+        return weight_matrices.at(node->get_second_order_connection())
+            ->get_second_order_weights();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get second order weights in State for "
@@ -527,21 +537,9 @@ Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
     }
 }
 
-int State::get_connection_index(Connection *conn) const {
-    try {
-        return attributes.at(layer_devices.at(conn->to_layer))
-                         .at(conn->to_layer->neural_model)
-                         ->get_connection_index(conn->id);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to get connection index in State for "
-            "connection: " + conn->str());
-    }
-}
-
 Pointer<float> State::get_weights(Connection* conn) const {
     try {
-        return weight_matrices.at(conn)->get_data();
+        return weight_matrices.at(conn)->get_weights();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get weight matrix in State for "
@@ -615,6 +613,10 @@ bool State::is_inter_device(Connection *conn) const {
 
 BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
     transfer_to_host();
+    // TODO
+    return nullptr;
+
+    /*
     try {
         return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
             ->get_neuron_data(layer->id, key);
@@ -623,10 +625,15 @@ BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
             "Failed to get neuron \"" + key + "\" data in State for "
             "layer: " + layer->str());
     }
+    */
 }
 
 BasePointer* State::get_layer_data(Layer *layer, std::string key) {
     transfer_to_host();
+    // TODO
+    return nullptr;
+
+    /*
     try {
         return attributes.at(layer_devices.at(layer)).at(layer->neural_model)
             ->get_layer_data(layer->id, key);
@@ -635,10 +642,15 @@ BasePointer* State::get_layer_data(Layer *layer, std::string key) {
             "Failed to get layer \"" + key + "\" data in State for "
             "layer: " + layer->str());
     }
+    */
 }
 
 BasePointer* State::get_connection_data(Connection *conn, std::string key) {
     transfer_to_host();
+    // TODO
+    return nullptr;
+
+    /*
     try {
         return attributes.at(layer_devices.at(conn->to_layer))
                          .at(conn->to_layer->neural_model)
@@ -648,6 +660,7 @@ BasePointer* State::get_connection_data(Connection *conn, std::string key) {
             "Failed to get connection \"" + key + "\" data in State for "
             "connection: " + conn->str());
     }
+    */
 }
 
 BasePointer* State::get_weight_matrix(Connection *conn, std::string key) {

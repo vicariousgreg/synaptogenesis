@@ -27,6 +27,7 @@ class SampleWeightMatrix : public WeightMatrix {
     public:
         Pointer<float> var1;
         Pointer<float> var2;
+        float x;
 
     WEIGHT_MATRIX_MEMBERS(SampleWeightMatrix);
     virtual void register_variables();

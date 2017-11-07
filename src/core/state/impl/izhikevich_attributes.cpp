@@ -245,9 +245,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         (IzhikevichAttributes*)synapse_data.attributes; \
     IzhikevichWeightMatrix *matrix = \
         (IzhikevichWeightMatrix*)synapse_data.matrix; \
-    float baseline_conductance = \
-        att->baseline_conductance.get()[synapse_data.connection_index]; \
-    bool stp_flag = att->stp_flag.get()[synapse_data.connection_index]; \
+    float baseline_conductance = matrix->baseline_conductance; \
+    bool stp_flag = matrix->stp_flag; \
 \
     float *stds   = matrix->stds.get(); \
     float *stps   = matrix->stps.get(); \
@@ -459,8 +458,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     float *to_traces = att->postsyn_trace.get(synapse_data.to_start_index); \
     float *dopamines = att->dopamine.get(synapse_data.to_start_index); \
     float *acetylcholines = att->acetylcholine.get(synapse_data.to_start_index); \
-    float learning_rate = \
-        att->learning_rate.get()[synapse_data.connection_index];
+    float learning_rate = matrix->learning_rate; \
 
 #define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
@@ -588,20 +586,6 @@ static void check_parameters(Connection *conn) {
 
 IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
         : Attributes(layers, BIT) {
-    // Baseline conductances
-    this->baseline_conductance =
-        Attributes::create_connection_variable<float>();
-    Attributes::register_connection_variable(
-        "baseline conductance", &baseline_conductance);
-
-    // Learning rate
-    this->learning_rate = Attributes::create_connection_variable<float>();
-    Attributes::register_connection_variable("learning rate", &learning_rate);
-
-    // Short term plasticity flag
-    this->stp_flag = Attributes::create_connection_variable<int>();
-    Attributes::register_connection_variable("stp flag", &stp_flag);
-
     // Conductances
     this->ampa_conductance = Attributes::create_neuron_variable<float>();
     Attributes::register_neuron_variable("ampa", &ampa_conductance);
@@ -677,18 +661,6 @@ IzhikevichAttributes::IzhikevichAttributes(LayerList &layers)
                 LOG_ERROR(
                     "Error " + conn->str() + "\n"
                     "Gap junctions must be between neurons of the same layer.");
-
-            // Retrieve baseline conductance
-            baseline_conductance[connection_indices[conn->id]] =
-                std::stof(conn->get_parameter("conductance", "1.0"));
-
-            // Retrieve learning rate
-            learning_rate[connection_indices[conn->id]] =
-                std::stof(conn->get_parameter("learning rate", "0.004"));
-
-            // Retrieve short term plasticity flag
-            stp_flag[connection_indices[conn->id]] =
-                conn->get_parameter("short term plasticity", "true") == "true";
         }
     }
 }
@@ -724,12 +696,23 @@ void IzhikevichWeightMatrix::register_variables() {
 }
 
 void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
+    auto iz_mat = (IzhikevichWeightMatrix*)matrix;
     Connection *conn = matrix->connection;
-    Pointer<float> mData = matrix->get_data();
+
+    // Retrieve baseline conductance
+    iz_mat->baseline_conductance =
+        std::stof(conn->get_parameter("conductance", "1.0"));
+
+    // Retrieve learning rate
+    iz_mat->learning_rate =
+        std::stof(conn->get_parameter("learning rate", "0.004"));
+
+    // Retrieve short term plasticity flag
+    iz_mat->stp_flag =
+        conn->get_parameter("short term plasticity", "true") == "true";
 
     int num_weights = conn->get_num_weights();
-
-    auto iz_mat = (IzhikevichWeightMatrix*)matrix;
+    Pointer<float> mData = matrix->get_weights();
 
     // Short term trace
     clear_weights(iz_mat->short_traces, num_weights);
@@ -744,7 +727,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     set_weights(iz_mat->stds, num_weights, 1.0);
 
     // Short Term Potentiation
-    if (stp_flag[connection_indices[conn->id]])
+    if (iz_mat->stp_flag)
         set_weights(iz_mat->stps, num_weights, 1.0);
     else
         switch(conn->opcode) {

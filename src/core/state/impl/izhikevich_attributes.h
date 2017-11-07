@@ -11,16 +11,6 @@ class IzhikevichAttributes : public Attributes {
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
-        /* Connection Attributes */
-        // Baseline conductances
-        Pointer<float> baseline_conductance;
-
-        // Learning rate
-        Pointer<float> learning_rate;
-
-        // Short term plasticity flag
-        Pointer<int> stp_flag;
-
         /* Neuron Attributes */
         // Conductances for different ion channels
         Pointer<float> ampa_conductance;
@@ -63,6 +53,15 @@ class IzhikevichWeightMatrix : public WeightMatrix {
         Pointer<float> stps;
         Pointer<float> eligibilities;
         Pointer<int> delays;
+
+        // Baseline conductances
+        float baseline_conductance;
+
+        // Learning rate
+        float learning_rate;
+
+        // Short term plasticity flag
+        bool stp_flag;
 
     WEIGHT_MATRIX_MEMBERS(IzhikevichWeightMatrix);
     virtual void register_variables();

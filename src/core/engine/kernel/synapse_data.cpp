@@ -6,7 +6,6 @@ SynapseData::SynapseData(DendriticNode *parent_node,
     Connection *conn, State *state) :
         attributes(state->get_attributes_pointer(conn->to_layer)),
         extractor(state->get_connection_extractor(conn)),
-        connection_index(state->get_connection_index(conn)),
         subset_config(conn->get_config()->get_subset_config()),
         arborized_config(conn->get_config()->get_arborized_config()),
         connection(*conn),

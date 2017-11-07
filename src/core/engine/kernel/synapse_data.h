@@ -27,7 +27,6 @@ class SynapseData {
         const SubsetConfig subset_config;
         const ArborizedConfig arborized_config;
         const Connection connection;
-        int connection_index;
 
         /* Weight attributes */
         const WeightMatrix* matrix;

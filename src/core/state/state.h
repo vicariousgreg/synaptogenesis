@@ -54,7 +54,6 @@ class State {
         Kernel<ATTRIBUTE_ARGS> get_learning_kernel(Layer *layer) const;
 
         /* Getters for connection related data */
-        int get_connection_index(Connection *conn) const;
         Pointer<float> get_weights(Connection *conn) const;
         const WeightMatrix* get_matrix_pointer(Connection *conn) const;
         EXTRACTOR get_connection_extractor(Connection *conn) const;

@@ -31,10 +31,11 @@ class Attributes {
             return true;
         }
 
-        // Schedule and conduct transfer to device
+        // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
         std::map<PointerKey, BasePointer*> get_pointer_map();
         void transfer_to_device();
+        void transfer_to_host();
 
         /* Learning Rule functions */
         // Activator Kernel
@@ -54,24 +55,18 @@ class Attributes {
         int get_layer_index(size_t id) const;
         int get_other_start_index(size_t id) const;
         Pointer<float> get_input(size_t id, int register_index = 0) const;
-        Pointer<float> get_second_order_weights(size_t id) const;
         Pointer<Output> get_output(size_t id, int word_index = 0) const;
         Pointer<Output> get_expected(size_t id) const;
-
-        // Connection data retrieval
-        int get_connection_index(size_t id) const;
 
         // Getters for external use
         BasePointer* get_neuron_data(size_t id, std::string key);
         BasePointer* get_layer_data(size_t id, std::string key);
-        BasePointer* get_connection_data(size_t id, std::string key);
 
         // Neuron IO data
         const OutputType output_type;
         Pointer<Output> output;
         Pointer<Output> expected;
         Pointer<float> input;
-        Pointer<float> second_order_weights;
 
         // Pointer to this object
         // If parallel, this will point to the device copy
@@ -100,19 +95,13 @@ class Attributes {
         // Methods for creating and registering variables
         //   to be handled by the superclass
         template<class T> Pointer<T> create_neuron_variable();
-        template<class T> Pointer<T> create_connection_variable();
         template<class T> Pointer<T> create_layer_variable();
 
         template<class T> Pointer<T> create_neuron_variable(T val);
-        template<class T> Pointer<T> create_connection_variable(T val);
         template<class T> Pointer<T> create_layer_variable(T val);
 
         void register_neuron_variable(std::string key, BasePointer* ptr);
-        void register_connection_variable(std::string key, BasePointer* ptr);
         void register_layer_variable(std::string key, BasePointer* ptr);
-
-        // Traverse the dendritic tree and find second order nodes
-        int dendrite_DFS(const DendriticNode *curr, int second_order_size);
 
         // Number of neurons, layers, and connections
         int total_neurons;
@@ -123,7 +112,6 @@ class Attributes {
 
         // Managed pointers
         std::map<std::string, BasePointer*> neuron_variables;
-        std::map<std::string, BasePointer*> connection_variables;
         std::map<std::string, BasePointer*> layer_variables;
 
         std::map<size_t, int> layer_indices;
@@ -131,11 +119,6 @@ class Attributes {
         std::map<size_t, int> input_start_indices;
         std::map<size_t, int> output_start_indices;
         std::map<size_t, int> layer_sizes;
-
-        std::map<size_t, int> connection_indices;
-
-        std::map<size_t, int> second_order_indices;
-        std::map<size_t, int> second_order_sizes;
 };
 
 /* Macros for Attribute subclass Registry */

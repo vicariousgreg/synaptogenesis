@@ -9,6 +9,7 @@
 #define DUMMY_VAL 1.0
 
 REGISTER_ATTRIBUTES(DebugAttributes, "debug", FLOAT)
+REGISTER_WEIGHT_MATRIX(DebugWeightMatrix, "debug")
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/
@@ -37,9 +38,8 @@ BUILD_ATTRIBUTE_KERNEL(DebugAttributes, debug_attribute_kernel,
 
 #define CHECK_ATT \
     DebugAttributes *debug_att = (DebugAttributes*)synapse_data.attributes; \
-    int conn_index = synapse_data.connection_index; \
-    assert(conn_index < debug_att->connection_variable.get_size()); \
-    assert(*debug_att->connection_variable.get(conn_index) == DUMMY_VAL); \
+    DebugWeightMatrix *debug_mat = (DebugWeightMatrix*)synapse_data.matrix; \
+    assert(debug_mat->x == DUMMY_VAL); \
     assert(from_rows * from_columns == from_size); \
     assert(to_rows * to_columns == to_size);
 
@@ -163,12 +163,13 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
 
 DebugAttributes::DebugAttributes(LayerList &layers)
         : Attributes(layers, FLOAT) {
-    this->connection_variable = Attributes::create_connection_variable<float>(DUMMY_VAL);
-    Attributes::register_connection_variable("conn_var", &connection_variable);
-
     this->layer_variable = Attributes::create_layer_variable<float>(DUMMY_VAL);
     Attributes::register_layer_variable("layer_var", &layer_variable);
 
     this->neuron_variable = Attributes::create_neuron_variable<float>(DUMMY_VAL);
     Attributes::register_neuron_variable("neuron_var", &neuron_variable);
+}
+
+void DebugAttributes::process_weight_matrix(WeightMatrix* matrix) {
+    ((DebugWeightMatrix*)matrix)->x = DUMMY_VAL;
 }

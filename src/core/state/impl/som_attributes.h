@@ -10,6 +10,8 @@ class SOMAttributes : public Attributes {
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
 
+        virtual void process_weight_matrix(WeightMatrix* matrix);
+
         Pointer<int> winner;
         Pointer<float> rbf_scale;
         Pointer<float> learning_rate;
@@ -18,6 +20,15 @@ class SOMAttributes : public Attributes {
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
+};
+
+class SOMWeightMatrix : public WeightMatrix {
+    public:
+        float learning_rate;
+        float neighbor_learning_rate;
+        int neighborhood_size;
+
+    WEIGHT_MATRIX_MEMBERS(SOMWeightMatrix);
 };
 
 #endif

@@ -106,6 +106,8 @@ WeightMatrix::WeightMatrix(Attributes *att, Connection* conn)
     // Allocate matrix on host
     // If parallel, it will be copied below
     weights = Pointer<float>(num_weights);
+    if (conn->second_order_host)
+        second_order_weights = Pointer<float>(num_weights);
     if (weights.get() == nullptr)
         LOG_ERROR(
             "Failed to allocate space for weight matrices on host!");
@@ -142,14 +144,28 @@ void WeightMatrix::transfer_to_device() {
     if (not ResourceManager::get_instance()->is_host(device_id)) {
         cudaSetDevice(device_id);
 
-        // If already transfered, free old copy
-        if (this->pointer != this)
-            cudaFree(this->pointer);
-
         // Transfer to device
         this->pointer = (WeightMatrix*)
             ResourceManager::get_instance()->allocate_device(
                 1, get_object_size(), this, device_id);
+    }
+#endif
+}
+
+void WeightMatrix::transfer_to_host() {
+#ifdef __CUDACC__
+    // Copy attributes to device and set the pointer
+    if (not ResourceManager::get_instance()->is_host(device_id)
+            and this != this->pointer) {
+        cudaSetDevice(device_id);
+
+        // Transfer to host
+        cudaMemcpy(this, this->pointer, get_object_size(), cudaMemcpyDeviceToHost);
+
+        // If previously transferred, free old copy
+        if (this->pointer != this)
+            cudaFree(this->pointer);
+        this->pointer = this;
     }
 #endif
 }
@@ -167,6 +183,8 @@ BasePointer* WeightMatrix::get_layer(std::string key) {
 
 std::vector<BasePointer*> WeightMatrix::get_pointers() {
     std::vector<BasePointer*> pointers = { &weights };
+    if (connection->second_order_host)
+        pointers.push_back(&second_order_weights);
     for (auto pair : variables) pointers.push_back(pair.second);
     return pointers;
 }
@@ -174,6 +192,9 @@ std::vector<BasePointer*> WeightMatrix::get_pointers() {
 std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
     std::map<PointerKey, BasePointer*> pointers;
     pointers[PointerKey(connection->id, "weights", weights.get_bytes(), 0)] = &weights;
+    if (connection->second_order_host)
+        pointers[PointerKey(connection->id, "second order weights",
+            second_order_weights.get_bytes(), 0)] = &second_order_weights;
 
     for (auto pair : variables)
         pointers[PointerKey(

@@ -9,6 +9,7 @@
 #define DUMMY_VAL 1.0
 
 REGISTER_ATTRIBUTES(SOMAttributes, "som", FLOAT)
+REGISTER_WEIGHT_MATRIX(SOMWeightMatrix, "som")
 
 /******************************************************************************/
 /******************************** KERNEL **************************************/
@@ -60,12 +61,10 @@ CALC_ALL(activate_som,
 
 CALC_ALL(update_som,
     SOMAttributes *som_att = (SOMAttributes*)synapse_data.attributes;
-    float learning_rate =
-        *som_att->learning_rate.get(synapse_data.connection_index);
-    float neighbor_learning_rate =
-        *som_att->neighbor_learning_rate.get(synapse_data.connection_index);
-    int neighborhood_size =
-        *som_att->neighborhood_size.get(synapse_data.connection_index);
+    SOMWeightMatrix *som_mat = (SOMWeightMatrix*)synapse_data.matrix;
+    float learning_rate = som_mat->learning_rate;
+    float neighbor_learning_rate = som_mat->neighbor_learning_rate;
+    int neighborhood_size = som_mat->neighborhood_size;
     int winner = *som_att->winner.get(synapse_data.to_layer_index);
 
     int winner_row = winner / to_columns;
@@ -126,24 +125,20 @@ SOMAttributes::SOMAttributes(LayerList &layers)
     this->rbf_scale = Attributes::create_layer_variable<float>(0.0);
     Attributes::register_layer_variable("rbf scale", &rbf_scale);
 
-    this->learning_rate = Attributes::create_connection_variable<float>(0.0);
-    Attributes::register_connection_variable("learning rate", &learning_rate);
-    this->neighbor_learning_rate = Attributes::create_connection_variable<float>(0.0);
-    Attributes::register_connection_variable("neighbor learning rate", &neighbor_learning_rate);
-    this->neighborhood_size = Attributes::create_connection_variable<int>(0.0);
-    Attributes::register_connection_variable("neighborhood size", &neighborhood_size);
-
     for (auto layer : layers) {
         rbf_scale[layer_indices[layer->id]] =
             std::stof(layer->get_parameter("rbf scale", "1"));
-
-        for (auto conn : layer->get_input_connections()) {
-            learning_rate[layer_indices[conn->id]] =
-                std::stof(conn->get_parameter("learning rate", "0.01"));
-            neighbor_learning_rate[layer_indices[conn->id]] =
-                std::stof(conn->get_parameter("neighbor learning rate", "0.001"));
-            neighborhood_size[layer_indices[conn->id]] =
-                std::stoi(conn->get_parameter("neighborhood size", "2"));
-        }
     }
+}
+
+void SOMAttributes::process_weight_matrix(WeightMatrix* matrix) {
+    SOMWeightMatrix *s_mat = (SOMWeightMatrix*)matrix;
+    auto conn = matrix->connection;
+
+    s_mat->learning_rate =
+        std::stof(conn->get_parameter("learning rate", "0.01"));
+    s_mat->neighbor_learning_rate =
+        std::stof(conn->get_parameter("neighbor learning rate", "0.001"));
+    s_mat->neighborhood_size =
+        std::stoi(conn->get_parameter("neighborhood size", "2"));
 }

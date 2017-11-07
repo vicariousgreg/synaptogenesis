@@ -26,9 +26,6 @@ SampleAttributes::SampleAttributes(LayerList &layers)
         : Attributes(layers, FLOAT) {  // FLOAT indicates the output type
 
     // Here's where you construct and register variables
-    this->connection_variable = create_connection_variable<float>(0.0);
-    register_connection_variable("conn_var", &connection_variable);
-
     this->layer_variable = create_layer_variable<float>(0.0);
     register_layer_variable("layer_var", &layer_variable);
 
@@ -44,12 +41,6 @@ SampleAttributes::SampleAttributes(LayerList &layers)
         // Neuron Variables
         for (int nid = 0 ; nid < layer->size ; ++nid) {
             neuron_variable[start_index + nid] = 0.0;
-        }
-
-        // Connection Variables
-        for (auto& conn : layer->get_input_connections()) {
-            connection_variable[connection_indices[conn->id]] =
-                std::stof(conn->get_parameter("connection variable", "1.0"));
         }
 
         start_index += layer->size;
@@ -74,8 +65,11 @@ void SampleAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     // Retrieve connection and matrix data pointer
     Connection *conn = matrix->connection;
-    Pointer<float> mData = matrix->get_data();
+    Pointer<float> mData = matrix->get_weights();
     int num_weights = conn->get_num_weights();
+
+    // Connection variable
+    s_mat->x = std::stof(conn->get_parameter("connection variable", "1.0"));
 
     // Accessing second and third layers
     Pointer<float> second_weights = s_mat->var1;
@@ -176,8 +170,8 @@ BUILD_ATTRIBUTE_KERNEL(SampleAttributes, sample_attribute_kernel,
  * This one defines variable extraction, as in the attributes kernel above. */
 #define EXTRACT \
     SampleAttributes *sample_att = (SampleAttributes*)synapse_data.attributes; \
-    int conn_index = synapse_data.connection_index; \
-    float conn_var = *sample_att->connection_variable.get(conn_index);
+    SampleWeightMatrix *sample_mat = (SampleWeightMatrix*)synapse_data.matrix; \
+    float conn_var = sample_mat->x;
 
 /* This macro defines what happens for each neuron before weight iteration.
  * Here is where neuron specific data should be extracted or initialized */
