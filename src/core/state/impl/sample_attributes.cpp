@@ -214,7 +214,7 @@ CALC_ALL(activate_sample,
  */
 #define EXTRACT_UPDATE \
     EXTRACT \
-    float * const second_order_weights = synapse_data.second_order_weights.get();
+    float * const second_order_weights = synapse_data.matrix->second_order_weights.get();
 
 /* This macro shows updating of second order weights.  The operation is carried
  *   out on each weight using calc() and the assigned opcode.  No sum needs to

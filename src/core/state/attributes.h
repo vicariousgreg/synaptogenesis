@@ -78,6 +78,7 @@ class Attributes {
             return Kernel<ATTRIBUTE_ARGS>(nullptr, nullptr);
         }
 
+        void set_device_id(DeviceID id) { this->device_id = id; }
         DeviceID get_device_id() { return device_id; }
 
         // Gets the output type of a layer based on its neural model
@@ -130,16 +131,14 @@ static bool __att_dummy = \
 std::string CLASS_NAME::get_neural_model() {return STRING; } \
 int CLASS_NAME::get_object_size() { return sizeof(CLASS_NAME); } \
 \
-Attributes *CLASS_NAME::build(LayerList &layers, DeviceID device_id) { \
-    auto att = new CLASS_NAME(layers); \
-    att->device_id = device_id; \
-    return att; \
+Attributes *CLASS_NAME::build(LayerList &layers) { \
+    return new CLASS_NAME(layers); \
 }
 
 // Put this one in .h at bottom of class definition
 #define ATTRIBUTE_MEMBERS \
     public: \
-        static Attributes *build(LayerList &layers, DeviceID device_id); \
+        static Attributes *build(LayerList &layers); \
     protected: \
         virtual std::string get_neural_model(); \
         virtual int get_object_size();

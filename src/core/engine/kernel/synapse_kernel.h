@@ -78,7 +78,10 @@ inline HOST DEVICE float calc(Opcode opcode, float prior, float input) {
 #define SYNAPSE_PREAMBLE \
     const Opcode opcode = synapse_data.connection.opcode; \
     const int delay = synapse_data.connection.delay; \
-    float * const weights = synapse_data.weights.get(); \
+    float * const weights = \
+        (synapse_data.connection.second_order_host) \
+            ? synapse_data.matrix->second_order_weights.get() \
+            : synapse_data.matrix->weights.get(); \
     const int num_weights = synapse_data.connection.num_weights; \
     const bool plastic = synapse_data.connection.plastic; \
     const float max_weight = synapse_data.connection.max_weight; \
@@ -913,7 +916,7 @@ CALC_ALL( \
 /******************************************************************************/
 
 #define EXTRACT_SECOND_ORDER \
-    float * const second_order_weights = synapse_data.second_order_weights.get(); \
+    float * const second_order_weights = synapse_data.matrix->second_order_weights.get(); \
 
 #define CALC_VAL_SECOND_ORDER \
     float val = extractor(outputs[from_index], delay) * weights[weight_index]; \

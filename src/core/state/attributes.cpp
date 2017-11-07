@@ -15,7 +15,7 @@ OutputType Attributes::get_output_type(Layer *layer) {
 
 Attributes::Attributes(LayerList &layers, OutputType output_type)
         : output_type(output_type),
-          device_id(0),
+          device_id(ResourceManager::get_instance()->get_host_id()),
           pointer(this) {
     // Keep track of register sizes
     int input_size = 0;
@@ -68,8 +68,9 @@ Attributes::~Attributes() {
     for (auto pair : layer_variables) pair.second->free();
 
 #ifdef __CUDACC__
-    if (this->pointer != pointer and
+    if (this != this->pointer and
             not ResourceManager::get_instance()->is_host(device_id)) {
+        cudaSetDevice(device_id);
         cudaFree(this->pointer);
     }
 #endif

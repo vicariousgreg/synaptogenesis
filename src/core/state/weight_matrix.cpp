@@ -2,7 +2,6 @@
 #include <sstream>
 
 #include "state/weight_matrix.h"
-#include "state/attributes.h"
 #include "network/layer.h"
 #include "network/connection.h"
 #include "util/error_manager.h"
@@ -97,24 +96,29 @@ void clear_diagonal(float *arr, int rows, int cols) {
 static void initialize_weights(const PropertyConfig config,
     float* target_matrix, Connection* conn);
 
-WeightMatrix::WeightMatrix(Attributes *att, Connection* conn)
-    : attributes(att),
-      connection(conn),
-      device_id(0),
+WeightMatrix::WeightMatrix(Connection* conn)
+    : connection(conn),
+      device_id(ResourceManager::get_instance()->get_host_id()),
       pointer(this),
-      num_weights(conn->get_num_weights()) {
-    // Allocate matrix on host
-    // If parallel, it will be copied below
-    weights = Pointer<float>(num_weights);
-    if (conn->second_order_host)
-        second_order_weights = Pointer<float>(num_weights);
-    if (weights.get() == nullptr)
-        LOG_ERROR(
-            "Failed to allocate space for weight matrices on host!");
-}
+      num_weights(conn->get_num_weights()),
+      weights(Pointer<float>(num_weights)),
+      second_order_weights(
+          (conn->second_order)
+              ? Pointer<float>(num_weights)
+              : Pointer<float>()) { }
 
 WeightMatrix::~WeightMatrix() {
     this->weights.free();
+    this->second_order_weights.free();
+    for (auto pair : variables) pair.second->free();
+
+#ifdef __CUDACC__
+    if (this != this->pointer and
+            not ResourceManager::get_instance()->is_host(device_id)) {
+        cudaSetDevice(device_id);
+        cudaFree(this->pointer);
+    }
+#endif
 }
 
 void WeightMatrix::transpose(bool to_device) {
@@ -203,18 +207,16 @@ std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
     return pointers;
 }
 
-WeightMatrix *WeightMatrix::build(Attributes *att, Connection *conn, DeviceID device_id) {
-    auto mat = new WeightMatrix(att, conn);
-    mat->init(device_id);
+WeightMatrix *WeightMatrix::build(Connection *conn) {
+    auto mat = new WeightMatrix(conn);
+    mat->init();
     return mat;
 }
 
-void WeightMatrix::init(DeviceID device_id) {
-    this->device_id = device_id;
+void WeightMatrix::init() {
     initialize_weights(
         connection->get_config()->get_weight_config(), weights, connection);
     register_variables();
-    attributes->process_weight_matrix(this);
 }
 
 template Pointer<float> WeightMatrix::create_variable();
@@ -476,7 +478,7 @@ static void initialize_weights(const PropertyConfig config,
 /******************************************************************************/
 /**************************** DELAY INITIALIZATION ****************************/
 /******************************************************************************/
-void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
+void set_delays(OutputType output_type, Connection *conn,
         int* delays, float velocity, bool cap_delay,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset) {

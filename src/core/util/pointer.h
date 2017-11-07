@@ -35,12 +35,12 @@ class PointerKey {
 
 class BasePointer {
     public:
-        HOST DEVICE void* get(size_t offset=0) { return ptr + (offset * unit_size); }
-        HOST DEVICE size_t get_size() { return size; }
-        HOST DEVICE size_t get_unit_size() { return unit_size; }
-        HOST DEVICE size_t get_bytes() { return size * unit_size; }
-        HOST DEVICE DeviceID get_device_id() { return device_id; }
-        std::type_index get_type() { return type; }
+        HOST DEVICE void* get(size_t offset=0) const { return ptr + (offset * unit_size); }
+        HOST DEVICE size_t get_size() const { return size; }
+        HOST DEVICE size_t get_unit_size() const { return unit_size; }
+        HOST DEVICE size_t get_bytes() const { return size * unit_size; }
+        HOST DEVICE DeviceID get_device_id() const { return device_id; }
+        std::type_index get_type() const { return type; }
 
         // Frees the encapsulated pointer if this is the owner
         void free();

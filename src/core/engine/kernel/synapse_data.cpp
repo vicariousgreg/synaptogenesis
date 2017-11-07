@@ -14,8 +14,7 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         to_start_index(state->get_other_start_index(conn->to_layer)),
         to_layer_index(state->get_layer_index(conn->to_layer)),
         output_type(Attributes::get_output_type(conn->from_layer)),
-        matrix(state->get_matrix_pointer(conn)),
-        weights(state->get_weights(conn)) {
+        matrix(state->get_matrix_pointer(conn)) {
     destination_outputs = state->get_output(conn->to_layer);
 
     if (state->is_inter_device(conn))
@@ -25,14 +24,4 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         outputs = state->get_output(conn->from_layer,
             get_word_index(conn->delay, output_type));
     inputs = state->get_input(conn->to_layer, parent_node->register_index);
-
-    // Second order non-host connections operate on copies of the
-    //   host connection's weight matrix
-    if (conn->second_order)
-        second_order_weights = state->get_second_order_weights(parent_node);
-
-    // The second order host uses the operated upon copy as its source matrix
-    // TODO: Figure out a better way to deal with this for stacked matrices
-    if (conn->second_order_host)
-        weights = second_order_weights;
 }

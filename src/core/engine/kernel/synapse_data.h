@@ -30,8 +30,6 @@ class SynapseData {
 
         /* Weight attributes */
         const WeightMatrix* matrix;
-        Pointer<float> weights;
-        Pointer<float> second_order_weights;
 
         /* Layer attributes */
         int to_layer_index;

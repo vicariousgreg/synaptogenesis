@@ -760,7 +760,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
                 "Randomized axons cannot have delays greater than 31!");
         iRand(delays, num_weights, 0, max_delay);
     } else {
-        set_delays(get_device_id(), BIT, conn, delays, 0.15,
+        set_delays(BIT, conn, delays, 0.15,
             conn->get_parameter("cap delay", "false") == "true",
             std::stof(conn->from_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->to_layer->get_parameter("neuron spacing", "0.1")),

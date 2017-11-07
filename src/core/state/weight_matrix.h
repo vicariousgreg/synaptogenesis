@@ -5,11 +5,10 @@
 #include "util/pointer.h"
 
 class Connection;
-class Attributes;
 
 class WeightMatrix {
     public:
-        WeightMatrix(Attributes *att, Connection *conn);
+        WeightMatrix(Connection *conn);
         virtual ~WeightMatrix();
 
         // Getters
@@ -17,6 +16,7 @@ class WeightMatrix {
         Pointer<float> get_second_order_weights() const
             { return second_order_weights; }
         BasePointer* get_layer(std::string key);
+        void set_device_id(DeviceID id) { this->device_id = id; }
         DeviceID get_device_id() { return device_id; }
 
         // Pointer sets and transfer functions
@@ -33,12 +33,14 @@ class WeightMatrix {
         // If parallel, this will point to the device copy
         WeightMatrix *pointer;
 
-        Attributes* const attributes;
+        const int num_weights;
+        Pointer<float> weights;
+        Pointer<float> second_order_weights;
+
         Connection* const connection;
 
         // Build function
-        static WeightMatrix *build(Attributes *att,
-            Connection *conn, DeviceID device_id);
+        static WeightMatrix *build(Connection *conn);
 
     protected:
         // Additional matrix layers (variables)
@@ -46,13 +48,10 @@ class WeightMatrix {
         void register_variable(std::string key, BasePointer* ptr);
         std::map<std::string, BasePointer*> variables;
 
-        Pointer<float> weights;
-        Pointer<float> second_order_weights;
-        int num_weights;
         DeviceID device_id;
 
         // Initialization
-        void init(DeviceID device_id);
+        void init();
 
         virtual int get_object_size() { return sizeof(WeightMatrix); }
 };
@@ -60,24 +59,24 @@ class WeightMatrix {
 /* Macros for WeightMatrix subclass Registry */
 // Put this one in .cpp
 #define REGISTER_WEIGHT_MATRIX(CLASS_NAME, STRING) \
-CLASS_NAME::CLASS_NAME(Attributes *att, Connection *conn) \
-    : WeightMatrix(att, conn) { } \
+CLASS_NAME::CLASS_NAME(Connection *conn) \
+    : WeightMatrix(conn) { } \
 static bool __mat_dummy = \
     NeuralModelBank::register_weight_matrix( \
         STRING, CLASS_NAME::build); \
 int CLASS_NAME::get_object_size() { return sizeof(CLASS_NAME); } \
 \
-WeightMatrix *CLASS_NAME::build(Attributes *att, Connection *conn, DeviceID device_id) { \
-    auto mat = new CLASS_NAME(att, conn); \
-    mat->init(device_id); \
+WeightMatrix *CLASS_NAME::build(Connection *conn) { \
+    auto mat = new CLASS_NAME(conn); \
+    mat->init(); \
     return mat; \
 }
 
 // Put this one in .h at bottom of class definition
 #define WEIGHT_MATRIX_MEMBERS(CLASS_NAME) \
     public: \
-        CLASS_NAME(Attributes *att, Connection *conn); \
-        static WeightMatrix *build(Attributes *att, Connection *conn, DeviceID device_id); \
+        CLASS_NAME(Connection *conn); \
+        static WeightMatrix *build(Connection *conn); \
     protected: \
         virtual int get_object_size();
 
@@ -103,7 +102,7 @@ void transfer_weights(float* from, float* to, int size);
 void clear_diagonal(float *arr, int rows, int cols);
 
 /* Sets delays according to spatial organization */
-void set_delays(DeviceID device_id, OutputType output_type, Connection *conn,
+void set_delays(OutputType output_type, Connection *conn,
     int* delays, float velocity, bool cap_delay,
     float from_spacing, float to_spacing,
     float x_offset, float y_offset);

@@ -87,7 +87,8 @@ State::State(Network *network) : network(network), on_host(true) {
                 attributes[device_id][neural_model] = nullptr;
             } else {
                 auto att = NeuralModelBank::build_attributes(
-                    layers, neural_model, device_id);
+                    layers, neural_model);
+                att->set_device_id(device_id);
                 attributes[device_id][neural_model] = att;
 
                 // Retrieve pointers
@@ -101,7 +102,9 @@ State::State(Network *network) : network(network), on_host(true) {
                     for (auto& conn : layer->get_input_connections()) {
                         WeightMatrix* matrix =
                             NeuralModelBank::build_weight_matrix(
-                                att, conn, neural_model, device_id);
+                                conn, neural_model);
+                        matrix->set_device_id(device_id);
+                        att->process_weight_matrix(matrix);
                         this->weight_matrices[conn] = matrix;
 
                         // Retrieve pointers
