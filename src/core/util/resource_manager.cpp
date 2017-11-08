@@ -195,11 +195,11 @@ void ResourceManager::delete_events() {
     for (auto device : devices) device->delete_events();
 }
 
-const std::vector<DeviceID> ResourceManager::get_active_devices() {
-    std::vector<DeviceID> active;
+const std::set<DeviceID> ResourceManager::get_active_devices() {
+    std::set<DeviceID> active;
     for (auto device : devices)
         if (device->is_active())
-            active.push_back(device->device_id);
+            active.insert(device->device_id);
     return active;
 }
 

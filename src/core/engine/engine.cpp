@@ -397,10 +397,11 @@ Report* Engine::run(PropertyConfig args) {
     // Set engine to active
     Engine::activate(this);
 
-    // Transfer state to device
-    // This renders the pointers in the engine outdated,
-    //   so the engine must be rebuilt
+    // Build state and transfer
+    // This renders the engine outdated, so the engine must be rebuilt as well
+    context.state->build(ResourceManager::get_instance()->get_active_devices());
     context.state->transfer_to_device();
+    this->rebuild(args);
 
     multithreaded = args.get_bool("multithreaded", true);
 
@@ -408,9 +409,6 @@ Report* Engine::run(PropertyConfig args) {
     if (multithreaded)
         Scheduler::get_instance()->start_thread_pool(
             std::max(0, args.get_int("worker threads", 4)));
-
-    // Rebuild engine
-    rebuild(args);
 
     // Initialize cuda random states
     init_rand(context.network->get_max_layer_size());

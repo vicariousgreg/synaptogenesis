@@ -20,6 +20,8 @@ class State {
         State(Network *network);
         virtual ~State();
 
+        void build(std::set<DeviceID> devices = {});
+
         /* Transfers all data to device or back to host */
         void transfer_to_device();
         void transfer_to_host();
@@ -66,11 +68,11 @@ class State {
 
         Network* const network;
 
-        const std::vector<DeviceID> get_active_devices()
+        const std::set<DeviceID> get_active_devices()
             { return active_devices; }
 
     private:
-        std::vector<DeviceID> active_devices;
+        std::set<DeviceID> active_devices;
 
         bool on_host;
         std::map<DeviceID, Buffer*> internal_buffers;
@@ -78,9 +80,9 @@ class State {
         std::map<Layer*, Attributes*> attributes;
         std::map<Layer*, DeviceID> layer_devices;
 
-        // Keep track of all pointers
-        std::map<DeviceID, std::vector<BasePointer*>> network_pointers;
-        std::map<DeviceID, std::vector<BasePointer*>> buffer_pointers;
+        // Functions for gathering pointers
+        std::map<DeviceID, std::vector<BasePointer*>> get_network_pointers() const;
+        std::map<DeviceID, std::vector<BasePointer*>> get_buffer_pointers() const;
 
         std::map<PointerKey, BasePointer*> pointer_map;
 

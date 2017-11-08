@@ -30,7 +30,7 @@ class ResourceManager {
 
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }
-        const std::vector<DeviceID> get_active_devices();
+        const std::set<DeviceID> get_active_devices();
         DeviceID get_host_id() { return devices.size()-1; }
         bool is_host(DeviceID device_id) { return device_id == get_host_id(); }
 

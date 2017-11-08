@@ -10,7 +10,7 @@
 #include "util/tools.h"
 
 static std::map<Layer*, DeviceID> distribute_layers(
-        const LayerList& layers, std::vector<DeviceID> devices) {
+        const LayerList& layers, std::set<DeviceID> devices) {
     std::map<Layer*, DeviceID> layer_devices;
 
     // Distribute layers
@@ -30,9 +30,7 @@ static std::map<Layer*, DeviceID> distribute_layers(
     // Give the next biggest layer to the device with the least weight
     //   until no layers are left to distribute
     for (int i = 0; num_weights.size() > 0; ++i) {
-        // Typically display device is 0, so start at the other end
-        // This helps avoid burdening the display device in some situations
-        int next_device = devices[devices.size()-1];
+        int next_device = *devices.begin();
         for (auto pair : device_weights)
             if (pair.second < device_weights.at(next_device))
                 next_device = pair.first;
@@ -54,19 +52,6 @@ static std::map<Layer*, DeviceID> distribute_layers(
 }
 
 State::State(Network *network) : network(network), on_host(true) {
-    // Determine number of non-host devices
-    // Subtract one if cuda is enabled to avoid distribution to the host
-    this->active_devices = ResourceManager::get_instance()->get_active_devices();
-
-    // Add pointer vectors for each device
-    for (auto device : active_devices) {
-        network_pointers[device] = std::vector<BasePointer*>();
-        buffer_pointers[device] = std::vector<BasePointer*>();
-    }
-
-    // Distribute layers
-    this->layer_devices = distribute_layers(network->get_layers(), active_devices);
-
     // Validate neural model strings
     for (auto layer : network->get_layers())
         if (NeuralModelBank::get_neural_models().count(layer->neural_model) == 0)
@@ -75,10 +60,7 @@ State::State(Network *network) : network(network), on_host(true) {
                 "\" in " + layer->str());
 
     // Create attributes and weight matrices
-    for (auto pair : this->layer_devices) {
-        auto layer = pair.first;
-        auto device_id = pair.second;
-
+    for (auto layer : network->get_layers()) {
         auto att = NeuralModelBank::build_attributes(layer);
         if (not att->check_compatibility(layer->structure->cluster_type))
             LOG_ERROR(
@@ -87,12 +69,36 @@ State::State(Network *network) : network(network), on_host(true) {
         att->process_weight_matrices();
         attributes[layer] = att;
 
-        // Retrieve pointers
-        for (auto ptr : att->get_pointers())
-            network_pointers[device_id].push_back(ptr);
         for (auto pair : att->get_pointer_map())
             pointer_map[pair.first] = pair.second;
     }
+
+    this->build();
+}
+
+void State::build(std::set<DeviceID> devices) {
+    // If no devices are specified, just use host
+    if (devices.size() == 0)
+        devices = { ResourceManager::get_instance()->get_host_id() };
+
+    // Check if the state is already on the specified devices
+    if (devices == active_devices) return;
+
+    // Ensure the state is back on the host before rebuilding
+    if (not on_host) this->transfer_to_host();
+
+    // Distribute layers
+    this->active_devices = devices;
+    this->layer_devices = distribute_layers(network->get_layers(), devices);
+
+    // Delete old buffers
+    for (auto pair : internal_buffers)
+        delete pair.second;
+    internal_buffers.clear();
+    for (auto pair : inter_device_buffers)
+        for (auto inner_pair : pair.second)
+            delete inner_pair.second;
+    inter_device_buffers.clear();
 
     // Create buffers
     for (auto device_id : active_devices) {
@@ -109,10 +115,6 @@ State::State(Network *network) : network(network), on_host(true) {
         auto buffer =
             build_buffer(device_id, device_layers, LayerList(), device_layers);
         internal_buffers[device_id] = buffer;
-
-        // Retrieve pointers
-        for (auto ptr : buffer->get_pointers())
-            buffer_pointers[device_id].push_back(ptr);
 
         // Set up inter-device buffers (one per word index)
         std::map<int, LayerList> inter_device_layers;
@@ -133,10 +135,6 @@ State::State(Network *network) : network(network), on_host(true) {
         for (auto pair : inter_device_layers) {
             auto buffer = build_buffer(device_id, LayerList(), pair.second, LayerList());
             buffer_map[pair.first] = buffer;
-
-            // Retrieve pointers
-            for (auto ptr : buffer->get_pointers())
-                buffer_pointers[device_id].push_back(ptr);
         }
 
         // Set the inter device buffer
@@ -156,6 +154,35 @@ State::~State() {
     }
 }
 
+std::map<DeviceID, std::vector<BasePointer*>> State::get_network_pointers() const {
+    std::map<DeviceID, std::vector<BasePointer*>> network_pointers;
+    for (auto device : active_devices)
+        network_pointers[device] = std::vector<BasePointer*>();
+
+    for (auto pair : layer_devices)
+        for (auto ptr : attributes.at(pair.first)->get_pointers())
+            network_pointers[pair.second].push_back(ptr);
+
+    return network_pointers;
+}
+
+std::map<DeviceID, std::vector<BasePointer*>> State::get_buffer_pointers() const {
+    std::map<DeviceID, std::vector<BasePointer*>> buffer_pointers;
+    for (auto device : active_devices)
+        buffer_pointers[device] = std::vector<BasePointer*>();
+
+    for (auto pair : internal_buffers)
+        for (auto ptr : pair.second->get_pointers())
+            buffer_pointers[pair.first].push_back(ptr);
+
+    for (auto pair : inter_device_buffers)
+        for (auto inner_pair : pair.second)
+            for (auto ptr : inner_pair.second->get_pointers())
+                buffer_pointers[pair.first].push_back(ptr);
+
+    return buffer_pointers;
+}
+
 void State::transfer_to_device() {
 #ifdef __CUDACC__
     if (not on_host) return;
@@ -171,7 +198,7 @@ void State::transfer_to_device() {
     std::set<BasePointer*> new_data_block_pointers;
 
     // Transfer network pointers
-    for (auto pair : network_pointers) {
+    for (auto pair : get_network_pointers()) {
         auto device_id = pair.first;
         if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
@@ -179,7 +206,7 @@ void State::transfer_to_device() {
     }
 
     // Transfer buffer pointers
-    for (auto pair : buffer_pointers) {
+    for (auto pair : get_buffer_pointers()) {
         auto device_id = pair.first;
         if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
@@ -212,7 +239,7 @@ void State::transfer_to_host() {
     std::set<BasePointer*> new_data_block_pointers;
 
     // Transfer network pointers
-    for (auto pair : network_pointers) {
+    for (auto pair : get_network_pointers()) {
         auto device_id = pair.first;
         if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
@@ -220,7 +247,7 @@ void State::transfer_to_host() {
     }
 
     // Transfer buffer pointers
-    for (auto pair : buffer_pointers) {
+    for (auto pair : get_buffer_pointers()) {
         auto device_id = pair.first;
         if (device_id != host_id and pair.second.size() > 0)
             new_data_block_pointers.insert(
@@ -257,7 +284,7 @@ void State::copy_to(State* other) {
 
 size_t State::get_network_bytes() const {
     size_t size = 0;
-    for (auto pair : network_pointers)
+    for (auto pair : get_network_pointers())
         for (auto ptr : pair.second)
             size += ptr->get_bytes();
     return size;
@@ -265,7 +292,7 @@ size_t State::get_network_bytes() const {
 
 size_t State::get_buffer_bytes() const {
     size_t size = 0;
-    for (auto pair : buffer_pointers)
+    for (auto pair : get_buffer_pointers())
         for (auto ptr : pair.second)
             size += ptr->get_bytes();
     return size;
