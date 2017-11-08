@@ -10,6 +10,22 @@
 #include "util/constants.h"
 #include "util/stream.h"
 #include "util/event.h"
+#include "util/property_config.h"
+
+class Memstat {
+    public:
+        Memstat(DeviceID device_id, size_t free, size_t total,
+            size_t used, size_t used_by_this);
+        void print();
+        PropertyConfig to_config();
+
+        DeviceID device_id;
+        const size_t free;
+        const size_t total;
+        const size_t used;
+        const size_t used_by_this;
+};
+
 
 class BasePointer;
 
@@ -44,7 +60,7 @@ class ResourceManager {
         void* allocate_device(size_t count, size_t size,
             void* source_data, DeviceID device_id=0);
         void drop_pointer(void* ptr, size_t bytes, DeviceID device_id);
-        std::vector<Memstat> get_memory_usage(bool verbose=false);
+        std::vector<PropertyConfig> get_memory_usage(bool verbose=false);
 
         BasePointer* transfer(DeviceID device_id,
             std::vector<BasePointer*> ptrs);

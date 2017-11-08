@@ -1,42 +1,5 @@
 #include "util/parallel.h"
 
-Memstat::Memstat(DeviceID device_id, size_t free, size_t total,
-    size_t used, size_t used_by_this)
-        : device_id(device_id), free(free), total(total),
-          used(used), used_by_this(used_by_this) { }
-
-Memstat::Memstat(const Memstat& o, size_t used_by_this)
-        : device_id(o.device_id), free(o.free), total(o.total),
-          used(o.used), used_by_this(used_by_this) { }
-
-void Memstat::print() {
-    if (free == 0)
-        printf("Device %d memory usage:\n"
-            "  used  : %10zu %7.2f MB\n",
-            device_id,
-            used_by_this, float(used_by_this)/1024.0/1024.0);
-    else if (used_by_this > 0)
-        printf("Device %d memory usage:\n"
-            "  proc  : %10zu %7.2f MB\n"
-            "  used  : %10zu %7.2f MB\n"
-            "  free  : %10zu %7.2f MB\n"
-            "  total : %10zu %7.2f MB\n",
-            device_id,
-            used_by_this, float(used_by_this)/1024.0/1024.0,
-            used, float(used)/1024.0/1024.0,
-            free, float(free)/1024.0/1024.0,
-            total, float(total)/1024.0/1024.0);
-    else
-        printf("Device %d memory usage:\n"
-            "  used  : %10zu %7.2f MB\n"
-            "  free  : %10zu %7.2f MB\n"
-            "  total : %10zu %7.2f MB\n",
-            device_id,
-            used, float(used)/1024.0/1024.0,
-            free, float(free)/1024.0/1024.0,
-            total, float(total)/1024.0/1024.0);
-}
-
 #ifdef __CUDACC__
 
 int calc_threads(int computations) {
@@ -70,19 +33,17 @@ void gpuAssert(const char* file, int line, const char* msg) {
     }
 }
 
-Memstat device_check_memory(DeviceID device_id) {
+void device_check_memory(DeviceID device_id, size_t *free, size_t *total) {
+    if (device_id >= get_num_cuda_devices())
+        LOG_ERROR("Tried to query invalid device memory!");
+
     int prev_device;
     cudaGetDevice(&prev_device);
     cudaSetDevice(device_id);
 
-    size_t free_byte ;
-    size_t total_byte ;
-    cudaMemGetInfo( &free_byte, &total_byte );
-    size_t used_byte = total_byte - free_byte;
+    cudaMemGetInfo(free, total);
 
-    Memstat stats = Memstat(device_id, free_byte, total_byte, used_byte);
     cudaSetDevice(prev_device);
-    return stats;
 }
 
 void* cuda_allocate_device(int device_id, size_t count,

@@ -480,16 +480,15 @@ Report* Engine::run(PropertyConfig args) {
     // Clean up
     free_rand();
 
-    if (killed and this->report == nullptr) {
-        killed = false;
-        return new Report(this, this->context.state, 0, 0.0);
-    } else {
-        auto r = this->report;
-        this->report = nullptr;
+    Report* r = (killed and this->report == nullptr)
+        ? new Report(this, this->context.state, 0, 0.0)
+        : this->report;
+    r->set_child("args", &args);
+    for (auto mem : mems) r->add_to_array("memory usage", &mem);
 
-        r->set_child("args", &args);
-        return r;
-    }
+    killed = false;
+    this->report = nullptr;
+    return r;
 }
 
 static void handle_interrupt(int param) {

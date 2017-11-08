@@ -1,11 +1,57 @@
 #include <cstdlib>
 #include <ctime>
+#include <sys/sysinfo.h>
 
 #include "util/resource_manager.h"
 #include "util/error_manager.h"
 #include "util/stream.h"
 #include "util/event.h"
 #include "util/pointer.h"
+
+Memstat::Memstat(DeviceID device_id, size_t free, size_t total,
+    size_t used, size_t used_by_this)
+        : device_id(device_id), free(free), total(total),
+          used(used), used_by_this(used_by_this) { }
+
+void Memstat::print() {
+    if (free == 0)
+        printf("Device %d memory usage:\n"
+            "  used  : %11zu   %8.2f MB\n",
+            device_id,
+            used_by_this, float(used_by_this)/1024.0/1024.0);
+    else if (used_by_this > 0)
+        printf("Device %d memory usage:\n"
+            "  proc  : %11zu   %8.2f MB\n"
+            "  used  : %11zu   %8.2f MB\n"
+            "  free  : %11zu   %8.2f MB\n"
+            "  total : %11zu   %8.2f MB\n",
+            device_id,
+            used_by_this, float(used_by_this)/1024.0/1024.0,
+            used, float(used)/1024.0/1024.0,
+            free, float(free)/1024.0/1024.0,
+            total, float(total)/1024.0/1024.0);
+    else
+        printf("Device %d memory usage:\n"
+            "  used  : %11zu   %8.2f MB\n"
+            "  free  : %11zu   %8.2f MB\n"
+            "  total : %11zu   %8.2f MB\n",
+            device_id,
+            used, float(used)/1024.0/1024.0,
+            free, float(free)/1024.0/1024.0,
+            total, float(total)/1024.0/1024.0);
+}
+
+PropertyConfig Memstat::to_config() {
+    auto host_id = ResourceManager::get_instance()->get_host_id();
+    return PropertyConfig({
+        {"device id", std::to_string(device_id)},
+        {"device type", (device_id == host_id) ? "host" : "gpu"},
+        {"proc", std::to_string(float(used_by_this)/1024.0/1024.0)},
+        {"used", std::to_string(float(used)/1024.0/1024.0)},
+        {"free", std::to_string(float(free)/1024.0/1024.0)},
+        {"total", std::to_string(float(total)/1024.0/1024.0)} });
+}
+
 
 ResourceManager *ResourceManager::instance = nullptr;
 
@@ -139,21 +185,23 @@ void ResourceManager::drop_pointer(void* ptr, size_t bytes, DeviceID device_id) 
     this->memory_usage[device_id] -= bytes;
 }
 
-std::vector<Memstat> ResourceManager::get_memory_usage(bool verbose) {
-    std::vector<Memstat> stats;
-    for (auto d : devices)
-        if (d->is_host())
-            stats.push_back(
-                Memstat(
-                    d->device_id, 0, 0,
-                    memory_usage[d->device_id],
-                    memory_usage[d->device_id]));
-        else
-            stats.push_back(
-                Memstat(
-                    device_check_memory(d->device_id),
-                    memory_usage[d->device_id]));
-    if (verbose) for (auto s : stats) s.print();
+std::vector<PropertyConfig> ResourceManager::get_memory_usage(bool verbose) {
+    std::vector<PropertyConfig> stats;
+    for (auto d : devices) {
+        size_t free, total;
+        if (d->is_host()) {
+            struct sysinfo info;
+            sysinfo(&info);
+            free = info.freeram;
+            total = info.totalram;
+        } else {
+            device_check_memory(d->device_id, &free, &total);
+        }
+        Memstat stat = Memstat(
+            d->device_id, free, total, total-free, memory_usage[d->device_id]);
+        if (verbose) stat.print();
+        stats.push_back(stat.to_config());
+    }
     return stats;
 }
 
