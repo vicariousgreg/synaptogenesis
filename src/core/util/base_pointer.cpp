@@ -19,7 +19,8 @@ void BasePointer::free() {
 #else
         if (local) std::free(ptr);         // unpinned host memory (default)
 #endif
-        ResourceManager::get_instance()->drop_pointer(ptr, device_id);
+        ResourceManager::get_instance()->drop_pointer(
+            ptr, size * unit_size, device_id);
     }
 }
 

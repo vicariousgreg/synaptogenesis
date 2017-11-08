@@ -446,7 +446,8 @@ Report* Engine::run(PropertyConfig args) {
     // Ensure device is synchronized without errors
     device_synchronize();
     device_check_error("Clock device synchronization failed!");
-    if (verbose) device_check_memory();
+
+    auto mems = ResourceManager::get_instance()->get_memory_usage(verbose);
 
     if (not killed) {
         std::vector<std::thread> threads;

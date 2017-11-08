@@ -30,6 +30,10 @@ ResourceManager::ResourceManager() {
 
     // Host or First GPU
     devices[0]->set_active(true);
+
+    // Initialize memory usage
+    for (auto d : devices)
+        memory_usage[d->device_id] = 0;
 }
 
 ResourceManager::~ResourceManager() {
@@ -58,12 +62,12 @@ void ResourceManager::flush(DeviceID device_id) {
         auto pointers = managed_pointers.at(device_id);
         if (is_host(device_id))
             for (auto ptr : pointers)
-                std::free(ptr);
+                std::free(ptr.first);
 #ifdef __CUDACC__
         else {
             cudaSetDevice(device_id);
             for (auto ptr : pointers)
-                cudaFree(ptr);
+                cudaFree(ptr.first);
         }
 #endif
         managed_pointers.erase(device_id);
@@ -109,7 +113,8 @@ void* ResourceManager::allocate_host(size_t count, size_t size) {
     if (ptr == nullptr)
         LOG_ERROR(
             "Failed to allocate space on host for neuron state!");
-    managed_pointers[get_host_id()].insert(ptr);
+    managed_pointers[get_host_id()].insert({ ptr, count * size });
+    this->memory_usage[get_host_id()] += count * size;
     return ptr;
 }
 
@@ -121,15 +126,35 @@ void* ResourceManager::allocate_device(size_t count, size_t size,
         LOG_ERROR(
             "Attempted to allocate memory on non-existent device!");
     void* ptr = cuda_allocate_device(device_id, count, size, source_data);
-    managed_pointers[device_id].insert(ptr);
+    managed_pointers[device_id].insert({ ptr, count * size });
+    this->memory_usage[device_id] += count * size;
     return ptr;
 }
 
-void ResourceManager::drop_pointer(void* ptr, DeviceID device_id) {
+void ResourceManager::drop_pointer(void* ptr, size_t bytes, DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
             "Attempted to drop pointer from non-existent device!");
-    managed_pointers[device_id].erase(ptr);
+    managed_pointers[device_id].erase({ ptr, bytes });
+    this->memory_usage[device_id] -= bytes;
+}
+
+std::vector<Memstat> ResourceManager::get_memory_usage(bool verbose) {
+    std::vector<Memstat> stats;
+    for (auto d : devices)
+        if (d->is_host())
+            stats.push_back(
+                Memstat(
+                    d->device_id, 0, 0,
+                    memory_usage[d->device_id],
+                    memory_usage[d->device_id]));
+        else
+            stats.push_back(
+                Memstat(
+                    device_check_memory(d->device_id),
+                    memory_usage[d->device_id]));
+    if (verbose) for (auto s : stats) s.print();
+    return stats;
 }
 
 BasePointer* ResourceManager::transfer(DeviceID device_id,

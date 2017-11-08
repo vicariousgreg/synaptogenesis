@@ -4,6 +4,20 @@
 #include "util/constants.h"
 #include "util/error_manager.h"
 
+class Memstat {
+    public:
+        Memstat(DeviceID device_id, size_t free, size_t total,
+            size_t used, size_t used_by_this=0);
+        Memstat(const Memstat& other, size_t used_by_this);
+        void print();
+
+        DeviceID device_id;
+        size_t free;
+        size_t total;
+        size_t used;
+        size_t used_by_this;
+};
+
 // Define prefixes such that it doesn't affect anything for serial version
 #ifdef __CUDACC__
 
@@ -25,7 +39,7 @@ inline void init_rand(int count) { }
 inline void free_rand() { }
 inline int calc_threads(int computations) { return 0; }
 inline int calc_blocks(int computations, int threads=0) { return 0; }
-inline void device_check_memory() { }
+inline Memstat device_check_memory(DeviceID device_id) { }
 inline void* cuda_allocate_device(int device_id, size_t count,
         size_t size, void* source_data) {
     LOG_ERROR(
@@ -62,7 +76,7 @@ int calc_blocks(int computations, int threads=IDEAL_THREADS);
 void gpuAssert(const char* file, int line, const char* msg);
 
 /** Checks cuda memory usage and availability */
-void device_check_memory();
+Memstat device_check_memory(DeviceID device_id);
 void* cuda_allocate_device(int device_id, size_t count,
         size_t size, void* source_data);
 

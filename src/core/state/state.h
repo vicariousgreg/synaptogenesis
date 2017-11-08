@@ -20,6 +20,8 @@ class State {
         State(Network *network);
         virtual ~State();
 
+        /* Builds the state on the specified devices
+         * If none specified, host is used by default */
         void build(std::set<DeviceID> devices = {});
 
         /* Transfers all data to device or back to host */

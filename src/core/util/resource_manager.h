@@ -43,7 +43,8 @@ class ResourceManager {
         void* allocate_host(size_t count, size_t size);
         void* allocate_device(size_t count, size_t size,
             void* source_data, DeviceID device_id=0);
-        void drop_pointer(void* ptr, DeviceID device_id);
+        void drop_pointer(void* ptr, size_t bytes, DeviceID device_id);
+        std::vector<Memstat> get_memory_usage(bool verbose=false);
 
         BasePointer* transfer(DeviceID device_id,
             std::vector<BasePointer*> ptrs);
@@ -86,7 +87,8 @@ class ResourceManager {
 
         int num_cores;
         std::vector<Device*> devices;
-        std::map<DeviceID, std::set<void*>> managed_pointers;
+        std::map<DeviceID, std::set<std::pair<void*, size_t>>> managed_pointers;
+        std::map<DeviceID, size_t> memory_usage;
 };
 
 #endif
