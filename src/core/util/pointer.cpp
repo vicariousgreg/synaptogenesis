@@ -55,6 +55,18 @@ Pointer<T>::Pointer(T* ptr, size_t size, bool local, DeviceID device_id)
           false) { }
 
 template<typename T>
+Pointer<T>::Pointer(BasePointer* base_ptr)
+    : BasePointer(
+          std::type_index(typeid(T)),
+          (float*)base_ptr->get(),
+          base_ptr->get_size(),
+          sizeof(T),
+          base_ptr->get_device_id(),
+          base_ptr->get_local(),
+          false,
+          false) { }
+
+template<typename T>
 Pointer<T>::Pointer(const Pointer<T>& other)
     : BasePointer(
           std::type_index(typeid(T)),

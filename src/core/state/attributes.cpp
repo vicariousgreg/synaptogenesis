@@ -60,15 +60,20 @@ void Attributes::transfer(DeviceID new_device) {
         LOG_ERROR("Cannot transfer attributes directly between devices!");
 
     if (new_device == host_id) {
+        auto old_device = device_id;
+        auto old_ptr = this->pointer;
+
         // Transfer to host
         cudaMemcpy(this, this->pointer, get_object_size(), cudaMemcpyDeviceToHost);
+        this->device_id = new_device;
 
         // Free old device copy
-        cudaSetDevice(device_id);
-        cudaFree(this->pointer);
+        cudaSetDevice(old_device);
+        cudaFree(old_ptr);
         this->pointer = this;
     } else {
         // Transfer to device
+        this->device_id = new_device;
         cudaSetDevice(new_device);
         this->pointer = (Attributes*)
             ResourceManager::get_instance()->allocate_device(
@@ -119,9 +124,9 @@ void Attributes::process_weight_matrices() {
         process_weight_matrix(pair.second);
 }
 
-void Attributes::transpose_weight_matrices(DeviceID dest_device) {
+void Attributes::transpose_weight_matrices() {
     for (auto pair : weight_matrices)
-        pair.second->transpose(dest_device);
+        pair.second->transpose();
 }
 
 template Pointer<float> Attributes::create_neuron_variable();

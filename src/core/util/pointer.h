@@ -39,6 +39,7 @@ class BasePointer {
         HOST DEVICE size_t get_unit_size() const { return unit_size; }
         HOST DEVICE size_t get_bytes() const { return size * unit_size; }
         HOST DEVICE DeviceID get_device_id() const { return device_id; }
+        HOST DEVICE bool get_local() const { return local; }
         std::type_index get_type() const { return type; }
 
         // Frees the encapsulated pointer if this is the owner
@@ -99,6 +100,7 @@ class Pointer : public BasePointer {
         // Container constructor
         // Encapsulates the pointer but does not claim ownership
         Pointer(T* ptr, size_t size, bool local, DeviceID device_id);
+        Pointer(BasePointer* base_ptr);
         Pointer(const Pointer<T>& other);
 
 

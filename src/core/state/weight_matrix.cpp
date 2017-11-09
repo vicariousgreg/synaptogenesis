@@ -5,6 +5,7 @@
 #include "network/layer.h"
 #include "network/connection.h"
 #include "util/error_manager.h"
+#include "util/parallel.h"
 
 /* Sets all values in an array to the given val */
 void set_weights(float* arr, int size, float val, float fraction) {
@@ -122,20 +123,17 @@ WeightMatrix::~WeightMatrix() {
 #endif
 }
 
-void WeightMatrix::transpose(DeviceID dest_device) {
-    bool dest_host = ResourceManager::get_instance()->is_host(dest_device);
+void WeightMatrix::transpose() {
+    DeviceID host_id = ResourceManager::get_instance()->get_host_id();
 
     // Only transpose if necessary
     // If num_weights == to_layer size, transposition is a no-op.
-    if ((dest_host and not transposed)
-        or (not dest_host and transposed)
-        or (num_weights == connection->to_layer->size)) return;
+    if (num_weights == connection->to_layer->size) return;
 
-    // If the matrix is bound for a device, rows correspond to destination
-    //   neurons.  Otherwise, the transposition has already been carried out,
-    //   so the rows/columns need to be switched.
+    // If the matrix is not transposed yet, rows correspond to destination
+    //   neurons.  Otherwise, the rows/columns need to be switched.
     int original_rows, original_cols;
-    if (dest_host) {
+    if (transposed) {
         original_cols = connection->to_layer->size;
         original_rows = num_weights / original_cols;
     } else {
@@ -143,9 +141,46 @@ void WeightMatrix::transpose(DeviceID dest_device) {
         original_cols = num_weights / original_rows;
     }
 
-    transpose_matrix<float>(this->weights.get(), original_rows, original_cols);
-    for (auto pair : variables)
-        transpose_matrix<float>((float*)pair.second->get(), original_rows, original_cols);
+    if (device_id == host_id) {
+        transpose_matrix<float>(this->weights.get(), original_rows, original_cols);
+        for (auto pair : variables)
+            transpose_matrix<float>((float*)pair.second->get(), original_rows, original_cols);
+    } else {
+#ifdef __CUDACC__
+        // Create temporary matrix
+        Pointer<float> temp = Pointer<float>(num_weights);
+        temp.transfer(device_id,
+            (float*)ResourceManager::get_instance()->allocate_device(
+                num_weights, sizeof(float), nullptr, device_id),
+            true); // take ownership
+
+        dim3 dimGrid(
+            (original_cols/TILE_DIM) + (original_cols % TILE_DIM > 0),
+            (original_rows/TILE_DIM) + (original_rows % TILE_DIM > 0), 1);
+        dim3 dimBlock(TILE_DIM, BLOCK_ROWS, 1);
+
+        auto stream = ResourceManager::get_instance()->get_default_stream(device_id);
+
+        this->weights.copy_to(temp, stream);
+        transpose_matrix_parallel<float>
+            <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
+            (temp, this->weights, original_rows, original_cols);
+        device_synchronize();
+        device_check_error("Failed to transpose weight matrix!");
+
+        for (auto pair : variables) {
+            auto p = Pointer<float>(pair.second);
+            p.copy_to(temp, stream);
+            transpose_matrix_parallel<float>
+                <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
+                (temp, p, original_rows, original_cols);
+            device_synchronize();
+            device_check_error("Failed to transpose weight matrix!");
+        }
+        temp.free();
+#endif
+    }
+
     this->transposed = not this->transposed;
 }
 
@@ -158,21 +193,25 @@ void WeightMatrix::transfer(DeviceID new_device) {
         LOG_ERROR("Cannot transfer attributes directly between devices!");
 
     if (new_device == host_id) {
+        auto old_device = device_id;
+        auto old_ptr = this->pointer;
+
         // Transfer to host
         cudaMemcpy(this, this->pointer, get_object_size(), cudaMemcpyDeviceToHost);
+        this->device_id = new_device;
 
         // Free old device copy
-        cudaSetDevice(device_id);
-        cudaFree(this->pointer);
+        cudaSetDevice(old_device);
+        cudaFree(old_ptr);
         this->pointer = this;
     } else {
         // Transfer to device
+        this->device_id = new_device;
         cudaSetDevice(new_device);
         this->pointer = (WeightMatrix*)
             ResourceManager::get_instance()->allocate_device(
                 1, get_object_size(), this, new_device);
     }
-
     device_check_error("Failed to transfer attributes to device!");
 #endif
 }

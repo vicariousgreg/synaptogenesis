@@ -21,7 +21,7 @@ class WeightMatrix {
         // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
         std::map<PointerKey, BasePointer*> get_pointer_map();
-        void transpose(DeviceID dest_device);
+        void transpose();
         void transfer(DeviceID new_device);
 
         // Subclasses implement this for variable registration

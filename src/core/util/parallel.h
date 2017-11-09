@@ -4,6 +4,9 @@
 #include "util/constants.h"
 #include "util/error_manager.h"
 
+const int TILE_DIM = 32;
+const int BLOCK_ROWS = 8;
+
 // Define prefixes such that it doesn't affect anything for serial version
 #ifdef __CUDACC__
 
@@ -71,6 +74,14 @@ extern DEVICE curandState_t* cuda_rand_states;
 GLOBAL void init_curand(int count);
 void init_rand(int count);
 void free_rand();
+
+template<class T>
+class Pointer;
+
+template<class T>
+GLOBAL void transpose_matrix_parallel(
+    const Pointer<T> idata, Pointer<T> odata,
+	const int original_rows, const int original_columns);
 
 #endif
 

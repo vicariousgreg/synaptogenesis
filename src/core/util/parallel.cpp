@@ -1,4 +1,5 @@
 #include "util/parallel.h"
+#include "util/pointer.h"
 
 #ifdef __CUDACC__
 
@@ -98,6 +99,40 @@ void free_rand() {
         cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
     }
     cudaSetDevice(prev_device);
+}
+
+template GLOBAL void transpose_matrix_parallel<float>(
+	const Pointer<float> idata, Pointer<float> odata,
+	const int original_rows, const int original_columns);
+template GLOBAL void transpose_matrix_parallel<int>(
+	const Pointer<int> idata, Pointer<int> odata,
+	const int original_rows, const int original_columns);
+
+template<class T>
+GLOBAL void transpose_matrix_parallel(
+        const Pointer<T> idata, Pointer<T> odata,
+        const int original_rows, const int original_columns) {
+    __shared__ T tile[TILE_DIM][TILE_DIM+1];
+
+    int x = blockIdx.x * TILE_DIM + threadIdx.x;
+    int y = blockIdx.y * TILE_DIM + threadIdx.y;
+
+    T* in = idata.get();
+    if (x < original_columns)
+        for (int j = 0; j < TILE_DIM; j += BLOCK_ROWS)
+            if (y+j < original_rows)
+                tile[threadIdx.y+j][threadIdx.x] = in[(y+j)*original_columns + x];
+
+    __syncthreads();
+
+    x = blockIdx.y * TILE_DIM + threadIdx.x;
+    y = blockIdx.x * TILE_DIM + threadIdx.y;
+
+    T* out = odata.get();
+    if (x < original_rows)
+        for (int j = 0; j < TILE_DIM; j += BLOCK_ROWS)
+            if (y + j < original_columns)
+                out[(y+j)*original_rows + x] = tile[threadIdx.x][threadIdx.y + j];
 }
 
 #endif

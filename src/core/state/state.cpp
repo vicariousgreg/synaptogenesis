@@ -190,10 +190,6 @@ void State::transfer_to_device() {
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
-    // Transpose device-bound matrices
-    for (auto pair : attributes)
-        pair.second->transpose_weight_matrices(layer_devices.at(pair.first));
-
     // Accumulate new data block pointers
     std::set<BasePointer*> new_data_block_pointers;
 
@@ -217,6 +213,10 @@ void State::transfer_to_device() {
     for (auto pair : attributes)
         pair.second->transfer(layer_devices.at(pair.first));
 
+    // Transpose matrices
+    for (auto pair : attributes)
+        pair.second->transpose_weight_matrices();
+
     // Free old data block pointers and replace with new ones
     for (auto ptr : data_block_pointers) ptr->free();
     data_block_pointers = new_data_block_pointers;
@@ -231,6 +231,10 @@ void State::transfer_to_host() {
 
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
+
+    // Transpose device-bound matrices
+    for (auto pair : attributes)
+        pair.second->transpose_weight_matrices();
 
     // Transfer attributes
     for (auto pair : attributes) pair.second->transfer(host_id);
@@ -257,10 +261,6 @@ void State::transfer_to_host() {
     // Free old data block pointers and replace with new ones
     for (auto ptr : data_block_pointers) ptr->free();
     data_block_pointers = new_data_block_pointers;
-
-    // Transpose device-bound matrices
-    for (auto pair : attributes)
-        pair.second->transpose_weight_matrices(host_id);
 
     on_host = true;
 #endif
