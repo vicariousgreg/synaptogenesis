@@ -4,8 +4,8 @@
 #include "util/constants.h"
 #include "util/error_manager.h"
 
-const int TILE_DIM = 32;
-const int BLOCK_ROWS = 8;
+const int TRANSPOSE_TILE_DIM = 32;
+const int TRANSPOSE_BLOCK_ROWS = 8;
 
 // Define prefixes such that it doesn't affect anything for serial version
 #ifdef __CUDACC__
@@ -36,6 +36,15 @@ inline void* cuda_allocate_device(int device_id, size_t count,
     return nullptr;
 }
 
+class dim3 {
+    public:
+        dim3(int x, int y=1, int z=1) : x(x), y(y), z(z) { }
+        int x, y, z;
+};
+
+dim3 calc_transpose_threads(int original_rows, int original_columns);
+dim3 calc_transpose_blocks(int original_rows, int original_columns);
+
 #endif
 
 #ifdef __CUDACC__
@@ -61,6 +70,9 @@ int get_num_cuda_devices();
 
 int calc_threads(int computations);
 int calc_blocks(int computations, int threads=IDEAL_THREADS);
+
+dim3 calc_transpose_threads(int original_rows, int original_columns);
+dim3 calc_transpose_blocks(int original_rows, int original_columns);
 
 void gpuAssert(const char* file, int line, const char* msg);
 

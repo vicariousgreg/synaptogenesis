@@ -103,6 +103,9 @@ WeightMatrix::WeightMatrix(Connection* conn)
       transposed(false),
       pointer(this),
       num_weights(conn->get_num_weights()),
+      rows(conn->to_layer->size),
+      columns(num_weights / rows),
+      transpose_weights(false),
       weights(Pointer<float>(num_weights)),
       second_order_weights(
           (conn->second_order)
@@ -130,21 +133,12 @@ void WeightMatrix::transpose() {
     // If num_weights == to_layer size, transposition is a no-op.
     if (num_weights == connection->to_layer->size) return;
 
-    // If the matrix is not transposed yet, rows correspond to destination
-    //   neurons.  Otherwise, the rows/columns need to be switched.
-    int original_rows, original_cols;
-    if (transposed) {
-        original_cols = connection->to_layer->size;
-        original_rows = num_weights / original_cols;
-    } else {
-        original_rows = connection->to_layer->size;
-        original_cols = num_weights / original_rows;
-    }
-
     if (device_id == host_id) {
-        transpose_matrix<float>(this->weights.get(), original_rows, original_cols);
+        transpose_matrix_in_place<float>(
+            this->weights.get(), get_rows(), get_columns());
         for (auto pair : variables)
-            transpose_matrix<float>((float*)pair.second->get(), original_rows, original_cols);
+            transpose_matrix_in_place<float>(
+                (float*)pair.second->get(), get_rows(), get_columns());
     } else {
 #ifdef __CUDACC__
         // Create temporary matrix
@@ -154,17 +148,16 @@ void WeightMatrix::transpose() {
                 num_weights, sizeof(float), nullptr, device_id),
             true); // take ownership
 
-        dim3 dimGrid(
-            (original_cols/TILE_DIM) + (original_cols % TILE_DIM > 0),
-            (original_rows/TILE_DIM) + (original_rows % TILE_DIM > 0), 1);
-        dim3 dimBlock(TILE_DIM, BLOCK_ROWS, 1);
+        dim3 dimGrid = calc_transpose_blocks(get_rows(), get_columns());
+        dim3 dimBlock = calc_transpose_threads(get_rows(), get_columns());
 
-        auto stream = ResourceManager::get_instance()->get_default_stream(device_id);
+        auto stream =
+            ResourceManager::get_instance()->get_default_stream(device_id);
 
         this->weights.copy_to(temp, stream);
         transpose_matrix_parallel<float>
             <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-            (temp, this->weights, original_rows, original_cols);
+            (temp, this->weights, get_rows(), get_columns());
         device_synchronize();
         device_check_error("Failed to transpose weight matrix!");
 
@@ -173,7 +166,7 @@ void WeightMatrix::transpose() {
             p.copy_to(temp, stream);
             transpose_matrix_parallel<float>
                 <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-                (temp, p, original_rows, original_cols);
+                (temp, p, get_rows(), get_columns());
             device_synchronize();
             device_check_error("Failed to transpose weight matrix!");
         }
@@ -182,6 +175,16 @@ void WeightMatrix::transpose() {
     }
 
     this->transposed = not this->transposed;
+}
+
+void WeightMatrix::set_weight_transpose(bool t) {
+    if (transpose_weights and (not t)) {
+        weights_transposed.free();
+        weights_transposed = Pointer<float>();
+    } else if ((not transpose_weights) and t) {
+        weights_transposed = Pointer<float>(num_weights);
+    }
+    transpose_weights = t;
 }
 
 void WeightMatrix::transfer(DeviceID new_device) {
@@ -229,6 +232,8 @@ BasePointer* WeightMatrix::get_layer(std::string key) {
 
 std::vector<BasePointer*> WeightMatrix::get_pointers() {
     std::vector<BasePointer*> pointers = { &weights };
+    if (transpose_weights)
+        pointers.push_back(&weights_transposed);
     if (connection->second_order_host)
         pointers.push_back(&second_order_weights);
     for (auto pair : variables) pointers.push_back(pair.second);
@@ -238,6 +243,10 @@ std::vector<BasePointer*> WeightMatrix::get_pointers() {
 std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
     std::map<PointerKey, BasePointer*> pointers;
     pointers[PointerKey(connection->id, "weights", weights.get_bytes())] = &weights;
+
+    if (transpose_weights)
+        pointers[PointerKey(connection->id, "weights transposed",
+            weights_transposed.get_bytes())] = &weights_transposed;
     if (connection->second_order_host)
         pointers[PointerKey(connection->id, "second order weights",
             second_order_weights.get_bytes())] = &second_order_weights;
@@ -729,7 +738,7 @@ void set_delays(OutputType output_type, Connection *conn,
  */
 
 template<class RandomIterator>
-static void transpose_impl(RandomIterator first, RandomIterator last,
+static void transpose_in_place_impl(RandomIterator first, RandomIterator last,
         long desired_rows) {
     const long mn1 = (last - first - 1);
     const long n   = (last - first) / desired_rows;
@@ -746,10 +755,13 @@ static void transpose_impl(RandomIterator first, RandomIterator last,
     }
 }
 
-template void transpose_matrix<float>(float* data, int original_rows, int original_cols);
-template void transpose_matrix<int>(int* data, int original_rows, int original_cols);
+template void transpose_matrix_in_place<float>(
+    float* data, int original_rows, int original_cols);
+template void transpose_matrix_in_place<int>(
+    int* data, int original_rows, int original_cols);
 
 template <typename T>
-void transpose_matrix(T* data, int original_rows, int original_cols) {
-    transpose_impl(data, data + (original_rows * original_cols), original_cols);
+void transpose_matrix_in_place(T* data, int original_rows, int original_cols) {
+    transpose_in_place_impl(data,
+        data + (original_rows * original_cols), original_cols);
 }

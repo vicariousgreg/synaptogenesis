@@ -69,7 +69,7 @@ class Instruction {
         Stream *stream;
         Event* event;
         std::vector<Event*> dependencies;
-        int blocks, threads;
+        dim3 blocks, threads;
         Instruction *child;
 };
 
@@ -298,6 +298,36 @@ class DendriticInstruction : public Instruction {
     protected:
         Pointer<float> src, dst;
         bool init;
+};
+
+/* Transposes a matrix */
+class TransposeInstruction : public Instruction {
+    public:
+        TransposeInstruction(Connection *conn, State *state, Stream *stream)
+                : Instruction(conn->to_layer, stream),
+                  connection(conn),
+                  matrix(state->get_matrix(conn)) {
+                this->threads = calc_transpose_threads(
+                    matrix->get_rows(), matrix->get_columns());
+                this->blocks = calc_transpose_blocks(
+                    matrix->get_rows(), matrix->get_columns());
+        }
+
+        void activate() {
+            Instruction::wait_for_dependencies();
+            get_transposer().run(
+                stream, blocks, threads,
+                matrix->get_weights(), matrix->get_weights_transposed(),
+                matrix->get_rows(), matrix->get_columns());
+            Instruction::record_event();
+        }
+
+        Connection* const connection;
+        const WeightMatrix * const matrix;
+
+    protected:
+        Kernel<const Pointer<float>, Pointer<float>,
+            const int, const int> transposer;
 };
 
 /* Transfers data */

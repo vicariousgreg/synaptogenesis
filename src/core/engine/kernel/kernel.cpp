@@ -1,5 +1,6 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
+#include "util/parallel.h"
 
 /******************************************************************************/
 /************************* ACTIVATOR TOOL KERNELS *****************************/
@@ -135,6 +136,28 @@ GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
 Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal() {
     return Kernel<int, Pointer<float>, Pointer<float>, bool>(
         calc_internal_SERIAL, calc_internal_PARALLEL);
+}
+
+void transpose_matrix_serial(
+        const Pointer<float> idata, Pointer<float> odata,
+        const int original_rows, const int original_columns) {
+    float* in = idata.get();
+    float* out = odata.get();
+
+    for (int i = 0 ; i < original_rows ; ++i)
+        for (int j = 0 ; j < original_columns ; ++j)
+            out[(j*original_rows) + i] = in[(i*original_columns) + j];
+}
+
+Kernel<const Pointer<float>, Pointer<float>,
+        const int, const int> get_transposer() {
+#ifdef __CUDACC__
+    return Kernel<const Pointer<float>, Pointer<float>, const int, const int>(
+        transpose_matrix_serial,transpose_matrix_parallel<float>);
+#else
+    return Kernel<const Pointer<float>, Pointer<float>, const int, const int>(
+        transpose_matrix_serial);
+#endif
 }
 
 /******************************************************************************/

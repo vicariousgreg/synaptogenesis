@@ -33,7 +33,7 @@ class Kernel {
                   parallel_kernel(parallel_kernel),
                   run_all_serial(false) { }
 
-        void run(Stream *stream, int blocks, int threads, ARGS... args) {
+        void run(Stream *stream, dim3 blocks, dim3 threads, ARGS... args) {
             if (run_all_serial or stream->is_host())
                 run_serial(stream, args...);
             else
@@ -50,7 +50,7 @@ class Kernel {
                         this, stream, serial_kernel, args...));
         }
 
-        void run_parallel(Stream *stream, int blocks, int threads, ARGS... args) {
+        void run_parallel(Stream *stream, dim3 blocks, dim3 threads, ARGS... args) {
 #ifdef __CUDACC__
             if (parallel_kernel == nullptr)
                 LOG_ERROR(
@@ -71,7 +71,7 @@ class Kernel {
         }
 
 #ifdef __CUDACC__
-        void parallel_wrapper(Stream *stream, int blocks, int threads,
+        void parallel_wrapper(Stream *stream, dim3 blocks, dim3 threads,
                 void(*f)(ARGS...), ARGS... args) {
             cudaSetDevice(stream->get_device_id());
             f
@@ -110,5 +110,9 @@ template<typename T>
 inline Kernel<Pointer<T>, Pointer<T>, Stream*> get_copy_pointer_kernel() {
     return Kernel<Pointer<T>, Pointer<T>, Stream*>(copy_pointer, true);
 }
+
+/* Transposition kernel */
+Kernel<const Pointer<float>, Pointer<float>,
+    const int, const int> get_transposer();
 
 #endif

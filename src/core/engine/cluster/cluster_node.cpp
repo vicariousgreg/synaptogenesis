@@ -114,6 +114,11 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
             synapse_activate_instructions.push_back(syn_inst);
             activate_instructions.push_back(syn_inst);
 
+            // If transpose flag, add transposition instruction
+            if (state->get_weight_transpose(conn))
+                update_instructions.push_back(
+                    new TransposeInstruction(conn, state, compute_stream));
+
             // If plastic, create update instruction
             if (conn->plastic) {
                 auto syn_update_inst = new SynapseUpdateInstruction(
@@ -153,6 +158,11 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         // Create the instruction and add it to the synapse instuction list
         synapse_activate_instructions.push_back(syn_inst);
         activate_instructions.push_back(syn_inst);
+
+        // If transpose flag, add transposition instruction
+        if (state->get_weight_transpose(conn))
+            update_instructions.push_back(
+                new TransposeInstruction(conn, state, compute_stream));
 
         // If plastic, create update instruction
         if (conn->plastic) {

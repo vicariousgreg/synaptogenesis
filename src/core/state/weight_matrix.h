@@ -13,10 +13,14 @@ class WeightMatrix {
 
         // Getters
         Pointer<float> get_weights() const { return weights; }
+        Pointer<float> get_weights_transposed() const
+            { return weights_transposed; }
         Pointer<float> get_second_order_weights() const
             { return second_order_weights; }
         BasePointer* get_layer(std::string key);
         DeviceID get_device_id() { return device_id; }
+        int get_rows() const { return (transposed) ? columns : rows; }
+        int get_columns() const { return (transposed) ? rows : columns; }
 
         // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
@@ -26,6 +30,8 @@ class WeightMatrix {
 
         // Subclasses implement this for variable registration
         virtual void register_variables() { }
+        void set_weight_transpose(bool t);
+        bool get_weight_transpose() { return transpose_weights; }
 
         // Pointer to this object
         // If parallel, this will point to the device copy
@@ -33,6 +39,7 @@ class WeightMatrix {
 
         const int num_weights;
         Pointer<float> weights;
+        Pointer<float> weights_transposed;
         Pointer<float> second_order_weights;
 
         Connection* const connection;
@@ -48,6 +55,9 @@ class WeightMatrix {
 
         DeviceID device_id;
         bool transposed;
+        bool transpose_weights;
+        const int rows;
+        const int columns;
 
         // Initialization
         void init();
@@ -108,6 +118,6 @@ void set_delays(OutputType output_type, Connection *conn,
 
 /* Transposes a matrix in place */
 template <typename T>
-void transpose_matrix(T* data, int original_rows, int original_cols);
+void transpose_matrix_in_place(T* data, int original_rows, int original_cols);
 
 #endif

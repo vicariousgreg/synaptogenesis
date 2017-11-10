@@ -54,6 +54,7 @@ class State {
 
         /* Getters for connection related data */
         Pointer<float> get_weights(Connection *conn) const;
+        const WeightMatrix* get_matrix(Connection *conn) const;
         const WeightMatrix* get_matrix_pointer(Connection *conn) const;
         EXTRACTOR get_connection_extractor(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) const;
@@ -61,6 +62,7 @@ class State {
         Pointer<Output> get_device_output_buffer(
             Connection *conn, int word_index) const;
         bool is_inter_device(Connection *conn) const;
+        bool get_weight_transpose(Connection *conn) const;
 
         /* Getters for external use */
         BasePointer* get_neuron_data(Layer *layer, std::string key);

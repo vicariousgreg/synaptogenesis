@@ -485,13 +485,25 @@ Kernel<ATTRIBUTE_ARGS> State::get_learning_kernel(Layer *layer) const {
 
 Pointer<float> State::get_weights(Connection* conn) const {
     try {
-        return attributes.at(conn->to_layer)->get_weight_matrix(conn)->get_weights();
+        return attributes.at(conn->to_layer)
+            ->get_weight_matrix(conn)->get_weights();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get weight matrix in State for "
             "conn: " + conn->str());
     }
 }
+
+const WeightMatrix* State::get_matrix(Connection* conn) const {
+    try {
+        return attributes.at(conn->to_layer)->get_weight_matrix(conn);
+    } catch (std::out_of_range) {
+        LOG_ERROR(
+            "Failed to get weight matrix in State for "
+            "conn: " + conn->str());
+    }
+}
+
 const WeightMatrix* State::get_matrix_pointer(Connection* conn) const {
     try {
         return attributes.at(conn->to_layer)->get_weight_matrix(conn)->pointer;
@@ -549,6 +561,18 @@ bool State::is_inter_device(Connection *conn) const {
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to check inter-device status in State for "
+            "connection: " + conn->str());
+    }
+}
+
+bool State::get_weight_transpose(Connection *conn) const {
+    try {
+        return attributes.at(conn->to_layer)
+            ->get_weight_matrix(conn)
+            ->get_weight_transpose();
+    } catch (std::out_of_range) {
+        LOG_ERROR(
+            "Failed to check transpose flag in State for "
             "connection: " + conn->str());
     }
 }
