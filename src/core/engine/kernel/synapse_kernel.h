@@ -263,8 +263,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             NEURON_PRE; \
  \
             /* Determine starting row and column for source neurons */ \
-            int s_row = d_row * row_stride + row_offset; \
-            int s_col = d_col * column_stride + column_offset; \
+            int s_row = d_row * row_stride + (row_spacing * row_offset); \
+            int s_col = d_col * column_stride + (column_spacing * column_offset); \
  \
             /* Row of matrix is either the first column (convolutional) */ \
             /*   or the index of the destination neuron otherwise */ \
@@ -330,8 +330,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         NEURON_PRE; \
 \
         /* Determine starting row and column for source neurons */ \
-        int s_row = d_row * row_stride + row_offset; \
-        int s_col = d_col * column_stride + column_offset; \
+        int s_row = d_row * row_stride + (row_spacing * row_offset); \
+        int s_col = d_col * column_stride + (column_spacing * column_offset); \
 \
         /* Column of matrix is either the first column (convolutional) */ \
         /*   or the index of the destination neuron otherwise */ \
@@ -402,10 +402,16 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             NEURON_PRE; \
 \
             /* Determine range of source neurons for divergent kernel */ \
-            int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride; \
-            int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride; \
-            int end_s_row = start_s_row + (row_spacing * (row_field_size - row_stride) / row_stride); \
-            int end_s_col = start_s_col + (column_spacing * (column_field_size - column_stride) / column_stride); \
+            int start_s_row = \
+                (d_row + row_spacing * (-row_offset \
+                    - row_field_size + row_stride)) / row_stride; \
+            int start_s_col = \
+                (d_col + column_spacing * (-column_offset \
+                    - column_field_size + column_stride)) / column_stride; \
+            int end_s_row = start_s_row + \
+                (row_spacing * (row_field_size - row_stride) / row_stride); \
+            int end_s_col = start_s_col + \
+                (column_spacing * (column_field_size - column_stride) / column_stride); \
 \
             int weight_offset = (convolutional) ? 0 : (to_index * (num_weights / to_size)); \
 \
@@ -465,8 +471,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         NEURON_PRE; \
  \
         /* Determine range of source neurons for divergent kernel */ \
-        int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride; \
-        int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride; \
+        int start_s_row = \
+            (d_row + row_spacing * (-row_offset \
+                - row_field_size + row_stride)) / row_stride; \
+        int start_s_col = \
+            (d_col + column_spacing * (-column_offset \
+                - column_field_size + column_stride)) / column_stride; \
         int end_s_row = start_s_row + \
             (row_spacing * (row_field_size - row_stride) / row_stride); \
         int end_s_col = start_s_col + \
@@ -535,8 +545,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
                     int to_index = d_row * to_columns + d_col; \
  \
                     /* Determine starting row and column for source neurons */ \
-                    int s_row = d_row * row_stride + row_offset; \
-                    int s_col = d_col * column_stride + column_offset; \
+                    int s_row = d_row * row_stride + (row_spacing * row_offset); \
+                    int s_col = d_col * column_stride + (column_spacing * column_offset); \
  \
                     int k_s_row = s_row + (k_row * row_spacing); \
                     int k_s_col = s_col + (k_col * column_spacing); \
@@ -595,8 +605,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
                 int to_index = d_row * to_columns + d_col; \
 \
                 /* Determine starting row and column for source neurons */ \
-                int s_row = d_row * row_stride + row_offset; \
-                int s_col = d_col * column_stride + column_offset; \
+                int s_row = d_row * row_stride + (row_spacing * row_offset); \
+                int s_col = d_col * column_stride + (column_spacing * column_offset); \
 \
                 int k_s_row = s_row + (k_row * row_spacing); \
                 int k_s_col = s_col + (k_col * column_spacing); \
@@ -652,8 +662,12 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
                 for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
                     int to_index = d_row * to_columns + d_col; \
 \
-                    int s_row = ((d_row - row_offset - row_field_size + row_stride) / row_stride); \
-                    int s_col = ((d_col - column_offset - column_field_size + column_stride) / column_stride); \
+                    int s_row = \
+                        (d_row + row_spacing * (-row_offset \
+                            - row_field_size + row_stride)) / row_stride; \
+                    int s_col = \
+                        (d_col + column_spacing * (-column_offset \
+                            - column_field_size + column_stride)) / column_stride; \
 \
                     int k_s_row = s_row + (k_row * row_spacing); \
                     int k_s_col = s_col + (k_col * column_spacing); \
@@ -711,8 +725,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
             for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
                 int to_index = d_row * to_columns + d_col; \
 \
-                int s_row = ((d_row - row_offset - row_field_size + row_stride) / row_stride); \
-                int s_col = ((d_col - column_offset - column_field_size + column_stride) / column_stride); \
+                int s_row = \
+                    (d_row + row_spacing * (-row_offset \
+                        - row_field_size + row_stride)) / row_stride; \
+                int s_col = \
+                    (d_col + column_spacing * (-column_offset \
+                        - column_field_size + column_stride)) / column_stride; \
 \
                 int k_s_row = s_row + (k_row * row_spacing); \
                 int k_s_col = s_col + (k_col * column_spacing); \

@@ -108,7 +108,7 @@ WeightMatrix::WeightMatrix(Connection* conn)
       transpose_weights(false),
       weights(Pointer<float>(num_weights)),
       second_order_weights(
-          (conn->second_order)
+          (conn->second_order_host)
               ? Pointer<float>(num_weights)
               : Pointer<float>()) { }
 
@@ -131,47 +131,48 @@ void WeightMatrix::transpose() {
 
     // Only transpose if necessary
     // If num_weights == to_layer size, transposition is a no-op.
-    if (num_weights == connection->to_layer->size) return;
-
-    if (device_id == host_id) {
-        transpose_matrix_in_place<float>(
-            this->weights.get(), get_rows(), get_columns());
-        for (auto pair : variables)
+    if (num_weights != connection->to_layer->size) {
+        // Transpose on the current device
+        if (device_id == host_id) {
             transpose_matrix_in_place<float>(
-                (float*)pair.second->get(), get_rows(), get_columns());
-    } else {
+                this->weights.get(), get_rows(), get_columns());
+            for (auto pair : variables)
+                transpose_matrix_in_place<float>(
+                    (float*)pair.second->get(), get_rows(), get_columns());
+        } else {
 #ifdef __CUDACC__
-        // Create temporary matrix
-        Pointer<float> temp = Pointer<float>(num_weights);
-        temp.transfer(device_id,
-            (float*)ResourceManager::get_instance()->allocate_device(
-                num_weights, sizeof(float), nullptr, device_id),
-            true); // take ownership
+            // Create temporary matrix
+            Pointer<float> temp = Pointer<float>(num_weights);
+            temp.transfer(device_id,
+                (float*)ResourceManager::get_instance()->allocate_device(
+                    num_weights, sizeof(float), nullptr, device_id),
+                true); // take ownership
 
-        dim3 dimGrid = calc_transpose_blocks(get_rows(), get_columns());
-        dim3 dimBlock = calc_transpose_threads(get_rows(), get_columns());
+            dim3 dimGrid = calc_transpose_blocks(get_rows(), get_columns());
+            dim3 dimBlock = calc_transpose_threads(get_rows(), get_columns());
 
-        auto stream =
-            ResourceManager::get_instance()->get_default_stream(device_id);
+            auto stream =
+                ResourceManager::get_instance()->get_default_stream(device_id);
 
-        this->weights.copy_to(temp, stream);
-        transpose_matrix_parallel<float>
-            <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-            (temp, this->weights, get_rows(), get_columns());
-        device_synchronize();
-        device_check_error("Failed to transpose weight matrix!");
-
-        for (auto pair : variables) {
-            auto p = Pointer<float>(pair.second);
-            p.copy_to(temp, stream);
+            this->weights.copy_to(temp, stream);
             transpose_matrix_parallel<float>
                 <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-                (temp, p, get_rows(), get_columns());
+                (temp, this->weights, get_rows(), get_columns());
             device_synchronize();
             device_check_error("Failed to transpose weight matrix!");
-        }
-        temp.free();
+
+            for (auto pair : variables) {
+                auto p = Pointer<float>(pair.second);
+                p.copy_to(temp, stream);
+                transpose_matrix_parallel<float>
+                    <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
+                    (temp, p, get_rows(), get_columns());
+                device_synchronize();
+                device_check_error("Failed to transpose weight matrix!");
+            }
+            temp.free();
 #endif
+        }
     }
 
     this->transposed = not this->transposed;

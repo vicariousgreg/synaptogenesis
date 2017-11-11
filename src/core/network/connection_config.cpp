@@ -41,7 +41,7 @@ ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
     if (not config->has("row offset") and not config->has("offset"))
         row_offset = -row_field_size/2;
     if (not config->has("column offset") and not config->has("offset"))
-        column_offset = -row_field_size/2;
+        column_offset = -column_field_size/2;
 }
 
 ArborizedConfig::ArborizedConfig()

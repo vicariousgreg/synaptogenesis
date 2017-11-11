@@ -66,9 +66,9 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
 
     // Clear out box
     for (int i = 0; i < rows*center_cols; ++i) {
-        data[i*4 + 0] = 0;
-        data[i*4 + 1] = 0;
-        data[i*4 + 2] = 0;
+        data[i*4 + 0] = 255;
+        data[i*4 + 1] = 255;
+        data[i*4 + 2] = 255;
         data[i*4 + 3] = 255;
     }
 
