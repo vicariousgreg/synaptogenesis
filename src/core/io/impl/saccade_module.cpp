@@ -6,7 +6,7 @@ REGISTER_MODULE(SaccadeModule, "saccade");
 
 SaccadeModule::SaccadeModule(LayerList layers, ModuleConfig *config)
         : Module(layers, config) {
-    input_data = Pointer<float>(input_size);
+    input_data = Pointer<float>(get_input_size());
     this->window = SaccadeWindow::build(this);
 
     for (auto layer : layers) {
