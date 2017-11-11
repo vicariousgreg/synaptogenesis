@@ -399,7 +399,26 @@ Report* Engine::run(PropertyConfig args) {
 
     // Build state and transfer
     // This renders the engine outdated, so the engine must be rebuilt as well
-    context.state->build(ResourceManager::get_instance()->get_active_devices());
+    std::set<DeviceID> devices;
+    try {
+        if (args.has("devices"))
+            devices.insert(std::stoi(args.get("devices")));
+        if (args.has_array("devices"))
+            for (auto dev : args.get_array("devices"))
+                devices.insert(std::stoi(dev));
+        if (devices.size() > 0)
+            ResourceManager::get_instance()->check_device_ids(devices, true);
+        else
+            devices = ResourceManager::get_instance()->get_default_devices();
+    } catch (...) {
+        LOG_ERROR("Failed to extract devices from Engine args!");
+    }
+
+    // TODO: adding these lines breaks mnist.py
+    //context.state->build({ 0 });
+    //context.state->transfer_to_device();
+
+    context.state->build(devices);
     context.state->transfer_to_device();
     this->rebuild(args);
 
@@ -484,7 +503,7 @@ Report* Engine::run(PropertyConfig args) {
         ? new Report(this, this->context.state, 0, 0.0)
         : this->report;
     r->set_child("args", &args);
-    for (auto mem : mems) r->add_to_array("memory usage", &mem);
+    for (auto mem : mems) r->add_to_child_array("memory usage", &mem);
 
     killed = false;
     this->report = nullptr;

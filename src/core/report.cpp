@@ -35,7 +35,7 @@ void Report::print() {
     printf("Engine buffer size: %12zu bytes    (%12f MB)\n",
         engine_buffer_bytes, (float)engine_buffer_bytes / (1024 * 1024));
 
-    auto arr = get_array("layer reports");
+    auto arr = get_child_array("layer reports");
     for (auto indices : layer_indices) {
         printf("\nReport for %s\n", indices.first->str().c_str());
 
@@ -58,8 +58,8 @@ void Report::add_report(Module *module, Layer *layer, PropertyConfig props) {
         layer_report.set(pair.first, pair.second);
 
     // Add the index of the report
-    layer_indices[layer].push_back(get_array("layer reports").size());
+    layer_indices[layer].push_back(get_child_array("layer reports").size());
 
     // Add the report
-    this->add_to_array("layer reports", &layer_report);
+    this->add_to_child_array("layer reports", &layer_report);
 }

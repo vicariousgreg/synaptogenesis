@@ -26,8 +26,10 @@ static PropertyConfig *parse_properties(Object nco) {
             for (auto item : pair.second->get<Array>().values()) {
                 if (item->is<Object>()) {
                     auto props = parse_properties(item->get<Object>());
-                    config->add_to_array(pair.first, props);
+                    config->add_to_child_array(pair.first, props);
                     delete props;
+                } else if (item->is<String>()) {
+                    config->add_to_array(pair.first, item->get<String>());
                 }
             }
         }
@@ -50,6 +52,13 @@ static Object write_properties(const PropertyConfig *config) {
 
     // Arrays
     for (auto pair : config->get_arrays()) {
+        Array a;
+        for (auto item : pair.second) a << item;
+        if (a.size() > 0) o << pair.first << a;
+    }
+
+    // Child Arrays
+    for (auto pair : config->get_child_arrays()) {
         Array a;
         for (auto item : pair.second)
             a << write_properties(item);

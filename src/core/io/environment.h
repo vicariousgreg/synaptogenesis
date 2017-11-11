@@ -19,7 +19,7 @@ class Environment : public PropertyConfig {
             std::string layer="", std::string type="");
 
         /* Getters */
-        const ConfigArray get_modules() { return get_array("modules") ; }
+        const ConfigArray get_modules() { return get_child_array("modules") ; }
 };
 
 #endif

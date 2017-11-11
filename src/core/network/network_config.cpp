@@ -5,9 +5,9 @@
 
 NetworkConfig::NetworkConfig(const PropertyConfig *config)
         : PropertyConfig(config) {
-    for (auto structure : config->get_array("structures"))
+    for (auto structure : config->get_child_array("structures"))
         this->add_structure_internal(new StructureConfig(structure));
-    for (auto connection : config->get_array("connections"))
+    for (auto connection : config->get_child_array("connections"))
         this->add_connection_internal(new ConnectionConfig(connection));
 }
 
@@ -18,7 +18,7 @@ void NetworkConfig::add_structure_internal(StructureConfig* config) {
 
 NetworkConfig* NetworkConfig::add_structure(StructureConfig* config) {
     this->add_structure_internal(config);
-    this->add_to_array("structures", config);
+    this->add_to_child_array("structures", config);
     return this;
 }
 
@@ -36,7 +36,7 @@ void NetworkConfig::add_connection_internal(ConnectionConfig* config) {
 
 NetworkConfig* NetworkConfig::add_connection(ConnectionConfig* config) {
     this->add_connection_internal(config);
-    this->add_to_array("connections", config);
+    this->add_to_child_array("connections", config);
     return this;
 }
 

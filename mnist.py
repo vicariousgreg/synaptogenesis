@@ -1,4 +1,4 @@
-from syngen import Network, Environment, create_callback
+from syngen import Network, Environment, create_callback, get_cpu, get_gpus
 
 data_path = "/HDD/datasets/mnist/processed/"
 # data_path = "./resources"
@@ -131,6 +131,7 @@ train = True
 if (train):
     # Run training
     print(network.run(train_env, {"multithreaded" : "false",
+                                  "devices" : get_cpu(),
                                   "worker threads" : 0}))
 
     # Save the state and load it back up
@@ -144,6 +145,7 @@ matrix = network.get_weight_matrix("main matrix")
 # Run test
 print(network.run(test_env, {"multithreaded" : "false",
                              "worker threads" : 0,
+                             "devices" : get_cpu(),
                              "learning flag" : "false"}))
 
 # Delete the objects

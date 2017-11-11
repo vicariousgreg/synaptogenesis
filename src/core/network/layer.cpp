@@ -33,7 +33,7 @@ Layer::Layer(Structure *structure, const LayerConfig *config)
           plastic(config->plastic),
           global(config->global),
           dendritic_root(new DendriticNode(this)) {
-    add_dendrites("root", config->get_array("dendrites"));
+    add_dendrites("root", config->get_child_array("dendrites"));
 }
 
 Layer::~Layer() {
@@ -143,7 +143,7 @@ void Layer::add_dendrites(std::string parent_name,
         auto child = parent->add_child(dendrite->get("name"), second_order);
 
         add_dendrites(child->name,
-            dendrite->get_array("children"));
+            dendrite->get_child_array("children"));
     }
 }
 

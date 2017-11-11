@@ -1,8 +1,7 @@
 from syngen import Network, Environment, create_callback, FloatArray
-from syngen import get_num_gpus, set_cpu, set_gpu, set_multi_gpu, set_all_devices
+from syngen import get_gpus
 from syngen import set_suppress_output, set_warnings, set_debug
 
-set_multi_gpu(2)
 set_warnings(False)
 
 # Create main structure (feedforward engine)
@@ -400,6 +399,7 @@ network = Network(
 
 print(network.run(env, {"multithreaded" : "true",
                         "worker threads" : "1",
+                        "devices" : get_gpus(),
                         "verbose" : "true"}))
 
 # Delete the objects

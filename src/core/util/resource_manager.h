@@ -46,15 +46,13 @@ class ResourceManager {
 
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }
-        const std::set<DeviceID> get_active_devices();
+        const std::set<DeviceID> get_devices() { return device_ids; }
+        const std::set<DeviceID> get_default_devices();
+        bool check_device_ids(std::set<DeviceID> ids, bool raise_error=true);
         DeviceID get_host_id() { return devices.size()-1; }
+        std::vector<DeviceID> get_gpu_ids();
+        std::vector<DeviceID> get_all_ids();
         bool is_host(DeviceID device_id) { return device_id == get_host_id(); }
-
-        int get_num_gpus();
-        void set_cpu();
-        void set_gpu(int index=0);
-        void set_multi_gpu(int num=2);
-        void set_all();
 
         void* allocate_host(size_t count, size_t size);
         void* allocate_device(size_t count, size_t size,
@@ -80,8 +78,6 @@ class ResourceManager {
                 virtual ~Device();
 
                 bool is_host() const { return host_flag; }
-                void set_active(bool x) { active = x; }
-                bool is_active() const { return active; };
 
                 Stream *create_stream();
                 Event *create_event();
@@ -96,13 +92,11 @@ class ResourceManager {
                 Stream* const inter_device_stream;
                 std::vector<Stream*> streams;
                 std::vector<Event*> events;
-
-            protected:
-                bool active;
         };
 
         int num_cores;
         std::vector<Device*> devices;
+        std::set<DeviceID> device_ids;
         std::map<DeviceID, std::set<std::pair<void*, size_t>>> managed_pointers;
         std::map<DeviceID, size_t> memory_usage;
 };

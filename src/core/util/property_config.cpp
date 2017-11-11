@@ -9,8 +9,12 @@ PropertyConfig::PropertyConfig(const PropertyConfig *other) {
     for (auto pair : other->get_children())
         this->set_child(pair.first, pair.second);
     for (auto pair : other->get_arrays()) {
+        for (auto str : pair.second)
+            this->add_to_array(pair.first, str);
+    }
+    for (auto pair : other->get_child_arrays()) {
         for (auto config : pair.second)
-            this->add_to_array(pair.first, config);
+            this->add_to_child_array(pair.first, config);
     }
 }
 
@@ -23,7 +27,7 @@ PropertyConfig::PropertyConfig(std::initializer_list<StringPair> pairs) {
 
 PropertyConfig::~PropertyConfig() {
     for (auto pair : children) delete pair.second;
-    for (auto pair : arrays)
+    for (auto pair : child_arrays)
         for (auto config : pair.second)
             delete config;
 }
@@ -162,47 +166,128 @@ PropertyConfig* PropertyConfig::remove_child(std::string key) {
 }
 
 
-const ArrayPairList PropertyConfig::get_arrays() const {
-    ArrayPairList pairs;
-    for (auto key : array_keys)
-        pairs.push_back(ArrayPair(key, arrays.at(key)));
+const StringArrayPairList PropertyConfig::get_arrays() const {
+    StringArrayPairList pairs;
+    for (auto key : string_array_keys)
+        pairs.push_back(StringArrayPair(key, string_arrays.at(key)));
     return pairs;
 }
 
-const ArrayPairList PropertyConfig::get_arrays_alphabetical() const {
-    ArrayPairList pairs;
-    for (auto pair : arrays)
-        pairs.push_back(ArrayPair(pair.first, pair.second));
+const StringArrayPairList PropertyConfig::get_arrays_alphabetical() const {
+    StringArrayPairList pairs;
+    for (auto pair : string_arrays)
+        pairs.push_back(StringArrayPair(pair.first, pair.second));
     return pairs;
 }
 
 
 bool PropertyConfig::has_array(std::string key) const
-    { return arrays.count(key) > 0; }
+    { return string_arrays.count(key) > 0; }
 
-const ConfigArray PropertyConfig::get_array(std::string key) const {
-    if (has_array(key)) return arrays.at(key);
+const StringArray PropertyConfig::get_array(std::string key) const {
+    if (has_array(key)) return string_arrays.at(key);
+    else                return StringArray();
+}
+
+PropertyConfig *PropertyConfig::set_array(std::string key, StringArray array) {
+    string_arrays[key] = array;
+    if (std::find(string_array_keys.begin(), string_array_keys.end(), key)
+            == string_array_keys.end())
+        string_array_keys.push_back(key);
+    return this;
+}
+
+PropertyConfig *PropertyConfig::add_to_array(std::string key, std::string val) {
+    if (not has_array(key)) set_array(key, StringArray());
+    string_arrays.at(key).push_back(val);
+    return this;
+}
+
+std::string PropertyConfig::remove_from_array(
+        std::string key, std::string val) {
+    if (has_array(key)) {
+        auto arr = string_arrays.at(key);
+        auto it = std::find(arr.begin(), arr.end(), val);
+        if (it != arr.end()) {
+            auto to_return = *it;
+            arr.erase(it);
+            return to_return;
+        } else
+            LOG_ERROR(
+                "Attempted to remove non-existent property " + key
+                + " from PropertyConfig array " + key + "!");
+    } else {
+        LOG_ERROR(
+            "Attempted to remove non-existent property " + key
+            + " from PropertyConfig array " + key + "!");
+    }
+    return "";
+}
+
+std::string PropertyConfig::remove_from_array(std::string key, int index) {
+    auto arr = get_array(key);
+    if (arr.size() > index)
+        return remove_from_array(key, arr.at(index));
+    else
+        LOG_ERROR(
+            "Attempted to remove non-existent property " + key
+            + " from PropertyConfig array " + key + "!");
+}
+
+StringArray PropertyConfig::remove_array(std::string key) {
+    if (has_array(key)) {
+        StringArray array = get_array(key);
+        string_arrays.erase(key);
+        string_array_keys.erase(
+            std::find(string_array_keys.begin(), string_array_keys.end(), key));
+        return array;
+    }
+    LOG_ERROR(
+        "Attempted to remove non-existent property " + key
+        + " from PropertyConfig!");
+}
+
+const ConfigArrayPairList PropertyConfig::get_child_arrays() const {
+    ConfigArrayPairList pairs;
+    for (auto key : child_array_keys)
+        pairs.push_back(ConfigArrayPair(key, child_arrays.at(key)));
+    return pairs;
+}
+
+const ConfigArrayPairList PropertyConfig::get_child_arrays_alphabetical() const {
+    ConfigArrayPairList pairs;
+    for (auto pair : child_arrays)
+        pairs.push_back(ConfigArrayPair(pair.first, pair.second));
+    return pairs;
+}
+
+
+bool PropertyConfig::has_child_array(std::string key) const
+    { return child_arrays.count(key) > 0; }
+
+const ConfigArray PropertyConfig::get_child_array(std::string key) const {
+    if (has_child_array(key)) return child_arrays.at(key);
     else                return ConfigArray();
 }
 
-PropertyConfig *PropertyConfig::set_array(std::string key, ConfigArray array) {
-    arrays[key] = array;
-    if (std::find(array_keys.begin(), array_keys.end(), key)
-            == array_keys.end())
-        array_keys.push_back(key);
+PropertyConfig *PropertyConfig::set_child_array(std::string key, ConfigArray array) {
+    child_arrays[key] = array;
+    if (std::find(child_array_keys.begin(), child_array_keys.end(), key)
+            == child_array_keys.end())
+        child_array_keys.push_back(key);
     return this;
 }
 
-PropertyConfig *PropertyConfig::add_to_array(std::string key, const PropertyConfig* config) {
-    if (not has_array(key)) set_array(key, ConfigArray());
-    arrays.at(key).push_back(new PropertyConfig(config));
+PropertyConfig *PropertyConfig::add_to_child_array(std::string key, const PropertyConfig* config) {
+    if (not has_child_array(key)) set_child_array(key, ConfigArray());
+    child_arrays.at(key).push_back(new PropertyConfig(config));
     return this;
 }
 
-PropertyConfig *PropertyConfig::remove_from_array(
+PropertyConfig *PropertyConfig::remove_from_child_array(
         std::string key, const PropertyConfig* config) {
-    if (has_array(key)) {
-        auto arr = arrays.at(key);
+    if (has_child_array(key)) {
+        auto arr = child_arrays.at(key);
         auto it = std::find(arr.begin(), arr.end(), config);
         if (it != arr.end()) {
             auto to_return = *it;
@@ -220,22 +305,22 @@ PropertyConfig *PropertyConfig::remove_from_array(
     return nullptr;
 }
 
-PropertyConfig *PropertyConfig::remove_from_array(std::string key, int index) {
-    auto arr = get_array(key);
+PropertyConfig *PropertyConfig::remove_from_child_array(std::string key, int index) {
+    auto arr = get_child_array(key);
     if (arr.size() > index)
-        return remove_from_array(key, arr.at(index));
+        return remove_from_child_array(key, arr.at(index));
     else
         LOG_ERROR(
             "Attempted to remove non-existent property " + key
             + " from PropertyConfig array " + key + "!");
 }
 
-ConfigArray PropertyConfig::remove_array(std::string key) {
-    if (has_array(key)) {
-        ConfigArray array = get_array(key);
-        arrays.erase(key);
-        array_keys.erase(
-            std::find(array_keys.begin(), array_keys.end(), key));
+ConfigArray PropertyConfig::remove_child_array(std::string key) {
+    if (has_child_array(key)) {
+        ConfigArray array = get_child_array(key);
+        child_arrays.erase(key);
+        child_array_keys.erase(
+            std::find(child_array_keys.begin(), child_array_keys.end(), key));
         return array;
     }
     LOG_ERROR(
@@ -252,8 +337,14 @@ std::string PropertyConfig::str() const {
         str += "(" + pair.first + "," + pair.second->str() + ")";
     for (auto pair : get_arrays_alphabetical()) {
         str += "(" + pair.first + "," + "[";
+        for (auto s : pair.second)
+            str += s + ", ";
+        str += "])";
+    }
+    for (auto pair : get_child_arrays_alphabetical()) {
+        str += "(" + pair.first + "," + "[";
         for (auto config : pair.second)
-            str += config->str();
+            str += config->str() + ", ";
         str += "])";
     }
     return str + "}";

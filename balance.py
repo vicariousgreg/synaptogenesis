@@ -1,13 +1,10 @@
 from syngen import Network, Environment, create_callback, FloatArray
-from syngen import get_num_gpus, set_cpu, set_gpu, set_multi_gpu, set_all_devices
+from syngen import get_gpus, get_cpu
 from syngen import set_suppress_output, set_warnings, set_debug
 from os import path
 
 leaky = False
 visualizer = False
-
-if get_num_gpus() > 0:
-    set_gpu(0 if leaky else 1)
 
 set_suppress_output(False)
 set_warnings(False)
@@ -175,8 +172,16 @@ state_path = ("balance_leaky.bin" if leaky else "balance.bin")
 
 pre_matrix = network.get_weight_matrix("main matrix").to_list()
 if not path.exists("./states/" + state_path):
+    gpus = get_gpus()
+    if len(gpus) > 1:
+        device = gpus[0 if leaky else 1]
+    elif len(gpus) == 1:
+        device = gpus[0]
+    else:
+        device = get_cpu()
     print(network.run(env, {"multithreaded" : "true",
                             "worker threads" : "1",
+                            "devices" : device,
                             "iterations" : 100000,
                             "verbose" : "true"}))
     network.save_state(state_path)

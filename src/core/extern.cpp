@@ -65,8 +65,12 @@ void add_child(PROPS properties, char* key, PROPS child) {
     ((PropertyConfig*)properties)->set_child(key, (PropertyConfig*)child);
 }
 
-void add_to_array(PROPS properties, char* key, PROPS props) {
-    ((PropertyConfig*)properties)->add_to_array(key, (PropertyConfig*)props);
+void add_to_array(PROPS properties, char* key, char* val) {
+    ((PropertyConfig*)properties)->add_to_array(key, val);
+}
+
+void add_to_child_array(PROPS properties, char* key, PROPS props) {
+    ((PropertyConfig*)properties)->add_to_child_array(key, (PropertyConfig*)props);
 }
 
 ARRAY get_keys(PROPS properties) {
@@ -87,6 +91,12 @@ ARRAY get_array_keys(PROPS properties) {
     else return null_array();
 }
 
+ARRAY get_child_array_keys(PROPS properties) {
+    auto& keys = ((PropertyConfig*)properties)->get_child_array_keys();
+    if (keys.size() > 0) return string_array(keys);
+    else return null_array();
+}
+
 
 const char* get_property(PROPS properties, char* key) {
     if (((PropertyConfig*)properties)->has(key))
@@ -103,6 +113,15 @@ PROPS get_child(PROPS properties, char* key) {
 ARRAY get_array(PROPS properties, char* key) {
     if (((PropertyConfig*)properties)->has_array(key)) {
         auto arr = ((PropertyConfig*)properties)->get_array(key);
+        if (arr.size() > 0)
+            return string_array(arr);
+    }
+    return null_array();
+}
+
+ARRAY get_child_array(PROPS properties, char* key) {
+    if (((PropertyConfig*)properties)->has_child_array(key)) {
+        auto arr = ((PropertyConfig*)properties)->get_child_array(key);
         if (arr.size() > 0)
             return property_array(arr);
     }
@@ -243,44 +262,22 @@ void destroy(void* obj) {
     delete obj;
 }
 
-int get_num_gpus() {
-    return ResourceManager::get_instance()->get_num_gpus();
+int get_cpu() {
+    return ResourceManager::get_instance()->get_host_id();
 }
 
-bool set_cpu() {
-    try {
-        ResourceManager::get_instance()->set_cpu();
-        return true;
-    } catch (...) {
-        return true;
-    }
+ARRAY get_gpus() {
+    auto ids = ResourceManager::get_instance()->get_gpu_ids();
+    Pointer<int> p(ids.size());
+    for (int i = 0 ; i < ids.size() ; ++i) p[i] = ids[i];
+    return build_array(&p);
 }
 
-bool set_gpu(int index) {
-    try {
-        ResourceManager::get_instance()->set_gpu(index);
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
-bool set_multi_gpu(int num) {
-    try {
-        ResourceManager::get_instance()->set_multi_gpu(num);
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
-bool set_all_devices() {
-    try {
-        ResourceManager::get_instance()->set_all();
-        return true;
-    } catch (...) {
-        return false;
-    }
+ARRAY get_all_devices() {
+    auto ids = ResourceManager::get_instance()->get_all_ids();
+    Pointer<int> p(ids.size());
+    for (int i = 0 ; i < ids.size() ; ++i) p[i] = ids[i];
+    return build_array(&p);
 }
 
 void set_suppress_output(bool val) {

@@ -74,8 +74,8 @@ ResourceManager::ResourceManager() {
     // Create host device (CPU)
     devices.push_back(new Device(devices.size(), true, devices.size() == 0));
 
-    // Host or First GPU
-    devices[0]->set_active(true);
+    // Create DeviceID set
+    for (auto d : devices) device_ids.insert(d->device_id);
 
     // Initialize memory usage
     for (auto d : devices)
@@ -125,32 +125,32 @@ void ResourceManager::flush(DeviceID device_id) {
     }
 }
 
-int ResourceManager::get_num_gpus() {
-    return get_num_cuda_devices();
+const std::set<DeviceID> ResourceManager::get_default_devices() {
+    return { devices[0]->device_id };
 }
 
-void ResourceManager::set_cpu() {
-    for (auto device : devices)
-        device->set_active(false);
-    devices[devices.size()-1]->set_active(true);
+bool ResourceManager::check_device_ids(std::set<DeviceID> ids, bool raise_error) {
+    for (auto id : ids)
+        if (device_ids.count(id) == 0)
+            if (raise_error)
+                LOG_ERROR("Invalid device ID: " + std::to_string(id));
+            else return false;
+    return true;
 }
 
-void ResourceManager::set_gpu(int index) {
-    if (index > get_num_cuda_devices())
-        LOG_ERROR("Could not find GPU " + std::to_string(index));
-    for (auto device : devices)
-        device->set_active(false);
-    devices[index]->set_active(true);
+std::vector<DeviceID> ResourceManager::get_gpu_ids() {
+    std::vector<DeviceID> gpu_ids;
+    for (auto id : device_ids)
+        if (id != get_host_id())
+            gpu_ids.push_back(id);
+    return gpu_ids;
 }
 
-void ResourceManager::set_multi_gpu(int num) {
-    for (auto device : devices) device->set_active(not device->is_host());
+std::vector<DeviceID> ResourceManager::get_all_ids() {
+    std::vector<DeviceID> all_ids;
+    for (auto id : device_ids) all_ids.push_back(id);
+    return all_ids;
 }
-
-void ResourceManager::set_all() {
-    for (auto device : devices) device->set_active(true);
-}
-
 
 void* ResourceManager::allocate_host(size_t count, size_t size) {
     if (count == 0) return nullptr;
@@ -187,18 +187,18 @@ void ResourceManager::drop_pointer(void* ptr, size_t bytes, DeviceID device_id) 
 
 std::vector<PropertyConfig> ResourceManager::get_memory_usage(bool verbose) {
     std::vector<PropertyConfig> stats;
-    for (auto d : devices) {
+    for (auto id : device_ids) {
         size_t free, total;
-        if (d->is_host()) {
+        if (id == get_host_id()) {
             struct sysinfo info;
             sysinfo(&info);
             free = info.freeram;
             total = info.totalram;
         } else {
-            device_check_memory(d->device_id, &free, &total);
+            device_check_memory(id, &free, &total);
         }
         Memstat stat = Memstat(
-            d->device_id, free, total, total-free, memory_usage[d->device_id]);
+            id, free, total, total-free, memory_usage[id]);
         if (verbose) stat.print();
         stats.push_back(stat.to_config());
     }
@@ -268,19 +268,9 @@ void ResourceManager::delete_events() {
     for (auto device : devices) device->delete_events();
 }
 
-const std::set<DeviceID> ResourceManager::get_active_devices() {
-    std::set<DeviceID> active;
-    for (auto device : devices)
-        if (device->is_active())
-            active.insert(device->device_id);
-    return active;
-}
-
-
 ResourceManager::Device::Device(DeviceID device_id, bool host_flag, bool solo)
         : device_id(device_id),
           host_flag(host_flag),
-          active(false),
           default_stream(new DefaultStream(device_id, host_flag)),
           inter_device_stream((solo)
               ? nullptr

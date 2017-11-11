@@ -31,12 +31,12 @@ ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
     if (not config->has("structure") or not config->has("layer"))
         LOG_ERROR(
             "Module layer config must have structure and layer name!");
-    this->add_to_array("layers", config);
+    this->add_to_child_array("layers", config);
     return this;
 }
 
 const PropertyConfig* ModuleConfig::get_layer(Layer *layer) const {
-    for (auto config : get_array("layers"))
+    for (auto config : get_child_array("layers"))
         if (config->get("structure") == layer->structure->name and
             config->get("layer") == layer->name)
             return config;

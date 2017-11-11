@@ -13,7 +13,7 @@ StructureConfig::StructureConfig(const PropertyConfig *config)
             "Unspecified name for structure!");
 
     // Add layers
-    for (auto layer : config->get_array("layers"))
+    for (auto layer : config->get_child_array("layers"))
         this->add_layer_internal(new LayerConfig(layer));
 }
 
@@ -29,7 +29,7 @@ void StructureConfig::add_layer_internal(LayerConfig *config) {
 
 StructureConfig* StructureConfig::add_layer(LayerConfig* config) {
     this->add_layer_internal(config);
-    this->add_to_array("layers", config);
+    this->add_to_child_array("layers", config);
     return this;
 }
 

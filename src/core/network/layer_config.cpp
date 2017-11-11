@@ -76,7 +76,7 @@ static PropertyConfig* get_dendrite(const ConfigArray& arr, std::string name) {
         if (node->get("name") == name)
             return node;
         else {
-            auto props = get_dendrite(node->get_array("children"), name);
+            auto props = get_dendrite(node->get_child_array("children"), name);
             if (props != nullptr) return props;
         }
     return nullptr;
@@ -85,14 +85,14 @@ static PropertyConfig* get_dendrite(const ConfigArray& arr, std::string name) {
 LayerConfig* LayerConfig::add_dendrite(std::string parent,
         PropertyConfig *config) {
     if (parent == "root") {
-        this->add_to_array("dendrites", config);
+        this->add_to_child_array("dendrites", config);
     } else {
-        auto node = get_dendrite(this->get_array("dendrites"), parent);
+        auto node = get_dendrite(this->get_child_array("dendrites"), parent);
         if (node == nullptr)
             LOG_ERROR(
                 "Could not find dendrite " + parent
                 + "in layer " + name + "!");
-        node->add_to_array("children", config);
+        node->add_to_child_array("children", config);
     }
     return this;
 }

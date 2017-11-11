@@ -28,7 +28,7 @@ class ModuleConfig : public PropertyConfig {
 
         std::string get_type() const { return get("type", ""); }
         const ConfigArray get_layers() const
-            { return get_array("layers"); }
+            { return get_child_array("layers"); }
         const PropertyConfig* get_layer(Layer *layer) const;
 
     protected:

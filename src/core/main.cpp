@@ -575,7 +575,7 @@ void dsst_test() {
             ->set("neural model", "relay")
             ->set("rows", cell_rows)
             ->set("columns", cell_cols)
-            ->set_array("dendrites",
+            ->set_child_array("dendrites",
                 {
                     (new PropertyConfig())
                         ->set("name", "fixation")

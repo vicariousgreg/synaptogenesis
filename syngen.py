@@ -68,7 +68,8 @@ _syn.free_array_deep.argtypes = (CArray, )
 _syn.create_properties.restype = c_void_p
 _syn.add_property.argtypes = (c_void_p, c_char_p, c_char_p)
 _syn.add_child.argtypes = (c_void_p, c_char_p, c_void_p)
-_syn.add_to_array.argtypes = (c_void_p, c_char_p, c_void_p)
+_syn.add_to_array.argtypes = (c_void_p, c_char_p, c_char_p)
+_syn.add_to_child_array.argtypes = (c_void_p, c_char_p, c_void_p)
 
 _syn.get_keys.argtypes = (c_void_p,)
 _syn.get_keys.restype = CArray
@@ -76,6 +77,8 @@ _syn.get_child_keys.argtypes = (c_void_p,)
 _syn.get_child_keys.restype = CArray
 _syn.get_array_keys.argtypes = (c_void_p,)
 _syn.get_array_keys.restype = CArray
+_syn.get_child_array_keys.argtypes = (c_void_p,)
+_syn.get_child_array_keys.restype = CArray
 
 _syn.get_property.restype = c_char_p
 _syn.get_property.argtypes = (c_void_p, c_char_p)
@@ -83,6 +86,8 @@ _syn.get_child.restype = c_void_p
 _syn.get_child.argtypes = (c_void_p, c_char_p)
 _syn.get_array.restype = CArray
 _syn.get_array.argtypes = (c_void_p, c_char_p)
+_syn.get_child_array.restype = CArray
+_syn.get_child_array.argtypes = (c_void_p, c_char_p)
 
 _syn.create_environment.restype = c_void_p
 _syn.create_environment.argtypes = (c_void_p,)
@@ -118,32 +123,29 @@ _syn.run.restype = c_void_p
 _syn.run.argtypes = (c_void_p, c_void_p, c_void_p, c_void_p)
 
 _syn.destroy.argtypes = (c_void_p,)
-_syn.get_num_gpus.restype = c_int
-_syn.set_cpu.restype = c_bool
-_syn.set_gpu.restype = c_bool
-_syn.set_gpu.argtypes = (c_int,)
-_syn.set_multi_gpu.restype = c_bool
-_syn.set_multi_gpu.argtypes = (c_int,)
-_syn.set_all_devices.restype = c_bool
+
+_syn.get_cpu.restype = c_int
+_syn.get_gpus.restype = CArray
+_syn.get_all_devices.restype = CArray
 
 _syn.set_suppress_output.argtypes = (c_bool,)
 _syn.set_warnings.argtypes = (c_bool,)
 _syn.set_debug.argtypes = (c_bool,)
 
-def get_num_gpus():
-    return _syn.get_num_gpus()
+def get_cpu():
+    return _syn.get_cpu()
 
-def set_cpu():
-    return _syn.set_cpu()
+def get_gpus():
+    gpus_object = _syn.get_gpus()
+    gpus = build_array(gpus_object).to_list()
+    _syn.free_array(gpus_object)
+    return gpus
 
-def set_gpu(index=0):
-    return _syn.set_gpu(index)
-
-def set_multi_gpu(count=0):
-    return _syn.set_multi_gpu(count)
-
-def set_all_devices():
-    return _syn.set_all_devices()
+def get_all_devices():
+    devices_object = _syn.get_all_devices()
+    devices = build_array(devices_object).to_list()
+    _syn.free_array(devices_object)
+    return devices
 
 def set_suppress_output(val):
     _syn.set_suppress_output(val)
@@ -171,6 +173,7 @@ class Properties(CObject):
         self.properties = OrderedDict()
         self.children = OrderedDict()
         self.arrays = OrderedDict()
+        self.child_arrays = OrderedDict()
 
         # If dictionary, build C properties
         if type(props) is dict:
@@ -181,7 +184,9 @@ class Properties(CObject):
                 elif type(v) is list:
                     for x in v:
                         if type(x) is dict:
-                            self.add_to_array(k, x)
+                            self.add_to_child_array(k, x)
+                        else:
+                            self.add_to_array(k, str(x))
                 else:
                     self.add_property(k, v)
         # If int, interpret as C properties pointer and retrieve data
@@ -196,6 +201,7 @@ class Properties(CObject):
                 key_str = string_at(cast(key, c_char_p))
                 self.properties[key_str] = string_at(
                     _syn.get_property(props, key))
+
             _syn.free_array_deep(keys_obj)
 
             # Get child properties
@@ -222,16 +228,37 @@ class Properties(CObject):
 
                 for j in range(arr.size):
                     self.arrays[key_str].append(
+                        string_at(cast(arr.data[j], c_char_p)))
+                _syn.free_array(arr_obj)
+            _syn.free_array_deep(keys_obj)
+
+            # Get child array properties
+            keys_obj = _syn.get_child_array_keys(props)
+            keys = build_array(keys_obj)
+            for i in range(keys.size):
+                key = keys.data[i]
+                key_str = string_at(cast(key, c_char_p))
+                arr_obj = _syn.get_child_array(props, key)
+                arr = build_array(arr_obj)
+
+                if key_str not in self.child_arrays:
+                    self.child_arrays[key_str] = []
+
+                for j in range(arr.size):
+                    self.child_arrays[key_str].append(
                         Properties(arr.data[j]))
                 _syn.free_array(arr_obj)
+            _syn.free_array_deep(keys_obj)
 
     def to_dict(self):
         out = OrderedDict()
         for k,v in self.properties.iteritems():
-            out[k] = v;
+            out[k] = v
         for k,v in self.children.iteritems():
-            out[k] = v.to_dict();
+            out[k] = v.to_dict()
         for k,v in self.arrays.iteritems():
+            out[k] = [str(p) for p in v]
+        for k,v in self.child_arrays.iteritems():
             out[k] = [p.to_dict() for p in v]
         return out
 
@@ -247,12 +274,18 @@ class Properties(CObject):
         self.children[key] = child
         _syn.add_child(self.obj, key, child.obj)
 
-    def add_to_array(self, key, dictionary):
-        props = Properties(dictionary)
+    def add_to_array(self, key, val):
         if key not in self.arrays:
             self.arrays[key] = []
-        self.arrays[key].append(props)
-        _syn.add_to_array(self.obj, key, props.obj)
+        self.arrays[key].append(val)
+        _syn.add_to_array(self.obj, key, val)
+
+    def add_to_child_array(self, key, dictionary):
+        props = Properties(dictionary)
+        if key not in self.child_arrays:
+            self.child_arrays[key] = []
+        self.child_arrays[key].append(props)
+        _syn.add_to_child_array(self.obj, key, props.obj)
 
 
 class Environment(CObject):
