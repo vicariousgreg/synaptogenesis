@@ -25,8 +25,6 @@ class SaccadeModule : public Module {
         Pointer<float> input_data;
         SaccadeWindow *window;
 
-        int input_rows, input_cols, input_size;
-
     MODULE_MEMBERS
 };
 
