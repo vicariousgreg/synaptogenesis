@@ -35,9 +35,9 @@ CALC_ALL(activate_perceptron,
     ,
     float sum = 0.0;
     ,
-    sum += (extractor(outputs[from_index], delay) > 0) * weights[weight_index];
+    sum += (extract(outputs[from_index], delay) > 0) * weights[weight_index];
     ,
-    inputs[to_index] = calc(opcode, inputs[to_index], sum);
+    inputs[to_index] = aggregate(inputs[to_index], sum);
 ; );
 
 Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {

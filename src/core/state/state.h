@@ -57,6 +57,7 @@ class State {
         const WeightMatrix* get_matrix(Connection *conn) const;
         const WeightMatrix* get_matrix_pointer(Connection *conn) const;
         EXTRACTOR get_connection_extractor(Connection *conn) const;
+        AGGREGATOR get_connection_aggregator(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) const;
         Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) const;
         Pointer<Output> get_device_output_buffer(

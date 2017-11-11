@@ -520,6 +520,12 @@ EXTRACTOR State::get_connection_extractor(Connection *conn) const {
         layer_devices.at(conn->to_layer));
 }
 
+AGGREGATOR State::get_connection_aggregator(Connection *conn) const {
+    return get_aggregator(
+        conn->opcode,
+        layer_devices.at(conn->to_layer));
+}
+
 Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
     try {
         return attributes.at(conn->to_layer)->get_activator(conn);

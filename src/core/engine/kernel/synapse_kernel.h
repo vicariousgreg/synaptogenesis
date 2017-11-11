@@ -3,43 +3,11 @@
 
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/extractor.h"
+#include "engine/kernel/aggregator.h"
 #include "util/parallel.h"
 #include "util/constants.h"
 #include "util/tools.h"
 #include "util/pointer.h"
-
-// Different min, max, and assert functions are used on the host and device
-#ifdef __CUDACC__
-#define MIN min
-#define MAX max
-#else
-#include <algorithm>
-#include <assert.h>
-#define MIN std::fmin
-#define MAX std::fmax
-#endif
-
-/* Synaptic operations
- * |prior| is the current state of the neuron.
- * |input| is the synaptic input accomulated from one connection.
- *
- * ADD represent traditional excitatory input
- * SUB represent traditional inhibitory input
- * MULT and DIV represent modulatory input that can be used for gating
- * */
-inline HOST DEVICE float calc(Opcode opcode, float prior, float input) {
-    switch (opcode) {
-        case ADD:  return prior + input;
-        case SUB:  return prior - input;
-        // case MULT: return prior * (1+input);
-        // case DIV:  return prior / (1+input);
-        case MULT: return prior * input;
-        case DIV:  return prior / input;
-        case POOL: return MAX(prior, (1+input));
-        default: assert(false);
-    }
-    return 0.0;
-}
 
 /******************************************************************************/
 /*************************** CONNECTION KERNELS *******************************/
@@ -94,7 +62,8 @@ inline HOST DEVICE float calc(Opcode opcode, float prior, float input) {
     Output * const outputs = synapse_data.outputs.get(); \
     Output * const destination_outputs = synapse_data.destination_outputs.get(); \
     float * const inputs = synapse_data.inputs.get(); \
-    const EXTRACTOR extractor = synapse_data.extractor;
+    const EXTRACTOR extract = synapse_data.extractor; \
+    const AGGREGATOR aggregate = synapse_data.aggregator;
 
 
 
@@ -903,10 +872,10 @@ CALC_DIVERGENT(FUNC_NAME##_divergent, \
 /******************************************************************************/
 
 #define CALC_VAL \
-    float val = extractor(outputs[from_index], delay) * weights[weight_index];
+    float val = extract(outputs[from_index], delay) * weights[weight_index];
 
 #define AGGREGATE \
-    inputs[to_index] = calc(opcode, inputs[to_index], sum);
+    inputs[to_index] = aggregate(inputs[to_index], sum);
 
 #define ACTIVATE_ALL(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
 CALC_ALL( \
@@ -938,9 +907,9 @@ CALC_ALL( \
         synapse_data.second_order_host_matrix->second_order_weights.get(); \
 
 #define CALC_VAL_SECOND_ORDER \
-    float val = extractor(outputs[from_index], delay) * weights[weight_index]; \
+    float val = extract(outputs[from_index], delay) * weights[weight_index]; \
     second_order_weights[weight_index] = \
-        calc(opcode, second_order_weights[weight_index], val);
+        aggregate(second_order_weights[weight_index], val);
 
 #define ACTIVATE_ALL_SECOND_ORDER(FUNC_NAME, UPDATE_EXT, UPDATE_CALC) \
 CALC_ALL(FUNC_NAME, \

@@ -4,6 +4,7 @@
 #include "network/layer.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/extractor.h"
+#include "engine/kernel/aggregator.h"
 #include "util/parallel.h"
 #include "util/pointer.h"
 
@@ -18,10 +19,13 @@ class SynapseData {
         SynapseData(DendriticNode *parent_node, Connection *conn, State *state);
 
         /* Attributes pointer for to_layer */
-        const Attributes *attributes;
+        const Attributes * const attributes;
 
         /* Output extractor */
         const EXTRACTOR extractor;
+
+        /* Input sum aggregator based on opcode */
+        const AGGREGATOR aggregator;
 
         /* Connection attributes */
         const SubsetConfig subset_config;
@@ -29,8 +33,8 @@ class SynapseData {
         const Connection connection;
 
         /* Weight attributes */
-        const WeightMatrix* matrix;
-        const WeightMatrix* second_order_host_matrix;
+        const WeightMatrix * const matrix;
+        const WeightMatrix * const second_order_host_matrix;
 
         /* Layer attributes */
         const Layer from_layer;

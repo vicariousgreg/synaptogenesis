@@ -269,7 +269,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
 // Weight Operation
 #define CALC_VAL_PREAMBLE \
-    float spike = extractor(outputs[from_index], delays[weight_index]); \
+    float spike = extract(outputs[from_index], delays[weight_index]); \
 \
     float std    = stds[weight_index]; \
     float stp    = stps[weight_index]; \
@@ -464,7 +464,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     float dest_trace = to_traces[to_index]; \
     float dopamine = dopamines[to_index]; \
     float acetylcholine = acetylcholines[to_index]; \
-    float dest_spike = extractor(destination_outputs[to_index], 0);
+    float dest_spike = extract(destination_outputs[to_index], 0);
 
 /* Minimum weight */
 #define MIN_WEIGHT 0.0001
@@ -477,7 +477,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 \
     if (weight >= MIN_WEIGHT) { \
         /* Extract postsynaptic trace */ \
-        float src_spike = extractor(outputs[from_index], delays[weight_index]); \
+        float src_spike = extract(outputs[from_index], delays[weight_index]); \
     \
         /* Update presynaptic trace */ \
         float src_trace = \

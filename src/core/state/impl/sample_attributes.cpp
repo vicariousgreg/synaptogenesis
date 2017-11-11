@@ -171,13 +171,13 @@ BUILD_ATTRIBUTE_KERNEL(SampleAttributes, sample_attribute_kernel,
 #define WEIGHT_OP \
     Output from_out = outputs[from_index]; \
     float weight = weights[weight_index]; \
-    float val = extractor(from_out, delay) * weight; \
+    float val = extract(from_out, delay) * weight; \
     sum += val;
 
 /* This macro defines what happens for each neuron after weight iteration.
  * The provided calc function will use the operation designated by the opcode */
 #define NEURON_POST \
-    calc(opcode, inputs[to_index], sum);
+    aggregate(inputs[to_index], sum);
 
 /* This macro puts it all together.  It takes the name of the function and four
  *   code blocks that correspond to the four macros defined above. */
@@ -203,15 +203,15 @@ CALC_ALL(activate_sample,
     float * const second_order_weights = synapse_data.matrix->second_order_weights.get();
 
 /* This macro shows updating of second order weights.  The operation is carried
- *   out on each weight using calc() and the assigned opcode.  No sum needs to
- *   be maintained; the second_order_weights are modified directly
+ *   out on each weight using aggregate() and the assigned opcode.  No sum
+ *   needs to be maintained; the second_order_weights are modified directly.
  */
 #define SECOND_ORDER_WEIGHT_OP \
     Output from_out = outputs[from_index]; \
     float weight = weights[weight_index]; \
-    float val = extractor(from_out, delay) * weight; \
+    float val = extract(from_out, delay) * weight; \
     second_order_weights[weight_index] = \
-        calc(opcode, second_order_weights[weight_index], val);
+        aggregate(second_order_weights[weight_index], val);
 
 CALC_ALL(activate_sample_second_order,
     EXTRACT_UPDATE,
@@ -282,11 +282,11 @@ Kernel<SYNAPSE_ARGS> SampleAttributes::get_activator(Connection *conn) {
 
 /* Retrieve output of the destination layer, not the input layer */
 #define NEURON_PRE_UPDATE \
-    float to_out = extractor(destination_outputs[to_index], 0);
+    float to_out = extract(destination_outputs[to_index], 0);
 
 /* Do Oja's rule for Hebbian learning */
 #define UPDATE_WEIGHT \
-    float from_out = extractor(outputs[from_index], delay); \
+    float from_out = extract(outputs[from_index], delay); \
     float old_weight = weights[weight_index]; \
     weights[weight_index] = old_weight + \
         /* Use conn_var as a learning rate */ \
@@ -316,8 +316,8 @@ CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_sample_convergent_convolutional,
     float old_weight = weights[weight_index];,
 
     /* Aggregate */
-    float from_out = extractor(outputs[from_index], delay); \
-    float to_out = extractor(destination_outputs[to_index], 0);
+    float from_out = extract(outputs[from_index], delay); \
+    float to_out = extract(destination_outputs[to_index], 0);
     weight_delta += from_out * (to_out - (from_out * old_weight));,
 
     /* Update the weight by averaging and using conn_var as learning rate */
@@ -333,8 +333,8 @@ CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_sample_divergent_convolutional,
     float old_weight = weights[weight_index];,
 
     /* Aggregate */
-    float from_out = extractor(outputs[from_index], delay); \
-    float to_out = extractor(destination_outputs[to_index], 0);
+    float from_out = extract(outputs[from_index], delay); \
+    float to_out = extract(destination_outputs[to_index], 0);
     weight_delta += from_out * (to_out - (from_out * old_weight));,
 
     /* Update the weight by averaging and using conn_var as learning rate */

@@ -52,7 +52,7 @@ CALC_ALL(activate_som,
 
     float distance = 0.0;,
 
-    float val = extractor(outputs[from_index], delay) - weights[weight_index];
+    float val = extract(outputs[from_index], delay) - weights[weight_index];
     distance += val * val;,
 
     inputs[to_index] += distance;
@@ -74,10 +74,10 @@ CALC_ALL(update_som,
 
     if (to_index == winner)
         weights[weight_index] += learning_rate *
-            (extractor(outputs[from_index], delay) - weights[weight_index]);
+            (extract(outputs[from_index], delay) - weights[weight_index]);
     else if (row_dist + col_dist <= neighborhood_size)
         weights[weight_index] += neighbor_learning_rate *
-            (extractor(outputs[from_index], delay) - weights[weight_index]);,
+            (extract(outputs[from_index], delay) - weights[weight_index]);,
 
 );
 

@@ -8,6 +8,7 @@ SynapseData::SynapseData(DendriticNode *parent_node,
     Connection *conn, State *state) :
         attributes(state->get_attributes_pointer(conn->to_layer)),
         extractor(state->get_connection_extractor(conn)),
+        aggregator(state->get_connection_aggregator(conn)),
         subset_config(conn->get_config()->get_subset_config()),
         arborized_config(conn->get_config()->get_arborized_config()),
         connection(*conn),
@@ -16,7 +17,8 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         matrix(state->get_matrix_pointer(conn)),
         second_order_host_matrix(
             (conn->second_order_slave)
-                ?  state->get_matrix_pointer(parent_node->get_second_order_connection())
+                ? state->get_matrix_pointer(
+                    parent_node->get_second_order_connection())
                 : nullptr),
         inputs(state->get_input(conn->to_layer, parent_node->register_index)),
         destination_outputs(state->get_output(conn->to_layer)) {

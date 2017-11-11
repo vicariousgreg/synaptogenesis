@@ -32,7 +32,7 @@ bool __mat_dummy = NeuralModelBank::register_weight_matrix("leaky_izhikevich", I
 
 #define GET_DEST_ACTIVITY \
     float dest_trace = to_traces[to_index]; \
-    float dest_spike = extractor(destination_outputs[to_index], 0);
+    float dest_spike = extract(destination_outputs[to_index], 0);
 
 /* Minimum weight */
 #define MIN_WEIGHT 0.0001
@@ -46,7 +46,7 @@ bool __mat_dummy = NeuralModelBank::register_weight_matrix("leaky_izhikevich", I
 \
     if (weight >= MIN_WEIGHT) { \
         /* Extract postsynaptic trace */ \
-        float src_spike = extractor(outputs[from_index], delays[weight_index]); \
+        float src_spike = extract(outputs[from_index], delays[weight_index]); \
     \
         /* Update presynaptic trace */ \
         float src_trace = \

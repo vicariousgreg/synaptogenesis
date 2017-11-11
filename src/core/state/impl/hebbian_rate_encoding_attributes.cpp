@@ -11,10 +11,10 @@ REGISTER_ATTRIBUTES(HebbianRateEncodingAttributes, "hebbian_rate_encoding", FLOA
 #define LEARNING_RATE 0.1
 
 #define EXTRACT_DEST_OUT \
-    float dest_out = extractor(destination_outputs[to_index], 0);
+    float dest_out = extract(destination_outputs[to_index], 0);
 
 #define EXTRACT_SOURCE_OUT \
-    float source_out = extractor(outputs[from_index], delay); \
+    float source_out = extract(outputs[from_index], delay); \
 
 #define UPDATE_WEIGHT \
     EXTRACT_SOURCE_OUT \
