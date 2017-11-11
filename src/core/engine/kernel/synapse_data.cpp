@@ -14,6 +14,10 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         from_layer(*conn->from_layer),
         to_layer(*conn->to_layer),
         matrix(state->get_matrix_pointer(conn)),
+        second_order_host_matrix(
+            (conn->second_order_slave)
+                ?  state->get_matrix_pointer(parent_node->get_second_order_connection())
+                : nullptr),
         inputs(state->get_input(conn->to_layer, parent_node->register_index)),
         destination_outputs(state->get_output(conn->to_layer)) {
     auto output_type = Attributes::get_output_type(conn->from_layer);

@@ -30,6 +30,7 @@ class SynapseData {
 
         /* Weight attributes */
         const WeightMatrix* matrix;
+        const WeightMatrix* second_order_host_matrix;
 
         /* Layer attributes */
         const Layer from_layer;

@@ -934,7 +934,8 @@ CALC_ALL( \
 /******************************************************************************/
 
 #define EXTRACT_SECOND_ORDER \
-    float * const second_order_weights = synapse_data.matrix->second_order_weights.get(); \
+    float * const second_order_weights = \
+        synapse_data.second_order_host_matrix->second_order_weights.get(); \
 
 #define CALC_VAL_SECOND_ORDER \
     float val = extractor(outputs[from_index], delay) * weights[weight_index]; \
