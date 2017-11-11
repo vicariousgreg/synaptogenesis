@@ -154,6 +154,9 @@ def set_warnings(val):
 def set_debug(val):
     _syn.set_debug(val)
 
+def interrupt_engine():
+    _syn.interrupt_engine()
+
 class CObject:
     def __init(self):
         self.obj = None

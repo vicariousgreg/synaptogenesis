@@ -294,3 +294,7 @@ void set_warnings(bool val) {
 void set_debug(bool val) {
     ErrorManager::debug = val;
 }
+
+void interrupt_engine() {
+    Engine::interrupt_async();
+}

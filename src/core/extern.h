@@ -74,5 +74,6 @@ extern "C" void set_suppress_output(bool val);
 extern "C" void set_warnings(bool val);
 extern "C" void set_debug(bool val);
 
+extern "C" void interrupt_engine();
 
 #endif

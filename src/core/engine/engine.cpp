@@ -496,6 +496,8 @@ static void handle_interrupt(int param) {
 }
 
 std::set<Engine*> Engine::active_engines;
+std::mutex Engine::interrupt_lock;
+bool Engine::interrupt_signaled = false;
 
 void Engine::activate(Engine* engine) {
     if (active_engines.empty())
@@ -509,6 +511,11 @@ void Engine::deactivate(Engine* engine) {
 }
 
 void Engine::interrupt() {
+    {
+        std::unique_lock<std::mutex> lock(interrupt_lock);
+        Engine::interrupt_signaled = true;
+    }
+
     for (auto engine : active_engines) {
         if (engine->verbose) printf("Interrupting engine...\n");
         engine->killed = true;
@@ -526,4 +533,14 @@ void Engine::interrupt() {
         }
     }
     active_engines.clear();
+    std::unique_lock<std::mutex> lock(interrupt_lock);
+    Engine::interrupt_signaled = false;
+}
+
+void Engine::interrupt_async() {
+    std::unique_lock<std::mutex> lock(interrupt_lock);
+    if (not Engine::interrupt_signaled) {
+        Engine::interrupt_signaled = true;
+        std::thread(Engine::interrupt).detach();
+    }
 }

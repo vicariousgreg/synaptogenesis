@@ -74,6 +74,7 @@ class Engine {
 
         // Interrupts all active engines
         static void interrupt();
+        static void interrupt_async();
 
     protected:
         Context context;
@@ -117,6 +118,8 @@ class Engine {
 
         // Static infrastructure for interruption
         static std::set<Engine*> active_engines;
+        static std::mutex interrupt_lock;
+        static bool interrupt_signaled;
         static void activate(Engine* engine);
         static void deactivate(Engine* engine);
 };
