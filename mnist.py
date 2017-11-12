@@ -1,13 +1,7 @@
-from syngen import Network, Environment, create_callback, get_cpu, get_gpus
+from syngen import Network, Environment, get_cpu, get_gpus
 
 data_path = "/HDD/datasets/mnist/processed/"
 # data_path = "./resources"
-
-# Create test callback
-def callback(ID, size, ptr):
-    pass
-
-cb,addr = create_callback(callback)
 
 # Create main structure (feedforward engine)
 structure = {"name" : "mnist", "type" : "feedforward"}
@@ -99,18 +93,6 @@ modules = [
                 "layer" : "bias_layer"
             }
         ]
-    },
-    {
-        "type" : "callback",
-        "layers" : [
-            {
-                "structure" : "mnist",
-                "layer" : "output_layer",
-                "params" : "output",
-                "function" : addr,
-                "id" : 0
-            }
-        ]
     }
 ]
 
@@ -144,8 +126,8 @@ matrix = network.get_weight_matrix("main matrix")
 
 # Run test
 print(network.run(test_env, {"multithreaded" : "false",
-                             "worker threads" : 0,
-                             "devices" : get_cpu(),
+                             "devices" : get_gpus()[0],
+                             "worker threads" : 2,
                              "learning flag" : "false"}))
 
 # Delete the objects

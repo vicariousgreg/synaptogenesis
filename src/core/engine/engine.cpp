@@ -414,10 +414,6 @@ Report* Engine::run(PropertyConfig args) {
         LOG_ERROR("Failed to extract devices from Engine args!");
     }
 
-    // TODO: adding these lines breaks mnist.py
-    //context.state->build({ 0 });
-    //context.state->transfer_to_device();
-
     context.state->build(devices);
     context.state->transfer_to_device();
     this->rebuild(args);
@@ -425,9 +421,8 @@ Report* Engine::run(PropertyConfig args) {
     multithreaded = args.get_bool("multithreaded", true);
 
     // Launch Scheduler thread pool
-    if (multithreaded)
-        Scheduler::get_instance()->start_thread_pool(
-            std::max(0, args.get_int("worker threads", 4)));
+    Scheduler::get_instance()->start_thread_pool(
+        std::max(0, args.get_int("worker threads", 4)));
 
     // Initialize cuda random states
     init_rand(context.network->get_max_layer_size());

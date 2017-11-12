@@ -222,7 +222,7 @@ BasePointer* ResourceManager::transfer(DeviceID device_id,
         for (auto ptr : ptrs) {
             if (ptr->size > 0) {
                 ptr->transfer(device_id, it, false);
-                it += ptr->size * ptr->unit_size;
+                it += ptr->get_bytes();
             }
         }
     }

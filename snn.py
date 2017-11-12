@@ -398,7 +398,7 @@ network = Network(
      "connections" : connections})
 
 print(network.run(env, {"multithreaded" : "true",
-                        "worker threads" : "1",
+                        "worker threads" : 0,
                         "devices" : get_gpus(),
                         "verbose" : "true"}))
 

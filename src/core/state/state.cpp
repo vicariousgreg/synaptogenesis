@@ -196,7 +196,7 @@ void State::transfer_to_device() {
     // Transfer network pointers
     for (auto pair : get_network_pointers()) {
         auto device_id = pair.first;
-        if (device_id != host_id and pair.second.size() > 0)
+        if (pair.second.size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(device_id, pair.second));
     }
@@ -204,7 +204,7 @@ void State::transfer_to_device() {
     // Transfer buffer pointers
     for (auto pair : get_buffer_pointers()) {
         auto device_id = pair.first;
-        if (device_id != host_id and pair.second.size() > 0)
+        if (pair.second.size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(device_id, pair.second));
     }
@@ -215,10 +215,14 @@ void State::transfer_to_device() {
 
     // Transpose matrices
     for (auto pair : attributes)
-        pair.second->transpose_weight_matrices();
+        if (pair.second->get_device_id() != host_id)
+            pair.second->transpose_weight_matrices();
 
     // Free old data block pointers and replace with new ones
-    for (auto ptr : data_block_pointers) ptr->free();
+    for (auto ptr : data_block_pointers) {
+        ptr->free();
+        delete ptr;
+    }
     data_block_pointers = new_data_block_pointers;
 
     on_host = false;
@@ -234,7 +238,8 @@ void State::transfer_to_host() {
 
     // Transpose device-bound matrices
     for (auto pair : attributes)
-        pair.second->transpose_weight_matrices();
+        if (pair.second->get_device_id() != host_id)
+            pair.second->transpose_weight_matrices();
 
     // Transfer attributes
     for (auto pair : attributes) pair.second->transfer(host_id);
@@ -245,7 +250,7 @@ void State::transfer_to_host() {
     // Transfer network pointers
     for (auto pair : get_network_pointers()) {
         auto device_id = pair.first;
-        if (device_id != host_id and pair.second.size() > 0)
+        if (pair.second.size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(host_id, pair.second));
     }
@@ -253,13 +258,16 @@ void State::transfer_to_host() {
     // Transfer buffer pointers
     for (auto pair : get_buffer_pointers()) {
         auto device_id = pair.first;
-        if (device_id != host_id and pair.second.size() > 0)
+        if (pair.second.size() > 0)
             new_data_block_pointers.insert(
                 res_man->transfer(host_id, pair.second));
     }
 
     // Free old data block pointers and replace with new ones
-    for (auto ptr : data_block_pointers) ptr->free();
+    for (auto ptr : data_block_pointers) {
+        ptr->free();
+        delete ptr;
+    }
     data_block_pointers = new_data_block_pointers;
 
     on_host = true;

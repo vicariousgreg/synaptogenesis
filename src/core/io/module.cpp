@@ -71,7 +71,8 @@ void Module::feed_input(Buffer *buffer) {
                 feed_input_impl(buffer);
         } else if (curr_iteration == cutoff) {
             for (auto layer : layers)
-                fSet(buffer->get_input(layer), layer->size, 0.0);
+                if (get_io_type(layer) & INPUT)
+                    fSet(buffer->get_input(layer), layer->size, 0.0);
         }
     }
 }
@@ -83,7 +84,8 @@ void Module::feed_expected(Buffer *buffer) {
                 feed_expected_impl(buffer);
         } else if (curr_iteration == cutoff) {
             for (auto layer : layers)
-                fSet((float*)buffer->get_expected(layer).get(), layer->size, 0.0);
+                if (get_io_type(layer) & EXPECTED)
+                    fSet((float*)buffer->get_expected(layer).get(), layer->size, 0.0);
         }
     }
 }

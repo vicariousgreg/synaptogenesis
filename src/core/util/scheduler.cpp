@@ -19,7 +19,7 @@ Scheduler::~Scheduler() {
 /*************************** CLIENT INTERFACE *********************************/
 /******************************************************************************/
 void Scheduler::start_thread_pool(unsigned int size) {
-    if (pool_running) shutdown_thread_pool();
+    shutdown_thread_pool();
 
     if (size == 0) {
         pool_running = false;
@@ -145,7 +145,7 @@ void Scheduler::worker_run_stream(Stream *stream) {
         }
 
         lock_stream(stream);
-        if (queues[stream].size() == 0) {
+        if (active and queues[stream].size() == 0) {
             available_streams[stream] = true;
             active = false;
         }
@@ -186,7 +186,6 @@ Scheduler::QueueSignal Scheduler::wait(Event* event, Stream* stream) {
                 : STOP_NO_POP;
     } else {
         // Devices wait on CUDA events using CUDA API
-        cudaSetDevice(event->get_device_id());
         cudaStreamWaitEvent(stream->cuda_stream, event->cuda_event, 0);
 
         return CONTINUE;

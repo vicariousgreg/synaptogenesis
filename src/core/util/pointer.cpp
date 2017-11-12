@@ -159,8 +159,8 @@ void Pointer<T>::copy_to(Pointer<T> dst, Stream *stream) const {
                 stream->get_cuda_stream());
         } else {
             if (this->local)
-                cudaMemcpy(dst.ptr, this->ptr, this->size * sizeof(T),
-                    cudaMemcpyHostToDevice);
+                cudaMemcpyAsync(dst.ptr, this->ptr, this->size * sizeof(T),
+                    cudaMemcpyHostToDevice, stream->get_cuda_stream());
             else
                 cudaMemcpyAsync(dst.ptr, this->ptr, this->size * sizeof(T),
                     cudaMemcpyDeviceToHost, stream->get_cuda_stream());

@@ -155,22 +155,22 @@ void WeightMatrix::transpose() {
                 ResourceManager::get_instance()->get_default_stream(device_id);
 
             this->weights.copy_to(temp, stream);
+            cudaSetDevice(device_id);
             transpose_matrix_parallel<float>
                 <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
                 (temp, this->weights, get_rows(), get_columns());
-            device_synchronize();
-            device_check_error("Failed to transpose weight matrix!");
 
             for (auto pair : variables) {
                 auto p = Pointer<float>(pair.second);
                 p.copy_to(temp, stream);
+                cudaSetDevice(device_id);
                 transpose_matrix_parallel<float>
                     <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
                     (temp, p, get_rows(), get_columns());
-                device_synchronize();
-                device_check_error("Failed to transpose weight matrix!");
             }
             temp.free();
+            device_synchronize();
+            device_check_error("Failed to transpose weight matrix!");
 #endif
         }
     }
