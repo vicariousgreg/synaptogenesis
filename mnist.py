@@ -114,7 +114,8 @@ if (train):
     # Run training
     print(network.run(train_env, {"multithreaded" : "false",
                                   "devices" : get_cpu(),
-                                  "worker threads" : 0}))
+                                  "worker threads" : 0,
+                                  "verbose" : "false"}))
 
     # Save the state and load it back up
     network.save_state("mnist.bin")
@@ -125,9 +126,10 @@ else:
 matrix = network.get_weight_matrix("main matrix")
 
 # Run test
-print(network.run(test_env, {"multithreaded" : "false",
+print(network.run(test_env, {"multithreaded" : "true",
                              "devices" : get_gpus()[0],
-                             "worker threads" : 2,
+                             "worker threads" : 1,
+                             "verbose" : "false",
                              "learning flag" : "false"}))
 
 # Delete the objects

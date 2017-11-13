@@ -25,7 +25,7 @@ class Scheduler {
         void start_thread_pool(unsigned int size);
 
         /* Shuts down the thread pool if it is running */
-        void shutdown_thread_pool();
+        void shutdown_thread_pool(bool verbose=false);
 
         /* Enqueue operations on the provided stream */
         void enqueue_wait(Stream *stream, Event *event);
@@ -40,28 +40,22 @@ class Scheduler {
 
         Scheduler()
             : index(0),
-              client_blocked_on(nullptr),
               pool_running(false),
               dormant(false),
               single_thread(true) { }
 
-        /* Indicates what a worker should do after performing an operation */
-        typedef enum {
-            CONTINUE,
-            STOP_POP,
-            STOP_NO_POP
-        } QueueSignal;
-
         /* Worker functions */
-        Stream* worker_get_stream();
-        void worker_run_stream(Stream *stream);
-        void worker_loop();
-        QueueSignal wait(Event* event, Stream* stream);
-        QueueSignal record(Event* event, Stream* stream);
-        QueueSignal compute(std::function<void()> f, Stream* stream);
+        Stream* worker_get_stream(int id);
+        void worker_run_stream(Stream *stream, int id);
+        void worker_loop(int id);
+        bool wait(Event* event, Stream* stream);
+        bool record(Event* event, Stream* stream);
+        bool compute(std::function<void()> f, Stream* stream);
 
         /* Thread variables */
         std::vector<std::thread> threads;
+        std::vector<int> completed;
+        int total_instructions;
         bool single_thread;
 
         /* Worker variables */
@@ -77,20 +71,22 @@ class Scheduler {
          * Streams being operated on are temporarily marked as unavailable */
         std::map<Stream*, std::mutex> stream_mutex;
         std::map<Stream*, bool> available_streams;
-        std::map<Stream*, std::queue<std::function<QueueSignal()>>> queues;
+        std::map<Stream*, int> stream_owners;
+        std::map<Stream*, std::queue<std::function<bool()>>> queues;
         void lock_stream(Stream *stream);
         void unlock_stream(Stream *stream);
-        void push(Stream *stream, std::function<QueueSignal()> f);
-        void pop(Stream *stream);
-        void mark_available(Stream *stream);
+        void push(Stream *stream, std::function<bool()> f);
 
         /* Event variables
          * When an event is queued up to be recorded, it becomes active
          * If a stream needs to wait for an event, it will be frozen if
          *   the event is active, and thawed when the event is recorded */
         std::mutex event_mutex;
+        std::mutex waiting_mutex;
         std::map<Event*, bool> active_events;
+        std::map<Event*, int> waiting_streams;
         std::map<Event*, std::vector<Stream*>> frozen_streams;
+        std::map<Stream*, int> stream_frozen_on;
         bool active(Event *event);
         void activate(Event *event);
         void deactivate(Event *event);
@@ -102,8 +98,7 @@ class Scheduler {
          * When the event is recorded, the client will be woken up */
         std::mutex client_mutex;
         std::condition_variable client_cv;
-        Event* client_blocked_on;
-        void maybe_block_client(Event *event);
+        void maybe_block_client(Event *event, bool wait_on_streams=false);
         void notify_client(Event *event);
 
         /* Dormant variables

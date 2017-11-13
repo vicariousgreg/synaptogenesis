@@ -486,7 +486,7 @@ Report* Engine::run(PropertyConfig args) {
     }
 
     // Shutdown the Scheduler thread pool
-    Scheduler::get_instance()->shutdown_thread_pool();
+    Scheduler::get_instance()->shutdown_thread_pool(verbose);
 
     // Set engine to inactive
     Engine::deactivate(this);

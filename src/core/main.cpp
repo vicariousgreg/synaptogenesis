@@ -102,7 +102,11 @@ void mnist_test() {
     // Run training
     auto state = new State(network);
     Engine engine(Context(network, env, state));
-    engine.run(PropertyConfig({{"iterations", "60000"}}));
+    engine.run(PropertyConfig({{"iterations", "60000"},
+                               {"worker threads", "16"},
+                               {"multithreaded", "false"},
+                               {"verbose", "true"},
+                               {"devices", "2"}}));
 
     // Remove modules and replace for testing
     env->remove_modules();
@@ -125,9 +129,12 @@ void mnist_test() {
         new ModuleConfig("periodic_input", "mnist", "bias_layer"));
 
     // Run testing (disable learning)
-    engine.rebuild();
     engine.run(PropertyConfig(
         {{"iterations", "10000"},
+         {"devices", "0"},
+         {"worker threads", "16"},
+         {"multithreaded", "true"},
+         {"verbose", "true"},
          {"learning flag", "false"}}));
 }
 
@@ -1085,7 +1092,8 @@ int main(int argc, char *argv[]) {
     // Set single GPU
     //ResourceManager::get_instance()->set_gpu(0);
 
-    working_memory_test();
+    mnist_test();
+    //working_memory_test();
     //return cli();
 
     /*
