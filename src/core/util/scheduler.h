@@ -46,7 +46,7 @@ class Scheduler {
 
         /* Worker functions */
         Stream* worker_get_stream(int id);
-        void worker_run_stream(Stream *stream, int id);
+        void worker_run_stream(int id, Stream *stream);
         void worker_loop(int id);
         bool wait(Event* event, Stream* stream);
         bool record(Event* event, Stream* stream);
@@ -90,8 +90,8 @@ class Scheduler {
         bool active(Event *event);
         void activate(Event *event);
         void deactivate(Event *event);
-        bool freeze(Stream *stream, Event *event);
-        void thaw(Event *event);
+        bool maybe_freeze(Stream *stream, Event *event);
+        int thaw(Event *event);
 
         /* Client variables
          * Callers of synchronize(event) are blocked if the event is active
@@ -99,7 +99,6 @@ class Scheduler {
         std::mutex client_mutex;
         std::condition_variable client_cv;
         void maybe_block_client(Event *event, bool wait_on_streams=false);
-        void notify_client(Event *event);
 
         /* Dormant variables
          * To avoid busy waiting, if there are no available streams
