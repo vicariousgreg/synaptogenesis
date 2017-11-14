@@ -15,9 +15,11 @@ typedef struct ARRAY {
     int size;
     POINTER_TYPE type;
     void* data;
+    bool owner;
 } ARRAY;
 
-ARRAY build_array(BasePointer* ptr);
+ARRAY build_array(BasePointer* ptr, bool owner);
+ARRAY build_array(void* ptr, int size, POINTER_TYPE type, bool owner);
 ARRAY null_array();
 extern "C" void free_array(ARRAY arr);
 extern "C" void free_array_deep(ARRAY arr);

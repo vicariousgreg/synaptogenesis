@@ -3,7 +3,10 @@ from collections import OrderedDict
 from json import dumps
 
 class CArray(Structure):
-    _fields_=[("size",c_int), ("type",c_uint), ("data",c_void_p)]
+    _fields_=[("size",c_int),
+              ("type",c_uint),
+              ("data",c_void_p),
+              ("owner",c_bool)]
 
 class PArray:
     def __init__(self, size, ptr):

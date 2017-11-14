@@ -128,7 +128,7 @@ matrix = network.get_weight_matrix("main matrix")
 # Run test
 print(network.run(test_env, {"multithreaded" : "true",
                              "devices" : get_gpus()[0],
-                             "worker threads" : 1,
+                             "worker threads" : 0,
                              "verbose" : "false",
                              "learning flag" : "false"}))
 

@@ -159,9 +159,25 @@ void* ResourceManager::allocate_host(size_t count, size_t size) {
     if (ptr == nullptr)
         LOG_ERROR(
             "Failed to allocate space on host for neuron state!");
-    managed_pointers[get_host_id()].insert({ ptr, count * size });
+    managed_pointers[get_host_id()][ptr] = count * size;
     this->memory_usage[get_host_id()] += count * size;
     return ptr;
+}
+
+void* ResourceManager::allocate_host_pinned(size_t count, size_t size) {
+#ifdef __CUDACC__
+    if (count == 0) return nullptr;
+
+    void* ptr;
+    cudaMallocHost(&ptr, count * size);
+
+    if (ptr == nullptr)
+        LOG_ERROR(
+            "Failed to allocate pinned space on host for neuron state!");
+    managed_pointers[get_host_id()][ptr] = count * size;
+    this->memory_usage[get_host_id()] += count * size;
+    return ptr;
+#endif
 }
 
 void* ResourceManager::allocate_device(size_t count, size_t size,
@@ -172,16 +188,24 @@ void* ResourceManager::allocate_device(size_t count, size_t size,
         LOG_ERROR(
             "Attempted to allocate memory on non-existent device!");
     void* ptr = cuda_allocate_device(device_id, count, size, source_data);
-    managed_pointers[device_id].insert({ ptr, count * size });
+    managed_pointers[device_id][ptr] = count * size;
     this->memory_usage[device_id] += count * size;
     return ptr;
 }
 
-void ResourceManager::drop_pointer(void* ptr, size_t bytes, DeviceID device_id) {
+void ResourceManager::drop_pointer(void* ptr, DeviceID device_id) {
     if (device_id >= get_num_devices())
         LOG_ERROR(
             "Attempted to drop pointer from non-existent device!");
-    managed_pointers[device_id].erase({ ptr, bytes });
+    int old_size = managed_pointers[device_id].size();
+    size_t bytes = managed_pointers[device_id].at(ptr);
+    managed_pointers[device_id].erase(ptr);
+    if (managed_pointers[device_id].size() != (old_size - 1))
+        LOG_ERROR("Attempted to drop unmanaged pointer from ResourceManager!");
+
+    if (bytes > this->memory_usage[device_id])
+        LOG_ERROR(
+            "Error in ResourceManager: negative memory usage encountered!");
     this->memory_usage[device_id] -= bytes;
 }
 

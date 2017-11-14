@@ -118,10 +118,11 @@ WeightMatrix::~WeightMatrix() {
     for (auto pair : variables) pair.second->free();
 
 #ifdef __CUDACC__
-    if (this != this->pointer and
-            not ResourceManager::get_instance()->is_host(device_id)) {
+    if (this != this->pointer
+            and not ResourceManager::get_instance()->is_host(device_id)) {
         cudaSetDevice(device_id);
         cudaFree(this->pointer);
+        ResourceManager::get_instance()->drop_pointer(this->pointer, device_id);
     }
 #endif
 }
@@ -207,6 +208,7 @@ void WeightMatrix::transfer(DeviceID new_device) {
         // Free old device copy
         cudaSetDevice(old_device);
         cudaFree(old_ptr);
+        ResourceManager::get_instance()->drop_pointer(old_ptr, old_device);
         this->pointer = this;
     } else {
         // Transfer to device

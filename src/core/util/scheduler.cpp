@@ -151,7 +151,8 @@ Stream* Scheduler::worker_get_stream(int id) {
         //   the caller worker thread as owner, and return it
         std::unique_lock<std::mutex> lock(stream_mutex[stream]);
         if (available_streams[stream] and queues[stream].size() != 0) {
-            assert(stream_owners[stream] == -1);
+            if (stream_owners[stream] != -1)
+                LOG_ERROR("Scheduler error in worker_get_stream()!");
             available_streams[stream] = false;
             stream_owners[stream] = id;
             return stream;
@@ -289,7 +290,8 @@ bool Scheduler::wait(Event* event, Stream* stream) {
     //   decrement the wait count
     if (not_waiting) {
         std::unique_lock<std::mutex> lock(waiting_mutex);
-        assert(waiting_streams[event] > 0);
+        if (waiting_streams[event] <= 0)
+            LOG_ERROR("Scheduler error in wait()!");
         waiting_streams[event] -= 1;
     }
     return ret;

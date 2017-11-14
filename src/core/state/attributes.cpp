@@ -70,6 +70,7 @@ void Attributes::transfer(DeviceID new_device) {
         // Free old device copy
         cudaSetDevice(old_device);
         cudaFree(old_ptr);
+        ResourceManager::get_instance()->drop_pointer(old_ptr, old_device);
         this->pointer = this;
     } else {
         // Transfer to device

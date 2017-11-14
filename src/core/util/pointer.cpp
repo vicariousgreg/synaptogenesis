@@ -92,8 +92,8 @@ Pointer<T> Pointer<T>::slice(size_t offset, size_t new_size) const {
 template<typename T>
 Pointer<T> Pointer<T>::pinned_pointer(size_t size) {
 #ifdef __CUDACC__
-    T* ptr;
-    cudaMallocHost((void**) &ptr, size * sizeof(T));
+    T* ptr = (T*)ResourceManager::get_instance()
+        ->allocate_host_pinned(size, sizeof(T));
     auto pointer = Pointer<T>(ptr, size, true,
         ResourceManager::get_instance()->get_host_id());
     pointer.owner = true;

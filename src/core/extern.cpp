@@ -7,31 +7,39 @@
 #include "engine/engine.h"
 #include "util/constants.h"
 
-ARRAY build_array(BasePointer* ptr) {
-    ARRAY arr;
-    arr.size = ptr->get_size();
-    arr.data = ptr->get();
+ARRAY build_array(BasePointer* ptr, bool owner) {
+    POINTER_TYPE type = VOID_POINTER;
     if (ptr->get_type() == std::type_index(typeid(float)))
-        arr.type = FLOAT_POINTER;
+        type = FLOAT_POINTER;
     else if (ptr->get_type() == std::type_index(typeid(int)))
-        arr.type = INT_POINTER;
-    else if (ptr->get_type() == std::type_index(typeid(void)))
-        arr.type = VOID_POINTER;
+        type = INT_POINTER;
+
+    return build_array(ptr->get(), ptr->get_size(), type, owner);
+}
+
+ARRAY build_array(void* ptr, int size, POINTER_TYPE type, bool owner) {
+    ARRAY arr;
+    arr.size = size;
+    arr.type = type;
+    arr.data = ptr;
+    arr.owner = owner;
     return arr;
 }
 
 ARRAY null_array() {
-    return ARRAY{ 0, VOID_POINTER, nullptr };
+    return ARRAY{ 0, VOID_POINTER, nullptr, false };
 }
 
 void free_array(ARRAY arr) {
-    free(arr.data);
+    if (arr.owner) free(arr.data);
 }
 
 void free_array_deep(ARRAY arr) {
-    for (int i = 0 ; i < arr.size ; ++i)
-        free(((void**)arr.data)[i]);
-    free(arr.data);
+    if (arr.owner) {
+        for (int i = 0 ; i < arr.size ; ++i)
+            free(((void**)arr.data)[i]);
+        free(arr.data);
+    }
 }
 
 static ARRAY string_array(const std::vector<std::string>& strings) {
@@ -44,13 +52,13 @@ static ARRAY string_array(const std::vector<std::string>& strings) {
             pp[i][j] = strings[i].c_str()[j];
     }
 
-    return ARRAY{ strings.size(), STRING_POINTER, pp };
+    return ARRAY{ strings.size(), STRING_POINTER, pp, true };
 }
 
 static ARRAY property_array(const ConfigArray& arr) {
     void** pp = (void**)malloc(arr.size() * sizeof(PropertyConfig*));
     for (int i = 0 ; i < arr.size() ; ++i) pp[i] = arr[i];
-    return ARRAY{ arr.size(), PROPS_POINTER, pp };
+    return ARRAY{ arr.size(), PROPS_POINTER, pp, true };
 }
 
 PROPS create_properties() {
@@ -201,7 +209,7 @@ ARRAY get_neuron_data(STATE state, char* structure_name,
         auto layer = ((State*)state)->network
             ->get_structure(structure_name)->get_layer(layer_name);
         auto ptr = ((State*)state)->get_neuron_data(layer, key);
-        return build_array(ptr);
+        return build_array(ptr, false);
     } catch (...) {
         return null_array();
     }
@@ -213,7 +221,7 @@ ARRAY get_layer_data(STATE state, char* structure_name,
         auto layer = ((State*)state)->network
             ->get_structure(structure_name)->get_layer(layer_name);
         auto ptr = ((State*)state)->get_layer_data(layer, key);
-        return build_array(ptr);
+        return build_array(ptr, false);
     } catch (...) {
         return null_array();
     }
@@ -223,7 +231,7 @@ ARRAY get_connection_data(STATE state, char* conn_name, char* key) {
     try {
         auto conn = ((State*)state)->network->get_connection(conn_name);
         auto ptr = ((State*)state)->get_connection_data(conn, key);
-        return build_array(ptr);
+        return build_array(ptr, false);
     } catch (...) {
         return null_array();
     }
@@ -234,7 +242,7 @@ ARRAY get_weight_matrix(STATE state, char* conn_name, char* key) {
     try {
         auto conn = ((State*)state)->network->get_connection(conn_name);
         auto ptr = ((State*)state)->get_weight_matrix(conn, key);
-        return build_array(ptr);
+        return build_array(ptr, false);
     } catch (...) {
         return null_array();
     }
@@ -268,16 +276,16 @@ int get_cpu() {
 
 ARRAY get_gpus() {
     auto ids = ResourceManager::get_instance()->get_gpu_ids();
-    Pointer<int> p(ids.size());
+    int* p = (int*)malloc(ids.size() * sizeof(int));
     for (int i = 0 ; i < ids.size() ; ++i) p[i] = ids[i];
-    return build_array(&p);
+    return build_array(p, ids.size(), INT_POINTER, true);
 }
 
 ARRAY get_all_devices() {
     auto ids = ResourceManager::get_instance()->get_all_ids();
-    Pointer<int> p(ids.size());
+    int* p = (int*)malloc(ids.size() * sizeof(int));
     for (int i = 0 ; i < ids.size() ; ++i) p[i] = ids[i];
-    return build_array(&p);
+    return build_array(p, ids.size(), INT_POINTER, true);
 }
 
 void set_suppress_output(bool val) {

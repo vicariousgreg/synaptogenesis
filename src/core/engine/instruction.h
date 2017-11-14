@@ -44,8 +44,11 @@ class Instruction {
         }
 
         void add_dependency(Instruction *inst) {
-            inst->add_event();
-            this->dependencies.push_back(inst->event);
+            // Only add dependencies for instructions on different streams
+            if (inst->stream != this->stream) {
+                inst->add_event();
+                this->dependencies.push_back(inst->event);
+            }
         }
 
         void copy_dependencies(Instruction *inst) {
