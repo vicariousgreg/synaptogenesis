@@ -30,7 +30,14 @@ static std::map<Layer*, DeviceID> distribute_layers(
     // Give the next biggest layer to the device with the least weight
     //   until no layers are left to distribute
     for (int i = 0; num_weights.size() > 0; ++i) {
+        // Start with the max device ID
+        // If multi-GPU and an imbalanced network, this can shift the
+        //   burden off of the the primary GPU
         int next_device = *devices.begin();
+        for (auto pair : device_weights)
+            if (pair.first > next_device)
+                next_device = pair.first;
+
         for (auto pair : device_weights)
             if (pair.second < device_weights.at(next_device))
                 next_device = pair.first;

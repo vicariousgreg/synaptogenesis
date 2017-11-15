@@ -5,6 +5,7 @@ from os import path
 
 leaky = False
 visualizer = True
+plastic = "true"
 
 set_suppress_output(False)
 set_warnings(False)
@@ -13,11 +14,11 @@ set_debug(False)
 # Create main structure (feedforward engine)
 structure = {"name" : "snn", "type" : "parallel"}
 
-dim = 128
-exc_exc_spread = 21
+dim = 256
+exc_exc_spread = 15
 inh_inh_spread = 7
-exc_inh_spread = 21
-inh_exc_spread = 11
+exc_inh_spread = 15
+inh_exc_spread = 9
 
 # Excitatory layer
 excitatory = {
@@ -64,9 +65,9 @@ exc_exc = {
         "wrap" : "true",
     },
     "opcode" : "add",
-    "plastic" : "true",
+    "plastic" : plastic,
 #    "learning rate" : "0.1",
-    "max weight" : "0.5",
+    "max weight" : "5.0",
     "weight config" : {
 #        "type" : "power law",
 #        "exponent" : "1.5",
@@ -86,8 +87,8 @@ exc_inh = {
         "wrap" : "true",
     },
     "opcode" : "add",
-    "plastic" : "true",
-    "max weight" : "1.0",
+    "plastic" : plastic,
+    "max weight" : "5.0",
     "weight config" : {
 #        "type" : "power law",
 #        "exponent" : "1.5",
@@ -107,7 +108,7 @@ inh_exc = {
         "wrap" : "true",
     },
     "opcode" : "sub",
-    "plastic" : "true",
+    "plastic" : plastic,
     "max weight" : "5.0",
     "weight config" : {
 #        "type" : "power law",
@@ -127,7 +128,7 @@ inh_inh = {
         "wrap" : "true",
     },
     "opcode" : "gap",
-    "plastic" : "true",
+    "plastic" : plastic,
     "max weight" : "0.5",
     "weight config" : {
         "type" : "flat",
@@ -186,22 +187,31 @@ state_path = ("balance_leaky.bin" if leaky else "balance.bin")
 pre_exc_matrix = network.get_weight_matrix("exc matrix").to_list()
 pre_inh_matrix = network.get_weight_matrix("inh matrix").to_list()
 
+gpus = get_gpus()
+if len(gpus) > 1:
+    #device = gpus[0 if leaky else 1]
+    device = gpus
+elif len(gpus) == 1:
+    device = gpus[0]
+else:
+    device = get_cpu()
+
 if not path.exists("./states/" + state_path):
-    gpus = get_gpus()
-    if len(gpus) > 1:
-        device = gpus[0 if leaky else 1]
-    elif len(gpus) == 1:
-        device = gpus[0]
-    else:
-        device = get_cpu()
     print(network.run(env, {"multithreaded" : "true",
                             "worker threads" : "1",
                             "devices" : device,
                             "iterations" : 1000000,
                             "verbose" : "true"}))
+    print("Saving to ./states/" + state_path)
     network.save_state(state_path)
 else:
     network.load_state(state_path)
+    print("Loaded ./states/" + state_path)
+    print(network.run(env, {"multithreaded" : "true",
+                            "worker threads" : "1",
+                            "devices" : device,
+                            "iterations" : 1000000,
+                            "verbose" : "true"}))
 
 post_exc_matrix = network.get_weight_matrix("exc matrix").to_list()
 post_inh_matrix = network.get_weight_matrix("inh matrix").to_list()
