@@ -41,6 +41,11 @@ inhibitory = {
     "neural model" : ("leaky_izhikevich" if leaky else "izhikevich"),
     "rows" : dim/2,
     "columns" : dim/2,
+    "noise config" : {
+        "type" : "poisson",
+        "value" : 10.0,
+        "rate" : 100
+    },
     "neuron spacing" : "0.2",
     "init" : "fast"
     #"init" : "random negative"
@@ -84,6 +89,8 @@ exc_inh = {
     "plastic" : "true",
     "max weight" : "1.0",
     "weight config" : {
+#        "type" : "power law",
+#        "exponent" : "1.5",
         "type" : "flat",
         "weight" : "0.2",
         "fraction" : "0.1"
@@ -103,6 +110,8 @@ inh_exc = {
     "plastic" : "true",
     "max weight" : "5.0",
     "weight config" : {
+#        "type" : "power law",
+#        "exponent" : "1.5",
         "type" : "flat",
         "weight" : "0.3",
         "fraction" : "0.3"
@@ -198,16 +207,36 @@ post_exc_matrix = network.get_weight_matrix("exc matrix").to_list()
 post_inh_matrix = network.get_weight_matrix("inh matrix").to_list()
 
 print("Excitatory Matrix:")
-print("Pre:", len(pre_exc_matrix), sum(pre_exc_matrix), min(x for x in pre_exc_matrix if x > 0.0), max(pre_exc_matrix))
-print("Post:", len(post_exc_matrix), sum(post_exc_matrix), min(x for x in post_exc_matrix if x > 0.0), max(post_exc_matrix))
+print("Pre:",
+    "%9d" % sum(1 for x in pre_exc_matrix if x > 0.0),
+    "%9.7f" % (sum(pre_exc_matrix) / sum(1 for x in pre_exc_matrix if x > 0.0)),
+    "%9.7f" % sum(pre_exc_matrix),
+    "%9.7f" % min(x for x in pre_exc_matrix if x > 0.0),
+    "%9.7f" % max(pre_exc_matrix))
+print("Post:",
+    "%9d" % sum(1 for x in post_exc_matrix if x > 0.0),
+    "%9.7f" % (sum(post_exc_matrix) / sum(1 for x in post_exc_matrix if x > 0.0)),
+    "%9.7f" % sum(post_exc_matrix),
+    "%9.7f" % min(x for x in post_exc_matrix if x > 0.0),
+    "%9.7f" % max(post_exc_matrix))
 diff = sum(post_exc_matrix) - sum(pre_exc_matrix)
 
 count = sum(1 for x in pre_exc_matrix if x > 0.0)
 print("Diff:", diff, count, diff / count)
 
 print("\nInhibitory Matrix:")
-print("Pre:", len(pre_inh_matrix), sum(pre_inh_matrix), min(x for x in pre_inh_matrix if x > 0.0), max(pre_inh_matrix))
-print("Post:", len(post_inh_matrix), sum(post_inh_matrix), min(x for x in post_inh_matrix if x > 0.0), max(post_inh_matrix))
+print("Pre:",
+    "%9d" % sum(1 for x in pre_inh_matrix if x > 0.0),
+    "%9.7f" % (sum(pre_inh_matrix) / sum(1 for x in pre_inh_matrix if x > 0.0)),
+    "%9.7f" % sum(pre_inh_matrix),
+    "%9.7f" % min(x for x in pre_inh_matrix if x > 0.0),
+    "%9.7f" % max(pre_inh_matrix))
+print("Post:",
+    "%9d" % sum(1 for x in post_inh_matrix if x > 0.0),
+    "%9.7f" % (sum(post_inh_matrix) / sum(1 for x in post_inh_matrix if x > 0.0)),
+    "%9.7f" % sum(post_inh_matrix),
+    "%9.7f" % min(x for x in post_inh_matrix if x > 0.0),
+    "%9.7f" % max(post_inh_matrix))
 diff = sum(post_inh_matrix) - sum(pre_inh_matrix)
 
 count = sum(1 for x in pre_inh_matrix if x > 0.0)

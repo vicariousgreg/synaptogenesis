@@ -743,7 +743,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     // Retrieve learning rate
     iz_mat->learning_rate =
-        std::stof(conn->get_parameter("learning rate", "0.01"));
+        std::stof(conn->get_parameter("learning rate", "0.1"));
 
     // Retrieve short term plasticity flag
     iz_mat->stp_flag =
