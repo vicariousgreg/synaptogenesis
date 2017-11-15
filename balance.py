@@ -4,7 +4,7 @@ from syngen import set_suppress_output, set_warnings, set_debug
 from os import path
 
 leaky = False
-visualizer = False
+visualizer = True
 
 set_suppress_output(False)
 set_warnings(False)
@@ -13,8 +13,8 @@ set_debug(False)
 # Create main structure (feedforward engine)
 structure = {"name" : "snn", "type" : "parallel"}
 
-dim = 64
-exc_exc_spread = 31
+dim = 128
+exc_exc_spread = 21
 inh_inh_spread = 7
 exc_inh_spread = 21
 inh_exc_spread = 11
@@ -32,6 +32,7 @@ excitatory = {
     },
     "neuron spacing" : "0.1",
     "init" : "regular"
+    #"init" : "random positive"
 }
 
 # Inhibitory layer
@@ -42,6 +43,7 @@ inhibitory = {
     "columns" : dim/2,
     "neuron spacing" : "0.2",
     "init" : "fast"
+    #"init" : "random negative"
 }
 
 # Add layers to structure
@@ -50,7 +52,7 @@ structure["layers"] = [excitatory, inhibitory]
 exc_exc = {
     "from layer" : "exc",
     "to layer" : "exc",
-    "name" : "main matrix",
+    "name" : "exc matrix",
     "type" : "convergent",
     "arborized config" : {
         "field size" : exc_exc_spread,
@@ -59,7 +61,7 @@ exc_exc = {
     "opcode" : "add",
     "plastic" : "true",
 #    "learning rate" : "0.1",
-    "max" : "0.5",
+    "max weight" : "0.5",
     "weight config" : {
 #        "type" : "power law",
 #        "exponent" : "1.5",
@@ -79,8 +81,8 @@ exc_inh = {
         "wrap" : "true",
     },
     "opcode" : "add",
-    "plastic" : "false",
-    "max" : "0.5",
+    "plastic" : "true",
+    "max weight" : "1.0",
     "weight config" : {
         "type" : "flat",
         "weight" : "0.2",
@@ -90,6 +92,7 @@ exc_inh = {
 inh_exc = {
     "from layer" : "inh",
     "to layer" : "exc",
+    "name" : "inh matrix",
     "type" : "divergent",
     "arborized config" : {
         "field size" : inh_exc_spread,
@@ -97,13 +100,14 @@ inh_exc = {
         "wrap" : "true",
     },
     "opcode" : "sub",
-    "plastic" : "false",
+    "plastic" : "true",
+    "max weight" : "5.0",
     "weight config" : {
         "type" : "flat",
-        "weight" : "1.0",
+        "weight" : "0.3",
         "fraction" : "0.3"
     },
-    "myelinated" : "true"
+    "myelinated" : "false"
 }
 inh_inh = {
     "from layer" : "inh",
@@ -114,8 +118,8 @@ inh_inh = {
         "wrap" : "true",
     },
     "opcode" : "gap",
-    "plastic" : "false",
-    "max" : "0.5",
+    "plastic" : "true",
+    "max weight" : "0.5",
     "weight config" : {
         "type" : "flat",
         "weight" : "0.01",
@@ -170,7 +174,9 @@ network = Network(
 
 state_path = ("balance_leaky.bin" if leaky else "balance.bin")
 
-pre_matrix = network.get_weight_matrix("main matrix").to_list()
+pre_exc_matrix = network.get_weight_matrix("exc matrix").to_list()
+pre_inh_matrix = network.get_weight_matrix("inh matrix").to_list()
+
 if not path.exists("./states/" + state_path):
     gpus = get_gpus()
     if len(gpus) > 1:
@@ -182,19 +188,29 @@ if not path.exists("./states/" + state_path):
     print(network.run(env, {"multithreaded" : "true",
                             "worker threads" : "1",
                             "devices" : device,
-                            "iterations" : 100000,
+                            "iterations" : 1000000,
                             "verbose" : "true"}))
     network.save_state(state_path)
 else:
     network.load_state(state_path)
 
-post_matrix = network.get_weight_matrix("main matrix").to_list()
+post_exc_matrix = network.get_weight_matrix("exc matrix").to_list()
+post_inh_matrix = network.get_weight_matrix("inh matrix").to_list()
 
-print("Pre:", len(pre_matrix), sum(pre_matrix), min(pre_matrix), max(pre_matrix))
-print("Post:", len(post_matrix), sum(post_matrix), min(post_matrix), max(post_matrix))
-diff = sum(post_matrix) - sum(pre_matrix)
+print("Excitatory Matrix:")
+print("Pre:", len(pre_exc_matrix), sum(pre_exc_matrix), min(x for x in pre_exc_matrix if x > 0.0), max(pre_exc_matrix))
+print("Post:", len(post_exc_matrix), sum(post_exc_matrix), min(x for x in post_exc_matrix if x > 0.0), max(post_exc_matrix))
+diff = sum(post_exc_matrix) - sum(pre_exc_matrix)
 
-count = sum(1 for x in pre_matrix if x > 0.0)
+count = sum(1 for x in pre_exc_matrix if x > 0.0)
+print("Diff:", diff, count, diff / count)
+
+print("\nInhibitory Matrix:")
+print("Pre:", len(pre_inh_matrix), sum(pre_inh_matrix), min(x for x in pre_inh_matrix if x > 0.0), max(pre_inh_matrix))
+print("Post:", len(post_inh_matrix), sum(post_inh_matrix), min(x for x in post_inh_matrix if x > 0.0), max(post_inh_matrix))
+diff = sum(post_inh_matrix) - sum(pre_inh_matrix)
+
+count = sum(1 for x in pre_inh_matrix if x > 0.0)
 print("Diff:", diff, count, diff / count)
 
 # Delete the objects

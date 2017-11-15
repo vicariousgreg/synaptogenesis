@@ -32,7 +32,8 @@ class IzhikevichAttributes : public Attributes {
         Pointer<float> recovery;
 
         // Spike trace for learning
-        Pointer<float> postsyn_trace;
+        Pointer<float> postsyn_exc_trace;
+        Pointer<int> time_since_spike;
 
         // Neuron parameters
         Pointer<float> as;
@@ -53,6 +54,7 @@ class IzhikevichWeightMatrix : public WeightMatrix {
         Pointer<float> stps;
         Pointer<float> eligibilities;
         Pointer<int> delays;
+        Pointer<int> time_since_spike;
 
         // Baseline conductances
         float baseline_conductance;
