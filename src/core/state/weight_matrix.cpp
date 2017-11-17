@@ -63,18 +63,20 @@ void randomize_weights_lognormal(float* arr, int size,
 }
 void randomize_weights_powerlaw(float* arr, int size,
         float exponent, float max, float fraction) {
-    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    std::uniform_real_distribution<float> dist(0.0, 1.0);
 
-    float coeff = pow(max, exponent+1);
-    float pow_exp = 1.0 / (exponent+1);
+    float coeff_a = pow(max, 1.0-exponent);
+    float coeff_b = pow(0.0001, 1.0-exponent);
+    float coeff = coeff_a - coeff_b;
+    float pow_exp = 1.0 / (1.0-exponent);
 
     if (fraction == 1.0) {
         for (int i = 0 ; i < size ; ++i)
-            arr[i] = pow(coeff * dist(generator), pow_exp);
+            arr[i] = pow(coeff * dist(generator) + coeff_b, pow_exp);
     } else {
         for (int i = 0 ; i < size ; ++i)
             arr[i] = (dist(generator) < fraction)
-                ? pow(coeff * dist(generator), pow_exp)
+                ? pow(coeff * dist(generator) + coeff_b, pow_exp)
                 : 0.0;
     }
 }
