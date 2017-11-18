@@ -116,7 +116,9 @@ std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
 
     for (auto wm_pair : weight_matrices)
         for (auto pair : wm_pair.second->get_pointer_map())
-            pointers[pair.first] = pair.second;
+            if (pointers.count(pair.first) > 0)
+                LOG_ERROR("Duplicate PointerKey encountered in Attributes!");
+            else pointers[pair.first] = pair.second;
     return pointers;
 }
 

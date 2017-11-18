@@ -77,7 +77,9 @@ State::State(Network *network) : network(network), on_host(true) {
         attributes[layer] = att;
 
         for (auto pair : att->get_pointer_map())
-            pointer_map[pair.first] = pair.second;
+            if (pointer_map.count(pair.first) > 0)
+                LOG_ERROR("Duplicate PointerKey encountered in State!");
+            else pointer_map[pair.first] = pair.second;
     }
 
     this->build();
