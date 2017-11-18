@@ -314,7 +314,7 @@ size_t State::get_buffer_bytes() const {
 }
 
 bool State::exists(std::string file_name) {
-    std::ifstream f(("./states/" + file_name).c_str());
+    std::ifstream f((file_name).c_str());
     return f.good();
 }
 
@@ -323,7 +323,7 @@ void State::save(std::string file_name, bool verbose) {
     this->transfer_to_host();
 
     // Open file stream
-    std::string path = "./states/" + file_name;
+    std::string path = file_name;
     std::ofstream output_file(path, std::ofstream::binary);
     if (verbose)
         printf("Saving network state to %s ...\n", path.c_str());
@@ -346,10 +346,10 @@ void State::save(std::string file_name, bool verbose) {
 
 void State::load(std::string file_name, bool verbose) {
     if (not State::exists(file_name))
-        LOG_ERROR("Could not open file: ./states/" + file_name);
+        LOG_ERROR("Could not open file: " + file_name);
 
     // Open file stream
-    std::string path = "./states/" + file_name;
+    std::string path = file_name;
 
     std::ifstream input_file(path, std::ifstream::binary);
     if (verbose)

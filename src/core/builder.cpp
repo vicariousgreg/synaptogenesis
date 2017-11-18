@@ -69,7 +69,7 @@ static Object write_properties(const PropertyConfig *config) {
 
 Network* load_network(std::string path) {
     std::stringstream buffer;
-    buffer << std::ifstream("networks/" + path).rdbuf();
+    buffer << std::ifstream(path).rdbuf();
 
     Object o;
     o.parse(buffer.str());
@@ -81,7 +81,7 @@ Network* load_network(std::string path) {
 }
 
 void save_network(Network *network, std::string path) {
-    std::ofstream file("networks/" + path);
+    std::ofstream file(path);
 	file << write_properties(network->get_config()).json() << std::endl;
 	file.close();
 }

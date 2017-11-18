@@ -50,16 +50,13 @@ bool __mat_dummy = NeuralModelBank::register_weight_matrix("leaky_izhikevich", I
 \
     if (weight >= MIN_WEIGHT) { \
         /* Extract postsynaptic trace */ \
-        float src_spike = extract(outputs[from_index], delays[weight_index]); \
-        int src_time_since_spike = from_time_since_spike[from_index] = \
-            ((src_spike > 0.0) \
-                ? 0 \
-                : MIN(32, from_time_since_spike[from_index] + 1)); \
+        int src_time_since_spike = from_time_since_spike[from_index]; \
+        bool src_spike = src_time_since_spike == 0; \
 \
         /* Update presynaptic trace */ \
         float src_trace = (opcode == ADD) \
             ? (presyn_traces[weight_index] = \
-                (src_spike > 0.0) \
+                (src_spike) \
                     ? (presyn_traces[weight_index] + STDP_A_POS) \
                     : presyn_traces[weight_index] * STDP_TAU_POS) \
             : ((dest_spike > 0.0 and src_time_since_spike > 0 and src_time_since_spike < 32) \
@@ -72,7 +69,7 @@ bool __mat_dummy = NeuralModelBank::register_weight_matrix("leaky_izhikevich", I
 \
         float dest_trace = (opcode == ADD) \
             ? dest_exc_trace \
-            : ((src_spike > 0.0 and dest_time_since_spike > 0 and dest_time_since_spike < 32) \
+            : ((src_spike and dest_time_since_spike > 0 and dest_time_since_spike < 32) \
                 /* negative iSTDP function of delta T */ \
                 ? powf(dest_time_since_spike, 10) \
                   * 0.0000001 \

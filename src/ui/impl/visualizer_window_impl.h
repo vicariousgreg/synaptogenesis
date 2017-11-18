@@ -27,6 +27,7 @@ class HeatmapWindowImpl : public VisualizerWindowImpl {
         HeatmapWindowImpl(int integration_window, bool linear);
         virtual ~HeatmapWindowImpl();
 
+        virtual void update();
         virtual void add_layer(Layer *layer, IOTypeMask io_type);
         virtual void feed_input(Layer *layer, float *input);
         virtual void report_output(Layer *layer,
@@ -38,6 +39,7 @@ class HeatmapWindowImpl : public VisualizerWindowImpl {
         int integration_window;
         bool linear;
         std::map<int, float*> output_count_map;
+        Gtk::Label *label;
 };
 
 #endif

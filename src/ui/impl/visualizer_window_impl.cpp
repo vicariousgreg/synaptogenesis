@@ -95,10 +95,57 @@ void VisualizerWindowImpl::report_output(Layer *layer,
 }
 
 HeatmapWindowImpl::HeatmapWindowImpl(int integration_window, bool linear)
-    : iterations(1), integration_window(integration_window), linear(linear) { }
+        : iterations(0), integration_window(integration_window), linear(linear) {
+    label = new Gtk::Label();
+    label->override_color(Gdk::RGBA("White"));
+    label->override_font(Pango::FontDescription("monospace"));
+    this->grid->attach_next_to(
+        *Gtk::manage(label),
+        //Gtk::PositionType::POS_BOTTOM,
+        Gtk::PositionType::POS_RIGHT,
+        1, 1);
+}
 
 HeatmapWindowImpl::~HeatmapWindowImpl() {
     for (auto pair : output_count_map) free(pair.second);
+}
+
+void HeatmapWindowImpl::update() {
+    VisualizerWindowImpl::update();
+    if (iterations % integration_window == (integration_window-1)) {
+        std::string text;
+        for (auto layer : layers) {
+            float* output_count = output_count_map[layer->id];
+            float max = output_count[0];
+            float min = output_count[0];
+            float sum = 0.0;
+            int count = 0;
+
+            for (int j = 0; j < layer->size; ++j) {
+                float c = output_count[j];
+                max = MAX(c, max);
+                sum += c;
+                if (c > 0) {
+                    ++count;
+                    min = MAX(1, MIN(c, min));
+                }
+            }
+            float avg = sum / layer->size;
+            float avg_non_silent = sum / count;
+            max = max * 1000.0 / integration_window;
+            min = min * 1000.0 / integration_window;
+            avg = avg * 1000.0 / integration_window;
+            avg_non_silent = avg_non_silent * 1000.0 / integration_window;
+
+            text += layer->str() + "\n";
+            text += "Spiked: " + std::to_string(count) + " / " + std::to_string(layer->size) + "\n";
+            text += "Max: " + std::to_string(int(max)) + "\n";
+            text += "Min: " + std::to_string(int(min)) + "\n";
+            text += "Avg: " + std::to_string(avg) + "\n";
+            text += "     " + std::to_string(avg_non_silent) + "\n" + "\n";
+        }
+        label->set_text(text);
+    }
 }
 
 void HeatmapWindowImpl::add_layer(Layer *layer, IOTypeMask io_type) {

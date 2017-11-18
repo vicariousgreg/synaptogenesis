@@ -86,7 +86,7 @@ static void create_parameters(std::string str,
 /******************************************************************************/
 
 /* Voltage threshold for neuron spiking. */
-#define IZ_SPIKE_THRESH 30
+#define IZ_SPIKE_THRESH 30.0
 
 /* Euler resolution for voltage update. */
 #define IZ_EULER_RES 10
@@ -173,6 +173,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         // If the voltage explodes (voltage == NaN -> voltage != voltage),
         //   set it to threshold before it corrupts the recovery variable
         voltage = (voltage != voltage) ? IZ_SPIKE_THRESH : voltage;
+        voltage = MIN(voltage, IZ_SPIKE_THRESH);
 
         float adjusted_tau = (voltage > IZ_SPIKE_THRESH)
             ? delta_v / (IZ_SPIKE_THRESH - voltage + delta_v)
@@ -257,7 +258,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 \
     float *stds   = matrix->stds.get(); \
     float *stps   = matrix->stps.get(); \
-    int   *delays = matrix->delays.get();
+    int   *delays = matrix->delays.get(); \
+    int   *from_time_since_spike = matrix->time_since_spike.get();
 
 #define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
     float *short_conductances = att->SHORT_NAME.get(); \
@@ -277,6 +279,10 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 // Weight Operation
 #define CALC_VAL_PREAMBLE \
     float spike = extract(outputs[from_index], delays[weight_index]); \
+    from_time_since_spike[from_index] = \
+        ((spike > 0.0) \
+            ? 0 \
+            : MIN(32, from_time_since_spike[from_index] + 1)); \
 \
     float std    = stds[weight_index]; \
     float stp    = stps[weight_index]; \
@@ -487,16 +493,13 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 \
     if (weight >= MIN_WEIGHT) { \
         /* Extract postsynaptic trace */ \
-        float src_spike = extract(outputs[from_index], delays[weight_index]); \
-        int src_time_since_spike = from_time_since_spike[from_index] = \
-            ((src_spike > 0.0) \
-                ? 0 \
-                : MIN(32, from_time_since_spike[from_index] + 1)); \
+        int src_time_since_spike = from_time_since_spike[from_index]; \
+        bool src_spike = src_time_since_spike == 0; \
 \
         /* Update presynaptic trace */ \
         float src_trace = (opcode == ADD) \
             ? (presyn_traces[weight_index] = \
-                (src_spike > 0.0) \
+                (src_spike) \
                     ? (presyn_traces[weight_index] + STDP_A_POS) \
                     : presyn_traces[weight_index] * STDP_TAU_POS) \
             : ((dest_spike > 0.0 and src_time_since_spike > 0 and src_time_since_spike < 32) \
@@ -509,7 +512,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 \
         float dest_trace = (opcode == ADD) \
             ? dest_exc_trace \
-            : ((src_spike > 0.0 and dest_time_since_spike > 0 and dest_time_since_spike < 32) \
+            : ((src_spike and dest_time_since_spike > 0 and dest_time_since_spike < 32) \
                 /* negative iSTDP function of delta T */ \
                 ? powf(dest_time_since_spike, 10) \
                   * 0.0000001 \
