@@ -39,7 +39,7 @@ bool __mat_dummy = NeuralModelBank::register_weight_matrix("leaky_izhikevich", I
     float dest_spike = extract(destination_outputs[to_index], 0);
 
 /* Minimum weight */
-#define MIN_WEIGHT 0.0001
+#define MIN_WEIGHT 0.0f
 
 /* Time dynamics for long term eligibility trace */
 #define C_A   0.000001

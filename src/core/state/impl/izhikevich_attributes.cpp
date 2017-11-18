@@ -214,12 +214,13 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     // Least significant value already loaded into next_value.
     // Index moved appropriately from loop.
     spikes[size*index + nid] = (next_value >> 1) | (spike << 31);
+    bool prev_spike = next_value >> 31;
 
     // Update trace, voltage, recovery
-    postsyn_exc_traces[nid] = (spike)
+    postsyn_exc_traces[nid] = (prev_spike)
         ? (postsyn_exc_traces[nid] + STDP_A_NEG)
         : (postsyn_exc_traces[nid] * STDP_TAU_NEG);
-    time_since_spikes[nid] = (spike)
+    time_since_spikes[nid] = (prev_spike)
         ? 0
         : MIN(32, time_since_spikes[nid] + 1);
     voltages[nid] = (spike) ? cs[nid] : voltage;
@@ -483,7 +484,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     float dest_spike = extract(destination_outputs[to_index], 0);
 
 /* Minimum weight */
-#define MIN_WEIGHT 0.0001
+#define MIN_WEIGHT 0.0f
 
 /* Time dynamics for long term eligibility trace */
 #define C_TAU 0.99

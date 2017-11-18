@@ -13,12 +13,12 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
     leaky = False
     plastic = "true"
     learning_rate = 0.005
-    base_weight = 0.001
+    base_weight = 0.01
 
     exc_noise_strength = 10.0
-    exc_noise_rate = 30
+    exc_noise_rate = 10
     inh_noise_strength = 10.0
-    inh_noise_rate = 30
+    inh_noise_rate = 10
 
     set_suppress_output(False)
     set_warnings(False)
@@ -84,8 +84,10 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
         "weight config" : {
     #        "type" : "power law",
     #        "exponent" : "1.5",
-            "type" : "flat",
-            "weight" : base_weight,
+            "type" : "random",
+            "max weight" : "0.2",
+    #        "type" : "flat",
+    #        "weight" : base_weight,
             "fraction" : "1.0"
         },
     }
@@ -107,8 +109,10 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
         "weight config" : {
     #        "type" : "power law",
     #        "exponent" : "1.5",
-            "type" : "flat",
-            "weight" : base_weight,
+            "type" : "random",
+            "max weight" : "0.2",
+    #        "type" : "flat",
+    #        "weight" : base_weight,
             "fraction" : "1.0"
         },
     }
@@ -129,8 +133,10 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
         "weight config" : {
     #        "type" : "power law",
     #        "exponent" : "1.5",
-            "type" : "flat",
-            "weight" : base_weight,
+            "type" : "random",
+            "max weight" : "0.2",
+    #        "type" : "flat",
+    #        "weight" : base_weight,
             "fraction" : "1.0"
         },
         "myelinated" : "false"
@@ -205,7 +211,7 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
         print(network.run(env, {"multithreaded" : "true",
                                 "worker threads" : "1",
                                 "devices" : device,
-                                "iterations" : 1000000,
+                                "iterations" : 750000,
                                 "verbose" : "true"}))
         if outfile is not None:
             print("Saving state to " + outfile + " ...")
@@ -243,6 +249,21 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
         (post_non_zero, post_sum, post_avg, post_min, post_max) \
             = print_matrix_stats(post_matrix)
 
+        diff_non_zero = post_non_zero - pre_non_zero
+        diff_sum = post_sum - pre_sum
+        diff_avg = post_avg - pre_avg
+        diff_min = post_min - pre_min
+        diff_max = post_max - pre_max
+
+        print("Diff:")
+        print("  Non-zero:     %-9d" % diff_non_zero)
+        print("  Sum:          %f" % diff_sum)
+        print("  Average:      %10.7f" % diff_avg)
+        print("  Min:          %10.7f" % diff_min)
+        print("  Max:          %10.7f" % diff_max)
+        print("")
+        print("")
+
         plt.subplot(1,2,1)
         np_mat = np.mat(pre_matrix)
         np_mat = np_mat.reshape(to_size, len(pre_matrix) / to_size)
@@ -267,7 +288,8 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
         np_mat = np.mat([x for x in pre_matrix if x > 0.0])
         np_mat = np_mat.reshape(np_mat.size, 1)
         (hist, bins) = np.histogram(np_mat,
-                 bins=np.logspace(np.log10(np_mat.min()-0.00001), np.log10(np_mat.max()+0.00001), 35))
+                 bins=np.logspace(np.log10(max(0.00001, np_mat.min()-0.00001)),
+                     np.log10(np_mat.max()+0.00001), 35))
         x = [10 ** (0.5 * (np.log10(bins[i]) + np.log10(bins[i+1]))) for i in range(len(hist))]
         hist = [float(v) / hist.sum() for v in hist]
         plt.loglog(x, hist, "o", color='b')
@@ -275,27 +297,13 @@ def main(infile=None, outfile=None, silent=False, visualizer=False):
         np_mat = np.mat([x for x in post_matrix if x > 0.0])
         np_mat = np_mat.reshape(np_mat.size, 1)
         (hist, bins) = np.histogram(np_mat,
-                 bins=np.logspace(np.log10(np_mat.min()-0.00001), np.log10(np_mat.max()+0.00001), 35))
+                 bins=np.logspace(np.log10(max(0.00001, np_mat.min()-0.00001)),
+                     np.log10(np_mat.max()+0.00001), 35))
         x = [10 ** (0.5 * (np.log10(bins[i]) + np.log10(bins[i+1]))) for i in range(len(hist))]
         hist = [float(v) / hist.sum() for v in hist]
         plt.loglog(x, hist, "o", color='r')
-        plt.show()
-        plt.show()
 
-        diff_non_zero = post_non_zero - pre_non_zero
-        diff_sum = post_sum - pre_sum
-        diff_avg = post_avg - pre_avg
-        diff_min = post_min - pre_min
-        diff_max = post_max - pre_max
-
-        print("Diff:")
-        print("  Non-zero:     %-9d" % diff_non_zero)
-        print("  Sum:          %f" % diff_sum)
-        print("  Average:      %10.7f" % diff_avg)
-        print("  Min:          %10.7f" % diff_min)
-        print("  Max:          %10.7f" % diff_max)
-        print("")
-        print("")
+        plt.show()
 
     exc_dim = dim**2
     inh_dim = (dim/2)**2
