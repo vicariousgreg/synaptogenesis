@@ -163,11 +163,11 @@ class NormalNoiseInstruction : public InitializeInstruction {
         NormalNoiseInstruction(Layer *layer, State *state,
             Stream *stream, bool init)
                 : InitializeInstruction(layer, state, stream),
-                  init(init),
-                  mean(layer->get_config()->get_child("noise config")
-                      ->get_float("mean", 1.0)),
-                  std_dev(layer->get_config()->get_child("noise config")
-                      ->get_float("std_dev", 0.1)) { }
+                  init(init) {
+            auto config = layer->get_config()->get_child("noise config");
+            mean = config->get_float("mean", 1.0);
+            std_dev = config->get_float("std_dev", 0.1);
+        }
 
         void activate() {
             Instruction::wait_for_dependencies();
@@ -190,11 +190,17 @@ class PoissonNoiseInstruction : public InitializeInstruction {
         PoissonNoiseInstruction(Layer *layer, State *state,
             Stream *stream, bool init)
                 : InitializeInstruction(layer, state, stream),
-                  init(init),
-                  val(layer->get_config()->get_child("noise config")
-                      ->get_float("value", 20)),
-                  rate(0.001 * layer->get_config()->get_child("noise config")
-                      ->get_float("rate", 1)) { }
+                  init(init) {
+            auto config = layer->get_config()->get_child("noise config");
+            val = config->get_float("value", 20);
+            rate = 0.001 * config->get_float("rate", 1);
+
+            if (config->get_bool("random", "false")) {
+                random_rates = Pointer<float>(size);
+                fRand(random_rates.get(), size, 0.0, rate);
+                random_rates.transfer(stream->get_device_id(), nullptr);
+            }
+        }
 
         void activate() {
             Instruction::wait_for_dependencies();
@@ -202,13 +208,14 @@ class PoissonNoiseInstruction : public InitializeInstruction {
                 blocks, threads,
                 dst, size,
                 val, rate,
-                init);
+                init, random_rates);
             Instruction::record_event();
         }
 
     protected:
         float val;
         float rate;
+        Pointer<float> random_rates;
         bool init;
 };
 
@@ -216,10 +223,10 @@ class PoissonNoiseInstruction : public InitializeInstruction {
 class SynapseInstruction : public Instruction {
     public:
         SynapseInstruction(DendriticNode* parent_node, Connection *conn,
-            State *state, Stream *stream)
+            State *state, Stream *stream, bool updater)
                 : Instruction(conn->to_layer, stream),
                   connection(conn),
-                  synapse_data(parent_node, conn, state) { }
+                  synapse_data(parent_node, conn, state, updater) { }
 
         Connection* const connection;
 
@@ -232,7 +239,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
     public:
         SynapseActivateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
-                : SynapseInstruction(parent_node, conn, state, stream),
+                : SynapseInstruction(parent_node, conn, state, stream, false),
                   activator(state->get_activator(conn)) {
             // Convolutional activate instructions iterate over weights
             // This is because of special conditions (see connection.cpp)
@@ -260,7 +267,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
     public:
         SynapseUpdateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
-                : SynapseInstruction(parent_node, conn, state, stream),
+                : SynapseInstruction(parent_node, conn, state, stream, true),
                   updater(state->get_updater(conn)) {
             // Convolutional update instructions iterate over weights
             if (conn->convolutional) {

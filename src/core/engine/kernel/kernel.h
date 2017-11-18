@@ -93,7 +93,8 @@ Kernel<float, Pointer<float>, int> get_set_data();
 
 /* Randomizes input data */
 Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_normal();
-Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_poisson();
+Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>
+    get_randomize_data_poisson();
 
 /* Dendritic tree internal computation */
 Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal();

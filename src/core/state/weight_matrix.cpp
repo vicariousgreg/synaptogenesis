@@ -146,10 +146,7 @@ void WeightMatrix::transpose() {
 #ifdef __CUDACC__
             // Create temporary matrix
             Pointer<float> temp = Pointer<float>(num_weights);
-            temp.transfer(device_id,
-                (float*)ResourceManager::get_instance()->allocate_device(
-                    num_weights, sizeof(float), nullptr, device_id),
-                true); // take ownership
+            temp.transfer(device_id, nullptr);
 
             dim3 dimGrid = calc_transpose_blocks(get_rows(), get_columns());
             dim3 dimBlock = calc_transpose_threads(get_rows(), get_columns());

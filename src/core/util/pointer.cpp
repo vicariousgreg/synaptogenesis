@@ -113,11 +113,16 @@ Pointer<T> Pointer<T>::pinned_pointer(size_t size, T val) {
 
 template<typename T>
 HOST DEVICE T* Pointer<T>::get(size_t offset) const {
+    if (size == 0) return nullptr;
 #ifdef __CUDA_ARCH__
-    if (local) assert(false);
+    if (offset >= size) assert(false);
+    if (local and ptr != nullptr) assert(false);
     return ((T*)ptr) + offset;
 #else
-    if (not local)
+    if (offset >= size)
+        LOG_ERROR(
+            "Attempted to dereference pointer with invalid offset!");
+    if (not local and ptr != nullptr)
         LOG_ERROR(
             "Attempted to dereference device pointer from host!");
     return ((T*)ptr) + offset;

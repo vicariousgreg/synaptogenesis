@@ -59,48 +59,54 @@ GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
 GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool init) { }
 #endif
-Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_normal() {
+Kernel<Pointer<float>, int, float, float, bool>
+        get_randomize_data_normal() {
     return Kernel<Pointer<float>, int, float, float, bool>(
         randomize_data_normal_SERIAL, randomize_data_normal_PARALLEL);
 }
 
 /* Randomizes input data using Poisson Point Process */
 void randomize_data_poisson_SERIAL(Pointer<float> ptr,
-        int count, float val, float rate, bool init) {
+        int count, float val, float rate, bool init, Pointer<float> random_rates) {
     std::default_random_engine generator(time(0));
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
     float* data = ptr.get();
+    float* rrates = random_rates.get();
+    bool random = rrates != nullptr;
 
     if (init)
         for (int nid = 0; nid < count; ++nid)
-            data[nid] = (distribution(generator) < rate) ? val : 0.0;
+            data[nid] =
+                (distribution(generator) < ((random) ? rrates[nid] : rate))
+                ? val : 0.0;
     else
         for (int nid = 0; nid < count; ++nid)
-            if (distribution(generator) < rate)
+            if (distribution(generator) < ((random) ? rrates[nid] : rate))
                 data[nid] += val;
 }
 #ifdef __CUDACC__
 GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr,
-        int count, float val, float rate, bool init) {
+        int count, float val, float rate, bool init, Pointer<float> random_rates) {
     float* data = ptr.get();
-
+    float* rrates = random_rates.get();
+    bool random = rrates != nullptr;
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
         if (init)
             data[nid] =
-                (curand_uniform(&cuda_rand_states[nid]) < rate)
+                (curand_uniform(&cuda_rand_states[nid]) < ((random) ? rrates[nid] : rate))
                 ? val : 0.0;
-        else if (curand_uniform(&cuda_rand_states[nid]) < rate)
+        else if (curand_uniform(&cuda_rand_states[nid]) < ((random) ? rrates[nid] : rate))
             data[nid] += val;
     }
 }
 #else
 GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr,
-        int count, float val, float rate, bool init) { }
+        int count, float val, float rate, bool init, Pointer<float> random_rates) { }
 #endif
-Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_poisson() {
-    return Kernel<Pointer<float>, int, float, float, bool>(
+Kernel<Pointer<float>, int, float, float, bool, Pointer<float>> get_randomize_data_poisson() {
+    return Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>(
         randomize_data_poisson_SERIAL, randomize_data_poisson_PARALLEL);
 }
 

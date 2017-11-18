@@ -39,6 +39,11 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
         bool transfer_ownership) {
 #ifdef __CUDACC__
     bool host_dest = ResourceManager::get_instance()->is_host(new_device);
+    if (destination == nullptr) {
+        transfer_ownership = true;
+        destination = (void*)ResourceManager::get_instance()->allocate_device(
+            size, unit_size, nullptr, new_device);
+    }
 
     if (local) {
         if (host_dest)

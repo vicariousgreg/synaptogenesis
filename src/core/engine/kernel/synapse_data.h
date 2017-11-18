@@ -16,7 +16,8 @@ class Connection;
 /* Data package that is passed into synaptic kernel functions */
 class SynapseData {
     public:
-        SynapseData(DendriticNode *parent_node, Connection *conn, State *state);
+        SynapseData(DendriticNode *parent_node, Connection *conn,
+            State *state, bool updater);
 
         /* Attributes pointer for to_layer */
         const Attributes * const attributes;
