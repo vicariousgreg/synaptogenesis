@@ -40,12 +40,14 @@ inline float fRand(float fMin, float fMax) {
 }
 inline void fRand(float* arr, int size, float fMin, float fMax, float fraction=1.0) {
     auto dist = std::uniform_real_distribution<float>(fMin, fMax);
-    if (fraction == 1.0)
+    if (fraction == 1.0) {
         for (int i = 0 ; i < size ; ++i) arr[i] = dist(generator);
-    else
+    } else {
+        auto f_dist = std::uniform_real_distribution<float>(0.0, 1.0);
         for (int i = 0 ; i < size ; ++i)
-            if (dist(generator) < fraction)
+            if (f_dist(generator) < fraction)
                 arr[i] = dist(generator);
+    }
 }
 
 /* Random int functions */

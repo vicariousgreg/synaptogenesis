@@ -96,7 +96,7 @@ void set_weights(float* arr, int size, float val, float fraction=1.0);
 void clear_weights(float* arr, int size);
 
 /* Randomizes an array */
-void randomize_weights(float* arr, int size, float max, float fraction=1.0);
+void randomize_weights(float* arr, int size, float min, float max, float fraction=1.0);
 void randomize_weights_gaussian(float* arr, int size,
     float mean, float std_dev, float max, float fraction=1.0);
 void randomize_weights_lognormal(float* arr, int size,

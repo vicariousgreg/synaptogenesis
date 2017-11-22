@@ -18,8 +18,8 @@ void clear_weights(float* arr, int size) {
 }
 
 /* Randomizes an array */
-void randomize_weights(float* arr, int size, float max, float fraction) {
-    fRand(arr, size, 0, max, fraction);
+void randomize_weights(float* arr, int size, float min, float max, float fraction) {
+    fRand(arr, size, min, max, fraction);
 }
 void randomize_weights_gaussian(float* arr, int size,
         float mean, float std_dev, float max, float fraction) {
@@ -301,10 +301,11 @@ static void flat_config(const PropertyConfig& config, float* target_matrix,
 static void random_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn) {
     float max_weight = config.get_float("max weight", 1.0);
+    float min_weight = config.get_float("min weight", 0.0);
     float fraction = config.get_float("fraction", 1.0);
 
     randomize_weights(target_matrix, conn->get_num_weights(),
-        max_weight, fraction);
+        min_weight, max_weight, fraction);
 }
 
 static void gaussian_config(const PropertyConfig& config, float* target_matrix,

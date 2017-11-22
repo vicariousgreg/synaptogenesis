@@ -93,8 +93,11 @@ static void create_parameters(std::string str,
 #define IZ_EULER_RES_INV 0.1
 
 /* Time dynamics of spike traces */
-#define STDP_TAU_POS       0.44   // tau = 1.8ms
-#define STDP_TAU_NEG       0.833   // tau = 6ms
+//#define STDP_TAU_POS       0.44    // tau = 1.8ms
+//#define STDP_TAU_NEG       0.833   // tau = 6ms
+#define STDP_TAU_POS       0.9     // tau = 10ms
+//#define STDP_TAU_NEG       0.933   // tau = 15ms
+#define STDP_TAU_NEG       0.95   // tau = 20ms
 
 /* Time dynamics of dopamine */
 #define DOPAMINE_CLEAR_TAU 0.95  // 20
@@ -176,7 +179,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         voltage = MIN(voltage, IZ_SPIKE_THRESH);
 
         float adjusted_tau = (voltage > IZ_SPIKE_THRESH)
-            ? delta_v / (IZ_SPIKE_THRESH - voltage + delta_v)
+            ? delta_v
+                / (IZ_SPIKE_THRESH - voltage + delta_v)
+                * IZ_EULER_RES_INV
             : IZ_EULER_RES_INV;
 
         // Update recovery variable
@@ -484,7 +489,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     float dest_spike = extract(destination_outputs[to_index], 0);
 
 /* Minimum weight */
-#define MIN_WEIGHT 0.0f
+#define MIN_WEIGHT 0.0001f
 
 /* Time dynamics for long term eligibility trace */
 #define C_TAU 0.99
