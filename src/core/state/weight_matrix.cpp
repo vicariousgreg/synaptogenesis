@@ -62,11 +62,11 @@ void randomize_weights_lognormal(float* arr, int size,
     }
 }
 void randomize_weights_powerlaw(float* arr, int size,
-        float exponent, float max, float fraction) {
+        float exponent, float min, float max, float fraction) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
 
     float coeff_a = pow(max, 1.0-exponent);
-    float coeff_b = pow(0.0001, 1.0-exponent);
+    float coeff_b = pow(std::max(min, 0.00001f), 1.0-exponent);
     float coeff = coeff_a - coeff_b;
     float pow_exp = 1.0 / (1.0-exponent);
 
@@ -300,7 +300,7 @@ static void flat_config(const PropertyConfig& config, float* target_matrix,
 
 static void random_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn) {
-    float max_weight = config.get_float("max weight", 1.0);
+    float max_weight = config.get_float("max weight", conn->max_weight);
     float min_weight = config.get_float("min weight", 0.0);
     float fraction = config.get_float("fraction", 1.0);
 
@@ -342,6 +342,8 @@ static void power_law_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn) {
     float exponent = config.get_float("exponent", 1.5);
     float fraction = config.get_float("fraction", 1.0);
+    float max_weight = config.get_float("max weight", conn->max_weight);
+    float min_weight = config.get_float("min weight", 0.0);
 
     exponent = abs(exponent);
 
@@ -351,7 +353,7 @@ static void power_law_config(const PropertyConfig& config, float* target_matrix,
             "  Power law config max must be positive!");
 
     randomize_weights_powerlaw(target_matrix, conn->get_num_weights(),
-        exponent, conn->max_weight, fraction);
+        exponent, min_weight, max_weight, fraction);
 }
 
 static void surround_config(const PropertyConfig& config, float* target_matrix,

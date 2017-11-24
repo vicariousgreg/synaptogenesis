@@ -102,7 +102,7 @@ void randomize_weights_gaussian(float* arr, int size,
 void randomize_weights_lognormal(float* arr, int size,
     float mean, float std_dev, float max, float fraction=1.0);
 void randomize_weights_powerlaw(float* arr, int size,
-    float exponent, float max, float fraction=1.0);
+    float exponent, float min, float max, float fraction=1.0);
 
 /* Transfers the values from one array to another */
 void transfer_weights(float* from, float* to, int size);
