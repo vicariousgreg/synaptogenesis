@@ -2,13 +2,14 @@
 #include "io/impl/saccade_module.h"
 #include "util/tools.h"
 
-static int peripheral_cols = 50;
-static int center_cols = 100;
-static int rows = 100;
+static int peripheral_cols = 120;
+static int center_cols = 240;
+static int rows = 340;
 static int cols = peripheral_cols * 2 + center_cols;
 
 SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
             : module(module),
+              window_dirty(true),
               input_dirty(true) {
     table = new Gtk::Table(1, 3, false);
     table->set_row_spacings(0);
@@ -16,38 +17,52 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
     this->override_background_color(Gdk::RGBA("Black"));
     this->add(*table);
 
-    /*
     center_cross = Gdk::Pixbuf::create_from_file(
-        "./resources/saccade/center_cross.png");
+        "./resources/antisaccade/center_cross.bmp");
     center_circle = Gdk::Pixbuf::create_from_file(
-        "./resources/saccade/center_circle.png");
+        "./resources/antisaccade/center_circle.bmp");
     peripheral_square = Gdk::Pixbuf::create_from_file(
-        "./resources/saccade/peripheral_square.png");
+        "./resources/antisaccade/peripheral_square.bmp");
     peripheral_circle = Gdk::Pixbuf::create_from_file(
-        "./resources/saccade/peripheral_circle.png");
+        "./resources/antisaccade/peripheral_circle.bmp");
 
     // Load face images
-    for (int i = 1 ; i < 10 ; ++i)
-        digit_pixbufs.push_back(
+    for (int i = 0 ; i < 9 ; ++i) {
+        fear_faces_left.push_back(
             Gdk::Pixbuf::create_from_file(
-                "./resources/saccade/" + std::to_string(i)
-                + "_" + std::to_string(cell_cols) + ".png"));
-    */
+                "./resources/antisaccade/fear_l_" + std::to_string(i) + ".bmp"));
+        fear_faces_right.push_back(
+            Gdk::Pixbuf::create_from_file(
+                "./resources/antisaccade/fear_r_" + std::to_string(i) + ".bmp"));
+    }
+    for (int i = 0 ; i < 8 ; ++i) {
+        neutral_faces_left.push_back(
+            Gdk::Pixbuf::create_from_file(
+                "./resources/antisaccade/neutral_l_" + std::to_string(i) + ".bmp"));
+        neutral_faces_right.push_back(
+            Gdk::Pixbuf::create_from_file(
+                "./resources/antisaccade/neutral_r_" + std::to_string(i) + ".bmp"));
+    }
 
     // Create peripheral panes
     for (int i = 0; i < 2; ++i) {
+        /*
         auto pix = Gdk::Pixbuf::create(
                 Gdk::Colorspace::COLORSPACE_RGB,
                 true, 8, peripheral_cols, rows);
+        */
+        auto pix = peripheral_square;
         guint8* data = pix->get_pixels();
 
         // Clear out pane
+        /*
         for (int i = 0; i < peripheral_cols*rows; ++i) {
             data[i*4 + 0] = 0;
             data[i*4 + 1] = 0;
             data[i*4 + 2] = 0;
             data[i*4 + 3] = 255;
         }
+        */
 
         if (i == 0) {
             this->left_pane_pixbuf = pix;
@@ -78,16 +93,68 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
     this->table->attach(*center_pane_image, 1, 2, 0, 1);
     this->table->attach(*right_pane_image, 2, 3, 0, 1);
     this->table->show_all();
+
+    this->set_face(iRand(1), iRand(1));
 }
 
 SaccadeWindowImpl::~SaccadeWindowImpl() {
     delete this->table;
 }
 
+void SaccadeWindowImpl::set_cross() {
+    auto cross_data = center_cross->get_pixels();
+    int pix_size = center_cross->get_has_alpha() ? 4 : 3;
+    auto center_data = center_pane_pixbuf->get_pixels();
+
+    for (int index = 0; index < rows*center_cols; ++index) {
+        center_data[4*index + 0] = cross_data[pix_size*index + 0];
+        center_data[4*index + 1] = cross_data[pix_size*index + 1];
+        center_data[4*index + 2] = cross_data[pix_size*index + 2];
+    }
+}
+
+void SaccadeWindowImpl::set_face(bool fear, bool direction) {
+    input_dirty = true;
+    window_dirty = true;
+
+
+    auto& faces = fear_faces_left;
+    if (fear and direction)
+        faces = fear_faces_right;
+    else if (not fear and direction)
+        faces = neutral_faces_right;
+    else if (not fear and not direction)
+        faces = neutral_faces_left;
+
+    int index = iRand(faces.size()-1);
+    auto face_pix = faces[index];
+    auto face_data = face_pix->get_pixels();
+    int pix_size = face_pix->get_has_alpha() ? 4 : 3;
+    auto center_data = center_pane_pixbuf->get_pixels();
+
+    printf("Setting face to ");
+    printf((fear) ? "fear " : "neutral ");
+    printf((direction) ? "right " : "left ");
+    printf("%d\n", index);
+
+    for (int index = 0; index < rows*center_cols; ++index) {
+        center_data[4*index + 0] = face_data[pix_size*index + 0];
+        center_data[4*index + 1] = face_data[pix_size*index + 1];
+        center_data[4*index + 2] = face_data[pix_size*index + 2];
+    }
+}
+
 void SaccadeWindowImpl::add_layer(Layer* layer, IOTypeMask io_type) {
 }
 
 void SaccadeWindowImpl::update() {
+    if (window_dirty) {
+        window_dirty = false;
+
+        left_pane_image->set(left_pane_pixbuf);
+        right_pane_image->set(right_pane_pixbuf);
+        center_pane_image->set(center_pane_pixbuf);
+    }
 }
 
 void SaccadeWindowImpl::feed_input(Layer *layer, float *input) {
@@ -121,7 +188,15 @@ bool SaccadeWindowImpl::on_button_press_event(GdkEventButton* button_event) {
     if (button_event->type == GDK_BUTTON_PRESS) {
         int row = int(button_event->y);
         int col = int(button_event->x);
-        printf("Clicked: row(%d) column(%d)\n", row, col);
+        if (col < peripheral_cols) {
+            printf("Clicked left   (%d, %d)\n", row, col);
+            this->set_face(iRand(1), iRand(1));
+        } else if (col < peripheral_cols + center_cols) {
+            printf("Clicked center (%d, %d)\n", row, col);
+        } else {
+            printf("Clicked right  (%d, %d)\n", row, col);
+            this->set_face(iRand(1), iRand(1));
+        }
         return true;
     }
     return false;

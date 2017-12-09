@@ -10,6 +10,9 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         SaccadeWindowImpl(SaccadeModule* module);
         virtual ~SaccadeWindowImpl();
 
+        void set_face(bool fear, bool direction);
+        void set_cross();
+
         void update();
         void add_layer(Layer *layer, IOTypeMask io_type);
         void feed_input(Layer *layer, float *input);
@@ -17,8 +20,10 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
     protected:
         Glib::RefPtr<Gdk::Pixbuf> center_cross;
         Glib::RefPtr<Gdk::Pixbuf> center_circle;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf>> neutral_faces;
-        std::vector<Glib::RefPtr<Gdk::Pixbuf>> fear_faces;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> neutral_faces_left;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> fear_faces_left;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> neutral_faces_right;
+        std::vector<Glib::RefPtr<Gdk::Pixbuf>> fear_faces_right;
 
         Glib::RefPtr<Gdk::Pixbuf> peripheral_square;
         Glib::RefPtr<Gdk::Pixbuf> peripheral_circle;
@@ -33,6 +38,7 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         bool on_button_press_event(GdkEventButton* button_event);
 
         bool input_dirty;
+        bool window_dirty;
 
         Gtk::Table *table;
 
