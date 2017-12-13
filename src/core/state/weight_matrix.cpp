@@ -694,15 +694,18 @@ void set_delays(OutputType output_type, Connection *conn,
                     int to_index = d_row*to_columns + d_col;
 
                     /* Determine range of source neurons for divergent kernel */
-                    int start_s_row = (d_row - row_offset - row_field_size + row_stride) / row_stride;
-                    int start_s_col = (d_col - column_offset - column_field_size + column_stride) / column_stride;
-                    int end_s_row = start_s_row + (row_spacing * (row_field_size + row_stride) / row_stride);
-                    int end_s_col = start_s_col + (column_spacing * (column_field_size + column_stride) / column_stride);
+                    int start_s_row = \
+                        (d_row + row_spacing * (-row_offset \
+                            - row_field_size + row_stride)) / row_stride; \
+                    int start_s_col = \
+                        (d_col + column_spacing * (-column_offset \
+                            - column_field_size + column_stride)) / column_stride; \
+                    int end_s_row = start_s_row + \
+                        (row_spacing * (row_field_size - row_stride) / row_stride); \
+                    int end_s_col = start_s_col + \
+                        (column_spacing * (column_field_size - column_stride) / column_stride); \
 
-                    // SERIAL
                     int weight_offset = to_index * (num_weights / to_size);
-                    // PARALLEL
-                    int kernel_row_size = num_weights / to_size;
 
                     /* Iterate over relevant source neurons... */
                     int k_index = 0;
@@ -718,10 +721,10 @@ void set_delays(OutputType output_type, Connection *conn,
                             int from_index = (s_row * from_columns) + s_col;
 
                             float d_x = abs(
-                                ((d_col + ac.column_offset) * to_spacing)
+                                (d_col * to_spacing)
                                 - (s_col * from_spacing));
                             float d_y = abs(
-                                ((d_row + ac.row_offset) * to_spacing)
+                                (d_row * to_spacing)
                                 - (s_row * from_spacing));
 
                             float distance = pow(
