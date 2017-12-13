@@ -422,8 +422,7 @@ static void circular_mask_config(const PropertyConfig& config, float* target_mat
                     (powf(k_row + 0.5 - row_center, 2) * col_radius_sq) +
                     (powf(k_col + 0.5 - col_center, 2) * row_radius_sq);
 
-                if ((invert and term <= sq_mult)
-                        or (not invert and term > sq_mult)) {
+                if (invert == (term <= sq_mult)) {
                     int weight_index = weight_offset +
                         (k_row * col_field_size) + k_col;
                     target_matrix[weight_index] = 0.0;
