@@ -358,23 +358,19 @@ static void power_law_config(const PropertyConfig& config, float* target_matrix,
 
 static void surround_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn) {
-    switch (conn->type) {
-        case CONVERGENT:
-            break;
-        default:
-            LOG_ERROR(
-                "Error in weight config for " + conn->str() + ":\n"
-                "  SurroundWeightConfig can only be used "
-                "on convergent/convolutional arborized connections!");
-    }
+    if (conn->type != CONVERGENT)
+        LOG_ERROR(
+            "Error in weight config for " + conn->str() + ":\n"
+            "  SurroundWeightConfig can only be used "
+            "on convergent arborized connections!");
 
-    int rows = config.get_int("rows", 0);
-    int cols = config.get_int("columns", 0);
+    int rows = config.get_int("rows", 1);
+    int cols = config.get_int("columns", 1);
     int size_param = config.get_int("size", -1);
 
     if (size_param >= 0)
         rows = cols = size_param;
-    if (rows < 0 or cols < 0)
+    if (rows <= 0 or cols <= 0)
         LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Surround weight config rows/cols must be positive!");
@@ -385,17 +381,17 @@ static void surround_config(const PropertyConfig& config, float* target_matrix,
     int col_field_size = ac.column_field_size;
     int kernel_size = ac.get_total_field_size();
 
+    if (rows >= row_field_size or cols >= col_field_size)
+        LOG_ERROR(
+            "Error in weight config for " + conn->str() + ":\n"
+            "  Surround weight config dimensions must be smaller than kernel!");
+
     int row_offset = (row_field_size - rows) / 2;
     int col_offset = (col_field_size - cols) / 2;
 
+
     // Convolutional connections are unique in that there is only one kernel.
-    int size;
-    switch (conn->type) {
-        case CONVERGENT:
-            if (conn->convolutional) size = 1;
-            else size = conn->to_layer->size;
-            break;
-    }
+    int size = (conn->convolutional) ? 1 : conn->to_layer->size;
 
     for (int index = 0 ; index < size ; ++index) {
         int weight_offset = (conn->convolutional)
@@ -526,6 +522,9 @@ static void initialize_weights(const PropertyConfig config,
                 break;
             }
             case CONVERGENT:
+                // Use surround config's default size of 1 to remove diagonal
+                if (not surround)
+                    surround_config(config, target_matrix, conn);
                 break;
         }
     }

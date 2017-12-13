@@ -73,8 +73,8 @@ State::State(Network *network) : network(network), on_host(true) {
             LOG_ERROR(
                 "Error building attributes for " + layer->str() + ":\n"
                 "  Cluster compatibility conflict detected!");
-        att->process_weight_matrices();
         attributes[layer] = att;
+        att->process_weight_matrices();
 
         for (auto pair : att->get_pointer_map())
             if (pointer_map.count(pair.first) > 0)
@@ -602,18 +602,14 @@ bool State::get_weight_transpose(Connection *conn) const {
 
 BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
     transfer_to_host();
-    // TODO
-    return nullptr;
 
-    /*
     try {
-        return attributes.at(layer)->get_neuron_data(layer->id, key);
+        return attributes.at(layer)->get_neuron_data(key);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get neuron \"" + key + "\" data in State for "
             "layer: " + layer->str());
     }
-    */
 }
 
 BasePointer* State::get_layer_data(Layer *layer, std::string key) {

@@ -35,16 +35,12 @@ def build_network(dim=64, leaky=False):
     exc_noise_rate = 5
     inh_noise_strength = 10.0
     inh_noise_rate = 5
-    exc_random = "true"
+    exc_random = "false"
     inh_random = "false"
 
     myelinated = "false"
 
-    set_suppress_output(False)
-    set_warnings(False)
-    set_debug(False)
-
-    # Create main structure (feedforward engine)
+    # Create main structure
     structure = {"name" : "snn", "type" : "parallel"}
 
     exc_exc_spread = 25
@@ -60,8 +56,9 @@ def build_network(dim=64, leaky=False):
         "rows" : dim,
         "columns" : dim,
         "neuron spacing" : "0.1",
-        "init" : "regular"
-        #"init" : "random positive"
+        #"init" : "bursting"
+        #"init" : "regular"
+        "init" : "random positive"
     }
 
     # Inhibitory layer
@@ -71,8 +68,8 @@ def build_network(dim=64, leaky=False):
         "rows" : dim/2,
         "columns" : dim/2,
         "neuron spacing" : "0.2",
-        "init" : "fast"
-        #"init" : "random negative"
+        #"init" : "fast"
+        "init" : "random negative"
     }
 
     # Noise
@@ -150,13 +147,15 @@ def build_network(dim=64, leaky=False):
                 "type" : "random",
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
-                "fraction" : exc_exc_fraction
+                "fraction" : exc_exc_fraction,
+                "diagonal" : "false"
             }
     elif exc_exc_weight_init == "flat":
         exc_exc["weight config"] = {
                 "type" : "flat",
                 "weight" : exc_exc_base_weight_max,
-                "fraction" : exc_exc_fraction
+                "fraction" : exc_exc_fraction,
+                "diagonal" : "false"
             }
     elif exc_exc_weight_init == "power law":
         exc_exc["weight config"] = {
@@ -164,7 +163,8 @@ def build_network(dim=64, leaky=False):
                 "exponent" : exc_exc_exponent,
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
-                "fraction" : exc_exc_fraction
+                "fraction" : exc_exc_fraction,
+                "diagonal" : "false"
             }
 
     # Exc Inh init
@@ -360,9 +360,9 @@ def compare_matrices(init_matrix, pre_matrix, post_matrix, to_size):
     plt.show()
 
 def main(infile=None, outfile=None, silent=False, visualizer=False,
-        device=None, iterations=10000000):
+        device=None, iterations=1000000):
     leaky = False
-    dim = 64
+    dim = 128
 
     network = build_network(dim, leaky)
     env = build_environment(visualizer)
@@ -387,10 +387,10 @@ def main(infile=None, outfile=None, silent=False, visualizer=False,
         device = get_gpus()[1]
     if not silent:
         report = network.run(env, {"multithreaded" : "true",
-                                "worker threads" : "1",
-                                "devices" : device,
-                                "iterations" : iterations,
-                                "verbose" : "true"})
+                                   "worker threads" : "1",
+                                   "devices" : device,
+                                   "iterations" : iterations,
+                                   "verbose" : "true"})
         if report is None:
             print("Engine failure.  Exiting...")
             return
@@ -440,5 +440,9 @@ if __name__ == "__main__":
         device = get_cpu()
     else:
         device = get_gpus()[args.d]
+
+    set_suppress_output(False)
+    set_warnings(False)
+    set_debug(False)
 
     main(args.i, args.o, args.silent, args.visualizer, device)
