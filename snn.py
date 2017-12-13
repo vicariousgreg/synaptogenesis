@@ -17,7 +17,7 @@ inh_exc_spread = 11
 
 # Excitatory layers
 layer = {
-    "neural model" : "leaky_izhikevich",
+    "neural model" : "izhikevich",
     "rows" : dim,
     "columns" : dim,
     "noise config" : {

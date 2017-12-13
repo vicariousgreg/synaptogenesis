@@ -9,36 +9,39 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
-def build_network(dim=64, leaky=False):
+def build_network(dim=64):
     plastic = "true"
-    learning_rate = 0.1
+    short_term_plasticity = "true"
+    myelinated = "false"
+    learning_rate = 0.01
 
-    exc_exc_weight_init = "power law"
+    exc_exc_weight_init = "flat"
     exc_exc_exponent = 1.1
+    exc_exc_base_weight = 0.005
     exc_exc_base_weight_min = 0.00011
-    exc_exc_base_weight_max = 0.1
+    exc_exc_base_weight_max = 0.05
     exc_exc_fraction = 0.1
 
-    exc_inh_weight_init = "power law"
+    exc_inh_weight_init = "flat"
     exc_inh_exponent = 1.1
+    exc_inh_base_weight = 0.005
     exc_inh_base_weight_min = 0.00011
-    exc_inh_base_weight_max = 0.1
+    exc_inh_base_weight_max = 0.05
     exc_inh_fraction = 0.1
 
-    inh_exc_weight_init = "power law"
+    inh_exc_weight_init = "flat"
     inh_exc_exponent = 1.1
+    inh_exc_base_weight = 0.005
     inh_exc_base_weight_min = 0.00011
-    inh_exc_base_weight_max = 0.1
+    inh_exc_base_weight_max = 0.05
     inh_exc_fraction = 0.1
 
     exc_noise_strength = 10.0
     exc_noise_rate = 10
-    inh_noise_strength = 10.0
+    inh_noise_strength = 5.0
     inh_noise_rate = 10
     exc_random = "false"
     inh_random = "false"
-
-    myelinated = "false"
 
     # Create main structure
     structure = {"name" : "snn", "type" : "parallel"}
@@ -46,13 +49,13 @@ def build_network(dim=64, leaky=False):
     exc_exc_spread = 25
     exc_inh_spread = 15
     inh_exc_spread = 7
-    exc_inh_mask = 11
+    exc_inh_mask = 9
 
 
     # Excitatory layer
     excitatory = {
         "name" : "exc",
-        "neural model" : ("leaky_izhikevich" if leaky else "izhikevich"),
+        "neural model" : "izhikevich",
         "rows" : dim,
         "columns" : dim,
         "neuron spacing" : "0.1",
@@ -64,7 +67,7 @@ def build_network(dim=64, leaky=False):
     # Inhibitory layer
     inhibitory = {
         "name" : "inh",
-        "neural model" : ("leaky_izhikevich" if leaky else "izhikevich"),
+        "neural model" : "izhikevich",
         "rows" : dim/2,
         "columns" : dim/2,
         "neuron spacing" : "0.2",
@@ -105,7 +108,8 @@ def build_network(dim=64, leaky=False):
         "plastic" : plastic,
         "learning rate" : learning_rate,
         "max weight" : "0.5",
-        "myelinated" : myelinated
+        "myelinated" : myelinated,
+        "short term plasticity" : short_term_plasticity
     }
 
     exc_inh = {
@@ -122,7 +126,8 @@ def build_network(dim=64, leaky=False):
         "plastic" : plastic,
         "learning rate" : learning_rate,
         "max weight" : "0.5",
-        "myelinated" : myelinated
+        "myelinated" : myelinated,
+        "short term plasticity" : short_term_plasticity
     }
     inh_exc = {
         "from layer" : "inh",
@@ -138,7 +143,8 @@ def build_network(dim=64, leaky=False):
         "plastic" : plastic,
         "learning rate" : learning_rate,
         "max weight" : "0.5",
-        "myelinated" : myelinated
+        "myelinated" : myelinated,
+        "short term plasticity" : short_term_plasticity
     }
 
     # Exc Exc init
@@ -154,7 +160,7 @@ def build_network(dim=64, leaky=False):
     elif exc_exc_weight_init == "flat":
         exc_exc["weight config"] = {
                 "type" : "flat",
-                "weight" : exc_exc_base_weight_max,
+                "weight" : exc_exc_base_weight,
                 "fraction" : exc_exc_fraction,
                 "diagonal" : "false",
                 "circular mask" : {}
@@ -188,7 +194,7 @@ def build_network(dim=64, leaky=False):
     elif exc_inh_weight_init == "flat":
         exc_inh["weight config"] = {
                 "type" : "flat",
-                "weight" : exc_inh_base_weight_max,
+                "weight" : exc_inh_base_weight,
                 "fraction" : exc_inh_fraction,
                 "circular mask" : [
                     {
@@ -225,7 +231,7 @@ def build_network(dim=64, leaky=False):
     elif inh_exc_weight_init == "flat":
         inh_exc["weight config"] = {
                 "type" : "flat",
-                "weight" : inh_exc_base_weight_max,
+                "weight" : inh_exc_base_weight,
                 "fraction" : inh_exc_fraction
             }
     elif inh_exc_weight_init == "power law":
@@ -376,10 +382,9 @@ def compare_matrices(init_matrix, pre_matrix, post_matrix, to_size):
 
 def main(infile=None, outfile=None, silent=False, visualizer=False,
         device=None, iterations=1000000):
-    leaky = False
     dim = 128
 
-    network = build_network(dim, leaky)
+    network = build_network(dim)
     env = build_environment(visualizer)
 
     init_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()

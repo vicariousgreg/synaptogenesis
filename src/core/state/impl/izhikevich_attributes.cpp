@@ -245,14 +245,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 #define DOPAMINE_TAU      0.95   // tau = 20
 #define ACETYLCHOLINE_TAU 0.95   // tau = 20
 
-#define U_DEPRESS 0.5
-#define F_DEPRESS 0.001       // 1 / 1000
-#define D_DEPRESS 0.00125     // 1 / 800
-
-#define U_POTENTIATE 0.2
-#define F_POTENTIATE 0.05     // 1 / 20
-#define D_POTENTIATE 0.001429 // 1 / 700
-
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS \
     IzhikevichAttributes *att = \
@@ -262,7 +254,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float baseline_conductance = matrix->baseline_conductance; \
     bool stp_flag = matrix->stp_flag; \
 \
-    float *stds   = matrix->stds.get(); \
     float *stps   = matrix->stps.get(); \
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get();
@@ -290,9 +281,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             ? 0 \
             : MIN(32, from_time_since_spike[from_index] + 1)); \
 \
-    float std    = stds[weight_index]; \
-    float stp    = stps[weight_index]; \
-    float weight = weights[weight_index] * stp * std;
+    float weight = weights[weight_index] * (1 + stps[weight_index]);
 
 #define CALC_VAL_SHORT \
     float short_trace = short_traces[weight_index] \
@@ -305,16 +294,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         + (spike * weight * baseline_conductance); \
     long_sum += long_trace; \
     long_traces[weight_index] = long_trace * long_tau;
-
-#define CALC_VAL_PLASTIC(STP_U, STP_F, STD_D) \
-    if (stp_flag) { \
-        stds[weight_index] += \
-            ((1 - std) * STD_D) \
-            - (spike * std * stp); \
-        stps[weight_index] += \
-            ((STP_U - stp) * STP_F) \
-            + (spike * STP_U * (1 - stp)); \
-    }
 
 // Neuron Post Operation
 #define AGGREGATE_SHORT \
@@ -338,8 +317,7 @@ CALC_ALL(activate_iz_add,
 
     CALC_VAL_PREAMBLE
     CALC_VAL_SHORT
-    CALC_VAL_LONG
-    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
+    CALC_VAL_LONG,
 
     AGGREGATE_SHORT
     AGGREGATE_LONG
@@ -358,8 +336,7 @@ CALC_ALL(activate_iz_sub,
 
     CALC_VAL_PREAMBLE
     CALC_VAL_SHORT
-    CALC_VAL_LONG
-    CALC_VAL_PLASTIC(U_POTENTIATE, F_POTENTIATE, D_POTENTIATE),
+    CALC_VAL_LONG,
 
     AGGREGATE_SHORT
     AGGREGATE_LONG
@@ -374,8 +351,7 @@ CALC_ALL(activate_iz_mult,
     INIT_SUM,
 
     CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT
-    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
+    CALC_VAL_SHORT,
 
     AGGREGATE_SHORT
 );
@@ -389,8 +365,7 @@ CALC_ALL(activate_iz_reward,
     INIT_SUM,
 
     CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT
-    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
+    CALC_VAL_SHORT,
 
     AGGREGATE_SHORT
 );
@@ -404,8 +379,7 @@ CALC_ALL(activate_iz_modulate,
     INIT_SUM,
 
     CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT
-    CALC_VAL_PLASTIC(U_DEPRESS, F_DEPRESS, D_DEPRESS),
+    CALC_VAL_SHORT,
 
     AGGREGATE_SHORT
 );
@@ -470,8 +444,10 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
         (IzhikevichWeightMatrix*)synapse_data.matrix; \
     float *presyn_traces   = matrix->presyn_traces.get(); \
     float *eligibilities   = matrix->eligibilities.get(); \
+    float *stps   = matrix->stps.get(); \
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get(); \
+    bool stp_flag = matrix->stp_flag; \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.attributes; \
@@ -490,6 +466,11 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 
 /* Minimum weight */
 #define MIN_WEIGHT 0.0001f
+
+/* Short term plasticity */
+#define STP_TAU 0.9998  // 5000ms
+#define MIN_STP -1.0f
+#define MAX_STP 1.0f
 
 /* Time dynamics for long term eligibility trace */
 #define C_TAU 0.99
@@ -547,8 +528,14 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
         weight += learning_rate * weight_delta; \
 \
         /* Ensure weight stays within boundaries */ \
-        weights[weight_index] = weight = \
-            MAX(MIN_WEIGHT, MIN(max_weight, weight)); \
+        weights[weight_index] = MAX(MIN_WEIGHT, MIN(max_weight, weight)); \
+\
+        /* Update short term plasticity if applicable */ \
+        if (stp_flag) { \
+            float stp = \
+                (stps[weight_index] * STP_TAU) + weight_delta; \
+            stps[weight_index] = MAX(MIN_STP, MIN(MAX_STP, stp)); \
+        } \
     }
 
 CALC_ALL(update_iz,
@@ -721,13 +708,9 @@ void IzhikevichWeightMatrix::register_variables() {
     this->presyn_traces = WeightMatrix::create_variable<float>();
     WeightMatrix::register_variable("presyn trace", &presyn_traces);
 
-    // Short Term Depression
-    this->stds = WeightMatrix::create_variable<float>();
-    WeightMatrix::register_variable("short term depression", &stds);
-
-    // Short Term Potentiation
+    // Short Term Plasticity
     this->stps = WeightMatrix::create_variable<float>();
-    WeightMatrix::register_variable("short term potentiation", &stps);
+    WeightMatrix::register_variable("short term plasticity", &stps);
 
     // Long term eligibility trace
     this->eligibilities = WeightMatrix::create_variable<float>();
@@ -770,24 +753,8 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     // Plasticity trace
     clear_weights(iz_mat->presyn_traces, num_weights);
 
-    // Short Term Depression
-    set_weights(iz_mat->stds, num_weights, 1.0);
-
-    // Short Term Potentiation
-    if (iz_mat->stp_flag)
-        set_weights(iz_mat->stps, num_weights, 1.0);
-    else
-        switch(conn->opcode) {
-            case ADD:
-            case MULT:
-            case REWARD:
-            case MODULATE:
-                set_weights(iz_mat->stps, num_weights, U_DEPRESS);
-                break;
-            case SUB:
-                set_weights(iz_mat->stps, num_weights, U_POTENTIATE);
-                break;
-        }
+    // Short Term Plasticity
+    set_weights(iz_mat->stps, num_weights, 0.0);
 
     // Long term eligibiity trace
     set_weights(iz_mat->eligibilities, num_weights, 0.0);
