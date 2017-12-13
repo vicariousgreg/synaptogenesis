@@ -120,11 +120,13 @@
 			"from layer": "3_cortex",
 			"to layer": "3_cortex",
 			"weight config": {
-				"type": "surround",
+				"type": "flat" ,
 				"weight": "0.100000",
 				"fraction": "0.100000",
-				"size": "15",
-				"child type": "flat" 
+				"circular mask" : {
+				  "diameter" : "15",
+				  "invert" : "true"
+				}
 			},
 			"arborized config": {
 				"field size": "15",
@@ -201,11 +203,13 @@
 			"to layer": "3_cortex",
 			"myelinated": "true",
 			"weight config": {
-				"type": "surround",
+				"type": "flat" ,
 				"weight": "0.100000",
 				"fraction": "0.100000",
-				"size": "15",
-				"child type": "flat" 
+				"circular mask" : {
+				  "diameter" : "15",
+				  "invert" : "true"
+				}
 			},
 			"arborized config": {
 				"field size": "19",
@@ -243,11 +247,13 @@
 			"from layer": "3_cortex",
 			"to layer": "3_cortex",
 			"weight config": {
-				"type": "surround",
+				"type": "flat",
 				"weight": "0.100000",
 				"fraction": "0.100000",
-				"size": "15",
-				"child type": "flat" 
+				"circular mask" : {
+				  "diameter" : "15",
+				  "invert" : "true"
+				}
 			},
 			"arborized config": {
 				"field size": "15",
@@ -342,11 +348,13 @@
 			"from layer": "3_cortex",
 			"to layer": "3_cortex",
 			"weight config": {
-				"type": "surround",
+				"type": "flat",
 				"weight": "0.100000",
 				"fraction": "0.100000",
-				"size": "15",
-				"child type": "flat" 
+				"circular mask" : {
+				  "diameter" : "15",
+				  "invert" : "true"
+				}
 			},
 			"arborized config": {
 				"field size": "15",

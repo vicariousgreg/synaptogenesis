@@ -32,9 +32,9 @@ def build_network(dim=64, leaky=False):
     inh_exc_fraction = 0.1
 
     exc_noise_strength = 10.0
-    exc_noise_rate = 5
+    exc_noise_rate = 10
     inh_noise_strength = 10.0
-    inh_noise_rate = 5
+    inh_noise_rate = 10
     exc_random = "false"
     inh_random = "false"
 
@@ -148,14 +148,16 @@ def build_network(dim=64, leaky=False):
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false"
+                "diagonal" : "false",
+                "circular mask" : {}
             }
     elif exc_exc_weight_init == "flat":
         exc_exc["weight config"] = {
                 "type" : "flat",
                 "weight" : exc_exc_base_weight_max,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false"
+                "diagonal" : "false",
+                "circular mask" : {}
             }
     elif exc_exc_weight_init == "power law":
         exc_exc["weight config"] = {
@@ -164,39 +166,52 @@ def build_network(dim=64, leaky=False):
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false"
+                "diagonal" : "false",
+                "circular mask" : {}
             }
 
     # Exc Inh init
     if exc_inh_weight_init == "random":
         exc_inh["weight config"] = {
-                "type" : "surround",
-                "rows" : exc_inh_mask,
-                "columns" : exc_inh_mask,
-                "child type" : "random",
+                "type" : "random",
                 "min weight" : exc_inh_base_weight_min,
                 "max weight" : exc_inh_base_weight_max,
-                "fraction" : exc_inh_fraction
+                "fraction" : exc_inh_fraction,
+                "circular mask" : [
+                    {
+                        "diameter" : exc_inh_mask,
+                        "invert" : "true"
+                    },
+                    { }
+                ]
             }
     elif exc_inh_weight_init == "flat":
         exc_inh["weight config"] = {
-                "type" : "surround",
-                "rows" : exc_inh_mask,
-                "columns" : exc_inh_mask,
-                "child type" : "flat",
+                "type" : "flat",
                 "weight" : exc_inh_base_weight_max,
-                "fraction" : exc_inh_fraction
+                "fraction" : exc_inh_fraction,
+                "circular mask" : [
+                    {
+                        "diameter" : exc_inh_mask,
+                        "invert" : "true"
+                    },
+                    { }
+                ]
             }
     elif exc_inh_weight_init == "power law":
         exc_inh["weight config"] = {
-                "type" : "surround",
-                "rows" : exc_inh_mask,
-                "columns" : exc_inh_mask,
-                "child type" : "power law",
+                "type" : "power law",
                 "exponent" : exc_inh_exponent,
                 "min weight" : exc_inh_base_weight_min,
                 "max weight" : exc_inh_base_weight_max,
-                "fraction" : exc_inh_fraction
+                "fraction" : exc_inh_fraction,
+                "circular mask" : [
+                    {
+                        "diameter" : exc_inh_mask,
+                        "invert" : "true"
+                    },
+                    { }
+                ]
             }
 
     # Exc Inh init

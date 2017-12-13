@@ -37,12 +37,10 @@
 			"from layer": "board",
 			"to layer": "board",
 			"weight config": {
-				"type": "surround",
+				"type": "flat" ,
 				"weight": "1.000000",
 				"fraction": "1.000000",
-				"rows": "1",
-				"columns": "1",
-				"child type": "flat" 
+				"diagonal": "false"
 			},
 			"arborized config": {
 				"field size": "5",
@@ -61,12 +59,13 @@
 			"from layer": "board",
 			"to layer": "board",
 			"weight config": {
-				"type": "surround",
+				"type": "flat" ,
 				"weight": "1.000000",
 				"fraction": "1.000000",
-				"rows": "5",
-				"columns": "5",
-				"child type": "flat" 
+				"circular mask": {
+				  "diameter" : "5",
+				  "invert" : "true"
+        }
 			},
 			"arborized config": {
 				"field size": "7",

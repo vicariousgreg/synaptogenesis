@@ -356,53 +356,78 @@ static void power_law_config(const PropertyConfig& config, float* target_matrix,
         exponent, min_weight, max_weight, fraction);
 }
 
-static void surround_config(const PropertyConfig& config, float* target_matrix,
+static void circular_mask_config(const PropertyConfig& config, float* target_matrix,
         Connection* conn) {
     if (conn->type != CONVERGENT)
         LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
-            "  SurroundWeightConfig can only be used "
+            "  CircularMaskConfig can only be used "
             "on convergent arborized connections!");
 
-    int rows = config.get_int("rows", 1);
-    int cols = config.get_int("columns", 1);
-    int size_param = config.get_int("size", -1);
-
-    if (size_param >= 0)
-        rows = cols = size_param;
-    if (rows <= 0 or cols <= 0)
-        LOG_ERROR(
-            "Error in weight config for " + conn->str() + ":\n"
-            "  Surround weight config rows/cols must be positive!");
-
-    // Carve out center
     auto ac = conn->get_config()->get_arborized_config();
     int row_field_size = ac.column_field_size;
     int col_field_size = ac.column_field_size;
     int kernel_size = ac.get_total_field_size();
 
-    if (rows >= row_field_size or cols >= col_field_size)
+    float row_radius = config.get_float("row radius", 0);
+    float col_radius = config.get_float("column radius", 0);
+    float row_diameter = config.get_float("row diameter", 0);
+    float col_diameter = config.get_float("column diameter", 0);
+    float radius = config.get_float("radius", 0);
+    float diameter = config.get_float("diameter", 0);
+    bool invert = config.get_bool("invert", false);
+
+    if (row_radius <= 0) {
+        if (row_diameter > 0)
+            row_radius = row_diameter / 2;
+        else if (radius > 0)
+            row_radius = radius;
+        else if (diameter > 0)
+            row_radius = diameter / 2;
+        else
+            row_radius = float(row_field_size) / 2;
+    }
+
+    if (col_radius <= 0) {
+        if (col_diameter > 0)
+            col_radius = col_diameter / 2;
+        else if (radius > 0)
+            col_radius = radius;
+        else if (diameter > 0)
+            col_radius = diameter / 2;
+        else
+            col_radius = float(col_field_size) / 2;
+    }
+
+    if (row_radius <= 0 or col_radius <= 0)
         LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
-            "  Surround weight config dimensions must be smaller than kernel!");
+            "  Circular mask weight config radii must be positive!");
 
-    int row_offset = (row_field_size - rows) / 2;
-    int col_offset = (col_field_size - cols) / 2;
-
+    float row_center = float(row_field_size) / 2;
+    float col_center = float(col_field_size) / 2;
+    float row_radius_sq = pow(row_radius, 2);
+    float col_radius_sq = pow(col_radius, 2);
+    float sq_mult = row_radius_sq * col_radius_sq;
 
     // Convolutional connections are unique in that there is only one kernel.
     int size = (conn->convolutional) ? 1 : conn->to_layer->size;
 
     for (int index = 0 ; index < size ; ++index) {
-        int weight_offset = (conn->convolutional)
-            ? 0 : (index * kernel_size);
+        int weight_offset = index * kernel_size;
 
-        for (int k_row = row_offset ; k_row < row_offset + rows ; ++k_row) {
-            for (int k_col = col_offset ;
-                    k_col < col_offset + cols ; ++k_col) {
-                int weight_index = weight_offset +
-                    (k_row * col_field_size) + k_col;
-                target_matrix[weight_index] = 0.0;
+        for (int k_row = 0 ; k_row < row_field_size ; ++k_row) {
+            for (int k_col = 0 ; k_col < col_field_size ; ++k_col) {
+                float term =
+                    (powf(k_row + 0.5 - row_center, 2) * col_radius_sq) +
+                    (powf(k_col + 0.5 - col_center, 2) * row_radius_sq);
+
+                if ((invert and term <= sq_mult)
+                        or (not invert and term > sq_mult)) {
+                    int weight_index = weight_offset +
+                        (k_row * col_field_size) + k_col;
+                    target_matrix[weight_index] = 0.0;
+                }
             }
         }
     }
@@ -473,16 +498,6 @@ static void initialize_weights(const PropertyConfig config,
 
     auto type = config.get("type", "flat");
 
-    // If surround, treat as child type and then process as surround after
-    bool surround = type == "surround";
-    if (surround) {
-        if (not config.has("child type"))
-            LOG_ERROR(
-                "Error in weight config for " + conn->str() + ":\n"
-                "  Missing child weight config for surround weight config!");
-        type = config.get("child type");
-    }
-
     if (type == "flat")
         flat_config(config, target_matrix, conn);
     else if (type == "random")
@@ -495,18 +510,18 @@ static void initialize_weights(const PropertyConfig config,
         power_law_config(config, target_matrix, conn);
     else if (type == "specified")
         specified_config(config, target_matrix, conn);
-    else if (type == "surround")
-        LOG_ERROR(
-            "Error in weight config for " + conn->str() + ":\n"
-            "  Surround weight configs cannot be nested!");
     else
         LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Unrecognized weight config type: " + type);
 
-    // Now do surround processing
-    if (surround)
-        surround_config(config, target_matrix, conn);
+    // Now do mask processing
+    if (config.has_child("circular mask"))
+        circular_mask_config(config.get_child("circular mask"), target_matrix, conn);
+
+    if (config.has_child_array("circular mask"))
+        for (auto child_config : config.get_child_array("circular mask"))
+            circular_mask_config(child_config, target_matrix, conn);
 
     if (not config.get_bool("diagonal", true)) {
         switch(conn->type) {
@@ -522,9 +537,10 @@ static void initialize_weights(const PropertyConfig config,
                 break;
             }
             case CONVERGENT:
-                // Use surround config's default size of 1 to remove diagonal
-                if (not surround)
-                    surround_config(config, target_matrix, conn);
+                // Use inverted circular mask config with radius 0.5
+                circular_mask_config(
+                    PropertyConfig({{"radius", "0.5"}, {"invert", "true"}}),
+                    target_matrix, conn);
                 break;
         }
     }

@@ -66,12 +66,6 @@ log normal
   std_dev : 0.3
   fractionx : 1
 
-surround
-  child type
-  rows : 0
-  columns : 0
-  size : -1
-
 specified
   weight string
 
