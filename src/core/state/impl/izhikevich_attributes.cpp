@@ -100,10 +100,7 @@ static void create_parameters(std::string str,
 #define STDP_TAU_NEG       0.95   // tau = 20ms
 
 /* Time dynamics of dopamine */
-#define DOPAMINE_CLEAR_TAU 0.95  // 20
-
-/* Time dynamics of acetylcholine */
-#define ACETYLCHOLINE_CLEAR_TAU 0.95  // 20
+#define DOPAMINE_CLEAR_TAU 0.95  // 20ms
 
 /* STDP A constants */
 #define STDP_A_POS 0.4
@@ -118,7 +115,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *gabab_conductances = iz_att->gabab_conductance.get();
     float *multiplicative_factors = iz_att->multiplicative_factor.get();
     float *dopamines = iz_att->dopamine.get();
-    float *acetylcholines = iz_att->acetylcholine.get();
 
     float *voltages = iz_att->voltage.get();
     float *recoveries = iz_att->recovery.get();
@@ -194,7 +190,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     gabab_conductances[nid] = 0.0;
     multiplicative_factors[nid] = 0.0;
     dopamines[nid] *= DOPAMINE_CLEAR_TAU;
-    acetylcholines[nid] *= ACETYLCHOLINE_CLEAR_TAU;
 
     /********************
      *** SPIKE UPDATE ***
@@ -243,7 +238,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
 #define MULT_TAU          0.95   // tau = 20
 #define DOPAMINE_TAU      0.95   // tau = 20
-#define ACETYLCHOLINE_TAU 0.95   // tau = 20
 
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS \
@@ -370,20 +364,6 @@ CALC_ALL(activate_iz_reward,
     AGGREGATE_SHORT
 );
 
-CALC_ALL(activate_iz_modulate,
-    ACTIV_EXTRACTIONS
-    ACTIV_EXTRACTIONS_SHORT(
-        acetylcholine,
-        ACETYLCHOLINE_TAU),
-
-    INIT_SUM,
-
-    CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT,
-
-    AGGREGATE_SHORT
-);
-
 CALC_ALL(activate_iz_gap,
     IzhikevichAttributes *att =
         (IzhikevichAttributes*)synapse_data.attributes;
@@ -412,7 +392,6 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     funcs[FULLY_CONNECTED][SUB]      = get_activate_iz_sub_fully_connected();
     funcs[FULLY_CONNECTED][MULT]     = get_activate_iz_mult_fully_connected();
     funcs[FULLY_CONNECTED][REWARD]   = get_activate_iz_reward_fully_connected();
-    funcs[FULLY_CONNECTED][MODULATE] = get_activate_iz_modulate_fully_connected();
     funcs[SUBSET][ADD]               = get_activate_iz_add_subset();
     funcs[SUBSET][SUB]               = get_activate_iz_sub_subset();
     funcs[SUBSET][MULT]              = get_activate_iz_mult_subset();
@@ -443,7 +422,6 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     IzhikevichWeightMatrix *matrix = \
         (IzhikevichWeightMatrix*)synapse_data.matrix; \
     float *presyn_traces   = matrix->presyn_traces.get(); \
-    float *eligibilities   = matrix->eligibilities.get(); \
     float *stps   = matrix->stps.get(); \
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get(); \
@@ -454,14 +432,12 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     float *to_exc_traces = att->postsyn_exc_trace.get(); \
     int   *to_time_since_spike = att->time_since_spike.get(); \
     float *dopamines = att->dopamine.get(); \
-    float *acetylcholines = att->acetylcholine.get(); \
     float learning_rate = matrix->learning_rate; \
 
 #define GET_DEST_ACTIVITY \
     float dest_exc_trace = to_exc_traces[to_index]; \
     int   dest_time_since_spike = to_time_since_spike[to_index]; \
     float dopamine = dopamines[to_index]; \
-    float acetylcholine = acetylcholines[to_index]; \
     float dest_spike = extract(destination_outputs[to_index], 0);
 
 /* Minimum weight */
@@ -512,19 +488,8 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
                 (dest_spike * src_trace) \
                 - (src_spike * dest_trace) ; \
 \
-        /* Update eligibility trace */ \
-        float c = \
-            eligibilities[weight_index] = \
-                (eligibilities[weight_index] * C_TAU) \
-                + weight_delta; \
-\
-        /* Add dopamine driven long term changes */ \
-        weight_delta += c * dopamine; \
-\
-        /* Add acetylcholine driven short term changes */ \
-        weight_delta += c * acetylcholine; \
-\
         /* Calculate new weight */ \
+        /* Reward (dopamine) should factor in here */ \
         weight += learning_rate * weight_delta; \
 \
         /* Ensure weight stays within boundaries */ \
@@ -631,8 +596,6 @@ IzhikevichAttributes::IzhikevichAttributes(Layer *layer)
     Attributes::register_neuron_variable("mult", &multiplicative_factor);
     this->dopamine = Attributes::create_neuron_variable<float>();
     Attributes::register_neuron_variable("dopamine", &dopamine);
-    this->acetylcholine = Attributes::create_neuron_variable<float>();
-    Attributes::register_neuron_variable("acetylcholine", &acetylcholine);
 
     // Neuron variables
     this->voltage = Attributes::create_neuron_variable<float>();
@@ -712,10 +675,6 @@ void IzhikevichWeightMatrix::register_variables() {
     this->stps = WeightMatrix::create_variable<float>();
     WeightMatrix::register_variable("short term plasticity", &stps);
 
-    // Long term eligibility trace
-    this->eligibilities = WeightMatrix::create_variable<float>();
-    WeightMatrix::register_variable("eligibilities", &eligibilities);
-
     // Delay
     this->delays = WeightMatrix::create_variable<int>();
     WeightMatrix::register_variable("delays", &delays);
@@ -755,9 +714,6 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     // Short Term Plasticity
     set_weights(iz_mat->stps, num_weights, 0.0);
-
-    // Long term eligibiity trace
-    set_weights(iz_mat->eligibilities, num_weights, 0.0);
 
     // Delays
     // Myelinated connections use the base delay only

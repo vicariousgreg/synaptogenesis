@@ -24,9 +24,6 @@ class IzhikevichAttributes : public Attributes {
         // Reward signal
         Pointer<float> dopamine;
 
-        // Modulation signal
-        Pointer<float> acetylcholine;
-
         // Voltage and recovery variables
         Pointer<float> voltage;
         Pointer<float> recovery;
@@ -50,9 +47,7 @@ class IzhikevichWeightMatrix : public WeightMatrix {
         Pointer<float> short_traces;
         Pointer<float> long_traces;
         Pointer<float> presyn_traces;
-        Pointer<float> stds;
         Pointer<float> stps;
-        Pointer<float> eligibilities;
         Pointer<int> delays;
         Pointer<int> time_since_spike;
 
