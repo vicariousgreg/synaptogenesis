@@ -10,38 +10,50 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def build_network(dim=64):
+    # Neuron parameters
+    exc_init = "regular"
+    inh_init = "fast"
+    exc_init = "random positive"
+    inh_init = "random negative"
+
+    # Plasticity parameters
     plastic = "true"
-    short_term_plasticity = "true"
-    myelinated = "false"
+    stp = "true"
+    stp_tau = "5000"
     learning_rate = 0.01
 
-    exc_exc_weight_init = "flat"
-    exc_exc_exponent = 1.1
-    exc_exc_base_weight = 0.005
-    exc_exc_base_weight_min = 0.00011
-    exc_exc_base_weight_max = 0.05
-    exc_exc_fraction = 0.1
-
-    exc_inh_weight_init = "flat"
-    exc_inh_exponent = 1.1
-    exc_inh_base_weight = 0.005
-    exc_inh_base_weight_min = 0.00011
-    exc_inh_base_weight_max = 0.05
-    exc_inh_fraction = 0.1
-
-    inh_exc_weight_init = "flat"
-    inh_exc_exponent = 1.1
-    inh_exc_base_weight = 0.005
-    inh_exc_base_weight_min = 0.00011
-    inh_exc_base_weight_max = 0.05
-    inh_exc_fraction = 0.1
-
+    # Noise Parameters
     exc_noise_strength = 10.0
-    exc_noise_rate = 10
-    inh_noise_strength = 5.0
-    inh_noise_rate = 10
+    exc_noise_rate = 1
+    inh_noise_strength = 10.0
+    inh_noise_rate = 0
     exc_random = "false"
     inh_random = "false"
+
+    # Weight parameters
+    init = "power law"
+    myelinated = "false"
+
+    exc_exc_weight_init = init
+    exc_exc_exponent = 1.5
+    exc_exc_base_weight = 0.005
+    exc_exc_base_weight_min = 0.00011
+    exc_exc_base_weight_max = 0.2
+    exc_exc_fraction = 0.1
+
+    exc_inh_weight_init = init
+    exc_inh_exponent = 1.5
+    exc_inh_base_weight = 0.005
+    exc_inh_base_weight_min = 0.00011
+    exc_inh_base_weight_max = 0.2
+    exc_inh_fraction = 0.1
+
+    inh_exc_weight_init = init
+    inh_exc_exponent = 1.5
+    inh_exc_base_weight = 0.005
+    inh_exc_base_weight_min = 0.00011
+    inh_exc_base_weight_max = 0.2
+    inh_exc_fraction = 0.1
 
     # Create main structure
     structure = {"name" : "snn", "type" : "parallel"}
@@ -59,9 +71,7 @@ def build_network(dim=64):
         "rows" : dim,
         "columns" : dim,
         "neuron spacing" : "0.1",
-        #"init" : "bursting"
-        #"init" : "regular"
-        "init" : "random positive"
+        "init" : exc_init
     }
 
     # Inhibitory layer
@@ -71,8 +81,7 @@ def build_network(dim=64):
         "rows" : dim/2,
         "columns" : dim/2,
         "neuron spacing" : "0.2",
-        #"init" : "fast"
-        "init" : "random negative"
+        "init" : inh_init
     }
 
     # Noise
@@ -109,7 +118,8 @@ def build_network(dim=64):
         "learning rate" : learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
-        "short term plasticity" : short_term_plasticity
+        "short term plasticity" : stp,
+        "short term plasticity tau" : stp_tau
     }
 
     exc_inh = {
@@ -127,7 +137,8 @@ def build_network(dim=64):
         "learning rate" : learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
-        "short term plasticity" : short_term_plasticity
+        "short term plasticity" : stp,
+        "short term plasticity tau" : stp_tau
     }
     inh_exc = {
         "from layer" : "inh",
@@ -144,11 +155,20 @@ def build_network(dim=64):
         "learning rate" : learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
-        "short term plasticity" : short_term_plasticity
+        "short term plasticity" : stp,
+        "short term plasticity tau" : stp_tau
     }
 
     # Exc Exc init
-    if exc_exc_weight_init == "random":
+    if exc_exc_weight_init == "zero":
+        exc_exc["weight config"] = {
+                "type" : "flat",
+                "weight" : 0.00011,
+                "fraction" : exc_exc_fraction,
+                "diagonal" : "false",
+                "circular mask" : {}
+            }
+    elif exc_exc_weight_init == "random":
         exc_exc["weight config"] = {
                 "type" : "random",
                 "min weight" : exc_exc_base_weight_min,
@@ -177,7 +197,20 @@ def build_network(dim=64):
             }
 
     # Exc Inh init
-    if exc_inh_weight_init == "random":
+    if exc_inh_weight_init == "zero":
+        exc_inh["weight config"] = {
+                "type" : "flat",
+                "weight" : 0.00011,
+                "fraction" : exc_inh_fraction,
+                "circular mask" : [
+                    {
+                        "diameter" : exc_inh_mask,
+                        "invert" : "true"
+                    },
+                    { }
+                ]
+            }
+    elif exc_inh_weight_init == "random":
         exc_inh["weight config"] = {
                 "type" : "random",
                 "min weight" : exc_inh_base_weight_min,
@@ -221,7 +254,13 @@ def build_network(dim=64):
             }
 
     # Exc Inh init
-    if inh_exc_weight_init == "random":
+    if inh_exc_weight_init == "zero":
+        inh_exc["weight config"] = {
+                "type" : "flat",
+                "weight" : 0.00011,
+                "fraction" : inh_exc_fraction
+            }
+    elif inh_exc_weight_init == "random":
         inh_exc["weight config"] = {
                 "type" : "random",
                 "min weight" : inh_exc_base_weight_min,
@@ -261,6 +300,23 @@ def build_environment(visualizer=False):
         modules = [
             {
                 "type" : "visualizer",
+                "colored" : "false",
+                "layers" : [
+                    { "structure" : "snn", "layer" : "exc" },
+                    { "structure" : "snn", "layer" : "inh" },
+                ]
+            },
+            {
+                "type" : "visualizer",
+                "colored" : "true",
+
+                "decay" : "false",
+                "window" : 256,
+
+                #"decay" : "true",
+                #"window" : 1024,
+                #"bump" : 128,
+
                 "layers" : [
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
@@ -380,16 +436,17 @@ def compare_matrices(init_matrix, pre_matrix, post_matrix, to_size):
 
     plt.show()
 
-def main(infile=None, outfile=None, silent=False, visualizer=False,
-        device=None, iterations=1000000):
+def main(infile=None, outfile=None, do_training=True, print_stats=True,
+        visualizer=False, device=None, iterations=1000000):
     dim = 128
 
     network = build_network(dim)
     env = build_environment(visualizer)
 
-    init_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()
-    init_exc_inh_matrix = network.get_weight_matrix("exc inh matrix").to_list()
-    init_inh_exc_matrix = network.get_weight_matrix("inh exc matrix").to_list()
+    if print_stats:
+        init_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()
+        init_exc_inh_matrix = network.get_weight_matrix("exc inh matrix").to_list()
+        init_inh_exc_matrix = network.get_weight_matrix("inh exc matrix").to_list()
 
     if infile is not None:
         if not path.exists(infile):
@@ -399,13 +456,14 @@ def main(infile=None, outfile=None, silent=False, visualizer=False,
             network.load_state(infile)
             print("... done.")
 
-    pre_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()
-    pre_exc_inh_matrix = network.get_weight_matrix("exc inh matrix").to_list()
-    pre_inh_exc_matrix = network.get_weight_matrix("inh exc matrix").to_list()
+    if print_stats:
+        pre_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()
+        pre_exc_inh_matrix = network.get_weight_matrix("exc inh matrix").to_list()
+        pre_inh_exc_matrix = network.get_weight_matrix("inh exc matrix").to_list()
 
     if device is None:
         device = get_gpus()[1]
-    if not silent:
+    if do_training:
         report = network.run(env, {"multithreaded" : "true",
                                    "worker threads" : "1",
                                    "devices" : device,
@@ -421,18 +479,19 @@ def main(infile=None, outfile=None, silent=False, visualizer=False,
             network.save_state(outfile)
             print("... done.")
 
-    post_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()
-    post_exc_inh_matrix = network.get_weight_matrix("exc inh matrix").to_list()
-    post_inh_exc_matrix = network.get_weight_matrix("inh exc matrix").to_list()
+    if print_stats:
+        post_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()
+        post_exc_inh_matrix = network.get_weight_matrix("exc inh matrix").to_list()
+        post_inh_exc_matrix = network.get_weight_matrix("inh exc matrix").to_list()
 
-    exc_dim = dim**2
-    inh_dim = (dim/2)**2
-    print("Excitatory-excitatory Matrix:")
-    compare_matrices(init_exc_exc_matrix, pre_exc_exc_matrix, post_exc_exc_matrix, exc_dim)
-    print("Excitatory-inhibitory Matrix:")
-    compare_matrices(init_exc_inh_matrix, pre_exc_inh_matrix, post_exc_inh_matrix, inh_dim)
-    print("Inhibitory-excitatory Matrix:")
-    compare_matrices(init_inh_exc_matrix, pre_inh_exc_matrix, post_inh_exc_matrix, exc_dim)
+        exc_dim = dim**2
+        inh_dim = (dim/2)**2
+        print("Excitatory-excitatory Matrix:")
+        compare_matrices(init_exc_exc_matrix, pre_exc_exc_matrix, post_exc_exc_matrix, exc_dim)
+        print("Excitatory-inhibitory Matrix:")
+        compare_matrices(init_exc_inh_matrix, pre_exc_inh_matrix, post_exc_inh_matrix, inh_dim)
+        print("Inhibitory-excitatory Matrix:")
+        compare_matrices(init_inh_exc_matrix, pre_inh_exc_matrix, post_inh_exc_matrix, exc_dim)
 
     # Delete the objects
     del network
@@ -444,9 +503,12 @@ if __name__ == "__main__":
                         help='source state file')
     parser.add_argument('-o', type=str,
                         help='destination state file')
+    parser.add_argument('-t', action='store_true', default=False,
+                        dest='train',
+                        help='run training')
     parser.add_argument('-s', action='store_true', default=False,
-                        dest='silent',
-                        help='just print statistics')
+                        dest='stats',
+                        help='print statistics')
     parser.add_argument('-v', action='store_true', default=False,
                         dest='visualizer',
                         help='run the visualizer')
@@ -465,4 +527,4 @@ if __name__ == "__main__":
     set_warnings(False)
     set_debug(False)
 
-    main(args.i, args.o, args.silent, args.visualizer, device)
+    main(args.i, args.o, args.train, args.stats, args.visualizer, device)

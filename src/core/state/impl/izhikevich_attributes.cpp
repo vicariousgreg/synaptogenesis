@@ -426,6 +426,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get(); \
     bool stp_flag = matrix->stp_flag; \
+    float stp_tau = matrix->stp_tau; \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.attributes; \
@@ -444,7 +445,6 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 #define MIN_WEIGHT 0.0001f
 
 /* Short term plasticity */
-#define STP_TAU 0.9998  // 5000ms
 #define MIN_STP -1.0f
 #define MAX_STP 1.0f
 
@@ -497,8 +497,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 \
         /* Update short term plasticity if applicable */ \
         if (stp_flag) { \
-            float stp = \
-                (stps[weight_index] * STP_TAU) + weight_delta; \
+            float stp = (stps[weight_index] * stp_tau) + weight_delta; \
             stps[weight_index] = MAX(MIN_STP, MIN(MAX_STP, stp)); \
         } \
     }
@@ -699,6 +698,11 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     // Retrieve short term plasticity flag
     iz_mat->stp_flag =
         conn->get_parameter("short term plasticity", "true") == "true";
+
+    // Retrieve short term plasticity time constant
+    iz_mat->stp_tau =
+        1.0 - (1.0 / std::stof(
+            conn->get_parameter("short term plasticity tau", "5000")));
 
     int num_weights = conn->get_num_weights();
     Pointer<float> mData = matrix->get_weights();

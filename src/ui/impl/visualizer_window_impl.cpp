@@ -1,19 +1,9 @@
+#include <math.h>
+
 #include "visualizer_window.h"
 #include "visualizer_window_impl.h"
 
 #include "network/structure.h"
-
-VisualizerWindowImpl::VisualizerWindowImpl() {
-    grid = new Gtk::Grid();
-    grid->set_row_spacing(1);
-    grid->set_column_spacing(1);
-    grid->override_background_color(Gdk::RGBA("DarkSlateGray"));
-    this->add(*grid);
-}
-
-VisualizerWindowImpl::~VisualizerWindowImpl() {
-    delete this->grid;
-}
 
 static guint8 convert(Output out, OutputType type) {
     switch (type) {
@@ -24,6 +14,26 @@ static guint8 convert(Output out, OutputType type) {
         case BIT:
             return (out.i > INT_MAX) ? 255 : (out.i >> 23);
     }
+}
+
+VisualizerWindowImpl::VisualizerWindowImpl(PropertyConfig *config) :
+          colored(config->get_bool("colored", false)),
+          decay(config->get_bool("decay", false)),
+          bump(config->get_int("bump", 16)),
+          color_window(config->get_int("window", 256)),
+          freq_r(3.8 / color_window),
+          freq_g(freq_r * 2),
+          freq_b(freq_r * 3) {
+    grid = new Gtk::Grid();
+    grid->set_row_spacing(1);
+    grid->set_column_spacing(1);
+    grid->override_background_color(Gdk::RGBA("DarkSlateGray"));
+    this->add(*grid);
+}
+
+VisualizerWindowImpl::~VisualizerWindowImpl() {
+    delete this->grid;
+    for (auto pair : hues) free(pair.second);
 }
 
 void VisualizerWindowImpl::add_layer(Layer *layer, IOTypeMask io_type) {
@@ -60,6 +70,14 @@ void VisualizerWindowImpl::add_layer(Layer *layer, IOTypeMask io_type) {
         Gtk::PositionType::POS_RIGHT,
         cols, rows);
     this->grid->show_all();
+
+    if (colored)  {
+        int *layer_hues = (int*) calloc(layer->size, sizeof(int));
+        this->hues[layer->id] = layer_hues;
+        for (int j = 0; j < layer->size; ++j)
+            layer_hues[j] = color_window;
+    }
+
 }
 
 void VisualizerWindowImpl::update() {
@@ -74,12 +92,31 @@ void VisualizerWindowImpl::report_output(Layer *layer,
         Output *output, OutputType output_type) {
     guint8* data =
         this->pixbufs[layer_indices[layer]]->get_pixels();
+    int *layer_hues = hues[layer->id];
 
     for (int j = 0; j < layer->size; ++j) {
-        float val = convert(output[j], output_type);
-        data[j*4 + 0] = val;
-        data[j*4 + 1] = val;
-        data[j*4 + 2] = val;
+        if (colored and output_type == BIT) {
+            int hue = layer_hues[j] = (output[j].i & 1)
+                ? (decay ? std::max(0, layer_hues[j] - bump) : 0)
+                : std::min(layer_hues[j] + 1, color_window+1);
+
+            if (hue == color_window+1) {
+                continue;
+            } else if (hue == color_window) {
+                data[j*4 + 0] = 0;
+                data[j*4 + 1] = 0;
+                data[j*4 + 2] = 0;
+            } else {
+                data[j*4 + 0] = sin(float(hue) * freq_r + 1) * 127 + 128;
+                data[j*4 + 1] = sin(float(hue) * freq_g + 3) * 127 + 128;
+                data[j*4 + 2] = sin(float(hue) * freq_b + 5) * 127 + 128;
+            }
+        } else {
+            float val = convert(output[j], output_type);
+            data[j*4 + 0] = val;
+            data[j*4 + 1] = val;
+            data[j*4 + 2] = val;
+        }
     }
 
     if (layer->rows == 1) {
@@ -94,8 +131,15 @@ void VisualizerWindowImpl::report_output(Layer *layer,
     }
 }
 
-HeatmapWindowImpl::HeatmapWindowImpl(int integration_window, bool linear)
-        : iterations(0), integration_window(integration_window), linear(linear) {
+HeatmapWindowImpl::HeatmapWindowImpl(PropertyConfig *config)
+        : VisualizerWindowImpl(config),
+          iterations(0),
+          integration_window(config->get_int("window", 1000)),
+          linear(config->get_bool("linear", false)) {
+    if (integration_window < 1)
+        LOG_ERROR("Invalid integrationwindow in HeatmapModule: "
+            + std::to_string(integration_window));
+
     label = new Gtk::Label();
     label->override_color(Gdk::RGBA("White"));
     label->override_font(Pango::FontDescription("monospace"));

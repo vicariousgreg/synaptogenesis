@@ -7,7 +7,8 @@
 REGISTER_MODULE(VisualizerModule, "visualizer");
 
 VisualizerModule::VisualizerModule(LayerList layers, ModuleConfig *config)
-        : Module(layers, config), window(VisualizerWindow::build_visualizer()) {
+        : Module(layers, config),
+          window(VisualizerWindow::build_visualizer(config)) {
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
 
@@ -51,9 +52,7 @@ REGISTER_MODULE(HeatmapModule, "heatmap");
 
 HeatmapModule::HeatmapModule(LayerList layers, ModuleConfig *config)
         : Module(layers, config),
-          window(VisualizerWindow::build_heatmap(
-              config->get_int("window", 1000),
-              config->get_bool("linear", false))) {
+          window(VisualizerWindow::build_heatmap(config)) {
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
 

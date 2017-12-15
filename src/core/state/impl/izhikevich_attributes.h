@@ -60,6 +60,9 @@ class IzhikevichWeightMatrix : public WeightMatrix {
         // Short term plasticity flag
         bool stp_flag;
 
+        // Short term plasticity time constant
+        float stp_tau;
+
     WEIGHT_MATRIX_MEMBERS(IzhikevichWeightMatrix);
     virtual void register_variables();
 };

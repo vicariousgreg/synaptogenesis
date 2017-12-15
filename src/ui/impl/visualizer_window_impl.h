@@ -6,7 +6,7 @@
 
 class VisualizerWindowImpl : public VisualizerWindow, public GuiWindow {
     public:
-        VisualizerWindowImpl();
+        VisualizerWindowImpl(PropertyConfig *config);
         virtual ~VisualizerWindowImpl();
 
         virtual void update();
@@ -16,15 +16,24 @@ class VisualizerWindowImpl : public VisualizerWindow, public GuiWindow {
             Output *output, OutputType output_type);
 
     protected:
+        bool colored;
+        bool decay;
+        int color_window;
+        int bump;
+        float freq_r;
+        float freq_g;
+        float freq_b;
+
         Gtk::Grid *grid;
         std::vector<Gtk::Image*> images;
         std::vector<Glib::RefPtr<Gdk::Pixbuf>> pixbufs;
         std::map<Layer*, int> layer_indices;
+        std::map<size_t, int*> hues;
 };
 
 class HeatmapWindowImpl : public VisualizerWindowImpl {
     public:
-        HeatmapWindowImpl(int integration_window, bool linear);
+        HeatmapWindowImpl(PropertyConfig *config);
         virtual ~HeatmapWindowImpl();
 
         virtual void update();
@@ -38,7 +47,7 @@ class HeatmapWindowImpl : public VisualizerWindowImpl {
         int iterations;
         int integration_window;
         bool linear;
-        std::map<int, float*> output_count_map;
+        std::map<size_t, float*> output_count_map;
         Gtk::Label *label;
 };
 
