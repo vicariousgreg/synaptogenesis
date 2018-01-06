@@ -32,7 +32,6 @@ Kernel<float, Pointer<float>, int> get_set_data() {
 /* Randomizes input data using Normal Distribution */
 void randomize_data_normal_SERIAL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool init) {
-    std::default_random_engine generator(time(0));
     std::normal_distribution<float> distribution(mean, std_dev);
     float* data = ptr.get();
 
@@ -68,7 +67,6 @@ Kernel<Pointer<float>, int, float, float, bool>
 /* Randomizes input data using Poisson Point Process */
 void randomize_data_poisson_SERIAL(Pointer<float> ptr,
         int count, float val, float rate, bool init, Pointer<float> random_rates) {
-    std::default_random_engine generator(time(0));
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
     float* data = ptr.get();
     float* rrates = random_rates.get();

@@ -8,7 +8,7 @@
 static guint8 convert(Output out, OutputType type) {
     switch (type) {
         case FLOAT:
-            return 255 * out.f;
+            return 255 * MIN(1.0, out.f);
         case INT:
             return 255 * float(out.i) / INT_MAX;
         case BIT:
