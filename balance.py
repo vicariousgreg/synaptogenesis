@@ -253,7 +253,7 @@ def build_network(dim=64):
                 ]
             }
 
-    # Exc Inh init
+    # Inh Exc init
     if inh_exc_weight_init == "zero":
         inh_exc["weight config"] = {
                 "type" : "flat",
