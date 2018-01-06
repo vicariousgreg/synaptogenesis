@@ -13,8 +13,8 @@ def build_network(dim=64):
     # Neuron parameters
     exc_init = "regular"
     inh_init = "fast"
-    exc_init = "random positive"
-    inh_init = "random negative"
+    #exc_init = "random positive"
+    #inh_init = "random negative"
 
     # Plasticity parameters
     plastic = "true"
@@ -24,33 +24,33 @@ def build_network(dim=64):
 
     # Noise Parameters
     exc_noise_strength = 10.0
-    exc_noise_rate = 1
+    exc_noise_rate = 5
     inh_noise_strength = 10.0
-    inh_noise_rate = 0
+    inh_noise_rate = 2
     exc_random = "false"
     inh_random = "false"
 
     # Weight parameters
-    init = "power law"
+    init = "flat"
     myelinated = "false"
 
     exc_exc_weight_init = init
     exc_exc_exponent = 1.5
-    exc_exc_base_weight = 0.005
+    exc_exc_base_weight = 0.02
     exc_exc_base_weight_min = 0.00011
     exc_exc_base_weight_max = 0.2
     exc_exc_fraction = 0.1
 
     exc_inh_weight_init = init
     exc_inh_exponent = 1.5
-    exc_inh_base_weight = 0.005
+    exc_inh_base_weight = 0.02
     exc_inh_base_weight_min = 0.00011
     exc_inh_base_weight_max = 0.2
     exc_inh_fraction = 0.1
 
     inh_exc_weight_init = init
     inh_exc_exponent = 1.5
-    inh_exc_base_weight = 0.005
+    inh_exc_base_weight = 0.02
     inh_exc_base_weight_min = 0.00011
     inh_exc_base_weight_max = 0.2
     inh_exc_fraction = 0.1
@@ -437,7 +437,7 @@ def compare_matrices(init_matrix, pre_matrix, post_matrix, to_size):
     plt.show()
 
 def main(infile=None, outfile=None, do_training=True, print_stats=True,
-        visualizer=False, device=None, iterations=1000000):
+        visualizer=False, refresh_rate=0, device=None, iterations=1000000):
     dim = 128
 
     network = build_network(dim)
@@ -464,11 +464,15 @@ def main(infile=None, outfile=None, do_training=True, print_stats=True,
     if device is None:
         device = get_gpus()[1]
     if do_training:
-        report = network.run(env, {"multithreaded" : "true",
-                                   "worker threads" : "1",
-                                   "devices" : device,
-                                   "iterations" : iterations,
-                                   "verbose" : "true"})
+        train_args = {"multithreaded" : "true",
+                      "worker threads" : "1",
+                      "devices" : device,
+                      "iterations" : iterations,
+                      "verbose" : "true"}
+        if refresh_rate > 0:
+            train_args["refresh rate"] = refresh_rate;
+        report = network.run(env, train_args)
+
         if report is None:
             print("Engine failure.  Exiting...")
             return
@@ -516,6 +520,8 @@ if __name__ == "__main__":
                         help='run on host CPU')
     parser.add_argument('-d', type=int, default=1,
                         help='run on device #')
+    parser.add_argument('-r', type=int, default=0,
+                        help='refresh rate')
     args = parser.parse_args()
 
     if args.host:
@@ -527,4 +533,4 @@ if __name__ == "__main__":
     set_warnings(False)
     set_debug(False)
 
-    main(args.i, args.o, args.train, args.stats, args.visualizer, device)
+    main(args.i, args.o, args.train, args.stats, args.visualizer, args.r, device)
