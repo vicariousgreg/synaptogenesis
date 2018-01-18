@@ -39,6 +39,7 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
 
         bool input_dirty;
         bool window_dirty;
+        bool waiting;
 
         Gtk::Table *table;
 

@@ -10,7 +10,8 @@ static int cols = peripheral_cols * 2 + center_cols;
 SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
             : module(module),
               window_dirty(true),
-              input_dirty(true) {
+              input_dirty(true),
+              waiting(true) {
     table = new Gtk::Table(1, 3, false);
     table->set_row_spacings(0);
     table->set_col_spacings(0);
@@ -94,7 +95,7 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
     this->table->attach(*right_pane_image, 2, 3, 0, 1);
     this->table->show_all();
 
-    this->set_face(iRand(1), iRand(1));
+    this->set_cross();
 }
 
 SaccadeWindowImpl::~SaccadeWindowImpl() {
@@ -102,6 +103,10 @@ SaccadeWindowImpl::~SaccadeWindowImpl() {
 }
 
 void SaccadeWindowImpl::set_cross() {
+    input_dirty = true;
+    window_dirty = true;
+    waiting = true;
+
     auto cross_data = center_cross->get_pixels();
     int pix_size = center_cross->get_has_alpha() ? 4 : 3;
     auto center_data = center_pane_pixbuf->get_pixels();
@@ -116,7 +121,7 @@ void SaccadeWindowImpl::set_cross() {
 void SaccadeWindowImpl::set_face(bool fear, bool direction) {
     input_dirty = true;
     window_dirty = true;
-
+    waiting = false;
 
     auto& faces = fear_faces_left;
     if (fear and direction)
@@ -190,12 +195,13 @@ bool SaccadeWindowImpl::on_button_press_event(GdkEventButton* button_event) {
         int col = int(button_event->x);
         if (col < peripheral_cols) {
             printf("Clicked left   (%d, %d)\n", row, col);
-            this->set_face(iRand(1), iRand(1));
+            if (not waiting) this->set_cross();
         } else if (col < peripheral_cols + center_cols) {
             printf("Clicked center (%d, %d)\n", row, col);
+            if (waiting) this->set_face(iRand(1), iRand(1));
         } else {
             printf("Clicked right  (%d, %d)\n", row, col);
-            this->set_face(iRand(1), iRand(1));
+            if (not waiting) this->set_cross();
         }
         return true;
     }

@@ -64,7 +64,7 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     // This is the appropriate index to use for the most recent output
     next_value = f_outputs[size * index + nid];
     //f_outputs[size * index + nid] = MAX(0, next_value + (tau * (-next_value + inputs[nid])));
-    f_outputs[size * index + nid] = MAX(0,
+    f_outputs[size * index + nid] = MAX(0.0f,
         next_value + (tau * inputs[nid]) + (decay * -next_value));
     /*
     if (inputs[nid] != 0.0f and inputs[nid] != 100.0f)

@@ -1,4 +1,5 @@
 from syngen import Network, Environment
+from syngen import get_gpus, get_cpu
 
 # Create main structure (parallel engine)
 structure = {"name" : "saccade", "type" : "parallel"}
@@ -41,8 +42,11 @@ network = Network(
      "connections" : []})
 
 # Run test
+gpus = get_gpus()
+device = gpus[len(gpus)-1] if len(gpus) > 0 else get_cpu()
 print(network.run(env, {"multithreaded" : "true",
                         "worker threads" : 1,
+                        "devices" : device,
                         "learning flag" : "false"}))
 
 # Delete the objects

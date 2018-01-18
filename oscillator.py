@@ -13,10 +13,10 @@ def build_network(dim=64):
     plastic = "false"
     learning_rate = 0.01
 
-    exc_exc_spread = 11
-    exc_inh_spread = 11
-    inh_exc_spread = 11
-    inh_inh_spread = 11
+    exc_exc_spread = 35
+    exc_inh_spread = 35
+    inh_exc_spread = 35
+    inh_inh_spread = 35
     exc_inh_mask = 0
 
     exc_tau = 0.05
@@ -27,10 +27,10 @@ def build_network(dim=64):
 
     # Noise Parameters
     exc_noise_strength = 1.0 / exc_tau
-    exc_noise_rate = 0.1
+    exc_noise_rate = 10
     inh_noise_strength = 1.0 / inh_tau
     inh_noise_rate = 0
-    exc_random = "false"
+    exc_random = "true"
     inh_random = "false"
 
     # Weight parameters
@@ -310,29 +310,29 @@ def build_environment(visualizer=False):
                     { "structure" : "oscillator", "layer" : "inh" },
                 ]
             },
-            {
-                "type" : "visualizer",
-                "colored" : "true",
-
-                "decay" : "false",
-                "window" : 256,
-
-                #"decay" : "true",
-                #"window" : 1024,
-                #"bump" : 128,
-
-                "layers" : [
-                    { "structure" : "oscillator", "layer" : "exc" },
-                    { "structure" : "oscillator", "layer" : "inh" },
-                ]
-            }
+#            {
+#                "type" : "visualizer",
+#                "colored" : "true",
+#
+#                "decay" : "false",
+#                "window" : 256,
+#
+#                #"decay" : "true",
+#                #"window" : 1024,
+#                #"bump" : 128,
+#
+#                "layers" : [
+#                    { "structure" : "oscillator", "layer" : "exc" },
+#                    { "structure" : "oscillator", "layer" : "inh" },
+#                ]
+#            }
         ]
 
     return Environment({"modules" : modules})
 
 def main(infile=None, outfile=None, do_training=True, print_stats=True,
         visualizer=False, device=None, iterations=1000000):
-    dim = 64
+    dim = 128
 
     network = build_network(dim)
     env = build_environment(visualizer)
