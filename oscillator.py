@@ -34,28 +34,28 @@ def build_network(dim=64):
     inh_random = "false"
 
     # Weight parameters
-    exc_exc_weight_init = "random"
+    exc_exc_weight_init = "power law"
     exc_exc_exponent = 1.5
     exc_exc_base_weight = 0.1
     exc_exc_base_weight_min = 0.00011
     exc_exc_base_weight_max = 0.2
     exc_exc_fraction = 0.1
 
-    exc_inh_weight_init = "random"
+    exc_inh_weight_init = "power law"
     exc_inh_exponent = 1.5
     exc_inh_base_weight = 0.1
     exc_inh_base_weight_min = 0.00011
-    exc_inh_base_weight_max = 1.0
+    exc_inh_base_weight_max = 0.2
     exc_inh_fraction = 0.1
 
-    inh_exc_weight_init = "random"
+    inh_exc_weight_init = "power law"
     inh_exc_exponent = 1.5
     inh_exc_base_weight = 0.1
     inh_exc_base_weight_min = 0.00011
     inh_exc_base_weight_max = 0.2
     inh_exc_fraction = 0.1
 
-    inh_inh_weight_init = "random"
+    inh_inh_weight_init = "power law"
     inh_inh_exponent = 1.5
     inh_inh_base_weight = 0.1
     inh_inh_base_weight_min = 0.00011
@@ -332,7 +332,7 @@ def build_environment(visualizer=False):
 
 def main(infile=None, outfile=None, do_training=True, print_stats=True,
         visualizer=False, device=None, iterations=1000000):
-    dim = 128
+    dim = 256
 
     network = build_network(dim)
     env = build_environment(visualizer)
