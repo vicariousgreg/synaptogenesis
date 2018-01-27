@@ -1,7 +1,7 @@
 #ifndef aggregator_h
 #define aggregator_h
 
-#include "util/constants.h"
+#include <cmath>
 
 // Different min, max, and assert functions are used on the host and device
 #ifdef __CUDACC__
@@ -13,6 +13,8 @@
 #define MIN std::fmin
 #define MAX std::fmax
 #endif
+
+#include "util/constants.h"
 
 /* Aggregators are responsible for aggregating input values based on opcode */
 typedef float(*AGGREGATOR)(float prior, float input);
