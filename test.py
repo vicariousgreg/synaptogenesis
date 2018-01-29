@@ -96,7 +96,7 @@ modules = [
 #        #"type" : "one_hot_random_input",
 #        "type" : "periodic_input",
 #        "random" : "false",
-#        "val" : "1.0",
+#        "value" : "1.0",
 #        "rate" : "1000000",
 #        "layers" : [
 #            { "structure" : "test", "layer" : "exc" },

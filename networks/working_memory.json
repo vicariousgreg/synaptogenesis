@@ -15,10 +15,10 @@
 					"noise config": {
 						"type": "normal",
 						"mean": "1.000000",
-						"std_dev": "0.300000" 
-					} 
-				} 
-			] 
+						"std dev": "0.300000"
+					}
+				}
+			]
 		},
 		{
 			"name": "1",
@@ -35,10 +35,10 @@
 					"noise config": {
 						"type": "normal",
 						"mean": "1.000000",
-						"std_dev": "0.300000" 
-					} 
-				} 
-			] 
+						"std dev": "0.300000"
+					}
+				}
+			]
 		},
 		{
 			"name": "2",
@@ -55,10 +55,10 @@
 					"noise config": {
 						"type": "normal",
 						"mean": "1.000000",
-						"std_dev": "0.300000" 
-					} 
-				} 
-			] 
+						"std dev": "0.300000"
+					}
+				}
+			]
 		},
 		{
 			"name": "working memory",
@@ -73,8 +73,8 @@
 					"global": "false",
 					"init": "regular",
 					"noise config": {
-						"type": "poisson" 
-					} 
+						"type": "poisson"
+					}
 				},
 				{
 					"name": "tl1_thalamus",
@@ -83,10 +83,10 @@
 					"columns": "1",
 					"plastic": "false",
 					"global": "false",
-					"init": "thalamo_cortical" 
-				} 
-			] 
-		} 
+					"init": "thalamo_cortical"
+				}
+			]
+		}
 	],
 	"connections": [
 		{
@@ -102,12 +102,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "false",
@@ -130,8 +130,8 @@
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "false",
@@ -147,8 +147,8 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "1.000000" 
-			} 
+				"fraction": "1.000000"
+			}
 		},
 		{
 			"plastic": "true",
@@ -163,12 +163,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "true",
@@ -184,12 +184,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "false",
@@ -213,8 +213,8 @@
 			},
 			"arborized config": {
 				"field size": "19",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "true",
@@ -229,12 +229,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "false",
@@ -257,8 +257,8 @@
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "true",
@@ -273,12 +273,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "false",
@@ -294,8 +294,8 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "1.000000" 
-			} 
+				"fraction": "1.000000"
+			}
 		},
 		{
 			"plastic": "true",
@@ -310,12 +310,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "true",
@@ -330,12 +330,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "false",
@@ -358,8 +358,8 @@
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "true",
@@ -374,12 +374,12 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "0.100000" 
+				"fraction": "0.100000"
 			},
 			"arborized config": {
 				"field size": "15",
-				"wrap": "true" 
-			} 
+				"wrap": "true"
+			}
 		},
 		{
 			"plastic": "false",
@@ -395,9 +395,9 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.100000",
-				"fraction": "1.000000" 
-			} 
-		} 
-	] 
-} 
+				"fraction": "1.000000"
+			}
+		}
+	]
+}
 

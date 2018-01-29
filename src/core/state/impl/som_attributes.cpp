@@ -1,5 +1,5 @@
 #include <string>
-#include <math.h>
+#include <cmath>
 
 #include "state/impl/som_attributes.h"
 #include "state/weight_matrix.h"
@@ -40,7 +40,7 @@ BUILD_ATTRIBUTE_KERNEL(SOMAttributes, som_attribute_kernel,
         f_outputs[size * index + nid] = next_value;
     }
     float input = inputs[nid];
-    f_outputs[size * index + nid] = exp(-rbf_scale * (input * input));
+    f_outputs[size * index + nid] = std::exp(-rbf_scale * (input * input));
 )
 
 /******************************************************************************/

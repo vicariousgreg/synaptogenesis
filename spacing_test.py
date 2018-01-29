@@ -11,7 +11,7 @@ a = {
     "noise config" : {
         "type" : "normal",
         "mean" : 1.0,
-        "std_dev" : 0.0
+        "std dev" : 0.0
     },
 }
 b = {

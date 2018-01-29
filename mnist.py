@@ -86,7 +86,7 @@ modules = [
     },
     {
         "type" : "periodic_input",
-        "val" : "1",
+        "value" : "1",
         "layers" : [
             {
                 "structure" : "mnist",

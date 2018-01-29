@@ -383,7 +383,7 @@ modules = [
     {
         "type" : "one_hot_random_input",
         "random" : "false",
-        "val" : "1.0",
+        "value" : "1.0",
         "rate" : change_rate,
         "layers" : [
             { "structure" : "snn", "layer" : "gate_a" },
@@ -392,7 +392,7 @@ modules = [
     {
         "type" : "one_hot_random_input",
         "random" : "false",
-        "val" : "1.0",
+        "value" : "1.0",
         "rate" : change_rate,
         "layers" : [
             { "structure" : "snn", "layer" : "gate_b" },

@@ -59,4 +59,19 @@ class OneHotCyclicInputModule : public PeriodicInputModule {
     MODULE_MEMBERS
 };
 
+class GaussianRandomInputModule : public PeriodicInputModule {
+    public:
+        GaussianRandomInputModule(LayerList layers, ModuleConfig *config);
+        virtual ~GaussianRandomInputModule();
+
+    protected:
+        virtual void update();
+
+        Pointer<float> gaussians;
+        int rows, columns;
+        int gauss_rows, gauss_columns;
+
+    MODULE_MEMBERS
+};
+
 #endif

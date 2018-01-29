@@ -166,7 +166,7 @@ class NormalNoiseInstruction : public InitializeInstruction {
                   init(init) {
             auto config = layer->get_config()->get_child("noise config");
             mean = config->get_float("mean", 1.0);
-            std_dev = config->get_float("std_dev", 0.1);
+            std_dev = config->get_float("std dev", 0.1);
         }
 
         void activate() {
