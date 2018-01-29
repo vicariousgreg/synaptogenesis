@@ -105,7 +105,7 @@ WeightMatrix::WeightMatrix(Connection* conn)
       transposed(false),
       pointer(this),
       num_weights(conn->get_num_weights()),
-      rows(conn->to_layer->size),
+      rows((conn->convolutional) ? 1 : conn->to_layer->size),
       columns(num_weights / rows),
       transpose_weights(false),
       weights(Pointer<float>(num_weights)),
