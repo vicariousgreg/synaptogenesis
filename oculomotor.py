@@ -72,6 +72,7 @@ modules = [
         "std dev" : "10",
         "value" : "1",
         "normalize" : "false",
+        "peaks" : "3",
         "layers" : [
             {
                 "structure" : "oculomotor",

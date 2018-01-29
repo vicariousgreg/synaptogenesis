@@ -102,6 +102,7 @@ GaussianRandomInputModule::GaussianRandomInputModule(LayerList layers,
     this->columns = layers.at(0)->columns;
     float std_dev = config->get_float("std dev", 1.0);
     bool normalize = config->get_bool("normalize", true);
+    this->num_peaks = config->get_int("peaks", 1);
 
     /* Precompute gaussian values
      * If random, use 1.0 as peak
@@ -143,29 +144,33 @@ GaussianRandomInputModule::~GaussianRandomInputModule() {
 }
 
 void GaussianRandomInputModule::update() {
-    // Randomly select gaussian center
-    int row_offset = iRand(0, rows-1);
-    int column_offset = iRand(0, columns-1);
+    fSet(values, values.get_size(), 0.0);
 
-    if (random) {
-        float peak = fRand(min_value, max_value);
-        for (int row = 0 ; row < rows; ++row) {
-            for (int col = 0 ; col < columns; ++col) {
-                int index = row * columns + col;
-                int gauss_index =
-                    ((row + row_offset) * gauss_columns)
-                        + (col + column_offset);
-                values[index] = peak * gaussians[gauss_index];
+    for (int i = 0 ; i < num_peaks ; ++i) {
+        // Randomly select gaussian center
+        int row_offset = iRand(0, rows-1);
+        int column_offset = iRand(0, columns-1);
+
+        if (random) {
+            float peak = fRand(min_value, max_value);
+            for (int row = 0 ; row < rows; ++row) {
+                for (int col = 0 ; col < columns; ++col) {
+                    int index = row * columns + col;
+                    int gauss_index =
+                        ((row + row_offset) * gauss_columns)
+                            + (col + column_offset);
+                    values[index] += peak * gaussians[gauss_index];
+                }
             }
-        }
-    } else {
-        for (int row = 0 ; row < rows; ++row) {
-            for (int col = 0 ; col < columns; ++col) {
-                int index = row * columns + col;
-                int gauss_index =
-                    ((row + row_offset) * gauss_columns)
-                        + (col + column_offset);
-                values[index] = gaussians[gauss_index];
+        } else {
+            for (int row = 0 ; row < rows; ++row) {
+                for (int col = 0 ; col < columns; ++col) {
+                    int index = row * columns + col;
+                    int gauss_index =
+                        ((row + row_offset) * gauss_columns)
+                            + (col + column_offset);
+                    values[index] += gaussians[gauss_index];
+                }
             }
         }
     }
