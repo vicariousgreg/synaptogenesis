@@ -26,11 +26,14 @@ def build_network(dim=200):
     # Create main structure (parallel engine)
     structure = {"name" : "oculomotor", "type" : "parallel"}
 
-    exc_tau = 0.1
-    inh_tau = 0.1
+    half_inh = True
+    mask = True
 
-    exc_decay = 0.05
-    inh_decay = 0.05
+    exc_tau = 0.2
+    inh_tau = 0.2
+
+    exc_decay = 0.1
+    inh_decay = 0.1
 
     exc_noise_strength = 0.5 / exc_tau
     exc_noise_rate = 10
@@ -42,18 +45,18 @@ def build_network(dim=200):
     receptive_field = 15
 
     exc_exc_rf = 7
-    exc_inh_rf = 31
-    inh_exc_rf = 21
+    exc_inh_rf = 63
+    inh_exc_rf = 41
     inh_inh_rf = 31
 
     mask_rf = 7
 
-    exc_exc_fraction = 0.5
-    exc_inh_fraction = 0.5
-    inh_exc_fraction = 0.5
-    inh_inh_fraction = 0.5
+    exc_exc_fraction = 0.25
+    exc_inh_fraction = 0.25
+    inh_exc_fraction = 0.25
+    inh_inh_fraction = 0.25
 
-    exc_exc_mean = 0.2
+    exc_exc_mean = 0.1
     exc_inh_mean = 0.1
     inh_exc_mean = 0.1
     inh_inh_mean = 0.1
@@ -85,8 +88,8 @@ def build_network(dim=200):
     sc_inh = {
         "name" : "sc_inh",
         "neural model" : "oscillator",
-        "rows" : dim,
-        "columns" : dim,
+        "rows" : dim/2 if half_inh else dim,
+        "columns" : dim/2 if half_inh else dim,
         "tau" : inh_tau,
         "decay" : inh_decay,
         "noise config" : {
@@ -117,7 +120,7 @@ def build_network(dim=200):
             "arborized config" : {
                 "field size" : receptive_field,
                 "stride" : 1,
-                "wrap" : "false"
+                "wrap" : "true"
             }
         },
         {
@@ -137,6 +140,7 @@ def build_network(dim=200):
             "arborized config" : {
                 "field size" : exc_exc_rf,
                 "stride" : 1,
+                "wrap" : "true"
             }
         },
         {
@@ -157,17 +161,18 @@ def build_network(dim=200):
                         "invert" : "true"
                     },
                     { }
-                ]
+                ] if mask else [ { } ]
             },
             "arborized config" : {
                 "field size" : exc_inh_rf,
-                "stride" : 1,
+                "stride" : 2 if half_inh else 1,
+                "wrap" : "true"
             }
         },
         {
             "from layer" : "sc_inh",
             "to layer" : "sc_exc",
-            "type" : "convergent",
+            "type" : "divergent" if half_inh else "convergent",
             "convolutional" : "true",
             "opcode" : "sub",
             "plastic" : "false",
@@ -176,11 +181,12 @@ def build_network(dim=200):
                 "mean" : inh_exc_mean,
                 "std dev" : inh_exc_std_dev,
                 "fraction" : inh_exc_fraction,
-                "circular mask" : [ { } ]
+                "circular mask" : [ { } ] if not half_inh else None
             },
             "arborized config" : {
                 "field size" : inh_exc_rf,
-                "stride" : 1,
+                "stride" : 2 if half_inh else 1,
+                "wrap" : "true"
             }
         },
 #        {
@@ -200,6 +206,7 @@ def build_network(dim=200):
 #            "arborized config" : {
 #                "field size" : inh_inh_rf,
 #                "stride" : 1,
+#                "wrap" : "true"
 #            }
 #        },
     ]
@@ -222,8 +229,8 @@ def build_environment(visualizer=False):
         {
             "type" : "gaussian_random_input",
             "rate" : "200",
-            "std dev" : "5",
-            "value" : "0.25",
+            "std dev" : "10",
+            "value" : "0.1",
             "normalize" : "true",
             "peaks" : "3",
             "random" : "true",
@@ -244,6 +251,9 @@ def main(infile=None, outfile=None, do_training=True,
 
     network = build_network(dim)
     env = build_environment(visualizer)
+
+    network.save("networks/ocm.json")
+    env.save("environments/ocm.json")
 
     if infile is not None:
         if not path.exists(infile):
@@ -296,7 +306,7 @@ if __name__ == "__main__":
                         help='refresh rate')
     args = parser.parse_args()
 
-    if args.host:
+    if args.host or len(get_gpus()) == 0:
         device = get_cpu()
     else:
         device = get_gpus()[args.d]

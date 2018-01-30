@@ -1,0 +1,37 @@
+{
+	"modules": [
+		{
+			"type": "visualizer",
+			"layers": [
+				{
+					"layer": "vision",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_exc",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_inh",
+					"structure": "oculomotor" 
+				} 
+			] 
+		},
+		{
+			"normalize": "true",
+			"rate": "200",
+			"peaks": "3",
+			"std dev": "10",
+			"random": "true",
+			"type": "gaussian_random_input",
+			"value": "0.1",
+			"layers": [
+				{
+					"layer": "vision",
+					"structure": "oculomotor" 
+				} 
+			] 
+		} 
+	] 
+} 
+

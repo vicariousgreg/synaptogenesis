@@ -1100,9 +1100,9 @@ int main(int argc, char *argv[]) {
     // Set single GPU
     //ResourceManager::get_instance()->set_gpu(0);
 
-    mnist_test();
+    //mnist_test();
     //working_memory_test();
-    //return cli();
+    return cli();
 
     /*
     try {

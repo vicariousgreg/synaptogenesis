@@ -88,7 +88,7 @@ void save_network(Network *network, std::string path) {
 
 Environment* load_environment(std::string path) {
     std::stringstream buffer;
-    buffer << std::ifstream("environments/" + path).rdbuf();
+    buffer << std::ifstream(path).rdbuf();
 
     Object o;
     o.parse(buffer.str());
@@ -101,7 +101,7 @@ Environment* load_environment(std::string path) {
 }
 
 void save_environment(Environment *environment, std::string path) {
-    std::ofstream file("environments/" + path);
+    std::ofstream file(path);
 	file << write_properties(environment).json() << std::endl;
 	file.close();
 }

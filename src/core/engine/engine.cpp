@@ -433,6 +433,7 @@ Report* Engine::run(PropertyConfig args) {
     this->suppress_output = args.get_bool("suppress output", false);
     this->environment_rate = args.get_int("environment rate", 1);
     this->refresh_rate = args.get_float("refresh rate", FLT_MAX);
+    if (this->refresh_rate == 0) this->refresh_rate = FLT_MAX;
     this->time_limit = (refresh_rate == FLT_MAX)
         ? 0 : (1.0 / this->refresh_rate);
 

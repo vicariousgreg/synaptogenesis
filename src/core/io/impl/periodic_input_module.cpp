@@ -44,8 +44,10 @@ void PeriodicInputModule::feed_input_impl(Buffer *buffer) {
 }
 
 void PeriodicInputModule::cycle_impl() {
-    dirty = true;
-    this->update();
+    if (curr_iteration % rate == 0) {
+        dirty = true;
+        this->update();
+    }
 
     if (verbose) {
         std::cout << "============================ SHUFFLE\n";

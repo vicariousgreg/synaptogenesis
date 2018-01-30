@@ -1,0 +1,134 @@
+{
+	"connections": [
+		{
+			"convolutional": "true",
+			"to layer": "sc_exc",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "vision",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "true",
+				"stride": "1",
+				"field size": "15" 
+			},
+			"weight config": {
+				"type": "flat",
+				"weight": "0.1" 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_exc",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "sc_exc",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "true",
+				"stride": "1",
+				"field size": "7" 
+			},
+			"weight config": {
+				"std dev": "0.025",
+				"type": "gaussian",
+				"fraction": "0.25",
+				"mean": "0.1",
+				"circular mask": [
+					{
+					} 
+				] 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_inh",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "sc_exc",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "true",
+				"stride": "2",
+				"field size": "63" 
+			},
+			"weight config": {
+				"std dev": "0.025",
+				"type": "gaussian",
+				"fraction": "0.25",
+				"mean": "0.1",
+				"circular mask": [
+					{
+						"diameter": "7",
+						"invert": "true" 
+					},
+					{
+					} 
+				] 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_exc",
+			"opcode": "sub",
+			"type": "divergent",
+			"from layer": "sc_inh",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "true",
+				"stride": "2",
+				"field size": "41" 
+			},
+			"weight config": {
+				"circular mask": "None",
+				"std dev": "0.025",
+				"type": "gaussian",
+				"fraction": "0.25",
+				"mean": "0.1" 
+			} 
+		} 
+	],
+	"structures": [
+		{
+			"type": "parallel",
+			"name": "oculomotor",
+			"layers": [
+				{
+					"columns": "200",
+					"rows": "200",
+					"name": "vision",
+					"neural model": "oscillator" 
+				},
+				{
+					"tau": "0.2",
+					"rows": "200",
+					"name": "sc_exc",
+					"neural model": "oscillator",
+					"decay": "0.1",
+					"columns": "200",
+					"noise config": {
+						"rate": "10",
+						"random": "false",
+						"type": "poisson",
+						"value": "2.5" 
+					} 
+				},
+				{
+					"tau": "0.2",
+					"rows": "100",
+					"name": "sc_inh",
+					"neural model": "oscillator",
+					"decay": "0.1",
+					"columns": "100",
+					"noise config": {
+						"rate": "0",
+						"random": "false",
+						"type": "poisson",
+						"value": "2.5" 
+					} 
+				} 
+			] 
+		} 
+	] 
+} 
+

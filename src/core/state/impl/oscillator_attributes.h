@@ -15,7 +15,13 @@ class OscillatorAttributes : public Attributes {
 
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
+        // Internal neural state
+        Pointer<float> state;
+
+        // Time constant (scales synaptic input)
         float tau;
+
+        // Decay time constant (scales decay)
         float decay;
 
     GET_KERNEL_DEF

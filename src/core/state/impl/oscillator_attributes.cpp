@@ -17,6 +17,9 @@ OscillatorAttributes::OscillatorAttributes(Layer *layer)
         : Attributes(layer, FLOAT) {
     this->tau = std::stof(layer->get_parameter("tau", "0.1"));
     this->decay = std::stof(layer->get_parameter("decay", "0.1"));
+
+    this->state = Attributes::create_neuron_variable<float>(0.0);
+    Attributes::register_neuron_variable("state", &state);
 }
 
 void OscillatorWeightMatrix::register_variables() { }
@@ -43,6 +46,7 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     OscillatorAttributes *oscillator_att = (OscillatorAttributes*)att;
     float tau = oscillator_att->tau;
     float decay = oscillator_att->decay;
+    float* state = oscillator_att->state.get();
 
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience
@@ -63,13 +67,9 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
 
     // This is the appropriate index to use for the most recent output
     next_value = f_outputs[size * index + nid];
-    //f_outputs[size * index + nid] = MAX(0, next_value + (tau * (-next_value + inputs[nid])));
-    f_outputs[size * index + nid] = MAX(0.0f,
-        next_value + (tau * inputs[nid]) + (decay * -next_value));
-    /*
-    if (inputs[nid] != 0.0f and inputs[nid] != 100.0f)
-        printf("(%f %f) ", inputs[nid], f_outputs[size * index + nid]);
-    */
+    float st = state[nid];
+    state[nid] = st = st + (tau * inputs[nid]) + (decay * -st);
+    f_outputs[size * index + nid] = MAX(0.0f, st);
 )
 
 /******************************************************************************/
