@@ -113,6 +113,7 @@ modules = [
         "type" : "periodic_input",
         "rate" : "1",
         "random" : "true",
+        "max" : "1.0",
         "layers" : [
             {
                 "structure" : "dendrite_test",
@@ -124,6 +125,7 @@ modules = [
         "type" : "periodic_input",
         "rate" : "1",
         "random" : "true",
+        "max" : "0.5",
         "layers" : [
             {
                 "structure" : "dendrite_test",
@@ -134,6 +136,11 @@ modules = [
     {
         "type" : "gaussian_random_input",
         "rate" : "100",
+        "std dev" : "10",
+        "value" : "1.0",
+        "normalize" : "true",
+        "peaks" : "1",
+        "random" : "false",
         "layers" : [
             {
                 "structure" : "dendrite_test",
@@ -144,6 +151,11 @@ modules = [
     {
         "type" : "gaussian_random_input",
         "rate" : "100",
+        "std dev" : "10",
+        "value" : "1.0",
+        "normalize" : "true",
+        "peaks" : "1",
+        "random" : "false",
         "layers" : [
             {
                 "structure" : "dendrite_test",
