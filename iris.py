@@ -74,7 +74,7 @@ modules = [
 #            {
 #                "structure" : "iris",
 #                "layer" : "output_layer",
-#                "params" : "output",
+#                "output" : "true",
 #                "function" : addr,
 #                "id" : 0
 #            }

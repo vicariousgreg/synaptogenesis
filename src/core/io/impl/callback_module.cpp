@@ -10,7 +10,7 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
         // Get Function
         if (not layer_config->has("function"))
             LOG_ERROR("Unspecified callback function for layer "
-            + layer->str() + " in CallbackModule!");
+                + layer->str() + " in CallbackModule!");
         callbacks[layer] = (void(*)(int, int, void*))(
             std::stoll(layer_config->get("function")));
 
@@ -29,9 +29,10 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
         if (layer_config->get_bool("output", false))
             set_io_type(layer, get_io_type(layer) | OUTPUT);
 
-        // Use output as default
+        // Log error if unspecified type
         if (get_io_type(layer) == 0)
-            set_io_type(layer, OUTPUT);
+            LOG_ERROR("Unspecified type for layer "
+                + layer->str() + " in CallbackModule!");
     }
 }
 
