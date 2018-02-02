@@ -28,19 +28,21 @@ def build_network(dim=100):
         {"structures" : [structure],
          "connections" : []})
 
-def build_environment(socket, dim, visualizer=False):
+def build_environment(sensory_socket, motor_socket, dim, visualizer=False):
     buf = bytearray(dim * dim * 4)
 
     def sensory_callback(ID, length, ptr):
-        socket.get_data(4, length, buf)
+        sensory_socket.send_ping()
+        sensory_socket.get_data(4, length, buf)
 
         c_buf = cast(ptr, POINTER(c_byte))
         for i,x in enumerate(buf):
             c_buf[i] = x
 
     def motor_callback(ID, length, ptr):
+        motor_socket.send_ping()
         arr = FloatArray(length, ptr)
-        socket.send_data(arr.to_list())
+        motor_socket.send_data(arr.to_list())
 
     scb,scb_addr = create_callback(sensory_callback)
     mcb,mcb_addr = create_callback(motor_callback)
@@ -61,12 +63,6 @@ def build_environment(socket, dim, visualizer=False):
             ]
         },
         {
-            "type" : "visualizer",
-            "layers" : [
-                { "structure" : "pi_test", "layer" : "field" }
-            ]
-        },
-        {
             "type" : "callback",
             "rate" : 1,
             "layers" : [
@@ -81,15 +77,24 @@ def build_environment(socket, dim, visualizer=False):
         }
     ]
 
+    if visualizer:
+        modules.append({
+            "type" : "visualizer",
+            "layers" : [
+                { "structure" : "pi_test", "layer" : "field" }
+            ]
+        })
+
     return Environment({"modules" : modules})
 
 def main(infile=None, outfile=None, do_training=True,
         visualizer=False, device=None, rate=0, iterations=1000):
     dim = 100
 
-    socket = PiServer()
+    sensory_socket = PiServer(TCP_PORT=11111)
+    motor_socket = PiServer(TCP_PORT=11112)
     network = build_network(dim)
-    env = build_environment(socket, dim, visualizer)
+    env = build_environment(sensory_socket, motor_socket, dim, visualizer)
 
     if infile is not None:
         if not path.exists(infile):
@@ -121,7 +126,8 @@ def main(infile=None, outfile=None, do_training=True,
     # Delete the objects
     del network
     del env
-    socket.close()
+    sensory_socket.close()
+    motor_socket.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

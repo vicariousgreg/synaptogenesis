@@ -3,6 +3,12 @@ import argparse
 from struct import pack
 
 class PiSocket:
+    def get_ping(self):
+        while not self.conn.recv(1): pass
+
+    def send_ping(self):
+        self.conn.sendall(' ')
+
     def get_integer(self):
         mesg = ''
         rec = 0
@@ -26,8 +32,9 @@ class PiSocket:
         self.conn.sendall(bytearray(pack(ty * len(mesg), *mesg)))
 
 class PiServer(PiSocket):
-    def __init__(self, TCP_IP='192.168.0.180', TCP_PORT=12397):
+    def __init__(self, TCP_IP='192.168.0.180', TCP_PORT=11111):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.s.bind((TCP_IP, TCP_PORT))
         self.s.listen(1)
         conn, addr = self.s.accept()
@@ -61,10 +68,18 @@ if __name__ == "__main__":
     parser.add_argument('-v', action='store_true', default=False,
                         dest='verbose',
                         help='print as messages are passed, and time stats')
+    parser.add_argument('-get', action='store_true', default=False,
+                        dest='get',
+                        help='gets messages')
+    parser.add_argument('-send', action='store_true', default=False,
+                        dest='send',
+                        help='send messages')
     parser.add_argument('-n', type=int, default=1000,
                         help='number of messages to exchange')
     parser.add_argument('-m', type=int, default=10000,
                         help='size of messages to exchange')
+    parser.add_argument('-p', type=int, default=12397,
+                        help='port to use')
     args = parser.parse_args()
 
     TCP_IP = '192.168.0.180'
@@ -73,28 +88,42 @@ if __name__ == "__main__":
     message_count = args.n
     message_size = args.m
 
-    sock = PiServer() if args.server else PiClient()
+    if not args.get and not args.send:
+        args.get = args.server
+        args.send = not args.server
+
+    sock = PiServer(TCP_PORT=args.p) if args.server else PiClient(TCP_PORT=args.p)
 
     try:
         start = time.time()
         buf = bytearray(4 * message_size)
 
         # Send first message from client
-        if not args.server:
+        if not args.server and args.send:
+            sock.get_ping()
             mesg = [uniform(0.0, 1.0) for _ in xrange(message_size)]
             sock.send_data(mesg)
             if args.verbose: print("Sent")
 
         # Exchange
         for i in xrange(message_count-1):
-            sock.get_data(4, message_size, buf)
-            if args.verbose: print("Got")
+            if args.get:
+                if args.server: sock.send_ping()
+                else: sock.get_ping()
+
+                sock.get_data(4, message_size, buf)
+                if args.verbose: print("Got")
             mesg = [uniform(0.0, 1.0) for _ in xrange(message_size)]
-            sock.send_data(mesg)
-            if args.verbose: print("Sent")
+            if args.send:
+                if args.server: sock.send_ping()
+                else: sock.get_ping()
+
+                sock.send_data(mesg)
+                if args.verbose: print("Sent")
 
         # Get last message from client
-        if args.server:
+        if args.server and args.get:
+            sock.send_ping()
             sock.get_data(4, message_size, buf)
             if args.verbose: print("Got")
 
