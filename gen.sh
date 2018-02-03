@@ -1,9 +1,11 @@
+#!/bin/bash
+
 build_flag=serial
 gui_flag=
+main_flag=
 debug_flag=
 
-#!/bin/bash
-while getopts "pndch" OPTION
+while getopts "pnmdch" OPTION
 do
 	case $OPTION in
 		p)
@@ -11,6 +13,9 @@ do
 			;;
 		n)
 			gui_flag='NO_GUI=true'
+			;;
+		m)
+			main_flag='MAIN=true'
 			;;
 		d)
 			debug_flag='DEBUG=true'
@@ -25,7 +30,8 @@ do
 			echo "  usage: gen.sh [-p] [-n] [-d] [-c]"
 			echo "    -p builds parallel version (requires CUDA)"
 			echo "    -n builds without GUI (normally requires GTK)"
-			echo "    -d builds without debug flags"
+			echo "    -m builds c++ main executable"
+			echo "    -d builds with debug flags"
 			echo "    -c cleans the build first"
 			exit
 			;;
@@ -46,6 +52,12 @@ else
 	echo "  ... without GUI"
 fi
 
+if [ "$main_flag" == '' ]; then
+	echo "  ... without c++ main executable"
+else
+	echo "  ... with c++ main executable"
+fi
+
 if [ "$debug_flag" == '' ]; then
 	echo "  ... without debugging"
 else
@@ -56,7 +68,7 @@ echo ===========================
 echo
 echo
 
-make $build_flag $gui_flag $debug_flag
+make $build_flag $gui_flag $main_flag $debug_flag
 
 echo
 echo

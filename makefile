@@ -35,6 +35,11 @@ NVCCFLAGS    := -w -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
+ifndef MAIN
+TARGET_S=
+TARGET_P=
+endif
+
 ifdef DEBUG
 CCFLAGS+=-g
 NVCCFLAGS+=-g
@@ -53,6 +58,11 @@ all: serial
 
 install: 
 	cp $(TARGETDIR)/$(LIBRARY) $(LIBRARY_DIR)
+	python -c "\
+from sys import path; \
+from os import system; \
+site_packages = next(p for p in path if 'site-packages' in p); \
+system('cp syngen.py ' + site_packages)"
 
 #---------------------------------------------------------------------------------
 #  LIBS BUILDING
@@ -98,11 +108,11 @@ $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(COREPATH)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-serial: directories libs $(TARGET_S) ctags_s
+serial: directories libs $(UILIBPATH) $(OBJECTS_S) $(TARGET_S) $(OBJECTS_LIBS) ctags_s
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
 
 #Make tags
-ctags_s: $(TARGET_S)
+ctags_s: $(OBJECTS_S)
 ifdef CTAGS
 	ctags -R --exclude=.git src
 endif
@@ -145,11 +155,11 @@ $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-parallel: directories libs $(TARGET_P) ctags_p
+parallel: directories libs $(UILIBPATH) $(OBJECTS_P) $(TARGET_P) $(OBJECTS_LIBS) ctags_p
 	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
 
-ctags_p: $(TARGET_P)
+ctags_p: $(OBJECTS_P)
 ifdef CTAGS
 	ctags -R --exclude=.git src
 endif
