@@ -30,7 +30,7 @@ do
 			echo "  usage: gen.sh [-p] [-n] [-d] [-c]"
 			echo "    -p builds parallel version (requires CUDA)"
 			echo "    -n builds without GUI (normally requires GTK)"
-			echo "    -m builds c++ main executable"
+			echo "    -m builds C++ main executable"
 			echo "    -d builds with debug flags"
 			echo "    -c cleans the build first"
 			exit
@@ -53,9 +53,9 @@ else
 fi
 
 if [ "$main_flag" == '' ]; then
-	echo "  ... without c++ main executable"
+	echo "  ... without C++ main executable"
 else
-	echo "  ... with c++ main executable"
+	echo "  ... with C++ main executable"
 fi
 
 if [ "$debug_flag" == '' ]; then

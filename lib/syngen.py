@@ -63,7 +63,7 @@ def build_array(base_array):
     elif base_array.type == V_P:
         return VoidArray(base_array.size, base_array.data)
 
-_syn = CDLL('synaptogenesis.so')
+_syn = CDLL('libsyngen.so')
 
 _syn.free_array.argtypes = (CArray, )
 _syn.free_array_deep.argtypes = (CArray, )

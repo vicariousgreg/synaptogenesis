@@ -9,5 +9,5 @@ syngen_test
 syngen_parallel_test
 tags
 cscope.out
-synaptogenesis.so
+libsyngen.so
 synaptogenesis.nvvp

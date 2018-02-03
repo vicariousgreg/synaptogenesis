@@ -10,7 +10,7 @@ NVCC          := /usr/local/cuda-8.0/bin/nvcc
 #The Target Binary Program
 TARGET_S      := syngen_test
 TARGET_P      := syngen_parallel_test
-LIBRARY       := synaptogenesis.so
+LIBRARY       := libsyngen.so
 
 #The Directories, Source, Includes, Objects, Binary and Resources
 BUILDDIR_LINK := ./build
