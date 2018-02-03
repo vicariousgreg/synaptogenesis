@@ -47,9 +47,9 @@ else
 fi
 
 if [ "$debug_flag" == '' ]; then
-	echo "  ... with debugging"
-else
 	echo "  ... without debugging"
+else
+	echo "  ... with debugging"
 fi
 echo ===========================
 
