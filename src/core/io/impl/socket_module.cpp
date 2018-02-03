@@ -79,40 +79,44 @@ SocketModule::SocketModule(LayerList layers, ModuleConfig *config)
 }
 
 void SocketModule::feed_input_impl(Buffer *buffer) {
-    if (single_layer) {
-        // If there's only one layer, stream directly into layer buffer
-        auto layer = layers[0];
-        if (get_io_type(layer) & INPUT) {
+    if (stream_input) {
+        if (single_layer) {
+            // If there's only one layer, stream directly into layer buffer
+            auto layer = layers[0];
+            if (get_io_type(layer) & INPUT) {
+                send(client, &ping_char, 1, 0);
+                recv(client, buffer->get_input(layer).get(), buffer_bytes, 0);
+            }
+        } else {
+            // Otherwise, stream into local buffer and copy
             send(client, &ping_char, 1, 0);
-            recv(client, buffer->get_input(layer).get(), buffer_bytes, 0);
-        }
-    } else {
-        // Otherwise, stream into local buffer and copy
-        send(client, &ping_char, 1, 0);
-        recv(client, local_buffer.get(), buffer_bytes, 0);
+            recv(client, local_buffer.get(), buffer_bytes, 0);
 
-        for (auto layer : layers)
-            if (get_io_type(layer) & INPUT)
-                buffer->set_input(layer, this->local_buffer);
+            for (auto layer : layers)
+                if (get_io_type(layer) & INPUT)
+                    buffer->set_input(layer, this->local_buffer);
+        }
     }
 }
 
 void SocketModule::feed_expected_impl(Buffer *buffer) {
-    if (single_layer) {
-        // If there's only one layer, stream directly into layer buffer
-        auto layer = layers[0];
-        if (get_io_type(layer) & EXPECTED) {
+    if (stream_expected) {
+        if (single_layer) {
+            // If there's only one layer, stream directly into layer buffer
+            auto layer = layers[0];
+            if (get_io_type(layer) & EXPECTED) {
+                send(client, &ping_char, 1, 0);
+                recv(client, buffer->get_expected(layer).get(), buffer_bytes, 0);
+            }
+        } else {
+            // Otherwise, stream into local buffer and copy
             send(client, &ping_char, 1, 0);
-            recv(client, buffer->get_expected(layer).get(), buffer_bytes, 0);
-        }
-    } else {
-        // Otherwise, stream into local buffer and copy
-        send(client, &ping_char, 1, 0);
-        recv(client, local_buffer.get(), buffer_bytes, 0);
+            recv(client, local_buffer.get(), buffer_bytes, 0);
 
-        for (auto layer : layers)
-            if (get_io_type(layer) & EXPECTED)
-                buffer->set_expected(layer, this->local_buffer.cast<Output>());
+            for (auto layer : layers)
+                if (get_io_type(layer) & EXPECTED)
+                    buffer->set_expected(layer, this->local_buffer.cast<Output>());
+        }
     }
 }
 
