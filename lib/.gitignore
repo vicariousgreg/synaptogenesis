@@ -1,0 +1,13 @@
+*.o
+*.d
+*.a
+*.gch
+*.pyc
+.*.swp
+.*.swo
+syngen_test
+syngen_parallel_test
+tags
+cscope.out
+synaptogenesis.so
+synaptogenesis.nvvp

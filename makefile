@@ -16,8 +16,8 @@ LIBRARY       := synaptogenesis.so
 BUILDDIR_LINK := ./build
 BUILDDIR_S    := ./build/serial
 BUILDDIR_P    := ./build/parallel
-LIBRARY_DIR   := /usr/lib/
-TARGETDIR     := .
+LIBRARY_DIR   := ./lib
+BIN_DIR       := ./bin
 SRCEXT        := cpp
 DEPEXT        := d
 OBJEXT        := o
@@ -57,12 +57,12 @@ endif
 all: serial
 
 install: 
-	cp $(TARGETDIR)/$(LIBRARY) $(LIBRARY_DIR)
+	cp $(LIBRARY_DIR)/$(LIBRARY) /usr/lib/
 	python -c "\
 from sys import path; \
 from os import system; \
 site_packages = next(p for p in path if 'site-packages' in p); \
-system('cp syngen.py ' + site_packages)"
+system('cp lib/syngen.py ' + site_packages)"
 
 #---------------------------------------------------------------------------------
 #  LIBS BUILDING
@@ -109,7 +109,7 @@ SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(COREPATH)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 serial: directories libs $(UILIBPATH) $(OBJECTS_S) $(TARGET_S) $(OBJECTS_LIBS) ctags_s
-	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
+	$(CC) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
 
 #Make tags
 ctags_s: $(OBJECTS_S)
@@ -139,7 +139,7 @@ clean:
 
 #Link
 $(TARGET_S): $(UILIBPATH) $(OBJECTS_S) $(OBJECTS_LIBS)
-	$(CC) $(CCFLAGS) -o $(TARGETDIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
+	$(CC) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
 
 #Compile
 $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
@@ -157,7 +157,7 @@ OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.
 
 parallel: directories libs $(UILIBPATH) $(OBJECTS_P) $(TARGET_P) $(OBJECTS_LIBS) ctags_p
 	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
-	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
+	$(CC) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
 
 ctags_p: $(OBJECTS_P)
 ifdef CTAGS
@@ -171,7 +171,7 @@ endif
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
 $(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS)
-	$(NVCC) $(NVCCLINK) -o $(TARGETDIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
+	$(NVCC) $(NVCCLINK) -o $(BIN_DIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
