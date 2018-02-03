@@ -558,6 +558,7 @@ void working_memory_test() {
     delete state;
 }
 
+#ifdef __GUI__
 void dsst_test() {
     // Use default DSST parameters
     auto temp_config = new ModuleConfig("dsst");
@@ -686,6 +687,7 @@ void dsst_test() {
     delete env;
     delete state;
 }
+#endif
 
 void debug_test() {
     NetworkConfig *network_config = new NetworkConfig();

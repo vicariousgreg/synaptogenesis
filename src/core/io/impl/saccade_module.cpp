@@ -1,3 +1,5 @@
+#ifdef __GUI__
+
 #include "io/impl/saccade_module.h"
 
 #include "saccade_window.h"
@@ -39,3 +41,5 @@ void SaccadeModule::report_output_impl(Buffer *buffer) {
         if (get_io_type(layer) & OUTPUT) ;
             // Add output processing here
 }
+
+#endif

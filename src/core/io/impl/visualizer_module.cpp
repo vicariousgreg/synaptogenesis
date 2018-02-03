@@ -1,4 +1,8 @@
+#ifdef __GUI__
+
 #include "visualizer_module.h"
+
+#include "visualizer_window.h"
 
 /******************************************************************************/
 /***************************** VISUALIZER *************************************/
@@ -85,3 +89,5 @@ void HeatmapModule::report_output_impl(Buffer *buffer) {
 void HeatmapModule::cycle_impl() {
     window->cycle();
 }
+
+#endif

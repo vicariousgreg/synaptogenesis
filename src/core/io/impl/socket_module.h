@@ -17,7 +17,7 @@ class SocketModule : public Module {
         void report_output_impl(Buffer *buffer);
 
     protected:
-        bool stream_input, stream_expected;
+        bool stream_input, stream_expected, stream_output;
         bool single_layer;
         int server, client;
         struct sockaddr_in myaddr;

@@ -9,7 +9,7 @@ import sys
 import argparse
 
 
-def build_network(dim=100):
+def build_network(rows=480, cols=720):
     # Create main structure (parallel engine)
     structure = {"name" : "pi_test", "type" : "parallel"}
 
@@ -17,8 +17,8 @@ def build_network(dim=100):
     field = {
         "name" : "field",
         "neural model" : "relay",
-        "rows" : dim,
-        "columns" : dim}
+        "rows" : rows,
+        "columns" : cols}
 
     # Add layers to structure
     structure["layers"] = [field]
@@ -28,8 +28,8 @@ def build_network(dim=100):
         {"structures" : [structure],
          "connections" : []})
 
-def build_environment(sensory_socket, motor_socket, dim, visualizer=False):
-    buf = bytearray(dim * dim * 4)
+def build_environment(sensory_socket, motor_socket, rows, cols, visualizer=False):
+    buf = bytearray(rows * cols * 4)
 
     def sensory_callback(ID, length, ptr):
         sensory_socket.send_ping()
@@ -89,12 +89,13 @@ def build_environment(sensory_socket, motor_socket, dim, visualizer=False):
 
 def main(infile=None, outfile=None, do_training=True,
         visualizer=False, device=None, rate=0, iterations=1000):
-    dim = 100
+    rows = 480
+    cols = 720
 
     sensory_socket = PiServer(TCP_PORT=11111)
     motor_socket = PiServer(TCP_PORT=11112)
-    network = build_network(dim)
-    env = build_environment(sensory_socket, motor_socket, dim, visualizer)
+    network = build_network(rows, cols)
+    env = build_environment(sensory_socket, motor_socket, rows, cols, visualizer)
 
     if infile is not None:
         if not path.exists(infile):

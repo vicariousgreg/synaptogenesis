@@ -1,3 +1,5 @@
+#ifdef __GUI__
+
 #ifndef dsst_module_h
 #define dsst_module_h
 
@@ -49,5 +51,7 @@ class DSSTModule : public Module {
 
     MODULE_MEMBERS
 };
+
+#endif
 
 #endif

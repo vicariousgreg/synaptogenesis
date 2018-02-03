@@ -1,6 +1,7 @@
 import socket
 import argparse
-from struct import pack
+from struct import pack, unpack
+#from picam import PiCam
 
 class PiSocket:
     def get_ping(self):
@@ -57,6 +58,12 @@ class PiClient(PiSocket):
     def __del__(self):
         self.close()
 
+def gen_mesg(message_size):
+    return [uniform(0.0, 1.0) for _ in xrange(message_size)]
+
+#def get_camera_mesg(cam):
+#    return cam.capture_greyscale()
+
 if __name__ == "__main__":
     import time
     from random import uniform
@@ -92,32 +99,38 @@ if __name__ == "__main__":
         args.get = args.server
         args.send = not args.server
 
+#    if args.send: cam = PiCam()
     sock = PiServer(TCP_PORT=args.p) if args.server else PiClient(TCP_PORT=args.p)
 
     try:
+        if args.get:
+            buf = bytearray(4 * message_size)
+
         start = time.time()
-        buf = bytearray(4 * message_size)
 
         # Send first message from client
         if not args.server and args.send:
             sock.get_ping()
-            mesg = [uniform(0.0, 1.0) for _ in xrange(message_size)]
+            mesg = gen_mesg(message_size)
+#            mesg = get_camera_mesg(cam)
             sock.send_data(mesg)
             if args.verbose: print("Sent")
 
         # Exchange
         for i in xrange(message_count-1):
             if args.get:
-                if args.server: sock.send_ping()
-                else: sock.get_ping()
+                sock.send_ping() if args.server else sock.get_ping()
 
                 sock.get_data(4, message_size, buf)
-                if args.verbose: print("Got")
-            mesg = [uniform(0.0, 1.0) for _ in xrange(message_size)]
+                vals = unpack("f" * message_size, buf)
+                if args.verbose:
+                    print("Got")
+                    print(min(vals), max(vals), sum(vals) / message_size)
             if args.send:
-                if args.server: sock.send_ping()
-                else: sock.get_ping()
+                sock.send_ping() if args.server else sock.get_ping()
 
+                mesg = gen_mesg(message_size)
+#                mesg = get_camera_mesg(cam)
                 sock.send_data(mesg)
                 if args.verbose: print("Sent")
 

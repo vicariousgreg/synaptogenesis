@@ -222,7 +222,9 @@ void Engine::single_thread_loop() {
             if (not suppress_output)
                 for (auto& module : this->modules)
                     module->report_output(buffer);
+#ifdef __GUI__
             GuiController::update();
+#endif
         }
 
         // Cycle modules
@@ -263,8 +265,10 @@ void Engine::single_thread_loop() {
     // Report report if verbose
     if (verbose) report->print();
 
+#ifdef __GUI__
     // Shutdown GUI
     GuiController::quit();
+#endif
 
     this->network_running = false;
     this->environment_running = false;
@@ -347,8 +351,10 @@ void Engine::network_loop() {
     // Report report if verbose
     if (verbose) report->print();
 
+#ifdef __GUI__
     // Shutdown GUI
     GuiController::quit();
+#endif
 
     this->network_running = false;
 }
@@ -372,7 +378,9 @@ void Engine::environment_loop() {
             if (not suppress_output)
                 for (auto& module : this->modules)
                     module->report_output(buffer);
+#ifdef __GUI__
             GuiController::update();
+#endif
         }
         motor_lock.pass(NETWORK_THREAD);
 
@@ -478,8 +486,10 @@ Report* Engine::run(PropertyConfig args) {
                 &Engine::single_thread_loop, this));
         }
 
+#ifdef __GUI__
         // Launch UI on main thread
         GuiController::launch();
+#endif
 
         // Wait for threads
         for (auto& thread : threads)

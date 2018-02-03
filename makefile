@@ -1,22 +1,22 @@
 CTAGS  := $(shell command -v ctags 2> /dev/null)
 CSCOPE := $(shell command -v cscope 2> /dev/null)
 
-MAKEFLAGS += --jobs=10
+MAKEFLAGS += --jobs=12
 
 #Compiler and Linker
 CC            := g++
 NVCC          := /usr/local/cuda-8.0/bin/nvcc
 
 #The Target Binary Program
-TARGET_S      := test
-TARGET_P      := parallel_test
+TARGET_S      := syngen_test
+TARGET_P      := syngen_parallel_test
 LIBRARY       := synaptogenesis.so
 
 #The Directories, Source, Includes, Objects, Binary and Resources
 BUILDDIR_LINK := ./build
 BUILDDIR_S    := ./build/serial
 BUILDDIR_P    := ./build/parallel
-LIBRARY_DIR   := /usr/lib/synaptogenesis/synaptogenesis.so
+LIBRARY_DIR   := /usr/lib/
 TARGETDIR     := .
 SRCEXT        := cpp
 DEPEXT        := d
@@ -35,8 +35,24 @@ NVCCFLAGS    := -w -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
+ifdef DEBUG
+CCFLAGS+=-g
+NVCCFLAGS+=-g
+endif
+
+ifndef NO_GUI
+CCFLAGS+=-D__GUI__
+NVCCFLAGS+=-D__GUI__
+else
+UILIBPATH=
+LIBS=
+endif
+
 #Default Make
 all: serial
+
+install: 
+	cp $(TARGETDIR)/$(LIBRARY) $(LIBRARY_DIR)
 
 #---------------------------------------------------------------------------------
 #  LIBS BUILDING
@@ -64,10 +80,6 @@ $(UILIBPATH): $(OBJECTS_UI)
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_UI:.$(OBJEXT)=.$(DEPEXT))
 
-#Link
-$(TARGET_UI): $(UILIBPATH) $(OBJECTS_UI)
-	$(CC) $(CCFLAGS) `pkg-config --cflags gtkmm-3.0` -c $^ -o $(BUILDDIR_UI)/$(TARGET_UI) $(LIBS)
-
 #Compile
 $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
@@ -88,7 +100,6 @@ OBJECTS_S     := $(patsubst $(COREPATH)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.
 
 serial: directories libs $(TARGET_S) ctags_s
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
-	cp $(TARGETDIR)/$(LIBRARY) /usr/lib/
 
 #Make tags
 ctags_s: $(TARGET_S)
@@ -105,7 +116,6 @@ directories:
 	@mkdir -p $(BUILDDIR_P)
 	@mkdir -p $(BUILDDIR_UI)
 	@mkdir -p $(BUILDDIR_LIBS)
-	@mkdir -p $(LIBRARY_DIR)
 
 #Clean only Objects
 clean:
@@ -113,7 +123,6 @@ clean:
 	@$(RM) -rf $(BUILDDIR_P)
 	@$(RM) -rf $(BUILDDIR_UI)
 	@$(RM) -rf $(BUILDDIR_LIBS)
-	@$(RM) -rf $(LIBRARY_DIR)
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
@@ -139,7 +148,6 @@ OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.
 parallel: directories libs $(TARGET_P) ctags_p
 	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
 	$(CC) $(CCFLAGS) -shared -o $(TARGETDIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
-	cp $(TARGETDIR)/$(LIBRARY) /usr/lib/
 
 ctags_p: $(TARGET_P)
 ifdef CTAGS

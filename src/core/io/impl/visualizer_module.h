@@ -1,9 +1,11 @@
+#ifdef __GUI__
+
 #ifndef visualizer_module_h
 #define visualizer_module_h
 
 #include "io/module.h"
 
-#include "visualizer_window.h"
+class VisualizerWindow;
 
 class VisualizerModule : public Module {
     public:
@@ -30,5 +32,7 @@ class HeatmapModule : public Module {
 
     MODULE_MEMBERS
 };
+
+#endif
 
 #endif

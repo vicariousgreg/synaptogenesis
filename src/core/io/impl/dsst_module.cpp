@@ -1,3 +1,5 @@
+#ifdef __GUI__
+
 #include "io/impl/dsst_module.h"
 
 #include "dsst_window.h"
@@ -98,3 +100,5 @@ int DSSTModule::get_input_columns(PropertyConfig *config) {
 int DSSTModule::get_input_size(PropertyConfig *config) {
     return get_input_rows(config) * get_input_columns(config);
 }
+
+#endif

@@ -5,8 +5,8 @@
 *.pyc
 .*.swp
 .*.swo
-test
-parallel_test
+syngen_test
+syngen_parallel_test
 tags
 cscope.out
 synaptogenesis.so

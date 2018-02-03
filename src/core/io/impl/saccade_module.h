@@ -1,3 +1,5 @@
+#ifdef __GUI__
+
 #ifndef saccade_module_h
 #define saccade_module_h
 
@@ -27,5 +29,7 @@ class SaccadeModule : public Module {
 
     MODULE_MEMBERS
 };
+
+#endif
 
 #endif

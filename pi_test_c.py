@@ -9,7 +9,7 @@ import sys
 import argparse
 
 
-def build_network(rows=480, cols=720):
+def build_network(rows=100, cols=100):
     # Create main structure (parallel engine)
     structure = {"name" : "pi_test", "type" : "parallel"}
 
