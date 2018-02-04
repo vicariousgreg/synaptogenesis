@@ -1,7 +1,19 @@
 CTAGS  := $(shell command -v ctags 2> /dev/null)
 CSCOPE := $(shell command -v cscope 2> /dev/null)
 
-MAKEFLAGS += --jobs=12
+ifndef JOBS
+JOBS:=1
+OS:=$(shell uname -s)
+
+ifeq ($(OS),Linux)
+	JOBS:=$(shell grep -c ^processor /proc/cpuinfo)
+endif
+ifeq ($(OS),Darwin) # Assume Mac OS X
+	JOBS:=$(shell system_profiler | awk '/Number Of CPUs/{print $4}{next;}')
+endif
+endif
+
+MAKEFLAGS += --jobs=$(JOBS)
 
 #Compiler and Linker
 CC            := g++
@@ -57,12 +69,8 @@ endif
 all: serial
 
 install: 
-	cp $(LIBRARY_DIR)/$(LIBRARY) /usr/lib/
-	python -c "\
-from sys import path; \
-from os import system; \
-site_packages = next(p for p in path if 'site-packages' in p); \
-system('cp lib/syngen.py ' + site_packages)"
+	sudo cp $(LIBRARY_DIR)/$(LIBRARY) /usr/lib/
+	python install_python.py
 
 #---------------------------------------------------------------------------------
 #  LIBS BUILDING

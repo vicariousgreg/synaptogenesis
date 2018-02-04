@@ -219,14 +219,6 @@ def build_environment(visualizer=False):
     # Create environment modules
     modules = [
         {
-            "type" : "visualizer",
-            "layers" : [
-                { "structure" : "oculomotor", "layer" : "vision" },
-                { "structure" : "oculomotor", "layer" : "sc_exc" },
-                { "structure" : "oculomotor", "layer" : "sc_inh" }
-            ]
-        },
-        {
             "type" : "gaussian_random_input",
             "rate" : "200",
             "std dev" : "10",
@@ -242,6 +234,15 @@ def build_environment(visualizer=False):
             ]
         }
     ]
+    if visualizer:
+        modules.append({
+            "type" : "visualizer",
+            "layers" : [
+                { "structure" : "oculomotor", "layer" : "vision" },
+                { "structure" : "oculomotor", "layer" : "sc_exc" },
+                { "structure" : "oculomotor", "layer" : "sc_inh" }
+            ]
+        })
 
     return Environment({"modules" : modules})
 

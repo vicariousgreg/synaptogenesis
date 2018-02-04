@@ -4,8 +4,10 @@ build_flag=serial
 gui_flag=
 main_flag=
 debug_flag=
+jobs=
+jobs_flag=
 
-while getopts "pnmdch" OPTION
+while getopts "pnmdcjh" OPTION
 do
 	case $OPTION in
 		p)
@@ -25,6 +27,30 @@ do
       echo
       make clean
 			;;
+		j)
+      eval numjobs=\$$OPTIND
+
+      if [ "$numjobs" == '' ]; then
+        echo "error: build jobs must be a positive integer"
+        exit 1
+			fi
+
+			re='^[0-9]+$'
+			if ! [[ $numjobs =~ $re ]] ; then
+        echo "error: build jobs must be a positive integer"
+        exit 1
+      fi
+
+			if test $numjobs -gt 0; then
+				jobs=$numjobs
+				jobs_flag="JOBS=$numjobs"
+			else
+        echo "error: build jobs must be a positive integer"
+				exit 1
+			fi
+
+      shift
+			;;
 		\?|h)
 			echo Builds and installs synaptogenesis
 			echo "  usage: gen.sh [-p] [-n] [-d] [-c]"
@@ -33,6 +59,7 @@ do
 			echo "    -m builds C++ main executable"
 			echo "    -d builds with debug flags"
 			echo "    -c cleans the build first"
+			echo "    -j sets the number of build jobs"
 			exit
 			;;
 	esac
@@ -63,12 +90,20 @@ if [ "$debug_flag" == '' ]; then
 else
 	echo "  ... with debugging"
 fi
+
+if [ "$jobs" != '' ]; then
+	echo "  ... with" $jobs "jobs"
+fi
 echo ===========================
 
 echo
 echo
 
-make $build_flag $gui_flag $main_flag $debug_flag
+if ! make $build_flag $gui_flag $main_flag $debug_flag $jobs_flag ; then
+  echo
+  echo "Failed to build!"
+  exit 1
+fi
 
 echo
 echo
