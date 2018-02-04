@@ -1,7 +1,11 @@
-from sys import path
-from os import system
-directories = [p for p in path if 'site-packages' in p]
-if len(directories) == 0:
-  print('Could not find python packages directory!')
-  exit(1)
-system('cp lib/syngen.py ' + directories[0])
+from os import system, path
+from site import getusersitepackages
+
+d = getusersitepackages()
+
+if not path.exists(d):
+    print('mkdir -p ' + d)
+    system('mkdir -p ' + d)
+
+print('cp lib/syngen.py ' + d)
+system('cp lib/syngen.py ' + d)
