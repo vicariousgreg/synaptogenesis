@@ -111,4 +111,4 @@ echo
 echo ===========================
 echo Installing \(requires root\) ...
 echo ===========================
-sudo make install
+make install
