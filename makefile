@@ -69,8 +69,8 @@ endif
 all: serial
 
 install: 
-	sudo cp $(LIBRARY_DIR)/$(LIBRARY) /usr/lib/
 	python install_python.py
+	sudo cp $(LIBRARY_DIR)/$(LIBRARY) /usr/lib/
 
 #---------------------------------------------------------------------------------
 #  LIBS BUILDING

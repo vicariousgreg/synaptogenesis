@@ -1,8 +1,7 @@
 from syngen import Network, Environment, create_callback, FloatArray
 from ctypes import cast, POINTER, c_float
 
-data_path = "/HDD/datasets/iris/"
-# data_path = "./resources"
+data_path = "./resources/iris/"
 
 # Create test callback
 def callback(ID, size, ptr):
@@ -111,9 +110,9 @@ if (train):
                                   "verbose" : "true"}))
 
     # Save the state and load it back up
-    network.save_state("iris.bin")
+    network.save_state("states/iris.bin")
 else:
-    network.load_state("iris.bin")
+    network.load_state("states/iris.bin")
 
 # Retrieve main weight matrix
 matrix = network.get_weight_matrix("main matrix")
