@@ -8,9 +8,27 @@
 			"from layer": "vision",
 			"plastic": "false",
 			"arborized config": {
-				"wrap": "true",
+				"wrap": "false",
 				"stride": "1",
-				"field size": "15" 
+				"field size": "31" 
+			},
+			"weight config": {
+				"type": "flat",
+				"weight": "0.1" 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_out_exc",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "sc_exc",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "10",
+				"field size": "10",
+				"offset": "0" 
 			},
 			"weight config": {
 				"type": "flat",
@@ -25,15 +43,15 @@
 			"from layer": "sc_exc",
 			"plastic": "false",
 			"arborized config": {
-				"wrap": "true",
+				"wrap": "false",
 				"stride": "1",
-				"field size": "7" 
+				"field size": "31" 
 			},
 			"weight config": {
-				"std dev": "0.025",
+				"std dev": "0.01",
 				"type": "gaussian",
-				"fraction": "0.25",
-				"mean": "0.1",
+				"fraction": "1",
+				"mean": "0.05",
 				"circular mask": [
 					{
 					} 
@@ -48,18 +66,18 @@
 			"from layer": "sc_exc",
 			"plastic": "false",
 			"arborized config": {
-				"wrap": "true",
+				"wrap": "false",
 				"stride": "2",
-				"field size": "63" 
+				"field size": "123" 
 			},
 			"weight config": {
-				"std dev": "0.025",
+				"std dev": "0.005",
 				"type": "gaussian",
-				"fraction": "0.25",
-				"mean": "0.1",
+				"fraction": "1",
+				"mean": "0.025",
 				"circular mask": [
 					{
-						"diameter": "7",
+						"diameter": "31",
 						"invert": "true" 
 					},
 					{
@@ -75,16 +93,86 @@
 			"from layer": "sc_inh",
 			"plastic": "false",
 			"arborized config": {
-				"wrap": "true",
+				"wrap": "false",
 				"stride": "2",
-				"field size": "41" 
+				"field size": "83" 
 			},
 			"weight config": {
 				"circular mask": "None",
-				"std dev": "0.025",
+				"std dev": "0.005",
 				"type": "gaussian",
-				"fraction": "0.25",
-				"mean": "0.1" 
+				"fraction": "1",
+				"mean": "0.025" 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_out_exc",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "sc_out_exc",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "1",
+				"field size": "3" 
+			},
+			"weight config": {
+				"std dev": "0.01",
+				"type": "gaussian",
+				"fraction": "1",
+				"mean": "0.05",
+				"circular mask": [
+					{
+					} 
+				] 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_out_inh",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "sc_out_exc",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "2",
+				"field size": "11" 
+			},
+			"weight config": {
+				"std dev": "0.01",
+				"type": "gaussian",
+				"fraction": "1",
+				"mean": "0.05",
+				"circular mask": [
+					{
+						"diameter": "3",
+						"invert": "true" 
+					},
+					{
+					} 
+				] 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_out_exc",
+			"opcode": "sub",
+			"type": "divergent",
+			"from layer": "sc_out_inh",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "2",
+				"field size": "9" 
+			},
+			"weight config": {
+				"circular mask": "None",
+				"std dev": "0.01",
+				"type": "gaussian",
+				"fraction": "1",
+				"mean": "0.05" 
 			} 
 		} 
 	],
@@ -100,26 +188,54 @@
 					"neural model": "oscillator" 
 				},
 				{
-					"tau": "0.2",
+					"tau": "0.05",
 					"rows": "200",
 					"name": "sc_exc",
 					"neural model": "oscillator",
-					"decay": "0.1",
+					"decay": "0.02",
 					"columns": "200",
 					"noise config": {
-						"rate": "10",
+						"rate": "1",
 						"random": "false",
 						"type": "poisson",
-						"value": "2.5" 
+						"value": "10.0" 
+					} 
+				},
+				{
+					"tau": "0.1",
+					"rows": "100",
+					"name": "sc_inh",
+					"neural model": "oscillator",
+					"decay": "0.05",
+					"columns": "100",
+					"noise config": {
+						"rate": "0",
+						"random": "false",
+						"type": "poisson",
+						"value": "5.0" 
+					} 
+				},
+				{
+					"tau": "0.1",
+					"rows": "20",
+					"name": "sc_out_exc",
+					"neural model": "oscillator",
+					"decay": "0.05",
+					"columns": "20",
+					"noise config": {
+						"rate": "1",
+						"random": "false",
+						"type": "poisson",
+						"value": "5.0" 
 					} 
 				},
 				{
 					"tau": "0.2",
-					"rows": "100",
-					"name": "sc_inh",
+					"rows": "10",
+					"name": "sc_out_inh",
 					"neural model": "oscillator",
 					"decay": "0.1",
-					"columns": "100",
+					"columns": "10",
 					"noise config": {
 						"rate": "0",
 						"random": "false",

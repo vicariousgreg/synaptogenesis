@@ -135,19 +135,22 @@ HeatmapWindowImpl::HeatmapWindowImpl(PropertyConfig *config)
         : VisualizerWindowImpl(config),
           iterations(0),
           integration_window(config->get_int("window", 1000)),
-          linear(config->get_bool("linear", false)) {
+          linear(config->get_bool("linear", false)),
+          stats(config->get_bool("stats", true)) {
     if (integration_window < 1)
         LOG_ERROR("Invalid integrationwindow in HeatmapModule: "
             + std::to_string(integration_window));
 
-    label = new Gtk::Label();
-    label->override_color(Gdk::RGBA("White"));
-    label->override_font(Pango::FontDescription("monospace"));
-    this->grid->attach_next_to(
-        *Gtk::manage(label),
-        //Gtk::PositionType::POS_BOTTOM,
-        Gtk::PositionType::POS_RIGHT,
-        1, 1);
+    if (stats) {
+        label = new Gtk::Label();
+        label->override_color(Gdk::RGBA("White"));
+        label->override_font(Pango::FontDescription("monospace"));
+        this->grid->attach_next_to(
+            *Gtk::manage(label),
+            //Gtk::PositionType::POS_BOTTOM,
+            Gtk::PositionType::POS_RIGHT,
+            1, 1);
+    }
 }
 
 HeatmapWindowImpl::~HeatmapWindowImpl() {
@@ -156,6 +159,8 @@ HeatmapWindowImpl::~HeatmapWindowImpl() {
 
 void HeatmapWindowImpl::update() {
     VisualizerWindowImpl::update();
+    if (not stats) return;
+
     if (iterations % integration_window == (integration_window-1)) {
         std::string text;
         for (auto layer : layers) {

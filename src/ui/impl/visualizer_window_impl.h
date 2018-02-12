@@ -47,6 +47,7 @@ class HeatmapWindowImpl : public VisualizerWindowImpl {
         int iterations;
         int integration_window;
         bool linear;
+        bool stats;
         std::map<size_t, float*> output_count_map;
         Gtk::Label *label;
 };

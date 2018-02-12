@@ -1,6 +1,21 @@
 {
 	"modules": [
 		{
+			"normalize": "true",
+			"rate": "1000",
+			"peaks": "100",
+			"std dev": "5",
+			"random": "true",
+			"type": "gaussian_random_input",
+			"value": "0.1",
+			"layers": [
+				{
+					"layer": "vision",
+					"structure": "oculomotor" 
+				} 
+			] 
+		},
+		{
 			"type": "visualizer",
 			"layers": [
 				{
@@ -14,20 +29,40 @@
 				{
 					"layer": "sc_inh",
 					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_out_exc",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_out_inh",
+					"structure": "oculomotor" 
 				} 
 			] 
 		},
 		{
-			"normalize": "true",
-			"rate": "200",
-			"peaks": "3",
-			"std dev": "10",
-			"random": "true",
-			"type": "gaussian_random_input",
-			"value": "0.1",
+			"window": "1000",
+			"type": "heatmap",
+			"linear": "true",
 			"layers": [
 				{
 					"layer": "vision",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_exc",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_inh",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_out_exc",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "sc_out_inh",
 					"structure": "oculomotor" 
 				} 
 			] 

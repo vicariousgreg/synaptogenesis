@@ -1,82 +1,60 @@
 from syngen import Network, Environment
 from syngen import get_gpus, get_cpu
 from syngen import set_suppress_output, set_warnings, set_debug
-from math import exp
 
 from os import path
 import sys
 import argparse
 
-def gaussian_weight_string(rows, cols, peak, sig, norm=False):
-    inv_sqrt_2pi = 0.3989422804014327
+def build_exc_inh_pair(
+        exc_name,
+        inh_name,
+        rows,
+        cols,
 
-    row_center = rows / 2
-    col_center = cols / 2
-    peak_coeff = peak * (1.0 if norm else inv_sqrt_2pi / sig)
-    gauss = []
+        half_inh = True,
+        mask = True,
 
-    for row in xrange(rows):
-        for col in xrange(cols):
-            dist = ((row - row_center) ** 2) + ((col - col_center) ** 2) ** 0.5
-            a = dist / sig
-            gauss.append("%.6f" % (peak_coeff * exp(-0.5 * a * a)))
-    return " ".join(gauss)
+        exc_tau = 0.05,
+        inh_tau = 0.05,
 
-def build_network(dim=200):
-    # Create main structure (parallel engine)
-    structure = {"name" : "oculomotor", "type" : "parallel"}
+        exc_decay = 0.02,
+        inh_decay = 0.02,
 
-    half_inh = True
-    mask = True
+        exc_noise_rate = 1,
+        inh_noise_rate = 0,
+        exc_noise_random = "false",
+        inh_noise_random = "false",
 
-    exc_tau = 0.2
-    inh_tau = 0.2
+        exc_exc_rf = 31,
+        exc_inh_rf = 123,
+        inh_exc_rf = 83,
+        inh_inh_rf = 63,
 
-    exc_decay = 0.1
-    inh_decay = 0.1
+        mask_rf = 31,
+
+        exc_exc_fraction = 1,
+        exc_inh_fraction = 1,
+        inh_exc_fraction = 1,
+        inh_inh_fraction = 1,
+
+        exc_exc_mean = 0.05,
+        exc_inh_mean = 0.025,
+        inh_exc_mean = 0.025,
+        inh_inh_mean = 0.025,
+
+        exc_exc_std_dev = 0.01,
+        exc_inh_std_dev = 0.005,
+        inh_exc_std_dev = 0.005,
+        inh_inh_std_dev = 0.005):
 
     exc_noise_strength = 0.5 / exc_tau
-    exc_noise_rate = 10
     inh_noise_strength = 0.5 / inh_tau
-    inh_noise_rate = 0
-    exc_noise_random = "false"
-    inh_noise_random = "false"
-
-    receptive_field = 15
-
-    exc_exc_rf = 7
-    exc_inh_rf = 63
-    inh_exc_rf = 41
-    inh_inh_rf = 31
-
-    mask_rf = 7
-
-    exc_exc_fraction = 0.25
-    exc_inh_fraction = 0.25
-    inh_exc_fraction = 0.25
-    inh_inh_fraction = 0.25
-
-    exc_exc_mean = 0.1
-    exc_inh_mean = 0.1
-    inh_exc_mean = 0.1
-    inh_inh_mean = 0.1
-
-    exc_exc_std_dev = 0.025
-    exc_inh_std_dev = 0.025
-    inh_exc_std_dev = 0.025
-    inh_inh_std_dev = 0.025
-
-    # Add layers
-    vision_layer = {
-        "name" : "vision",
+    exc = {
+        "name" : exc_name,
         "neural model" : "oscillator",
-        "rows" : dim,
-        "columns" : dim}
-    sc_exc = {
-        "name" : "sc_exc",
-        "neural model" : "oscillator",
-        "rows" : dim,
-        "columns" : dim,
+        "rows" : rows,
+        "columns" : cols,
         "tau" : exc_tau,
         "decay" : exc_decay,
         "noise config" : {
@@ -85,11 +63,11 @@ def build_network(dim=200):
             "rate" : exc_noise_rate,
             "random" : exc_noise_random
         }}
-    sc_inh = {
-        "name" : "sc_inh",
+    inh = {
+        "name" : inh_name,
         "neural model" : "oscillator",
-        "rows" : dim/2 if half_inh else dim,
-        "columns" : dim/2 if half_inh else dim,
+        "rows" : rows/2 if half_inh else rows,
+        "columns" : cols/2 if half_inh else cols,
         "tau" : inh_tau,
         "decay" : inh_decay,
         "noise config" : {
@@ -99,33 +77,10 @@ def build_network(dim=200):
             "random" : inh_noise_random
         }}
 
-    # Add layers to structure
-    structure["layers"] = [vision_layer, sc_exc, sc_inh]
-
-    # Create connections
     connections = [
         {
-            "from layer" : "vision",
-            "to layer" : "sc_exc",
-            "type" : "convergent",
-            "convolutional" : "true",
-            "opcode" : "add",
-            "plastic" : "false",
-            "weight config" : {
-                "type" : "flat",
-                "weight" : 0.1,
-    #            "weight string" : gaussian_weight_string(
-    #                receptive_field, receptive_field, 3, 3, False)
-            },
-            "arborized config" : {
-                "field size" : receptive_field,
-                "stride" : 1,
-                "wrap" : "true"
-            }
-        },
-        {
-            "from layer" : "sc_exc",
-            "to layer" : "sc_exc",
+            "from layer" : exc_name,
+            "to layer" : exc_name,
             "type" : "convergent",
             "convolutional" : "true",
             "opcode" : "add",
@@ -140,12 +95,12 @@ def build_network(dim=200):
             "arborized config" : {
                 "field size" : exc_exc_rf,
                 "stride" : 1,
-                "wrap" : "true"
+                "wrap" : "false"
             }
         },
         {
-            "from layer" : "sc_exc",
-            "to layer" : "sc_inh",
+            "from layer" : exc_name,
+            "to layer" : inh_name,
             "type" : "convergent",
             "convolutional" : "true",
             "opcode" : "add",
@@ -166,12 +121,12 @@ def build_network(dim=200):
             "arborized config" : {
                 "field size" : exc_inh_rf,
                 "stride" : 2 if half_inh else 1,
-                "wrap" : "true"
+                "wrap" : "false"
             }
         },
         {
-            "from layer" : "sc_inh",
-            "to layer" : "sc_exc",
+            "from layer" : inh_name,
+            "to layer" : exc_name,
             "type" : "divergent" if half_inh else "convergent",
             "convolutional" : "true",
             "opcode" : "sub",
@@ -186,12 +141,12 @@ def build_network(dim=200):
             "arborized config" : {
                 "field size" : inh_exc_rf,
                 "stride" : 2 if half_inh else 1,
-                "wrap" : "true"
+                "wrap" : "false"
             }
         },
 #        {
-#            "from layer" : "sc_inh",
-#            "to layer" : "sc_inh",
+#            "from layer" : inh_name,
+#            "to layer" : inh_name,
 #            "type" : "convergent",
 #            "convolutional" : "true",
 #            "opcode" : "sub",
@@ -206,10 +161,147 @@ def build_network(dim=200):
 #            "arborized config" : {
 #                "field size" : inh_inh_rf,
 #                "stride" : 1,
-#                "wrap" : "true"
+#                "wrap" : "false"
 #            }
 #        },
     ]
+
+    return [exc, inh], connections
+
+
+def build_network(dim=200):
+    # Create main structure (parallel engine)
+    structure = {"name" : "oculomotor", "type" : "parallel"}
+
+    # Add retinal layer
+    vision_layer = {
+        "name" : "vision",
+        "neural model" : "oscillator",
+        "rows" : dim,
+        "columns" : dim}
+
+    sc_layers, sc_conns = build_exc_inh_pair(
+        "sc_exc", "sc_inh",
+        dim, dim,
+        half_inh = True,
+        mask = True,
+
+        exc_tau = 0.05,
+        inh_tau = 0.1,
+
+        exc_decay = 0.02,
+        inh_decay = 0.05,
+
+        exc_noise_rate = 1,
+        inh_noise_rate = 0,
+        exc_noise_random = "false",
+        inh_noise_random = "false",
+
+        exc_exc_rf = 31,
+        exc_inh_rf = 123,
+        inh_exc_rf = 83,
+        inh_inh_rf = 63,
+
+        mask_rf = 31,
+
+        exc_exc_fraction = 1,
+        exc_inh_fraction = 1,
+        inh_exc_fraction = 1,
+        inh_inh_fraction = 1,
+
+        exc_exc_mean = 0.05,
+        exc_inh_mean = 0.025,
+        inh_exc_mean = 0.025,
+        inh_inh_mean = 0.025,
+
+        exc_exc_std_dev = 0.01,
+        exc_inh_std_dev = 0.005,
+        inh_exc_std_dev = 0.005,
+        inh_inh_std_dev = 0.005)
+
+    scale = 20
+    sc_out_layers, sc_out_conns = build_exc_inh_pair(
+        "sc_out_exc", "sc_out_inh",
+        scale, scale,
+        half_inh = True,
+        mask = True,
+
+        exc_tau = 0.1,
+        inh_tau = 0.2,
+
+        exc_decay = 0.05,
+        inh_decay = 0.1,
+
+        exc_noise_rate = 1,
+        inh_noise_rate = 0,
+        exc_noise_random = "false",
+        inh_noise_random = "false",
+
+        exc_exc_rf = 3,
+        exc_inh_rf = 11,
+        inh_exc_rf = 9,
+        inh_inh_rf = 7,
+
+        mask_rf = 3,
+
+        exc_exc_fraction = 1,
+        exc_inh_fraction = 1,
+        inh_exc_fraction = 1,
+        inh_inh_fraction = 1,
+
+        exc_exc_mean = 0.05,
+        exc_inh_mean = 0.05,
+        inh_exc_mean = 0.05,
+        inh_inh_mean = 0.05,
+
+        exc_exc_std_dev = 0.01,
+        exc_inh_std_dev = 0.01,
+        inh_exc_std_dev = 0.01,
+        inh_inh_std_dev = 0.01)
+
+
+    # Add layers to structure
+    structure["layers"] = [vision_layer] + sc_layers + sc_out_layers
+
+    # Create connections
+    receptive_field = 31
+    connections = [
+        {
+            "from layer" : "vision",
+            "to layer" : "sc_exc",
+            "type" : "convergent",
+            "convolutional" : "true",
+            "opcode" : "add",
+            "plastic" : "false",
+            "weight config" : {
+                "type" : "flat",
+                "weight" : 0.1,
+            },
+            "arborized config" : {
+                "field size" : receptive_field,
+                "stride" : 1,
+                "wrap" : "false"
+            }
+        },
+        {
+            "from layer" : "sc_exc",
+            "to layer" : "sc_out_exc",
+            "type" : "convergent",
+            "convolutional" : "true",
+            "opcode" : "add",
+            "plastic" : "false",
+            "weight config" : {
+                "type" : "flat",
+                "weight" : 0.1,
+            },
+            "arborized config" : {
+                "field size" : dim/scale,
+                "stride" : dim/scale,
+                "wrap" : "false",
+                "offset" : 0
+            }
+        }] + sc_conns + sc_out_conns
+
     # Create network
     return Network(
         {"structures" : [structure],
@@ -220,11 +312,11 @@ def build_environment(visualizer=False):
     modules = [
         {
             "type" : "gaussian_random_input",
-            "rate" : "200",
-            "std dev" : "10",
+            "rate" : "1000",
+            "std dev" : "5",
             "value" : "0.1",
             "normalize" : "true",
-            "peaks" : "3",
+            "peaks" : "100",
             "random" : "true",
             "layers" : [
                 {
@@ -240,7 +332,21 @@ def build_environment(visualizer=False):
             "layers" : [
                 { "structure" : "oculomotor", "layer" : "vision" },
                 { "structure" : "oculomotor", "layer" : "sc_exc" },
-                { "structure" : "oculomotor", "layer" : "sc_inh" }
+                { "structure" : "oculomotor", "layer" : "sc_inh" },
+                { "structure" : "oculomotor", "layer" : "sc_out_exc" },
+                { "structure" : "oculomotor", "layer" : "sc_out_inh" }
+            ]
+        })
+        modules.append({
+            "type" : "heatmap",
+            "window" : "1000",
+            "linear" : "true",
+            "layers" : [
+                { "structure" : "oculomotor", "layer" : "vision" },
+                { "structure" : "oculomotor", "layer" : "sc_exc" },
+                { "structure" : "oculomotor", "layer" : "sc_inh" },
+                { "structure" : "oculomotor", "layer" : "sc_out_exc" },
+                { "structure" : "oculomotor", "layer" : "sc_out_inh" }
             ]
         })
 
