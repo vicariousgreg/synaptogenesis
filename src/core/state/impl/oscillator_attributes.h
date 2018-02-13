@@ -18,6 +18,9 @@ class OscillatorAttributes : public Attributes {
         // Internal neural state
         Pointer<float> state;
 
+        // Baseline tonic activity
+        float tonic;
+
         // Time constant (scales synaptic input)
         float tau;
 

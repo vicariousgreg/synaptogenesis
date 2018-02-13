@@ -4,13 +4,28 @@
 			"normalize": "true",
 			"rate": "1000",
 			"peaks": "100",
-			"std dev": "5",
+			"std dev": "2",
 			"random": "true",
 			"type": "gaussian_random_input",
 			"value": "0.1",
 			"layers": [
 				{
 					"layer": "vision",
+					"structure": "oculomotor" 
+				} 
+			] 
+		},
+		{
+			"normalize": "true",
+			"rate": "1000",
+			"peaks": "1",
+			"std dev": "5",
+			"random": "false",
+			"type": "gaussian_random_input",
+			"value": "0.5",
+			"layers": [
+				{
+					"layer": "gating",
 					"structure": "oculomotor" 
 				} 
 			] 
@@ -37,10 +52,15 @@
 				{
 					"layer": "sc_out_inh",
 					"structure": "oculomotor" 
+				},
+				{
+					"layer": "gating",
+					"structure": "oculomotor" 
 				} 
 			] 
 		},
 		{
+			"stats": "false",
 			"window": "1000",
 			"type": "heatmap",
 			"linear": "true",
@@ -63,6 +83,10 @@
 				},
 				{
 					"layer": "sc_out_inh",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "gating",
 					"structure": "oculomotor" 
 				} 
 			] 

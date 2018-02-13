@@ -9,8 +9,8 @@ import argparse
 def build_exc_inh_pair(
         exc_name,
         inh_name,
-        rows,
-        cols,
+        rows = 200,
+        cols = 200,
 
         half_inh = True,
         mask = True,
@@ -22,7 +22,7 @@ def build_exc_inh_pair(
         inh_decay = 0.02,
 
         exc_noise_rate = 1,
-        inh_noise_rate = 0,
+        inh_noise_rate = 1,
         exc_noise_random = "false",
         inh_noise_random = "false",
 
@@ -169,7 +169,9 @@ def build_exc_inh_pair(
     return [exc, inh], connections
 
 
-def build_network(dim=200):
+def build_network(rows=200, cols=200):
+    dim = min(rows, cols)
+
     # Create main structure (parallel engine)
     structure = {"name" : "oculomotor", "type" : "parallel"}
 
@@ -177,12 +179,12 @@ def build_network(dim=200):
     vision_layer = {
         "name" : "vision",
         "neural model" : "oscillator",
-        "rows" : dim,
-        "columns" : dim}
+        "rows" : rows,
+        "columns" : cols}
 
     sc_layers, sc_conns = build_exc_inh_pair(
         "sc_exc", "sc_inh",
-        dim, dim,
+        rows, cols,
         half_inh = True,
         mask = True,
 
@@ -193,16 +195,16 @@ def build_network(dim=200):
         inh_decay = 0.05,
 
         exc_noise_rate = 1,
-        inh_noise_rate = 0,
+        inh_noise_rate = 1,
         exc_noise_random = "false",
         inh_noise_random = "false",
 
-        exc_exc_rf = 31,
-        exc_inh_rf = 123,
-        inh_exc_rf = 83,
-        inh_inh_rf = 63,
+        exc_exc_rf = dim/7,
+        exc_inh_rf = dim/2,
+        inh_exc_rf = dim/2.5,
+        inh_inh_rf = dim/3.5,
 
-        mask_rf = 31,
+        mask_rf = dim/7,
 
         exc_exc_fraction = 1,
         exc_inh_fraction = 1,
@@ -219,49 +221,61 @@ def build_network(dim=200):
         inh_exc_std_dev = 0.005,
         inh_inh_std_dev = 0.005)
 
-    scale = 20
+    scale = 5
+    motor_rows = int(rows/scale)
+    motor_cols = int(cols/scale)
+    motor_dim = min(motor_rows, motor_cols)
     sc_out_layers, sc_out_conns = build_exc_inh_pair(
         "sc_out_exc", "sc_out_inh",
-        scale, scale,
+        motor_rows, motor_cols,
         half_inh = True,
         mask = True,
 
-        exc_tau = 0.1,
-        inh_tau = 0.2,
+        exc_tau = 0.01,
+        inh_tau = 0.1,
 
-        exc_decay = 0.05,
-        inh_decay = 0.1,
+        exc_decay = 0.02,
+        inh_decay = 0.02,
 
-        exc_noise_rate = 1,
+        exc_noise_rate = 0,
         inh_noise_rate = 0,
         exc_noise_random = "false",
         inh_noise_random = "false",
 
-        exc_exc_rf = 3,
-        exc_inh_rf = 11,
-        inh_exc_rf = 9,
-        inh_inh_rf = 7,
+        exc_exc_rf = motor_dim/7,
+        exc_inh_rf = motor_dim/2,
+        inh_exc_rf = motor_dim/2.5,
+        inh_inh_rf = motor_dim/3.5,
 
-        mask_rf = 3,
+        mask_rf = motor_dim/7,
 
         exc_exc_fraction = 1,
         exc_inh_fraction = 1,
         inh_exc_fraction = 1,
         inh_inh_fraction = 1,
 
-        exc_exc_mean = 0.05,
+        exc_exc_mean = 0.1,
         exc_inh_mean = 0.05,
         inh_exc_mean = 0.05,
         inh_inh_mean = 0.05,
 
-        exc_exc_std_dev = 0.01,
+        exc_exc_std_dev = 0.02,
         exc_inh_std_dev = 0.01,
         inh_exc_std_dev = 0.01,
         inh_inh_std_dev = 0.01)
 
+    gating_layer = {
+        "name" : "gating",
+        "neural model" : "oscillator",
+        "rows" : motor_rows,
+        "columns" : motor_cols,
+        "tau" : 0.5,
+        "decay" : 0.5,
+        "tonic" : 0.0}
 
     # Add layers to structure
-    structure["layers"] = [vision_layer] + sc_layers + sc_out_layers
+    structure["layers"] = [vision_layer] + \
+        sc_layers + sc_out_layers + [gating_layer]
 
     # Create connections
     receptive_field = 31
@@ -295,25 +309,38 @@ def build_network(dim=200):
                 "weight" : 0.1,
             },
             "arborized config" : {
-                "field size" : dim/scale,
-                "stride" : dim/scale,
+                "field size" : rows/motor_rows,
+                "stride" : cols/motor_cols,
                 "wrap" : "false",
                 "offset" : 0
             }
-        }] + sc_conns + sc_out_conns
+        },
+        {
+            "from layer" : "gating",
+            "to layer" : "sc_out_exc",
+            "type" : "one to one",
+            "opcode" : "mult",
+            "plastic" : "false",
+            "weight config" : {
+                "type" : "flat",
+                "weight" : 1.0,
+            }
+        }
+        ] + sc_conns + sc_out_conns
 
     # Create network
     return Network(
         {"structures" : [structure],
          "connections" : connections})
 
-def build_environment(visualizer=False):
+def build_environment(rows=200, cols=200, visualizer=False):
+    dim = min(rows, cols)
     # Create environment modules
     modules = [
         {
             "type" : "gaussian_random_input",
             "rate" : "1000",
-            "std dev" : "5",
+            "std dev" : dim/40,
             "value" : "0.1",
             "normalize" : "true",
             "peaks" : "100",
@@ -322,6 +349,21 @@ def build_environment(visualizer=False):
                 {
                     "structure" : "oculomotor",
                     "layer" : "vision"
+                }
+            ]
+        },
+        {
+            "type" : "gaussian_random_input",
+            "rate" : "1000",
+            "std dev" : dim/20,
+            "value" : "0.5",
+            "normalize" : "true",
+            "peaks" : "1",
+            "random" : "false",
+            "layers" : [
+                {
+                    "structure" : "oculomotor",
+                    "layer" : "gating"
                 }
             ]
         }
@@ -334,11 +376,13 @@ def build_environment(visualizer=False):
                 { "structure" : "oculomotor", "layer" : "sc_exc" },
                 { "structure" : "oculomotor", "layer" : "sc_inh" },
                 { "structure" : "oculomotor", "layer" : "sc_out_exc" },
-                { "structure" : "oculomotor", "layer" : "sc_out_inh" }
+                { "structure" : "oculomotor", "layer" : "sc_out_inh" },
+                { "structure" : "oculomotor", "layer" : "gating" },
             ]
         })
         modules.append({
             "type" : "heatmap",
+            "stats" : "false",
             "window" : "1000",
             "linear" : "true",
             "layers" : [
@@ -346,7 +390,8 @@ def build_environment(visualizer=False):
                 { "structure" : "oculomotor", "layer" : "sc_exc" },
                 { "structure" : "oculomotor", "layer" : "sc_inh" },
                 { "structure" : "oculomotor", "layer" : "sc_out_exc" },
-                { "structure" : "oculomotor", "layer" : "sc_out_inh" }
+                { "structure" : "oculomotor", "layer" : "sc_out_inh" },
+                { "structure" : "oculomotor", "layer" : "gating" },
             ]
         })
 
@@ -354,10 +399,11 @@ def build_environment(visualizer=False):
 
 def main(infile=None, outfile=None, do_training=True,
         visualizer=False, device=None, rate=0, iterations=1000000):
-    dim = 200
+    rows = 100
+    cols = 200
 
-    network = build_network(dim)
-    env = build_environment(visualizer)
+    network = build_network(rows, cols)
+    env = build_environment(rows, cols, visualizer)
 
     network.save("networks/ocm.json")
     env.save("environments/ocm.json")

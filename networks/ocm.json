@@ -26,13 +26,24 @@
 			"plastic": "false",
 			"arborized config": {
 				"wrap": "false",
-				"stride": "10",
-				"field size": "10",
+				"stride": "5",
+				"field size": "5",
 				"offset": "0" 
 			},
 			"weight config": {
 				"type": "flat",
 				"weight": "0.1" 
+			} 
+		},
+		{
+			"to layer": "sc_out_exc",
+			"from layer": "gating",
+			"plastic": "false",
+			"opcode": "mult",
+			"type": "one to one",
+			"weight config": {
+				"type": "flat",
+				"weight": "1.0" 
 			} 
 		},
 		{
@@ -45,7 +56,7 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "1",
-				"field size": "31" 
+				"field size": "14" 
 			},
 			"weight config": {
 				"std dev": "0.01",
@@ -68,7 +79,7 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "2",
-				"field size": "123" 
+				"field size": "50" 
 			},
 			"weight config": {
 				"std dev": "0.005",
@@ -77,7 +88,7 @@
 				"mean": "0.025",
 				"circular mask": [
 					{
-						"diameter": "31",
+						"diameter": "14",
 						"invert": "true" 
 					},
 					{
@@ -95,7 +106,7 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "2",
-				"field size": "83" 
+				"field size": "40.0" 
 			},
 			"weight config": {
 				"circular mask": "None",
@@ -115,13 +126,13 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "1",
-				"field size": "3" 
+				"field size": "2" 
 			},
 			"weight config": {
-				"std dev": "0.01",
+				"std dev": "0.02",
 				"type": "gaussian",
 				"fraction": "1",
-				"mean": "0.05",
+				"mean": "0.1",
 				"circular mask": [
 					{
 					} 
@@ -138,7 +149,7 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "2",
-				"field size": "11" 
+				"field size": "10" 
 			},
 			"weight config": {
 				"std dev": "0.01",
@@ -147,7 +158,7 @@
 				"mean": "0.05",
 				"circular mask": [
 					{
-						"diameter": "3",
+						"diameter": "2",
 						"invert": "true" 
 					},
 					{
@@ -165,7 +176,7 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "2",
-				"field size": "9" 
+				"field size": "8.0" 
 			},
 			"weight config": {
 				"circular mask": "None",
@@ -183,13 +194,13 @@
 			"layers": [
 				{
 					"columns": "200",
-					"rows": "200",
+					"rows": "100",
 					"name": "vision",
 					"neural model": "oscillator" 
 				},
 				{
 					"tau": "0.05",
-					"rows": "200",
+					"rows": "100",
 					"name": "sc_exc",
 					"neural model": "oscillator",
 					"decay": "0.02",
@@ -203,25 +214,11 @@
 				},
 				{
 					"tau": "0.1",
-					"rows": "100",
+					"rows": "50",
 					"name": "sc_inh",
 					"neural model": "oscillator",
 					"decay": "0.05",
 					"columns": "100",
-					"noise config": {
-						"rate": "0",
-						"random": "false",
-						"type": "poisson",
-						"value": "5.0" 
-					} 
-				},
-				{
-					"tau": "0.1",
-					"rows": "20",
-					"name": "sc_out_exc",
-					"neural model": "oscillator",
-					"decay": "0.05",
-					"columns": "20",
 					"noise config": {
 						"rate": "1",
 						"random": "false",
@@ -230,18 +227,41 @@
 					} 
 				},
 				{
-					"tau": "0.2",
-					"rows": "10",
-					"name": "sc_out_inh",
+					"tau": "0.01",
+					"rows": "20",
+					"name": "sc_out_exc",
 					"neural model": "oscillator",
-					"decay": "0.1",
-					"columns": "10",
+					"decay": "0.02",
+					"columns": "40",
 					"noise config": {
 						"rate": "0",
 						"random": "false",
 						"type": "poisson",
-						"value": "2.5" 
+						"value": "50.0" 
 					} 
+				},
+				{
+					"tau": "0.1",
+					"rows": "10",
+					"name": "sc_out_inh",
+					"neural model": "oscillator",
+					"decay": "0.02",
+					"columns": "20",
+					"noise config": {
+						"rate": "0",
+						"random": "false",
+						"type": "poisson",
+						"value": "5.0" 
+					} 
+				},
+				{
+					"tau": "0.5",
+					"tonic": "0.0",
+					"rows": "20",
+					"name": "gating",
+					"neural model": "oscillator",
+					"decay": "0.5",
+					"columns": "40" 
 				} 
 			] 
 		} 

@@ -15,6 +15,7 @@ REGISTER_WEIGHT_MATRIX(OscillatorWeightMatrix, "oscillator")
 
 OscillatorAttributes::OscillatorAttributes(Layer *layer)
         : Attributes(layer, FLOAT) {
+    this->tonic = std::stof(layer->get_parameter("tonic", "0.0"));
     this->tau = std::stof(layer->get_parameter("tau", "0.1"));
     this->decay = std::stof(layer->get_parameter("decay", "0.1"));
 
@@ -44,6 +45,7 @@ bool OscillatorAttributes::check_compatibility(ClusterType cluster_type) {
 BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     // Cast the attributes pointer to the subclass type
     OscillatorAttributes *oscillator_att = (OscillatorAttributes*)att;
+    float tonic = oscillator_att->tonic;
     float tau = oscillator_att->tau;
     float decay = oscillator_att->decay;
     float* state = oscillator_att->state.get();
@@ -68,7 +70,7 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     // This is the appropriate index to use for the most recent output
     next_value = f_outputs[size * index + nid];
     float st = state[nid];
-    state[nid] = st = st + (tau * inputs[nid]) + (decay * -st);
+    state[nid] = st = st + (tau * inputs[nid]) + (decay * (tonic-st));
     f_outputs[size * index + nid] = MAX(0.0f, st);
 )
 
