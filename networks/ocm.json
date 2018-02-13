@@ -126,7 +126,7 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "1",
-				"field size": "2" 
+				"field size": "3" 
 			},
 			"weight config": {
 				"std dev": "0.02",
@@ -158,7 +158,7 @@
 				"mean": "0.05",
 				"circular mask": [
 					{
-						"diameter": "2",
+						"diameter": "3",
 						"invert": "true" 
 					},
 					{

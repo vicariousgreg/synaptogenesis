@@ -102,6 +102,10 @@ GaussianRandomInputModule::GaussianRandomInputModule(LayerList layers,
 
     this->rows = layers.at(0)->rows;
     this->columns = layers.at(0)->columns;
+    this->row_border = config->get_int("row border", 0);
+    this->column_border = config->get_int("column border", 0);
+    if (config->has("border"))
+        this->row_border = this->column_border = config->get_int("border", 0);
     float std_dev = config->get_float("std dev", 1.0);
     bool normalize = config->get_bool("normalize", true);
     this->num_peaks = config->get_int("peaks", 1);
@@ -152,6 +156,11 @@ void GaussianRandomInputModule::update() {
         // Randomly select gaussian center
         int row_offset = iRand(0, rows-1);
         int column_offset = iRand(0, columns-1);
+        while (row_offset < row_border or row_offset + row_border >= rows)
+            row_offset = iRand(0, rows-1);
+        while (column_offset < column_border
+                or column_offset + column_border >= columns)
+            column_offset = iRand(0, columns-1);
 
         if (random) {
             float peak = fRand(min_value, max_value);

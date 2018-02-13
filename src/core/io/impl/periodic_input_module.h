@@ -69,6 +69,7 @@ class GaussianRandomInputModule : public PeriodicInputModule {
 
         Pointer<float> gaussians;
         int rows, columns;
+        int row_border, column_border;
         int gauss_rows, gauss_columns;
         int num_peaks;
 

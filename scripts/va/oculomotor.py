@@ -169,7 +169,7 @@ def build_exc_inh_pair(
     return [exc, inh], connections
 
 
-def build_network(rows=200, cols=200):
+def build_network(rows=200, cols=200, scale=5):
     dim = min(rows, cols)
 
     # Create main structure (parallel engine)
@@ -221,7 +221,6 @@ def build_network(rows=200, cols=200):
         inh_exc_std_dev = 0.005,
         inh_inh_std_dev = 0.005)
 
-    scale = 5
     motor_rows = int(rows/scale)
     motor_cols = int(cols/scale)
     motor_dim = min(motor_rows, motor_cols)
@@ -242,12 +241,12 @@ def build_network(rows=200, cols=200):
         exc_noise_random = "false",
         inh_noise_random = "false",
 
-        exc_exc_rf = motor_dim/7,
+        exc_exc_rf = 3,
         exc_inh_rf = motor_dim/2,
         inh_exc_rf = motor_dim/2.5,
         inh_inh_rf = motor_dim/3.5,
 
-        mask_rf = motor_dim/7,
+        mask_rf = 3,
 
         exc_exc_fraction = 1,
         exc_inh_fraction = 1,
@@ -333,13 +332,16 @@ def build_network(rows=200, cols=200):
         {"structures" : [structure],
          "connections" : connections})
 
-def build_environment(rows=200, cols=200, visualizer=False):
+def build_environment(rows=200, cols=200, scale=5, visualizer=False):
     dim = min(rows, cols)
+    motor_dim = min(rows/scale, cols/scale)
+
     # Create environment modules
     modules = [
         {
             "type" : "gaussian_random_input",
             "rate" : "1000",
+            "border" : dim/10,
             "std dev" : dim/40,
             "value" : "0.1",
             "normalize" : "true",
@@ -355,7 +357,8 @@ def build_environment(rows=200, cols=200, visualizer=False):
         {
             "type" : "gaussian_random_input",
             "rate" : "1000",
-            "std dev" : dim/20,
+            "border" : motor_dim/10,
+            "std dev" : motor_dim/5,
             "value" : "0.5",
             "normalize" : "true",
             "peaks" : "1",
@@ -401,9 +404,10 @@ def main(infile=None, outfile=None, do_training=True,
         visualizer=False, device=None, rate=0, iterations=1000000):
     rows = 100
     cols = 200
+    scale = 5
 
-    network = build_network(rows, cols)
-    env = build_environment(rows, cols, visualizer)
+    network = build_network(rows, cols, scale)
+    env = build_environment(rows, cols, scale, visualizer)
 
     network.save("networks/ocm.json")
     env.save("environments/ocm.json")
