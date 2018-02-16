@@ -59,7 +59,7 @@ WeightMatrix* NeuralModelBank::build_weight_matrix(Connection *conn) {
         return get_instance()
             ->mat_build_pointers.at(neural_model)(conn);
     } catch (std::out_of_range) {
-        LOG_WARNING("Using default weight matrix for: " + neural_model + "!");
+        LOG_DEBUG("Using default weight matrix for: " + neural_model + "!");
 
         // Use default weight matrix if none specified
         return WeightMatrix::build(conn);

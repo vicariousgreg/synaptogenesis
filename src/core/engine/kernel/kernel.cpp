@@ -110,26 +110,26 @@ Kernel<Pointer<float>, int, float, float, bool, Pointer<float>> get_randomize_da
 
 /* Dendritic tree internal computation */
 void calc_internal_SERIAL(int size, Pointer<float> src_ptr,
-        Pointer<float> dst_ptr, bool clear=false) {
+        Pointer<float> dst_ptr, AGGREGATOR aggregate, bool clear=false) {
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();
     if (clear) {
         for (int index = 0 ; index < size ; ++index) {
-            dst[index] += src[index];
+            dst[index] = aggregate(dst[index], src[index]);
             src[index] = 0.0;
         }
     } else
         for (int index = 0 ; index < size ; ++index)
-            dst[index] += src[index];
+            dst[index] = aggregate(dst[index], src[index]);
 }
 #ifdef __CUDACC__
 GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
-        Pointer<float> dst_ptr, bool clear=false) {
+        Pointer<float> dst_ptr, AGGREGATOR aggregate, bool clear=false) {
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
-        dst[index] += src[index];
+        dst[index] = aggregate(dst[index], src[index]);
         if (clear) src[index] = 0.0;
     }
 }
@@ -137,8 +137,8 @@ GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
 GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
         Pointer<float> dst_ptr, bool clear=false) { }
 #endif
-Kernel<int, Pointer<float>, Pointer<float>, bool> get_calc_internal() {
-    return Kernel<int, Pointer<float>, Pointer<float>, bool>(
+Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR, bool> get_calc_internal() {
+    return Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR, bool>(
         calc_internal_SERIAL, calc_internal_PARALLEL);
 }
 

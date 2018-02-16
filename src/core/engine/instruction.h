@@ -294,6 +294,7 @@ class DendriticInstruction : public Instruction {
             DendriticNode *child, State *state, Stream *stream)
                 : Instruction(parent->to_layer, stream),
                   init(child->register_index != 0),
+                  aggregator(get_aggregator(child->opcode, stream->get_device_id())),
                   src(state->get_input(to_layer, child->register_index)),
                   dst(state->get_input(to_layer, parent->register_index)) { }
 
@@ -301,12 +302,13 @@ class DendriticInstruction : public Instruction {
             Instruction::wait_for_dependencies();
             get_calc_internal().run(
                 stream, blocks, threads,
-                to_layer->size, src, dst, init);
+                to_layer->size, src, dst, aggregator, init);
             Instruction::record_event();
         }
 
     protected:
         Pointer<float> src, dst;
+        AGGREGATOR aggregator;
         bool init;
 };
 

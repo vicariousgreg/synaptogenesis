@@ -28,6 +28,10 @@ CSVReaderModule::CSVReaderModule(LayerList layers, ModuleConfig *config)
     this->exposure = config->get_int("exposure", 1);
     this->epochs = config->get_int("epochs", 1);
 
+    LOG_DEBUG("Opening file: " + this->filename + " in layers:\n");
+    for (auto layer : layers)
+        LOG_DEBUG("  " + layer->str());
+
     // Check if file exists
     if (filename == "" or not std::ifstream(filename.c_str()).good())
         LOG_ERROR(

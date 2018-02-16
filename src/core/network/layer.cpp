@@ -140,7 +140,10 @@ void Layer::add_dendrites(std::string parent_name,
                 "Attempted to dendrite without name to layer!");
 
         bool second_order = dendrite->get_bool("second order", false);
-        auto child = parent->add_child(dendrite->get("name"), second_order);
+        auto child = parent->add_child(
+        dendrite->get("name"),
+            get_opcode(dendrite->get("opcode", "add")),
+            second_order);
 
         add_dendrites(child->name,
             dendrite->get_child_array("children"));

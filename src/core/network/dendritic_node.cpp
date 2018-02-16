@@ -10,13 +10,14 @@ DendriticNode::DendriticNode(Layer *to_layer)
               to_layer->structure->name + "/" + to_layer->name + "-0")),
           register_index(0),
           conn(nullptr),
+          opcode(ADD),
           second_order_conn(nullptr),
           second_order(false),
           name("root") { }
 
 /* Constructor for an internal node */
 DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
-    int register_index, std::string name, bool second_order)
+    int register_index, std::string name, Opcode opcode, bool second_order)
         : parent(parent),
           to_layer(to_layer),
           id(std::hash<std::string>()(
@@ -24,6 +25,7 @@ DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
               + std::to_string(to_layer->get_dendritic_nodes().size()))),
           register_index(register_index),
           conn(nullptr),
+          opcode(opcode),
           second_order_conn(nullptr),
           second_order(second_order),
           name(name) { }
@@ -38,6 +40,7 @@ DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
               + std::to_string(to_layer->get_dendritic_nodes().size()))),
           register_index(register_index),
           conn(conn),
+          opcode(ADD),
           second_order_conn(nullptr),
           second_order(false),
           name("Leaf dendrite: " + conn->str()) { }
@@ -66,7 +69,8 @@ Connection* DendriticNode::get_second_order_connection() const {
         return second_order_conn;
 }
 
-DendriticNode* DendriticNode::add_child(std::string name, bool second_order) {
+DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
+        bool second_order) {
     // Verify that this node is not a leaf or a second order node
     if (is_leaf())
         LOG_ERROR(
@@ -89,7 +93,8 @@ DendriticNode* DendriticNode::add_child(std::string name, bool second_order) {
     if (children.size() > 0) ++child_register;
 
     auto child =
-        new DendriticNode(this, to_layer, child_register, name, second_order);
+        new DendriticNode(this, to_layer, child_register,
+            name, opcode, second_order);
     children.push_back(child);
     return child;
 }
