@@ -90,6 +90,7 @@ DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
 
     // The child's register index is bumped up if it's not the first child
     int child_register = this->register_index;
+    if (this->name == "root") ++child_register;
     if (children.size() > 0) ++child_register;
 
     auto child =

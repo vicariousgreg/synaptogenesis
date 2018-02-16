@@ -18,7 +18,7 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
         if (not layer_config->has("id"))
             LOG_ERROR("Unspecified callback id for layer "
             + layer->str() + " in CallbackModule!");
-        ids[layer] = layer_config->get_int("arg", 0);
+        ids[layer] = layer_config->get_int("id", 0);
 
         if (layer_config->get_bool("input", false))
             set_io_type(layer, get_io_type(layer) | INPUT);

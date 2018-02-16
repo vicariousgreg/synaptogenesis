@@ -157,6 +157,10 @@ SubsetConfig::SubsetConfig(
 bool SubsetConfig::validate(Connection *conn) const {
     Layer *from_layer = conn->from_layer;
     Layer *to_layer = conn->to_layer;
+    LOG_DEBUG(
+        "Validating SubsetConfig: \n" +
+        from_layer->str() + " => " + to_layer->str() + "\n" +
+        this->str() + "\n");
     return
         from_row_end <= from_layer->rows
         and from_col_end <= from_layer->columns

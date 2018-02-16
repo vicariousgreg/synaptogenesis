@@ -187,5 +187,6 @@ std::string Connection::str() const {
         + from_layer->name
         + " (" + from_layer->structure->name + ") -> "
         + to_layer->name
-        + " (" + to_layer->structure->name + ") {Node: " + node->name + "}]";
+        + " (" + to_layer->structure->name + ") {Node: " + node->name + "} name="
+	+ this->name + "]";
 }
