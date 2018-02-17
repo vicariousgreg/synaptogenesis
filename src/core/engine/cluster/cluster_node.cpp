@@ -31,28 +31,11 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
             new ExpectedTransferInstruction(
                 to_layer, state, engine, compute_stream);
 
-    // Add noise / clear instruction
-    auto noise_config = to_layer->get_config()->get_child("noise config", nullptr);
-    if (noise_config != nullptr) {
-        auto type = noise_config->get("type", "normal");
-        if (type == "normal")
-            activate_instructions.push_back(
-                new NormalNoiseInstruction(
-                    to_layer, state, compute_stream,
-                    not engine->is_input(to_layer)));
-        else if (type == "poisson")
-            activate_instructions.push_back(
-                new PoissonNoiseInstruction(
-                    to_layer, state, compute_stream,
-                    not engine->is_input(to_layer)));
-        else
-            LOG_ERROR(
-                "Error building cluster node for " + layer->str() + ":\n"
-                "  Unrecognized noise type: " + type);
-    } else if (not this->is_input) {
-        activate_instructions.push_back(
-            new ClearInstruction(to_layer, state, compute_stream));
-    }
+    // Add init (noise / clear) instruction
+    this->init_instruction = get_initialize_instruction(
+        to_layer, state, compute_stream, this->is_input);
+    if (init_instruction != nullptr)
+        activate_instructions.push_back(init_instruction);
 
     // Add state instructions
     this->state_update_instruction =
@@ -204,6 +187,10 @@ const InstructionList& ClusterNode::get_activate_instructions() const {
 
 const InstructionList& ClusterNode::get_update_instructions() const {
     return update_instructions;
+}
+
+Instruction* ClusterNode::get_init_instruction() const {
+    return init_instruction;
 }
 
 Instruction* ClusterNode::get_input_instruction() const {

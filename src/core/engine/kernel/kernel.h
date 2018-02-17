@@ -89,9 +89,10 @@ class Kernel {
 };
 
 /* Sets input data (use val=0.0 for clear) */
-Kernel<float, Pointer<float>, int> get_set_data();
+Kernel<float, Pointer<float>, int, bool> get_set_data();
 
 /* Randomizes input data */
+Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_uniform();
 Kernel<Pointer<float>, int, float, float, bool> get_randomize_data_normal();
 Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>
     get_randomize_data_poisson();

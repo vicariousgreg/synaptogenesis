@@ -21,7 +21,11 @@ bias_layer = {
     "name" : "bias_layer",
     "neural model" : "relay",
     "rows" : 1,
-    "columns" : 1}
+    "columns" : 1,
+    "noise config" : {
+        "type" : "flat",
+        "val" : 1.0
+    }}
 
 # Add layers to structure
 structure["layers"] = [input_layer, output_layer, bias_layer]
@@ -84,16 +88,6 @@ modules = [
             }
         ]
     },
-    {
-        "type" : "periodic_input",
-        "value" : "1",
-        "layers" : [
-            {
-                "structure" : "mnist",
-                "layer" : "bias_layer"
-            }
-        ]
-    }
 ]
 
 # Create training environment
@@ -109,11 +103,15 @@ network = Network(
     {"structures" : [structure],
      "connections" : connections})
 
+# Get device
+gpus = get_gpus()
+device = get_gpus(gpus[-1]) if len(gpus) > 0 else get_cpu()
+
 train = True
 if (train):
     # Run training
     print(network.run(train_env, {"multithreaded" : "false",
-                                  "devices" : get_cpu(),
+                                  "devices" : device,
                                   "worker threads" : 0,
                                   "verbose" : "false"}))
 
@@ -127,7 +125,7 @@ matrix = network.get_weight_matrix("main matrix")
 
 # Run test
 print(network.run(test_env, {"multithreaded" : "true",
-                             "devices" : get_gpus()[0],
+                             "devices" : device,
                              "worker threads" : 0,
                              "verbose" : "false",
                              "learning flag" : "false"}))

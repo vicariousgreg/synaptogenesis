@@ -25,12 +25,22 @@ in1 = {
     "name" : "in1",
     "neural model" : "relay",
     "rows" : dim,
-    "columns" : dim}
+    "columns" : dim,
+    "noise config" : {
+        "type" : "uniform",
+        "min" : 0.0,
+        "max" : 1.0,
+    }}
 in2 = {
     "name" : "in2",
     "neural model" : "relay",
     "rows" : dim,
-    "columns" : dim}
+    "columns" : dim,
+    "noise config" : {
+        "type" : "uniform",
+        "min" : 0.0,
+        "max" : 0.5,
+    }}
 gate1 = {
     "name" : "gate1",
     "neural model" : "relay",
@@ -107,30 +117,6 @@ modules = [
             { "structure" : "dendrite_test", "layer" : "gate1" },
             { "structure" : "dendrite_test", "layer" : "in2" },
             { "structure" : "dendrite_test", "layer" : "gate2" },
-        ]
-    },
-    {
-        "type" : "periodic_input",
-        "rate" : "1",
-        "random" : "true",
-        "max" : "1.0",
-        "layers" : [
-            {
-                "structure" : "dendrite_test",
-                "layer" : "in1"
-            }
-        ]
-    },
-    {
-        "type" : "periodic_input",
-        "rate" : "1",
-        "random" : "true",
-        "max" : "0.5",
-        "layers" : [
-            {
-                "structure" : "dendrite_test",
-                "layer" : "in2"
-            }
         ]
     },
     {

@@ -7,35 +7,76 @@
 /******************************************************************************/
 
 /* Clears input data */
-void set_data_SERIAL(float val, Pointer<float> ptr, int count) {
+void set_data_SERIAL(float val, Pointer<float> ptr, int count, bool overwrite) {
     float* data = ptr.get();
 
-    for (int nid = 0; nid < count; ++nid)
-        data[nid] = val;
+    if (overwrite)
+        for (int nid = 0; nid < count; ++nid)
+            data[nid] = val;
+    else
+        for (int nid = 0; nid < count; ++nid)
+            data[nid] += val;
 }
 #ifdef __CUDACC__
-GLOBAL void set_data_PARALLEL(float val, Pointer<float> ptr, int count) {
+GLOBAL void set_data_PARALLEL(float val, Pointer<float> ptr,
+        int count, bool overwrite) {
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count)
-        data[nid] = val;
+        if (overwrite) data[nid] = val;
+        else           data[nid] += val;
 }
 #else
 GLOBAL void set_data_PARALLEL(float val, Pointer<float> ptr, int count) { }
 #endif
-Kernel<float, Pointer<float>, int> get_set_data() {
-    return Kernel<float, Pointer<float>, int>(
+Kernel<float, Pointer<float>, int, bool> get_set_data() {
+    return Kernel<float, Pointer<float>, int, bool>(
         set_data_SERIAL, set_data_PARALLEL);
+}
+
+/* Randomizes input data using Uniform Distribution */
+void randomize_data_uniform_SERIAL(Pointer<float> ptr,
+        int count, float min, float max, bool overwrite) {
+    std::uniform_real_distribution<float> distribution(min, max);
+    float* data = ptr.get();
+
+    if (overwrite)
+        for (int nid = 0; nid < count; ++nid)
+            data[nid] = distribution(generator);
+    else
+        for (int nid = 0; nid < count; ++nid)
+            data[nid] += distribution(generator);
+}
+#ifdef __CUDACC__
+GLOBAL void randomize_data_uniform_PARALLEL(Pointer<float> ptr,
+        int count, float min, float max, bool overwrite) {
+    float* data = ptr.get();
+
+    int nid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (nid < count) {
+        float val = (curand_uniform(&cuda_rand_states[nid]) * (max-min)) + min;
+        if (overwrite) data[nid] = val;
+        else           data[nid] += val;
+    }
+}
+#else
+GLOBAL void randomize_data_uniform_PARALLEL(Pointer<float> ptr,
+        int count, float min, float max, bool overwrite) { }
+#endif
+Kernel<Pointer<float>, int, float, float, bool>
+        get_randomize_data_uniform() {
+    return Kernel<Pointer<float>, int, float, float, bool>(
+        randomize_data_uniform_SERIAL, randomize_data_uniform_PARALLEL);
 }
 
 /* Randomizes input data using Normal Distribution */
 void randomize_data_normal_SERIAL(Pointer<float> ptr,
-        int count, float mean, float std_dev, bool init) {
+        int count, float mean, float std_dev, bool overwrite) {
     std::normal_distribution<float> distribution(mean, std_dev);
     float* data = ptr.get();
 
-    if (init)
+    if (overwrite)
         for (int nid = 0; nid < count; ++nid)
             data[nid] = distribution(generator);
     else
@@ -44,19 +85,19 @@ void randomize_data_normal_SERIAL(Pointer<float> ptr,
 }
 #ifdef __CUDACC__
 GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
-        int count, float mean, float std_dev, bool init) {
+        int count, float mean, float std_dev, bool overwrite) {
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
         float val = (curand_normal(&cuda_rand_states[nid]) * std_dev) + mean;
-        if (init) data[nid] = val;
-        else      data[nid] += val;
+        if (overwrite) data[nid] = val;
+        else           data[nid] += val;
     }
 }
 #else
 GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
-        int count, float mean, float std_dev, bool init) { }
+        int count, float mean, float std_dev, bool overwrite) { }
 #endif
 Kernel<Pointer<float>, int, float, float, bool>
         get_randomize_data_normal() {
@@ -65,14 +106,14 @@ Kernel<Pointer<float>, int, float, float, bool>
 }
 
 /* Randomizes input data using Poisson Point Process */
-void randomize_data_poisson_SERIAL(Pointer<float> ptr,
-        int count, float val, float rate, bool init, Pointer<float> random_rates) {
+void randomize_data_poisson_SERIAL(Pointer<float> ptr, int count, float val,
+        float rate, bool overwrite, Pointer<float> random_rates) {
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
     float* data = ptr.get();
     float* rrates = random_rates.get();
     bool random = rrates != nullptr;
 
-    if (init)
+    if (overwrite)
         for (int nid = 0; nid < count; ++nid)
             data[nid] =
                 (distribution(generator) < ((random) ? rrates[nid] : rate))
@@ -83,15 +124,15 @@ void randomize_data_poisson_SERIAL(Pointer<float> ptr,
                 data[nid] += val;
 }
 #ifdef __CUDACC__
-GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr,
-        int count, float val, float rate, bool init, Pointer<float> random_rates) {
+GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
+        float val, float rate, bool overwrite, Pointer<float> random_rates) {
     float* data = ptr.get();
     float* rrates = random_rates.get();
     bool random = rrates != nullptr;
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count) {
-        if (init)
+        if (overwrite)
             data[nid] =
                 (curand_uniform(&cuda_rand_states[nid]) < ((random) ? rrates[nid] : rate))
                 ? val : 0.0;
@@ -100,8 +141,8 @@ GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr,
     }
 }
 #else
-GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr,
-        int count, float val, float rate, bool init, Pointer<float> random_rates) { }
+GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
+        float val, float rate, bool overwrite, Pointer<float> random_rates) { }
 #endif
 Kernel<Pointer<float>, int, float, float, bool, Pointer<float>> get_randomize_data_poisson() {
     return Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>(

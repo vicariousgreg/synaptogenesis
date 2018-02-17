@@ -124,10 +124,12 @@ class InterDeviceTransferInstruction : public Instruction {
 class InitializeInstruction : public Instruction {
     public:
         // Initialize layer buffers
-        InitializeInstruction(Layer *layer, State *state, Stream *stream)
+        InitializeInstruction(Layer *layer, State *state, Stream *stream,
+            bool overwrite)
                 : Instruction(layer, stream),
                   dst(state->get_input(layer)),
-                  size(layer->size) { }
+                  size(layer->size),
+                  overwrite(overwrite) { }
 
         // Initialize second order buffers
         InitializeInstruction(DendriticNode *second_order_node,
@@ -139,31 +141,67 @@ class InitializeInstruction : public Instruction {
     protected:
         Pointer<float> dst;
         int size;
+        bool overwrite;
 };
 
 /* Clears inputs */
-class ClearInstruction : public InitializeInstruction {
+class SetInstruction : public InitializeInstruction {
     public:
-        // Clear layer buffers
-        ClearInstruction(Layer *layer, State *state, Stream *stream)
-                : InitializeInstruction(layer, state, stream) { }
+        SetInstruction(Layer *layer, State *state, Stream *stream,
+            float val, bool overwrite)
+                : InitializeInstruction(layer, state, stream, overwrite),
+                  val(val) { }
+
+        // Constructor for flat noise config
+        SetInstruction(Layer *layer, State *state, Stream *stream,
+            bool overwrite)
+                : InitializeInstruction(layer, state, stream, overwrite) {
+            auto config = layer->get_config()->get_child("noise config");
+            val = config->get_float("val", 1.0);
+        }
 
         void activate() {
             wait_for_dependencies();
             get_set_data().run(stream,
                 blocks, threads,
-                0.0, dst, size);
+                val, dst, size, overwrite);
             Instruction::record_event();
         }
+
+    protected:
+        float val;
 };
 
 /* Adds noise to the input */
+class UniformNoiseInstruction : public InitializeInstruction {
+    public:
+        UniformNoiseInstruction(Layer *layer, State *state,
+            Stream *stream, bool overwrite)
+                : InitializeInstruction(layer, state, stream, overwrite) {
+            auto config = layer->get_config()->get_child("noise config");
+            min = config->get_float("min", 1.0);
+            max = config->get_float("max", 1.0);
+        }
+
+        void activate() {
+            Instruction::wait_for_dependencies();
+            get_randomize_data_uniform().run(stream,
+                blocks, threads,
+                dst, size,
+                min, max,
+                overwrite);
+            Instruction::record_event();
+        }
+
+    protected:
+        float min, max;
+};
+
 class NormalNoiseInstruction : public InitializeInstruction {
     public:
         NormalNoiseInstruction(Layer *layer, State *state,
-            Stream *stream, bool init)
-                : InitializeInstruction(layer, state, stream),
-                  init(init) {
+            Stream *stream, bool overwrite)
+                : InitializeInstruction(layer, state, stream, overwrite) {
             auto config = layer->get_config()->get_child("noise config");
             mean = config->get_float("mean", 1.0);
             std_dev = config->get_float("std dev", 0.1);
@@ -175,22 +213,20 @@ class NormalNoiseInstruction : public InitializeInstruction {
                 blocks, threads,
                 dst, size,
                 mean, std_dev,
-                init);
+                overwrite);
             Instruction::record_event();
         }
 
     protected:
         float mean;
         float std_dev;
-        bool init;
 };
 
 class PoissonNoiseInstruction : public InitializeInstruction {
     public:
         PoissonNoiseInstruction(Layer *layer, State *state,
-            Stream *stream, bool init)
-                : InitializeInstruction(layer, state, stream),
-                  init(init) {
+            Stream *stream, bool overwrite)
+                : InitializeInstruction(layer, state, stream, overwrite) {
             auto config = layer->get_config()->get_child("noise config");
             val = config->get_float("value", 20);
             rate = 0.001 * config->get_float("rate", 1);
@@ -208,7 +244,7 @@ class PoissonNoiseInstruction : public InitializeInstruction {
                 blocks, threads,
                 dst, size,
                 val, rate,
-                init, random_rates);
+                overwrite, random_rates);
             Instruction::record_event();
         }
 
@@ -216,7 +252,6 @@ class PoissonNoiseInstruction : public InitializeInstruction {
         float val;
         float rate;
         Pointer<float> random_rates;
-        bool init;
 };
 
 /* Operates on synapses */
@@ -293,7 +328,7 @@ class DendriticInstruction : public Instruction {
         DendriticInstruction(DendriticNode *parent,
             DendriticNode *child, State *state, Stream *stream)
                 : Instruction(parent->to_layer, stream),
-                  init(child->register_index != 0),
+                  overwrite(child->register_index != 0),
                   aggregator(get_aggregator(child->opcode, stream->get_device_id())),
                   src(state->get_input(to_layer, child->register_index)),
                   dst(state->get_input(to_layer, parent->register_index)) { }
@@ -302,14 +337,14 @@ class DendriticInstruction : public Instruction {
             Instruction::wait_for_dependencies();
             get_calc_internal().run(
                 stream, blocks, threads,
-                to_layer->size, src, dst, aggregator, init);
+                to_layer->size, src, dst, aggregator, overwrite);
             Instruction::record_event();
         }
 
     protected:
         Pointer<float> src, dst;
         AGGREGATOR aggregator;
-        bool init;
+        bool overwrite;
 };
 
 /* Transposes a matrix */
@@ -493,6 +528,11 @@ class StateLearningInstruction : public StateInstruction {
             : StateInstruction(to_layer, state, stream,
               state->get_learning_kernel(to_layer)) { }
 };
+
+/* Retrieves the appropriate initialization instruction, based on noise config
+ *   specification and whether the layer has input from the environment */
+InitializeInstruction* get_initialize_instruction(
+        Layer *layer, State *state, Stream *stream, bool is_input);
 
 typedef std::vector<Instruction*> InstructionList;
 typedef std::vector<SynapseInstruction*> SynapseInstructionList;
