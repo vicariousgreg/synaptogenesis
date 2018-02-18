@@ -1,4 +1,4 @@
-from syngen import Network, Environment, create_callback, FloatArray
+from syngen import Network, Environment, create_io_callback, FloatArray
 
 # Create main structure (feedforward engine)
 structure = {"name" : "test", "type" : "parallel"}

@@ -487,6 +487,33 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
     }
 }
 
+static void distance_callback_config(const PropertyConfig& config,
+        float* target_matrix, Connection* conn) {
+    if (not config.has("distance callback"))
+        LOG_ERROR(
+            "Unspecified distance callback function for connection "
+            + conn->str());
+
+    void (*callback)(int, int, void*, void*) =
+        (void(*)(int, int, void*, void*))(
+            std::stoll(config.get("distance callback")));
+
+    int id = config.get_int("id", 0);
+    float from_spacing = config.get_float("from spacing", 1.0);
+    float to_spacing = config.get_float("to spacing", 1.0);
+    float x_offset = config.get_float("x offset", 0.0);
+    float y_offset = config.get_float("y offset", 0.0);
+
+    int num_weights = conn->get_num_weights();
+    Pointer<float> distances = Pointer<float>(num_weights, -1.0);
+    get_distances(conn, distances,
+        from_spacing, to_spacing,
+        x_offset, y_offset);
+
+    callback(id, num_weights, target_matrix, distances.get());
+    distances.free();
+}
+
 static void initialize_weights(const PropertyConfig config,
         float* target_matrix, Connection* conn) {
     if (config.has("fraction")) {
@@ -515,6 +542,7 @@ static void initialize_weights(const PropertyConfig config,
         LOG_ERROR(
             "Error in weight config for " + conn->str() + ":\n"
             "  Unrecognized weight config type: " + type);
+
 
     // Now do mask processing
     if (config.has_child("circular mask"))
@@ -545,6 +573,10 @@ static void initialize_weights(const PropertyConfig config,
                 break;
         }
     }
+
+    // Finally, run callbacks
+    if (config.has("distance callback"))
+        distance_callback_config(config, target_matrix, conn);
 }
 
 /******************************************************************************/

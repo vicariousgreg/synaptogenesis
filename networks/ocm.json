@@ -14,7 +14,8 @@
 			},
 			"weight config": {
 				"type": "flat",
-				"weight": "0.1" 
+				"weight": "0.1",
+				"distance callback": "140474900639760" 
 			} 
 		},
 		{
@@ -25,10 +26,12 @@
 			"from layer": "sc_exc",
 			"plastic": "false",
 			"arborized config": {
-				"wrap": "false",
-				"stride": "5",
 				"field size": "5",
-				"offset": "0" 
+				"distance callback": "140474900639760",
+				"to spacing": "5",
+				"stride": "5",
+				"offset": "0",
+				"wrap": "false" 
 			},
 			"weight config": {
 				"type": "flat",
@@ -59,9 +62,10 @@
 				"field size": "14" 
 			},
 			"weight config": {
+				"distance callback": "140474900639760",
+				"fraction": "1",
 				"std dev": "0.01",
 				"type": "gaussian",
-				"fraction": "1",
 				"mean": "0.05",
 				"circular mask": [
 					{
@@ -82,9 +86,11 @@
 				"field size": "50" 
 			},
 			"weight config": {
+				"distance callback": "140474900639760",
+				"to spacing": "2",
+				"fraction": "1",
 				"std dev": "0.005",
 				"type": "gaussian",
-				"fraction": "1",
 				"mean": "0.025",
 				"circular mask": [
 					{
@@ -109,10 +115,12 @@
 				"field size": "40.0" 
 			},
 			"weight config": {
+				"distance callback": "140474900639760",
+				"from spacing": "2",
 				"circular mask": "None",
+				"fraction": "1",
 				"std dev": "0.005",
 				"type": "gaussian",
-				"fraction": "1",
 				"mean": "0.025" 
 			} 
 		},
@@ -129,9 +137,10 @@
 				"field size": "3" 
 			},
 			"weight config": {
+				"distance callback": "140474900639760",
+				"fraction": "1",
 				"std dev": "0.02",
 				"type": "gaussian",
-				"fraction": "1",
 				"mean": "0.1",
 				"circular mask": [
 					{
@@ -152,9 +161,11 @@
 				"field size": "10" 
 			},
 			"weight config": {
+				"distance callback": "140474900639760",
+				"to spacing": "2",
+				"fraction": "1",
 				"std dev": "0.01",
 				"type": "gaussian",
-				"fraction": "1",
 				"mean": "0.05",
 				"circular mask": [
 					{
@@ -179,10 +190,12 @@
 				"field size": "8.0" 
 			},
 			"weight config": {
+				"distance callback": "140474900639760",
+				"from spacing": "2",
 				"circular mask": "None",
+				"fraction": "1",
 				"std dev": "0.01",
 				"type": "gaussian",
-				"fraction": "1",
 				"mean": "0.05" 
 			} 
 		} 

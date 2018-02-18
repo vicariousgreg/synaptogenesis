@@ -1,4 +1,4 @@
-from syngen import Network, Environment, create_callback, FloatArray
+from syngen import Network, Environment, create_io_callback, FloatArray
 from ctypes import cast, POINTER, c_float
 
 data_path = "./resources/iris/"
@@ -8,7 +8,7 @@ def callback(ID, size, ptr):
     arr = FloatArray(size, ptr)
     for x in arr: print(x)
 
-cb,addr = create_callback(callback)
+cb,addr = create_io_callback(callback)
 
 # Create main structure (feedforward engine)
 structure = {"name" : "iris", "type" : "feedforward"}

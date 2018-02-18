@@ -1,4 +1,4 @@
-from syngen import Network, Environment, create_callback, FloatArray
+from syngen import Network, Environment, create_io_callback, FloatArray
 from syngen import get_gpus
 from syngen import set_suppress_output, set_warnings, set_debug
 from copy import deepcopy

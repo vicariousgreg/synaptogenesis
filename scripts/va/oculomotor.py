@@ -1,10 +1,33 @@
 from syngen import Network, Environment
 from syngen import get_gpus, get_cpu
 from syngen import set_suppress_output, set_warnings, set_debug
+from syngen import create_distance_weight_callback, FloatArray
 
 from os import path
+from math import exp
 import sys
 import argparse
+
+def gauss(dist, peak, sig, norm=False):
+    inv_sqrt_2pi = 0.3989422804014327
+    peak_coeff = peak * (1.0 if norm else inv_sqrt_2pi / sig)
+
+    a = dist / sig
+    return peak_coeff * exp(-0.5 * a * a)
+
+# Create distance weight init callback
+def dist_callback(ID, size, weights, distances):
+    w_arr = FloatArray(size, weights)
+    d_arr = FloatArray(size, distances)
+
+    # Find maximum distance and half it
+    max_dist = max(d_arr.data[i] for i in xrange(size)) / 2
+
+    # Smooth out weights based on distances
+    for i in xrange(size):
+        w_arr.data[i] = gauss(d_arr.data[i], w_arr.data[i], max_dist, True)
+
+cb,addr = create_distance_weight_callback(dist_callback)
 
 def build_exc_inh_pair(
         exc_name,
@@ -90,7 +113,8 @@ def build_exc_inh_pair(
                 "mean" : exc_exc_mean,
                 "std dev" : exc_exc_std_dev,
                 "fraction" : exc_exc_fraction,
-                "circular mask" : [ { } ]
+                "circular mask" : [ { } ],
+                "distance callback" : addr,
             },
             "arborized config" : {
                 "field size" : exc_exc_rf,
@@ -116,7 +140,9 @@ def build_exc_inh_pair(
                         "invert" : "true"
                     },
                     { }
-                ] if mask else [ { } ]
+                ] if mask else [ { } ],
+                "distance callback" : addr,
+                "to spacing" : 2,
             },
             "arborized config" : {
                 "field size" : exc_inh_rf,
@@ -136,7 +162,9 @@ def build_exc_inh_pair(
                 "mean" : inh_exc_mean,
                 "std dev" : inh_exc_std_dev,
                 "fraction" : inh_exc_fraction,
-                "circular mask" : [ { } ] if not half_inh else None
+                "circular mask" : [ { } ] if not half_inh else None,
+                "distance callback" : addr,
+                "from spacing" : 2,
             },
             "arborized config" : {
                 "field size" : inh_exc_rf,
@@ -289,6 +317,7 @@ def build_network(rows=200, cols=200, scale=5):
             "weight config" : {
                 "type" : "flat",
                 "weight" : 0.1,
+                "distance callback" : addr,
             },
             "arborized config" : {
                 "field size" : receptive_field,
@@ -311,7 +340,9 @@ def build_network(rows=200, cols=200, scale=5):
                 "field size" : rows/motor_rows,
                 "stride" : cols/motor_cols,
                 "wrap" : "false",
-                "offset" : 0
+                "offset" : 0,
+                "distance callback" : addr,
+                "to spacing" : cols / motor_cols
             }
         },
         {

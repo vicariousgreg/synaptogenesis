@@ -367,6 +367,10 @@ class Network(CObject):
         return Properties(report)
 
 
-def create_callback(f):
+def create_io_callback(f):
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
+    return (cb, cast(cb, c_void_p).value)
+
+def create_distance_weight_callback(f):
+    cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
     return (cb, cast(cb, c_void_p).value)

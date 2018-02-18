@@ -1,4 +1,4 @@
-from syngen import Network, Environment, create_callback, FloatArray
+from syngen import Network, Environment, create_io_callback, FloatArray
 from syngen import get_gpus, get_cpu
 from syngen import set_suppress_output, set_warnings, set_debug
 from pisocket import PiServer
@@ -44,8 +44,8 @@ def build_environment(sensory_socket, motor_socket, rows, cols, visualizer=False
         arr = FloatArray(length, ptr)
         motor_socket.send_data(arr.to_list())
 
-    scb,scb_addr = create_callback(sensory_callback)
-    mcb,mcb_addr = create_callback(motor_callback)
+    scb,scb_addr = create_io_callback(sensory_callback)
+    mcb,mcb_addr = create_io_callback(motor_callback)
 
     # Create environment modules
     modules = [
