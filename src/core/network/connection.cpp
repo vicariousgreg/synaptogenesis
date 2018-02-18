@@ -88,7 +88,7 @@ Connection::Connection(const Connection& other)
       second_order_host(other.second_order_host),
       second_order_slave(other.second_order_slave),
       name(other.name),
-      num_weights(num_weights),
+      num_weights(other.num_weights),
       id(other.id) { }
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,
@@ -174,7 +174,15 @@ std::string Connection::get_parameter(std::string key,
     return this->get_config()->get(key, default_val);
 }
 
-int Connection::get_num_weights() const { return num_weights; }
+int Connection::get_matrix_rows() const
+    { return (convolutional) ? 1 : to_layer->size; }
+
+int Connection::get_matrix_columns() const
+    { return num_weights / get_matrix_rows(); }
+
+int Connection::get_num_weights() const
+    { return num_weights; }
+
 int Connection::get_compute_weights() const {
     if (convolutional and not second_order_slave)
         return num_weights * to_layer->size;

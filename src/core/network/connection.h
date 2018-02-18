@@ -19,6 +19,8 @@ class Connection {
         virtual ~Connection();
 
         /* Constant getters */
+        int get_matrix_rows() const;
+        int get_matrix_columns() const;
         int get_num_weights() const;
         int get_compute_weights() const;
         const ConnectionConfig* get_config() const;
