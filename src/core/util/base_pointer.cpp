@@ -6,6 +6,20 @@
 #include "util/resource_manager.h"
 #include "util/tools.h"
 
+BasePointer::BasePointer(std::type_index type, void* ptr,
+    size_t size, size_t unit_size,
+    DeviceID device_id, bool owner)
+        : type(type),
+          ptr(ptr),
+          size(size),
+          unit_size(unit_size),
+          device_id(device_id),
+          pinned(false),
+          owner(owner) {
+    this->local =
+        device_id == ResourceManager::get_instance()->get_host_id();
+}
+
 void BasePointer::free() {
     if (owner and size > 0) {
 #ifdef __CUDACC__
@@ -24,15 +38,14 @@ void BasePointer::free() {
 }
 
 BasePointer* BasePointer::slice(size_t offset, size_t new_size) const {
-    return new BasePointer(
+    auto pointer = new BasePointer(
         type,
         ((char*)ptr) + (offset * unit_size),
         new_size,
         unit_size,
         device_id,
-        local,
-        pinned,
         false);
+    pointer->pinned = this->pinned;
 }
 
 void BasePointer::transfer(DeviceID new_device, void* destination,

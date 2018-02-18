@@ -251,8 +251,7 @@ BasePointer* ResourceManager::transfer(DeviceID device_id,
         }
     }
     return new BasePointer(
-        std::type_index(typeid(void)), data, size, 1,
-        device_id, is_host(device_id), false, true);
+        std::type_index(typeid(void)), data, size, 1, device_id, true);
 }
 
 Stream *ResourceManager::get_default_stream(DeviceID device_id) {

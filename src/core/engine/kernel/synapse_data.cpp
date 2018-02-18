@@ -16,6 +16,10 @@ SynapseData::SynapseData(DendriticNode *parent_node,
         from_layer(*conn->from_layer),
         to_layer(*conn->to_layer),
         matrix(state->get_matrix_pointer(conn)),
+        weights(
+            (conn->second_order_host)
+                ? state->get_matrix(conn)->second_order_weights
+                : state->get_matrix(conn)->weights),
         second_order_host_matrix(
             (conn->second_order_slave)
                 ? state->get_matrix_pointer(
@@ -44,3 +48,16 @@ SynapseData::SynapseData(DendriticNode *parent_node,
                 get_word_index(conn->delay, output_type));
     }
 }
+
+SynapseData::SynapseData(Connection *conn, Pointer<void*> p_to_p) :
+        attributes(nullptr),
+        extractor(nullptr),
+        aggregator(nullptr),
+        subset_config(conn->get_config()->get_subset_config()),
+        arborized_config(conn->get_config()->get_arborized_config()),
+        connection(*conn),
+        from_layer(*conn->from_layer),
+        to_layer(*conn->to_layer),
+        matrix(nullptr),
+        second_order_host_matrix(nullptr),
+        pointer_to_pointer(p_to_p) { }

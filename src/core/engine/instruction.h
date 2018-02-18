@@ -102,7 +102,7 @@ class InterDeviceTransferInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_copy_pointer_kernel<Output>().run(
+            get_copy_pointer_kernel<Output>().schedule(
                 stream, 0, 0, src, dst, stream);
             Instruction::record_event();
         }
@@ -162,7 +162,7 @@ class SetInstruction : public InitializeInstruction {
 
         void activate() {
             wait_for_dependencies();
-            get_set_data().run(stream,
+            get_set_data().schedule(stream,
                 blocks, threads,
                 val, dst, size, overwrite);
             Instruction::record_event();
@@ -185,7 +185,7 @@ class UniformNoiseInstruction : public InitializeInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_randomize_data_uniform().run(stream,
+            get_randomize_data_uniform().schedule(stream,
                 blocks, threads,
                 dst, size,
                 min, max,
@@ -209,7 +209,7 @@ class NormalNoiseInstruction : public InitializeInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_randomize_data_normal().run(stream,
+            get_randomize_data_normal().schedule(stream,
                 blocks, threads,
                 dst, size,
                 mean, std_dev,
@@ -240,7 +240,7 @@ class PoissonNoiseInstruction : public InitializeInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_randomize_data_poisson().run(stream,
+            get_randomize_data_poisson().schedule(stream,
                 blocks, threads,
                 dst, size,
                 val, rate,
@@ -287,7 +287,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            activator.run(stream,
+            activator.schedule(stream,
                 blocks, threads,
                 synapse_data);
             Instruction::record_event();
@@ -313,7 +313,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
         }
 
         void activate() {
-            updater.run(stream,
+            updater.schedule(stream,
                 blocks, threads,
                 synapse_data);
         }
@@ -335,7 +335,7 @@ class DendriticInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_calc_internal().run(
+            get_calc_internal().schedule(
                 stream, blocks, threads,
                 to_layer->size, src, dst, aggregator, overwrite);
             Instruction::record_event();
@@ -362,7 +362,7 @@ class TransposeInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_transposer().run(
+            get_transposer().schedule(
                 stream, blocks, threads,
                 matrix->get_weights(), matrix->get_weights_transposed(),
                 matrix->get_rows(), matrix->get_columns());
@@ -390,7 +390,7 @@ class TransferInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            get_copy_pointer_kernel<T>().run(
+            get_copy_pointer_kernel<T>().schedule(
                 stream, 0, 0, src, dst, stream);
             Instruction::record_event();
         }
@@ -418,10 +418,10 @@ class BufferedTransferInstruction : public Instruction {
             Instruction::wait_for_dependencies();
 
             if (is_dirty())
-                get_copy_pointer_kernel<T>().run(
+                get_copy_pointer_kernel<T>().schedule(
                     stream, 0, 0, src, inter, stream);
 
-            get_copy_pointer_kernel<T>().run(
+            get_copy_pointer_kernel<T>().schedule(
                 stream, 0, 0, inter, dst, stream);
 
             Instruction::record_event();
@@ -502,7 +502,7 @@ class StateInstruction : public Instruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            attribute_kernel.run(stream,
+            attribute_kernel.schedule(stream,
                 blocks, threads,
                 attribute_data);
             Instruction::record_event();

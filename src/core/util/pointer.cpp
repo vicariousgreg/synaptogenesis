@@ -20,8 +20,6 @@ Pointer<T>::Pointer()
           0,
           sizeof(T),
           ResourceManager::get_instance()->get_host_id(),
-          true,
-          false,
           false) { }
 
 template<typename T>
@@ -32,8 +30,6 @@ Pointer<T>::Pointer(size_t size)
           size,
           sizeof(T),
           ResourceManager::get_instance()->get_host_id(),
-          true,
-          false,
           true) { }
 
 template<typename T>
@@ -43,16 +39,15 @@ Pointer<T>::Pointer(size_t size, T val)
 }
 
 template<typename T>
-Pointer<T>::Pointer(T* ptr, size_t size, bool local, DeviceID device_id)
+Pointer<T>::Pointer(T* ptr, size_t size, DeviceID device_id,
+        bool claim_ownership)
     : BasePointer(
           std::type_index(typeid(T)),
           ptr,
           size,
           sizeof(T),
           device_id,
-          local,
-          false,
-          false) { }
+          claim_ownership) { }
 
 template<typename T>
 Pointer<T>::Pointer(BasePointer* base_ptr)
@@ -62,8 +57,6 @@ Pointer<T>::Pointer(BasePointer* base_ptr)
           base_ptr->get_size(),
           sizeof(T),
           base_ptr->get_device_id(),
-          base_ptr->get_local(),
-          false,
           false) { }
 
 template<typename T>
@@ -74,19 +67,19 @@ Pointer<T>::Pointer(const Pointer<T>& other)
           other.size,
           sizeof(T),
           other.device_id,
-          other.local,
-          other.pinned,
-          false) { }
+          false) {
+    this->pinned = other.pinned;
+}
 
 template<typename T>
 template<typename S>
 Pointer<S> Pointer<T>::cast() const {
-    return Pointer<S>((S*)ptr, size, local, device_id);
+    return Pointer<S>((S*)ptr, size, device_id);
 }
 
 template<typename T>
 Pointer<T> Pointer<T>::slice(size_t offset, size_t new_size) const {
-    return Pointer<T>(((T*)ptr) + offset, new_size, local, device_id);
+    return Pointer<T>(((T*)ptr) + offset, new_size, device_id);
 }
 
 template<typename T>
@@ -94,9 +87,9 @@ Pointer<T> Pointer<T>::pinned_pointer(size_t size) {
 #ifdef __CUDACC__
     T* ptr = (T*)ResourceManager::get_instance()
         ->allocate_host_pinned(size, sizeof(T));
-    auto pointer = Pointer<T>(ptr, size, true,
-        ResourceManager::get_instance()->get_host_id());
-    pointer.owner = true;
+    auto pointer = Pointer<T>(ptr, size,
+        ResourceManager::get_instance()->get_host_id(),
+        true);
     pointer.pinned = true;
     return pointer;
 #else
@@ -107,6 +100,23 @@ Pointer<T> Pointer<T>::pinned_pointer(size_t size) {
 template<typename T>
 Pointer<T> Pointer<T>::pinned_pointer(size_t size, T val) {
     auto pointer = Pointer<T>::pinned_pointer(size);
+    pointer.set(val, false);
+    return pointer;
+}
+
+template<typename T>
+Pointer<T> Pointer<T>::device_pointer(DeviceID device_id, size_t size) {
+    auto res_man = ResourceManager::get_instance();
+    T* ptr = (device_id == res_man->get_host_id())
+        ? (T*)res_man->allocate_host(size, sizeof(T))
+        : (T*)res_man->allocate_device(
+            size, sizeof(T), nullptr, device_id);
+    return Pointer<T>(ptr, size, device_id, true);
+}
+
+template<typename T>
+Pointer<T> Pointer<T>::device_pointer(DeviceID device_id, size_t size, T val) {
+    auto pointer = Pointer<T>::device_pointer(device_id, size);
     pointer.set(val, false);
     return pointer;
 }
@@ -127,6 +137,15 @@ HOST DEVICE T* Pointer<T>::get(size_t offset) const {
             "Attempted to dereference device pointer from host!");
     return ((T*)ptr) + offset;
 #endif
+}
+
+template<typename T>
+HOST DEVICE T* Pointer<T>::get_unsafe(size_t offset) const {
+    if (size == 0) return nullptr;
+    if (offset >= size)
+        LOG_ERROR(
+            "Attempted to dereference pointer with invalid offset!");
+    return ((T*)ptr) + offset;
 }
 
 template<typename T>

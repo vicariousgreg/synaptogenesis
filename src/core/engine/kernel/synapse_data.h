@@ -19,6 +19,12 @@ class SynapseData {
         SynapseData(DendriticNode *parent_node, Connection *conn,
             State *state, bool updater);
 
+        /* Secondary state-free constructor for auxiliary kernels that
+         *   don't need state attributes/matrices, like delay initialization.
+         *   These use the auxiliary pointer-to-pointer member instead.
+         */
+        SynapseData(Connection *conn, Pointer<void*> p_to_p);
+
         /* Attributes pointer for to_layer */
         const Attributes * const attributes;
 
@@ -36,6 +42,7 @@ class SynapseData {
         /* Weight attributes */
         const WeightMatrix * const matrix;
         const WeightMatrix * const second_order_host_matrix;
+        Pointer<float> weights;
 
         /* Layer attributes */
         const Layer from_layer;
@@ -45,6 +52,9 @@ class SynapseData {
         Pointer<Output> outputs;
         Pointer<Output> destination_outputs;
         Pointer<float> inputs;
+
+        /* Auxiliary pointer-to-pointer */
+        Pointer<void*> pointer_to_pointer;
 };
 
 /* Typedef for kernel functions, which just take SynapseData */

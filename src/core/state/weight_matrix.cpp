@@ -4,6 +4,8 @@
 #include "state/weight_matrix.h"
 #include "network/layer.h"
 #include "network/connection.h"
+#include "engine/kernel/kernel.h"
+#include "engine/kernel/synapse_kernel.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
@@ -105,8 +107,8 @@ WeightMatrix::WeightMatrix(Connection* conn)
       transposed(false),
       pointer(this),
       num_weights(conn->get_num_weights()),
-      rows((conn->convolutional) ? 1 : conn->to_layer->size),
-      columns(num_weights / rows),
+      rows(conn->get_matrix_rows()),
+      columns(conn->get_matrix_columns()),
       transpose_weights(false),
       weights(Pointer<float>(num_weights)),
       second_order_weights(
@@ -145,8 +147,8 @@ void WeightMatrix::transpose() {
         } else {
 #ifdef __CUDACC__
             // Create temporary matrix
-            Pointer<float> temp = Pointer<float>(num_weights);
-            temp.transfer(device_id, nullptr);
+            Pointer<float> temp =
+                Pointer<float>::device_pointer(device_id, num_weights);
 
             dim3 dimGrid = calc_transpose_blocks(get_rows(), get_columns());
             dim3 dimBlock = calc_transpose_threads(get_rows(), get_columns());
@@ -546,208 +548,417 @@ static void initialize_weights(const PropertyConfig config,
 }
 
 /******************************************************************************/
-/**************************** DELAY INITIALIZATION ****************************/
+/************************ PAIRWISE WEIGHT OPERATIONS **************************/
 /******************************************************************************/
-void set_delays(OutputType output_type, Connection *conn,
-        int* delays, float velocity, bool cap_delay,
-        float from_spacing, float to_spacing,
-        float x_offset, float y_offset) {
-    if (output_type != BIT)
-        LOG_ERROR(
-            "Only BIT output connections can have variable delays!");
-    int base_delay = conn->delay;
+#define INDICES_EXTRACTIONS \
+    int** p_to_p = (int**)synapse_data.pointer_to_pointer.get(); \
+    int* from_row_indices = (int*)p_to_p[0]; \
+    int* from_col_indices = (int*)p_to_p[1]; \
+    int* to_row_indices = (int*)p_to_p[2]; \
+    int* to_col_indices = (int*)p_to_p[3]; \
+    int* used = (int*)p_to_p[4];
 
-    LOG_DEBUG(
-        conn->from_layer->name + " -> " +
-        conn->to_layer->name + "delay initialization...\n");
+#define SET_INDICES(PREFIX) \
+    from_row_indices[weight_index] = PREFIX##from_row; \
+    from_col_indices[weight_index] = PREFIX##from_column; \
+    to_row_indices[weight_index] = to_row; \
+    to_col_indices[weight_index] = to_column; \
+    used[weight_index] = 1;
 
+CALC_ALL(indices_kernel,
+    INDICES_EXTRACTIONS,
+    ,
+    SET_INDICES(),
+)
+
+CALC_CONVERGENT(indices_kernel_wrap_convergent,
+    INDICES_EXTRACTIONS,
+    ,
+    SET_INDICES(pre_wrap_),
+)
+CALC_DIVERGENT(indices_kernel_wrap_divergent,
+    INDICES_EXTRACTIONS,
+    ,
+    SET_INDICES(pre_wrap_),
+)
+
+void get_indices(Connection *conn, Pointer<int> used,
+        Pointer<int> from_row_indices, Pointer<int> from_col_indices,
+        Pointer<int> to_row_indices, Pointer<int> to_col_indices) {
+    LOG_DEBUG("Retrieving to/from indices for : " + conn->str());
+
+    // Retrieve appropriate kernel
+    Kernel<SYNAPSE_ARGS> indices_kernel;
     switch(conn->type) {
         case FULLY_CONNECTED:
-        case SUBSET: {
-            int from_row_start, from_col_start, to_row_start, to_col_start;
-            int from_row_end, from_col_end, to_row_end, to_col_end;
-
-            if (conn->type == FULLY_CONNECTED) {
-                from_row_start = from_col_start = to_row_start = to_col_start = 0;
-                from_row_end = conn->from_layer->rows;
-                from_col_end = conn->from_layer->columns;
-                to_row_end = conn->to_layer->rows;
-                to_col_end = conn->to_layer->columns;
-            } else if (conn->type == SUBSET) {
-                auto sc = conn->get_config()->get_subset_config();
-                from_row_start = sc.from_row_start;
-                from_col_start = sc.from_col_start;
-                to_row_start = sc.to_row_start;
-                to_col_start = sc.to_col_start;
-                from_row_end = sc.from_row_end;
-                from_col_end = sc.from_col_end;
-                to_row_end = sc.to_row_end;
-                to_col_end = sc.to_col_end;
-            }
-
-            int from_columns = conn->from_layer->columns;
-            int weight_index = 0;
-            for (int f_row = from_row_start; f_row < from_row_end; ++f_row) {
-                float f_y = f_row * from_spacing;
-
-                for (int f_col = from_col_start; f_col < from_col_end; ++f_col) {
-                    float f_x = f_col * from_spacing;
-
-                    for (int t_row = to_row_start; t_row < to_row_end; ++t_row) {
-                        float t_y = t_row * to_spacing + y_offset;
-
-                        for (int t_col = to_col_start; t_col < to_col_end; ++t_col) {
-                            float t_x = t_col * to_spacing + x_offset;
-
-                            float distance = pow(
-                                pow(t_x - f_x, 2) + pow(t_y - f_y, 2),
-                                0.5);
-                            int delay = base_delay + (distance / velocity);
-                            if (delay > 31)
-                                if (cap_delay) delay = 31;
-                                else
-                                    LOG_ERROR(
-                                        "Error initializing delays for "
-                                        + conn->str() + "\n"
-                                        "  Unmyelinated axons cannot have delays "
-                                        "greater than 31!");
-                            delays[weight_index] = delay;
-                            ++weight_index;
-                        }
-                    }
-                }
-            }
+            indices_kernel = get_indices_kernel_fully_connected();
             break;
-        }
+        case SUBSET:
+            indices_kernel = get_indices_kernel_subset();
+            break;
         case ONE_TO_ONE:
-            for (int i = 0 ; i < conn->get_num_weights() ; ++i)
-                delays[i] = base_delay;
+            indices_kernel = get_indices_kernel_one_to_one();
             break;
-        case CONVERGENT: {
-            auto ac = conn->get_config()->get_arborized_config();
-            int to_size = conn->to_layer->size;
-            int field_size = ac.row_field_size * ac.column_field_size;
-
-            if (ac.row_stride != ac.column_stride
-                or (int(to_spacing / from_spacing) != ac.row_stride))
-                LOG_ERROR(
-                    "Error initializing delays for " + conn->str() + "\n"
-                    "  Spacing and strides must match up for "
-                    "convergent connection (got " + std::to_string(to_spacing)
-                    + ", " + std::to_string(from_spacing) + "!");
-
-            for (int f_row = 0; f_row < ac.row_field_size; ++f_row) {
-                float f_y = (f_row*ac.row_spacing + ac.row_offset) * to_spacing;
-
-                for (int f_col = 0; f_col < ac.column_field_size; ++f_col) {
-                    float f_x = ((f_col*ac.column_spacing) + ac.column_offset) * to_spacing;
-
-                    float distance = pow(
-                        pow(f_x, 2) + pow(f_y, 2),
-                        0.5);
-                    int delay = base_delay + (distance / velocity);
-                    if (delay > 31)
-                        if (cap_delay) delay = 31;
-                        else
-                            LOG_ERROR(
-                                "Error initializing delays for " + conn->str()
-                                + "\n  Unmyelinated axons cannot have delays "
-                                "greater than 31!");
-
-                    int f_index = (f_row * ac.column_field_size) + f_col;
-                    for (int i = 0 ; i < to_size ; ++i)
-                        delays[(i * field_size) + f_index] = delay;
-                }
-            }
+        case CONVERGENT:
+            indices_kernel = get_indices_kernel_wrap_convergent();
             break;
-        }
-        case DIVERGENT: {
-            auto ac = conn->get_config()->get_arborized_config();
-            int num_weights = conn->get_num_weights();
-            int to_rows = conn->to_layer->rows;
-            int to_columns = conn->to_layer->columns;
-            int to_size = conn->to_layer->size;
-            int from_rows = conn->from_layer->rows;
-            int from_columns = conn->from_layer->columns;
-
-            if (ac.row_stride != ac.column_stride
-                or (int(from_spacing / to_spacing) != ac.row_stride))
-                LOG_ERROR(
-                    "Error initializing delays for " + conn->str() + "\n"
-                    "  Spacing and strides must match up for "
-                    "convergent connection (got " + std::to_string(to_spacing)
-                    + ", " + std::to_string(from_spacing) + "!");
-
-
-            int row_field_size = ac.row_field_size;
-            int column_field_size = ac.column_field_size;
-            int row_stride = ac.row_stride;
-            int column_stride = ac.column_stride;
-            int row_spacing = ac.row_spacing;
-            int column_spacing = ac.column_spacing;
-            int row_offset = ac.row_offset;
-            int column_offset = ac.column_offset;
-            int kernel_size = row_field_size * column_field_size;
-
-            for (int d_row = 0 ; d_row < to_rows ; ++d_row) {
-                for (int d_col = 0 ; d_col < to_columns ; ++d_col) {
-                    int to_index = d_row*to_columns + d_col;
-
-                    /* Determine range of source neurons for divergent kernel */
-                    int start_s_row = \
-                        (d_row + row_spacing * (-row_offset \
-                            - row_field_size + row_stride)) / row_stride; \
-                    int start_s_col = \
-                        (d_col + column_spacing * (-column_offset \
-                            - column_field_size + column_stride)) / column_stride; \
-                    int end_s_row = start_s_row + \
-                        (row_spacing * (row_field_size - row_stride) / row_stride); \
-                    int end_s_col = start_s_col + \
-                        (column_spacing * (column_field_size - column_stride) / column_stride); \
-
-                    int weight_offset = to_index * (num_weights / to_size);
-
-                    /* Iterate over relevant source neurons... */
-                    int k_index = 0;
-                    for (int s_row = start_s_row ; s_row <= end_s_row ; (s_row += row_spacing)) {
-                        for (int s_col = start_s_col ; s_col <= end_s_col ; (s_col += column_spacing, ++k_index)) {
-                            /* If wrapping, adjust out of bounds indices accordingly */
-                            if (not ac.wrap and
-                                (s_row < 0 or s_row >= from_rows
-                                or s_col < 0 or s_col >= from_columns)) {
-                                continue;
-                            }
-
-                            int from_index = (s_row * from_columns) + s_col;
-
-                            float d_x = abs(
-                                (d_col * to_spacing)
-                                - (s_col * from_spacing));
-                            float d_y = abs(
-                                (d_row * to_spacing)
-                                - (s_row * from_spacing));
-
-                            float distance = pow(
-                                pow(d_x, 2) + pow(d_y, 2),
-                                0.5);
-                            int delay = base_delay + (distance / velocity);
-                            if (delay > 31)
-                                if (cap_delay) delay = 31;
-                                else
-                                    LOG_ERROR(
-                                        "Error initializing delays for "
-                                        + conn->str() + "\n"
-                                        "  Unmyelinated axons cannot have "
-                                        "delays greater than 31!");
-                            int weight_index = weight_offset + k_index;
-                            delays[weight_index] = delay;
-                        }
-                    }
-                }
-            }
+        case DIVERGENT:
+            indices_kernel = get_indices_kernel_wrap_divergent();
             break;
-        }
     }
+
+    auto res_man = ResourceManager::get_instance();
+    Pointer<void*> p_to_p = Pointer<void*>(5);
+
+    if (res_man->get_gpu_ids().size() == 0) {
+        p_to_p[0] = from_row_indices.get();
+        p_to_p[1] = from_col_indices.get();
+        p_to_p[2] = to_row_indices.get();
+        p_to_p[3] = to_col_indices.get();
+        p_to_p[4] = used.get();
+
+        LOG_DEBUG("  Running serial kernel...");
+        indices_kernel.run_serial(SynapseData(conn, p_to_p));
+    } else {
+#ifdef __CUDACC__
+        int num_weights = conn->get_num_weights();
+        DeviceID device_id = *res_man->get_devices().begin();
+        DeviceID host_id = res_man->get_host_id();
+        Stream *stream = res_man->get_default_stream(device_id);
+
+        LOG_DEBUG("  Allocating device memory...");
+
+        std::vector<Pointer<int>> host_pointers =
+            { from_row_indices, from_col_indices,
+              to_row_indices, to_col_indices, used };
+
+        // Set up pointers
+        std::vector<Pointer<int>> device_pointers;
+        for (int i = 0 ; i < host_pointers.size() ; ++i) {
+            device_pointers.push_back(
+                Pointer<int>::device_pointer(device_id, num_weights));
+            p_to_p[i] = device_pointers[i].get_unsafe();
+        }
+        // Set used to 0
+        device_pointers[device_pointers.size()-1].set(0, false);
+        p_to_p.transfer(device_id);
+
+        LOG_DEBUG("  Running parallel kernel...");
+
+        // Run parallel kernel
+        dim3 threads = calc_threads(conn->to_layer->size);
+        dim3 blocks = calc_blocks(conn->to_layer->size);
+        indices_kernel.run_parallel(
+            stream, blocks, threads, SynapseData(conn, p_to_p));
+
+        LOG_DEBUG("  Performing transposition...");
+
+        // Transpose matrices
+        Pointer<int> temp =
+            Pointer<int>::device_pointer(device_id, num_weights);
+
+        int transpose_rows = conn->get_matrix_columns();
+        int transpose_cols = conn->get_matrix_rows();
+        blocks = calc_transpose_blocks(transpose_rows, transpose_cols);
+        threads = calc_transpose_threads(transpose_rows, transpose_cols);
+
+        // Perform transpositions
+        for (int i = 0 ; i < device_pointers.size() ; ++i) {
+            cudaSetDevice(device_id);
+            transpose_matrix_parallel<int>
+                <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+                (device_pointers[i], temp, transpose_rows, transpose_cols);
+
+            temp.copy_to(host_pointers[i], stream);
+            device_synchronize();
+            device_check_error("Failed to transpose weight matrix!");
+            device_pointers[i].free();
+        }
+        temp.free();
+#endif
+    }
+
+    p_to_p.free();
+}
+
+#define DISTANCES_EXTRACTIONS \
+    float** p_to_p = (float**)synapse_data.pointer_to_pointer.get(); \
+    float* distances = (float*)p_to_p[0]; \
+    float* aux_values = (float*)p_to_p[1]; \
+    float from_spacing = aux_values[0]; \
+    float to_spacing = aux_values[1]; \
+    float x_offset = aux_values[2]; \
+    float y_offset = aux_values[3];
+
+#define SET_DISTANCES(PREFIX) \
+    float f_y = PREFIX##from_row * from_spacing; \
+    float f_x = PREFIX##from_column * from_spacing; \
+ \
+    float t_y = to_row * to_spacing + y_offset; \
+    float t_x = to_column * to_spacing + x_offset; \
+ \
+    distances[weight_index] = pow( \
+        pow(t_x - f_x, 2) + pow(t_y - f_y, 2), \
+        0.5);
+
+CALC_ALL(distances_kernel,
+    DISTANCES_EXTRACTIONS,
+    ,
+    SET_DISTANCES(),
+)
+
+CALC_CONVERGENT(distances_kernel_wrap_convergent,
+    DISTANCES_EXTRACTIONS,
+    ,
+    SET_DISTANCES(pre_wrap_),
+)
+CALC_DIVERGENT(distances_kernel_wrap_divergent,
+    DISTANCES_EXTRACTIONS,
+    ,
+    SET_DISTANCES(pre_wrap_),
+)
+
+void get_distances(Connection *conn, Pointer<float> distances,
+        float from_spacing, float to_spacing,
+        float x_offset, float y_offset) {
+    LOG_DEBUG("Retrieving distances for : " + conn->str());
+
+    // Retrieve appropriate kernel
+    Kernel<SYNAPSE_ARGS> distances_kernel;
+    switch(conn->type) {
+        case FULLY_CONNECTED:
+            distances_kernel = get_distances_kernel_fully_connected();
+            break;
+        case SUBSET:
+            distances_kernel = get_distances_kernel_subset();
+            break;
+        case ONE_TO_ONE:
+            distances_kernel = get_distances_kernel_one_to_one();
+            break;
+        case CONVERGENT:
+            distances_kernel = get_distances_kernel_wrap_convergent();
+            break;
+        case DIVERGENT:
+            distances_kernel = get_distances_kernel_wrap_divergent();
+            break;
+    }
+
+    auto res_man = ResourceManager::get_instance();
+    Pointer<void*> p_to_p = Pointer<void*>(5);
+    Pointer<float> auxiliary = Pointer<float>(4);
+    auxiliary[0] = from_spacing;
+    auxiliary[1] = to_spacing;
+    auxiliary[2] = x_offset;
+    auxiliary[3] = y_offset;
+
+    if (res_man->get_gpu_ids().size() == 0) {
+        p_to_p[0] = distances.get();
+        p_to_p[1] = auxiliary.get();
+
+        LOG_DEBUG("  Running serial kernel...");
+        distances_kernel.run_serial(SynapseData(conn, p_to_p));
+    } else {
+#ifdef __CUDACC__
+        int num_weights = conn->get_num_weights();
+        DeviceID device_id = *res_man->get_devices().begin();
+        DeviceID host_id = res_man->get_host_id();
+        Stream *stream = res_man->get_default_stream(device_id);
+
+        LOG_DEBUG("  Allocating device memory...");
+
+        // Set up pointers
+        auto device_distances = Pointer<float>::device_pointer(device_id, num_weights);
+        p_to_p[0] = device_distances.get_unsafe();
+
+        auxiliary.transfer(device_id);
+        p_to_p[1] = auxiliary.get_unsafe();
+
+        p_to_p.transfer(device_id);
+
+        LOG_DEBUG("  Running parallel kernel...");
+
+        // Run parallel kernel
+        dim3 threads = calc_threads(conn->to_layer->size);
+        dim3 blocks = calc_blocks(conn->to_layer->size);
+        distances_kernel.run_parallel(
+            stream, blocks, threads, SynapseData(conn, p_to_p));
+
+        LOG_DEBUG("  Performing transposition...");
+
+        // Transpose matrices
+        Pointer<float> temp =
+            Pointer<float>::device_pointer(device_id, num_weights);
+
+        int transpose_rows = conn->get_matrix_columns();
+        int transpose_cols = conn->get_matrix_rows();
+        blocks = calc_transpose_blocks(transpose_rows, transpose_cols);
+        threads = calc_transpose_threads(transpose_rows, transpose_cols);
+
+        // Perform transposition
+        cudaSetDevice(device_id);
+        transpose_matrix_parallel<float>
+            <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+            (device_distances, temp, transpose_rows, transpose_cols);
+
+        temp.copy_to(distances, stream);
+        device_synchronize();
+        device_check_error("Failed to transpose weight matrix!");
+        device_distances.free();
+        temp.free();
+#endif
+    }
+
+    auxiliary.free();
+    p_to_p.free();
+}
+
+#define DELAYS_EXTRACTIONS \
+    void** p_to_p = (void**)synapse_data.pointer_to_pointer.get(); \
+    int* delays = (int*)p_to_p[0]; \
+    float* aux_values = (float*)p_to_p[1]; \
+    float from_spacing = aux_values[0]; \
+    float to_spacing = aux_values[1]; \
+    float x_offset = aux_values[2]; \
+    float y_offset = aux_values[3]; \
+    float velocity = aux_values[4]; \
+    int base_delay = (int)aux_values[5]; \
+    bool cap_delay = aux_values[6] > 0.5;
+
+#define SET_DELAYS(PREFIX) \
+    float f_y = PREFIX##from_row * from_spacing; \
+    float f_x = PREFIX##from_column * from_spacing; \
+ \
+    float t_y = to_row * to_spacing + y_offset; \
+    float t_x = to_column * to_spacing + x_offset; \
+ \
+    float distance = pow( \
+        pow(t_x - f_x, 2) + pow(t_y - f_y, 2), \
+        0.5); \
+    int delay = base_delay + (distance / velocity); \
+    if (delay > 31 and not cap_delay) { \
+        printf("BIT delays cannot be greater than 31!"); \
+        assert(false); \
+    } \
+    delays[weight_index] = MIN(31, delay);
+
+CALC_ALL(delays_kernel,
+    DELAYS_EXTRACTIONS,
+    ,
+    SET_DELAYS(),
+)
+
+CALC_CONVERGENT(delays_kernel_wrap_convergent,
+    DELAYS_EXTRACTIONS,
+    ,
+    SET_DELAYS(pre_wrap_),
+)
+CALC_DIVERGENT(delays_kernel_wrap_divergent,
+    DELAYS_EXTRACTIONS,
+    ,
+    SET_DELAYS(pre_wrap_),
+)
+
+void get_delays(Connection *conn, OutputType output_type, Pointer<int> delays,
+        float from_spacing, float to_spacing,
+        float x_offset, float y_offset,
+        float velocity, bool cap_delay) {
+    LOG_DEBUG("Initializing delays for : " + conn->str());
+    if (output_type != BIT)
+        LOG_ERROR("Only BIT output connections can have variable delays!");
+
+    int base_delay = conn->delay;
+    float num_weights = conn->get_num_weights();
+
+    // Retrieve appropriate kernel
+    Kernel<SYNAPSE_ARGS> delays_kernel;
+    switch(conn->type) {
+        case FULLY_CONNECTED:
+            delays_kernel = get_delays_kernel_fully_connected();
+            break;
+        case SUBSET:
+            delays_kernel = get_delays_kernel_subset();
+            break;
+        case ONE_TO_ONE:
+            delays_kernel = get_delays_kernel_one_to_one();
+            break;
+        case CONVERGENT:
+            delays_kernel = get_delays_kernel_wrap_convergent();
+            break;
+        case DIVERGENT:
+            delays_kernel = get_delays_kernel_wrap_divergent();
+            break;
+    }
+
+    auto res_man = ResourceManager::get_instance();
+    Pointer<void*> p_to_p = Pointer<void*>(5);
+    Pointer<float> auxiliary = Pointer<float>(7);
+    auxiliary[0] = from_spacing;
+    auxiliary[1] = to_spacing;
+    auxiliary[2] = x_offset;
+    auxiliary[3] = y_offset;
+    auxiliary[4] = velocity;
+    auxiliary[5] = base_delay;
+    auxiliary[6] = (cap_delay) ? 1.0 : 0.0;
+
+    if (res_man->get_gpu_ids().size() == 0) {
+        p_to_p[0] = (void*)delays.get();
+        p_to_p[1] = (void*)auxiliary.get();
+
+        LOG_DEBUG("  Running serial kernel...");
+        delays_kernel.run_serial(SynapseData(conn, p_to_p));
+    } else {
+#ifdef __CUDACC__
+        int num_weights = conn->get_num_weights();
+        DeviceID device_id = *res_man->get_devices().begin();
+        DeviceID host_id = res_man->get_host_id();
+        Stream *stream = res_man->get_default_stream(device_id);
+
+        LOG_DEBUG("  Allocating device memory...");
+
+        // Set up pointers
+        auto device_delays = Pointer<int>::device_pointer(device_id, num_weights);
+        p_to_p[0] = device_delays.get_unsafe();
+
+        auxiliary.transfer(device_id);
+        p_to_p[1] = auxiliary.get_unsafe();
+
+        p_to_p.transfer(device_id);
+
+        LOG_DEBUG("  Running parallel kernel...");
+
+        // Run parallel kernel
+        dim3 threads = calc_threads(conn->to_layer->size);
+        dim3 blocks = calc_blocks(conn->to_layer->size);
+        delays_kernel.run_parallel(
+            stream, blocks, threads, SynapseData(conn, p_to_p));
+
+        LOG_DEBUG("  Performing transposition...");
+
+        // Transpose matrices
+        Pointer<int> temp =
+            Pointer<int>::device_pointer(device_id, num_weights);
+
+        int transpose_rows = conn->get_matrix_columns();
+        int transpose_cols = conn->get_matrix_rows();
+        blocks = calc_transpose_blocks(transpose_rows, transpose_cols);
+        threads = calc_transpose_threads(transpose_rows, transpose_cols);
+
+        // Perform transposition
+        cudaSetDevice(device_id);
+        transpose_matrix_parallel<int>
+            <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+            (device_delays, temp, transpose_rows, transpose_cols);
+
+        temp.copy_to(delays, stream);
+        device_synchronize();
+        device_check_error("Failed to transpose weight matrix!");
+        device_delays.free();
+        temp.free();
+#endif
+    }
+
+    auxiliary.free();
+    p_to_p.free();
 }
 
 /******************************************************************************/

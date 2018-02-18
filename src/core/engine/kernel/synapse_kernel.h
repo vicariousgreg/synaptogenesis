@@ -46,10 +46,7 @@
 #define SYNAPSE_PREAMBLE \
     const Opcode opcode = synapse_data.connection.opcode; \
     const int delay = synapse_data.connection.delay; \
-    float * const weights = \
-        (synapse_data.connection.second_order_host) \
-            ? synapse_data.matrix->second_order_weights.get() \
-            : synapse_data.matrix->weights.get(); \
+    float * const weights = synapse_data.weights.get(); \
     const int num_weights = synapse_data.connection.num_weights; \
     const bool plastic = synapse_data.connection.plastic; \
     const float max_weight = synapse_data.connection.max_weight; \
@@ -73,13 +70,24 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     EXTRACTIONS; \
  \
     int weight_index = 0; \
-    for (int to_index = 0 ; to_index < to_size ; ++to_index) { \
-        NEURON_PRE; \
-        for (int from_index = 0 ; from_index < from_size ; \
-                (++from_index, ++weight_index)) { \
-            WEIGHT_OP; \
+    int to_index = 0; \
+    for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+        for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+            NEURON_PRE; \
+\
+            int from_index = 0; \
+            for (int from_row = 0 ; from_row < from_rows ; ++from_row) { \
+                for (int from_column = 0 ; from_column < from_columns ; ++from_column) { \
+                    WEIGHT_OP; \
+\
+                    ++weight_index; \
+                    ++from_index; \
+                } \
+            } \
+\
+            NEURON_POST; \
+            ++to_index; \
         } \
-        NEURON_POST; \
     } \
 }
 
@@ -88,14 +96,24 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    int to_row = blockIdx.x; \
+    int to_column = threadIdx.x; \
+    int to_index = to_row * blockDim.x + to_column; \
+\
     if (to_index < to_size) { \
         NEURON_PRE; \
+\
+        int from_index = 0; \
         int weight_index = to_index; \
-        for (int from_index = 0 ; from_index < from_size ; \
-                (++from_index, weight_index += to_size)) { \
-            WEIGHT_OP; \
+        for (int from_row = 0 ; from_row < from_rows ; ++from_row) { \
+            for (int from_column = 0 ; from_column < from_columns ; ++from_column) { \
+                WEIGHT_OP; \
+\
+                weight_index += to_size; \
+                ++from_index; \
+            } \
         } \
+\
         NEURON_POST; \
     } \
 }
@@ -118,14 +136,14 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
  \
     int to_kernel_index = 0; \
     for (int to_row = to_row_start ; to_row < to_row_end ; ++to_row) { \
-        for (int to_col = to_col_start ; to_col < to_col_end ; ++to_col) { \
-            int to_index = to_row * to_columns + to_col; \
+        for (int to_column = to_col_start ; to_column < to_col_end ; ++to_column) { \
+            int to_index = to_row * to_columns + to_column; \
             NEURON_PRE; \
             int from_kernel_index = 0; \
 \
             for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
-                for (int from_col = from_col_start ; from_col < from_col_end ; ++from_col) { \
-                    int from_index = from_row * from_columns + from_col; \
+                for (int from_column = from_col_start ; from_column < from_col_end ; ++from_column) { \
+                    int from_index = from_row * from_columns + from_column; \
                     int weight_index = to_kernel_index * from_kernel_size + from_kernel_index; \
 \
                     WEIGHT_OP; \
@@ -157,14 +175,14 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_kernel_index < to_kernel_size) { \
         int to_row = (to_kernel_index / to_col_size) + to_row_start; \
-        int to_col = (to_kernel_index % to_col_size) + to_col_start; \
-        int to_index = to_row * to_columns + to_col; \
+        int to_column = (to_kernel_index % to_col_size) + to_col_start; \
+        int to_index = to_row * to_columns + to_column; \
         int from_kernel_index = 0; \
         NEURON_PRE; \
 \
         for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
-            for (int from_col = from_col_start ; from_col < from_col_end ; ++from_col) { \
-                int from_index = from_row * from_columns + from_col; \
+            for (int from_column = from_col_start ; from_column < from_col_end ; ++from_column) { \
+                int from_index = from_row * from_columns + from_column; \
                 int weight_index = from_kernel_index * to_kernel_size + to_kernel_index; \
 \
                 WEIGHT_OP; \
@@ -184,12 +202,18 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    for (int weight_index=0, from_index=0, to_index=0 ; \
-         weight_index < from_size ; \
-         ++weight_index, ++to_index, ++from_index) { \
-        NEURON_PRE; \
-        WEIGHT_OP; \
-        NEURON_POST; \
+    int weight_index = 0; \
+    for (int from_row=0, to_row=0, from_index=0, to_index=0 ; \
+         from_row < from_rows ; \
+         ++from_row, ++to_row) { \
+        for (int from_column=0, to_column=0 ; from_column < from_columns ; \
+             ++from_column, ++to_column, \
+             ++from_index, ++to_index, \
+             ++weight_index) { \
+            NEURON_PRE; \
+            WEIGHT_OP; \
+            NEURON_POST; \
+        } \
     } \
 }
 
@@ -198,10 +222,15 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    int weight_index = blockIdx.x * blockDim.x + threadIdx.x; \
-    if (weight_index < from_size) { \
-        int from_index = weight_index; \
-        int to_index = weight_index; \
+    int to_row = blockIdx.x; \
+    int to_column = threadIdx.x; \
+    int to_index = to_row * blockDim.x + to_column; \
+\
+    if (to_index < to_size) { \
+        int from_row = to_row; \
+        int from_column = to_column; \
+        int from_index = to_index; \
+        int weight_index = to_index; \
         NEURON_PRE; \
         WEIGHT_OP; \
         NEURON_POST; \
@@ -227,13 +256,13 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     EXTRACTIONS; \
  \
     int to_index = 0; \
-    for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
-        for (int d_col = 0 ; d_col < to_columns ; (++d_col, ++to_index)) { \
+    for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+        for (int to_column = 0 ; to_column < to_columns ; (++to_column, ++to_index)) { \
             NEURON_PRE; \
  \
             /* Determine starting row and column for source neurons */ \
-            int s_row = d_row * row_stride + (row_spacing * row_offset); \
-            int s_col = d_col * column_stride + (column_spacing * column_offset); \
+            int s_row = to_row * row_stride + (row_spacing * row_offset); \
+            int s_col = to_column * column_stride + (column_spacing * column_offset); \
  \
             /* Row of matrix is either the first column (convolutional) */ \
             /*   or the index of the destination neuron otherwise */ \
@@ -243,27 +272,29 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             int k_index = 0; \
             for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
                 for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++k_index)) { \
-                    int k_s_row = s_row + (k_row * row_spacing); \
-                    int k_s_col = s_col + (k_col * column_spacing); \
+                    int from_row = s_row + (k_row * row_spacing); \
+                    int from_column = s_col + (k_col * column_spacing); \
+                    int pre_wrap_from_row = from_row; \
+                    int pre_wrap_from_column = from_column; \
  \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        k_s_row = (k_s_row < 0) \
-                            ? k_s_row + from_rows \
-                            : (k_s_row >= from_rows) \
-                                ? k_s_row - from_rows : k_s_row; \
+                        from_row = (from_row < 0) \
+                            ? from_row + from_rows \
+                            : (from_row >= from_rows) \
+                                ? from_row - from_rows : from_row; \
  \
-                        k_s_col = (k_s_col < 0) \
-                            ? k_s_col + from_columns \
-                            : (k_s_col >= from_columns) \
-                                ? k_s_col - from_columns : k_s_col; \
+                        from_column = (from_column < 0) \
+                            ? from_column + from_columns \
+                            : (from_column >= from_columns) \
+                                ? from_column - from_columns : from_column; \
                     /* Avoid making connections with non-existent neurons */ \
-                    } else if (k_s_row < 0 or k_s_row >= from_rows \
-                        or k_s_col < 0 or k_s_col >= from_columns) { \
+                    } else if (from_row < 0 or from_row >= from_rows \
+                        or from_column < 0 or from_column >= from_columns) { \
                         continue; \
                     } \
  \
-                    int from_index = k_s_row * from_columns + k_s_col; \
+                    int from_index = from_row * from_columns + from_column; \
  \
                     /* Column of matrix is the kernel index */ \
                     int weight_index = weight_offset + k_index; \
@@ -294,13 +325,13 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
  \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_index < to_size) { \
-        int d_row = to_index / to_columns; \
-        int d_col = to_index % to_columns; \
+        int to_row = to_index / to_columns; \
+        int to_column = to_index % to_columns; \
         NEURON_PRE; \
 \
         /* Determine starting row and column for source neurons */ \
-        int s_row = d_row * row_stride + (row_spacing * row_offset); \
-        int s_col = d_col * column_stride + (column_spacing * column_offset); \
+        int s_row = to_row * row_stride + (row_spacing * row_offset); \
+        int s_col = to_column * column_stride + (column_spacing * column_offset); \
 \
         /* Column of matrix is either the first column (convolutional) */ \
         /*   or the index of the destination neuron otherwise */ \
@@ -314,27 +345,29 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int k_index = 0; \
         for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
             for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++k_index)) { \
-                int k_s_row = s_row + (k_row * row_spacing); \
-                int k_s_col = s_col + (k_col * column_spacing); \
+                int from_row = s_row + (k_row * row_spacing); \
+                int from_column = s_col + (k_col * column_spacing); \
+                int pre_wrap_from_row = from_row; \
+                int pre_wrap_from_column = from_column; \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    k_s_row = (k_s_row < 0) \
-                        ? k_s_row + from_rows \
-                        : (k_s_row >= from_rows) \
-                            ? k_s_row - from_rows : k_s_row; \
+                    from_row = (from_row < 0) \
+                        ? from_row + from_rows \
+                        : (from_row >= from_rows) \
+                            ? from_row - from_rows : from_row; \
 \
-                    k_s_col = (k_s_col < 0) \
-                        ? k_s_col + from_columns \
-                        : (k_s_col >= from_columns) \
-                            ? k_s_col - from_columns : k_s_col; \
+                    from_column = (from_column < 0) \
+                        ? from_column + from_columns \
+                        : (from_column >= from_columns) \
+                            ? from_column - from_columns : from_column; \
                 /* Avoid making connections with non-existent neurons */ \
-                } else if (k_s_row < 0 or k_s_row >= from_rows \
-                    or k_s_col < 0 or k_s_col >= from_columns) { \
+                } else if (from_row < 0 or from_row >= from_rows \
+                    or from_column < 0 or from_column >= from_columns) { \
                     continue; \
                 } \
 \
-                int from_index = k_s_row * from_columns + k_s_col; \
+                int from_index = from_row * from_columns + from_column; \
 \
                 /* Row of matrix is the kernel index * row size (see above) */ \
                 int weight_index = weight_col + k_index * kernel_row_size; \
@@ -366,16 +399,16 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 \
     /* Iterate over destination neurons */ \
     int to_index = 0; \
-    for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
-        for (int d_col = 0 ; d_col < to_columns ; (++d_col, ++to_index)) { \
+    for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+        for (int to_column = 0 ; to_column < to_columns ; (++to_column, ++to_index)) { \
             NEURON_PRE; \
 \
             /* Determine range of source neurons for divergent kernel */ \
             int start_s_row = \
-                (d_row + row_spacing * (-row_offset \
+                (to_row + row_spacing * (-row_offset \
                     - row_field_size + row_stride)) / row_stride; \
             int start_s_col = \
-                (d_col + column_spacing * (-column_offset \
+                (to_column + column_spacing * (-column_offset \
                     - column_field_size + column_stride)) / column_stride; \
             int end_s_row = start_s_row + \
                 (row_spacing * (row_field_size - row_stride) / row_stride); \
@@ -388,27 +421,29 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             int k_index = 0; \
             for (int s_row = start_s_row ; s_row <= end_s_row ; (s_row += row_spacing)) { \
                 for (int s_col = start_s_col ; s_col <= end_s_col ; (s_col += column_spacing, ++k_index)) { \
-                    int k_s_row = s_row; \
-                    int k_s_col = s_col; \
+                    int from_row = s_row; \
+                    int from_column = s_col; \
+                    int pre_wrap_from_row = from_row; \
+                    int pre_wrap_from_column = from_column; \
 \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        k_s_row = (k_s_row < 0) \
-                            ? k_s_row + from_rows \
-                            : (k_s_row >= from_rows) \
-                                ? k_s_row - from_rows : k_s_row; \
+                        from_row = (from_row < 0) \
+                            ? from_row + from_rows \
+                            : (from_row >= from_rows) \
+                                ? from_row - from_rows : from_row; \
  \
-                        k_s_col = (k_s_col < 0) \
-                            ? k_s_col + from_columns \
-                            : (k_s_col >= from_columns) \
-                                ? k_s_col - from_columns : k_s_col; \
+                        from_column = (from_column < 0) \
+                            ? from_column + from_columns \
+                            : (from_column >= from_columns) \
+                                ? from_column - from_columns : from_column; \
                     /* Avoid making connections with non-existent neurons */ \
-                    } else if (k_s_row < 0 or k_s_row >= from_rows \
-                        or k_s_col < 0 or k_s_col >= from_columns) { \
+                    } else if (from_row < 0 or from_row >= from_rows \
+                        or from_column < 0 or from_column >= from_columns) { \
                         continue; \
                     } \
 \
-                    int from_index = (k_s_row * from_columns) + k_s_col; \
+                    int from_index = (from_row * from_columns) + from_column; \
                     int weight_index = weight_offset + k_index; \
                     WEIGHT_OP; \
                 } \
@@ -435,16 +470,16 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_index < to_size) { \
-        int d_row = to_index / to_columns; \
-        int d_col = to_index % to_columns; \
+        int to_row = to_index / to_columns; \
+        int to_column = to_index % to_columns; \
         NEURON_PRE; \
  \
         /* Determine range of source neurons for divergent kernel */ \
         int start_s_row = \
-            (d_row + row_spacing * (-row_offset \
+            (to_row + row_spacing * (-row_offset \
                 - row_field_size + row_stride)) / row_stride; \
         int start_s_col = \
-            (d_col + column_spacing * (-column_offset \
+            (to_column + column_spacing * (-column_offset \
                 - column_field_size + column_stride)) / column_stride; \
         int end_s_row = start_s_row + \
             (row_spacing * (row_field_size - row_stride) / row_stride); \
@@ -455,27 +490,29 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int k_index = 0; \
         for (int s_row = start_s_row ; s_row <= end_s_row ; (s_row += row_spacing)) { \
             for (int s_col = start_s_col ; s_col <= end_s_col ; (s_col += column_spacing, ++k_index)) { \
-                int k_s_row = s_row; \
-                int k_s_col = s_col; \
+                int from_row = s_row; \
+                int from_column = s_col; \
+                int pre_wrap_from_row = from_row; \
+                int pre_wrap_from_column = from_column; \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    k_s_row = (k_s_row < 0) \
-                        ? k_s_row + from_rows \
-                        : (k_s_row >= from_rows) \
-                            ? k_s_row - from_rows : k_s_row; \
+                    from_row = (from_row < 0) \
+                        ? from_row + from_rows \
+                        : (from_row >= from_rows) \
+                            ? from_row - from_rows : from_row; \
 \
-                    k_s_col = (k_s_col < 0) \
-                        ? k_s_col + from_columns \
-                        : (k_s_col >= from_columns) \
-                            ? k_s_col - from_columns : k_s_col; \
+                    from_column = (from_column < 0) \
+                        ? from_column + from_columns \
+                        : (from_column >= from_columns) \
+                            ? from_column - from_columns : from_column; \
                 /* Avoid making connections with non-existent neurons */ \
-                } else if (k_s_row < 0 or k_s_row >= from_rows \
-                    or k_s_col < 0 or k_s_col >= from_columns) { \
+                } else if (from_row < 0 or from_row >= from_rows \
+                    or from_column < 0 or from_column >= from_columns) { \
                     continue; \
                 } \
 \
-                int from_index = (k_s_row * from_columns) + k_s_col; \
+                int from_index = (from_row * from_columns) + from_column; \
 \
                 /* Row of matrix is the kernel index * row size (see above)
                    Column of matrix is the index of the source neuron */ \
@@ -509,35 +546,37 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
         for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++weight_index)) { \
             WEIGHT_PRE; \
  \
-            for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
-                for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
-                    int to_index = d_row * to_columns + d_col; \
+            for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+                for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+                    int to_index = to_row * to_columns + to_column; \
  \
                     /* Determine starting row and column for source neurons */ \
-                    int s_row = d_row * row_stride + (row_spacing * row_offset); \
-                    int s_col = d_col * column_stride + (column_spacing * column_offset); \
+                    int s_row = to_row * row_stride + (row_spacing * row_offset); \
+                    int s_col = to_column * column_stride + (column_spacing * column_offset); \
  \
-                    int k_s_row = s_row + (k_row * row_spacing); \
-                    int k_s_col = s_col + (k_col * column_spacing); \
+                    int from_row = s_row + (k_row * row_spacing); \
+                    int from_column = s_col + (k_col * column_spacing); \
+                    int pre_wrap_from_row = from_row; \
+                    int pre_wrap_from_column = from_column; \
  \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        k_s_row = (k_s_row < 0) \
-                            ? k_s_row + from_rows \
-                            : (k_s_row >= from_rows) \
-                                ? k_s_row - from_rows : k_s_row; \
+                        from_row = (from_row < 0) \
+                            ? from_row + from_rows \
+                            : (from_row >= from_rows) \
+                                ? from_row - from_rows : from_row; \
  \
-                        k_s_col = (k_s_col < 0) \
-                            ? k_s_col + from_columns \
-                            : (k_s_col >= from_columns) \
-                                ? k_s_col - from_columns : k_s_col; \
+                        from_column = (from_column < 0) \
+                            ? from_column + from_columns \
+                            : (from_column >= from_columns) \
+                                ? from_column - from_columns : from_column; \
                     /* Avoid making connections with non-existent neurons */ \
-                    } else if (k_s_row < 0 or k_s_row >= from_rows \
-                        or k_s_col < 0 or k_s_col >= from_columns) { \
+                    } else if (from_row < 0 or from_row >= from_rows \
+                        or from_column < 0 or from_column >= from_columns) { \
                         continue; \
                     } \
  \
-                    int from_index = k_s_row * from_columns + k_s_col; \
+                    int from_index = from_row * from_columns + from_column; \
  \
                     NEURON_OP; \
                 } \
@@ -569,35 +608,37 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
         WEIGHT_PRE; \
  \
-        for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
-            for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
-                int to_index = d_row * to_columns + d_col; \
+        for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+            for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+                int to_index = to_row * to_columns + to_column; \
 \
                 /* Determine starting row and column for source neurons */ \
-                int s_row = d_row * row_stride + (row_spacing * row_offset); \
-                int s_col = d_col * column_stride + (column_spacing * column_offset); \
+                int s_row = to_row * row_stride + (row_spacing * row_offset); \
+                int s_col = to_column * column_stride + (column_spacing * column_offset); \
 \
-                int k_s_row = s_row + (k_row * row_spacing); \
-                int k_s_col = s_col + (k_col * column_spacing); \
+                int from_row = s_row + (k_row * row_spacing); \
+                int from_column = s_col + (k_col * column_spacing); \
+                int pre_wrap_from_row = from_row; \
+                int pre_wrap_from_column = from_column; \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    k_s_row = (k_s_row < 0) \
-                        ? k_s_row + from_rows \
-                        : (k_s_row >= from_rows) \
-                            ? k_s_row - from_rows : k_s_row; \
+                    from_row = (from_row < 0) \
+                        ? from_row + from_rows \
+                        : (from_row >= from_rows) \
+                            ? from_row - from_rows : from_row; \
 \
-                    k_s_col = (k_s_col < 0) \
-                        ? k_s_col + from_columns \
-                        : (k_s_col >= from_columns) \
-                            ? k_s_col - from_columns : k_s_col; \
+                    from_column = (from_column < 0) \
+                        ? from_column + from_columns \
+                        : (from_column >= from_columns) \
+                            ? from_column - from_columns : from_column; \
                 /* Avoid making connections with non-existent neurons */ \
-                } else if (k_s_row < 0 or k_s_row >= from_rows \
-                    or k_s_col < 0 or k_s_col >= from_columns) { \
+                } else if (from_row < 0 or from_row >= from_rows \
+                    or from_column < 0 or from_column >= from_columns) { \
                     continue; \
                 } \
 \
-                int from_index = k_s_row * from_columns + k_s_col; \
+                int from_index = from_row * from_columns + from_column; \
 \
                 NEURON_OP; \
             } \
@@ -627,38 +668,40 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
         for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++weight_index)) { \
             WEIGHT_PRE; \
 \
-            for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
-                for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
-                    int to_index = d_row * to_columns + d_col; \
+            for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+                for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+                    int to_index = to_row * to_columns + to_column; \
 \
                     int s_row = \
-                        (d_row + row_spacing * (-row_offset \
+                        (to_row + row_spacing * (-row_offset \
                             - row_field_size + row_stride)) / row_stride; \
                     int s_col = \
-                        (d_col + column_spacing * (-column_offset \
+                        (to_column + column_spacing * (-column_offset \
                             - column_field_size + column_stride)) / column_stride; \
 \
-                    int k_s_row = s_row + (k_row * row_spacing); \
-                    int k_s_col = s_col + (k_col * column_spacing); \
+                    int from_row = s_row + (k_row * row_spacing); \
+                    int from_column = s_col + (k_col * column_spacing); \
+                    int pre_wrap_from_row = from_row; \
+                    int pre_wrap_from_column = from_column; \
 \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        k_s_row = (k_s_row < 0) \
-                            ? k_s_row + from_rows \
-                            : (k_s_row >= from_rows) \
-                                ? k_s_row - from_rows : k_s_row; \
+                        from_row = (from_row < 0) \
+                            ? from_row + from_rows \
+                            : (from_row >= from_rows) \
+                                ? from_row - from_rows : from_row; \
 \
-                        k_s_col = (k_s_col < 0) \
-                            ? k_s_col + from_columns \
-                            : (k_s_col >= from_columns) \
-                                ? k_s_col - from_columns : k_s_col; \
+                        from_column = (from_column < 0) \
+                            ? from_column + from_columns \
+                            : (from_column >= from_columns) \
+                                ? from_column - from_columns : from_column; \
                     /* Avoid making connections with non-existent neurons */ \
-                    } else if (k_s_row < 0 or k_s_row >= from_rows \
-                        or k_s_col < 0 or k_s_col >= from_columns) { \
+                    } else if (from_row < 0 or from_row >= from_rows \
+                        or from_column < 0 or from_column >= from_columns) { \
                         continue; \
                     } \
 \
-                    int from_index = (k_s_row * from_columns) + k_s_col; \
+                    int from_index = (from_row * from_columns) + from_column; \
 \
                     NEURON_OP; \
                 } \
@@ -690,38 +733,40 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
         WEIGHT_PRE; \
 \
-        for (int d_row = 0 ; d_row < to_rows ; ++d_row) { \
-            for (int d_col = 0 ; d_col < to_columns ; ++d_col) { \
-                int to_index = d_row * to_columns + d_col; \
+        for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+            for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+                int to_index = to_row * to_columns + to_column; \
 \
                 int s_row = \
-                    (d_row + row_spacing * (-row_offset \
+                    (to_row + row_spacing * (-row_offset \
                         - row_field_size + row_stride)) / row_stride; \
                 int s_col = \
-                    (d_col + column_spacing * (-column_offset \
+                    (to_column + column_spacing * (-column_offset \
                         - column_field_size + column_stride)) / column_stride; \
 \
-                int k_s_row = s_row + (k_row * row_spacing); \
-                int k_s_col = s_col + (k_col * column_spacing); \
+                int from_row = s_row + (k_row * row_spacing); \
+                int from_column = s_col + (k_col * column_spacing); \
+                int pre_wrap_from_row = from_row; \
+                int pre_wrap_from_column = from_column; \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    k_s_row = (k_s_row < 0) \
-                        ? k_s_row + from_rows \
-                        : (k_s_row >= from_rows) \
-                            ? k_s_row - from_rows : k_s_row; \
+                    from_row = (from_row < 0) \
+                        ? from_row + from_rows \
+                        : (from_row >= from_rows) \
+                            ? from_row - from_rows : from_row; \
 \
-                    k_s_col = (k_s_col < 0) \
-                        ? k_s_col + from_columns \
-                        : (k_s_col >= from_columns) \
-                            ? k_s_col - from_columns : k_s_col; \
+                    from_column = (from_column < 0) \
+                        ? from_column + from_columns \
+                        : (from_column >= from_columns) \
+                            ? from_column - from_columns : from_column; \
                 /* Avoid making connections with non-existent neurons */ \
-                } else if (k_s_row < 0 or k_s_row >= from_rows \
-                    or k_s_col < 0 or k_s_col >= from_columns) { \
+                } else if (from_row < 0 or from_row >= from_rows \
+                    or from_column < 0 or from_column >= from_columns) { \
                     continue; \
                 } \
 \
-                int from_index = (k_s_row * from_columns) + k_s_col; \
+                int from_index = (from_row * from_columns) + from_column; \
 \
                 NEURON_OP; \
             } \

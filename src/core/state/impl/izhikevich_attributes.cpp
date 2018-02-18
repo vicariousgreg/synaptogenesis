@@ -721,8 +721,8 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
 
     // Delays
     // Myelinated connections use the base delay only
-    int *delays = iz_mat->delays.get();
     if (conn->get_parameter("myelinated", "false") == "true") {
+        int *delays = iz_mat->delays.get();
         int delay = conn->delay;
         for (int i = 0 ; i < num_weights ; ++i)
             delays[i] = delay;
@@ -732,14 +732,15 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         if (max_delay > 31)
             LOG_ERROR(
                 "Randomized axons cannot have delays greater than 31!");
-        iRand(delays, num_weights, 0, max_delay);
+        iRand(iz_mat->delays, num_weights, 0, max_delay);
     } else {
-        set_delays(BIT, conn, delays, 0.15,
-            conn->get_parameter("cap delay", "false") == "true",
+        get_delays(conn, BIT, iz_mat->delays,
             std::stof(conn->from_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->to_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->get_parameter("x offset", "0.0")),
-            std::stof(conn->get_parameter("y offset", "0.0")));
+            std::stof(conn->get_parameter("y offset", "0.0")),
+            0.15,
+            conn->get_parameter("cap delay", "false") == "true");
     }
 
     // Time since last spike

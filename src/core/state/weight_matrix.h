@@ -110,11 +110,22 @@ void transfer_weights(float* from, float* to, int size);
 /* Clears the diagonal of a weight matrix */
 void clear_diagonal(float *arr, int rows, int cols);
 
-/* Sets delays according to spatial organization */
-void set_delays(OutputType output_type, Connection *conn,
-    int* delays, float velocity, bool cap_delay,
+
+/* Stores to/from indices in arrays */
+void get_indices(Connection *conn, Pointer<int> used,
+    Pointer<int> from_row_indices, Pointer<int> from_col_indices,
+    Pointer<int> to_row_indices, Pointer<int> to_col_indices);
+
+/* Stores unit distances in arrays */
+void get_distances(Connection *conn, Pointer<float> distances,
     float from_spacing, float to_spacing,
-    float x_offset, float y_offset);
+    float x_offset=0.0, float y_offset=0.0);
+
+/* Stores delays in array according to spatial organization */
+void get_delays(Connection *conn, OutputType output_type, Pointer<int> delays,
+    float from_spacing, float to_spacing,
+    float x_offset, float y_offset,
+    float velocity, bool cap_delay);
 
 /* Transposes a matrix in place */
 template <typename T>

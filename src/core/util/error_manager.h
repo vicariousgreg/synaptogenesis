@@ -5,7 +5,12 @@
 
 #define LOG_ERROR ErrorManager::log_error
 #define LOG_WARNING ErrorManager::log_warning
-#define LOG_DEBUG ErrorManager::log_debug
+
+#ifdef DEBUG
+#define LOG_DEBUG(ARG) ErrorManager::log_debug(ARG)
+#else
+#define LOG_DEBUG(ARG)
+#endif
 
 class DebugError : public std::exception { };
 

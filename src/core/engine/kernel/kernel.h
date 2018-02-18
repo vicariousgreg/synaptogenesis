@@ -33,6 +33,11 @@ class Kernel {
                   parallel_kernel(parallel_kernel),
                   run_all_serial(false) { }
 
+        /* Checks if kernel is null (no serial kernel */
+        bool is_null() { return serial_kernel == nullptr; }
+
+
+        /* Serial/Parallel agnostic functions */
         void run(Stream *stream, dim3 blocks, dim3 threads, ARGS... args) {
             if (run_all_serial or stream->is_host())
                 run_serial(stream, args...);
@@ -40,37 +45,43 @@ class Kernel {
                 run_parallel(stream, blocks, threads, args...);
         }
 
-        void run_serial(Stream *stream, ARGS... args) {
+        void schedule(Stream *stream, dim3 blocks, dim3 threads, ARGS... args) {
+            if (run_all_serial or stream->is_host())
+                schedule_serial(stream, args...);
+            else
+                schedule_parallel(stream, blocks, threads, args...);
+        }
+
+
+        /* Serial Functions */
+        void run_serial(ARGS... args) {
+            serial_kernel(args...);
+        }
+
+        void serial_wrapper(void(*f)(ARGS...), ARGS... args) {
+            f(args...);
+        }
+
+        void schedule_serial(Stream *stream, ARGS... args) {
             if (serial_kernel == nullptr)
                 LOG_ERROR(
                     "Attempted to run nullptr kernel!");
             else
                 stream->schedule(
-                    std::bind(&Kernel::wrapper,
-                        this, stream, serial_kernel, args...));
+                    std::bind(&Kernel::serial_wrapper, this, serial_kernel, args...));
         }
 
-        void run_parallel(Stream *stream, dim3 blocks, dim3 threads, ARGS... args) {
-#ifdef __CUDACC__
-            if (parallel_kernel == nullptr)
-                LOG_ERROR(
-                    "Attempted to run nullptr kernel!");
-            else
-                stream->schedule(
-                    std::bind(&Kernel::parallel_wrapper,
-                        this, stream, blocks, threads, parallel_kernel,
-                        args...));
-#else
-            LOG_ERROR(
-                "Attempted to run parallel kernel on serial build!");
-#endif
-        }
-
-        void wrapper(Stream *stream, void(*f)(ARGS...), ARGS... args) {
-            f(args...);
-        }
 
 #ifdef __CUDACC__
+        /* Implemented Parallel Functions */
+        void run_parallel(Stream *stream, dim3 blocks, dim3 threads,
+                ARGS... args) {
+            cudaSetDevice(stream->get_device_id());
+            parallel_kernel
+            <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+                (args...);
+        }
+
         void parallel_wrapper(Stream *stream, dim3 blocks, dim3 threads,
                 void(*f)(ARGS...), ARGS... args) {
             cudaSetDevice(stream->get_device_id());
@@ -78,9 +89,31 @@ class Kernel {
             <<<blocks, threads, 0, stream->get_cuda_stream()>>>
                 (args...);
         }
-#endif
 
-        bool is_null() { return serial_kernel == nullptr; }
+        void schedule_parallel(Stream *stream, dim3 blocks, dim3 threads,
+                ARGS... args) {
+            if (parallel_kernel == nullptr)
+                LOG_ERROR(
+                    "Attempted to run nullptr kernel!");
+            else
+                stream->schedule(
+                    std::bind(&Kernel::parallel_wrapper,
+                        this, stream, blocks, threads, parallel_kernel, args...));
+        }
+#else
+        /* Dummy Parallel Functions (for serial builds) */
+        void run_parallel(Stream *stream, dim3 blocks, dim3 threads,
+                ARGS... args) {
+            LOG_ERROR(
+                "Attempted to run parallel kernel on serial build!");
+        }
+
+        void schedule_parallel(Stream *stream, dim3 blocks, dim3 threads,
+                ARGS... args) {
+            LOG_ERROR(
+                "Attempted to run parallel kernel on serial build!");
+        }
+#endif
 
     protected:
         bool run_all_serial;
