@@ -105,7 +105,7 @@ network = Network(
 
 # Get device
 gpus = get_gpus()
-device = get_gpus(gpus[-1]) if len(gpus) > 0 else get_cpu()
+device = gpus[-1] if len(gpus) > 0 else get_cpu()
 
 train = True
 if (train):

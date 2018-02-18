@@ -524,7 +524,7 @@ if __name__ == "__main__":
                         help='refresh rate')
     args = parser.parse_args()
 
-    if args.host:
+    if args.host or len(get_gpus()) == 0:
         device = get_cpu()
     else:
         device = get_gpus()[args.d]
