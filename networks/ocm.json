@@ -14,8 +14,8 @@
 			},
 			"weight config": {
 				"type": "flat",
-				"weight": "0.1",
-				"distance callback": "140474900639760" 
+				"weight": "0.01",
+				"distance callback": "140062122348560" 
 			} 
 		},
 		{
@@ -27,7 +27,7 @@
 			"plastic": "false",
 			"arborized config": {
 				"field size": "5",
-				"distance callback": "140474900639760",
+				"distance callback": "140062122348560",
 				"to spacing": "5",
 				"stride": "5",
 				"offset": "0",
@@ -62,7 +62,8 @@
 				"field size": "14" 
 			},
 			"weight config": {
-				"distance callback": "140474900639760",
+				"distance callback": "140062122348560",
+				"diagonal": "false",
 				"fraction": "1",
 				"std dev": "0.01",
 				"type": "gaussian",
@@ -86,7 +87,7 @@
 				"field size": "50" 
 			},
 			"weight config": {
-				"distance callback": "140474900639760",
+				"distance callback": "140062122348560",
 				"to spacing": "2",
 				"fraction": "1",
 				"std dev": "0.005",
@@ -115,7 +116,7 @@
 				"field size": "40.0" 
 			},
 			"weight config": {
-				"distance callback": "140474900639760",
+				"distance callback": "140062122348560",
 				"from spacing": "2",
 				"circular mask": "None",
 				"fraction": "1",
@@ -137,7 +138,8 @@
 				"field size": "3" 
 			},
 			"weight config": {
-				"distance callback": "140474900639760",
+				"distance callback": "140062122348560",
+				"diagonal": "false",
 				"fraction": "1",
 				"std dev": "0.02",
 				"type": "gaussian",
@@ -161,7 +163,7 @@
 				"field size": "10" 
 			},
 			"weight config": {
-				"distance callback": "140474900639760",
+				"distance callback": "140062122348560",
 				"to spacing": "2",
 				"fraction": "1",
 				"std dev": "0.01",
@@ -190,7 +192,7 @@
 				"field size": "8.0" 
 			},
 			"weight config": {
-				"distance callback": "140474900639760",
+				"distance callback": "140062122348560",
 				"from spacing": "2",
 				"circular mask": "None",
 				"fraction": "1",
@@ -240,7 +242,7 @@
 					} 
 				},
 				{
-					"tau": "0.01",
+					"tau": "0.1",
 					"rows": "20",
 					"name": "sc_out_exc",
 					"neural model": "oscillator",
@@ -250,7 +252,7 @@
 						"rate": "0",
 						"random": "false",
 						"type": "poisson",
-						"value": "50.0" 
+						"value": "5.0" 
 					} 
 				},
 				{

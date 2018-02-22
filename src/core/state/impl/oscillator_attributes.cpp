@@ -71,7 +71,9 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     next_value = f_outputs[size * index + nid];
     float st = state[nid];
     state[nid] = st = st + (tau * inputs[nid]) + (decay * (tonic-st));
-    f_outputs[size * index + nid] = MAX(0.0f, st);
+    //f_outputs[size * index + nid] = MAX(0.0f, st);
+    f_outputs[size * index + nid] = MAX(0.0f, tanh(st));
+    //f_outputs[size * index + nid] = (1.0f / (1 + exp(-100.0 * st)) * tanh(st));
 )
 
 /******************************************************************************/

@@ -113,6 +113,7 @@ def build_exc_inh_pair(
                 "mean" : exc_exc_mean,
                 "std dev" : exc_exc_std_dev,
                 "fraction" : exc_exc_fraction,
+                "diagonal" : "false",
                 "circular mask" : [ { } ],
                 "distance callback" : addr,
             },
@@ -258,7 +259,7 @@ def build_network(rows=200, cols=200, scale=5):
         half_inh = True,
         mask = True,
 
-        exc_tau = 0.01,
+        exc_tau = 0.1,
         inh_tau = 0.1,
 
         exc_decay = 0.02,
@@ -316,7 +317,7 @@ def build_network(rows=200, cols=200, scale=5):
             "plastic" : "false",
             "weight config" : {
                 "type" : "flat",
-                "weight" : 0.1,
+                "weight" : 0.01,
                 "distance callback" : addr,
             },
             "arborized config" : {
@@ -389,8 +390,8 @@ def build_environment(rows=200, cols=200, scale=5, visualizer=False):
             "type" : "gaussian_random_input",
             "rate" : "1000",
             "border" : motor_dim/10,
-            "std dev" : motor_dim/5,
-            "value" : "0.5",
+            "std dev" : motor_dim/10,
+            "value" : "1.0",
             "normalize" : "true",
             "peaks" : "1",
             "random" : "false",
@@ -416,7 +417,7 @@ def build_environment(rows=200, cols=200, scale=5, visualizer=False):
         })
         modules.append({
             "type" : "heatmap",
-            "stats" : "false",
+            "stats" : "true",
             "window" : "1000",
             "linear" : "true",
             "layers" : [

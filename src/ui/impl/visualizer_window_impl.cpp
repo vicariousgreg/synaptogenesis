@@ -186,8 +186,12 @@ void HeatmapWindowImpl::update() {
             avg = avg * 1000.0 / integration_window;
             avg_non_silent = avg_non_silent * 1000.0 / integration_window;
 
+            float percentage = 100.0 * count / layer->size;
+
             text += layer->str() + "\n";
-            text += "Spiked: " + std::to_string(count) + " / " + std::to_string(layer->size) + "\n";
+            text += "Spiked: " + std::to_string(count) +
+                " / " + std::to_string(layer->size) +
+                "(" + std::to_string(percentage) + "%)\n";
             text += "Max: " + std::to_string(int(max)) + "\n";
             text += "Min: " + std::to_string(int(min)) + "\n";
             text += "Avg: " + std::to_string(avg) + "\n";

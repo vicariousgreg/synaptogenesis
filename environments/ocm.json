@@ -20,11 +20,11 @@
 			"normalize": "true",
 			"rate": "1000",
 			"peaks": "1",
-			"std dev": "4",
+			"std dev": "2",
 			"border": "2",
 			"random": "false",
 			"type": "gaussian_random_input",
-			"value": "0.5",
+			"value": "1.0",
 			"layers": [
 				{
 					"layer": "gating",
@@ -62,7 +62,7 @@
 			] 
 		},
 		{
-			"stats": "false",
+			"stats": "true",
 			"window": "1000",
 			"type": "heatmap",
 			"linear": "true",
