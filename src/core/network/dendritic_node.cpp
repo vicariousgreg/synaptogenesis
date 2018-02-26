@@ -88,13 +88,10 @@ DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
             "Error in dendritic node of " + this->to_layer->str() + "\n"
             "  Duplicate dendritic node name: " + name + "!");
 
-    // The child's register index is bumped up if it's not the first child
-    int child_register = this->register_index;
-    if (this->name == "root") ++child_register;
-    if (children.size() > 0) ++child_register;
-
+    // The child inherits an incremented register index
     auto child =
-        new DendriticNode(this, to_layer, child_register,
+        new DendriticNode(this, to_layer,
+            this->register_index + 1,
             name, opcode, second_order);
     children.push_back(child);
     return child;
