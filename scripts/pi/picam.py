@@ -10,9 +10,14 @@ class PiCam:
         # Camera warm-up time
         sleep(2)
 
-    def capture_greyscale(self):
+    def capture_rgb(self):
+        output = picamera.array.PiRGBArray(self.camera)
         self.camera.capture(output, 'rgb')
         return output.array
+
+    def capture_greyscale(self):
+        output = picamera.array.PiRGBArray(self.camera)
+        self.camera.capture(output, 'rgb')
         return np.divide(
             output.array.reshape(
                 (output.array.shape[0] * output.array.shape[1],
