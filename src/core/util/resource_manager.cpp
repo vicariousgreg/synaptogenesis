@@ -126,7 +126,13 @@ void ResourceManager::flush(DeviceID device_id) {
 }
 
 const std::set<DeviceID> ResourceManager::get_default_devices() {
-    return { devices[0]->device_id };
+    // If multi-GPU, use last by default to minimize display GPU workload
+    if (get_num_devices() > 2)
+        return { devices[get_num_devices()-2]->device_id };
+    // Otherwise, just use the first device
+    // This will return the GPU if available, or the host if not
+    else
+        return { devices[0]->device_id };
 }
 
 bool ResourceManager::check_device_ids(std::set<DeviceID> ids, bool raise_error) {
