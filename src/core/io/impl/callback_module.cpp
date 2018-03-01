@@ -1,4 +1,5 @@
-#include "callback_module.h"
+#include "io/impl/callback_module.h"
+#include "util/callback_manager.h"
 
 REGISTER_MODULE(CallbackModule, "callback");
 
@@ -11,8 +12,8 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
         if (not layer_config->has("function"))
             LOG_ERROR("Unspecified callback function for layer "
                 + layer->str() + " in CallbackModule!");
-        callbacks[layer] = (void(*)(int, int, void*))(
-            std::stoll(layer_config->get("function")));
+        callbacks[layer] = CallbackManager::get_instance()->get_io_callback(
+            layer_config->get("function"));
 
         // Get id
         if (not layer_config->has("id"))

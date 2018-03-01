@@ -1,6 +1,6 @@
 #ifdef __GUI__
 
-#include "visualizer_module.h"
+#include "io/impl/visualizer_module.h"
 
 #include "visualizer_window.h"
 

@@ -1,7 +1,6 @@
 from syngen import Network, Environment, create_io_callback, FloatArray
 from syngen import get_gpus, get_cpu
 from syngen import set_suppress_output, set_warnings, set_debug
-from pisocket import PiServer
 from ctypes import cast, POINTER, c_byte
 
 from os import path
@@ -9,7 +8,7 @@ import sys
 import argparse
 
 
-def build_network(rows=480, cols=720):
+def build_network():
     # Create main structure (parallel engine)
     structure = {"name" : "pi_test", "type" : "parallel"}
 
@@ -17,8 +16,14 @@ def build_network(rows=480, cols=720):
     field = {
         "name" : "field",
         "neural model" : "relay",
-        "rows" : rows,
-        "columns" : cols}
+        "rows" : 8,
+        "columns" : 8,
+        "noise config" : {
+            "type" : "poisson",
+            "value" : 0.5,
+            "rate" : 10,
+            "random" : "true"
+        }}
 
     # Add layers to structure
     structure["layers"] = [field]
@@ -28,53 +33,22 @@ def build_network(rows=480, cols=720):
         {"structures" : [structure],
          "connections" : []})
 
-def build_environment(sensory_socket, motor_socket, rows, cols, visualizer=False):
-    buf = bytearray(rows * cols * 4)
-
-    def sensory_callback(ID, length, ptr):
-        sensory_socket.send_ping()
-        sensory_socket.get_data(4, length, buf)
-
-        c_buf = cast(ptr, POINTER(c_byte))
-        for i,x in enumerate(buf):
-            c_buf[i] = x
-
-    def motor_callback(ID, length, ptr):
-        motor_socket.send_ping()
-        arr = FloatArray(length, ptr)
-        motor_socket.send_data(arr.to_list())
-
-    create_io_callback("sensory", sensory_callback)
-    create_io_callback("motor", motor_callback)
-
+def build_environment(visualizer=False):
     # Create environment modules
     modules = [
         {
-            "type" : "callback",
+            "type" : "socket",
             "rate" : 1,
+            "ip" : "192.168.0.180",
+            "port" : 11111,
             "layers" : [
                 {
                     "structure" : "pi_test",
                     "layer" : "field",
                     "input" : "true",
-                    "function" : "sensory",
-                    "id" : 0
                 }
             ]
         },
-        {
-            "type" : "callback",
-            "rate" : 1,
-            "layers" : [
-                {
-                    "structure" : "pi_test",
-                    "layer" : "field",
-                    "output" : "true",
-                    "function" : "motor",
-                    "id" : 0
-                }
-            ]
-        }
     ]
 
     if visualizer:
@@ -89,13 +63,8 @@ def build_environment(sensory_socket, motor_socket, rows, cols, visualizer=False
 
 def main(infile=None, outfile=None, do_training=True,
         visualizer=False, device=None, rate=0, iterations=1000):
-    rows = 480
-    cols = 720
-
-    sensory_socket = PiServer(TCP_PORT=11111)
-    motor_socket = PiServer(TCP_PORT=11112)
-    network = build_network(rows, cols)
-    env = build_environment(sensory_socket, motor_socket, rows, cols, visualizer)
+    network = build_network()
+    env = build_environment(visualizer)
 
     if infile is not None:
         if not path.exists(infile):
@@ -127,8 +96,6 @@ def main(infile=None, outfile=None, do_training=True,
     # Delete the objects
     del network
     del env
-    sensory_socket.close()
-    motor_socket.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

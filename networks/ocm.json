@@ -15,7 +15,7 @@
 			"weight config": {
 				"type": "flat",
 				"weight": "0.01",
-				"distance callback": "140133453344784" 
+				"distance callback": "gaussian" 
 			} 
 		},
 		{
@@ -27,7 +27,7 @@
 			"plastic": "false",
 			"arborized config": {
 				"field size": "5",
-				"distance callback": "140133453344784",
+				"distance callback": "gaussian",
 				"to spacing": "5",
 				"stride": "5",
 				"offset": "0",
@@ -62,7 +62,7 @@
 				"field size": "14" 
 			},
 			"weight config": {
-				"distance callback": "140133453344784",
+				"distance callback": "gaussian",
 				"diagonal": "false",
 				"fraction": "1",
 				"std dev": "0.01",
@@ -87,7 +87,7 @@
 				"field size": "50" 
 			},
 			"weight config": {
-				"distance callback": "140133453344784",
+				"distance callback": "gaussian",
 				"to spacing": "2",
 				"fraction": "1",
 				"std dev": "0.005",
@@ -116,7 +116,7 @@
 				"field size": "40.0" 
 			},
 			"weight config": {
-				"distance callback": "140133453344784",
+				"distance callback": "gaussian",
 				"from spacing": "2",
 				"circular mask": "None",
 				"fraction": "1",
@@ -138,7 +138,7 @@
 				"field size": "3" 
 			},
 			"weight config": {
-				"distance callback": "140133453344784",
+				"distance callback": "gaussian",
 				"diagonal": "false",
 				"fraction": "1",
 				"std dev": "0.02",
@@ -163,7 +163,7 @@
 				"field size": "10" 
 			},
 			"weight config": {
-				"distance callback": "140133453344784",
+				"distance callback": "gaussian",
 				"to spacing": "2",
 				"fraction": "1",
 				"std dev": "0.01",
@@ -192,7 +192,7 @@
 				"field size": "8.0" 
 			},
 			"weight config": {
-				"distance callback": "140133453344784",
+				"distance callback": "gaussian",
 				"from spacing": "2",
 				"circular mask": "None",
 				"fraction": "1",

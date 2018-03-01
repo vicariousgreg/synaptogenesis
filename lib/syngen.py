@@ -135,6 +135,9 @@ _syn.set_suppress_output.argtypes = (c_bool,)
 _syn.set_warnings.argtypes = (c_bool,)
 _syn.set_debug.argtypes = (c_bool,)
 
+_syn.add_io_callback.argtypes = (c_char_p, c_longlong)
+_syn.add_distance_weight_callback.argtypes = (c_char_p, c_longlong)
+
 def get_cpu():
     return _syn.get_cpu()
 
@@ -161,6 +164,28 @@ def set_debug(val):
 
 def interrupt_engine():
     _syn.interrupt_engine()
+
+_io_callbacks = dict()
+_distance_weight_callbacks = dict()
+
+def create_io_callback(name, f):
+    if name in _io_callbacks:
+        raise ValueError("IO Callback with name " + name + "already exists!")
+
+    cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
+    addr = cast(cb, c_void_p).value
+    _io_callbacks[name] = (cb, addr)
+    _syn.add_io_callback(name, addr)
+
+def create_distance_weight_callback(name, f):
+    if name in _distance_weight_callbacks:
+        raise ValueError(
+            "Distance Weight Callback with name " + name + "already exists!")
+
+    cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
+    addr = cast(cb, c_void_p).value
+    _distance_weight_callbacks[name] = (cb, addr)
+    _syn.add_distance_weight_callback(name, addr)
 
 class CObject:
     def __init(self):
@@ -365,12 +390,3 @@ class Network(CObject):
         report = _syn.run(self.obj, environment.obj, self.state, args.obj)
         if report is None: print("Failed to run network!")
         return Properties(report)
-
-
-def create_io_callback(f):
-    cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
-    return (cb, cast(cb, c_void_p).value)
-
-def create_distance_weight_callback(f):
-    cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
-    return (cb, cast(cb, c_void_p).value)

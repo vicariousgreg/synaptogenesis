@@ -6,6 +6,7 @@
 #include "network/connection.h"
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
+#include "util/callback_manager.h"
 #include "util/error_manager.h"
 #include "util/parallel.h"
 
@@ -495,8 +496,8 @@ static void distance_callback_config(const PropertyConfig& config,
             + conn->str());
 
     void (*callback)(int, int, void*, void*) =
-        (void(*)(int, int, void*, void*))(
-            std::stoll(config.get("distance callback")));
+        CallbackManager::get_instance()->get_distance_weight_callback(
+            config.get("distance callback"));
 
     int id = config.get_int("id", 0);
     float from_spacing = config.get_float("from spacing", 1.0);

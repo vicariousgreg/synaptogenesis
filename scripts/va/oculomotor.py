@@ -27,7 +27,7 @@ def dist_callback(ID, size, weights, distances):
     for i in xrange(size):
         w_arr.data[i] = gauss(d_arr.data[i], w_arr.data[i], max_dist, True)
 
-cb,addr = create_distance_weight_callback(dist_callback)
+create_distance_weight_callback("gaussian", dist_callback)
 
 def build_exc_inh_pair(
         exc_name,
@@ -115,7 +115,7 @@ def build_exc_inh_pair(
                 "fraction" : exc_exc_fraction,
                 "diagonal" : "false",
                 "circular mask" : [ { } ],
-                "distance callback" : addr,
+                "distance callback" : "gaussian",
             },
             "arborized config" : {
                 "field size" : exc_exc_rf,
@@ -142,7 +142,7 @@ def build_exc_inh_pair(
                     },
                     { }
                 ] if mask else [ { } ],
-                "distance callback" : addr,
+                "distance callback" : "gaussian",
                 "to spacing" : 2,
             },
             "arborized config" : {
@@ -164,7 +164,7 @@ def build_exc_inh_pair(
                 "std dev" : inh_exc_std_dev,
                 "fraction" : inh_exc_fraction,
                 "circular mask" : [ { } ] if not half_inh else None,
-                "distance callback" : addr,
+                "distance callback" : "gaussian",
                 "from spacing" : 2,
             },
             "arborized config" : {
@@ -318,7 +318,7 @@ def build_network(rows=200, cols=200, scale=5):
             "weight config" : {
                 "type" : "flat",
                 "weight" : 0.01,
-                "distance callback" : addr,
+                "distance callback" : "gaussian",
             },
             "arborized config" : {
                 "field size" : receptive_field,
@@ -342,7 +342,7 @@ def build_network(rows=200, cols=200, scale=5):
                 "stride" : cols/motor_cols,
                 "wrap" : "false",
                 "offset" : 0,
-                "distance callback" : addr,
+                "distance callback" : "gaussian",
                 "to spacing" : cols / motor_cols
             }
         },

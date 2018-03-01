@@ -1,7 +1,6 @@
 from syngen import Network, Environment, create_io_callback, FloatArray
 from syngen import get_gpus, get_cpu
 from syngen import set_suppress_output, set_warnings, set_debug
-from pisocket import PiServer
 from ctypes import cast, POINTER, c_byte
 
 from os import path
@@ -34,12 +33,14 @@ def build_network(rows=100, cols=100):
         {"structures" : [structure],
          "connections" : []})
 
-def build_environment(rows, cols, visualizer=False):
+def build_environment(visualizer=False):
     # Create environment modules
     modules = [
         {
             "type" : "socket",
             "rate" : 1,
+            "ip" : "192.168.0.180",
+            "port" : 11111,
             "layers" : [
                 {
                     "structure" : "pi_test",
@@ -66,7 +67,7 @@ def main(infile=None, outfile=None, do_training=True,
     cols = 100
 
     network = build_network(rows, cols)
-    env = build_environment(rows, cols, visualizer)
+    env = build_environment(visualizer)
 
     if infile is not None:
         if not path.exists(infile):

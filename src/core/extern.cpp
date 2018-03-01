@@ -6,6 +6,7 @@
 #include "io/environment.h"
 #include "engine/engine.h"
 #include "util/constants.h"
+#include "util/callback_manager.h"
 
 ARRAY build_array(BasePointer* ptr, bool owner) {
     POINTER_TYPE type = VOID_POINTER;
@@ -302,4 +303,14 @@ void set_debug(bool val) {
 
 void interrupt_engine() {
     Engine::interrupt_async();
+}
+
+void add_io_callback(char* name, long long addr) {
+    CallbackManager::get_instance()->add_io_callback(name,
+        (void (*)(int, int, void*))(addr));
+}
+
+void add_distance_weight_callback(char* name, long long addr) {
+    CallbackManager::get_instance()->add_distance_weight_callback(name,
+        (void (*)(int, int, void*, void*))(addr));
 }

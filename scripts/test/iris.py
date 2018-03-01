@@ -8,7 +8,7 @@ def callback(ID, size, ptr):
     arr = FloatArray(size, ptr)
     for x in arr: print(x)
 
-cb,addr = create_io_callback(callback)
+create_io_callback("iris_cb", callback)
 
 # Create main structure (feedforward engine)
 structure = {"name" : "iris", "type" : "feedforward"}
@@ -74,7 +74,7 @@ modules = [
 #                "structure" : "iris",
 #                "layer" : "output_layer",
 #                "output" : "true",
-#                "function" : addr,
+#                "function" : "iris_cb",
 #                "id" : 0
 #            }
 #        ]
