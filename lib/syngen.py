@@ -2,12 +2,14 @@ from ctypes import *
 from collections import OrderedDict
 from json import dumps
 
+""" Wrapper for C Array Structure """
 class CArray(Structure):
     _fields_=[("size",c_int),
               ("type",c_uint),
               ("data",c_void_p),
               ("owner",c_bool)]
 
+""" Base class for typed Python array wrappers """
 class PArray:
     def __init__(self, size, ptr):
         self.size = size
@@ -22,6 +24,7 @@ class PArray:
             yield self.data[curr]
             curr += 1
 
+""" Typed Python array wrappers """
 class FloatArray(PArray):
     def __init__(self, size, ptr):
         self.size = size
@@ -48,6 +51,7 @@ class VoidArray(PArray):
         self.size = size
         self.data = cast(ptr, POINTER(c_void_p))
 
+""" Construct a Python array from a C array """
 def build_array(base_array):
     # See POINTER_TYPE in extern.h
     (F_P, I_P, S_P, P_P, V_P) = (1,2,3,4,5)
@@ -63,6 +67,8 @@ def build_array(base_array):
     elif base_array.type == V_P:
         return VoidArray(base_array.size, base_array.data)
 
+
+""" Library loading, arg/ret initialization """
 _syn = CDLL('libsyngen.so')
 
 _syn.free_array.argtypes = (CArray, )
@@ -138,6 +144,8 @@ _syn.set_debug.argtypes = (c_bool,)
 _syn.add_io_callback.argtypes = (c_char_p, c_longlong)
 _syn.add_distance_weight_callback.argtypes = (c_char_p, c_longlong)
 
+
+""" Wrappers for simple functions """
 def get_cpu():
     return _syn.get_cpu()
 
@@ -165,12 +173,14 @@ def set_debug(val):
 def interrupt_engine():
     _syn.interrupt_engine()
 
+
+""" Callback Maintenance """
 _io_callbacks = dict()
 _distance_weight_callbacks = dict()
 
 def create_io_callback(name, f):
     if name in _io_callbacks:
-        raise ValueError("IO Callback with name " + name + "already exists!")
+        raise ValueError("Duplicate IO Callback: " + name)
 
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
     addr = cast(cb, c_void_p).value
@@ -179,14 +189,15 @@ def create_io_callback(name, f):
 
 def create_distance_weight_callback(name, f):
     if name in _distance_weight_callbacks:
-        raise ValueError(
-            "Distance Weight Callback with name " + name + "already exists!")
+        raise ValueError("Duplicate Distance Weight Callback: " + name)
 
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _distance_weight_callbacks[name] = (cb, addr)
     _syn.add_distance_weight_callback(name, addr)
 
+
+""" Base Class for C Object wrapper """
 class CObject:
     def __init(self):
         self.obj = None
@@ -195,6 +206,7 @@ class CObject:
         if _syn is not None and self.obj is not None:
             _syn.destroy(self.obj)
 
+""" Properties: C dictionary implementation """
 class Properties(CObject):
     def __init__(self, props=dict()):
         # Dictionaries of Property Objects
@@ -316,6 +328,7 @@ class Properties(CObject):
         _syn.add_to_child_array(self.obj, key, props.obj)
 
 
+""" Environment Wrapper """
 class Environment(CObject):
     def __init__(self, env):
         if type(env) is str:
@@ -329,6 +342,7 @@ class Environment(CObject):
         return _syn.save_env(self.obj, filename)
 
 
+""" Network Wrapper """
 class Network(CObject):
     def __init__(self, net):
         if type(net) is str:
