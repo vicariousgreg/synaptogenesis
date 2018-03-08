@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <sys/sysinfo.h>
@@ -289,6 +290,16 @@ Event *ResourceManager::create_event(DeviceID device_id) {
     return devices[device_id]->create_event();
 }
 
+void ResourceManager::remove(Stream* stream) {
+    devices[stream->get_device_id()]->remove(stream);
+    delete stream;
+}
+
+void ResourceManager::remove(Event* event) {
+    devices[event->get_device_id()]->remove(event);
+    delete event;
+}
+
 void ResourceManager::delete_streams() {
     for (auto device : devices) device->delete_streams();
 }
@@ -324,12 +335,28 @@ void ResourceManager::Device::delete_events() {
 
 Stream *ResourceManager::Device::create_stream() {
     auto stream = new Stream(device_id, host_flag);
-    this->streams.push_back(stream);
+    streams.push_back(stream);
     return stream;
 }
 
 Event *ResourceManager::Device::create_event() {
     auto event = new Event(device_id, host_flag);
-    this->events.push_back(event);
+    events.push_back(event);
     return event;
+}
+
+void ResourceManager::Device::remove(Stream* stream) {
+    auto it = std::find(streams.begin(), streams.end(), stream);
+    if (it == streams.end())
+        LOG_ERROR(
+            "Attempted to remove unregistered stream!");
+    streams.erase(it);
+}
+
+void ResourceManager::Device::remove(Event* event) {
+    auto it = std::find(events.begin(), events.end(), event);
+    if (it == events.end())
+        LOG_ERROR(
+            "Attempted to remove unregistered event!");
+    events.erase(it);
 }

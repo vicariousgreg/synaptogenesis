@@ -336,19 +336,21 @@ class DendriticInstruction : public Instruction {
                 : Instruction(parent->to_layer, stream),
                   aggregator(get_aggregator(child->opcode, stream->get_device_id())),
                   src(state->get_input(to_layer, child->register_index)),
-                  dst(state->get_input(to_layer, parent->register_index)) { }
+                  dst(state->get_input(to_layer, parent->register_index)),
+                  trail_value(child->init_val) { }
 
         void activate() {
             Instruction::wait_for_dependencies();
             get_calc_internal().schedule(
                 stream, blocks, threads,
-                to_layer->size, src, dst, aggregator);
+                to_layer->size, src, dst, aggregator, trail_value);
             Instruction::record_event();
         }
 
     protected:
         Pointer<float> src, dst;
         AGGREGATOR aggregator;
+        float trail_value;
 };
 
 /* Transposes a matrix */

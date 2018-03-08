@@ -83,13 +83,16 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         activate_instructions.push_back(
             new SecondOrderWeightTransferInstruction(
                 curr, state, compute_stream));
-    // Regular internal nodes need to be cleared or set
+    // During propagation up the dendritic tree, internal nodes will be set to
+    //   their initialization value upon exit.  Thus, we need to initialize the
+    //   values for the first round.  Create a temporary instruction and do it.
+    // This shouldn't cause problems because the stream will be held up until
+    //   this initialization instruction is completed.
     // This doesn't get run for root because it cannot have an init_value, and
     //   because it can get noise applied to it that should not be overwritten
     else if (curr->name != "root")
-        activate_instructions.push_back(
-            new SetInstruction(
-                curr, state, compute_stream, curr->init_val));
+        new SetInstruction(
+            curr, state, compute_stream, curr->init_val)->activate();
 
     for (auto& child : curr->get_children()) {
         // Create an instruction

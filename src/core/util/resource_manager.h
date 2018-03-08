@@ -68,6 +68,8 @@ class ResourceManager {
         Stream *get_inter_device_stream(DeviceID id);
         Stream *create_stream(DeviceID id);
         Event *create_event(DeviceID id);
+        void remove(Stream* stream);
+        void remove(Event* event);
 
     private:
         static ResourceManager *instance;
@@ -82,6 +84,8 @@ class ResourceManager {
 
                 Stream *create_stream();
                 Event *create_event();
+                void remove(Stream* stream);
+                void remove(Event* event);
 
                 void delete_streams();
                 void delete_events();

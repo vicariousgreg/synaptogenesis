@@ -151,28 +151,32 @@ Kernel<Pointer<float>, int, float, float, bool, Pointer<float>> get_randomize_da
 
 /* Dendritic tree internal computation */
 void calc_internal_SERIAL(int size, Pointer<float> src_ptr,
-        Pointer<float> dst_ptr, AGGREGATOR aggregate) {
+        Pointer<float> dst_ptr, AGGREGATOR aggregate, float trail_value) {
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();
-    for (int index = 0 ; index < size ; ++index)
+    for (int index = 0 ; index < size ; ++index) {
         dst[index] = aggregate(dst[index], src[index]);
+        src[index] = trail_value;
+    }
 }
 #ifdef __CUDACC__
 GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
-        Pointer<float> dst_ptr, AGGREGATOR aggregate) {
+        Pointer<float> dst_ptr, AGGREGATOR aggregate, float trail_value) {
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
         dst[index] = aggregate(dst[index], src[index]);
+        src[index] = trail_value;
     }
 }
 #else
 GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
-        Pointer<float> dst_ptr) { }
+        Pointer<float> dst_ptr, float trail_value) { }
 #endif
-Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR> get_calc_internal() {
-    return Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR>(
+Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR,
+        float> get_calc_internal() {
+    return Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR, float>(
         calc_internal_SERIAL, calc_internal_PARALLEL);
 }
 

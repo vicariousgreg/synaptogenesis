@@ -131,9 +131,9 @@ Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>
     get_randomize_data_poisson();
 
 /* Dendritic tree internal computation */
-Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR> get_calc_internal();
-Kernel<int, int, Pointer<float>, Pointer<float>>
-get_calc_internal_second_order();
+Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR, float> get_calc_internal();
+Kernel<int, int, Pointer<float>, Pointer<float>, float>
+    get_calc_internal_second_order();
 
 /* Base activator kernel */
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn);
