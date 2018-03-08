@@ -13,11 +13,13 @@ DendriticNode::DendriticNode(Layer *to_layer)
           opcode(ADD),
           second_order_conn(nullptr),
           second_order(false),
+          init_val(0.0),
           name("root") { }
 
 /* Constructor for an internal node */
 DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
-    int register_index, std::string name, Opcode opcode, bool second_order)
+    int register_index, std::string name, Opcode opcode,
+    bool second_order, float init_val)
         : parent(parent),
           to_layer(to_layer),
           id(std::hash<std::string>()(
@@ -28,6 +30,7 @@ DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
           opcode(opcode),
           second_order_conn(nullptr),
           second_order(second_order),
+          init_val(init_val),
           name(name) { }
 
 /* Constructor for a leaf node */
@@ -43,6 +46,7 @@ DendriticNode::DendriticNode(DendriticNode *parent, Layer *to_layer,
           opcode(ADD),
           second_order_conn(nullptr),
           second_order(false),
+          init_val(0.0),
           name("Leaf dendrite: " + conn->str()) { }
 
 DendriticNode::~DendriticNode() {
@@ -70,7 +74,7 @@ Connection* DendriticNode::get_second_order_connection() const {
 }
 
 DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
-        bool second_order) {
+        bool second_order, float init_val) {
     // Verify that this node is not a leaf or a second order node
     if (is_leaf())
         LOG_ERROR(
@@ -92,7 +96,7 @@ DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
     auto child =
         new DendriticNode(this, to_layer,
             this->register_index + 1,
-            name, opcode, second_order);
+            name, opcode, second_order, init_val);
     children.push_back(child);
     return child;
 }

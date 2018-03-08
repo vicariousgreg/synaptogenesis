@@ -98,10 +98,11 @@ LayerConfig* LayerConfig::add_dendrite(std::string parent,
 }
 
 LayerConfig* LayerConfig::add_dendrite(std::string parent,
-            std::string name, bool second_order) {
+            std::string name, bool second_order, float init_val) {
     auto props = new PropertyConfig();
     props->set("name", name);
     props->set("second order", second_order ? "true" : "false");
+    props->set("init val", init_val);
     this->add_dendrite(parent, props);
     delete props;
     return this;

@@ -131,12 +131,12 @@ class InitializeInstruction : public Instruction {
                   size(layer->size),
                   overwrite(overwrite) { }
 
-        // Initialize second order buffers
-        InitializeInstruction(DendriticNode *second_order_node,
-            State *state, Stream *stream)
-                : Instruction(second_order_node->to_layer, stream),
-                  dst(state->get_second_order_weights(second_order_node)),
-                  size(second_order_node->get_second_order_size()) { }
+        // Initialize layer register (internal dendritic node)
+        InitializeInstruction(DendriticNode *node, State *state, Stream *stream)
+                : Instruction(node->to_layer, stream),
+                  dst(state->get_input(node->to_layer, node->register_index)),
+                  size(node->to_layer->size),
+                  overwrite(true) { }
 
     protected:
         Pointer<float> dst;
@@ -150,6 +150,12 @@ class SetInstruction : public InitializeInstruction {
         SetInstruction(Layer *layer, State *state, Stream *stream,
             float val, bool overwrite)
                 : InitializeInstruction(layer, state, stream, overwrite),
+                  val(val) { }
+
+        // Constructor for dendritic node register setting
+        SetInstruction(DendriticNode *node, State *state, Stream *stream,
+            float val)
+                : InitializeInstruction(node, state, stream),
                   val(val) { }
 
         // Constructor for flat noise config
@@ -336,7 +342,7 @@ class DendriticInstruction : public Instruction {
             Instruction::wait_for_dependencies();
             get_calc_internal().schedule(
                 stream, blocks, threads,
-                to_layer->size, src, dst, aggregator, true);
+                to_layer->size, src, dst, aggregator);
             Instruction::record_event();
         }
 

@@ -27,7 +27,7 @@ class LayerConfig : public PropertyConfig {
         LayerConfig* add_dendrite(std::string parent,
             PropertyConfig *config);
         LayerConfig* add_dendrite(std::string parent,
-            std::string name, bool second_order=false);
+            std::string name, bool second_order=false, float init_val=0.0);
 
         const std::string name;
         const std::string neural_model;

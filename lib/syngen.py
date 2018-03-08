@@ -1,6 +1,7 @@
 from ctypes import *
 from collections import OrderedDict
 from json import dumps
+from copy import deepcopy
 
 """ Wrapper for C Array Structure """
 class CArray(Structure):
@@ -404,3 +405,59 @@ class Network(CObject):
         report = _syn.run(self.obj, environment.obj, self.state, args.obj)
         if report is None: print("Failed to run network!")
         return Properties(report)
+
+
+def fill_in(defaults, props):
+    new_props = deepcopy(props)
+
+    for k,v in defaults.iteritems():
+        if type(v) is dict:
+            if k in new_props:
+                new_props[k] = fill_in(v, new_props[k])
+            else:
+                new_props[k] = deepcopy(v)
+        elif k not in new_props:
+            new_props[k] = deepcopy(v)
+    return new_props
+
+
+""" Properties Factory """
+class PropertiesFactory:
+    def __init__(self, defaults=None, func=None):
+        if defaults is None and func is None:
+            raise ValueError
+        self.set_defaults(defaults)
+        self.set_func(func)
+
+    def set_defaults(self, defaults):
+        if defaults is not None and not type(defaults) is dict:
+            raise ValueError
+        self.defaults = defaults
+
+    def set_func(self, func):
+        if func is not None and not callable(func):
+            raise ValueError
+        self.func = func
+
+    def build(self, props=dict()):
+        if self.defaults is not None:
+            new_props = fill_in(self.defaults, new_props)
+        if self.func is not None:
+            self.func(new_props)
+        return new_props
+
+""" Layer Factory """
+class LayerFactory(PropertiesFactory):
+    pass
+
+""" Connection Factory """
+class ConnectionFactory(PropertiesFactory):
+    def build(self, from_layer, to_layer, props=dict()):
+        try:
+            new_props = self.build(props)
+        except TypeError:
+            new_props = fill_in(self.defaults, props)
+            if self.defaults is not None:
+                new_props = fill_in(self.defaults, new_props)
+            self.func(from_layer, to_layer, new_props)
+        return new_props

@@ -141,9 +141,10 @@ void Layer::add_dendrites(std::string parent_name,
 
         bool second_order = dendrite->get_bool("second order", false);
         auto child = parent->add_child(
-        dendrite->get("name"),
+            dendrite->get("name"),
             get_opcode(dendrite->get("opcode", "add")),
-            second_order);
+            dendrite->get_bool("second order", false),
+            dendrite->get_float("init", 0.0));
 
         add_dendrites(child->name,
             dendrite->get_child_array("children"));

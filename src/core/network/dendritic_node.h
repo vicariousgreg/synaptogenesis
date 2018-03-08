@@ -58,6 +58,10 @@ class DendriticNode {
          *   of the same size */
         const bool second_order;
 
+        /* Value to initialize dendritic computations with
+         * Defaults to zero */
+        const float init_val;
+
    /* Opcode for internal nodes */
    const Opcode opcode;
 
@@ -70,7 +74,7 @@ class DendriticNode {
         /* Constructor for an internal node */
         DendriticNode(DendriticNode *parent, Layer *to_layer,
             int register_index, std::string name, Opcode opcode,
-            bool second_order=false);
+            bool second_order=false, float init_val=0.0);
 
         /* Constructor for a leaf node */
         DendriticNode(DendriticNode *parent, Layer *to_layer,
@@ -78,7 +82,7 @@ class DendriticNode {
 
         /* Add a child internal node */
         DendriticNode *add_child(std::string name, Opcode opcode,
-            bool second_order=false);
+            bool second_order=false, float init_val=0.0);
 
     protected:
         friend class Connection;
