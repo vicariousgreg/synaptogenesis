@@ -103,10 +103,6 @@ SaccadeWindowImpl::~SaccadeWindowImpl() {
 }
 
 void SaccadeWindowImpl::set_cross() {
-    input_dirty = true;
-    window_dirty = true;
-    waiting = true;
-
     auto cross_data = center_cross->get_pixels();
     int pix_size = center_cross->get_has_alpha() ? 4 : 3;
     auto center_data = center_pane_pixbuf->get_pixels();
@@ -116,13 +112,13 @@ void SaccadeWindowImpl::set_cross() {
         center_data[4*index + 1] = cross_data[pix_size*index + 1];
         center_data[4*index + 2] = cross_data[pix_size*index + 2];
     }
+
+    input_dirty = true;
+    window_dirty = true;
+    waiting = true;
 }
 
 void SaccadeWindowImpl::set_face(bool fear, bool direction) {
-    input_dirty = true;
-    window_dirty = true;
-    waiting = false;
-
     auto& faces = fear_faces_left;
     if (fear and direction)
         faces = fear_faces_right;
@@ -147,6 +143,10 @@ void SaccadeWindowImpl::set_face(bool fear, bool direction) {
         center_data[4*index + 1] = face_data[pix_size*index + 1];
         center_data[4*index + 2] = face_data[pix_size*index + 2];
     }
+
+    input_dirty = true;
+    window_dirty = true;
+    waiting = false;
 }
 
 void SaccadeWindowImpl::add_layer(Layer* layer, IOTypeMask io_type) {
@@ -154,11 +154,10 @@ void SaccadeWindowImpl::add_layer(Layer* layer, IOTypeMask io_type) {
 
 void SaccadeWindowImpl::update() {
     if (window_dirty) {
-        window_dirty = false;
-
         left_pane_image->set(left_pane_pixbuf);
         right_pane_image->set(right_pane_pixbuf);
         center_pane_image->set(center_pane_pixbuf);
+        window_dirty = false;
     }
 }
 
