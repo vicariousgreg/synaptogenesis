@@ -8,7 +8,7 @@ a = {
     "neural model" : "relay",
     "rows" : 1,
     "columns" : 1,
-    "noise config" : {
+    "init config" : {
         "type" : "normal",
         "mean" : 1.0,
         "std dev" : 0.0

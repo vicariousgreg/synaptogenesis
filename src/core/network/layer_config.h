@@ -12,7 +12,7 @@ class LayerConfig : public PropertyConfig {
                 std::string neural_model,
                 int rows,
                 int columns,
-                PropertyConfig* noise_config=nullptr,
+                PropertyConfig* init_config=nullptr,
                 bool plastic=false,
                 bool global=false);
 
@@ -20,7 +20,7 @@ class LayerConfig : public PropertyConfig {
             std::string name,
             std::string neural_model,
             std::string image,
-            PropertyConfig* noise_config=nullptr,
+            PropertyConfig* init_config=nullptr,
             bool plastic=false,
             bool global=false);
 

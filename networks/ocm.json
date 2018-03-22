@@ -220,7 +220,7 @@
 					"neural model": "oscillator",
 					"decay": "0.02",
 					"columns": "200",
-					"noise config": {
+					"init config": {
 						"rate": "1",
 						"random": "false",
 						"type": "poisson",
@@ -234,7 +234,7 @@
 					"neural model": "oscillator",
 					"decay": "0.05",
 					"columns": "100",
-					"noise config": {
+					"init config": {
 						"rate": "1",
 						"random": "false",
 						"type": "poisson",
@@ -248,7 +248,7 @@
 					"neural model": "oscillator",
 					"decay": "0.02",
 					"columns": "40",
-					"noise config": {
+					"init config": {
 						"rate": "0",
 						"random": "false",
 						"type": "poisson",
@@ -262,7 +262,7 @@
 					"neural model": "oscillator",
 					"decay": "0.02",
 					"columns": "20",
-					"noise config": {
+					"init config": {
 						"rate": "0",
 						"random": "false",
 						"type": "poisson",

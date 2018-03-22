@@ -62,8 +62,8 @@ class DendriticNode {
          * Defaults to zero */
         const float init_val;
 
-   /* Opcode for internal nodes */
-   const Opcode opcode;
+       /* Opcode for internal nodes */
+       const Opcode opcode;
 
     protected:
         friend class Layer;

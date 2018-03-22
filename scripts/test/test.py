@@ -10,7 +10,7 @@ exc = {
     "columns" : 200,
     "init" : "random positive",
     "neuron spacing" : "0.1",
-    "noise config" : {
+    "init config" : {
         "type" : "poisson",
         "rate" : 10
     },

@@ -22,9 +22,9 @@ bias_layer = {
     "neural model" : "relay",
     "rows" : 1,
     "columns" : 1,
-    "noise config" : {
+    "init config" : {
         "type" : "flat",
-        "val" : 1.0
+        "value" : 1.0
     }}
 
 # Add layers to structure

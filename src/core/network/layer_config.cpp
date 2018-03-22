@@ -38,7 +38,7 @@ LayerConfig::LayerConfig(
         std::string neural_model,
         int rows,
         int columns,
-        PropertyConfig* noise_config,
+        PropertyConfig* init_config,
         bool plastic,
         bool global)
             : name(name),
@@ -47,14 +47,14 @@ LayerConfig::LayerConfig(
               columns(columns),
               plastic(plastic),
               global(global) {
-    if (noise_config != nullptr)
-        this->set_child("noise config", noise_config);
+    if (init_config != nullptr)
+        this->set_child("init config", init_config);
     this->set("name", name);
     this->set("neural model", neural_model);
     this->set("rows", std::to_string(rows));
     this->set("columns", std::to_string(columns));
-    if (noise_config != nullptr)
-        this->set_child("noise config", noise_config);
+    if (init_config != nullptr)
+        this->set_child("init config", init_config);
     this->set("plastic", (plastic) ? "true" : "false");
     this->set("global", (global) ? "true" : "false");
 }
@@ -63,13 +63,13 @@ LayerConfig::LayerConfig(
     std::string name,
     std::string neural_model,
     std::string image,
-    PropertyConfig* noise_config,
+    PropertyConfig* init_config,
     bool plastic,
     bool global)
         : LayerConfig(
             name, neural_model,
             GET_IMAGE(image).height(), GET_IMAGE(image).width(),
-            noise_config, plastic, global) { }
+            init_config, plastic, global) { }
 
 static PropertyConfig* get_dendrite(const ConfigArray& arr, std::string name) {
     for (auto node : arr)

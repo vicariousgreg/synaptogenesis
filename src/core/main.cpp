@@ -165,7 +165,7 @@ void game_of_life_test() {
             ->set("neural model", "game_of_life")
             ->set("rows", board_dim)
             ->set("columns", board_dim)
-            ->set_child("noise config",
+            ->set_child("init config",
                 (new PropertyConfig())
                     ->set("type", "poisson")
                     ->set("value", birth_min)
@@ -282,7 +282,7 @@ void working_memory_test() {
             ->set("neural model", IZHIKEVICH)
             ->set("rows", cortex_size)
             ->set("columns", cortex_size)
-            ->set_child("noise config",
+            ->set_child("init config",
                 (new PropertyConfig())
                     ->set("type", "poisson")
                     ->set("rate", 1))

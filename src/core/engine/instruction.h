@@ -158,12 +158,12 @@ class SetInstruction : public InitializeInstruction {
                 : InitializeInstruction(node, state, stream),
                   val(val) { }
 
-        // Constructor for flat noise config
+        // Constructor for flat init config
         SetInstruction(Layer *layer, State *state, Stream *stream,
             bool overwrite)
                 : InitializeInstruction(layer, state, stream, overwrite) {
-            auto config = layer->get_config()->get_child("noise config");
-            val = config->get_float("val", 1.0);
+            auto config = layer->get_config()->get_child("init config");
+            val = config->get_float("value", 1.0);
         }
 
         void activate() {
@@ -184,7 +184,7 @@ class UniformNoiseInstruction : public InitializeInstruction {
         UniformNoiseInstruction(Layer *layer, State *state,
             Stream *stream, bool overwrite)
                 : InitializeInstruction(layer, state, stream, overwrite) {
-            auto config = layer->get_config()->get_child("noise config");
+            auto config = layer->get_config()->get_child("init config");
             min = config->get_float("min", 1.0);
             max = config->get_float("max", 1.0);
         }
@@ -208,7 +208,7 @@ class NormalNoiseInstruction : public InitializeInstruction {
         NormalNoiseInstruction(Layer *layer, State *state,
             Stream *stream, bool overwrite)
                 : InitializeInstruction(layer, state, stream, overwrite) {
-            auto config = layer->get_config()->get_child("noise config");
+            auto config = layer->get_config()->get_child("init config");
             mean = config->get_float("mean", 1.0);
             std_dev = config->get_float("std dev", 0.1);
         }
@@ -233,7 +233,7 @@ class PoissonNoiseInstruction : public InitializeInstruction {
         PoissonNoiseInstruction(Layer *layer, State *state,
             Stream *stream, bool overwrite)
                 : InitializeInstruction(layer, state, stream, overwrite) {
-            auto config = layer->get_config()->get_child("noise config");
+            auto config = layer->get_config()->get_child("init config");
             val = config->get_float("value", 20);
             rate = 0.001 * config->get_float("rate", 1);
 
@@ -535,7 +535,7 @@ class StateLearningInstruction : public StateInstruction {
               state->get_learning_kernel(to_layer)) { }
 };
 
-/* Retrieves the appropriate initialization instruction, based on noise config
+/* Retrieves the appropriate initialization instruction, based on init config
  *   specification and whether the layer has input from the environment */
 InitializeInstruction* get_initialize_instruction(
         Layer *layer, State *state, Stream *stream, bool is_input);

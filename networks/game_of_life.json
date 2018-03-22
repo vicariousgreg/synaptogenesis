@@ -15,7 +15,7 @@
 					"survival_max": "3",
 					"birth_min": "3",
 					"birth_max": "4",
-					"noise config": {
+					"init config": {
 						"type": "poisson",
 						"value": "3",
 						"rate": "0.5" 

@@ -21,7 +21,7 @@ layer = {
     "neural model" : "izhikevich",
     "rows" : dim,
     "columns" : dim,
-    "noise config" : {
+    "init config" : {
         "type" : "poisson",
         "value" : 0.1,
         "rate" : 10
@@ -47,7 +47,7 @@ input_layer = {
     "neural model" : "relay",
     "rows" : dim,
     "columns" : dim,
-    "noise config" : {
+    "init config" : {
         "type" : "poisson",
         "value" : 1.0,
         "rate" : 10
@@ -78,7 +78,7 @@ layer_inh = {
     "neural model" : "izhikevich",
     "rows" : dim/2,
     "columns" : dim/2,
-    "noise config" : {
+    "init config" : {
         "type" : "poisson",
         "value" : 0.1,
         "rate" : 10

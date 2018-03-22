@@ -86,14 +86,14 @@ def build_network(dim=64):
 
     # Noise
     if exc_noise_rate > 0 and exc_noise_strength > 0:
-        excitatory["noise config"] = {
+        excitatory["init config"] = {
             "type" : "poisson",
             "value" : exc_noise_strength,
             "rate" : exc_noise_rate,
             "random" : exc_random
         }
     if inh_noise_rate > 0 and inh_noise_strength > 0:
-        inhibitory["noise config"] = {
+        inhibitory["init config"] = {
             "type" : "poisson",
             "value" : inh_noise_strength,
             "rate" : inh_noise_rate,

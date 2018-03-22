@@ -18,7 +18,7 @@ def build_network(rows=100, cols=100):
         "neural model" : "relay",
         "rows" : rows,
         "columns" : cols,
-        "noise config" : {
+        "init config" : {
             "type" : "poisson",
             "value" : 0.5,
             "rate" : 10,

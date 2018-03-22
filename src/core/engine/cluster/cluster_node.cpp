@@ -31,7 +31,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
             new ExpectedTransferInstruction(
                 to_layer, state, engine, compute_stream);
 
-    // Add init (noise / clear) instruction
+    // Add init (init / clear) instruction
     this->init_instruction = get_initialize_instruction(
         to_layer, state, compute_stream, this->is_input);
     if (init_instruction != nullptr)
@@ -89,7 +89,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     // This shouldn't cause problems because the stream will be held up until
     //   this initialization instruction is completed.
     // This doesn't get run for root because it cannot have an init_value, and
-    //   because it can get noise applied to it that should not be overwritten
+    //   because it can get init applied to it that should not be overwritten
     else if (curr->name != "root")
         (new SetInstruction(
             curr, state, compute_stream, curr->init_val))->activate();

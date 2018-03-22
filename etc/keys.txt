@@ -12,7 +12,7 @@ NETWORK
       global : false
       image
 
-      noise config
+      init config
         type
         mean
         std_dev

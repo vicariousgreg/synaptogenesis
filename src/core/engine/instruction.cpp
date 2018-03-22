@@ -2,9 +2,9 @@
 
 InitializeInstruction* get_initialize_instruction(
         Layer *layer, State *state, Stream *stream, bool is_input) {
-    auto noise_config = layer->get_config()->get_child("noise config", nullptr);
-    if (noise_config != nullptr) {
-        auto type = noise_config->get("type", "normal");
+    auto init_config = layer->get_config()->get_child("init config", nullptr);
+    if (init_config != nullptr) {
+        auto type = init_config->get("type", "normal");
         if (type == "flat")
             return
                 new SetInstruction(layer, state, stream, not is_input);
@@ -20,7 +20,7 @@ InitializeInstruction* get_initialize_instruction(
         else
             LOG_ERROR(
                 "Error building cluster node for " + layer->str() + ":\n"
-                "  Unrecognized noise type: " + type);
+                "  Unrecognized init type: " + type);
     } else if (not is_input) {
         // Clear instruction (set 0.0, overwrite=true)
         return new SetInstruction(layer, state, stream, 0.0, true);

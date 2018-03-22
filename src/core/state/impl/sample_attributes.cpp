@@ -45,7 +45,7 @@ void SampleWeightMatrix::register_variables() {
 }
 
 /* WeightMatrices call this function once they're done initializing the first
- *   layer, which is specified by the layer's noise config.  This is where you
+ *   layer, which is specified by the layer's init config.  This is where you
  *   initialize the additional layers.  The connection and its layers can be
  *   retrieved from the WeightMatrix.
  */
@@ -64,11 +64,11 @@ void SampleAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Pointer<float> second_weights = s_mat->var1;
     Pointer<float> third_weights = s_mat->var2;
 
-    // The first layer is initialized according to the noise config.
+    // The first layer is initialized according to the init config.
     // Sometimes it's useful to differentially initialize
     //   matrix layers based on Connection parameters.
     if (conn->get_parameter("second weights", "false") == "true") {
-        float val = std::stof(conn->from_layer->get_parameter("val", "1.0"));
+        float val = std::stof(conn->from_layer->get_parameter("value", "1.0"));
         if (val < 0)
             LOG_ERROR(
                 "Error initializing weight matrix for " + conn->str() + " \n"
