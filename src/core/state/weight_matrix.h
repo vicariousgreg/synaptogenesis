@@ -81,6 +81,12 @@ WeightMatrix *CLASS_NAME::build(Connection *conn) { \
     return mat; \
 }
 
+// Use this if you want to reuse a defined weight matrix class
+#define USE_WEIGHT_MATRIX(CLASS_NAME, STRING) \
+static bool __mat_dummy = \
+    NeuralModelBank::register_weight_matrix( \
+        STRING, CLASS_NAME::build);
+
 // Put this one in .h at bottom of class definition
 #define WEIGHT_MATRIX_MEMBERS(CLASS_NAME) \
     public: \
