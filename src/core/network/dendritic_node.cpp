@@ -95,7 +95,7 @@ DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
     // The child inherits an incremented register index
     auto child =
         new DendriticNode(this, to_layer,
-            this->register_index + 1,
+            this->to_layer->get_dendritic_root()->get_max_register_index() + 1,
             name, opcode, second_order, init_val);
     children.push_back(child);
     return child;
