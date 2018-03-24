@@ -159,6 +159,7 @@ Attributes *CLASS_NAME::build(Layer *layer) { \
 #ifdef __CUDACC__
 
 // Skeletons -- don't use this directly
+// Standard attribute kernel
 #define DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES \
@@ -176,10 +177,41 @@ GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
     } \
 }
 
+// Random attribute kernel
+// Creates a random variables between 0.0 and 1.0
+#define DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
+    std::uniform_real_distribution<float> distribution(0.0, 1.0); \
+    PREAMBLE_ATTRIBUTES \
+    PREAMBLE \
+    for (int nid = 0; nid < size; ++nid) { \
+        float rand = distribution(generator); \
+        BODY; \
+    } \
+} \
+GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
+    PREAMBLE_ATTRIBUTES \
+    PREAMBLE \
+    int nid = blockIdx.x * blockDim.x + threadIdx.x; \
+    if (nid < size) { \
+        float rand = curand_uniform(&cuda_rand_states[nid]); \
+        BODY; \
+    } \
+}
+
 // Use this to set up attributes kernel
+// Standard version
 #define BUILD_ATTRIBUTE_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
+    return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
+
+// Random version
+#define BUILD_RAND_ATTRIBUTE_KERNEL( \
+    CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
+DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }

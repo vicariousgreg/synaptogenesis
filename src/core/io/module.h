@@ -64,6 +64,9 @@ class Module {
         /* Gets the name of a module */
         virtual std::string get_name() const = 0;
 
+        /* Checks if two modules are active simultaneously */
+        bool is_coactive(Module* other) const;
+
         const LayerList layers;
         ModuleConfig* const config;
 

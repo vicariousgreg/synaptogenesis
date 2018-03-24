@@ -20,13 +20,13 @@ def build_network(dim=64):
     plastic = "true"
     stp = "true"
     stp_tau = "5000"
-    learning_rate = 0.01
+    learning_rate = 0.0001
 
     # Noise Parameters
     exc_noise_strength = 10.0
-    exc_noise_rate = 5
+    exc_noise_rate = 1
     inh_noise_strength = 10.0
-    inh_noise_rate = 2
+    inh_noise_rate = 1
     exc_random = "false"
     inh_random = "false"
 
@@ -63,6 +63,14 @@ def build_network(dim=64):
     inh_exc_spread = 7
     exc_inh_mask = 9
 
+
+    # Poisson input layer
+    poisson = {
+        "name" : "poisson",
+        "neural model" : "poisson generator",
+        "rows" : dim,
+        "columns" : dim
+    }
 
     # Excitatory layer
     excitatory = {
@@ -102,7 +110,22 @@ def build_network(dim=64):
 
 
     # Add layers to structure
-    structure["layers"] = [excitatory, inhibitory]
+    structure["layers"] = [poisson, excitatory, inhibitory]
+
+    poisson_exc = {
+        "from layer" : "poisson",
+        "to layer" : "exc",
+        "type" : "one to one",
+        "opcode" : "add",
+        "plastic" : "false",
+        "max weight" : 10.0,
+        "weight config" : {
+            "type" : "flat",
+            "weight" : 10.0,
+            "fraction" : 1.0,
+        },
+        "direct" : "true" # direct connection into input current
+    }
 
     exc_exc = {
         "from layer" : "exc",
@@ -284,6 +307,7 @@ def build_network(dim=64):
 
     # Create connections
     connections = [
+        poisson_exc,
         exc_exc,
         exc_inh,
         inh_exc,
@@ -294,7 +318,7 @@ def build_network(dim=64):
         {"structures" : [structure],
          "connections" : connections})
 
-def build_environment(visualizer=False):
+def build_environment(visualizer=False, peaks=False, std_dev=10):
     modules = []
     if visualizer:
         modules = [
@@ -302,6 +326,7 @@ def build_environment(visualizer=False):
                 "type" : "visualizer",
                 "colored" : "false",
                 "layers" : [
+                    { "structure" : "snn", "layer" : "poisson" },
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
                 ]
@@ -336,10 +361,27 @@ def build_environment(visualizer=False):
                 "window" : 1000, # Short term
                 "linear" : "false",
                 "layers" : [
+                    { "structure" : "snn", "layer" : "poisson" },
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
                 ]
             },
+            {
+                "type" : "gaussian_random_input",
+                "rate" : "1000",
+                "border" : 0,
+                "std dev" : std_dev,
+                "value" : 0.01,
+                "normalize" : "true",
+                "peaks" : peaks,
+                "random" : "false",
+                "layers" : [
+                    {
+                        "structure" : "snn",
+                        "layer" : "poisson"
+                    }
+                ]
+            }
         ]
 
     return Environment({"modules" : modules})
@@ -437,11 +479,12 @@ def compare_matrices(init_matrix, pre_matrix, post_matrix, to_size):
     plt.show()
 
 def main(infile=None, outfile=None, do_training=True, print_stats=True,
-        visualizer=False, refresh_rate=0, device=None, iterations=1000000):
-    dim = 128
+        dim=128, peaks=1, visualizer=False, refresh_rate=0, device=None,
+        iterations=1000000):
+    std_dev = int(dim / 10)
 
     network = build_network(dim)
-    env = build_environment(visualizer)
+    env = build_environment(visualizer, peaks, std_dev)
 
     if print_stats:
         init_exc_exc_matrix = network.get_weight_matrix("exc exc matrix").to_list()
@@ -513,6 +556,10 @@ if __name__ == "__main__":
     parser.add_argument('-s', action='store_true', default=False,
                         dest='stats',
                         help='print statistics')
+    parser.add_argument('-dim', type=int, default=128,
+                        help='dimensions')
+    parser.add_argument('-p', type=int, default=1,
+                        help='noise peaks')
     parser.add_argument('-v', action='store_true', default=False,
                         dest='visualizer',
                         help='run the visualizer')
@@ -522,6 +569,8 @@ if __name__ == "__main__":
                         help='run on device #')
     parser.add_argument('-r', type=int, default=0,
                         help='refresh rate')
+    parser.add_argument('-it', type=int, default=1000000,
+                        help='iterations')
     args = parser.parse_args()
 
     if args.host or len(get_gpus()) == 0:
@@ -533,4 +582,4 @@ if __name__ == "__main__":
     set_warnings(False)
     set_debug(False)
 
-    main(args.i, args.o, args.train, args.stats, args.visualizer, args.r, device)
+    main(args.i, args.o, args.train, args.stats, args.dim, args.p, args.visualizer, args.r, device, args.it)

@@ -31,6 +31,11 @@ Engine::Engine(Context context)
 void Engine::build_environment(PropertyConfig args) {
     if (context.environment == nullptr) return;
 
+    /* Keep track of input and expected modules by layer
+     *   to check for coactivity conflicts */
+    std::map<Layer*, std::vector<Module*>> input_modules;
+    std::map<Layer*, std::vector<Module*>> expected_modules;
+
     /* Build environmental buffer */
     LayerList input_layers, expected_layers, output_layers;
 
@@ -55,19 +60,27 @@ void Engine::build_environment(PropertyConfig args) {
                     "to: " + layer->str() + "\n" +
                     "    Module has zero IO type for layer!");
 
-            // Check for duplicate input/expected modules
-            if (module_io_type & INPUT & layer_io_type)
-                LOG_ERROR(
-                    "Error in environment model:\n"
-                    "  Error adding module " + config->get("type") +
-                    "to: " + layer->str() + "\n" +
-                    "    Layer cannot have more than one input module!");
-            if (module_io_type & EXPECTED & layer_io_type)
-                LOG_ERROR(
-                    "Error in environment model:\n"
-                    "  Error adding module " + config->get("type") +
-                    "to: " + layer->str() + "\n" +
-                    "    Layer cannot have more than one expected module!");
+            // Check for conflicting input/expected modules
+            if (module_io_type & INPUT & layer_io_type) {
+                for (auto other : input_modules[layer])
+                    if (module->is_coactive(other))
+                        LOG_ERROR(
+                            "Error in environment model:\n"
+                            "  Error adding module " + config->get("type") +
+                            "to: " + layer->str() + "\n" +
+                            "    Layer has conflicting input modules!");
+                input_modules[layer].push_back(module);
+            }
+            if (module_io_type & EXPECTED & layer_io_type) {
+                for (auto other : expected_modules[layer])
+                    if (module->is_coactive(other))
+                        LOG_ERROR(
+                            "Error in environment model:\n"
+                            "  Error adding module " + config->get("type") +
+                            "to: " + layer->str() + "\n" +
+                            "    Layer has conflicting expected modules!");
+                expected_modules[layer].push_back(module);
+            }
 
             this->io_types[layer] = layer_io_type | module_io_type;
         }

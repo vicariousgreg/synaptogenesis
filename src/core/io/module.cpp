@@ -116,6 +116,19 @@ IOTypeMask Module::get_io_type(Layer *layer) const {
     }
 }
 
+/*
+ * Checks if two modules are coactive
+ * A layer can have two input or expected modules if and only if they are not
+ *   active at the same time due to start delays and cutoff iterations
+ * This method is used by the Engine to check for this
+ */
+bool Module::is_coactive(Module* other) const {
+    int this_end = this->start_delay + this->cutoff;
+    int other_end = other->start_delay + other->cutoff;
+
+    return this->start_delay < other_end and this_end > other->start_delay;
+}
+
 Module* Module::build_module(Network *network, ModuleConfig *config) {
     // Check type
     auto type = config->get_type();

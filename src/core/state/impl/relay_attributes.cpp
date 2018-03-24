@@ -1,5 +1,3 @@
-#include <string>
-
 #include "state/impl/relay_attributes.h"
 #include "util/error_manager.h"
 

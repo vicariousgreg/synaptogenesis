@@ -379,6 +379,10 @@ CALC_ALL(activate_iz_gap,
 );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
+    // Direct connections get a mainline into the input current
+    if (conn->get_parameter("direct", "false") == "true")
+        return get_base_activator_kernel(conn);
+
     // These are not supported because of the change of weight matrix pointer
     // Second order host connections require their weight matrices to be copied
     // Currently, this only copies the first matrix in the stack, and this
@@ -509,7 +513,7 @@ CALC_ALL(update_iz,
 ; );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
-    // Second order and convolutional updaters are not currently supported
+    // Second order, convolutional, and direct updaters are not supported
     if (conn->second_order or conn->convolutional)
         LOG_ERROR(
             "Unimplemented connection type!");
