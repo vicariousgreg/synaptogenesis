@@ -20,13 +20,14 @@ def build_network(dim=64):
     plastic = "true"
     stp = "true"
     stp_tau = "5000"
-    learning_rate = 0.0001
+    exc_learning_rate = 0.001
+    inh_learning_rate = 0.01
 
     # Noise Parameters
     exc_noise_strength = 10.0
     exc_noise_rate = 1
     inh_noise_strength = 10.0
-    inh_noise_rate = 1
+    inh_noise_rate = 5
     exc_random = "false"
     inh_random = "false"
 
@@ -50,10 +51,10 @@ def build_network(dim=64):
 
     inh_exc_weight_init = init
     inh_exc_exponent = 1.5
-    inh_exc_base_weight = 0.02
+    inh_exc_base_weight = 0.1
     inh_exc_base_weight_min = 0.00011
     inh_exc_base_weight_max = 0.2
-    inh_exc_fraction = 0.1
+    inh_exc_fraction = 0.25
 
     # Create main structure
     structure = {"name" : "snn", "type" : "parallel"}
@@ -118,7 +119,6 @@ def build_network(dim=64):
         "type" : "one to one",
         "opcode" : "add",
         "plastic" : "false",
-        "max weight" : 10.0,
         "weight config" : {
             "type" : "flat",
             "weight" : 10.0,
@@ -138,7 +138,7 @@ def build_network(dim=64):
         },
         "opcode" : "add",
         "plastic" : plastic,
-        "learning rate" : learning_rate,
+        "learning rate" : exc_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
         "short term plasticity" : stp,
@@ -157,7 +157,7 @@ def build_network(dim=64):
         },
         "opcode" : "add",
         "plastic" : plastic,
-        "learning rate" : learning_rate,
+        "learning rate" : exc_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
         "short term plasticity" : stp,
@@ -175,7 +175,7 @@ def build_network(dim=64):
         },
         "opcode" : "sub",
         "plastic" : plastic,
-        "learning rate" : learning_rate,
+        "learning rate" : inh_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
         "short term plasticity" : stp,
