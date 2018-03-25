@@ -23,7 +23,7 @@ SaccadeModule::SaccadeModule(LayerList layers, ModuleConfig *config)
         if (layer_config->get_bool("output", false))
             set_io_type(layer, get_io_type(layer) | OUTPUT);
 
-        // Use output as default
+        // Use input as default
         if (get_io_type(layer) == 0)
             set_io_type(layer, INPUT);
         window->add_layer(layer, get_io_type(layer));
@@ -38,8 +38,10 @@ void SaccadeModule::feed_input_impl(Buffer *buffer) {
 
 void SaccadeModule::report_output_impl(Buffer *buffer) {
     for (auto layer : layers)
-        if (get_io_type(layer) & OUTPUT) ;
-            // Add output processing here
+        if (get_io_type(layer) & OUTPUT)
+            window->report_output(layer,
+                buffer->get_output(layer),
+                get_output_type(layer));
 }
 
 #endif

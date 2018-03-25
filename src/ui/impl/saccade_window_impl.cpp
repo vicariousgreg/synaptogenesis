@@ -12,11 +12,30 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
               window_dirty(true),
               input_dirty(true),
               waiting(true) {
+    // Add table
     table = new Gtk::Table(1, 3, false);
     table->set_row_spacings(0);
     table->set_col_spacings(0);
     this->override_background_color(Gdk::RGBA("Black"));
-    this->add(*table);
+
+    // Add Overlay
+    overlay = new Gtk::Overlay();
+    overlay->add(*table);
+    overlay->set_opacity(1.0);
+    this->overlay_pix = Gdk::Pixbuf::create(
+        Gdk::Colorspace::COLORSPACE_RGB, true, 8, cols, rows);
+
+    // Transparent red image
+    guint8* data = overlay_pix->get_pixels();
+    for (int i = 0 ; i < rows*cols ; ++i) {
+        data[4*i + 0] = 255;
+        data[4*i + 1] = 0;
+        data[4*i + 2] = 0;
+        data[4*i + 3] = 0;
+    }
+    this->overlay_image = new Gtk::Image(overlay_pix);
+    overlay->add_overlay(*overlay_image);
+    this->add(*overlay);
 
     center_cross = Gdk::Pixbuf::create_from_file(
         "./resources/antisaccade/center_cross.bmp");
@@ -46,39 +65,19 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
     }
 
     // Create peripheral panes
-    for (int i = 0; i < 2; ++i) {
-        /*
-        auto pix = Gdk::Pixbuf::create(
-                Gdk::Colorspace::COLORSPACE_RGB,
-                true, 8, peripheral_cols, rows);
-        */
-        auto pix = peripheral_square;
-        guint8* data = pix->get_pixels();
+    auto pix = peripheral_square;
+    data = pix->get_pixels();
 
-        // Clear out pane
-        /*
-        for (int i = 0; i < peripheral_cols*rows; ++i) {
-            data[i*4 + 0] = 0;
-            data[i*4 + 1] = 0;
-            data[i*4 + 2] = 0;
-            data[i*4 + 3] = 255;
-        }
-        */
-
-        if (i == 0) {
-            this->left_pane_pixbuf = pix;
-            this->left_pane_image = new Gtk::Image(pix);
-        } else {
-            this->right_pane_pixbuf = pix;
-            this->right_pane_image = new Gtk::Image(pix);
-        }
-    }
+    this->left_pane_pixbuf = pix;
+    this->left_pane_image = new Gtk::Image(pix);
+    this->right_pane_pixbuf = pix;
+    this->right_pane_image = new Gtk::Image(pix);
 
     // Create center pane
     this->center_pane_pixbuf = Gdk::Pixbuf::create(
             Gdk::Colorspace::COLORSPACE_RGB,
             true, 8, center_cols, rows);
-    guint8* data = this->center_pane_pixbuf->get_pixels();
+    data = this->center_pane_pixbuf->get_pixels();
 
     // Clear out box
     for (int i = 0; i < rows*center_cols; ++i) {
@@ -94,12 +93,14 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
     this->table->attach(*center_pane_image, 1, 2, 0, 1);
     this->table->attach(*right_pane_image, 2, 3, 0, 1);
     this->table->show_all();
+    this->overlay->show_all();
 
     this->set_cross();
 }
 
 SaccadeWindowImpl::~SaccadeWindowImpl() {
     delete this->table;
+    delete this->overlay;
 }
 
 void SaccadeWindowImpl::set_cross() {
@@ -157,6 +158,7 @@ void SaccadeWindowImpl::update() {
         left_pane_image->set(left_pane_pixbuf);
         right_pane_image->set(right_pane_pixbuf);
         center_pane_image->set(center_pane_pixbuf);
+        overlay_image->set(overlay_pix);
         window_dirty = false;
     }
 }
@@ -185,6 +187,37 @@ void SaccadeWindowImpl::feed_input(Layer *layer, float *input) {
             for (int pix_col = 0 ; pix_col < peripheral_cols ; ++pix_col)
                 input[pix_row*cols + offset + pix_col] =
                     float(pix[4*(pix_row*peripheral_cols + pix_col)]) / 255.0;
+    }
+}
+
+void SaccadeWindowImpl::report_output(Layer *layer,
+        Output *output, OutputType output_type) {
+    int old_col = fixation.get_x(cols);
+    int old_row = fixation.get_y(rows);
+
+    fixation.update(output, output_type, layer->rows, layer->columns, 1.0);
+
+    int col = fixation.get_x(cols);
+    int row = fixation.get_y(rows);
+
+    if (row != old_row or col != old_col) {
+        //printf("Fixation: %d %d\n", row, col);
+        auto data = this->overlay_pix->get_pixels();
+        for (int i = 0 ; i < rows*cols ; ++i)
+            data[4*i + 3] = 0;
+
+        int start_row = std::max(0, row-5);
+        int end_row = std::min(rows, row+5);
+        int start_col = std::max(0, col-5);
+        int end_col = std::min(cols, col+5);
+
+        for (int i = start_row ; i < end_row ; ++i) {
+            for (int j = start_col ; j < end_col ; ++j) {
+                int index = i * cols + j;
+                data[4*index + 3] = 255;
+            }
+        }
+        window_dirty = true;
     }
 }
 

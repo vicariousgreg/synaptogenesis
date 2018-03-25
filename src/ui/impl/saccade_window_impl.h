@@ -3,6 +3,7 @@
 
 #include "saccade_window.h"
 #include "gui_window.h"
+#include "fixation.h"
 #include "util/pointer.h"
 
 class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
@@ -16,8 +17,11 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         void update();
         void add_layer(Layer *layer, IOTypeMask io_type);
         void feed_input(Layer *layer, float *input);
+        void report_output(Layer *layer,
+            Output *output, OutputType output_type);
 
     protected:
+        Glib::RefPtr<Gdk::Pixbuf> overlay_pix;
         Glib::RefPtr<Gdk::Pixbuf> center_cross;
         Glib::RefPtr<Gdk::Pixbuf> center_circle;
         std::vector<Glib::RefPtr<Gdk::Pixbuf>> neutral_faces_left;
@@ -31,6 +35,7 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         Gtk::Image* left_pane_image;
         Gtk::Image* right_pane_image;
         Gtk::Image* center_pane_image;
+        Gtk::Image* overlay_image;
         Glib::RefPtr<Gdk::Pixbuf> left_pane_pixbuf;
         Glib::RefPtr<Gdk::Pixbuf> right_pane_pixbuf;
         Glib::RefPtr<Gdk::Pixbuf> center_pane_pixbuf;
@@ -42,8 +47,11 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         bool waiting;
 
         Gtk::Table *table;
+        Gtk::Overlay *overlay;
 
         SaccadeModule *module;
+
+        Fixation fixation;
 };
 
 #endif

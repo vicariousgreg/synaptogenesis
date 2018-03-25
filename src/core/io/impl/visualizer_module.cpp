@@ -39,13 +39,11 @@ void VisualizerModule::feed_input_impl(Buffer *buffer) {
 }
 
 void VisualizerModule::report_output_impl(Buffer *buffer) {
-    for (auto layer : layers) {
-        if (get_io_type(layer) & OUTPUT) {
-            Output *output = buffer->get_output(layer);
-            OutputType output_type = get_output_type(layer);
-            window->report_output(layer, output, output_type);
-        }
-    }
+    for (auto layer : layers)
+        if (get_io_type(layer) & OUTPUT)
+            window->report_output(layer,
+                buffer->get_output(layer),
+                get_output_type(layer));
 }
 
 /******************************************************************************/
@@ -77,13 +75,11 @@ HeatmapModule::HeatmapModule(LayerList layers, ModuleConfig *config)
 }
 
 void HeatmapModule::report_output_impl(Buffer *buffer) {
-    for (auto layer : layers) {
-        if (get_io_type(layer) & OUTPUT) {
-            Output *output = buffer->get_output(layer);
-            OutputType output_type = get_output_type(layer);
-            window->report_output(layer, output, output_type);
-        }
-    }
+    for (auto layer : layers)
+        if (get_io_type(layer) & OUTPUT)
+            window->report_output(layer,
+                buffer->get_output(layer),
+                get_output_type(layer));
 }
 
 void HeatmapModule::cycle_impl() {
