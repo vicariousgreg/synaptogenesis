@@ -37,31 +37,35 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
     overlay->add_overlay(*overlay_image);
     this->add(*overlay);
 
-    center_cross = Gdk::Pixbuf::create_from_file(
-        "./resources/antisaccade/center_cross.bmp");
-    center_circle = Gdk::Pixbuf::create_from_file(
-        "./resources/antisaccade/center_circle.bmp");
-    peripheral_square = Gdk::Pixbuf::create_from_file(
-        "./resources/antisaccade/peripheral_square.bmp");
-    peripheral_circle = Gdk::Pixbuf::create_from_file(
-        "./resources/antisaccade/peripheral_circle.bmp");
+    try {
+        center_cross = Gdk::Pixbuf::create_from_file(
+            "./resources/antisaccade/center_cross.bmp");
+        center_circle = Gdk::Pixbuf::create_from_file(
+            "./resources/antisaccade/center_circle.bmp");
+        peripheral_square = Gdk::Pixbuf::create_from_file(
+            "./resources/antisaccade/peripheral_square.bmp");
+        peripheral_circle = Gdk::Pixbuf::create_from_file(
+            "./resources/antisaccade/peripheral_circle.bmp");
 
-    // Load face images
-    for (int i = 0 ; i < 9 ; ++i) {
-        fear_faces_left.push_back(
-            Gdk::Pixbuf::create_from_file(
-                "./resources/antisaccade/fear_l_" + std::to_string(i) + ".bmp"));
-        fear_faces_right.push_back(
-            Gdk::Pixbuf::create_from_file(
-                "./resources/antisaccade/fear_r_" + std::to_string(i) + ".bmp"));
-    }
-    for (int i = 0 ; i < 8 ; ++i) {
-        neutral_faces_left.push_back(
-            Gdk::Pixbuf::create_from_file(
-                "./resources/antisaccade/neutral_l_" + std::to_string(i) + ".bmp"));
-        neutral_faces_right.push_back(
-            Gdk::Pixbuf::create_from_file(
-                "./resources/antisaccade/neutral_r_" + std::to_string(i) + ".bmp"));
+        // Load face images
+        for (int i = 0 ; i < 9 ; ++i) {
+            fear_faces_left.push_back(
+                Gdk::Pixbuf::create_from_file(
+                    "./resources/antisaccade/fear_l_" + std::to_string(i) + ".bmp"));
+            fear_faces_right.push_back(
+                Gdk::Pixbuf::create_from_file(
+                    "./resources/antisaccade/fear_r_" + std::to_string(i) + ".bmp"));
+        }
+        for (int i = 0 ; i < 8 ; ++i) {
+            neutral_faces_left.push_back(
+                Gdk::Pixbuf::create_from_file(
+                    "./resources/antisaccade/neutral_l_" + std::to_string(i) + ".bmp"));
+            neutral_faces_right.push_back(
+                Gdk::Pixbuf::create_from_file(
+                    "./resources/antisaccade/neutral_r_" + std::to_string(i) + ".bmp"));
+        }
+    } catch(Glib::FileError) {
+        LOG_ERROR("Could not open resources directory!");
     }
 
     // Create peripheral panes

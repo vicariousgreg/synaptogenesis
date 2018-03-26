@@ -19,16 +19,20 @@ DSSTWindowImpl::DSSTWindowImpl(DSSTModule *module)
     this->add(*table);
 
     // Load images
-    for (int i = 1 ; i < 10 ; ++i)
-        digit_pixbufs.push_back(
-            Gdk::Pixbuf::create_from_file(
-                "./resources/dsst/" + std::to_string(i)
-                + "_" + std::to_string(cell_cols) + ".png"));
-    for (int i = 1 ; i < 10 ; ++i)
-        symbol_pixbufs.push_back(
-            Gdk::Pixbuf::create_from_file(
-                "./resources/dsst/sym" + std::to_string(i)
-                + "_" + std::to_string(cell_cols) + ".png"));
+    try {
+        for (int i = 1 ; i < 10 ; ++i)
+            digit_pixbufs.push_back(
+                Gdk::Pixbuf::create_from_file(
+                    "./resources/dsst/" + std::to_string(i)
+                    + "_" + std::to_string(cell_cols) + ".png"));
+        for (int i = 1 ; i < 10 ; ++i)
+            symbol_pixbufs.push_back(
+                Gdk::Pixbuf::create_from_file(
+                    "./resources/dsst/sym" + std::to_string(i)
+                    + "_" + std::to_string(cell_cols) + ".png"));
+    } catch(Glib::FileError) {
+        LOG_ERROR("Could not open resources directory!");
+    }
 
     // Create key boxes
     for (int col = 0; col < num_cols/2; ++col) {

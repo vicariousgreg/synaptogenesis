@@ -145,12 +145,14 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
                    ->get_layer(layer_conf->get("layer")));
 
     // Ensure there are layers in the set
-    if (layers.size() == 0)
-        LOG_ERROR(
+    if (layers.size() == 0) {
+        LOG_WARNING(
             "Attempted to build " + type + " module with 0 layers!");
-
-    // Build using structure and layer name
-    return bank->build_pointers.at(type)(layers, config);
+        return nullptr;
+    } else {
+        // Build using structure and layer name
+        return bank->build_pointers.at(type)(layers, config);
+    }
 }
 
 Module::ModuleBank* Module::get_module_bank() {

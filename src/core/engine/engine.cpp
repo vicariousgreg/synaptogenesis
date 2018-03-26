@@ -46,6 +46,10 @@ void Engine::build_environment(PropertyConfig args) {
         // Build module
         Module *module = Module::build_module(
             context.network, new ModuleConfig(config));
+
+        // If module has no layers, it will not be built, so skip it
+        if (module == nullptr) continue;
+
         modules.push_back(module);
 
         // Update io_types for all layers attached to the module
