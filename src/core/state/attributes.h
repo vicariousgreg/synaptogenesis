@@ -236,10 +236,31 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     } \
 }
 
+// Random attribute kernel
+// Creates a random variables between 0.0 and 1.0
+#define DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
+    std::uniform_real_distribution<float> distribution(0.0, 1.0); \
+    PREAMBLE_ATTRIBUTES \
+    PREAMBLE \
+    for (int nid = 0; nid < size; ++nid) { \
+        float rand = distribution(generator); \
+        BODY; \
+    } \
+}
+
 // Use this to set up attributes kernel
 #define BUILD_ATTRIBUTE_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
+    return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
+}
+
+// Random version
+#define BUILD_RAND_ATTRIBUTE_KERNEL( \
+    CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
+DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
 }
