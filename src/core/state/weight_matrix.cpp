@@ -545,8 +545,11 @@ static void initialize_weights(const PropertyConfig config,
             "Error in weight config for " + conn->str() + ":\n"
             "  Unrecognized weight config type: " + type);
 
+    // Now, run callbacks
+    if (config.has("distance callback"))
+        distance_callback_config(config, target_matrix, conn);
 
-    // Now do mask processing
+    // Finally, do mask processing
     if (config.has_child("circular mask"))
         circular_mask_config(config.get_child("circular mask"), target_matrix, conn);
 
@@ -575,10 +578,6 @@ static void initialize_weights(const PropertyConfig config,
                 break;
         }
     }
-
-    // Finally, run callbacks
-    if (config.has("distance callback"))
-        distance_callback_config(config, target_matrix, conn);
 }
 
 /******************************************************************************/
