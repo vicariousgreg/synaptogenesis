@@ -379,6 +379,7 @@ static void circular_mask_config(const PropertyConfig& config, float* target_mat
     float radius = config.get_float("radius", 0);
     float diameter = config.get_float("diameter", 0);
     bool invert = config.get_bool("invert", false);
+    float value = config.get_float("value", 0.0);
 
     if (row_radius <= 0) {
         if (row_diameter > 0)
@@ -428,7 +429,7 @@ static void circular_mask_config(const PropertyConfig& config, float* target_mat
                 if (invert == (term <= sq_mult)) {
                     int weight_index = weight_offset +
                         (k_row * col_field_size) + k_col;
-                    target_matrix[weight_index] = 0.0;
+                    target_matrix[weight_index] = value;
                 }
             }
         }

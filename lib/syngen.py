@@ -220,6 +220,8 @@ class Properties(CObject):
         if type(props) is dict:
             self.obj = _syn.create_properties()
             for k,v in props.iteritems():
+                if v is None: continue
+
                 if type(v) is dict:
                     self.add_child(k, v)
                 elif type(v) is list:

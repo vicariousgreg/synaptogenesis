@@ -9,6 +9,7 @@ REGISTER_ATTRIBUTES(RelayAttributes, "relay", FLOAT)
 
 BUILD_ATTRIBUTE_KERNEL(RelayAttributes, relay_attribute_kernel,
     float *f_outputs = (float*)outputs;
+    bool ramp = ((RelayAttributes*)att)->ramp;
 
     ,
 
@@ -20,7 +21,7 @@ BUILD_ATTRIBUTE_KERNEL(RelayAttributes, relay_attribute_kernel,
         f_outputs[size * index + nid] = next_value;
     }
     float input = inputs[nid];
-    f_outputs[size * index + nid] = input;
+    f_outputs[size * index + nid] = ramp ? MAX(0.0, input) : input;
 )
 
 /******************************************************************************/
@@ -28,4 +29,6 @@ BUILD_ATTRIBUTE_KERNEL(RelayAttributes, relay_attribute_kernel,
 /******************************************************************************/
 
 RelayAttributes::RelayAttributes(Layer *layer)
-        : Attributes(layer, FLOAT) { }
+        : Attributes(layer, FLOAT) {
+    this->ramp = layer->get_parameter("ramp", "false") == "true";
+}
