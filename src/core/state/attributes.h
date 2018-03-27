@@ -67,6 +67,8 @@ class Attributes {
         Pointer<Output> output;
         Pointer<Output> expected;
         Pointer<float> input;
+        int input_register_count;
+        int output_register_count;
 
         Layer * const layer;
 
@@ -274,5 +276,25 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
 }
 
 #endif
+
+// Macros for shifting outputs
+#define SHIFT_FLOAT_OUTPUTS(f_outputs, new_output) \
+    for (int index = history_size - 1 ; index > 0 ; --index) \
+        f_outputs[size * index + nid] = f_outputs[size * (index - 1) + nid]; \
+    f_outputs[nid] = new_output;
+
+#define SHIFT_BIT_OUTPUTS(b_outputs, new_bit) \
+    /* Reduce reads, chain values */ \
+    unsigned int curr_value = b_outputs[size * (history_size-1) + nid]; \
+\
+    for (int index = history_size - 1 ; index > 0 ; --index) { \
+        unsigned int prev_value = b_outputs[size * (index-1) + nid]; \
+        /* Shift bits, carry over LSB from prev value. */ \
+        b_outputs[size * index + nid] = (curr_value >> 1) | (prev_value << 31); \
+        curr_value = prev_value; \
+    } \
+\
+    b_outputs[nid] = (curr_value >> 1) | (new_bit << 31); \
+    bool prev_bit = curr_value >> 31;
 
 #endif

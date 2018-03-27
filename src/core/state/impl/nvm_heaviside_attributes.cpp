@@ -25,21 +25,9 @@ BUILD_ATTRIBUTE_KERNEL(NVMHeavisideAttributes, nvm_heaviside_kernel,
 
     ,
 
-    // If you want to respect delays, this is the algorithm
-    // If not, delayed output connections will get garbage data
-    float next_value = f_outputs[nid];
-    int index;
-    for (index = 0 ; index < history_size-1 ; ++index) {
-        float curr_value = next_value;
-        next_value = f_outputs[size * (index + 1) + nid];
-        f_outputs[size * index + nid] = next_value;
-    }
     float input = inputs[nid];
-
-    // This is the appropriate index to use for the most recent output
-    next_value = f_outputs[size * index + nid];
     float st = inputs[nid];
     state[nid] = st;
-    f_outputs[size * index + nid] = (float)(st > 0.);
-    // f_outputs[size * index + nid] = .5 * (tanh(st) + 1.); // logistic
+    SHIFT_FLOAT_OUTPUTS(f_outputs, (float)(st > 0.));
+    // SHIFT_FLOAT_OUTPUTS(f_outputs, .5 * (tanh(st) + 1.)); // logistic
 )

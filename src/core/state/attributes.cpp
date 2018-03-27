@@ -20,9 +20,10 @@ Attributes::Attributes(Layer *layer, OutputType output_type)
           pointer(this) {
     // Determine how many input cells are needed
     //   based on the dendritic trees of the layers
-    int input_register_count = layer->get_dendritic_root()->get_max_register_index() + 1;
-    int output_register_count = 1 +
-        (layer->get_max_delay() / get_timesteps_per_output(output_type));
+    this->input_register_count =
+        layer->get_dendritic_root()->get_max_register_index() + 1;
+    this->output_register_count =
+        1 + get_word_index(layer->get_max_delay(), output_type);
 
     this->input = Pointer<float>(input_register_count * layer->size, 0.0);
     this->expected = Pointer<Output>(layer->size);

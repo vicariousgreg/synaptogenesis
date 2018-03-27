@@ -54,7 +54,7 @@ endif
 
 ifdef DEBUG
 CCFLAGS+=-g
-NVCCFLAGS+=-g
+NVCCFLAGS+=-g -G
 CCFLAGS+=-DDEBUG
 NVCCFLAGS+=-DDEBUG
 endif

@@ -56,24 +56,12 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
 
     ,
 
-    // If you want to respect delays, this is the algorithm
-    // If not, delayed output connections will get garbage data
-    float next_value = f_outputs[nid];
-    int index;
-    for (index = 0 ; index < history_size-1 ; ++index) {
-        float curr_value = next_value;
-        next_value = f_outputs[size * (index + 1) + nid];
-        f_outputs[size * index + nid] = next_value;
-    }
-    float input = inputs[nid];
-
-    // This is the appropriate index to use for the most recent output
-    next_value = f_outputs[size * index + nid];
     float st = state[nid];
     state[nid] = st = st + (tau * inputs[nid]) + (decay * (tonic-st));
-    //f_outputs[size * index + nid] = MAX(0.0f, st);
-    f_outputs[size * index + nid] = MAX(0.0f, tanh(st));
-    //f_outputs[size * index + nid] = (1.0f / (1 + exp(-100.0 * st)) * tanh(st));
+
+    SHIFT_FLOAT_OUTPUTS(f_outputs, MAX(0.0f, tanh(st)));
+    // SHIFT_FLOAT_OUTPUTS(f_outputs, MAX(0.0f, st));
+    // SHIFT_FLOAT_OUTPUTS(f_outputs, (1.0f / (1 + exp(-100.0 * st)) * tanh(st)));
 )
 
 /******************************************************************************/

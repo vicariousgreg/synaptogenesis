@@ -430,6 +430,10 @@ Pointer<Output> State::get_expected(Layer *layer) const {
 }
 
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
+    // If -1, use last index (most recent output)
+    while (word_index < 0)
+        word_index = attributes.at(layer)->output_register_count + word_index;
+
     try {
         return attributes.at(layer)->get_output(word_index);
     } catch (std::out_of_range) {
