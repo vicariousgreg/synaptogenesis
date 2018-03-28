@@ -52,6 +52,7 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         SaccadeModule *module;
 
         Fixation fixation;
+        float saccade_rate;
 };
 
 #endif

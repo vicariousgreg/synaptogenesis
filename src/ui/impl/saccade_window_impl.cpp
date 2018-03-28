@@ -11,7 +11,8 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
             : module(module),
               window_dirty(true),
               input_dirty(true),
-              waiting(true) {
+              waiting(true),
+              saccade_rate(module->config->get_float("saccade rate", 1.0)) {
     // Add table
     table = new Gtk::Table(1, 3, false);
     table->set_row_spacings(0);
@@ -199,7 +200,9 @@ void SaccadeWindowImpl::report_output(Layer *layer,
     int old_col = fixation.get_x(cols);
     int old_row = fixation.get_y(rows);
 
-    fixation.update(output, output_type, layer->rows, layer->columns, 1.0);
+    fixation.update(output, output_type,
+        layer->rows, layer->columns,
+        this->saccade_rate);
 
     int col = fixation.get_x(cols);
     int row = fixation.get_y(rows);
