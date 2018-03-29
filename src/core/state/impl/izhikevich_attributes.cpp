@@ -172,7 +172,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         // If the voltage explodes (voltage == NaN -> voltage != voltage),
         //   set it to threshold before it corrupts the recovery variable
         voltage = (voltage != voltage) ? IZ_SPIKE_THRESH : voltage;
-        voltage = MIN(voltage, IZ_SPIKE_THRESH);
 
         float adjusted_tau = (voltage > IZ_SPIKE_THRESH)
             ? delta_v
