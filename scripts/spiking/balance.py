@@ -64,6 +64,14 @@ def build_network(dim=64):
     inh_exc_spread = 7
     exc_inh_mask = 9
 
+    # Sine wave envelope
+    sine = {
+        "name" : "sine",
+        "neural model" : "sine generator",
+        "frequency" : 25,
+        "rows" : dim,
+        "columns" : dim
+    }
 
     # Poisson input layer
     poisson = {
@@ -111,7 +119,21 @@ def build_network(dim=64):
 
 
     # Add layers to structure
-    structure["layers"] = [poisson, excitatory, inhibitory]
+    structure["layers"] = [sine, poisson, excitatory, inhibitory]
+
+    sine_poisson = {
+        "from layer" : "sine",
+        "to layer" : "poisson",
+        "type" : "one to one",
+        "opcode" : "add",
+        "plastic" : "false",
+        "weight config" : {
+            "type" : "flat",
+            "weight" : 0.01,
+            "fraction" : 1.0,
+        },
+        "direct" : "true" # direct connection into input current
+    }
 
     poisson_exc = {
         "from layer" : "poisson",
@@ -307,6 +329,7 @@ def build_network(dim=64):
 
     # Create connections
     connections = [
+        sine_poisson,
         poisson_exc,
         exc_exc,
         exc_inh,
@@ -326,6 +349,7 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                 "type" : "visualizer",
                 "colored" : "false",
                 "layers" : [
+                    { "structure" : "snn", "layer" : "sine" },
                     { "structure" : "snn", "layer" : "poisson" },
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
@@ -361,6 +385,7 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                 "window" : 1000, # Short term
                 "linear" : "false",
                 "layers" : [
+                    { "structure" : "snn", "layer" : "sine" },
                     { "structure" : "snn", "layer" : "poisson" },
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
@@ -371,14 +396,14 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                 "rate" : "1000",
                 "border" : 0,
                 "std dev" : std_dev,
-                "value" : 0.01,
+                "value" : 1.0,
                 "normalize" : "true",
                 "peaks" : peaks,
                 "random" : "false",
                 "layers" : [
                     {
                         "structure" : "snn",
-                        "layer" : "poisson"
+                        "layer" : "sine"
                     }
                 ]
             }

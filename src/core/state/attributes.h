@@ -150,8 +150,8 @@ Attributes *CLASS_NAME::build(Layer *layer) { \
 
 
 /* Macros for Attribute kernels */
-#define PREAMBLE_ATTRIBUTES \
-    const Attributes *att = attribute_data.attributes; \
+#define PREAMBLE_ATTRIBUTES(CLASS_NAME) \
+    CLASS_NAME *att = (CLASS_NAME*)attribute_data.attributes; \
     float *inputs = attribute_data.input.get(); \
     Output *outputs = attribute_data.output.get(); \
     int size = attribute_data.size; \
@@ -162,16 +162,16 @@ Attributes *CLASS_NAME::build(Layer *layer) { \
 
 // Skeletons -- don't use this directly
 // Standard attribute kernel
-#define DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+#define DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
-    PREAMBLE_ATTRIBUTES \
+    PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
         BODY; \
     } \
 } \
 GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
-    PREAMBLE_ATTRIBUTES \
+    PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
     int nid = blockIdx.x * blockDim.x + threadIdx.x; \
     if (nid < size) { \
@@ -181,10 +181,10 @@ GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
 
 // Random attribute kernel
 // Creates a random variables between 0.0 and 1.0
-#define DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+#define DEF_RAND_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     std::uniform_real_distribution<float> distribution(0.0, 1.0); \
-    PREAMBLE_ATTRIBUTES \
+    PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
         float rand = distribution(generator); \
@@ -192,7 +192,7 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     } \
 } \
 GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
-    PREAMBLE_ATTRIBUTES \
+    PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
     int nid = blockIdx.x * blockDim.x + threadIdx.x; \
     if (nid < size) { \
@@ -205,7 +205,7 @@ GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
 // Standard version
 #define BUILD_ATTRIBUTE_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
-DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
@@ -213,7 +213,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
 // Random version
 #define BUILD_RAND_ATTRIBUTE_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
-DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+DEF_RAND_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
@@ -221,7 +221,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
 // Use this to set up attributes learning kernel
 #define BUILD_ATTRIBUTE_LEARNING_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
-DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
@@ -229,9 +229,9 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
 #else
 
 // Skeletons -- don't use this directly
-#define DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
-HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
-    PREAMBLE_ATTRIBUTES \
+#define DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
+HOST void FUNC_NAME##_SERIAL(CLASS_NAME, AttributeData attribute_data) { \
+    PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
         BODY; \
@@ -240,10 +240,10 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
 
 // Random attribute kernel
 // Creates a random variables between 0.0 and 1.0
-#define DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+#define DEF_RAND_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     std::uniform_real_distribution<float> distribution(0.0, 1.0); \
-    PREAMBLE_ATTRIBUTES \
+    PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
         float rand = distribution(generator); \
@@ -254,7 +254,7 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
 // Use this to set up attributes kernel
 #define BUILD_ATTRIBUTE_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
-DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
 }
@@ -262,7 +262,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
 // Random version
 #define BUILD_RAND_ATTRIBUTE_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
-DEF_RAND_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+DEF_RAND_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
 }
@@ -270,7 +270,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_kernel() { \
 // Use this to set up attributes learning kernel
 #define BUILD_ATTRIBUTE_LEARNING_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
-DEF_ATT_KERNEL(FUNC_NAME, PREAMBLE, BODY) \
+DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
 }

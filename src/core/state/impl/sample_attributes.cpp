@@ -117,11 +117,8 @@ bool SampleAttributes::check_compatibility(ClusterType cluster_type) {
  *   by this macro (PREAMBLE_ATTRIBUTES).
  */
 BUILD_ATTRIBUTE_KERNEL(SampleAttributes, sample_attribute_kernel,
-    // Cast the attributes pointer to the subclass type
-    SampleAttributes *sample_att = (SampleAttributes*)att;
-
-    float layer_var = sample_att->layer_variable;
-    float* neuron_var = sample_att->neuron_variable.get();
+    float layer_var = att->layer_variable;
+    float* neuron_var = att->neuron_variable.get();
 
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience
@@ -146,6 +143,7 @@ BUILD_ATTRIBUTE_KERNEL(SampleAttributes, sample_attribute_kernel,
  * It is convenient to define each piece of the process using a macro.
  * This one defines variable extraction, as in the attributes kernel above. */
 #define EXTRACT \
+    /* Cast the attributes pointer to the subclass type */ \
     SampleAttributes *sample_att = (SampleAttributes*)synapse_data.attributes; \
     SampleWeightMatrix *sample_mat = (SampleWeightMatrix*)synapse_data.matrix; \
     float conn_var = sample_mat->x;

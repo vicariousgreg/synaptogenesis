@@ -43,12 +43,10 @@ bool OscillatorAttributes::check_compatibility(ClusterType cluster_type) {
 /******************************************************************************/
 
 BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
-    // Cast the attributes pointer to the subclass type
-    OscillatorAttributes *oscillator_att = (OscillatorAttributes*)att;
-    float tonic = oscillator_att->tonic;
-    float tau = oscillator_att->tau;
-    float decay = oscillator_att->decay;
-    float* state = oscillator_att->state.get();
+    float tonic = att->tonic;
+    float tau = att->tau;
+    float decay = att->decay;
+    float* state = att->state.get();
 
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience

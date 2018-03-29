@@ -13,11 +13,10 @@ REGISTER_ATTRIBUTES(GameOfLifeAttributes, "game_of_life", BIT)
 /******************************************************************************/
 
 BUILD_ATTRIBUTE_KERNEL(GameOfLifeAttributes, gol_attribute_kernel,
-    GameOfLifeAttributes *gol_att = (GameOfLifeAttributes*)att;
-    int survival_min = gol_att->survival_min;
-    int survival_max = gol_att->survival_max;
-    int birth_min = gol_att->birth_min;
-    int birth_max = gol_att->birth_max;
+    int survival_min = att->survival_min;
+    int survival_max = att->survival_max;
+    int birth_min = att->birth_min;
+    int birth_max = att->birth_max;
 
     ,
 

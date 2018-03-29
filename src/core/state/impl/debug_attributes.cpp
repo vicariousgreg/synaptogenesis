@@ -16,12 +16,10 @@ REGISTER_WEIGHT_MATRIX(DebugWeightMatrix, "debug")
 /******************************************************************************/
 
 BUILD_ATTRIBUTE_KERNEL(DebugAttributes, debug_attribute_kernel,
-    DebugAttributes *debug_att = (DebugAttributes*)att;
-
-    float layer_var = debug_att->layer_variable;
+    float layer_var = att->layer_variable;
     assert(layer_var == DUMMY_VAL);
 
-    float *neuron_var = debug_att->neuron_variable.get();
+    float *neuron_var = att->neuron_variable.get();
 
     ,
 

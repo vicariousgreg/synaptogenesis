@@ -107,24 +107,22 @@ static void create_parameters(std::string str,
 #define STDP_A_NEG 0.2
 
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
-    IzhikevichAttributes *iz_att = (IzhikevichAttributes*)att;
+    float *ampa_conductances = att->ampa_conductance.get();
+    float *nmda_conductances = att->nmda_conductance.get();
+    float *gabaa_conductances = att->gabaa_conductance.get();
+    float *gabab_conductances = att->gabab_conductance.get();
+    float *multiplicative_factors = att->multiplicative_factor.get();
+    float *dopamines = att->dopamine.get();
 
-    float *ampa_conductances = iz_att->ampa_conductance.get();
-    float *nmda_conductances = iz_att->nmda_conductance.get();
-    float *gabaa_conductances = iz_att->gabaa_conductance.get();
-    float *gabab_conductances = iz_att->gabab_conductance.get();
-    float *multiplicative_factors = iz_att->multiplicative_factor.get();
-    float *dopamines = iz_att->dopamine.get();
-
-    float *voltages = iz_att->voltage.get();
-    float *recoveries = iz_att->recovery.get();
-    float *postsyn_exc_traces = iz_att->postsyn_exc_trace.get();
-    int *time_since_spikes = iz_att->time_since_spike.get();
+    float *voltages = att->voltage.get();
+    float *recoveries = att->recovery.get();
+    float *postsyn_exc_traces = att->postsyn_exc_trace.get();
+    int *time_since_spikes = att->time_since_spike.get();
     unsigned int *spikes = (unsigned int*)outputs;
-    float *as = iz_att->as.get();
-    float *bs = iz_att->bs.get();
-    float *cs = iz_att->cs.get();
-    float *ds = iz_att->ds.get();
+    float *as = att->as.get();
+    float *bs = att->bs.get();
+    float *cs = att->cs.get();
+    float *ds = att->ds.get();
 
     ,
 

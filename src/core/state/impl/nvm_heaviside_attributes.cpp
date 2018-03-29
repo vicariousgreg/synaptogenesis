@@ -14,10 +14,8 @@ USE_WEIGHT_MATRIX(NVMWeightMatrix, "nvm_heaviside")
 /******************************************************************************/
 
 BUILD_ATTRIBUTE_KERNEL(NVMHeavisideAttributes, nvm_heaviside_kernel,
-    // Cast the attributes pointer to the subclass type
-    NVMHeavisideAttributes *nvm_heaviside_att = (NVMHeavisideAttributes*)att;
-    //float tonic = nvm_heaviside_att->tonic;
-    float* state = nvm_heaviside_att->state.get();
+    //float tonic = att->tonic;
+    float* state = att->state.get();
 
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience

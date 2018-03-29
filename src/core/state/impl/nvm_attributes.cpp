@@ -41,10 +41,8 @@ bool NVMAttributes::check_compatibility(ClusterType cluster_type) {
 /******************************************************************************/
 
 BUILD_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
-    // Cast the attributes pointer to the subclass type
-    NVMAttributes *nvm_att = (NVMAttributes*)att;
-    //float tonic = nvm_att->tonic;
-    float* state = nvm_att->state.get();
+    //float tonic = att->tonic;
+    float* state = att->state.get();
 
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience
