@@ -230,7 +230,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
 
 // Skeletons -- don't use this directly
 #define DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
-HOST void FUNC_NAME##_SERIAL(CLASS_NAME, AttributeData attribute_data) { \
+HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
     for (int nid = 0; nid < size; ++nid) { \
