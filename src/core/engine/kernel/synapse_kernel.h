@@ -909,7 +909,14 @@ CALC_DIVERGENT(FUNC_NAME##_divergent, \
     NEURON_PRE, \
     WEIGHT_OP, \
     NEURON_POST \
-);
+); \
+std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> FUNC_NAME##_map = { \
+    {FULLY_CONNECTED, get_##FUNC_NAME##_fully_connected()}, \
+    {SUBSET, get_##FUNC_NAME##_subset()}, \
+    {ONE_TO_ONE, get_##FUNC_NAME##_one_to_one()}, \
+    {CONVERGENT, get_##FUNC_NAME##_convergent()}, \
+    {DIVERGENT, get_##FUNC_NAME##_divergent()} \
+};
 
 
 /******************************************************************************/

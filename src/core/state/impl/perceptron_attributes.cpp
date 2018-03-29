@@ -38,15 +38,9 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
         LOG_ERROR(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
-    funcs[FULLY_CONNECTED]  = get_activate_perceptron_fully_connected();
-    funcs[SUBSET]           = get_activate_perceptron_subset();
-    funcs[ONE_TO_ONE]       = get_activate_perceptron_one_to_one();
-    funcs[CONVERGENT]       = get_activate_perceptron_convergent();
-    funcs[DIVERGENT]        = get_activate_perceptron_divergent();
 
     try {
-        return funcs.at(conn->type);
+        return activate_perceptron_map[conn->type];
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Unimplemented connection type!");
@@ -70,19 +64,12 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
         LOG_ERROR(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
-    funcs[FULLY_CONNECTED]  = get_update_perceptron_fully_connected();
-    funcs[SUBSET]           = get_update_perceptron_subset();
-    funcs[ONE_TO_ONE]       = get_update_perceptron_one_to_one();
-    funcs[CONVERGENT]       = get_update_perceptron_convergent();
-    funcs[DIVERGENT]        = get_update_perceptron_divergent();
-
     try {
-        return funcs.at(conn->type);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Unimplemented connection type!");
-    }
+        return update_perceptron_map[conn->type];
+    } catch (std::out_of_range) { }
+
+    LOG_ERROR(
+        "Unimplemented connection type!");
 }
 
 /******************************************************************************/

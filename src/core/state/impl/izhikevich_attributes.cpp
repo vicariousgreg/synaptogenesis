@@ -371,31 +371,23 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
         LOG_ERROR(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
-    funcs[FULLY_CONNECTED][ADD]      = get_activate_iz_add_fully_connected();
-    funcs[FULLY_CONNECTED][SUB]      = get_activate_iz_sub_fully_connected();
-    funcs[FULLY_CONNECTED][MULT]     = get_activate_iz_mult_fully_connected();
-    funcs[FULLY_CONNECTED][REWARD]   = get_activate_iz_reward_fully_connected();
-    funcs[SUBSET][ADD]               = get_activate_iz_add_subset();
-    funcs[SUBSET][SUB]               = get_activate_iz_sub_subset();
-    funcs[SUBSET][MULT]              = get_activate_iz_mult_subset();
-    funcs[ONE_TO_ONE][ADD]           = get_activate_iz_add_one_to_one();
-    funcs[ONE_TO_ONE][SUB]           = get_activate_iz_sub_one_to_one();
-    funcs[ONE_TO_ONE][MULT]          = get_activate_iz_mult_one_to_one();
-    funcs[CONVERGENT][ADD]           = get_activate_iz_add_convergent();
-    funcs[CONVERGENT][SUB]           = get_activate_iz_sub_convergent();
-    funcs[CONVERGENT][MULT]          = get_activate_iz_mult_convergent();
-    funcs[CONVERGENT][GAP]           = get_activate_iz_gap_convergent();
-    funcs[DIVERGENT][ADD]            = get_activate_iz_add_divergent();
-    funcs[DIVERGENT][SUB]            = get_activate_iz_sub_divergent();
-    funcs[DIVERGENT][MULT]           = get_activate_iz_mult_divergent();
-
     try {
-        return funcs.at(conn->type).at(conn->opcode);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Unimplemented connection type!");
-    }
+        switch (conn->opcode) {
+            case(ADD):
+                return activate_iz_add_map[conn->type];
+            case(SUB):
+                return activate_iz_sub_map[conn->type];
+            case(MULT):
+                return activate_iz_mult_map[conn->type];
+            case(REWARD):
+                return activate_iz_reward_map[conn->type];
+            case(GAP):
+                return activate_iz_gap_map[conn->type];
+        }
+    } catch(std::out_of_range) { }
+
+    LOG_ERROR(
+        "Unimplemented connection type!");
 }
 
 /******************************************************************************/
@@ -498,24 +490,16 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
         LOG_ERROR(
             "Unimplemented connection type!");
 
-    std::map<ConnectionType, std::map<Opcode, Kernel<SYNAPSE_ARGS>>> funcs;
-    funcs[FULLY_CONNECTED][ADD]  = get_update_iz_fully_connected();
-    funcs[SUBSET][ADD]           = get_update_iz_subset();
-    funcs[ONE_TO_ONE][ADD]       = get_update_iz_one_to_one();
-    funcs[CONVERGENT][ADD]       = get_update_iz_convergent();
-    funcs[DIVERGENT][ADD]        = get_update_iz_divergent();
-    funcs[FULLY_CONNECTED][SUB]  = get_update_iz_fully_connected();
-    funcs[SUBSET][SUB]           = get_update_iz_subset();
-    funcs[ONE_TO_ONE][SUB]       = get_update_iz_one_to_one();
-    funcs[CONVERGENT][SUB]       = get_update_iz_convergent();
-    funcs[DIVERGENT][SUB]        = get_update_iz_divergent();
-
     try {
-        return funcs.at(conn->type).at(conn->opcode);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Unimplemented connection type!");
-    }
+        switch (conn->opcode) {
+            case(ADD):
+            case(SUB):
+                return update_iz_map[conn->type];
+        }
+    } catch(std::out_of_range) { }
+
+    LOG_ERROR(
+        "Unimplemented connection type!");
 }
 
 /******************************************************************************/

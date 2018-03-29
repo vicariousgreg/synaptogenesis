@@ -160,32 +160,16 @@ CALC_ONE_TO_ONE(activate_oscillator_second_order_convolutional,
 /* This function is used to retrieve the appropriate kernel for a connection.
  * This allows different connections to run on different kernels. */
 Kernel<SYNAPSE_ARGS> OscillatorAttributes::get_activator(Connection *conn) {
-    bool second_order = conn->second_order;
-
     if (conn->convolutional and conn->second_order) {
-        // Typically convolutional connections just use the convergent kernel
-        // Second order convolutional connections are special because they iterate
-        //   once over the weights (see above)
         return get_activate_oscillator_second_order_convolutional();
     }
 
-    // The functions are retrieved using functions named after the argument
-    //   passed to CALC_ALL, with prefixes corresponding to the connection types
-    switch (conn->type) {
-        case FULLY_CONNECTED:
-            if (second_order) return get_activate_oscillator_second_order_fully_connected();
-            else              return get_activate_oscillator_fully_connected();
-        case SUBSET:
-            if (second_order) return get_activate_oscillator_second_order_subset();
-            else              return get_activate_oscillator_subset();
-        case ONE_TO_ONE:
-            if (second_order) return get_activate_oscillator_second_order_one_to_one();
-            else              return get_activate_oscillator_one_to_one();
-        case CONVERGENT:
-            return get_activate_oscillator_convergent();
-        case DIVERGENT:
-            return get_activate_oscillator_divergent();
-    }
+    try {
+        if (conn->second_order)
+            return activate_oscillator_second_order_map[conn->type];
+        else
+            return activate_oscillator_map[conn->type];
+    } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
     LOG_ERROR("Unimplemented connection type!");
@@ -261,28 +245,19 @@ CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_oscillator_divergent_convolutional
 );
 
 Kernel<SYNAPSE_ARGS> OscillatorAttributes::get_updater(Connection *conn) {
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     if (conn->second_order)
         LOG_ERROR("Unimplemented connection type!");
 
-    // The functions are retrieved using functions named after the argument
-    //   passed to CALC_ALL, with prefixes corresponding to the connection types
-    switch (conn->type) {
-        case FULLY_CONNECTED:
-            return get_update_oscillator_fully_connected();
-        case SUBSET:
-            return get_update_oscillator_subset();
-        case ONE_TO_ONE:
-            return get_update_oscillator_one_to_one();
-        case CONVERGENT:
-            return (conn->convolutional)
-                ? get_update_oscillator_convergent_convolutional()
-                : get_update_oscillator_convergent();
-        case DIVERGENT:
-            return (conn->convolutional)
-                ? get_update_oscillator_divergent_convolutional()
-                : get_update_oscillator_divergent();
+    if (conn->convolutional) {
+        if (conn->type == CONVERGENT)
+            return get_update_oscillator_convergent_convolutional();
+        else if (conn->type == DIVERGENT)
+            return get_update_oscillator_divergent_convolutional();
     }
+
+    try {
+        return update_oscillator_map[conn->type];
+    } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
     LOG_ERROR("Unimplemented connection type!");

@@ -163,23 +163,12 @@ Kernel<SYNAPSE_ARGS> NVMAttributes::get_activator(Connection *conn) {
         return get_activate_nvm_second_order_convolutional();
     }
 
-    // The functions are retrieved using functions named after the argument
-    //   passed to CALC_ALL, with prefixes corresponding to the connection types
-    switch (conn->type) {
-        case FULLY_CONNECTED:
-            if (second_order) return get_activate_nvm_second_order_fully_connected();
-            else              return get_activate_nvm_fully_connected();
-        case SUBSET:
-            if (second_order) return get_activate_nvm_second_order_subset();
-            else              return get_activate_nvm_subset();
-        case ONE_TO_ONE:
-            if (second_order) return get_activate_nvm_second_order_one_to_one();
-            else              return get_activate_nvm_one_to_one();
-        case CONVERGENT:
-            return get_activate_nvm_convergent();
-        case DIVERGENT:
-            return get_activate_nvm_divergent();
-    }
+    try {
+        if (conn->second_order)
+            return activate_nvm_second_order_map[conn->type];
+        else
+            return activate_nvm_map[conn->type];
+    } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
     LOG_ERROR("Unimplemented connection type!");
@@ -255,28 +244,19 @@ CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_nvm_divergent_convolutional,
 );
 
 Kernel<SYNAPSE_ARGS> NVMAttributes::get_updater(Connection *conn) {
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
     if (conn->second_order)
         LOG_ERROR("Unimplemented connection type!");
 
-    // The functions are retrieved using functions named after the argument
-    //   passed to CALC_ALL, with prefixes corresponding to the connection types
-    switch (conn->type) {
-        case FULLY_CONNECTED:
-            return get_update_nvm_fully_connected();
-        case SUBSET:
-            return get_update_nvm_subset();
-        case ONE_TO_ONE:
-            return get_update_nvm_one_to_one();
-        case CONVERGENT:
-            return (conn->convolutional)
-                ? get_update_nvm_convergent_convolutional()
-                : get_update_nvm_convergent();
-        case DIVERGENT:
-            return (conn->convolutional)
-                ? get_update_nvm_divergent_convolutional()
-                : get_update_nvm_divergent();
-    }
+    // The functions are retrieved using functions and a map created by CALC_ALL
+    try {
+        if (conn->convolutional) {
+            if (conn->type == CONVERGENT)
+                return get_update_nvm_convergent_convolutional();
+            else if (conn->type == DIVERGENT)
+                return get_update_nvm_divergent_convolutional();
+        }
+        return update_nvm_map[conn->type];
+    } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
     LOG_ERROR("Unimplemented connection type!");

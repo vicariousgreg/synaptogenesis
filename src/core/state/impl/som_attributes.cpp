@@ -75,16 +75,13 @@ CALC_ALL(update_som,
 );
 
 Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
-   if (not conn->second_order)
-        funcs[FULLY_CONNECTED] = get_activate_som_fully_connected();
-
     try {
-        return funcs.at(conn->type);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Unimplemented connection type!");
-    }
+        if (not conn->second_order and conn->type == FULLY_CONNECTED)
+            return get_activate_som_fully_connected();
+    } catch(std::out_of_range) { }
+
+    LOG_ERROR(
+        "Unimplemented connection type!");
 }
 
 /******************************************************************************/
@@ -92,17 +89,11 @@ Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 
 Kernel<SYNAPSE_ARGS> SOMAttributes::get_updater(Connection *conn) {
-    std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> funcs;
-    if (not conn->second_order) {
-        funcs[FULLY_CONNECTED] = get_update_som_fully_connected();
-    }
-
-    try {
-        return funcs.at(conn->type);
-    } catch (std::out_of_range) {
+    if (not conn->second_order and conn->type == FULLY_CONNECTED)
+        return get_update_som_fully_connected();
+    else
         LOG_ERROR(
             "Unimplemented connection type!");
-    }
 }
 
 /******************************************************************************/

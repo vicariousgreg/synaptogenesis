@@ -213,40 +213,22 @@ ACTIVATE_ALL(activate_base , , );
 ACTIVATE_ALL_SECOND_ORDER(activate_base_second_order , , );
 
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn) {
-    switch (conn->type) {
-        case FULLY_CONNECTED:
-            return (conn->second_order_slave)
-                ? get_activate_base_second_order_fully_connected()
-                : get_activate_base_fully_connected();
-        case SUBSET:
-            return (conn->second_order_slave)
-                ? get_activate_base_second_order_subset()
-                : get_activate_base_subset();
-        case ONE_TO_ONE:
-            return (conn->second_order_slave)
-                ? get_activate_base_second_order_one_to_one()
-                : get_activate_base_one_to_one();
-        case CONVERGENT:
-            if (conn->convolutional)
-                return (conn->second_order_slave)
-                    ? get_activate_base_second_order_convergent_convolutional()
-                    : get_activate_base_convergent();
-            else
-                return (conn->second_order_slave)
-                    ? get_activate_base_second_order_convergent()
-                    : get_activate_base_convergent();
-        case DIVERGENT:
-            if (conn->convolutional)
-                return (conn->second_order_slave)
-                    ? get_activate_base_second_order_divergent_convolutional()
-                    : get_activate_base_convergent();
-            else
-                return (conn->second_order_slave)
-                    ? get_activate_base_second_order_divergent()
-                    : get_activate_base_divergent();
-        default:
-            LOG_ERROR(
-                "Attempted to retrieve base activator kernel for "
-                "unimplemented connection type!");
+    // Handle second order convolutional connections
+    if (conn->convolutional and conn->second_order_slave) {
+        if (conn->type == CONVERGENT)
+            return get_activate_base_second_order_convergent_convolutional();
+        else if (conn->type == DIVERGENT)
+            return get_activate_base_second_order_divergent_convolutional();
     }
+
+    // Handle all other connections
+    // Use second order kernels for slave connections
+    if (conn->second_order_slave)
+        return activate_base_second_order_map[conn->type];
+    else
+        return activate_base_map[conn->type];
+
+    LOG_ERROR(
+        "Attempted to retrieve base activator kernel for "
+        "unimplemented connection type!");
 }
