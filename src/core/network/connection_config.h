@@ -70,6 +70,7 @@ class ConnectionConfig : public PropertyConfig {
             float max_weight,
             ConnectionType type,
             Opcode opcode,
+            bool sparse=false,
             bool convolutional=false,
             PropertyConfig *specialized_config=nullptr,
             PropertyConfig *weight_config=nullptr,
@@ -94,6 +95,7 @@ class ConnectionConfig : public PropertyConfig {
         const float max_weight;
         const ConnectionType type;
         const Opcode opcode;
+        const bool sparse;
         const bool convolutional;
 };
 

@@ -25,6 +25,7 @@ SynapseData::SynapseData(DendriticNode *parent_node,
                 ? state->get_matrix_pointer(
                     parent_node->get_second_order_connection())
                 : nullptr),
+        num_weights(conn->get_num_weights()),
         inputs(state->get_input(conn->to_layer, parent_node->register_index)),
         destination_outputs(state->get_output(conn->to_layer)) {
     // Updaters can only use outputs if they are within the same feedforward
@@ -49,7 +50,8 @@ SynapseData::SynapseData(DendriticNode *parent_node,
     }
 }
 
-SynapseData::SynapseData(Connection *conn, Pointer<void*> p_to_p) :
+SynapseData::SynapseData(WeightMatrix *matrix, Connection *conn,
+    Pointer<void*> p_to_p) :
         attributes(nullptr),
         extractor(nullptr),
         aggregator(nullptr),
@@ -58,6 +60,7 @@ SynapseData::SynapseData(Connection *conn, Pointer<void*> p_to_p) :
         connection(*conn),
         from_layer(*conn->from_layer),
         to_layer(*conn->to_layer),
-        matrix(nullptr),
+        matrix(matrix),
         second_order_host_matrix(nullptr),
+        num_weights(conn->get_num_weights()),
         pointer_to_pointer(p_to_p) { }

@@ -83,6 +83,7 @@ Connection::Connection(const Connection& other)
       max_weight(other.max_weight),
       opcode(other.opcode),
       type(other.type),
+      sparse(other.sparse),
       convolutional(other.convolutional),
       second_order(other.second_order),
       second_order_host(other.second_order_host),
@@ -102,6 +103,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             max_weight(config->max_weight),
             opcode(config->opcode),
             type(config->type),
+            sparse(config->sparse),
             convolutional(config->convolutional),
             second_order(node->second_order),
             second_order_host(second_order and
@@ -115,6 +117,12 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
         LOG_ERROR(
             "Error in " + this->str() + ":\n"
             "  Plastic second order connections are not supported!");
+
+    // Check for sparse second order connection
+    if (second_order and sparse)
+        LOG_ERROR(
+            "Error in " + this->str() + ":\n"
+            "  Sparse second order connections are not supported!");
 
     // If this is a non-host second order connection, match it to the weights
     //   of the host, not the size of the to_layer
@@ -174,14 +182,10 @@ std::string Connection::get_parameter(std::string key,
     return this->get_config()->get(key, default_val);
 }
 
-int Connection::get_matrix_rows() const
-    { return (convolutional) ? 1 : to_layer->size; }
-
-int Connection::get_matrix_columns() const
-    { return num_weights / get_matrix_rows(); }
-
-int Connection::get_num_weights() const
-    { return num_weights; }
+void Connection::sparsify(int sparse_num_weights) {
+    this->num_weights = sparse_num_weights;
+    this->type = SPARSE;
+}
 
 int Connection::get_compute_weights() const {
     if (convolutional and not second_order_slave)

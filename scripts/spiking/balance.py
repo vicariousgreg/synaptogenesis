@@ -160,6 +160,7 @@ def build_network(dim=64):
         },
         "opcode" : "add",
         "plastic" : plastic,
+        "sparse" : "true",
         "learning rate" : exc_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
@@ -179,6 +180,7 @@ def build_network(dim=64):
         },
         "opcode" : "add",
         "plastic" : plastic,
+        "sparse" : "true",
         "learning rate" : exc_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
@@ -197,6 +199,7 @@ def build_network(dim=64):
         },
         "opcode" : "sub",
         "plastic" : plastic,
+        "sparse" : "true",
         "learning rate" : inh_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
@@ -533,7 +536,7 @@ def main(infile=None, outfile=None, do_training=True, print_stats=True,
         device = get_gpus()[1]
     if do_training:
         train_args = {"multithreaded" : "true",
-                      "worker threads" : "1",
+                      "worker threads" : 4 if device == get_cpu() else 0,
                       "devices" : device,
                       "iterations" : iterations,
                       "verbose" : "true"}

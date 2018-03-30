@@ -70,7 +70,8 @@ typedef enum {
     SUBSET,
     ONE_TO_ONE,
     CONVERGENT,
-    DIVERGENT
+    DIVERGENT,
+    SPARSE        // Not added to maps because it's an internal type
 } ConnectionType;
 
 static std::map<ConnectionType, std::string> ConnectionTypeStrings = {
@@ -78,7 +79,7 @@ static std::map<ConnectionType, std::string> ConnectionTypeStrings = {
     {SUBSET, "subset"},
     {ONE_TO_ONE, "one to one"},
     {CONVERGENT, "convergent"},
-    {DIVERGENT, "divergent"}
+    {DIVERGENT, "divergent"},
 };
 
 static std::map<std::string, ConnectionType> ConnectionTypes {

@@ -8,6 +8,19 @@
 #include <chrono>
 #include <random>
 
+#include <cmath>
+
+// Different min, max, and assert functions are used on the host and device
+#ifdef __CUDACC__
+#define MIN min
+#define MAX max
+#else
+#include <algorithm>
+#include <assert.h>
+#define MIN std::fmin
+#define MAX std::fmax
+#endif
+
 #include "util/error_manager.h"
 
 using CClock = std::chrono::high_resolution_clock;

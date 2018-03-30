@@ -241,9 +241,9 @@ Kernel<SYNAPSE_ARGS> SampleAttributes::get_activator(Connection *conn) {
     // The functions are retrieved from a map created by CALC_ALL.
     try {
         if (second_order)
-            return activate_sample_second_order_map[conn->type];
+            return activate_sample_second_order_map.at(conn->get_type());
         else
-            return activate_sample_map[conn->type];
+            return activate_sample_map.at(conn->get_type());
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
@@ -329,12 +329,12 @@ Kernel<SYNAPSE_ARGS> SampleAttributes::get_updater(Connection *conn) {
     // The functions are retrieved from a map created by CALC_ALL.
     try {
         if (conn->convolutional) {
-            if (conn->type == CONVERGENT)
+            if (conn->get_type() == CONVERGENT)
                 return get_update_sample_convergent_convolutional();
-            else if (conn->type == DIVERGENT)
+            else if (conn->get_type() == DIVERGENT)
                 return get_update_sample_divergent_convolutional();
         } else {
-            return activate_sample_map[conn->type];
+            return activate_sample_map.at(conn->get_type());
         }
     } catch(std::out_of_range) { }
 

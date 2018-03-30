@@ -63,7 +63,7 @@ class State {
         Pointer<Output> get_device_output_buffer(
             Connection *conn, int word_index) const;
         bool is_inter_device(Connection *conn) const;
-        bool get_weight_transpose(Connection *conn) const;
+        bool get_transpose_flag(Connection *conn) const;
 
         /* Getters for external use */
         BasePointer* get_neuron_data(Layer *layer, std::string key);

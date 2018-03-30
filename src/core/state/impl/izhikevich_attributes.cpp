@@ -374,15 +374,15 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     try {
         switch (conn->opcode) {
             case(ADD):
-                return activate_iz_add_map[conn->type];
+                return activate_iz_add_map.at(conn->get_type());
             case(SUB):
-                return activate_iz_sub_map[conn->type];
+                return activate_iz_sub_map.at(conn->get_type());
             case(MULT):
-                return activate_iz_mult_map[conn->type];
+                return activate_iz_mult_map.at(conn->get_type());
             case(REWARD):
-                return activate_iz_reward_map[conn->type];
+                return activate_iz_reward_map.at(conn->get_type());
             case(GAP):
-                return activate_iz_gap_map[conn->type];
+                return activate_iz_gap_map.at(conn->get_type());
         }
     } catch(std::out_of_range) { }
 
@@ -494,7 +494,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
         switch (conn->opcode) {
             case(ADD):
             case(SUB):
-                return update_iz_map[conn->type];
+                return update_iz_map.at(conn->get_type());
         }
     } catch(std::out_of_range) { }
 
@@ -618,7 +618,7 @@ IzhikevichAttributes::IzhikevichAttributes(Layer *layer)
         check_parameters(conn);
 
         // Ensure gap junctions are self-connections
-        if (conn->type == GAP and conn->from_layer != conn->to_layer)
+        if (conn->get_type() == GAP and conn->from_layer != conn->to_layer)
             LOG_ERROR(
                 "Error " + conn->str() + "\n"
                 "Gap junctions must be between neurons of the same layer.");
@@ -702,7 +702,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
                 "Randomized axons cannot have delays greater than 31!");
         iRand(iz_mat->delays, num_weights, 0, max_delay);
     } else {
-        get_delays(conn, BIT, iz_mat->delays,
+        get_delays(iz_mat, BIT, iz_mat->delays,
             std::stof(conn->from_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->to_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->get_parameter("x offset", "0.0")),

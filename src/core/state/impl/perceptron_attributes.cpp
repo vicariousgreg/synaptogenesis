@@ -40,7 +40,7 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
 
 
     try {
-        return activate_perceptron_map[conn->type];
+        return activate_perceptron_map.at(conn->get_type());
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Unimplemented connection type!");
@@ -65,7 +65,7 @@ Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
             "Unimplemented connection type!");
 
     try {
-        return update_perceptron_map[conn->type];
+        return update_perceptron_map.at(conn->get_type());
     } catch (std::out_of_range) { }
 
     LOG_ERROR(

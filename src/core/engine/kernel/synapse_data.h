@@ -20,10 +20,13 @@ class SynapseData {
             State *state, bool updater);
 
         /* Secondary state-free constructor for auxiliary kernels that
-         *   don't need state attributes/matrices, like delay initialization.
+         *   don't need state attributes, like delay initialization.
          *   These use the auxiliary pointer-to-pointer member instead.
+         * The matrix is necessary for sparse connection types.
+         * Otherwise, it can be null.
          */
-        SynapseData(Connection *conn, Pointer<void*> p_to_p);
+        SynapseData(WeightMatrix *matrix, Connection *conn,
+            Pointer<void*> p_to_p);
 
         /* Attributes pointer for to_layer */
         const Attributes * const attributes;
@@ -43,6 +46,7 @@ class SynapseData {
         const WeightMatrix * const matrix;
         const WeightMatrix * const second_order_host_matrix;
         Pointer<float> weights;
+        const int num_weights;
 
         /* Layer attributes */
         const Layer from_layer;

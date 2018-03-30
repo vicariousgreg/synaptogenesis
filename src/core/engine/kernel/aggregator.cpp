@@ -2,6 +2,7 @@
 #include "util/parallel.h"
 #include "util/error_manager.h"
 #include "util/resource_manager.h"
+#include "util/tools.h"
 
 /* Synaptic operations
  * |prior| is the current state of the neuron.

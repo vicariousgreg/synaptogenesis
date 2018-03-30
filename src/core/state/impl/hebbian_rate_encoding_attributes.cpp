@@ -69,14 +69,14 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
             "Second order plastic connections not supported!");
 
     if (conn->convolutional) {
-        if (conn->type == CONVERGENT)
+        if (conn->get_type() == CONVERGENT)
             return get_update_hebbian_convergent_convolutional();
-        else if (conn->type == DIVERGENT)
+        else if (conn->get_type() == DIVERGENT)
             return get_update_hebbian_divergent_convolutional();
     }
 
     try {
-        return update_hebbian_map[conn->type];
+        return update_hebbian_map.at(conn->get_type());
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented

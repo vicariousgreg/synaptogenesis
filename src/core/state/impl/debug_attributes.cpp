@@ -105,7 +105,7 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
     }
 
     try {
-        return activate_debug_map[conn->type];
+        return activate_debug_map.at(conn->get_type());
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
@@ -120,14 +120,14 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
         LOG_ERROR("Unimplemented connection type!");
 
     if (conn->convolutional) {
-        if (conn->type == CONVERGENT)
+        if (conn->get_type() == CONVERGENT)
             return get_update_debug_convergent_convolutional();
-        else if (conn->type == DIVERGENT)
+        else if (conn->get_type() == DIVERGENT)
             return get_update_debug_divergent_convolutional();
     }
 
     try {
-        return update_debug_map[conn->type];
+        return update_debug_map.at(conn->get_type());
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented

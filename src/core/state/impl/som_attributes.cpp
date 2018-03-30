@@ -76,7 +76,7 @@ CALC_ALL(update_som,
 
 Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
     try {
-        if (not conn->second_order and conn->type == FULLY_CONNECTED)
+        if (not conn->second_order and conn->get_type() == FULLY_CONNECTED)
             return get_activate_som_fully_connected();
     } catch(std::out_of_range) { }
 
@@ -89,7 +89,7 @@ Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 
 Kernel<SYNAPSE_ARGS> SOMAttributes::get_updater(Connection *conn) {
-    if (not conn->second_order and conn->type == FULLY_CONNECTED)
+    if (not conn->second_order and conn->get_type() == FULLY_CONNECTED)
         return get_update_som_fully_connected();
     else
         LOG_ERROR(

@@ -30,17 +30,28 @@ class WeightMatrix {
 
         // Subclasses implement this for variable registration
         virtual void register_variables() { }
-        void set_weight_transpose(bool t);
-        bool get_weight_transpose() { return transpose_weights; }
+        void set_transpose_flag(bool t);
+        bool get_transpose_flag() { return transpose_flag; }
+
+        // Auto-resize for sparse matrices, which may need to be resized
+        //   after a state save/load
+        void resize();
+
+        // Adjust sparse indices in case they are invalid because of wrapping
+        void adjust_sparse_indices();
 
         // Pointer to this object
         // If parallel, this will point to the device copy
         WeightMatrix *pointer;
 
-        const int num_weights;
         Pointer<float> weights;
         Pointer<float> weights_transposed;
         Pointer<float> second_order_weights;
+
+        // Nonzero counts and from indices for sparse matrices
+        Pointer<int> nonzero_counts;
+        Pointer<int> from_row_indices;
+        Pointer<int> from_column_indices;
 
         Connection* const connection;
 
@@ -55,12 +66,17 @@ class WeightMatrix {
 
         DeviceID device_id;
         bool transposed;
-        bool transpose_weights;
-        const int rows;
-        const int columns;
+        bool transpose_flag;
+        int num_weights;
+        int rows;
+        int columns;
+        bool sparse;
 
         // Initialization
         void init();
+
+        // Sparsify functionality
+        void sparsify();
 
         virtual int get_object_size() { return sizeof(WeightMatrix); }
 };
@@ -118,17 +134,18 @@ void clear_diagonal(float *arr, int rows, int cols);
 
 
 /* Stores to/from indices in arrays */
-void get_indices(Connection *conn, Pointer<int> used,
+void get_indices(WeightMatrix *matrix, Pointer<int> used,
     Pointer<int> from_row_indices, Pointer<int> from_col_indices,
     Pointer<int> to_row_indices, Pointer<int> to_col_indices);
 
 /* Stores unit distances in arrays */
-void get_distances(Connection *conn, Pointer<float> distances,
+void get_distances(WeightMatrix *matrix, Pointer<float> distances,
     float from_spacing, float to_spacing,
     float x_offset=0.0, float y_offset=0.0);
 
 /* Stores delays in array according to spatial organization */
-void get_delays(Connection *conn, OutputType output_type, Pointer<int> delays,
+void get_delays(WeightMatrix *matrix, OutputType output_type,
+    Pointer<int> delays,
     float from_spacing, float to_spacing,
     float x_offset, float y_offset,
     float velocity, bool cap_delay);

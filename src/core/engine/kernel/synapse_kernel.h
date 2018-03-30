@@ -47,7 +47,7 @@
     const Opcode opcode = synapse_data.connection.opcode; \
     const int delay = synapse_data.connection.delay; \
     float * const weights = synapse_data.weights.get(); \
-    const int num_weights = synapse_data.connection.num_weights; \
+    const int num_weights = synapse_data.num_weights; \
     const bool plastic = synapse_data.connection.plastic; \
     const float max_weight = synapse_data.connection.max_weight; \
     const int from_size = synapse_data.from_layer.size; \
@@ -233,6 +233,67 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int weight_index = to_index; \
         NEURON_PRE; \
         WEIGHT_OP; \
+        NEURON_POST; \
+    } \
+}
+
+
+
+#define SPARSE_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+HOST void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    int * const nonzero_counts = synapse_data.matrix->nonzero_counts.get(); \
+    int * const from_row_indices = synapse_data.matrix->from_row_indices.get(); \
+    int * const from_column_indices = synapse_data.matrix->from_column_indices.get(); \
+    const int matrix_columns = num_weights / to_size; \
+    EXTRACTIONS; \
+ \
+    int to_index = 0; \
+    for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
+        for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+            NEURON_PRE; \
+\
+            int weight_index = to_index * matrix_columns; \
+            int nonzero = nonzero_counts[to_index]; \
+            for (int i = 0 ; i < nonzero ; ++i) { \
+                int from_row = from_row_indices[weight_index]; \
+                int from_column = from_column_indices[weight_index]; \
+                int from_index = from_row * from_columns + from_column; \
+                WEIGHT_OP; \
+                ++weight_index; \
+            } \
+\
+            NEURON_POST; \
+            ++to_index; \
+        } \
+    } \
+}
+
+#define SPARSE_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    int * const nonzero_counts = synapse_data.matrix->nonzero_counts.get(); \
+    int * const from_row_indices = synapse_data.matrix->from_row_indices.get(); \
+    int * const from_column_indices = synapse_data.matrix->from_column_indices.get(); \
+    EXTRACTIONS; \
+ \
+    int to_row = blockIdx.x; \
+    int to_column = threadIdx.x; \
+    int to_index = to_row * blockDim.x + to_column; \
+\
+    if (to_index < to_size) { \
+        NEURON_PRE; \
+\
+        int weight_index = to_index; \
+        int nonzero = nonzero_counts[to_index]; \
+        for (int i = 0 ; i < nonzero ; ++i) { \
+            int from_row = from_row_indices[weight_index]; \
+            int from_column = from_column_indices[weight_index]; \
+            int from_index = from_row * from_columns + from_column; \
+            WEIGHT_OP; \
+            weight_index += to_size; \
+        } \
+\
         NEURON_POST; \
     } \
 }
@@ -802,6 +863,13 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
+#define CALC_SPARSE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+SPARSE_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+SPARSE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() {\
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
+
 #define CALC_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CONVERGENT_PARALLEL(FUNC_NAME##_PARALLEL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CONVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
@@ -852,6 +920,12 @@ static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
 }
 
+#define CALC_SPARSE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+SPARSE_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL); \
+}
+
 #define CALC_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 CONVERGENT_SERIAL(FUNC_NAME##_SERIAL, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() { \
@@ -898,6 +972,12 @@ CALC_ONE_TO_ONE(FUNC_NAME##_one_to_one, \
     WEIGHT_OP, \
     NEURON_POST \
 ); \
+CALC_SPARSE(FUNC_NAME##_sparse, \
+    EXTRACTIONS, \
+    NEURON_PRE, \
+    WEIGHT_OP, \
+    NEURON_POST \
+); \
 CALC_CONVERGENT(FUNC_NAME##_convergent, \
     EXTRACTIONS, \
     NEURON_PRE, \
@@ -914,6 +994,7 @@ std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> FUNC_NAME##_map = { \
     {FULLY_CONNECTED, get_##FUNC_NAME##_fully_connected()}, \
     {SUBSET, get_##FUNC_NAME##_subset()}, \
     {ONE_TO_ONE, get_##FUNC_NAME##_one_to_one()}, \
+    {SPARSE, get_##FUNC_NAME##_sparse()}, \
     {CONVERGENT, get_##FUNC_NAME##_convergent()}, \
     {DIVERGENT, get_##FUNC_NAME##_divergent()} \
 };

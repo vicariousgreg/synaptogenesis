@@ -108,7 +108,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
             activate_instructions.push_back(syn_inst);
 
             // If transpose flag, add transposition instruction
-            if (state->get_weight_transpose(conn))
+            if (state->get_transpose_flag(conn))
                 update_instructions.push_back(
                     new TransposeInstruction(conn, state, compute_stream));
 
@@ -153,7 +153,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         activate_instructions.push_back(syn_inst);
 
         // If transpose flag, add transposition instruction
-        if (state->get_weight_transpose(conn))
+        if (state->get_transpose_flag(conn))
             update_instructions.push_back(
                 new TransposeInstruction(conn, state, compute_stream));
 

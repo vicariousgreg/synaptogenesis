@@ -165,9 +165,9 @@ Kernel<SYNAPSE_ARGS> NVMAttributes::get_activator(Connection *conn) {
 
     try {
         if (conn->second_order)
-            return activate_nvm_second_order_map[conn->type];
+            return activate_nvm_second_order_map.at(conn->get_type());
         else
-            return activate_nvm_map[conn->type];
+            return activate_nvm_map.at(conn->get_type());
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
@@ -250,12 +250,12 @@ Kernel<SYNAPSE_ARGS> NVMAttributes::get_updater(Connection *conn) {
     // The functions are retrieved using functions and a map created by CALC_ALL
     try {
         if (conn->convolutional) {
-            if (conn->type == CONVERGENT)
+            if (conn->get_type() == CONVERGENT)
                 return get_update_nvm_convergent_convolutional();
-            else if (conn->type == DIVERGENT)
+            else if (conn->get_type() == DIVERGENT)
                 return get_update_nvm_divergent_convolutional();
         }
-        return update_nvm_map[conn->type];
+        return update_nvm_map.at(conn->get_type());
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented

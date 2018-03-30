@@ -215,18 +215,20 @@ ACTIVATE_ALL_SECOND_ORDER(activate_base_second_order , , );
 Kernel<SYNAPSE_ARGS> get_base_activator_kernel(Connection *conn) {
     // Handle second order convolutional connections
     if (conn->convolutional and conn->second_order_slave) {
-        if (conn->type == CONVERGENT)
+        if (conn->get_type() == CONVERGENT)
             return get_activate_base_second_order_convergent_convolutional();
-        else if (conn->type == DIVERGENT)
+        else if (conn->get_type() == DIVERGENT)
             return get_activate_base_second_order_divergent_convolutional();
     }
 
     // Handle all other connections
     // Use second order kernels for slave connections
-    if (conn->second_order_slave)
-        return activate_base_second_order_map[conn->type];
-    else
-        return activate_base_map[conn->type];
+    try {
+        if (conn->second_order_slave)
+            return activate_base_second_order_map.at(conn->get_type());
+        else
+            return activate_base_map.at(conn->get_type());
+    } catch(std::out_of_range) { }
 
     LOG_ERROR(
         "Attempted to retrieve base activator kernel for "

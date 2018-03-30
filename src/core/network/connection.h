@@ -19,13 +19,15 @@ class Connection {
         virtual ~Connection();
 
         /* Constant getters */
-        int get_matrix_rows() const;
-        int get_matrix_columns() const;
-        int get_num_weights() const;
+        ConnectionType get_type() const { return type; }
+        int get_num_weights() const { return num_weights; }
         int get_compute_weights() const;
         const ConnectionConfig* get_config() const;
         std::string get_parameter(
             std::string key, std::string default_val) const;
+
+        /* Sparsify functionality */
+        void sparsify(int sparse_num_weights);
 
         // Connection config
         const ConnectionConfig * const config;
@@ -47,8 +49,8 @@ class Connection {
         // Connection operation code
         const Opcode opcode;
 
-        // Matrix type
-        const ConnectionType type;
+        // Sparse matrix
+        const bool sparse;
 
         // Convolutional boolean (extracted from type)
         const bool convolutional;
@@ -64,13 +66,16 @@ class Connection {
         // Connection ID
         const size_t id;
 
-        // Number of weights
-        const int num_weights;
-
         std::string str() const;
 
     protected:
         friend class Structure;
+
+        // Matrix type
+        ConnectionType type;
+
+        // Number of weights
+        int num_weights;
 
         Connection(Layer *from_layer, Layer *to_layer,
             const ConnectionConfig *config);

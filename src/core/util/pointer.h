@@ -19,16 +19,14 @@ class PointerKey {
 
         bool operator <(const PointerKey& other) const {
             if (hash == other.hash) {
-                if (type == other.type) return bytes < other.bytes;
-                else return type < other.type;
+                return type < other.type;
             } else {
                 return hash < other.hash;
             }
         }
         bool operator ==(const PointerKey& other) const {
             return hash == other.hash
-                and type == other.type
-                and bytes == other.bytes;
+                and type == other.type;
         }
 };
 
@@ -56,6 +54,11 @@ class BasePointer {
         // Copy data between base pointers
         // Used for IO, can only be called from the host
         void copy_to(BasePointer* other);
+
+        // Resizes the array, causing data truncation or new uninitialized data
+        // As much data as possible is copied over to the new location
+        // If this pointer is not the owner, the old data will not be freed
+        void resize(size_t new_size);
 
     protected:
         BasePointer(std::type_index type, void* ptr,
@@ -94,7 +97,7 @@ class Pointer : public BasePointer {
         Pointer(T* ptr, size_t size, DeviceID device_id,
             bool claim_ownership=false);
         Pointer(BasePointer* base_ptr);
-        Pointer(const Pointer<T>& other);
+        Pointer(const Pointer<T>& other, bool claim_ownership=false);
 
 
         /*****************************/

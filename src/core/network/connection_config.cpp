@@ -204,6 +204,7 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
           max_weight(config->get_float("max weight", 1.0)),
           type(get_connection_type(config->get("type", "fully connected"))),
           opcode(get_opcode(config->get("opcode", "add"))),
+          sparse(config->get_bool("sparse", false)),
           convolutional(config->get_bool("convolutional", false)) {
     if (not config->has("from layer"))
         LOG_ERROR(
@@ -216,6 +217,10 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
     if (delay < 0)
         LOG_ERROR(
             "Attempted to construct ConnectionConfig with negative delay!");
+
+    if (sparse and convolutional)
+        LOG_ERROR(
+            "Convolutional connections cannot be sparse!");
 
     if (convolutional and type != CONVERGENT and type != DIVERGENT)
         LOG_ERROR(
@@ -242,6 +247,7 @@ ConnectionConfig::ConnectionConfig(
     std::string from_layer, std::string to_layer,
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
+    bool sparse,
     bool convolutional,
     PropertyConfig *specialized_config,
     PropertyConfig *weight_config,
@@ -255,6 +261,7 @@ ConnectionConfig::ConnectionConfig(
           max_weight(max_weight),
           type(type),
           opcode(opcode),
+          sparse(sparse),
           convolutional(convolutional) {
     this->set("name", name);
     this->set("to layer", to_layer);
@@ -266,6 +273,7 @@ ConnectionConfig::ConnectionConfig(
     this->set("type", ConnectionTypeStrings.at(type));
     this->set("opcode", OpcodeStrings.at(opcode));
     this->set("convolutional", (convolutional) ? "true" : "false");
+    this->set("sparse", (sparse) ? "true" : "false");
 
     if (delay < 0)
         LOG_ERROR(
@@ -273,6 +281,10 @@ ConnectionConfig::ConnectionConfig(
 
     if (weight_config != nullptr)
         this->set_child("weight config", weight_config);
+
+    if (sparse and convolutional)
+        LOG_ERROR(
+            "Convolutional connections cannot be sparse!");
 
     if (convolutional and type != CONVERGENT and type != DIVERGENT)
         LOG_ERROR(

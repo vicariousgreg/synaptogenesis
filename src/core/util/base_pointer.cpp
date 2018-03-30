@@ -98,3 +98,31 @@ void BasePointer::copy_to(BasePointer* other) {
             "Attempted to copy memory between base pointers "
             "that aren't on the host!");
 }
+
+void BasePointer::resize(size_t new_size) {
+    // Allocate new space, copy as much as possible
+    auto res_man = ResourceManager::get_instance();
+
+    void* new_ptr;
+    if (local) {
+        new_ptr = res_man->allocate_host(new_size, unit_size);
+        memcpy(new_ptr, this->ptr,
+            MIN(this->size, new_size) * this->unit_size);
+    }
+#ifdef __CUDACC__
+    else {
+        new_ptr = res_man->allocate_device(
+            new_size, unit_size, nullptr, device_id);
+        cudaSetDevice(device_id);
+        cudaMemcpy(new_ptr, this->ptr,
+            MIN(this->size, new_size) * this->unit_size,
+            cudaMemcpyDeviceToDevice);
+    }
+#endif
+
+    // Free old data
+    // If not owner, this is a no-op
+    this->free();
+
+    this->ptr = new_ptr;
+}

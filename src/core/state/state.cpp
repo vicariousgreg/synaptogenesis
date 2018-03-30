@@ -82,6 +82,14 @@ State::State(Network *network) : network(network), on_host(true) {
             else pointer_map[pair.first] = pair.second;
     }
 
+    // Adjust sparse indicies
+    // If not sparse, this is a no-op
+    // Otherwise, it ensures weight indices are valid
+    for (auto conn : network->get_connections())
+        attributes.at(conn->to_layer)
+            ->get_weight_matrix(conn)
+            ->adjust_sparse_indices();
+
     this->build();
 }
 
@@ -373,9 +381,10 @@ void State::load(std::string file_name, bool verbose) {
             LOG_ERROR(
                 "Error reading pointer key from file!");
 
-        char* ptr;
+        // Search for the pointer, and if not found, skip it
+        BasePointer* ptr;
         try {
-            ptr = (char*) pointer_map.at(key)->get();
+            ptr = pointer_map.at(key);
         } catch (...) {
             LOG_WARNING(
                 "Error retrieving pointer -- continuing...");
@@ -384,9 +393,13 @@ void State::load(std::string file_name, bool verbose) {
             continue;
         }
 
-        if (not input_file.read(ptr, key.bytes))
-            LOG_ERROR(
-                "Error reading data from file!");
+        // If pointer size doesn't match, resize
+        if (ptr->get_bytes() != key.bytes)
+            ptr->resize(key.bytes);
+
+        // Read the data into memory
+        if (not input_file.read((char*)ptr->get(), key.bytes))
+            LOG_ERROR("Error reading data from file!");
 
         read += sizeof(PointerKey) + key.bytes;
     }
@@ -592,11 +605,11 @@ bool State::is_inter_device(Connection *conn) const {
     }
 }
 
-bool State::get_weight_transpose(Connection *conn) const {
+bool State::get_transpose_flag(Connection *conn) const {
     try {
         return attributes.at(conn->to_layer)
             ->get_weight_matrix(conn)
-            ->get_weight_transpose();
+            ->get_transpose_flag();
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to check transpose flag in State for "

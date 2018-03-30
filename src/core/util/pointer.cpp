@@ -60,14 +60,14 @@ Pointer<T>::Pointer(BasePointer* base_ptr)
           false) { }
 
 template<typename T>
-Pointer<T>::Pointer(const Pointer<T>& other)
+Pointer<T>::Pointer(const Pointer<T>& other, bool claim_ownership)
     : BasePointer(
           std::type_index(typeid(T)),
           other.ptr,
           other.size,
           sizeof(T),
           other.device_id,
-          false) {
+          claim_ownership) {
     this->pinned = other.pinned;
 }
 
@@ -203,9 +203,11 @@ void Pointer<T>::set(T val, bool async) {
         for (size_t i = 0 ; i < size ; ++i) t_ptr[i] = val;
 #ifdef __CUDACC__
     } else if (sizeof(T) == 1) {
+        cudaSetDevice(device_id);
         if (async) cudaMemsetAsync(ptr,val,size);
         else cudaMemset(ptr,val,size);
     } else if (sizeof(T) == 4) {
+        cudaSetDevice(device_id);
         if (async) cuMemsetD32Async((CUdeviceptr)ptr,val,size, 0);
         else cuMemsetD32((CUdeviceptr)ptr,val,size);
     } else {
