@@ -222,13 +222,13 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    int to_row = blockIdx.x; \
-    int to_column = threadIdx.x; \
-    int to_index = to_row * blockDim.x + to_column; \
+    int from_row = blockIdx.x; \
+    int from_column = threadIdx.x; \
+    int to_index = from_row * blockDim.x + from_column; \
 \
-    if (to_index < to_size) { \
-        int from_row = to_row; \
-        int from_column = to_column; \
+    if (to_index < from_size) { \
+        int to_row = from_row; \
+        int to_column = from_column; \
         int from_index = to_index; \
         int weight_index = to_index; \
         NEURON_PRE; \
@@ -1037,7 +1037,7 @@ CALC_ALL( \
 
 #define EXTRACT_SECOND_ORDER \
     float * const second_order_weights = \
-        synapse_data.second_order_host_matrix->second_order_weights.get(); \
+        synapse_data.second_order_host_matrix->second_order_weights.get();
 
 #define CALC_VAL_SECOND_ORDER \
     float val = extract(outputs[from_index], delay) * weights[weight_index]; \
