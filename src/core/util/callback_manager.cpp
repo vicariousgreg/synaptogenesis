@@ -29,11 +29,30 @@ void CallbackManager::add_distance_weight_callback(std::string name,
     }
 }
 
+void CallbackManager::add_weight_callback(std::string name,
+        void (*addr)(int, int, void*)) {
+    try {
+        weight_callbacks.at(name);
+        LOG_ERROR("Duplicate weight callback: " + name);
+    } catch (std::out_of_range) {
+        weight_callbacks[name] = addr;
+    }
+}
+
 void (*CallbackManager::get_io_callback(std::string name))(int, int, void*) {
     try {
         return io_callbacks.at(name);
     } catch (std::out_of_range) {
         LOG_ERROR("Could not find IO callback: " + name);
+    }
+}
+
+void (*CallbackManager::get_weight_callback(std::string name))
+        (int, int, void*) {
+    try {
+        return weight_callbacks.at(name);
+    } catch (std::out_of_range) {
+        LOG_ERROR("Could not find weight callback: " + name);
     }
 }
 

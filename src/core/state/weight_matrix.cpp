@@ -91,7 +91,7 @@ void transfer_weights(float* from, float* to, int size) {
 }
 
 /* Clears the diagonal of a weight matrix */
-void clear_diagonal(float *arr, int rows, int cols) {
+void clear_diagonal_square(float *arr, int rows, int cols) {
     if (rows != cols)
         LOG_ERROR(
             "Attempted to clear diagonal of non-square weight matrix!");
@@ -670,7 +670,23 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
     }
 }
 
-static void distance_callback_config(WeightMatrix *matrix,
+static void weight_callback_config(WeightMatrix *matrix,
+        const PropertyConfig& config, float* target_matrix, Connection* conn) {
+    if (not config.has("callback"))
+        LOG_ERROR(
+            "Unspecified weight callback function for connection "
+            + conn->str());
+
+    void (*callback)(int, int, void*) =
+        CallbackManager::get_instance()->get_weight_callback(
+            config.get("callback"));
+
+    int id = config.get_int("id", 0);
+    int num_weights = conn->get_num_weights();
+    callback(id, num_weights, target_matrix);
+}
+
+static void distance_weight_callback_config(WeightMatrix *matrix,
         const PropertyConfig& config, float* target_matrix, Connection* conn) {
     if (not config.has("distance callback"))
         LOG_ERROR(
@@ -695,6 +711,29 @@ static void distance_callback_config(WeightMatrix *matrix,
 
     callback(id, num_weights, target_matrix, distances.get());
     distances.free();
+}
+
+static void clear_diagonal(WeightMatrix *matrix,
+        const PropertyConfig& config, float* target_matrix, Connection* conn) {
+    switch(conn->get_type()) {
+        case FULLY_CONNECTED:
+            clear_diagonal_square(target_matrix,
+                conn->from_layer->size, conn->to_layer->size);
+            break;
+        case SUBSET: {
+            auto subset_config = conn->get_config()->get_subset_config();
+            clear_diagonal_square(target_matrix,
+                subset_config.from_size,
+                subset_config.to_size);
+            break;
+        }
+        case CONVERGENT:
+            // Use inverted circular mask config with radius 0.5
+            circular_mask_config(
+                PropertyConfig({{"radius", "0.5"}, {"invert", "true"}}),
+                    target_matrix, conn);
+            break;
+    }
 }
 
 static void initialize_weights(WeightMatrix *matrix,
@@ -727,8 +766,11 @@ static void initialize_weights(WeightMatrix *matrix,
             "  Unrecognized weight config type: " + type);
 
     // Now, run callbacks
+    if (config.has("callback"))
+        weight_callback_config(matrix, config, target_matrix, conn);
+
     if (config.has("distance callback"))
-        distance_callback_config(matrix, config, target_matrix, conn);
+        distance_weight_callback_config(matrix, config, target_matrix, conn);
 
     // Finally, do mask processing
     if (config.has_child("circular mask"))
@@ -739,27 +781,8 @@ static void initialize_weights(WeightMatrix *matrix,
         for (auto child_config : config.get_child_array("circular mask"))
             circular_mask_config(child_config, target_matrix, conn);
 
-    if (not config.get_bool("diagonal", true)) {
-        switch(conn->get_type()) {
-            case FULLY_CONNECTED:
-                clear_diagonal(target_matrix,
-                    conn->from_layer->size, conn->to_layer->size);
-                break;
-            case SUBSET: {
-                auto subset_config = conn->get_config()->get_subset_config();
-                clear_diagonal(target_matrix,
-                    subset_config.from_size,
-                    subset_config.to_size);
-                break;
-            }
-            case CONVERGENT:
-                // Use inverted circular mask config with radius 0.5
-                circular_mask_config(
-                    PropertyConfig({{"radius", "0.5"}, {"invert", "true"}}),
-                    target_matrix, conn);
-                break;
-        }
-    }
+    if (not config.get_bool("diagonal", true))
+        clear_diagonal(matrix, config, target_matrix, conn);
 }
 
 /******************************************************************************/

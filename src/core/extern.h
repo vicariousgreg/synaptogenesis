@@ -81,6 +81,7 @@ extern "C" void set_debug(bool val);
 extern "C" void interrupt_engine();
 
 extern "C" void add_io_callback(char* name, long long addr);
+extern "C" void add_weight_callback(char* name, long long addr);
 extern "C" void add_distance_weight_callback(char* name, long long addr);
 
 #endif

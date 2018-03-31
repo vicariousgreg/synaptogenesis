@@ -143,6 +143,7 @@ _syn.set_warnings.argtypes = (c_bool,)
 _syn.set_debug.argtypes = (c_bool,)
 
 _syn.add_io_callback.argtypes = (c_char_p, c_longlong)
+_syn.add_weight_callback.argtypes = (c_char_p, c_longlong)
 _syn.add_distance_weight_callback.argtypes = (c_char_p, c_longlong)
 
 
@@ -177,7 +178,15 @@ def interrupt_engine():
 
 """ Callback Maintenance """
 _io_callbacks = dict()
+_weight_callbacks = dict()
 _distance_weight_callbacks = dict()
+_callback_config_map = dict()
+
+def make_callback_id(config):
+    _callback_config_map[len(_callback_config_map_)] = config
+
+def get_config(ID):
+    return _callback_config_map[ID]
 
 def create_io_callback(name, f):
     if name in _io_callbacks:
@@ -187,6 +196,15 @@ def create_io_callback(name, f):
     addr = cast(cb, c_void_p).value
     _io_callbacks[name] = (cb, addr)
     _syn.add_io_callback(name, addr)
+
+def create_weight_callback(name, f):
+    if name in _weight_callbacks:
+        raise ValueError("Duplicate Weight Callback: " + name)
+
+    cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
+    addr = cast(cb, c_void_p).value
+    _weight_callbacks[name] = (cb, addr)
+    _syn.add_weight_callback(name, addr)
 
 def create_distance_weight_callback(name, f):
     if name in _distance_weight_callbacks:
@@ -463,3 +481,28 @@ class ConnectionFactory(PropertiesFactory):
                 new_props = fill_in(self.defaults, new_props)
             self.func(from_layer, to_layer, new_props)
         return new_props
+
+
+""" Common callbacks """
+from math import exp
+def gauss(dist, peak, sig, norm=False):
+    inv_sqrt_2pi = 0.3989422804014327
+    peak_coeff = peak * (1.0 if norm else inv_sqrt_2pi / sig)
+
+    a = dist / sig
+    return peak_coeff * exp(-0.5 * a * a)
+
+# Initializes weights based on the distances between the nodes
+def dist_callback(ID, size, weights, distances):
+    w_arr = FloatArray(size, weights)
+    d_arr = FloatArray(size, distances)
+
+    # Use half maximum distance for standard deviation
+    sigma = max(d_arr.data[i] for i in xrange(size)) / 2
+
+    # Smooth out weights based on distances
+    if sigma != 0:
+        for i in xrange(size):
+            w_arr.data[i] = gauss(d_arr.data[i], w_arr.data[i], sigma, True)
+
+create_distance_weight_callback("gaussian", dist_callback)
