@@ -506,3 +506,28 @@ def dist_callback(ID, size, weights, distances):
             w_arr.data[i] = gauss(d_arr.data[i], w_arr.data[i], sigma, True)
 
 create_distance_weight_callback("gaussian", dist_callback)
+
+
+""" Other Library Functions """
+def get_dsst_params(num_rows=8, cell_res=8):
+    num_cols = 18
+    cell_rows = 2*cell_res + 1
+    spacing = cell_res / 4
+
+    input_rows = (num_rows + 2) * (cell_rows + spacing) - spacing
+    input_cols = num_cols * (cell_res + spacing) - spacing
+
+    focus_rows = input_rows - cell_rows
+    focus_cols = input_cols - cell_res
+
+    return {
+        "columns" : num_cols,
+        "rows" : num_rows,
+        "cell columns" : cell_res,
+        "cell rows" : cell_rows,
+        "spacing" : spacing,
+        "input rows" : input_rows,
+        "input columns" : input_cols,
+        "focus rows" : focus_rows,
+        "focus columns" : focus_cols,
+    }
