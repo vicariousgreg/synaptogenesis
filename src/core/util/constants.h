@@ -2,7 +2,7 @@
 #define constants_h
 
 #include <map>
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 /* Output type enumeration.
  * Different engines may use different output formats.

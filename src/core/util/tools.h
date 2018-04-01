@@ -21,7 +21,7 @@
 #define MAX std::fmax
 #endif
 
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 using CClock = std::chrono::high_resolution_clock;
 using Time_point = CClock::time_point;

@@ -1,5 +1,5 @@
 #include "state/impl/backprop_rate_encoding_attributes.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 REGISTER_ATTRIBUTES(BackpropRateEncodingAttributes, "backprop_rate_encoding", FLOAT)
 

@@ -3,7 +3,7 @@
 #include "network/layer.h"
 #include "network/connection.h"
 #include "network/connection_config.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 ArborizedConfig::ArborizedConfig(PropertyConfig *config) {
     row_field_size = config->get_int("row field size", 0);

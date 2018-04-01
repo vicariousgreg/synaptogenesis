@@ -2,7 +2,7 @@
 #include <cstring>
 
 #include "util/pointer.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 #include "util/resource_manager.h"
 #include "util/tools.h"
 

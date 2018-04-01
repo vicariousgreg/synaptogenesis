@@ -1,6 +1,6 @@
 #include "state/impl/hebbian_rate_encoding_attributes.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 REGISTER_ATTRIBUTES(HebbianRateEncodingAttributes, "hebbian_rate_encoding", FLOAT)
 

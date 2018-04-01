@@ -6,7 +6,7 @@
 
 #include "network/connection.h"
 #include "util/constants.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 class DendriticNode;
 class Connection;

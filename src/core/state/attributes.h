@@ -12,7 +12,7 @@
 #include "engine/kernel/attribute_data.h"
 #include "util/constants.h"
 #include "util/pointer.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 class Attributes;
 

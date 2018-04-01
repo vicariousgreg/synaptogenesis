@@ -39,6 +39,14 @@ Environment->Module
     get_bool("skip", false)
     get("type")
 
+  src/core/io/module
+    get_child_array("layers")
+    get_bool("verbose", false)
+    get_int("delay", 0)
+    get_int("cutoff", 0)
+    get_int("rate", 1)
+    get("type")
+
   src/core/io/impl/csv_module
     get("filename", "")
     get_int("offset", 0)
@@ -78,57 +86,6 @@ Environment->Module
     get_int("port", 11111)
     get("ip", "192.168.0.180")
 
-  src/core/io/module
-    get_child_array("layers")
-    get_bool("verbose", false)
-    get_int("delay", 0)
-    get_int("cutoff", 0)
-    get_int("rate", 1)
-    get("type")
-
-  src/core/io/impl/callback_module
-    get("function")
-    get_int("id", 0)
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
-  src/core/io/impl/dsst_module
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
-  src/core/io/impl/dummy_module
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
-  src/core/io/impl/image_input_module
-    get("channel", "gray")
-
-  src/core/io/impl/saccade_module
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
-  src/core/io/impl/socket_module
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
-  src/core/io/impl/visualizer_module
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
-  src/core/io/module
-    get("structure")
-    get("layer")
-
-  src/core/io/environment
-    get("structure", "")
-    get("layer", "")
-
   src/ui/impl/saccade_window_impl.cpp
     get_float("saccade rate", 1.0)
 
@@ -142,6 +99,25 @@ Environment->Module
     get_bool("stats", true)
 
 
+
+Environment->Module->Layer
+  src/core/io/module
+    get("structure")
+    get("layer")
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
+
+  src/core/io/environment
+    get("structure", "")
+    get("layer", "")
+
+  src/core/io/impl/callback_module
+    get("function")
+    get_int("id", 0)
+
+  src/core/io/impl/image_input_module
+    get("channel", "gray")
 
 
 Network
@@ -160,6 +136,22 @@ Network->Structure
 
 
 Network->Structure->Layer
+  src/core/engine/instruction
+    get_child("init config", nullptr)
+    get_child("init config")
+
+  src/core/network/layer
+    get_child_array("dendrites")
+
+  src/core/network/layer_config
+    get("name", "")
+    get("neural model", "")
+    get_int("rows", 0)
+    get_int("columns", 0)
+    get("image")
+    get_bool("plastic", false)
+    get_child_array("dendrites")
+
   src/core/state/impl/game_of_life_attributes
     get_parameter("survival_min", "2")
     get_parameter("survival_max", "3")
@@ -186,23 +178,6 @@ Network->Structure->Layer
 
   src/core/state/impl/som_attributes
     get_parameter("rbf scale", "1")
-
-  src/core/engine/instruction
-    get_child("init config", nullptr)
-    get_child("init config")
-
-  src/core/network/layer
-    get_child_array("dendrites")
-
-  src/core/network/layer_config
-    get("name", "")
-    get("neural model", "")
-    get("image")
-    get_int("rows", 0)
-    get("image")
-    get_int("columns", 0)
-    get_bool("plastic", false)
-    get_child_array("dendrites")
 
 
 

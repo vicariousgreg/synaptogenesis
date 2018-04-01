@@ -163,7 +163,7 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
             "Attempted to build " + type + " module with 0 layers!");
         return nullptr;
     } else {
-        // Build using structure and layer name
+        // Build using layers and config
         return bank->build_pointers.at(type)(layers, config);
     }
 }

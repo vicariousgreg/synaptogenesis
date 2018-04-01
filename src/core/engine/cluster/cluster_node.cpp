@@ -2,7 +2,7 @@
 #include "network/layer.h"
 #include "engine/engine.h"
 #include "engine/instruction.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
         Stream *io_stream, Stream *compute_stream)

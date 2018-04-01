@@ -94,9 +94,6 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
 /* This macro defines what happens for each neuron after weight iteration.
  * The provided calc function will use the operation designated by the opcode */
 #define NEURON_POST \
-    /*
-    if (sum > 0.0f) printf("%f ", sum); \
-    */ \
     inputs[to_index] = aggregate(inputs[to_index], sum);
 
 /* This macro puts it all together.  It takes the name of the function and four

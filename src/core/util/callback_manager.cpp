@@ -1,5 +1,5 @@
 #include "util/callback_manager.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 CallbackManager *CallbackManager::instance = nullptr;
 

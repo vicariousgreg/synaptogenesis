@@ -2,7 +2,7 @@
 #include "network/layer.h"
 #include "network/dendritic_node.h"
 #include "network/structure.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 static int compute_num_weights(Layer *from_layer, Layer *to_layer,
         const ConnectionConfig *config) {

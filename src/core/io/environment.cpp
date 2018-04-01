@@ -24,8 +24,9 @@ void Environment::remove_modules(std::string structure,
     for (auto config : get_child_array("modules")) {
         if (type == "" or config->get("type", "") == type) {
             for (auto layer_config : config->get_child_array("layers")) {
-                if (layer_config->get("structure", "") == structure and
-                        (layer == "" or layer_config->get("layer", "") == layer))
+                if ((structure == ""
+                        or layer_config->get("structure", "") == structure) and
+                    (layer == "" or layer_config->get("layer", "") == layer))
                     delete remove_from_child_array("modules", config);
             }
         }

@@ -45,9 +45,6 @@ src/core/io/impl/callback_module
   Environment->Module->Layer
     get("function")
     get_int("id", 0)
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
 
 src/core/io/impl/csv_module
   Environment->Module
@@ -62,17 +59,6 @@ src/core/io/impl/dsst_module
     get_int("columns", 18)
     get_int("rows", 8)
     get_int("cell size", 8)
-
-  Environment->Module->Layer
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
-src/core/io/impl/dummy_module
-  Environment->Module->Layer
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
 
 src/core/io/impl/image_input_module
   Environment->Module
@@ -103,27 +89,10 @@ src/core/io/impl/print_rate_module
   Environment->Module
     get_int("window", 100)
 
-src/core/io/impl/saccade_module
-  Environment->Module->Layer
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
 src/core/io/impl/socket_module
-  Environment->Module->Layer
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
-
   Environment->Module
     get_int("port", 11111)
     get("ip", "192.168.0.180")
-
-src/core/io/impl/visualizer_module
-  Environment->Module->Layer
-    get_bool("input", false)
-    get_bool("expected", false)
-    get_bool("output", false)
 
 src/core/io/module
   Environment->Module
@@ -137,6 +106,9 @@ src/core/io/module
   Environment->Module->Layer
     get("structure")
     get("layer")
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
 
 src/core/network/connection_config
   Network->Connection->"arborized config"

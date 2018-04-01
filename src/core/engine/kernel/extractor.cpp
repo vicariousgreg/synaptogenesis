@@ -1,6 +1,6 @@
 #include "engine/kernel/extractor.h"
 #include "util/parallel.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 #include "util/resource_manager.h"
 
 HOST float extract_float_host(Output &out, int delay) { return out.f; }

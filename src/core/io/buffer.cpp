@@ -4,7 +4,7 @@
 #include "io/buffer.h"
 #include "network/network.h"
 #include "network/structure.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 Buffer *build_buffer(DeviceID device_id, LayerList input_layers,
         LayerList output_layers, LayerList expected_layers) {

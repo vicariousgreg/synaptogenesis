@@ -1,5 +1,5 @@
 #include "state/impl/relay_attributes.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 REGISTER_ATTRIBUTES(RelayAttributes, "relay", FLOAT)
 

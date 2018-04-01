@@ -7,7 +7,7 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "util/callback_manager.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 #include "util/parallel.h"
 
 /* Sets all values in an array to the given val */

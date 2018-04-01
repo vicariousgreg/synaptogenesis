@@ -1,7 +1,7 @@
 #include "network/network_config.h"
 #include "network/structure_config.h"
 #include "network/connection_config.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 NetworkConfig::NetworkConfig(const PropertyConfig *config)
         : PropertyConfig(config) {

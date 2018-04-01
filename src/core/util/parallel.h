@@ -2,7 +2,7 @@
 #define parallel_h
 
 #include "util/constants.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 const int TRANSPOSE_TILE_DIM = 32;
 const int TRANSPOSE_BLOCK_ROWS = 8;
@@ -58,7 +58,7 @@ dim3 calc_transpose_blocks(int original_rows, int original_columns);
 #include "device_launch_parameters.h"
 #include "assert.h"
 
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 #define WARP_SIZE 32
 #define IDEAL_THREADS 128

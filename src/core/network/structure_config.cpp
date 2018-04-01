@@ -1,6 +1,6 @@
 #include "network/structure_config.h"
 #include "network/layer_config.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 StructureConfig::StructureConfig(const PropertyConfig *config)
         : PropertyConfig(config),

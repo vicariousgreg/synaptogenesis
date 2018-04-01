@@ -1,5 +1,5 @@
 #include "state/impl/poisson_generator_attributes.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 REGISTER_ATTRIBUTES(PoissonGeneratorAttributes, "poisson generator", BIT)
 

@@ -1,96 +1,96 @@
 Network
   structures[]
     name
-    type
+    type  ->  parallel
     layers[]
       name
       neural model
-      image
       rows
       columns
-      plastic
-      init config
+      image  ->  null
+      plastic  ->  false
+      init config  ->  null
         type
       dendrites[]
         name
-        opcode
-        second order
-        init
+        opcode  ->  add
+        second order  ->  false
+        init  ->  0.0
         children[] *recursive
 
   connections[]
-    name
+    name  ->  ""
     from layer
-    from structure
     to layer
-    to structure
-    dendrite
-    plastic
-    delay
-    max weight
-    fully connected
-    opcode
-    sparse
-    convolutional
+    from structure  ->  (inferred)
+    to structure  ->  (inferred)
+    dendrite  ->  root
+    type  ->  fully connected
+    opcode  ->  add
+    plastic  ->  true
+    delay  ->  0
+    max weight  ->  1.0
+    sparse  ->  false
+    convolutional  ->  false
     arborized config
-      row field size
-      column field size
-      row stride
-      column stride
-      row spacing
-      column spacing
-      row offset
-      row offset
-      wrap
-      field size
-      stride
-      spacing
-      offset
+      row field size  ->  0
+      column field size  ->  0
+      row stride  ->  1
+      column stride  ->  1
+      row spacing  ->  0
+      column spacing  ->  0
+      row offset  ->  0
+      row offset  ->  0
+      wrap  ->  false
+      field size  ->  0
+      stride  ->  0
+      spacing  ->  0
+      offset  ->  0
     subset config
-      from row start
-      from row end
-      to row start
-      to row end
-      from column start
-      from column end
-      to column start
-      to column end
+      from row start  ->  0
+      from row end  ->  0
+      to row start  ->  0
+      to row end  ->  0
+      from column start  ->  0
+      from column end  ->  0
+      to column start  ->  0
+      to column end  ->  0
     weight config
-      type
-      fraction
+      type  ->  "flat"
+      fraction  ->  1.0
       circular mask[] (can be single child)
-        row radius
-        column radius
-        row diameter
-        column diameter
-        radius
-        diameter
-        invert
-        value
-      diagonal
+        row radius  ->  0
+        column radius  ->  0
+        row diameter  ->  0
+        column diameter  ->  0
+        radius  ->  0
+        diameter  ->  0
+        invert  ->  false
+        value  ->  0.0
+      diagonal  ->  true
       callback
       distance callback
-      id
-      from spacing
-      to spacing
-      x offset
-      y offset
+      id  ->  0
+      from spacing  ->  1.0
+      to spacing  ->  1.0
+      x offset  ->  0.0
+      y offset  ->  0.0
 
 Environment
   modules[]
     type
-    verbose
-    skip
-    delay
-    cutoff
-    rate
+    verbose  ->  false
+    skip  ->  false
+    delay  ->  0
+    cutoff  ->  0
+    rate  ->  1
     layers[]
       structure
       layer
-      id
-      input
-      expected
-      output
+      id  ->  0
+      input  ->  false
+      expected  ->  false
+      output  ->  false
 
 Args
   devices[] (can be single element)  ->  Resource Manager default devices

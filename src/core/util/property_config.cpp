@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include "util/property_config.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 PropertyConfig::PropertyConfig(const PropertyConfig *other) {
     for (auto pair : other->get())

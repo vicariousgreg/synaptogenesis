@@ -1,5 +1,5 @@
 #include "network/structure.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 #define cimg_display 0
 #include "CImg.h"

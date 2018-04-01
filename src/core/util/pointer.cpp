@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "util/error_manager.h"
+#include "util/logger.h"
 #include "util/resource_manager.h"
 #include "util/tools.h"
 

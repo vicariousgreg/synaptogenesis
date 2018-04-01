@@ -3,7 +3,7 @@
 #include "network/layer.h"
 #include "network/structure.h"
 #include "network/connection.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 /* Copy constructor is meant for synapse_data, which can be sent to devices.
  * This will render pointers invalid, so they are set to nullptr when copied.

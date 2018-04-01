@@ -4,7 +4,7 @@
 #include <sys/sysinfo.h>
 
 #include "util/resource_manager.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 #include "util/stream.h"
 #include "util/event.h"
 #include "util/pointer.h"

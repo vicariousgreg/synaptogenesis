@@ -1,5 +1,5 @@
 #include "network/network.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 #include "builder.h"
 
 Network::Network(NetworkConfig* config) : config(config) {

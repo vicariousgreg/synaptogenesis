@@ -1,7 +1,7 @@
 #include <cmath>
 
 #include "state/impl/sine_generator_attributes.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 
 REGISTER_ATTRIBUTES(SineGeneratorAttributes, "sine generator", FLOAT)

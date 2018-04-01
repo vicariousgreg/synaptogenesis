@@ -1,6 +1,6 @@
 #include "network/layer_config.h"
 #include "network/layer.h"
-#include "util/error_manager.h"
+#include "util/logger.h"
 
 #define cimg_display 0
 #include "CImg.h"
