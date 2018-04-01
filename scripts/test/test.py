@@ -32,11 +32,11 @@ conn1 = {
     "arborized config" : {
         "field size" : 15,
         "stride" : "2",
-        "wrap" : "false",
+        "wrap" : False,
     },
     "opcode" : "add",
     "max" : "1.0",
-    "plastic" : "false",
+    "plastic" : False,
     "weight config" : {
         "type" : "flat",
         "weight" : "1.0",
@@ -51,10 +51,10 @@ conn2 = {
     "arborized config" : {
         "field size" : 15,
         "stride" : "2",
-        "wrap" : "false",
+        "wrap" : False,
     },
     "opcode" : "sub",
-    "plastic" : "false",
+    "plastic" : False,
     "max" : "1.0",
     "weight config" : {
         "type" : "flat",
@@ -69,11 +69,11 @@ conn3 = {
     "type" : "convergent",
     "arborized config" : {
         "field size" : 15,
-        "wrap" : "false",
+        "wrap" : False,
     },
     "opcode" : "add",
     "max" : "1.0",
-    "plastic" : "false",
+    "plastic" : False,
     "weight config" : {
         "type" : "flat",
         "weight" : "0.5",
@@ -95,7 +95,7 @@ modules = [
 #    {
 #        #"type" : "one_hot_random_input",
 #        "type" : "periodic_input",
-#        "random" : "false",
+#        "random" : False,
 #        "value" : "1.0",
 #        "rate" : "1000000",
 #        "layers" : [
@@ -111,10 +111,10 @@ network = Network(
     {"structures" : [structure],
      "connections" : connections})
 
-print(network.run(env, {"multithreaded" : "true",
+print(network.run(env, {"multithreaded" : True,
                         "worker threads" : "1",
                         "refresh rate" : "100",
-                        "verbose" : "true"}))
+                        "verbose" : True}))
 
 # Delete the objects
 del network

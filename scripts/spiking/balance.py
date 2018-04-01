@@ -17,8 +17,8 @@ def build_network(dim=64):
     #inh_init = "random negative"
 
     # Plasticity parameters
-    plastic = "true"
-    stp = "true"
+    plastic = True
+    stp = True
     stp_tau = "5000"
     exc_learning_rate = 0.001
     inh_learning_rate = 0.01
@@ -28,12 +28,12 @@ def build_network(dim=64):
     exc_noise_rate = 1
     inh_noise_strength = 10.0
     inh_noise_rate = 5
-    exc_random = "false"
-    inh_random = "false"
+    exc_random = False
+    inh_random = False
 
     # Weight parameters
     init = "flat"
-    myelinated = "false"
+    myelinated = False
 
     exc_exc_weight_init = init
     exc_exc_exponent = 1.5
@@ -126,13 +126,13 @@ def build_network(dim=64):
         "to layer" : "poisson",
         "type" : "one to one",
         "opcode" : "add",
-        "plastic" : "false",
+        "plastic" : False,
         "weight config" : {
             "type" : "flat",
             "weight" : 0.01,
             "fraction" : 1.0,
         },
-        "direct" : "true" # direct connection into input current
+        "direct" : True # direct connection into input current
     }
 
     poisson_exc = {
@@ -140,13 +140,13 @@ def build_network(dim=64):
         "to layer" : "exc",
         "type" : "one to one",
         "opcode" : "add",
-        "plastic" : "false",
+        "plastic" : False,
         "weight config" : {
             "type" : "flat",
             "weight" : 10.0,
             "fraction" : 1.0,
         },
-        "direct" : "true" # direct connection into input current
+        "direct" : True # direct connection into input current
     }
 
     exc_exc = {
@@ -156,11 +156,11 @@ def build_network(dim=64):
         "type" : "convergent",
         "arborized config" : {
             "field size" : exc_exc_spread,
-            "wrap" : "true",
+            "wrap" : True,
         },
         "opcode" : "add",
         "plastic" : plastic,
-        "sparse" : "true",
+        "sparse" : True,
         "learning rate" : exc_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
@@ -176,11 +176,11 @@ def build_network(dim=64):
         "arborized config" : {
             "field size" : exc_inh_spread,
             "stride" : 2,
-            "wrap" : "true",
+            "wrap" : True,
         },
         "opcode" : "add",
         "plastic" : plastic,
-        "sparse" : "true",
+        "sparse" : True,
         "learning rate" : exc_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
@@ -195,11 +195,11 @@ def build_network(dim=64):
         "arborized config" : {
             "field size" : inh_exc_spread,
             "stride" : 2,
-            "wrap" : "true",
+            "wrap" : True,
         },
         "opcode" : "sub",
         "plastic" : plastic,
-        "sparse" : "true",
+        "sparse" : True,
         "learning rate" : inh_learning_rate,
         "max weight" : "0.5",
         "myelinated" : myelinated,
@@ -213,7 +213,7 @@ def build_network(dim=64):
                 "type" : "flat",
                 "weight" : 0.00011,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
                 "circular mask" : {}
             }
     elif exc_exc_weight_init == "random":
@@ -222,7 +222,7 @@ def build_network(dim=64):
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
                 "circular mask" : {}
             }
     elif exc_exc_weight_init == "flat":
@@ -230,7 +230,7 @@ def build_network(dim=64):
                 "type" : "flat",
                 "weight" : exc_exc_base_weight,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
                 "circular mask" : {}
             }
     elif exc_exc_weight_init == "power law":
@@ -240,7 +240,7 @@ def build_network(dim=64):
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
                 "circular mask" : {}
             }
 
@@ -253,7 +253,7 @@ def build_network(dim=64):
                 "circular mask" : [
                     {
                         "diameter" : exc_inh_mask,
-                        "invert" : "true"
+                        "invert" : True
                     },
                     { }
                 ]
@@ -267,7 +267,7 @@ def build_network(dim=64):
                 "circular mask" : [
                     {
                         "diameter" : exc_inh_mask,
-                        "invert" : "true"
+                        "invert" : True
                     },
                     { }
                 ]
@@ -280,7 +280,7 @@ def build_network(dim=64):
                 "circular mask" : [
                     {
                         "diameter" : exc_inh_mask,
-                        "invert" : "true"
+                        "invert" : True
                     },
                     { }
                 ]
@@ -295,7 +295,7 @@ def build_network(dim=64):
                 "circular mask" : [
                     {
                         "diameter" : exc_inh_mask,
-                        "invert" : "true"
+                        "invert" : True
                     },
                     { }
                 ]
@@ -350,7 +350,7 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
         modules = [
             {
                 "type" : "visualizer",
-                "colored" : "false",
+                "colored" : False,
                 "layers" : [
                     { "structure" : "snn", "layer" : "sine" },
                     { "structure" : "snn", "layer" : "poisson" },
@@ -360,12 +360,12 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
             },
             {
                 "type" : "visualizer",
-                "colored" : "true",
+                "colored" : True,
 
-                "decay" : "false",
+                "decay" : False,
                 "window" : 256,
 
-                #"decay" : "true",
+                #"decay" : True,
                 #"window" : 1024,
                 #"bump" : 128,
 
@@ -377,7 +377,7 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
             {
                 "type" : "heatmap",
                 "window" : 1000000, # Long term
-                "linear" : "true",
+                "linear" : True,
                 "layers" : [
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
@@ -386,7 +386,7 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
             {
                 "type" : "heatmap",
                 "window" : 1000, # Short term
-                "linear" : "false",
+                "linear" : False,
                 "layers" : [
                     { "structure" : "snn", "layer" : "sine" },
                     { "structure" : "snn", "layer" : "poisson" },
@@ -400,9 +400,9 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                 "border" : 0,
                 "std dev" : std_dev,
                 "value" : 1.0,
-                "normalize" : "true",
+                "normalize" : True,
                 "peaks" : peaks,
-                "random" : "false",
+                "random" : False,
                 "layers" : [
                     {
                         "structure" : "snn",
@@ -535,11 +535,11 @@ def main(infile=None, outfile=None, do_training=True, print_stats=True,
     if device is None:
         device = get_gpus()[1]
     if do_training:
-        train_args = {"multithreaded" : "true",
+        train_args = {"multithreaded" : True,
                       "worker threads" : 4 if device == get_cpu() else 0,
                       "devices" : device,
                       "iterations" : iterations,
-                      "verbose" : "true"}
+                      "verbose" : True}
         if refresh_rate > 0:
             train_args["refresh rate"] = refresh_rate;
         report = network.run(env, train_args)

@@ -14,11 +14,11 @@ receiver = {
     "dendrites" : [
         {
             "name" : "left",
-            "second order" : "true"
+            "second order" : True
         },
         {
             "name" : "right",
-            "second order" : "true"
+            "second order" : True
         },
     ]}
 in1 = {
@@ -63,7 +63,7 @@ connections = [
         "dendrite" : "left",
         "type" : "one to one",
         "opcode" : "add",
-        "plastic" : "false",
+        "plastic" : False,
         "weight config" : {
             "type" : "flat",
             "weight" : "1"
@@ -75,7 +75,7 @@ connections = [
         "dendrite" : "left",
         "type" : "one to one",
         "opcode" : "mult",
-        "plastic" : "false",
+        "plastic" : False,
         "weight config" : {
             "type" : "flat",
             "weight" : "1"
@@ -87,7 +87,7 @@ connections = [
         "dendrite" : "right",
         "type" : "one to one",
         "opcode" : "add",
-        "plastic" : "false",
+        "plastic" : False,
         "weight config" : {
             "type" : "flat",
             "weight" : "1"
@@ -99,7 +99,7 @@ connections = [
         "dendrite" : "right",
         "type" : "one to one",
         "opcode" : "mult",
-        "plastic" : "false",
+        "plastic" : False,
         "weight config" : {
             "type" : "flat",
             "weight" : "1"
@@ -124,9 +124,9 @@ modules = [
         "rate" : "100",
         "std dev" : "10",
         "value" : "1.0",
-        "normalize" : "true",
+        "normalize" : True,
         "peaks" : "1",
-        "random" : "false",
+        "random" : False,
         "layers" : [
             {
                 "structure" : "dendrite_test",
@@ -139,9 +139,9 @@ modules = [
         "rate" : "100",
         "std dev" : "10",
         "value" : "1.0",
-        "normalize" : "true",
+        "normalize" : True,
         "peaks" : "1",
-        "random" : "false",
+        "random" : False,
         "layers" : [
             {
                 "structure" : "dendrite_test",
@@ -161,10 +161,10 @@ network = Network(
 # Run test
 gpus = get_gpus()
 device = gpus[len(gpus)-1] if len(gpus) > 0 else get_cpu()
-print(network.run(env, {"multithreaded" : "true",
+print(network.run(env, {"multithreaded" : True,
                         "worker threads" : 1,
                         "devices" : device,
-                        "learning flag" : "false"}))
+                        "learning flag" : False}))
 
 # Delete the objects
 del network

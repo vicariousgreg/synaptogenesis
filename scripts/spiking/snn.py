@@ -110,10 +110,10 @@ exc_exc = {
     "arborized config" : {
         "field size" : exc_exc_spread,
         "stride" : "2",
-        "wrap" : "true",
+        "wrap" : True,
     },
     "opcode" : "add",
-    "plastic" : "true",
+    "plastic" : True,
     "learning rate" : "0.001",
     "max" : "0.5",
     "weight config" : {
@@ -124,16 +124,16 @@ exc_exc = {
         "fraction" : "0.1",
         "circular mask" : { }
     },
-    "myelinated" : "false"
+    "myelinated" : False
 }
 exc_exc_self = {
     "type" : "convergent",
     "arborized config" : {
         "field size" : exc_exc_self_spread,
-        "wrap" : "true",
+        "wrap" : True,
     },
     "opcode" : "add",
-    "plastic" : "true",
+    "plastic" : True,
     "learning rate" : "0.001",
     "max" : "0.5",
     "weight config" : {
@@ -142,7 +142,7 @@ exc_exc_self = {
         "type" : "flat",
         "weight" : "0.01",
         "fraction" : "0.1",
-        "diagonal" : "false",
+        "diagonal" : False,
         "circular mask" : { }
     },
 }
@@ -169,10 +169,10 @@ exc_inh = {
     "arborized config" : {
         "field size" : exc_inh_spread,
         "stride" : 2,
-        "wrap" : "true",
+        "wrap" : True,
     },
     "opcode" : "add",
-    "plastic" : "true",
+    "plastic" : True,
     "learning rate" : "0.001",
     "max" : "0.5",
     "weight config" : {
@@ -187,26 +187,26 @@ inh_exc = {
     "arborized config" : {
         "field size" : inh_exc_spread,
         "stride" : 2,
-        "wrap" : "true",
+        "wrap" : True,
     },
     "opcode" : "sub",
-    "plastic" : "true",
+    "plastic" : True,
     "learning rate" : "0.001",
     "weight config" : {
         "type" : "flat",
         "weight" : "0.02",
         "fraction" : "0.3"
     },
-    "myelinated" : "true"
+    "myelinated" : True
 }
 inh_inh_self = {
     "type" : "convergent",
     "arborized config" : {
         "field size" : inh_inh_self_spread,
-        "wrap" : "true",
+        "wrap" : True,
     },
     "opcode" : "gap",
-    "plastic" : "false",
+    "plastic" : False,
     "max" : "0.5",
     "weight config" : {
         "type" : "flat",
@@ -268,19 +268,19 @@ b_self_inh["to layer"] = "layer_b_inh"
 input_conn = {
     "type" : "one to one",
     "opcode" : "add",
-    "plastic" : "false",
+    "plastic" : False,
     "max" : "1.0",
     "weight config" : {
         "type" : "flat",
         "weight" : "1.0",
         "fraction" : "1.0"
     },
-    "myelinated" : "true"
+    "myelinated" : True
 }
 gate_conn = {
     "type" : "divergent",
     "opcode" : "mult",
-    "plastic" : "false",
+    "plastic" : False,
     "max" : "1.0",
     "weight config" : {
         "type" : "flat",
@@ -290,30 +290,30 @@ gate_conn = {
     "arborized config" : {
         "field size" : dim/input_grid,
         "stride" : dim/input_grid,
-        "wrap" : "false",
+        "wrap" : False,
         "offset" : "0"
     },
-    "myelinated" : "true"
+    "myelinated" : True
 }
 
 
 in_a = deepcopy(input_conn)
 in_a["from layer"] = "input_a"
 in_a["to layer"] = "layer_a"
-in_a["short term plasticity"] = "false"
+in_a["short term plasticity"] = False
 g_a = deepcopy(gate_conn)
 g_a["from layer"] = "gate_a"
 g_a["to layer"] = "input_a"
-g_a["short term plasticity"] = "false"
+g_a["short term plasticity"] = False
 
 in_b = deepcopy(input_conn)
 in_b["from layer"] = "input_b"
 in_b["to layer"] = "layer_b"
-in_b["short term plasticity"] = "false"
+in_b["short term plasticity"] = False
 g_b = deepcopy(gate_conn)
 g_b["from layer"] = "gate_b"
 g_b["to layer"] = "input_b"
-g_b["short term plasticity"] = "false"
+g_b["short term plasticity"] = False
 
 
 
@@ -349,7 +349,7 @@ modules = [
     {
         "type" : "heatmap",
         "window" : 1000000, # Long term
-        "linear" : "true",
+        "linear" : True,
         "layers" : [
             { "structure" : "snn", "layer" : "layer_a" },
             { "structure" : "snn", "layer" : "association_layer" },
@@ -366,7 +366,7 @@ modules = [
     {
         "type" : "heatmap",
         "window" : change_rate, # Short term
-        "linear" : "false",
+        "linear" : False,
         "layers" : [
             { "structure" : "snn", "layer" : "layer_a" },
             { "structure" : "snn", "layer" : "association_layer" },
@@ -382,7 +382,7 @@ modules = [
     },
     {
         "type" : "one_hot_random_input",
-        "random" : "false",
+        "random" : False,
         "value" : "1.0",
         "rate" : change_rate,
         "layers" : [
@@ -391,7 +391,7 @@ modules = [
     },
     {
         "type" : "one_hot_random_input",
-        "random" : "false",
+        "random" : False,
         "value" : "1.0",
         "rate" : change_rate,
         "layers" : [
@@ -407,10 +407,10 @@ network = Network(
     {"structures" : [structure],
      "connections" : connections})
 
-print(network.run(env, {"multithreaded" : "true",
+print(network.run(env, {"multithreaded" : True,
                         "worker threads" : 1,
                         "devices" : get_gpus(),
-                        "verbose" : "true"}))
+                        "verbose" : True}))
 
 # Delete the objects
 del network

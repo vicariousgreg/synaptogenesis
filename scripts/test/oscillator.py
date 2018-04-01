@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def build_network(dim=64):
-    plastic = "false"
+    plastic = False
     learning_rate = 0.01
 
     exc_exc_spread = 35
@@ -30,8 +30,8 @@ def build_network(dim=64):
     exc_noise_rate = 10
     inh_noise_strength = 1.0 / inh_tau
     inh_noise_rate = 0
-    exc_random = "true"
-    inh_random = "false"
+    exc_random = True
+    inh_random = False
 
     # Weight parameters
     exc_exc_weight_init = "power law"
@@ -112,7 +112,7 @@ def build_network(dim=64):
         "type" : "convergent",
         "arborized config" : {
             "field size" : exc_exc_spread,
-            "wrap" : "true",
+            "wrap" : True,
         },
         "opcode" : "add",
         "plastic" : plastic,
@@ -127,7 +127,7 @@ def build_network(dim=64):
         "type" : "convergent",
         "arborized config" : {
             "field size" : exc_inh_spread,
-            "wrap" : "true",
+            "wrap" : True,
         },
         "opcode" : "add",
         "plastic" : plastic,
@@ -142,7 +142,7 @@ def build_network(dim=64):
         "type" : "divergent",
         "arborized config" : {
             "field size" : inh_exc_spread,
-            "wrap" : "true",
+            "wrap" : True,
         },
         "opcode" : "sub",
         "plastic" : plastic,
@@ -157,7 +157,7 @@ def build_network(dim=64):
         "type" : "convergent",
         "arborized config" : {
             "field size" : inh_inh_spread,
-            "wrap" : "true",
+            "wrap" : True,
         },
         "opcode" : "sub",
         "plastic" : plastic,
@@ -171,7 +171,7 @@ def build_network(dim=64):
                 "type" : "flat",
                 "weight" : 0.00011,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
             }
     elif exc_exc_weight_init == "random":
         exc_exc["weight config"] = {
@@ -179,14 +179,14 @@ def build_network(dim=64):
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
             }
     elif exc_exc_weight_init == "flat":
         exc_exc["weight config"] = {
                 "type" : "flat",
                 "weight" : exc_exc_base_weight,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
             }
     elif exc_exc_weight_init == "power law":
         exc_exc["weight config"] = {
@@ -195,7 +195,7 @@ def build_network(dim=64):
                 "min weight" : exc_exc_base_weight_min,
                 "max weight" : exc_exc_base_weight_max,
                 "fraction" : exc_exc_fraction,
-                "diagonal" : "false",
+                "diagonal" : False,
             }
 
     # Exc Inh init
@@ -304,7 +304,7 @@ def build_environment(visualizer=False):
         modules = [
             {
                 "type" : "visualizer",
-                "colored" : "false",
+                "colored" : False,
                 "layers" : [
                     { "structure" : "oscillator", "layer" : "exc" },
                     { "structure" : "oscillator", "layer" : "inh" },
@@ -312,12 +312,12 @@ def build_environment(visualizer=False):
             },
 #            {
 #                "type" : "visualizer",
-#                "colored" : "true",
+#                "colored" : True,
 #
-#                "decay" : "false",
+#                "decay" : False,
 #                "window" : 256,
 #
-#                #"decay" : "true",
+#                #"decay" : True,
 #                #"window" : 1024,
 #                #"bump" : 128,
 #
@@ -348,11 +348,11 @@ def main(infile=None, outfile=None, do_training=True, print_stats=True,
     if device is None:
         device = get_gpus()[1]
     if do_training:
-        report = network.run(env, {"multithreaded" : "true",
+        report = network.run(env, {"multithreaded" : True,
                                    "worker threads" : "1",
                                    "devices" : device,
                                    "iterations" : iterations,
-                                   "verbose" : "true"})
+                                   "verbose" : True})
         if report is None:
             print("Engine failure.  Exiting...")
             return

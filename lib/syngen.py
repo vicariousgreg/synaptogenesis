@@ -330,7 +330,10 @@ class Properties(CObject):
 
     def add_property(self, key, val):
         self.properties[key] = val
-        _syn.add_property(self.obj, key, str(val))
+        if type(val) is bool:
+            _syn.add_property(self.obj, key, "true" if val else "false")
+        else:
+            _syn.add_property(self.obj, key, str(val))
 
     def add_child(self, key, child):
         child = Properties(child)

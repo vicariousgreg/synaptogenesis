@@ -38,7 +38,7 @@ connections = [
         "to layer" : "output_layer",
         "type" : "fully connected",
         "opcode" : "add",
-        "plastic" : "true",
+        "plastic" : True,
         "weight config" : {
             "type" : "random",
             "weight" : "1.0"
@@ -73,7 +73,7 @@ modules = [
 #            {
 #                "structure" : "iris",
 #                "layer" : "output_layer",
-#                "output" : "true",
+#                "output" : True,
 #                "function" : "iris_cb",
 #                "id" : 0
 #            }
@@ -106,8 +106,8 @@ network = Network(
 train = True
 if (train):
     # Run training
-    print(network.run(train_env, {"multithreaded" : "false",
-                                  "verbose" : "true"}))
+    print(network.run(train_env, {"multithreaded" : False,
+                                  "verbose" : True}))
 
     # Save the state and load it back up
     network.save_state("states/iris.bin")

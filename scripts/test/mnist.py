@@ -38,7 +38,7 @@ connections = [
         "to layer" : "output_layer",
         "type" : "fully connected",
         "opcode" : "add",
-        "plastic" : "true",
+        "plastic" : True,
         "weight config" : {
             "type" : "flat",
             "weight" : "0"
@@ -50,7 +50,7 @@ connections = [
         "to layer" : "output_layer",
         "type" : "fully connected",
         "opcode" : "add",
-        "plastic" : "true",
+        "plastic" : True,
         "weight config" : {
             "type" : "flat",
             "weight" : "0"
@@ -110,10 +110,10 @@ device = gpus[-1] if len(gpus) > 0 else get_cpu()
 train = True
 if (train):
     # Run training
-    print(network.run(train_env, {"multithreaded" : "false",
+    print(network.run(train_env, {"multithreaded" : False,
                                   "devices" : device,
                                   "worker threads" : 0,
-                                  "verbose" : "false"}))
+                                  "verbose" : False}))
 
     # Save the state and load it back up
     network.save_state("mnist.bin")
@@ -124,11 +124,11 @@ else:
 matrix = network.get_weight_matrix("main matrix")
 
 # Run test
-print(network.run(test_env, {"multithreaded" : "true",
+print(network.run(test_env, {"multithreaded" : True,
                              "devices" : device,
                              "worker threads" : 0,
-                             "verbose" : "false",
-                             "learning flag" : "false"}))
+                             "verbose" : False,
+                             "learning flag" : False}))
 
 # Delete the objects
 del network

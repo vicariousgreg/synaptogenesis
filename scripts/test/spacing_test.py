@@ -37,11 +37,11 @@ conn1 = {
         "field size" : 8,
         "spacing" : 8,
         "stride" : 1,
-        "wrap" : "false",
+        "wrap" : False,
     },
     "opcode" : "add",
     "max" : "1.0",
-    "plastic" : "false",
+    "plastic" : False,
     "weight config" : {
         "type" : "flat",
         "weight" : "1.0",
@@ -57,11 +57,11 @@ conn2 = {
         "field size" : 8,
         "spacing" : 8,
         "stride" : 1,
-        "wrap" : "false",
+        "wrap" : False,
     },
     "opcode" : "add",
     "max" : "1.0",
-    "plastic" : "false",
+    "plastic" : False,
     "weight config" : {
         "type" : "flat",
         "weight" : "1.0",
@@ -90,10 +90,10 @@ network = Network(
     {"structures" : [structure],
      "connections" : connections})
 
-print(network.run(env, {"multithreaded" : "true",
+print(network.run(env, {"multithreaded" : True,
                         "worker threads" : "1",
                         "refresh rate" : "100",
-                        "verbose" : "true"}))
+                        "verbose" : True}))
 
 # Delete the objects
 del network

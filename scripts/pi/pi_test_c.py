@@ -22,7 +22,7 @@ def build_network(rows=100, cols=100):
             "type" : "poisson",
             "value" : 0.5,
             "rate" : 10,
-            "random" : "true"
+            "random" : True
         }}
 
     # Add layers to structure
@@ -45,7 +45,7 @@ def build_environment(visualizer=False):
                 {
                     "structure" : "pi_test",
                     "layer" : "field",
-                    "input" : "true",
+                    "input" : True,
                 }
             ]
         },
@@ -80,12 +80,12 @@ def main(infile=None, outfile=None, do_training=True,
     if device is None:
         device = gpus[len(gpus)-1] if len(gpus) > 0 else get_cpu()
     if do_training:
-        report = network.run(env, {"multithreaded" : "true",
+        report = network.run(env, {"multithreaded" : True,
                                    "worker threads" : "2",
                                    "devices" : device,
                                    "iterations" : iterations,
                                    "refresh rate" : rate,
-                                   "verbose" : "true"})
+                                   "verbose" : True})
         if report is None:
             print("Engine failure.  Exiting...")
             return
