@@ -10,7 +10,6 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"global": "false",
 					"init": "random positive",
 					"init config": {
 						"type": "normal",
@@ -30,7 +29,6 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"global": "false",
 					"init": "random positive",
 					"init config": {
 						"type": "normal",
@@ -50,7 +48,6 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"global": "false",
 					"init": "random positive",
 					"init config": {
 						"type": "normal",
@@ -70,7 +67,6 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"global": "false",
 					"init": "regular",
 					"init config": {
 						"type": "poisson"
@@ -82,7 +78,6 @@
 					"rows": "1",
 					"columns": "1",
 					"plastic": "false",
-					"global": "false",
 					"init": "thalamo_cortical"
 				}
 			]

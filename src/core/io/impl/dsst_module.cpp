@@ -24,23 +24,11 @@ DSSTModule::DSSTModule(LayerList layers, ModuleConfig *config)
     input_data = Pointer<float>(input_size);
     this->window = DSSTWindow::build(this);
 
-    for (auto layer : layers) {
-        auto layer_config = config->get_layer(layer);
+    // Use input as default
+    set_default_io_type(INPUT);
 
-        if (layer_config->get_bool("input", false))
-            set_io_type(layer, get_io_type(layer) | INPUT);
-
-        if (layer_config->get_bool("expected", false))
-            set_io_type(layer, get_io_type(layer) | EXPECTED);
-
-        if (layer_config->get_bool("output", false))
-            set_io_type(layer, get_io_type(layer) | OUTPUT);
-
-        // Use output as default
-        if (get_io_type(layer) == 0)
-            set_io_type(layer, INPUT);
+    for (auto layer : layers)
         window->add_layer(layer, get_io_type(layer));
-    }
 }
 
 void DSSTModule::feed_input_impl(Buffer *buffer) {

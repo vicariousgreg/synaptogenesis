@@ -10,7 +10,6 @@
 					"rows": "188",
 					"columns": "178",
 					"plastic": "false",
-					"global": "false",
 					"init": "regular" 
 				},
 				{
@@ -19,7 +18,6 @@
 					"rows": "17",
 					"columns": "8",
 					"plastic": "false",
-					"global": "false",
 					"init": "regular",
 					"dendrites": [
 						{
@@ -34,7 +32,6 @@
 					"rows": "171",
 					"columns": "170",
 					"plastic": "false",
-					"global": "false",
 					"init": "regular" 
 				},
 				{
@@ -43,7 +40,6 @@
 					"rows": "1",
 					"columns": "1",
 					"plastic": "false",
-					"global": "false",
 					"init": "regular" 
 				} 
 			] 

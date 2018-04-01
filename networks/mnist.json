@@ -9,24 +9,21 @@
 					"neural model": "relay",
 					"rows": "28",
 					"columns": "28",
-					"plastic": "false",
-					"global": "false" 
+					"plastic": "false"
 				},
 				{
 					"name": "output_layer",
 					"neural model": "perceptron",
 					"rows": "1",
 					"columns": "10",
-					"plastic": "false",
-					"global": "false" 
+					"plastic": "false"
 				},
 				{
 					"name": "bias_layer",
 					"neural model": "relay",
 					"rows": "1",
 					"columns": "1",
-					"plastic": "false",
-					"global": "false" 
+					"plastic": "false"
 				} 
 			] 
 		} 

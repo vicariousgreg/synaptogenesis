@@ -22,8 +22,7 @@ class ModuleConfig : public PropertyConfig {
         ModuleConfig(std::string type);
         ModuleConfig(std::string type, std::string structure, std::string layer);
 
-        ModuleConfig* add_layer(std::string structure, std::string layer,
-            std::string params="");
+        ModuleConfig* add_layer(std::string structure, std::string layer);
         ModuleConfig* add_layer(PropertyConfig *config);
 
         std::string get_type() const { return get("type", ""); }
@@ -38,7 +37,7 @@ class ModuleConfig : public PropertyConfig {
 
 class Module {
     public:
-        virtual ~Module() {}
+        virtual ~Module() { delete config; }
 
         static Module* build_module(Network *network, ModuleConfig *config);
 
@@ -91,8 +90,12 @@ class Module {
             MODULE_BUILD_PTR build_ptr);
         static ModuleBank* get_module_bank();
 
+        void enforce_specified_io_type(std::string type);
+        void enforce_unique_io_type(std::string type);
+        void enforce_single_io_type(std::string type);
         void enforce_single_layer(std::string type);
         void enforce_equal_layer_sizes(std::string type);
+        void set_default_io_type(IOTypeMask io_type);
         void set_io_type(IOTypeMask io_type);
         void set_io_type(Layer *layer, IOTypeMask io_type);
         OutputType get_output_type(Layer* layer);

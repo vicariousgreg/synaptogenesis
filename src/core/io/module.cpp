@@ -1,3 +1,5 @@
+#include <bitset>
+
 #include "io/module.h"
 #include "network/network.h"
 #include "network/structure.h"
@@ -17,11 +19,10 @@ ModuleConfig::ModuleConfig(std::string type,
 }
 
 ModuleConfig* ModuleConfig::add_layer(std::string structure,
-        std::string layer, std::string params) {
+        std::string layer) {
     auto props = new PropertyConfig(
         { {"structure", structure},
           {"layer", layer} });
-    if (params != "") props->set("params", params);
     add_layer(props);
     delete props;
     return this;
@@ -44,8 +45,20 @@ const PropertyConfig* ModuleConfig::get_layer(Layer *layer) const {
 
 Module::Module(LayerList layers, ModuleConfig *config)
         : layers(layers), config(config), curr_iteration(0) {
-    for (auto layer : layers)
+    for (auto layer : layers) {
         output_types[layer] = Attributes::get_output_type(layer);
+        auto layer_config = config->get_layer(layer);
+
+        if (layer_config->get_bool("input", false))
+            set_io_type(layer, get_io_type(layer) | INPUT);
+
+        if (layer_config->get_bool("expected", false))
+            set_io_type(layer, get_io_type(layer) | EXPECTED);
+
+        if (layer_config->get_bool("output", false))
+            set_io_type(layer, get_io_type(layer) | OUTPUT);
+    }
+
     this->verbose = config->get_bool("verbose", false);
     this->start_delay = config->get_int("delay", 0);
     this->cutoff = config->get_int("cutoff", 0);
@@ -173,6 +186,30 @@ int Module::register_module(std::string module_type,
     return bank->modules.size() - 1;
 }
 
+void Module::enforce_specified_io_type(std::string type) {
+    for (auto layer : layers)
+        if (get_io_type(layer) == 0)
+            LOG_ERROR(
+                type + " module requires specified IO type!");
+}
+
+void Module::enforce_unique_io_type(std::string type) {
+    for (auto layer : layers)
+        if (std::bitset<sizeof(IOTypeMask)>(get_io_type(layer)).count() > 0)
+            LOG_ERROR(
+                type + " module requires unique IO type!");
+}
+
+void Module::enforce_single_io_type(std::string type) {
+    IOTypeMask or_type = 0;
+    for (auto layer : layers)
+        or_type |= get_io_type(layer);
+
+    if (std::bitset<sizeof(IOTypeMask)>(or_type).count() > 0)
+        LOG_ERROR(
+            type + " module requires single IO type!");
+}
+
 void Module::enforce_single_layer(std::string type) {
     if (layers.size() > 1)
         LOG_ERROR(
@@ -183,6 +220,12 @@ void Module::enforce_equal_layer_sizes(std::string type) {
     if (not check_equal_sizes(layers))
         LOG_ERROR(
             "Layers in " + type + " module must be of equal sizes!");
+}
+
+void Module::set_default_io_type(IOTypeMask io_type) {
+    for (auto layer : layers)
+        if (get_io_type(layer) == 0)
+            set_io_type(io_type);
 }
 
 void Module::set_io_type(IOTypeMask io_type) {

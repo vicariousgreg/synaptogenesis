@@ -246,6 +246,8 @@ class Properties(CObject):
                     for x in v:
                         if type(x) is dict:
                             self.add_to_child_array(k, x)
+                        elif type(x) is bool:
+                            self.add_to_array(k, "true" if x else "false")
                         else:
                             self.add_to_array(k, str(x))
                 else:

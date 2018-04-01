@@ -694,7 +694,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         int delay = conn->delay;
         for (int i = 0 ; i < num_weights ; ++i)
             delays[i] = delay;
-    } else if (conn->get_parameter("random delay", "false") == "true") {
+    } else if (conn->get_config()->has("random delay")) {
         int max_delay = std::stoi(
             conn->get_parameter("random delay", "0"));
         if (max_delay > 31)

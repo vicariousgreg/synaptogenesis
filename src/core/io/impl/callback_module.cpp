@@ -5,6 +5,8 @@ REGISTER_MODULE(CallbackModule, "callback");
 
 CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
         : Module(layers, config) {
+    enforce_specified_io_type("callback");
+
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
 
@@ -20,20 +22,6 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
             LOG_ERROR("Unspecified callback id for layer "
             + layer->str() + " in CallbackModule!");
         ids[layer] = layer_config->get_int("id", 0);
-
-        if (layer_config->get_bool("input", false))
-            set_io_type(layer, get_io_type(layer) | INPUT);
-
-        if (layer_config->get_bool("expected", false))
-            set_io_type(layer, get_io_type(layer) | EXPECTED);
-
-        if (layer_config->get_bool("output", false))
-            set_io_type(layer, get_io_type(layer) | OUTPUT);
-
-        // Log error if unspecified type
-        if (get_io_type(layer) == 0)
-            LOG_ERROR("Unspecified type for layer "
-                + layer->str() + " in CallbackModule!");
     }
 }
 

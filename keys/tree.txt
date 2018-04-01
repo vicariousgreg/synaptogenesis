@@ -1,0 +1,114 @@
+Network
+  structures[]
+    name
+    type
+    layers[]
+      name
+      neural model
+      image
+      rows
+      columns
+      plastic
+      init config
+        type
+      dendrites[]
+        name
+        opcode
+        second order
+        init
+        children[] *recursive
+
+  connections[]
+    name
+    from layer
+    from structure
+    to layer
+    to structure
+    dendrite
+    plastic
+    delay
+    max weight
+    fully connected
+    opcode
+    sparse
+    convolutional
+    arborized config
+      row field size
+      column field size
+      row stride
+      column stride
+      row spacing
+      column spacing
+      row offset
+      row offset
+      wrap
+      field size
+      stride
+      spacing
+      offset
+    subset config
+      from row start
+      from row end
+      to row start
+      to row end
+      from column start
+      from column end
+      to column start
+      to column end
+    weight config
+      type
+      fraction
+      circular mask[] (can be single child)
+        row radius
+        column radius
+        row diameter
+        column diameter
+        radius
+        diameter
+        invert
+        value
+      diagonal
+      callback
+      distance callback
+      id
+      from spacing
+      to spacing
+      x offset
+      y offset
+
+Environment
+  modules[]
+    type
+    verbose
+    skip
+    delay
+    cutoff
+    rate
+    layers[]
+      structure
+      layer
+      id
+      input
+      expected
+      output
+
+Args
+  devices[] (can be single element)  ->  Resource Manager default devices
+  multithreaded  ->  true
+  worker threads  ->  4
+  verbose  ->  false
+  learning flag  ->  true
+  suppress output  ->  false
+  environment rate  ->  1
+  refresh rate  ->  FLT_MAX
+  iterations  ->  Max of module get_expected_iterations (or indefinite)
+
+Report
+  iterations
+  total time
+  average time
+  fps
+  network bytes
+  state buffer bytes
+  engine buffer bytes
+  layer reports

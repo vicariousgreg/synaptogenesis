@@ -18,7 +18,6 @@ Layer::Layer(const Layer& other)
       columns(other.columns),
       size(other.size),
       plastic(other.plastic),
-      global(other.global),
       dendritic_root(nullptr) { }
 
 Layer::Layer(Structure *structure, const LayerConfig *config)
@@ -31,7 +30,6 @@ Layer::Layer(Structure *structure, const LayerConfig *config)
           columns(config->columns),
           size(rows * columns),
           plastic(config->plastic),
-          global(config->global),
           dendritic_root(new DendriticNode(this)) {
     add_dendrites("root", config->get_child_array("dendrites"));
 }

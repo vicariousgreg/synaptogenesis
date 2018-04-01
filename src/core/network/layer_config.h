@@ -13,16 +13,14 @@ class LayerConfig : public PropertyConfig {
                 int rows,
                 int columns,
                 PropertyConfig* init_config=nullptr,
-                bool plastic=false,
-                bool global=false);
+                bool plastic=false);
 
         LayerConfig(
             std::string name,
             std::string neural_model,
             std::string image,
             PropertyConfig* init_config=nullptr,
-            bool plastic=false,
-            bool global=false);
+            bool plastic=false);
 
         LayerConfig* add_dendrite(std::string parent,
             PropertyConfig *config);
@@ -33,7 +31,6 @@ class LayerConfig : public PropertyConfig {
         const std::string neural_model;
         const int rows, columns;
         const bool plastic;
-        const bool global;
 };
 
 #endif

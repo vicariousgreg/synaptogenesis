@@ -18,8 +18,7 @@ LayerConfig::LayerConfig(const PropertyConfig *config)
           columns((config->has("image"))
               ? GET_IMAGE(config->get("image")).width()
               : config->get_int("columns", 0)),
-          plastic(config->get_bool("plastic", false)),
-          global(config->get_bool("global", false)) {
+          plastic(config->get_bool("plastic", false)) {
     if (not config->has("name"))
         LOG_ERROR(
             "Attempted to construct LayerConfig without name!");
@@ -39,14 +38,12 @@ LayerConfig::LayerConfig(
         int rows,
         int columns,
         PropertyConfig* init_config,
-        bool plastic,
-        bool global)
+        bool plastic)
             : name(name),
               neural_model(neural_model),
               rows(rows),
               columns(columns),
-              plastic(plastic),
-              global(global) {
+              plastic(plastic) {
     if (init_config != nullptr)
         this->set_child("init config", init_config);
     this->set("name", name);
@@ -56,7 +53,6 @@ LayerConfig::LayerConfig(
     if (init_config != nullptr)
         this->set_child("init config", init_config);
     this->set("plastic", (plastic) ? "true" : "false");
-    this->set("global", (global) ? "true" : "false");
 }
 
 LayerConfig::LayerConfig(
@@ -64,12 +60,14 @@ LayerConfig::LayerConfig(
     std::string neural_model,
     std::string image,
     PropertyConfig* init_config,
-    bool plastic,
-    bool global)
+    bool plastic)
         : LayerConfig(
-            name, neural_model,
-            GET_IMAGE(image).height(), GET_IMAGE(image).width(),
-            init_config, plastic, global) { }
+            name,
+            neural_model,
+            GET_IMAGE(image).height(),
+            GET_IMAGE(image).width(),
+            init_config,
+            plastic) { }
 
 static PropertyConfig* get_dendrite(const ConfigArray& arr, std::string name) {
     for (auto node : arr)

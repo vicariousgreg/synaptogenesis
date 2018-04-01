@@ -1,0 +1,366 @@
+Run Args
+  src/core/engine/engine
+    get_array("devices")
+    get_bool("multithreaded", true)
+    get_int("worker threads", 4)
+    get_bool("verbose", false)
+    get_bool("learning flag", true)
+    get_bool("suppress output", false)
+    get_int("environment rate", 1)
+    get_float("refresh rate", FLT_MAX)
+    get_int("iterations", 1)
+
+
+
+Report
+  src/core/report
+    get("iterations")
+    get_float("total time", 0.0)
+    get_float("average time", 0.0)
+    get_float("fps", 0.0)
+    get("network bytes")
+    get("state buffer bytes")
+    get("engine buffer bytes")
+    get_child_array("layer reports")
+
+
+
+Environment
+  src/core/io/environment
+    get_child_array("modules")
+
+
+
+Environment->Module
+  src/core/io/environment
+    get("type", "")
+
+  src/core/engine/engine
+    get_bool("skip", false)
+    get("type")
+
+  src/core/io/impl/csv_module
+    get("filename", "")
+    get_int("offset", 0)
+    get_float("normalization", 1)
+    get_int("exposure", 1)
+    get_int("epochs", 1)
+
+  src/core/io/impl/dsst_module
+    get_int("columns", 18)
+    get_int("rows", 8)
+    get_int("cell size", 8)
+
+  src/core/io/impl/image_input_module
+    get("filename", "")
+    get_float("scale", 1)
+
+  src/core/io/impl/periodic_input_module
+    get_float("value", 1.0)
+    get_float("min", 0.0)
+    get_float("max", 1.0)
+    get_float("fraction", 1.0)
+    get_bool("random", false)
+    get_int("row border", 0)
+    get_int("column border", 0)
+    get_int("border", 0)
+    get_float("std dev", 1.0)
+    get_bool("normalize", true)
+    get_int("peaks", 1)
+
+  src/core/io/impl/print_output_module
+    get_int("history_length", 1)
+
+  src/core/io/impl/print_rate_module
+    get_int("window", 100)
+
+  src/core/io/impl/socket_module
+    get_int("port", 11111)
+    get("ip", "192.168.0.180")
+
+  src/core/io/module
+    get_child_array("layers")
+    get_bool("verbose", false)
+    get_int("delay", 0)
+    get_int("cutoff", 0)
+    get_int("rate", 1)
+    get("type")
+
+  src/core/io/impl/callback_module
+    get("function")
+    get_int("id", 0)
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
+
+  src/core/io/impl/dsst_module
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
+
+  src/core/io/impl/dummy_module
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
+
+  src/core/io/impl/image_input_module
+    get("channel", "gray")
+
+  src/core/io/impl/saccade_module
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
+
+  src/core/io/impl/socket_module
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
+
+  src/core/io/impl/visualizer_module
+    get_bool("input", false)
+    get_bool("expected", false)
+    get_bool("output", false)
+
+  src/core/io/module
+    get("structure")
+    get("layer")
+
+  src/core/io/environment
+    get("structure", "")
+    get("layer", "")
+
+  src/ui/impl/saccade_window_impl.cpp
+    get_float("saccade rate", 1.0)
+
+  src/ui/impl/visualizer_window_impl.cpp
+    get_bool("colored", false)
+    get_bool("decay", false)
+    get_int("bump", 16)
+    get_int("window", 256)
+    get_int("window", 1000)
+    get_bool("linear", false)
+    get_bool("stats", true)
+
+
+
+
+Network
+  src/core/network/network_config
+    get_child_array("structures")
+    get_child_array("connections")
+
+
+
+Network->Structure
+  src/core/network/structure_config
+    get("name", "")
+    get("type", "parallel")
+    get_child_array("layers")
+
+
+
+Network->Structure->Layer
+  src/core/state/impl/game_of_life_attributes
+    get_parameter("survival_min", "2")
+    get_parameter("survival_max", "3")
+    get_parameter("birth_min", "3")
+    get_parameter("birth_max", "3")
+
+  src/core/state/impl/izhikevich_attributes
+    get_parameter("init", "regular")
+    get_parameter("neuron spacing", "0.1")
+
+  src/core/state/impl/oscillator_attributes
+    get_parameter("tonic", "0.0")
+    get_parameter("tau", "0.1")
+    get_parameter("decay", "0.1")
+
+  src/core/state/impl/relay_attributes
+    get_parameter("ramp", "false")
+
+  src/core/state/impl/sample_attributes
+    get_parameter("value", "1.0")
+
+  src/core/state/impl/sine_generator_attributes
+    get_parameter("frequency", "10")
+
+  src/core/state/impl/som_attributes
+    get_parameter("rbf scale", "1")
+
+  src/core/engine/instruction
+    get_child("init config", nullptr)
+    get_child("init config")
+
+  src/core/network/layer
+    get_child_array("dendrites")
+
+  src/core/network/layer_config
+    get("name", "")
+    get("neural model", "")
+    get("image")
+    get_int("rows", 0)
+    get("image")
+    get_int("columns", 0)
+    get_bool("plastic", false)
+    get_child_array("dendrites")
+
+
+
+Network->Structure->Layer->"dendrites"
+  src/core/network/layer
+    get_bool("second order", false)
+    get("name")
+    get("opcode", "add")
+    get_float("init", 0.0)
+    get_child_array("children")
+
+  src/core/network/layer_config
+    get("name")
+    get_child_array("children")
+
+
+
+Network->Structure->Layer->"init config"
+  src/core/engine/instruction
+    get("type", "normal")
+    get_float("value", 1.0)
+    get_float("min", 1.0)
+    get_float("max", 1.0)
+    get_float("mean", 1.0)
+    get_float("std dev", 0.1)
+    get_float("value", 20)
+    get_float("rate", 1)
+    get_bool("random", "false")
+
+
+
+Network->Connection
+  src/core/network/connection_config
+    get("name", "")
+    get("from layer", "")
+    get("to layer", "")
+    get("dendrite", "root")
+    get_bool("plastic", true)
+    get_int("delay", 0)
+    get_float("max weight", 1.0)
+    get("type", "fully connected")
+    get("opcode", "add")
+    get_bool("sparse", false)
+    get_bool("convolutional", false)
+    get_child("arborized config")
+    get_child("subset config")
+    get_child("weight config")
+
+  src/core/network/network
+    get("name", "")
+    get("from structure")
+    get("to structure")
+
+  src/core/state/impl/izhikevich_attributes
+    get_parameter("direct", "false")
+    get_parameter("conductance", "1.0")
+    get_parameter("learning rate", "0.1")
+    get_parameter("short term plasticity", "true")
+    get_parameter("short term plasticity tau", "5000")
+    get_parameter("myelinated", "false")
+    get_parameter("random delay", "false")
+    get_parameter("random delay", "0")
+    get_parameter("x offset", "0.0")
+    get_parameter("y offset", "0.0")
+    get_parameter("cap delay", "false")
+
+  src/core/state/impl/sample_attributes
+    get_parameter("connection variable", "1.0")
+    get_parameter("second weights", "false")
+
+  src/core/state/impl/som_attributes
+    get_parameter("learning rate", "0.01")
+    get_parameter("neighbor learning rate", "0.001")
+    get_parameter("neighborhood size", "2")
+
+
+
+Network->Connection->"arborized config"
+  src/core/network/connection_config
+    get_int("row field size", 0)
+    get_int("column field size", 0)
+    get_int("row stride", 1)
+    get_int("column stride", 1)
+    get_int("row spacing", 1)
+    get_int("column spacing", 1)
+    get_int("row offset", 0)
+    get_int("row offset", 0)
+    get_bool("wrap", false)
+    get_int("field size", 0)
+    get_int("stride", 0)
+    get_int("spacing", 0)
+    get_int("offset", 0)
+
+
+
+Network->Connection->"subset config"
+  src/core/network/connection_config
+    get_int("from row start", 0)
+    get_int("from row end", 0)
+    get_int("to row start", 0)
+    get_int("to row end", 0)
+    get_int("from column start", 0)
+    get_int("from column end", 0)
+    get_int("to column start", 0)
+    get_int("to column end", 0)
+
+
+
+Network->Connection->"weight config"
+  src/core/state/weight_matrix
+    get("type", "flat")
+    get_child("circular mask")
+    get_child_array("circular mask")
+    get_bool("diagonal", true)
+
+    type == flat
+      get_float("weight", 1.0)
+      get_float("fraction", 1.0)
+    type == random
+      get_float("max weight", conn->max_weight)
+      get_float("min weight", 0.0)
+      get_float("fraction", 1.0)
+    type == gaussian
+      get_float("mean", 1.0)
+      get_float("std dev", 0.3)
+      get_float("fraction", 1.0)
+    type == log normal
+      get_float("mean", 1.0)
+      get_float("std dev", 0.3)
+      get_float("fraction", 1.0)
+    type == power law
+      get_float("exponent", 1.5)
+      get_float("fraction", 1.0)
+      get_float("max weight", conn->max_weight)
+      get_float("min weight", 0.0)
+    type == specified
+      get("weight string", "")
+
+    get("callback")
+    get_int("id", 0)
+
+    get("distance callback")
+    get_int("id", 0)
+    get_float("from spacing", 1.0)
+    get_float("to spacing", 1.0)
+    get_float("x offset", 0.0)
+    get_float("y offset", 0.0)
+    get_float("fraction", 1.0)
+
+
+
+Network->Connection->"weight config"->"circular mask"
+  src/core/state/weight_matrix
+    get_float("row radius", 0)
+    get_float("column radius", 0)
+    get_float("row diameter", 0)
+    get_float("column diameter", 0)
+    get_float("radius", 0)
+    get_float("diameter", 0)
+    get_bool("invert", false)
+    get_float("value", 0.0)

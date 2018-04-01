@@ -394,11 +394,12 @@ void WeightMatrix::sparsify() {
     int sparse_num_weights = max_nonzero * connection->to_layer->size;
 
     // Ensure nonzero size
-    if (sparse_num_weights == 0)
-        LOG_ERROR(
-            "Error in weight config for " + connection->str() + ":\n" +
+    if (sparse_num_weights == 0) {
+        LOG_WARNING(
+            "Warning in weight config for " + connection->str() + ":\n" +
             "    Attempted to sparsify empty matrix!");
-    else if (sparse_num_weights == num_weights) return;
+        sparse_num_weights = connection->to_layer->size;
+    } else if (sparse_num_weights == num_weights) return;
 
     // Create index matrices (padded with -1) and nonzero counts
     this->from_row_indices = Pointer<int>(sparse_num_weights, -1);

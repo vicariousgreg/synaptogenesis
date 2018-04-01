@@ -10,7 +10,6 @@
 					"rows": "256",
 					"columns": "256",
 					"plastic": "false",
-					"global": "false",
 					"survival_min": "2",
 					"survival_max": "3",
 					"birth_min": "3",

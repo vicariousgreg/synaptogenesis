@@ -1,16 +1,93 @@
 {
 	"connections": [
 		{
+			"to layer": "photoreceptor_inverse",
+			"from layer": "photoreceptor",
+			"plastic": "false",
+			"opcode": "sub",
+			"type": "one to one",
+			"weight config": {
+				"type": "flat",
+				"weight": "1.0" 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "retina_on",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "photoreceptor",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "true",
+				"stride": "1",
+				"field size": "5" 
+			},
+			"weight config": {
+				"type": "flat",
+				"weight": "-1.0",
+				"circular mask": [
+					{
+						"diameter": "1",
+						"invert": "true",
+						"value": "24" 
+					} 
+				] 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "retina_off",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "photoreceptor_inverse",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "true",
+				"stride": "1",
+				"field size": "5" 
+			},
+			"weight config": {
+				"type": "flat",
+				"weight": "-1.0",
+				"circular mask": [
+					{
+						"diameter": "1",
+						"invert": "true",
+						"value": "24" 
+					} 
+				] 
+			} 
+		},
+		{
 			"convolutional": "true",
 			"to layer": "sc_exc",
 			"opcode": "add",
 			"type": "convergent",
-			"from layer": "vision",
+			"from layer": "retina_on",
 			"plastic": "false",
 			"arborized config": {
 				"wrap": "false",
 				"stride": "1",
-				"field size": "31" 
+				"field size": "11" 
+			},
+			"weight config": {
+				"type": "flat",
+				"weight": "0.01",
+				"distance callback": "gaussian" 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"to layer": "sc_exc",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "retina_off",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "1",
+				"field size": "11" 
 			},
 			"weight config": {
 				"type": "flat",
@@ -35,7 +112,7 @@
 			},
 			"weight config": {
 				"type": "flat",
-				"weight": "0.1" 
+				"weight": "1.0" 
 			} 
 		},
 		{
@@ -51,6 +128,7 @@
 		},
 		{
 			"convolutional": "true",
+			"delay": "5",
 			"to layer": "sc_exc",
 			"opcode": "add",
 			"type": "convergent",
@@ -59,89 +137,13 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "1",
-				"field size": "14" 
+				"field size": "17" 
 			},
 			"weight config": {
 				"distance callback": "gaussian",
 				"diagonal": "false",
-				"fraction": "1",
+				"fraction": "0.1",
 				"std dev": "0.01",
-				"type": "gaussian",
-				"mean": "0.05",
-				"circular mask": [
-					{
-					} 
-				] 
-			} 
-		},
-		{
-			"convolutional": "true",
-			"to layer": "sc_inh",
-			"opcode": "add",
-			"type": "convergent",
-			"from layer": "sc_exc",
-			"plastic": "false",
-			"arborized config": {
-				"wrap": "false",
-				"stride": "2",
-				"field size": "50" 
-			},
-			"weight config": {
-				"distance callback": "gaussian",
-				"to spacing": "2",
-				"fraction": "1",
-				"std dev": "0.005",
-				"type": "gaussian",
-				"mean": "0.025",
-				"circular mask": [
-					{
-						"diameter": "14",
-						"invert": "true" 
-					},
-					{
-					} 
-				] 
-			} 
-		},
-		{
-			"convolutional": "true",
-			"to layer": "sc_exc",
-			"opcode": "sub",
-			"type": "divergent",
-			"from layer": "sc_inh",
-			"plastic": "false",
-			"arborized config": {
-				"wrap": "false",
-				"stride": "2",
-				"field size": "40.0" 
-			},
-			"weight config": {
-				"distance callback": "gaussian",
-				"from spacing": "2",
-				"circular mask": "None",
-				"fraction": "1",
-				"std dev": "0.005",
-				"type": "gaussian",
-				"mean": "0.025" 
-			} 
-		},
-		{
-			"convolutional": "true",
-			"to layer": "sc_out_exc",
-			"opcode": "add",
-			"type": "convergent",
-			"from layer": "sc_out_exc",
-			"plastic": "false",
-			"arborized config": {
-				"wrap": "false",
-				"stride": "1",
-				"field size": "3" 
-			},
-			"weight config": {
-				"distance callback": "gaussian",
-				"diagonal": "false",
-				"fraction": "1",
-				"std dev": "0.02",
 				"type": "gaussian",
 				"mean": "0.1",
 				"circular mask": [
@@ -152,6 +154,85 @@
 		},
 		{
 			"convolutional": "true",
+			"delay": "5",
+			"to layer": "sc_inh",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "sc_exc",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "2",
+				"field size": "35" 
+			},
+			"weight config": {
+				"distance callback": "gaussian",
+				"to spacing": "2",
+				"fraction": "0.25",
+				"std dev": "0.005",
+				"type": "gaussian",
+				"mean": "0.05",
+				"circular mask": [
+					{
+						"diameter": "11",
+						"invert": "true" 
+					},
+					{
+					} 
+				] 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"delay": "5",
+			"to layer": "sc_exc",
+			"opcode": "sub",
+			"type": "divergent",
+			"from layer": "sc_inh",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "2",
+				"field size": "35" 
+			},
+			"weight config": {
+				"distance callback": "gaussian",
+				"from spacing": "2",
+				"fraction": "0.5",
+				"std dev": "0.005",
+				"type": "gaussian",
+				"mean": "0.05" 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"delay": "0",
+			"to layer": "sc_out_exc",
+			"opcode": "add",
+			"type": "convergent",
+			"from layer": "sc_out_exc",
+			"plastic": "false",
+			"arborized config": {
+				"wrap": "false",
+				"stride": "1",
+				"field size": "7" 
+			},
+			"weight config": {
+				"distance callback": "gaussian",
+				"diagonal": "false",
+				"fraction": "1",
+				"std dev": "0.02",
+				"type": "gaussian",
+				"mean": "0.05",
+				"circular mask": [
+					{
+					} 
+				] 
+			} 
+		},
+		{
+			"convolutional": "true",
+			"delay": "0",
 			"to layer": "sc_out_inh",
 			"opcode": "add",
 			"type": "convergent",
@@ -160,7 +241,7 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "2",
-				"field size": "10" 
+				"field size": "35" 
 			},
 			"weight config": {
 				"distance callback": "gaussian",
@@ -171,7 +252,7 @@
 				"mean": "0.05",
 				"circular mask": [
 					{
-						"diameter": "3",
+						"diameter": "1",
 						"invert": "true" 
 					},
 					{
@@ -181,6 +262,7 @@
 		},
 		{
 			"convolutional": "true",
+			"delay": "0",
 			"to layer": "sc_out_exc",
 			"opcode": "sub",
 			"type": "divergent",
@@ -189,12 +271,11 @@
 			"arborized config": {
 				"wrap": "false",
 				"stride": "2",
-				"field size": "8.0" 
+				"field size": "35" 
 			},
 			"weight config": {
 				"distance callback": "gaussian",
 				"from spacing": "2",
-				"circular mask": "None",
 				"fraction": "1",
 				"std dev": "0.01",
 				"type": "gaussian",
@@ -208,34 +289,60 @@
 			"name": "oculomotor",
 			"layers": [
 				{
-					"columns": "200",
-					"rows": "100",
-					"name": "vision",
-					"neural model": "oscillator" 
+					"columns": "480",
+					"rows": "340",
+					"ramp": "true",
+					"name": "photoreceptor",
+					"neural model": "relay" 
 				},
 				{
-					"tau": "0.05",
-					"rows": "100",
+					"rows": "340",
+					"name": "photoreceptor_inverse",
+					"neural model": "relay",
+					"ramp": "true",
+					"columns": "480",
+					"init config": {
+						"type": "flat",
+						"value": "1.0" 
+					} 
+				},
+				{
+					"columns": "480",
+					"rows": "340",
+					"ramp": "true",
+					"name": "retina_on",
+					"neural model": "relay" 
+				},
+				{
+					"columns": "480",
+					"rows": "340",
+					"ramp": "true",
+					"name": "retina_off",
+					"neural model": "relay" 
+				},
+				{
+					"tau": "0.1",
+					"rows": "340",
 					"name": "sc_exc",
 					"neural model": "oscillator",
-					"decay": "0.02",
-					"columns": "200",
+					"decay": "0.05",
+					"columns": "480",
 					"init config": {
-						"rate": "1",
+						"rate": "0",
 						"random": "false",
 						"type": "poisson",
-						"value": "10.0" 
+						"value": "5.0" 
 					} 
 				},
 				{
 					"tau": "0.1",
-					"rows": "50",
+					"rows": "170",
 					"name": "sc_inh",
 					"neural model": "oscillator",
 					"decay": "0.05",
-					"columns": "100",
+					"columns": "240",
 					"init config": {
-						"rate": "1",
+						"rate": "0",
 						"random": "false",
 						"type": "poisson",
 						"value": "5.0" 
@@ -243,11 +350,11 @@
 				},
 				{
 					"tau": "0.1",
-					"rows": "20",
+					"rows": "68",
 					"name": "sc_out_exc",
 					"neural model": "oscillator",
-					"decay": "0.02",
-					"columns": "40",
+					"decay": "0.1",
+					"columns": "96",
 					"init config": {
 						"rate": "0",
 						"random": "false",
@@ -256,27 +363,27 @@
 					} 
 				},
 				{
-					"tau": "0.1",
-					"rows": "10",
+					"tau": "0.2",
+					"rows": "34",
 					"name": "sc_out_inh",
 					"neural model": "oscillator",
-					"decay": "0.02",
-					"columns": "20",
+					"decay": "0.01",
+					"columns": "48",
 					"init config": {
 						"rate": "0",
 						"random": "false",
 						"type": "poisson",
-						"value": "5.0" 
+						"value": "2.5" 
 					} 
 				},
 				{
-					"tau": "0.5",
+					"tau": "0.05",
 					"tonic": "0.0",
-					"rows": "20",
+					"rows": "68",
 					"name": "gating",
 					"neural model": "oscillator",
-					"decay": "0.5",
-					"columns": "40" 
+					"decay": "0.05",
+					"columns": "96" 
 				} 
 			] 
 		} 

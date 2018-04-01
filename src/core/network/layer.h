@@ -54,7 +54,6 @@ class Layer {
         Structure* const structure;
         const int rows, columns, size;
         const bool plastic;
-        const bool global;
 
     protected:
         friend class Structure;

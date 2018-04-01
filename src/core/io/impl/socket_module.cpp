@@ -10,30 +10,14 @@ SocketModule::SocketModule(LayerList layers, ModuleConfig *config)
           stream_expected(false),
           stream_output(false) {
     enforce_equal_layer_sizes("socket");
+    enforce_specified_io_type("socket");
+    enforce_unique_io_type("socket");
+    enforce_single_io_type("socket");
 
-    for (auto layer : layers) {
-        auto layer_config = config->get_layer(layer);
-
-        if (layer_config->get_bool("input", false)) {
-            set_io_type(layer, get_io_type(layer) | INPUT);
-            this->stream_input = true;
-        }
-
-        if (layer_config->get_bool("expected", false)) {
-            set_io_type(layer, get_io_type(layer) | EXPECTED);
-            this->stream_expected = true;
-        }
-
-        if (layer_config->get_bool("output", false)) {
-            set_io_type(layer, get_io_type(layer) | OUTPUT);
-            this->stream_output = true;
-        }
-
-        // Log error if unspecified type
-        if (get_io_type(layer) == 0)
-            LOG_ERROR("Unspecified type for layer "
-                + layer->str() + " in SocketModule!");
-    }
+    auto io_type = get_io_type(layers[0]);
+    this->stream_input = io_type == INPUT;
+    this->stream_expected = io_type == EXPECTED;
+    this->stream_output = io_type == OUTPUT;
 
     // Ensure one IO type
     if (stream_input + stream_expected + stream_output > 1)
@@ -140,6 +124,8 @@ void SocketModule::feed_expected_impl(Buffer *buffer) {
 }
 
 void SocketModule::report_output_impl(Buffer *buffer) {
+    if (not stream_output) return;
+
     for (auto layer : layers)
         if (get_io_type(layer) & OUTPUT)
             send_mesg(client, buffer->get_output(layer).get(), buffer_bytes);

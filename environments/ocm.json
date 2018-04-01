@@ -1,27 +1,27 @@
 {
 	"modules": [
 		{
-			"normalize": "true",
-			"rate": "1000",
-			"peaks": "100",
-			"std dev": "2",
-			"border": "10",
-			"random": "true",
-			"type": "gaussian_random_input",
-			"value": "0.1",
+			"saccade rate": "0.5",
+			"type": "saccade",
 			"layers": [
 				{
-					"layer": "vision",
+					"input": "true",
+					"layer": "photoreceptor",
+					"structure": "oculomotor" 
+				},
+				{
+					"output": "true",
+					"layer": "sc_out_exc",
 					"structure": "oculomotor" 
 				} 
 			] 
 		},
 		{
 			"normalize": "true",
-			"rate": "1000",
+			"rate": "100",
 			"peaks": "1",
-			"std dev": "2",
-			"border": "2",
+			"std dev": "11",
+			"border": "13",
 			"random": "false",
 			"type": "gaussian_random_input",
 			"value": "1.0",
@@ -36,7 +36,11 @@
 			"type": "visualizer",
 			"layers": [
 				{
-					"layer": "vision",
+					"layer": "retina_on",
+					"structure": "oculomotor" 
+				},
+				{
+					"layer": "retina_off",
 					"structure": "oculomotor" 
 				},
 				{
@@ -62,15 +66,11 @@
 			] 
 		},
 		{
-			"stats": "true",
+			"stats": "false",
 			"window": "1000",
 			"type": "heatmap",
 			"linear": "true",
 			"layers": [
-				{
-					"layer": "vision",
-					"structure": "oculomotor" 
-				},
 				{
 					"layer": "sc_exc",
 					"structure": "oculomotor" 
