@@ -44,6 +44,7 @@ class ResourceManager {
         void delete_streams();
         void delete_events();
 
+        /* Getters */
         unsigned int get_num_cores() { return num_cores; }
         unsigned int get_num_devices() { return devices.size(); }
         const std::set<DeviceID> get_devices() { return device_ids; }
@@ -54,16 +55,25 @@ class ResourceManager {
         std::vector<DeviceID> get_all_ids();
         bool is_host(DeviceID device_id) { return device_id == get_host_id(); }
 
+        /* Memory allocation */
         void* allocate_host(size_t count, size_t size);
         void* allocate_host_pinned(size_t count, size_t size);
         void* allocate_device(size_t count, size_t size,
             void* source_data, DeviceID device_id=0);
+
+        /* Memory usage tracking */
         void drop_pointer(void* ptr, DeviceID device_id);
         std::vector<PropertyConfig> get_memory_usage(bool verbose=false);
 
+        /* Smart pointer count tracking */
+        void increment_pointer_count(void* ptr, DeviceID device_id);
+        void decrement_pointer_count(void* ptr, DeviceID device_id);
+
+        /* Transfers a set of pointers to a new memory block */
         BasePointer* transfer(DeviceID device_id,
             std::vector<BasePointer*> ptrs);
 
+        /* Stream / event functions */
         Stream *get_default_stream(DeviceID id);
         Stream *get_inter_device_stream(DeviceID id);
         Stream *create_stream(DeviceID id);
@@ -103,6 +113,7 @@ class ResourceManager {
         std::vector<Device*> devices;
         std::set<DeviceID> device_ids;
         std::map<DeviceID, std::map<void*, size_t>> managed_pointers;
+        std::map<DeviceID, std::map<void*, int>> pointer_counts;
         std::map<DeviceID, size_t> memory_usage;
 };
 

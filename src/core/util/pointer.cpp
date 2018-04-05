@@ -60,7 +60,19 @@ Pointer<T>::Pointer(BasePointer* base_ptr)
           false) { }
 
 template<typename T>
-Pointer<T>::Pointer(const Pointer<T>& other, bool claim_ownership)
+Pointer<T>::Pointer(const Pointer<T>& other)
+    : BasePointer(
+          std::type_index(typeid(T)),
+          other.ptr,
+          other.size,
+          sizeof(T),
+          other.device_id,
+          false) {
+    this->pinned = other.pinned;
+}
+
+template<typename T>
+Pointer<T>::Pointer(Pointer<T>& other, bool claim_ownership)
     : BasePointer(
           std::type_index(typeid(T)),
           other.ptr,
@@ -69,6 +81,13 @@ Pointer<T>::Pointer(const Pointer<T>& other, bool claim_ownership)
           other.device_id,
           claim_ownership) {
     this->pinned = other.pinned;
+    if (claim_ownership) {
+        if (not other.owner)
+            LOG_ERROR("Attempted to pass ownership from non-owner pointer!");
+        other.owner = false;
+        other.ptr = nullptr;
+        other.size = 0;
+    }
 }
 
 template<typename T>

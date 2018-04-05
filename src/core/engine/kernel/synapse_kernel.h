@@ -96,9 +96,9 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    int to_row = blockIdx.x; \
-    int to_column = threadIdx.x; \
-    int to_index = to_row * blockDim.x + to_column; \
+    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    int to_column = to_index % to_columns; \
+    int to_row = to_index / to_columns; \
 \
     if (to_index < to_size) { \
         NEURON_PRE; \
@@ -222,9 +222,9 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
  \
-    int from_row = blockIdx.x; \
-    int from_column = threadIdx.x; \
-    int to_index = from_row * blockDim.x + from_column; \
+    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    int from_column = to_index % to_columns; \
+    int from_row = to_index / to_columns; \
 \
     if (to_index < from_size) { \
         int to_row = from_row; \
@@ -277,9 +277,9 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     int * const from_column_indices = synapse_data.matrix->from_column_indices.get(); \
     EXTRACTIONS; \
  \
-    int to_row = blockIdx.x; \
-    int to_column = threadIdx.x; \
-    int to_index = to_row * blockDim.x + to_column; \
+    int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
+    int to_column = to_index % to_columns; \
+    int to_row = to_index / to_columns; \
 \
     if (to_index < to_size) { \
         NEURON_PRE; \
@@ -766,8 +766,8 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 \
                     NEURON_OP; \
                 } \
-                WEIGHT_POST; \
             } \
+            WEIGHT_POST; \
         } \
     } \
 }
@@ -831,8 +831,8 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 NEURON_OP; \
             } \
-            WEIGHT_POST; \
         } \
+        WEIGHT_POST; \
     } \
 }
 

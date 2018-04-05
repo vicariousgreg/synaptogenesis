@@ -158,6 +158,13 @@ void Engine::rebuild(PropertyConfig args) {
 }
 
 void Engine::clear() {
+    // Clear clusters
+    for (auto cluster : clusters) delete cluster;
+    clusters.clear();
+    for (auto& inst : inter_device_transfers) delete inst;
+    inter_device_transfers.clear();
+
+    // Clear buffer
     if (buffer != nullptr) {
         delete buffer;
         buffer = nullptr;
@@ -167,12 +174,6 @@ void Engine::clear() {
     for (auto module : modules) delete module;
     modules.clear();
     io_types.clear();
-
-    // Clear clusters
-    for (auto cluster : clusters) delete cluster;
-    clusters.clear();
-    for (auto& inst : inter_device_transfers) delete inst;
-    inter_device_transfers.clear();
 
     // Clear resources
     ResourceManager::get_instance()->delete_streams();

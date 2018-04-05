@@ -166,8 +166,12 @@ void* ResourceManager::allocate_host(size_t count, size_t size) {
     if (ptr == nullptr)
         LOG_ERROR(
             "Failed to allocate space on host for neuron state!");
+
+    // Update bookkeeping
     managed_pointers[get_host_id()][ptr] = count * size;
+    pointer_counts[get_host_id()][ptr] = 0;
     this->memory_usage[get_host_id()] += count * size;
+
     return ptr;
 }
 
@@ -181,8 +185,12 @@ void* ResourceManager::allocate_host_pinned(size_t count, size_t size) {
     if (ptr == nullptr)
         LOG_ERROR(
             "Failed to allocate pinned space on host for neuron state!");
+
+    // Update bookkeeping
     managed_pointers[get_host_id()][ptr] = count * size;
+    pointer_counts[get_host_id()][ptr] = 0;
     this->memory_usage[get_host_id()] += count * size;
+
     return ptr;
 #endif
 }
@@ -195,8 +203,12 @@ void* ResourceManager::allocate_device(size_t count, size_t size,
         LOG_ERROR(
             "Attempted to allocate memory on non-existent device!");
     void* ptr = cuda_allocate_device(device_id, count, size, source_data);
+
+    // Update bookkeeping
     managed_pointers[device_id][ptr] = count * size;
+    pointer_counts[device_id][ptr] = 0;
     this->memory_usage[device_id] += count * size;
+
     return ptr;
 }
 
@@ -206,14 +218,29 @@ void ResourceManager::drop_pointer(void* ptr, DeviceID device_id) {
             "Attempted to drop pointer from non-existent device!");
     int old_size = managed_pointers[device_id].size();
     size_t bytes = managed_pointers[device_id].at(ptr);
+
+    // Update and check bookkeeping
     managed_pointers[device_id].erase(ptr);
     if (managed_pointers[device_id].size() != (old_size - 1))
         LOG_ERROR("Attempted to drop unmanaged pointer from ResourceManager!");
 
+    // Check pointer counts
+    if (pointer_counts[device_id][ptr] > 0)
+        LOG_WARNING("Dropped pointer with existing Pointer objects!");
+
+    // Check memory usage
     if (bytes > this->memory_usage[device_id])
         LOG_ERROR(
             "Error in ResourceManager: negative memory usage encountered!");
     this->memory_usage[device_id] -= bytes;
+}
+
+void ResourceManager::increment_pointer_count(void* ptr, DeviceID device_id) {
+    pointer_counts[device_id][ptr] += 1;
+}
+
+void ResourceManager::decrement_pointer_count(void* ptr, DeviceID device_id) {
+    pointer_counts[device_id][ptr] -= 1;
 }
 
 std::vector<PropertyConfig> ResourceManager::get_memory_usage(bool verbose) {

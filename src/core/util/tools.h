@@ -30,6 +30,7 @@ using std::chrono::duration_cast;
 
 static std::default_random_engine generator(std::random_device{}());
 
+
 /* Static float function */
 inline float fSet(float* arr, int size, float val, float fraction=1.0) {
     if (fraction == 1.0) {

@@ -32,13 +32,16 @@ class PointerKey {
 
 class BasePointer {
     public:
-        HOST DEVICE void* get(size_t offset=0) const { return ptr + (offset * unit_size); }
+        HOST DEVICE void* get(size_t offset=0) const
+            { return ptr + (offset * unit_size); }
         HOST DEVICE size_t get_size() const { return size; }
         HOST DEVICE size_t get_unit_size() const { return unit_size; }
         HOST DEVICE size_t get_bytes() const { return size * unit_size; }
         HOST DEVICE DeviceID get_device_id() const { return device_id; }
         HOST DEVICE bool get_local() const { return local; }
+        HOST DEVICE bool get_owner() const { return owner; }
         std::type_index get_type() const { return type; }
+        bool is_null() const { return ptr == nullptr; }
 
         // Frees the encapsulated pointer if this is the owner
         void free();
@@ -59,6 +62,8 @@ class BasePointer {
         // As much data as possible is copied over to the new location
         // If this pointer is not the owner, the old data will not be freed
         void resize(size_t new_size);
+
+        virtual ~BasePointer();
 
     protected:
         BasePointer(std::type_index type, void* ptr,
@@ -97,7 +102,8 @@ class Pointer : public BasePointer {
         Pointer(T* ptr, size_t size, DeviceID device_id,
             bool claim_ownership=false);
         Pointer(BasePointer* base_ptr);
-        Pointer(const Pointer<T>& other, bool claim_ownership=false);
+        Pointer(const Pointer<T>& other);
+        Pointer(Pointer<T>& other, bool claim_ownership);
 
 
         /*****************************/

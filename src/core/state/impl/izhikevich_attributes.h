@@ -48,7 +48,6 @@ class IzhikevichWeightMatrix : public WeightMatrix {
         Pointer<float> long_traces;
         Pointer<float> presyn_traces;
         Pointer<float> stps;
-        Pointer<int> delays;
         Pointer<int> time_since_spike;
 
         // Baseline conductances

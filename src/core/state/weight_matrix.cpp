@@ -123,10 +123,15 @@ WeightMatrix::WeightMatrix(Connection* conn)
 WeightMatrix::~WeightMatrix() {
     this->weights.free();
     this->weights_transposed.free();
+    this->second_order_weights.free();
     this->nonzero_counts.free();
     this->from_row_indices.free();
     this->from_column_indices.free();
-    this->second_order_weights.free();
+    this->to_row_indices.free();
+    this->to_column_indices.free();
+    this->used.free();
+    this->distances.free();
+    this->delays.free();
     for (auto pair : variables) pair.second->free();
 
 #ifdef __CUDACC__
@@ -143,21 +148,32 @@ void WeightMatrix::transpose() {
     DeviceID host_id = ResourceManager::get_instance()->get_host_id();
 
     // Only transpose if necessary
-    // If num_weights == to_layer size, transposition is a no-op.
-    if (num_weights != connection->to_layer->size) {
+    // If convolutional or num_weights == to_layer size, transposition is a no-op.
+    if (not connection->convolutional
+        and num_weights != connection->to_layer->size) {
+
+        // Create set of pointers to transpose
+        std::vector<BasePointer*> pointers = {
+            &weights,
+            &weights_transposed,
+            &second_order_weights,
+            &from_row_indices,
+            &from_column_indices,
+            &to_row_indices,
+            &to_column_indices,
+            &used,
+            &distances,
+            &delays,
+        };
+        for (auto pair : variables)
+            pointers.push_back(pair.second);
+
         // Transpose on the current device
         if (device_id == host_id) {
-            transpose_matrix_in_place<float>(
-                this->weights.get(), get_rows(), get_columns());
-            if (this->sparse) {
-                transpose_matrix_in_place<int>(
-                    this->from_row_indices.get(), get_rows(), get_columns());
-                transpose_matrix_in_place<int>(
-                    this->from_column_indices.get(), get_rows(), get_columns());
-            }
-            for (auto pair : variables)
-                transpose_matrix_in_place<float>(
-                    (float*)pair.second->get(), get_rows(), get_columns());
+            for (auto ptr : pointers)
+                if (ptr->get_size() > 0 and ptr->get_device_id() == device_id)
+                    transpose_matrix_in_place<float>(
+                        (float*)ptr->get(), get_rows(), get_columns());
         } else {
 #ifdef __CUDACC__
             // Create temporary matrix
@@ -170,39 +186,23 @@ void WeightMatrix::transpose() {
             auto stream =
                 ResourceManager::get_instance()->get_default_stream(device_id);
 
-            this->weights.copy_to(temp, stream);
-            cudaSetDevice(device_id);
-            transpose_matrix_parallel<float>
-                <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-                (temp, this->weights, get_rows(), get_columns());
+            // Copy to temp, transpose back into original memory (not in place)
+            for (auto ptr : pointers) {
+                if (ptr->get_size() > 0 and ptr->get_device_id() == device_id) {
+                    Pointer<float> p = Pointer<float>(
+                        (float*)ptr->get(), num_weights, device_id, false);
+                    p.copy_to(&temp, stream);
+                    cudaSetDevice(device_id);
+                    transpose_matrix_parallel<float>
+                        <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
+                        (temp, p, get_rows(), get_columns());
 
-            if (this->sparse) {
-                this->from_row_indices.cast<float>().copy_to(temp, stream);
-                cudaSetDevice(device_id);
-                transpose_matrix_parallel<float>
-                    <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-                    (temp, this->from_row_indices.cast<float>(),
-                        get_rows(), get_columns());
-
-                this->from_column_indices.cast<float>().copy_to(temp, stream);
-                cudaSetDevice(device_id);
-                transpose_matrix_parallel<float>
-                    <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-                    (temp, this->from_column_indices.cast<float>(),
-                        get_rows(), get_columns());
+                }
             }
 
-            for (auto pair : variables) {
-                auto p = Pointer<float>(pair.second);
-                p.copy_to(temp, stream);
-                cudaSetDevice(device_id);
-                transpose_matrix_parallel<float>
-                    <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-                    (temp, p, get_rows(), get_columns());
-            }
-            temp.free();
             device_synchronize();
             device_check_error("Failed to transpose weight matrix!");
+            temp.free();
 #endif
         }
     }
@@ -294,7 +294,8 @@ void WeightMatrix::transfer(DeviceID new_device) {
             ResourceManager::get_instance()->allocate_device(
                 1, get_object_size(), this, new_device);
     }
-    device_check_error("Failed to transfer attributes to device!");
+    device_synchronize();
+    device_check_error("Failed to transfer WeightMatrix to device!");
 #endif
 }
 
@@ -310,39 +311,37 @@ BasePointer* WeightMatrix::get_layer(std::string key) {
 }
 
 std::vector<BasePointer*> WeightMatrix::get_pointers() {
-    std::vector<BasePointer*> pointers = { &weights };
-    if (sparse) {
-        pointers.push_back(&nonzero_counts);
-        pointers.push_back(&from_row_indices);
-        pointers.push_back(&from_column_indices);
-    }
-    if (transpose_flag)
-        pointers.push_back(&weights_transposed);
-    if (connection->second_order_host)
-        pointers.push_back(&second_order_weights);
-    for (auto pair : variables) pointers.push_back(pair.second);
+    std::vector<BasePointer*> pointers;
+    for (auto pair : get_pointer_map())
+        pointers.push_back(pair.second);
     return pointers;
 }
 
 std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
     std::map<PointerKey, BasePointer*> pointers;
-    pointers[
-        PointerKey(connection->id, "weights", weights.get_bytes())] = &weights;
 
-    if (sparse) {
-        pointers[PointerKey(connection->id, "nonzero counts",
-            nonzero_counts.get_bytes())] = &nonzero_counts;
-        pointers[PointerKey(connection->id, "from row indices",
-            from_row_indices.get_bytes())] = &from_row_indices;
-        pointers[PointerKey(connection->id, "from column indices",
-            from_column_indices.get_bytes())] = &from_column_indices;
-    }
-    if (transpose_flag)
-        pointers[PointerKey(connection->id, "weights transposed",
-            weights_transposed.get_bytes())] = &weights_transposed;
-    if (connection->second_order_host)
-        pointers[PointerKey(connection->id, "second order weights",
-            second_order_weights.get_bytes())] = &second_order_weights;
+    pointers[PointerKey(connection->id, "weights",
+        weights.get_bytes())] = &weights;
+    pointers[PointerKey(connection->id, "weights transposed",
+        weights_transposed.get_bytes())] = &weights_transposed;
+    pointers[PointerKey(connection->id, "second order weights",
+        second_order_weights.get_bytes())] = &second_order_weights;
+    pointers[PointerKey(connection->id, "nonzero counts",
+        nonzero_counts.get_bytes())] = &nonzero_counts;
+    pointers[PointerKey(connection->id, "from row indices",
+        from_row_indices.get_bytes())] = &from_row_indices;
+    pointers[PointerKey(connection->id, "from column indices",
+        from_column_indices.get_bytes())] = &from_column_indices;
+    pointers[PointerKey(connection->id, "to row indices",
+        to_row_indices.get_bytes())] = &to_row_indices;
+    pointers[PointerKey(connection->id, "to column indices",
+        to_column_indices.get_bytes())] = &to_column_indices;
+    pointers[PointerKey(connection->id, "used",
+        used.get_bytes())] = &used;
+    pointers[PointerKey(connection->id, "distances",
+        distances.get_bytes())] = &distances;
+    pointers[PointerKey(connection->id, "delays",
+        delays.get_bytes())] = &delays;
 
     for (auto pair : variables)
         pointers[PointerKey(
@@ -370,16 +369,7 @@ void WeightMatrix::sparsify() {
         "\n   Cannot sparsify convolutional weight matrix!");
 
     // Get the full indices
-    auto full_from_row_indices = Pointer<int>(num_weights, -1);
-    auto full_from_column_indices = Pointer<int>(num_weights, -1);
-    auto full_to_row_indices = Pointer<int>(num_weights, -1);
-    auto full_to_column_indices = Pointer<int>(num_weights, -1);
-    auto used = Pointer<int>(num_weights, 0);
-    get_indices(this, used,
-        full_from_row_indices, full_from_column_indices,
-        full_to_row_indices, full_to_column_indices);
-    full_to_row_indices.free();
-    full_to_column_indices.free();
+    this->get_indices();
 
     // Compute nonzero weight counts and sparse matrix size
     int max_nonzero = 0;
@@ -402,8 +392,11 @@ void WeightMatrix::sparsify() {
     } else if (sparse_num_weights == num_weights) return;
 
     // Create index matrices (padded with -1) and nonzero counts
-    this->from_row_indices = Pointer<int>(sparse_num_weights, -1);
-    this->from_column_indices = Pointer<int>(sparse_num_weights, -1);
+    auto compact_from_row_indices = Pointer<int>(sparse_num_weights, -1);
+    auto compact_from_column_indices = Pointer<int>(sparse_num_weights, -1);
+    auto compact_to_row_indices = Pointer<int>(sparse_num_weights, -1);
+    auto compact_to_column_indices = Pointer<int>(sparse_num_weights, -1);
+    auto compact_used = Pointer<int>(sparse_num_weights, -1);
     this->nonzero_counts = Pointer<int>(connection->to_layer->size, 0);
 
     // Create new weight matrix
@@ -422,10 +415,16 @@ void WeightMatrix::sparsify() {
                 int new_index = row*max_nonzero + curr_col++;
 
                 new_weights[new_index] = weights[old_index];
-                from_row_indices[new_index]
-                    = full_from_row_indices[old_index];
-                from_column_indices[new_index]
-                    = full_from_column_indices[old_index];
+                compact_from_row_indices[new_index]
+                    = from_row_indices[old_index];
+                compact_from_column_indices[new_index]
+                    = from_column_indices[old_index];
+                compact_to_row_indices[new_index]
+                    = to_row_indices[old_index];
+                compact_to_column_indices[new_index]
+                    = to_column_indices[old_index];
+                compact_used[new_index]
+                    = used[old_index];
             }
         }
         nonzero_counts[row] = curr_col;
@@ -444,10 +443,17 @@ void WeightMatrix::sparsify() {
         total_nonzero, num_weights,
         float(total_nonzero) / num_weights);
 
-    // Free intermediate data
-    used.free();
-    full_from_row_indices.free();
-    full_from_column_indices.free();
+    // Free intermediate data and move pointers
+    this->from_row_indices.free();
+    this->from_column_indices.free();
+    this->to_row_indices.free();
+    this->to_column_indices.free();
+    this->used.free();
+    this->from_row_indices = Pointer<int>(compact_from_row_indices, true);
+    this->from_column_indices = Pointer<int>(compact_from_column_indices, true);
+    this->to_row_indices = Pointer<int>(compact_to_row_indices, true);
+    this->to_column_indices = Pointer<int>(compact_to_column_indices, true);
+    this->used = Pointer<int>(compact_used, true);
 
     // Free old weights and move pointer
     this->weights.free();
@@ -705,13 +711,9 @@ static void distance_weight_callback_config(WeightMatrix *matrix,
     float y_offset = config.get_float("y offset", 0.0);
 
     int num_weights = conn->get_num_weights();
-    Pointer<float> distances = Pointer<float>(num_weights, -1.0);
-    get_distances(matrix, distances,
-        from_spacing, to_spacing,
-        x_offset, y_offset);
+    matrix->get_distances(from_spacing, to_spacing, x_offset, y_offset);
 
-    callback(id, num_weights, target_matrix, distances.get());
-    distances.free();
+    callback(id, num_weights, target_matrix, matrix->distances.get());
 }
 
 static void clear_diagonal(WeightMatrix *matrix,
@@ -790,18 +792,18 @@ static void initialize_weights(WeightMatrix *matrix,
 /************************ PAIRWISE WEIGHT OPERATIONS **************************/
 /******************************************************************************/
 #define INDICES_EXTRACTIONS \
-    int** p_to_p = (int**)synapse_data.pointer_to_pointer.get(); \
-    int* from_row_is = (int*)p_to_p[0]; \
-    int* from_col_is = (int*)p_to_p[1]; \
-    int* to_row_indices = (int*)p_to_p[2]; \
-    int* to_col_indices = (int*)p_to_p[3]; \
-    int* used = (int*)p_to_p[4];
+    const WeightMatrix* mat = synapse_data.matrix; \
+    int* from_row_is = mat->from_row_indices.get(); \
+    int* from_column_is = mat->from_column_indices.get(); \
+    int* to_row_indices = mat->to_row_indices.get(); \
+    int* to_column_indices = mat->to_column_indices.get(); \
+    int* used = mat->used.get(); \
 
 #define SET_INDICES(PREFIX) \
     from_row_is[weight_index] = PREFIX##from_row; \
-    from_col_is[weight_index] = PREFIX##from_column; \
+    from_column_is[weight_index] = PREFIX##from_column; \
     to_row_indices[weight_index] = to_row; \
-    to_col_indices[weight_index] = to_column; \
+    to_column_indices[weight_index] = to_column; \
     used[weight_index] = 1;
 
 CALC_ALL(indices_kernel,
@@ -820,12 +822,23 @@ CALC_DIVERGENT(indices_kernel_wrap_divergent,
     ,
     SET_INDICES(pre_wrap_),
 )
+CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(indices_kernel_wrap_convergent_convolutional,
+    INDICES_EXTRACTIONS,
+    ,
+    SET_INDICES(pre_wrap_);,
+)
+CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(indices_kernel_wrap_divergent_convolutional,
+    INDICES_EXTRACTIONS,
+    ,
+    SET_INDICES(pre_wrap_),
+)
 
-void get_indices(WeightMatrix *matrix, Pointer<int> used,
-        Pointer<int> from_row_indices, Pointer<int> from_col_indices,
-        Pointer<int> to_row_indices, Pointer<int> to_col_indices) {
-    auto conn = matrix->connection;
+void WeightMatrix::get_indices() {
+    // If used is already set, indices have already been retrieved
+    if (not this->used.is_null()) return;
 
+    auto conn = this->connection;
+    int num_weights = conn->get_num_weights();
     LOG_DEBUG("Retrieving to/from indices for : " + conn->str());
 
     // Retrieve appropriate kernel
@@ -833,10 +846,14 @@ void get_indices(WeightMatrix *matrix, Pointer<int> used,
     try {
         switch(conn->get_type()) {
             case CONVERGENT:
-                indices_kernel = get_indices_kernel_wrap_convergent();
+                indices_kernel = (conn->convolutional)
+                    ? get_indices_kernel_wrap_convergent_convolutional()
+                    : get_indices_kernel_wrap_convergent();
                 break;
             case DIVERGENT:
-                indices_kernel = get_indices_kernel_wrap_divergent();
+                indices_kernel = (conn->convolutional)
+                    ? get_indices_kernel_wrap_divergent_convolutional()
+                    : get_indices_kernel_wrap_divergent();
                 break;
             default:
                 indices_kernel = indices_kernel_map.at(conn->get_type());
@@ -847,364 +864,311 @@ void get_indices(WeightMatrix *matrix, Pointer<int> used,
     }
 
     auto res_man = ResourceManager::get_instance();
-    Pointer<void*> p_to_p = Pointer<void*>(5);
+    this->from_row_indices = Pointer<int>(num_weights, -1);
+    this->from_column_indices = Pointer<int>(num_weights, -1);
+    this->to_row_indices = Pointer<int>(num_weights, -1);
+    this->to_column_indices = Pointer<int>(num_weights, -1);
+    this->used = Pointer<int>(num_weights, 0);
 
-    // Do on host if the connection is sparse (requires matrix data)
-    if (res_man->get_gpu_ids().size() == 0 or conn->get_type() == SPARSE) {
-        p_to_p[0] = from_row_indices.get();
-        p_to_p[1] = from_col_indices.get();
-        p_to_p[2] = to_row_indices.get();
-        p_to_p[3] = to_col_indices.get();
-        p_to_p[4] = used.get();
-
+    if (res_man->get_gpu_ids().size() == 0) {
         LOG_DEBUG("  Running serial kernel...");
-        indices_kernel.run_serial(SynapseData(matrix, conn, p_to_p));
+        indices_kernel.run_serial(SynapseData(this, conn));
     } else {
 #ifdef __CUDACC__
-        int num_weights = conn->get_num_weights();
         DeviceID device_id = *res_man->get_devices().begin();
         DeviceID host_id = res_man->get_host_id();
         Stream *stream = res_man->get_default_stream(device_id);
 
-        LOG_DEBUG("  Allocating device memory...");
+        bool transferred = false;
 
-        std::vector<Pointer<int>> host_pointers =
-            { from_row_indices, from_col_indices,
-              to_row_indices, to_col_indices, used };
-        int num_pointers = host_pointers.size();
+        // Transfer to device if necessary
+        if (this->get_device_id() == host_id) {
+            LOG_DEBUG("  Tranferring WeightMatrix to host...");
 
-        // Set up pointers
-        Pointer<int> device_pointers[num_pointers];
-        for (int i = 0 ; i < num_pointers ; ++i) {
-            device_pointers[i] =
-                Pointer<int>::device_pointer(device_id, num_weights);
-            p_to_p[i] = device_pointers[i].get_unsafe();
+            std::vector<BasePointer*> pointers;
+            pointers.push_back(&this->from_row_indices);
+            pointers.push_back(&this->from_column_indices);
+            pointers.push_back(&this->to_row_indices);
+            pointers.push_back(&this->to_column_indices);
+            pointers.push_back(&this->used);
+
+            for (auto ptr : pointers)
+                ptr->transfer(device_id);
+
+            this->transfer(device_id);
+            this->transpose();
+            transferred = true;
+        } else {
+            device_id = this->get_device_id();
+            stream = res_man->get_default_stream(device_id);
         }
-        // Set used to 0
-        device_pointers[num_pointers-1].set(0, false);
-        p_to_p.transfer(device_id);
 
         LOG_DEBUG("  Running parallel kernel...");
 
         // Run parallel kernel
-        dim3 threads = calc_threads(conn->to_layer->size);
-        dim3 blocks = calc_blocks(conn->to_layer->size);
+        dim3 threads = (conn->convolutional)
+            ? calc_threads(num_weights)
+            : calc_threads(conn->to_layer->size);
+        dim3 blocks = (conn->convolutional)
+            ? calc_blocks(num_weights)
+            : calc_blocks(conn->to_layer->size);
         indices_kernel.run_parallel(
-            stream, blocks, threads, SynapseData(nullptr, conn, p_to_p));
+            stream, blocks, threads, SynapseData(this->pointer, conn));
+        device_synchronize();
+        device_check_error("Failed to compute weight indices!");
 
-        LOG_DEBUG("  Performing transposition...");
+        if (transferred) {
+            // Transfer back to host
+            this->transpose();
+            this->transfer(host_id);
 
-        // Transpose matrices
-        Pointer<int> temp =
-            Pointer<int>::device_pointer(device_id, num_weights);
+            std::vector<BasePointer*> pointers;
+            pointers.push_back(&this->from_row_indices);
+            pointers.push_back(&this->from_column_indices);
+            pointers.push_back(&this->to_row_indices);
+            pointers.push_back(&this->to_column_indices);
+            pointers.push_back(&this->used);
 
-        int transpose_cols = (conn->convolutional) ? 1 : conn->to_layer->size;
-        int transpose_rows = num_weights / transpose_cols;
-        blocks = calc_transpose_blocks(transpose_rows, transpose_cols);
-        threads = calc_transpose_threads(transpose_rows, transpose_cols);
+            for (auto ptr : pointers)
+                ptr->transfer(host_id);
 
-        // Perform transpositions
-        for (int i = 0 ; i < num_pointers ; ++i) {
-            cudaSetDevice(device_id);
-            transpose_matrix_parallel<int>
-                <<<blocks, threads, 0, stream->get_cuda_stream()>>>
-                (device_pointers[i], temp, transpose_rows, transpose_cols);
-
-            temp.copy_to(host_pointers[i], stream);
             device_synchronize();
-            device_check_error("Failed to transpose weight matrix!");
-            device_pointers[i].free();
+            device_check_error("Failed to compute weight indices!");
         }
-        temp.free();
 #endif
     }
-
-    p_to_p.free();
 }
 
-#define DISTANCES_EXTRACTIONS \
-    float** p_to_p = (float**)synapse_data.pointer_to_pointer.get(); \
-    float* distances = (float*)p_to_p[0]; \
-    float* aux_values = (float*)p_to_p[1]; \
-    float from_spacing = aux_values[0]; \
-    float to_spacing = aux_values[1]; \
-    float x_offset = aux_values[2]; \
-    float y_offset = aux_values[3];
+/******************************* DISTANCES ************************************/
 
-#define SET_DISTANCES(PREFIX) \
-    float f_y = PREFIX##from_row * from_spacing; \
-    float f_x = PREFIX##from_column * from_spacing; \
- \
-    float t_y = to_row * to_spacing + y_offset; \
-    float t_x = to_column * to_spacing + x_offset; \
- \
-    distances[weight_index] = pow( \
-        pow(t_x - f_x, 2) + pow(t_y - f_y, 2), \
-        0.5);
-
-CALC_ALL(distances_kernel,
-    DISTANCES_EXTRACTIONS,
-    ,
-    SET_DISTANCES(),
-)
-
-CALC_CONVERGENT(distances_kernel_wrap_convergent,
-    DISTANCES_EXTRACTIONS,
-    ,
-    SET_DISTANCES(pre_wrap_),
-)
-CALC_DIVERGENT(distances_kernel_wrap_divergent,
-    DISTANCES_EXTRACTIONS,
-    ,
-    SET_DISTANCES(pre_wrap_),
-)
-
-void get_distances(WeightMatrix *matrix, Pointer<float> distances,
+HOST void compute_distances_SERIAL(
+        int num_weights, float* distances,
+        int* from_row_indices, int* from_column_indices,
+        int* to_row_indices, int* to_column_indices,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset) {
-    auto conn = matrix->connection;
 
+    for (int weight_index = 0 ; weight_index < num_weights ; ++weight_index) {
+        float f_y = from_row_indices[weight_index] * from_spacing;
+        float f_x = from_column_indices[weight_index] * from_spacing;
+
+        float t_y = to_row_indices[weight_index] * to_spacing + y_offset;
+        float t_x = to_column_indices[weight_index] * to_spacing + x_offset;
+
+        distances[weight_index] = pow(
+            pow(t_x - f_x, 2) + pow(t_y - f_y, 2),
+            0.5);
+    }
+}
+
+#ifdef __CUDACC__
+GLOBAL void compute_distances_PARALLEL(
+        int num_weights, float* distances,
+        int* from_row_indices, int* from_column_indices,
+        int* to_row_indices, int* to_column_indices,
+        float from_spacing, float to_spacing,
+        float x_offset, float y_offset) {
+
+    int weight_index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (weight_index < num_weights) {
+        float f_y = from_row_indices[weight_index] * from_spacing;
+        float f_x = from_column_indices[weight_index] * from_spacing;
+
+        float t_y = to_row_indices[weight_index] * to_spacing + y_offset;
+        float t_x = to_column_indices[weight_index] * to_spacing + x_offset;
+
+        distances[weight_index] = pow(
+            pow(t_x - f_x, 2) + pow(t_y - f_y, 2),
+            0.5);
+    }
+}
+#endif
+
+void WeightMatrix::get_distances(float from_spacing, float to_spacing,
+        float x_offset, float y_offset) {
+    // If distances is already set, distances have already been retrieved
+    if (not this->distances.is_null()) return;
+
+    // Ensure indices have been computed
+    if (this->used.is_null())
+        this->get_indices();
+
+    auto conn = this->connection;
     LOG_DEBUG("Retrieving distances for : " + conn->str());
 
-    // Retrieve appropriate kernel
-    Kernel<SYNAPSE_ARGS> distances_kernel;
-    try {
-        switch(conn->get_type()) {
-            case CONVERGENT:
-                distances_kernel = get_distances_kernel_wrap_convergent();
-                break;
-            case DIVERGENT:
-                distances_kernel = get_distances_kernel_wrap_divergent();
-                break;
-            default:
-                distances_kernel = distances_kernel_map.at(conn->get_type());
-                break;
-        }
-    } catch (std::out_of_range) {
-        LOG_ERROR("Unrecognized connection type!");
-    }
-
     auto res_man = ResourceManager::get_instance();
-    Pointer<void*> p_to_p = Pointer<void*>(5);
-    Pointer<float> auxiliary = Pointer<float>(4);
-    auxiliary[0] = from_spacing;
-    auxiliary[1] = to_spacing;
-    auxiliary[2] = x_offset;
-    auxiliary[3] = y_offset;
+    int num_weights = conn->get_num_weights();
+    this->distances = Pointer<float>(num_weights, 0.0);
 
-    // Do on host if the connection is sparse (requires matrix data)
-    if (res_man->get_gpu_ids().size() == 0 or conn->get_type() == SPARSE) {
-        p_to_p[0] = distances.get();
-        p_to_p[1] = auxiliary.get();
-
+    if (res_man->get_gpu_ids().size() == 0) {
         LOG_DEBUG("  Running serial kernel...");
-        distances_kernel.run_serial(SynapseData(matrix, conn, p_to_p));
+        compute_distances_SERIAL(num_weights,
+            this->distances.get(),
+            this->from_row_indices.get(),
+            this->from_column_indices.get(),
+            this->to_row_indices.get(),
+            this->to_column_indices.get(),
+            from_spacing, to_spacing, x_offset, y_offset);
     } else {
 #ifdef __CUDACC__
-        int num_weights = conn->get_num_weights();
         DeviceID device_id = *res_man->get_devices().begin();
         DeviceID host_id = res_man->get_host_id();
         Stream *stream = res_man->get_default_stream(device_id);
 
-        LOG_DEBUG("  Allocating device memory...");
-
-        // Set up pointers
-        auto device_distances
-            = Pointer<float>::device_pointer(device_id, num_weights);
-        p_to_p[0] = device_distances.get_unsafe();
-
-        auxiliary.transfer(device_id);
-        p_to_p[1] = auxiliary.get_unsafe();
-
-        p_to_p.transfer(device_id);
+        // Transfer to device if necessary
+        if (this->get_device_id() == host_id) {
+            LOG_DEBUG("  Tranferring WeightMatrix to host...");
+            this->distances.transfer(device_id);
+            this->from_row_indices.transfer(device_id);
+            this->from_column_indices.transfer(device_id);
+            this->to_row_indices.transfer(device_id);
+            this->to_column_indices.transfer(device_id);
+        } else {
+            device_id = this->get_device_id();
+            stream = res_man->get_default_stream(device_id);
+        }
 
         LOG_DEBUG("  Running parallel kernel...");
 
         // Run parallel kernel
-        dim3 threads = calc_threads(conn->to_layer->size);
-        dim3 blocks = calc_blocks(conn->to_layer->size);
-        distances_kernel.run_parallel(
-            stream, blocks, threads, SynapseData(nullptr, conn, p_to_p));
-
-        LOG_DEBUG("  Performing transposition...");
-
-        // Transpose matrices
-        Pointer<float> temp =
-            Pointer<float>::device_pointer(device_id, num_weights);
-
-        int transpose_cols = (conn->convolutional) ? 1 : conn->to_layer->size;
-        int transpose_rows = num_weights / transpose_cols;
-        blocks = calc_transpose_blocks(transpose_rows, transpose_cols);
-        threads = calc_transpose_threads(transpose_rows, transpose_cols);
-
-        // Perform transposition
+        dim3 threads = calc_threads(num_weights);
+        dim3 blocks = calc_blocks(num_weights);
         cudaSetDevice(device_id);
-        transpose_matrix_parallel<float>
-            <<<blocks, threads, 0, stream->get_cuda_stream()>>>
-            (device_distances, temp, transpose_rows, transpose_cols);
 
-        temp.copy_to(distances, stream);
+        compute_distances_PARALLEL
+        <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+            (num_weights,
+                this->distances.get_unsafe(),
+                this->from_row_indices.get_unsafe(),
+                this->from_column_indices.get_unsafe(),
+                this->to_row_indices.get_unsafe(),
+                this->to_column_indices.get_unsafe(),
+                from_spacing, to_spacing,
+                x_offset, y_offset);
         device_synchronize();
-        device_check_error("Failed to transpose weight matrix!");
-        device_distances.free();
-        temp.free();
+        device_check_error("Failed to compute distances!");
+
+        // Transfer back to host
+        this->distances.transfer(host_id);
+        this->from_row_indices.transfer(host_id);
+        this->from_column_indices.transfer(host_id);
+        this->to_row_indices.transfer(host_id);
+        this->to_column_indices.transfer(host_id);
+
+        device_synchronize();
+        device_check_error("Failed to compute weight indices!");
 #endif
     }
-
-    auxiliary.free();
-    p_to_p.free();
 }
 
-#define DELAYS_EXTRACTIONS \
-    void** p_to_p = (void**)synapse_data.pointer_to_pointer.get(); \
-    int* delays = (int*)p_to_p[0]; \
-    float* aux_values = (float*)p_to_p[1]; \
-    float from_spacing = aux_values[0]; \
-    float to_spacing = aux_values[1]; \
-    float x_offset = aux_values[2]; \
-    float y_offset = aux_values[3]; \
-    float velocity = aux_values[4]; \
-    int base_delay = (int)aux_values[5]; \
-    bool cap_delay = aux_values[6] > 0.5;
+/********************************* DELAYS *************************************/
 
-#define SET_DELAYS(PREFIX) \
-    float f_y = PREFIX##from_row * from_spacing; \
-    float f_x = PREFIX##from_column * from_spacing; \
- \
-    float t_y = to_row * to_spacing + y_offset; \
-    float t_x = to_column * to_spacing + x_offset; \
- \
-    float distance = pow( \
-        pow(t_x - f_x, 2) + pow(t_y - f_y, 2), \
-        0.5); \
-    int delay = base_delay + (distance / velocity); \
-    if (delay > 31 and not cap_delay) { \
-        printf("BIT delays cannot be greater than 31!"); \
-        assert(false); \
-    } \
-    delays[weight_index] = MIN(31, delay);
+HOST void compute_delays_SERIAL(int num_weights,
+        int* delays, float* distances,
+        float from_spacing, float to_spacing,
+        float x_offset, float y_offset,
+        float velocity, bool cap_delay, int base_delay) {
 
-CALC_ALL(delays_kernel,
-    DELAYS_EXTRACTIONS,
-    ,
-    SET_DELAYS(),
-)
+    for (int weight_index = 0 ; weight_index < num_weights ; ++weight_index) {
+        int delay = base_delay + (distances[weight_index] / velocity);
+        if (delay > 31 and not cap_delay) {
+            printf("BIT delays cannot be greater than 31!");
+            assert(false);
+        }
+        delays[weight_index] = MIN(31, delay);
+    }
+}
 
-CALC_CONVERGENT(delays_kernel_wrap_convergent,
-    DELAYS_EXTRACTIONS,
-    ,
-    SET_DELAYS(pre_wrap_),
-)
-CALC_DIVERGENT(delays_kernel_wrap_divergent,
-    DELAYS_EXTRACTIONS,
-    ,
-    SET_DELAYS(pre_wrap_),
-)
+#ifdef __CUDACC__
+GLOBAL void compute_delays_PARALLEL(int num_weights,
+        int* delays, float* distances,
+        float from_spacing, float to_spacing,
+        float x_offset, float y_offset,
+        float velocity, bool cap_delay, int base_delay) {
 
-void get_delays(WeightMatrix *matrix, OutputType output_type,
-        Pointer<int> delays,
+    int weight_index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (weight_index < num_weights) {
+        int delay = base_delay + (distances[weight_index] / velocity);
+        if (delay > 31 and not cap_delay) {
+            printf("BIT delays cannot be greater than 31!");
+            assert(false);
+        }
+        delays[weight_index] = MIN(31, delay);
+    }
+}
+#endif
+
+void WeightMatrix::get_delays(OutputType output_type,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset,
         float velocity, bool cap_delay) {
-    auto conn = matrix->connection;
 
+    // If delays is already set, delays have already been retrieved
+    if (not this->delays.is_null()) return;
+
+    // Ensure distances have been computed
+    if (this->distances.is_null())
+        this->get_distances(from_spacing, to_spacing, x_offset, y_offset);
+
+    auto conn = this->connection;
     LOG_DEBUG("Initializing delays for : " + conn->str());
     if (output_type != BIT)
         LOG_ERROR("Only BIT output connections can have variable delays!");
 
     int base_delay = conn->delay;
-    float num_weights = conn->get_num_weights();
-
-    // Retrieve appropriate kernel
-    Kernel<SYNAPSE_ARGS> delays_kernel;
-    try {
-        switch(conn->get_type()) {
-            case CONVERGENT:
-                delays_kernel = get_delays_kernel_wrap_convergent();
-                break;
-            case DIVERGENT:
-                delays_kernel = get_delays_kernel_wrap_divergent();
-                break;
-            default:
-                delays_kernel = delays_kernel_map.at(conn->get_type());
-                break;
-        }
-    } catch (std::out_of_range) {
-        LOG_ERROR("Unrecognized connection type!");
-    }
+    LOG_DEBUG("Retrieving delays for : " + conn->str());
 
     auto res_man = ResourceManager::get_instance();
-    Pointer<void*> p_to_p = Pointer<void*>(5);
-    Pointer<float> auxiliary = Pointer<float>(7);
-    auxiliary[0] = from_spacing;
-    auxiliary[1] = to_spacing;
-    auxiliary[2] = x_offset;
-    auxiliary[3] = y_offset;
-    auxiliary[4] = velocity;
-    auxiliary[5] = base_delay;
-    auxiliary[6] = (cap_delay) ? 1.0 : 0.0;
+    int num_weights = conn->get_num_weights();
+    this->delays = Pointer<int>(num_weights, 0);
 
-    // Do on host if the connection is sparse (requires matrix data)
-    if (res_man->get_gpu_ids().size() == 0 or conn->get_type() == SPARSE) {
-        p_to_p[0] = (void*)delays.get();
-        p_to_p[1] = (void*)auxiliary.get();
-
+    if (res_man->get_gpu_ids().size() == 0) {
         LOG_DEBUG("  Running serial kernel...");
-        delays_kernel.run_serial(SynapseData(matrix, conn, p_to_p));
+        compute_delays_SERIAL(num_weights,
+            this->delays.get(), this->distances.get(),
+            from_spacing, to_spacing, x_offset, y_offset,
+            velocity, cap_delay, conn->delay);
     } else {
 #ifdef __CUDACC__
-        int num_weights = conn->get_num_weights();
         DeviceID device_id = *res_man->get_devices().begin();
         DeviceID host_id = res_man->get_host_id();
         Stream *stream = res_man->get_default_stream(device_id);
 
-        LOG_DEBUG("  Allocating device memory...");
-
-        // Set up pointers
-        auto device_delays
-            = Pointer<int>::device_pointer(device_id, num_weights);
-        p_to_p[0] = device_delays.get_unsafe();
-
-        auxiliary.transfer(device_id);
-        p_to_p[1] = auxiliary.get_unsafe();
-
-        p_to_p.transfer(device_id);
+        // Transfer to device if necessary
+        if (this->get_device_id() == host_id) {
+            LOG_DEBUG("  Tranferring WeightMatrix to host...");
+            this->distances.transfer(device_id);
+            this->delays.transfer(device_id);
+        } else {
+            device_id = this->get_device_id();
+            stream = res_man->get_default_stream(device_id);
+        }
 
         LOG_DEBUG("  Running parallel kernel...");
 
         // Run parallel kernel
-        dim3 threads = calc_threads(conn->to_layer->size);
-        dim3 blocks = calc_blocks(conn->to_layer->size);
-        delays_kernel.run_parallel(
-            stream, blocks, threads, SynapseData(nullptr, conn, p_to_p));
-
-        LOG_DEBUG("  Performing transposition...");
-
-        // Transpose matrices
-        Pointer<int> temp =
-            Pointer<int>::device_pointer(device_id, num_weights);
-
-        int transpose_cols = (conn->convolutional) ? 1 : conn->to_layer->size;
-        int transpose_rows = num_weights / transpose_cols;
-        blocks = calc_transpose_blocks(transpose_rows, transpose_cols);
-        threads = calc_transpose_threads(transpose_rows, transpose_cols);
-
-        // Perform transposition
+        dim3 threads = calc_threads(num_weights);
+        dim3 blocks = calc_blocks(num_weights);
         cudaSetDevice(device_id);
-        transpose_matrix_parallel<int>
-            <<<blocks, threads, 0, stream->get_cuda_stream()>>>
-            (device_delays, temp, transpose_rows, transpose_cols);
 
-        temp.copy_to(delays, stream);
+        compute_delays_PARALLEL
+        <<<blocks, threads, 0, stream->get_cuda_stream()>>>
+            (num_weights,
+                this->delays.get_unsafe(), this->distances.get_unsafe(),
+                from_spacing, to_spacing,
+                x_offset, y_offset,
+                velocity, cap_delay, conn->delay);
         device_synchronize();
-        device_check_error("Failed to transpose weight matrix!");
-        device_delays.free();
-        temp.free();
+        device_check_error("Failed to compute delays!");
+
+        // Transfer back to host
+        this->distances.transfer(host_id);
+        this->delays.transfer(host_id);
+
+        device_synchronize();
+        device_check_error("Failed to compute weight indices!");
 #endif
     }
-
-    auxiliary.free();
-    p_to_p.free();
 }
 
 /******************************************************************************/

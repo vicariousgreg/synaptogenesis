@@ -91,13 +91,9 @@ void Attributes::transfer(DeviceID new_device) {
 }
 
 std::vector<BasePointer*> Attributes::get_pointers() {
-    std::vector<BasePointer*> pointers = {
-        &input, &output, &expected
-    };
-    for (auto pair : neuron_variables) pointers.push_back(pair.second);
-    for (auto pair : weight_matrices)
-        for (auto ptr : pair.second->get_pointers())
-            pointers.push_back(ptr);
+    std::vector<BasePointer*> pointers;
+    for (auto pair : get_pointer_map())
+        pointers.push_back(pair.second);
     return pointers;
 }
 

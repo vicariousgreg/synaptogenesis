@@ -251,9 +251,12 @@ ARRAY get_weight_matrix(STATE state, char* conn_name, char* key) {
 
 
 PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
-    try {
-        if (net == nullptr or state == nullptr) return nullptr;
+    if (net == nullptr or state == nullptr) return nullptr;
 
+// Do not catch exceptions in debug mode (so they can be traced in gdb)
+#ifndef DEBUG
+    try {
+#endif
         return Engine(Context(
                         (Network*)net,
                         (Environment*)env,
@@ -261,9 +264,11 @@ PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
                       .run((args == nullptr)
                               ? PropertyConfig()
                               : *((PropertyConfig*)args));
+#ifndef DEBUG
     } catch(...) {
         return nullptr;
     }
+#endif
 }
 
 

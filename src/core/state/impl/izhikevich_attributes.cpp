@@ -642,10 +642,6 @@ void IzhikevichWeightMatrix::register_variables() {
     this->stps = WeightMatrix::create_variable<float>();
     WeightMatrix::register_variable("short term plasticity", &stps);
 
-    // Delay
-    this->delays = WeightMatrix::create_variable<int>();
-    WeightMatrix::register_variable("delays", &delays);
-
     // Time since presynaptic spike
     this->time_since_spike = WeightMatrix::create_variable<int>();
     WeightMatrix::register_variable("time since spike", &time_since_spike);
@@ -702,7 +698,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
                 "Randomized axons cannot have delays greater than 31!");
         iRand(iz_mat->delays, num_weights, 0, max_delay);
     } else {
-        get_delays(iz_mat, BIT, iz_mat->delays,
+        iz_mat->get_delays(BIT,
             std::stof(conn->from_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->to_layer->get_parameter("neuron spacing", "0.1")),
             std::stof(conn->get_parameter("x offset", "0.0")),

@@ -340,14 +340,16 @@ void State::save(std::string file_name, bool verbose) {
 
     for (auto pair : pointer_map) {
         size_t bytes = pair.first.bytes;
-        const char* data = (const char*)pair.second->get();
+        if (bytes > 0) {
+            const char* data = (const char*)pair.second->get();
 
-        if (not output_file.write((const char*)&pair.first, sizeof(PointerKey)))
-            LOG_ERROR(
-                "Error writing state to file!");
-        if (not output_file.write(data, bytes))
-            LOG_ERROR(
-                "Error writing state to file!");
+            if (not output_file.write((const char*)&pair.first, sizeof(PointerKey)))
+                LOG_ERROR(
+                    "Error writing state to file!");
+            if (not output_file.write(data, bytes))
+                LOG_ERROR(
+                    "Error writing state to file!");
+        }
     }
 
     // Close file stream

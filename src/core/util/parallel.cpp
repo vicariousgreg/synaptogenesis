@@ -67,9 +67,11 @@ void* cuda_allocate_device(int device_id, size_t count,
 
     void* ptr;
     cudaMalloc(&ptr, count * size);
+    device_synchronize();
     device_check_error("Failed to allocate memory on device for neuron state!");
     if (source_data != nullptr)
         cudaMemcpy(ptr, source_data, count * size, cudaMemcpyHostToDevice);
+    device_synchronize();
     device_check_error("Failed to initialize memory on device for neuron state!");
 
     cudaSetDevice(prev_device);
