@@ -377,7 +377,8 @@ void WeightMatrix::sparsify() {
         int nonzero = 0;
         for (int col = 0 ; col < columns ; ++col) {
             int index = row*columns + col;
-            nonzero += (weights[index] != 0.0 and used[index]);
+            if (weights[index] == 0.0) used[index] = 0;
+            nonzero += used[index];
         }
         max_nonzero = MAX(max_nonzero, nonzero);
     }
@@ -396,7 +397,7 @@ void WeightMatrix::sparsify() {
     auto compact_from_column_indices = Pointer<int>(sparse_num_weights, -1);
     auto compact_to_row_indices = Pointer<int>(sparse_num_weights, -1);
     auto compact_to_column_indices = Pointer<int>(sparse_num_weights, -1);
-    auto compact_used = Pointer<int>(sparse_num_weights, -1);
+    auto compact_used = Pointer<int>(sparse_num_weights, 0);
     this->nonzero_counts = Pointer<int>(connection->to_layer->size, 0);
 
     // Create new weight matrix

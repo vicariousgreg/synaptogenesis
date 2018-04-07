@@ -43,7 +43,7 @@ UILIBPATH     := $(BUILDDIR_UI)/gui.a
 
 #Flags, Libraries and Includes
 CCFLAGS      := -w -fPIC -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
-NVCCFLAGS    := -w -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
+NVCCFLAGS    := -w -arch=sm_30 -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
