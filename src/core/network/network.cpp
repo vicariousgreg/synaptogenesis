@@ -27,7 +27,7 @@ void Network::add_structure(StructureConfig *struct_config) {
     this->config->add_structure(struct_config);
 }
 
-Structure* Network::get_structure(std::string name, bool log_error) {
+Structure* Network::get_structure(std::string name, bool log_error) const {
     Structure *structure = nullptr;
     for (auto s : this->structures)
         if (s->name == name)
@@ -36,6 +36,20 @@ Structure* Network::get_structure(std::string name, bool log_error) {
             LOG_ERROR(
                 "Could not find structure: " + name);
     return structure;
+}
+
+Layer* Network::get_layer(std::string name, bool log_error) const {
+    Layer *layer = nullptr;
+    for (auto l : get_layers())
+        if (l->name == name) {
+            if (layer != nullptr and log_error)
+                LOG_ERROR("Ambiguous layer name: %s" + name);
+            layer = l;
+        }
+    if (layer == nullptr and log_error)
+            LOG_ERROR(
+                "Could not find structure: " + name);
+    return layer;
 }
 
 void Network::add_connection(const ConnectionConfig* conn_config) {
@@ -110,9 +124,10 @@ int Network::get_num_weights() const {
 
 int Network::get_max_layer_size() const {
     int max_size = 0;
-    for (auto& structure : this->get_structures()) 
+    for (auto& structure : this->get_structures())
         for (auto& layer : structure->get_layers())
-            if (layer->size > max_size) max_size = layer->size;  
+            if (layer->size > max_size)
+                max_size = layer->size;
     return max_size;
 }
 
@@ -131,16 +146,53 @@ void Network::add_connection_internal(const ConnectionConfig* conn_config) {
     if (structures.size() == 1)
         from_structure = to_structure = structures.at(0)->name;
     else {
-        if (not conn_config->has("from structure"))
-            LOG_ERROR(
-                "Unspecified source structure for connection: "
-                + conn_config->get("name", ""));
-        if (not conn_config->has("to structure"))
-            LOG_ERROR(
-                "Unspecified destination structure for connection: "
-                + conn_config->get("name", ""));
-        from_structure = conn_config->get("from structure");
-        to_structure = conn_config->get("to structure");
+        std::string from_layer = conn_config->get("from layer", "");
+        std::string to_layer = conn_config->get("to layer", "");
+
+        if (conn_config->has("from structure")) {
+            from_structure = conn_config->get("from structure");
+        } else {
+            Structure *found = nullptr;
+            for (auto structure : structures) {
+                for (auto layer : structure->get_layers()) {
+                    if (layer->name == from_layer) {
+                        if (found != nullptr)
+                            LOG_ERROR(
+                                "Ambiguous source layer " + from_layer +
+                                " for connection: " + conn_config->get("name", ""));
+                        found = structure;
+                    }
+                }
+            }
+            if (found == nullptr)
+                LOG_ERROR(
+                    "Could not find source layer " + from_layer +
+                    " for connection: " + conn_config->get("name", ""));
+            from_structure = found->name;
+        }
+
+        if (conn_config->has("to structure")) {
+            to_structure = conn_config->get("to structure");
+        } else {
+            Structure *found = nullptr;
+            for (auto structure : structures) {
+                for (auto layer : structure->get_layers()) {
+                    if (layer->name == to_layer) {
+                        if (found != nullptr)
+                            LOG_ERROR(
+                                "Ambiguous destination layer " + to_layer +
+                                " for connection: " + conn_config->get("name", ""));
+                        found = structure;
+                    }
+                }
+            }
+
+            if (found == nullptr)
+                LOG_ERROR(
+                    "Could not find destination layer " + to_layer +
+                    " for connection: " + conn_config->get("name", ""));
+            to_structure = found->name;
+        }
     }
 
     Structure::connect(

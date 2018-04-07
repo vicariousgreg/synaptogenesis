@@ -29,17 +29,18 @@ ModuleConfig* ModuleConfig::add_layer(std::string structure,
 }
 
 ModuleConfig* ModuleConfig::add_layer(PropertyConfig *config) {
-    if (not config->has("structure") or not config->has("layer"))
+    if (not config->has("layer"))
         LOG_ERROR(
-            "Module layer config must have structure and layer name!");
+            "Module layer config must have layer name!");
     this->add_to_child_array("layers", config);
     return this;
 }
 
 const PropertyConfig* ModuleConfig::get_layer(Layer *layer) const {
     for (auto config : get_child_array("layers"))
-        if (config->get("structure") == layer->structure->name and
-            config->get("layer") == layer->name)
+        if ((not config->has("structure") or
+                config->get("structure") == layer->structure->name)
+            and config->get("layer") == layer->name)
             return config;
 }
 
@@ -153,9 +154,13 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
     // Extract layers
     LayerList layers;
     for (auto layer_conf : config->get_layers())
-        layers.push_back(
-            network->get_structure(layer_conf->get("structure"))
-                   ->get_layer(layer_conf->get("layer")));
+        if (layer_conf->has("structure"))
+            layers.push_back(
+                network->get_structure(layer_conf->get("structure"))
+                       ->get_layer(layer_conf->get("layer")));
+        else
+            layers.push_back(
+                network->get_layer(layer_conf->get("layer")));
 
     // Ensure there are layers in the set
     if (layers.size() == 0) {

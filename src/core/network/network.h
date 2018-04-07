@@ -26,7 +26,7 @@ class Network {
 
         /* Add or retrieve structure to/from model */
         void add_structure(StructureConfig *struct_config);
-        Structure* get_structure(std::string name, bool log_error=true);
+        Structure* get_structure(std::string name, bool log_error=true) const;
 
         /* Add connection */
         void add_connection(const ConnectionConfig* conn_config);
@@ -34,6 +34,7 @@ class Network {
         /* Getters */
         const NetworkConfig* get_config() const { return config; }
         const StructureList& get_structures() const { return structures; }
+        Layer* get_layer(std::string name, bool log_error=true) const;
         const LayerList get_layers() const;
         const LayerList get_layers(std::string neural_model) const;
         const ConnectionList get_connections() const;
