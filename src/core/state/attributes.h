@@ -36,18 +36,17 @@ class Attributes {
         std::map<PointerKey, BasePointer*> get_pointer_map();
         void transfer(DeviceID new_device);
 
-        /* Learning Rule functions */
-        // Activator Kernel
+        // Activation Function
         virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) {
             return get_base_activator_kernel(conn);
         }
 
-        // Updater Kernel
+        // Learning Rule
         virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) {
             return Kernel<SYNAPSE_ARGS> ();
         }
 
-        // Weight matrix processor
+        // Weight matrix functions
         void process_weight_matrices();
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
         void transpose_weight_matrices();
@@ -158,9 +157,15 @@ Attributes *CLASS_NAME::build(Layer *layer) { \
     int history_size = attribute_data.history_size; \
     bool plastic = attribute_data.plastic;
 
+
+
+/////////////////////
+// PARALLEL MACROS //
+/////////////////////
 #ifdef __CUDACC__
 
-// Skeletons -- don't use this directly
+//////
+// Skeletons -- don't use these directly
 // Standard attribute kernel
 #define DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
@@ -200,7 +205,11 @@ GLOBAL void FUNC_NAME##_PARALLEL(AttributeData attribute_data) { \
         BODY; \
     } \
 }
+//
+//////
 
+
+//////
 // Use this to set up attributes kernel
 // Standard version
 #define BUILD_ATTRIBUTE_KERNEL( \
@@ -225,10 +234,19 @@ DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
+//
+//////
 
+
+
+///////////////////
+// SERIAL MACROS //
+///////////////////
 #else
 
-// Skeletons -- don't use this directly
+//////
+// Skeletons -- don't use these directly
+// Standard attribute kernel
 #define DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
@@ -250,8 +268,12 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
         BODY; \
     } \
 }
+//
+/////
 
+//////
 // Use this to set up attributes kernel
+// Standard version
 #define BUILD_ATTRIBUTE_KERNEL( \
     CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
@@ -274,10 +296,17 @@ DEF_ATT_KERNEL(CLASS_NAME, FUNC_NAME, PREAMBLE, BODY) \
 Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
     return Kernel<ATTRIBUTE_ARGS>(FUNC_NAME##_SERIAL); \
 }
+//
+//////
 
 #endif
 
-// Macros for shifting outputs
+
+
+
+/////////////////////////////////
+// Macros for shifting outputs //
+/////////////////////////////////
 #define SHIFT_FLOAT_OUTPUTS(f_outputs, new_output) \
     for (int index = history_size - 1 ; index > 0 ; --index) \
         f_outputs[size * index + nid] = f_outputs[size * (index - 1) + nid]; \

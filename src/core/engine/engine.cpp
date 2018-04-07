@@ -126,7 +126,8 @@ void Engine::build_clusters(PropertyConfig args) {
             for (auto& syn_inst : node->get_synapse_activate_instructions()) {
                 auto conn = syn_inst->connection;
 
-                // If inter-device, find or create corresponding transfer instruction
+                // If inter-device, find or create
+                //   corresponding transfer instruction
                 if (state->is_inter_device(conn)) {
                     InterDeviceTransferInstruction *inst = nullptr;
 
@@ -138,13 +139,13 @@ void Engine::build_clusters(PropertyConfig args) {
                     // Create if doesn't exist
                     // Clusters are responsible for handling these transfers,
                     //   since different types handle them differently
-                    if (inst == nullptr) {
+                    bool new_transfer = (inst == nullptr);
+                    if (new_transfer) {
                         inst = new InterDeviceTransferInstruction(conn, state);
                         this->inter_device_transfers.push_back(inst);
-                        cluster->add_inter_device_instruction(syn_inst, inst, true);
-                    } else {
-                        cluster->add_inter_device_instruction(syn_inst, inst, false);
                     }
+                    cluster->add_inter_device_instruction(
+                        syn_inst, inst, new_transfer);
                 }
             }
         }
@@ -192,6 +193,12 @@ size_t Engine::get_buffer_bytes() const {
     return size;
 }
 
+
+/****************/
+/* Thread Mains */
+/****************/
+
+/* Launches network and environment computations */
 void Engine::single_thread_loop() {
     run_timer.reset();
 
@@ -292,6 +299,8 @@ void Engine::single_thread_loop() {
     this->environment_running = false;
 }
 
+/* Launches network computations
+ *   Exchanges thread-safe locks with environment loop */
 void Engine::network_loop() {
     run_timer.reset();
     this->network_running = true;
@@ -377,6 +386,8 @@ void Engine::network_loop() {
     this->network_running = false;
 }
 
+/* Launches environment computations
+ *   Exchanges thread-safe locks with network loop */
 void Engine::environment_loop() {
     this->environment_running = true;
 
@@ -419,12 +430,21 @@ void Engine::environment_loop() {
     this->environment_running = false;
 }
 
+/* Runs the engine:
+ *   Determines active devices
+ *   Builds state and transfers to devices
+ *   Starts computation thread pool
+ *   Extracts parameters
+ *   Launches network/environment thread(s)
+ *   Launches GUI
+ *   Waits for threads
+ *   Shuts down computation thread pool
+ *   Generates report */
 Report* Engine::run(PropertyConfig args) {
     // Set engine to active
     Engine::activate(this);
 
-    // Build state and transfer
-    // This renders the engine outdated, so the engine must be rebuilt as well
+    // Determine device(s) to use
     std::set<DeviceID> devices;
     try {
         if (args.has("devices"))
@@ -440,11 +460,11 @@ Report* Engine::run(PropertyConfig args) {
         LOG_ERROR("Failed to extract devices from Engine args!");
     }
 
+    // Build state and transfer
+    // This renders the engine outdated, so the engine must be rebuilt as well
     context.state->build(devices);
     context.state->transfer_to_device();
     this->rebuild(args);
-
-    multithreaded = args.get_bool("multithreaded", true);
 
     // Launch Scheduler thread pool
     Scheduler::get_instance()->start_thread_pool(
@@ -463,8 +483,6 @@ Report* Engine::run(PropertyConfig args) {
     this->time_limit = (refresh_rate == FLT_MAX)
         ? 0 : (1.0 / this->refresh_rate);
 
-    if (this->verbose) context.network->print();
-
     // If iterations is explicitly provided, use it
     if (args.has("iterations"))
         this->iterations = args.get_int("iterations", 1);
@@ -479,6 +497,9 @@ Report* Engine::run(PropertyConfig args) {
                 "Unspecified number of iterations -- running indefinitely.");
     }
 
+    // Print network
+    if (this->verbose) context.network->print();
+
     // Set locks
     sensory_lock.set_owner(ENVIRONMENT_THREAD);
     motor_lock.set_owner(NETWORK_THREAD);
@@ -488,17 +509,19 @@ Report* Engine::run(PropertyConfig args) {
     device_synchronize();
     device_check_error("Clock device synchronization failed!");
 
+    // Capture memory usage
     auto mems = ResourceManager::get_instance()->get_memory_usage(verbose);
 
+    // Launch threads
     if (not killed) {
         std::vector<std::thread> threads;
-        if (multithreaded) {
+        if (args.get_bool("multithreaded", true)) {
+            // Separate engine & environment threads
             if (verbose) printf("\nLaunching multithreaded...\n\n");
-            threads.push_back(std::thread(
-                &Engine::network_loop, this));
-            threads.push_back(std::thread(
-                &Engine::environment_loop, this));
+            threads.push_back(std::thread(&Engine::network_loop, this));
+            threads.push_back(std::thread(&Engine::environment_loop, this));
         } else {
+            // Single thread
             if (verbose) printf("\nLaunching single threaded...\n\n");
             threads.push_back(std::thread(
                 &Engine::single_thread_loop, this));
@@ -523,25 +546,34 @@ Report* Engine::run(PropertyConfig args) {
     // Clean up
     free_rand();
 
+    // Generate report
     Report* r = (killed and this->report == nullptr)
         ? new Report(this, this->context.state, 0, 0.0)
         : this->report;
     r->set_child("args", &args);
     for (auto mem : mems) r->add_to_child_array("memory usage", &mem);
 
+    // Reset engine variables
     killed = false;
     this->report = nullptr;
+
     return r;
 }
 
+
+/******************/
+/* Interrupt code */
+/******************/
+
+/* Set of running engines to be interrupted (observer pattern) */
+std::set<Engine*> Engine::active_engines;
+
+/* Wrapper with the correct signature for signal() */
 static void handle_interrupt(int param) {
     Engine::interrupt();
 }
 
-std::set<Engine*> Engine::active_engines;
-std::mutex Engine::interrupt_lock;
-bool Engine::interrupt_signaled = false;
-
+/* Register the interrupt and add the engine to the active set */
 void Engine::activate(Engine* engine) {
     if (active_engines.empty())
         signal(SIGINT, handle_interrupt);
@@ -553,10 +585,18 @@ void Engine::deactivate(Engine* engine) {
         active_engines.erase(engine);
 }
 
+/* Keep thread-safe signal flag */
+std::mutex Engine::interrupt_lock;
+bool Engine::interrupt_signaled = false;
+
+/* Signals interrupt to all active engines */
 void Engine::interrupt() {
     {
         std::unique_lock<std::mutex> lock(interrupt_lock);
-        Engine::interrupt_signaled = true;
+
+        // Avoid double signalling
+        if (Engine::interrupt_signaled) return;
+        else Engine::interrupt_signaled = true;
     }
 
     for (auto engine : active_engines) {
@@ -566,7 +606,7 @@ void Engine::interrupt() {
         // Stop the environment
         engine->environment_running = false;
 
-        // Wait for term lock
+        // Wait for termination lock
         while (engine->term_lock.get_owner() != NETWORK_THREAD);
 
         if (engine->multithreaded and engine->network_running) {
@@ -575,6 +615,8 @@ void Engine::interrupt() {
             engine->motor_lock.set_owner(NETWORK_THREAD);
         }
     }
+
+    // Reset active set and flag
     active_engines.clear();
     std::unique_lock<std::mutex> lock(interrupt_lock);
     Engine::interrupt_signaled = false;

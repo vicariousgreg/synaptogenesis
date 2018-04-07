@@ -69,26 +69,30 @@ class State {
         BasePointer* get_neuron_data(Layer *layer, std::string key);
         BasePointer* get_layer_data(Layer *layer, std::string key);
         BasePointer* get_connection_data(Connection *conn, std::string key);
-        BasePointer* get_weight_matrix(Connection *conn, std::string key="weights");
+        BasePointer* get_weight_matrix(Connection *conn,
+            std::string key="weights");
+
+        const std::set<DeviceID> get_active_devices() { return active_devices; }
 
         Network* const network;
 
-        const std::set<DeviceID> get_active_devices()
-            { return active_devices; }
-
     private:
-        std::set<DeviceID> active_devices;
-
         bool on_host;
+
+        // Data buffers
         std::map<DeviceID, Buffer*> internal_buffers;
         std::map<DeviceID, std::map<int, Buffer*>> inter_device_buffers;
+
+        // Layer maps
         std::map<Layer*, Attributes*> attributes;
         std::map<Layer*, DeviceID> layer_devices;
+        std::set<DeviceID> active_devices;
 
         // Functions for gathering pointers
         std::map<DeviceID, std::vector<BasePointer*>> get_network_pointers() const;
         std::map<DeviceID, std::vector<BasePointer*>> get_buffer_pointers() const;
 
+        // Map of all state data pointers
         std::map<PointerKey, BasePointer*> pointer_map;
 
         // Pointers to blocks of data returned by ResourceManager
