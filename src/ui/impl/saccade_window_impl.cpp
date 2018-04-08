@@ -11,7 +11,9 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
             : module(module),
               window_dirty(true),
               input_dirty(true),
+              central_input_dirty(true),
               waiting(true),
+              input_data((float*)malloc(rows*cols*sizeof(float))),
               saccade_rate(module->config->get_float("saccade rate", 1.0)) {
     // Add table
     table = new Gtk::Table(1, 3, false);
@@ -120,6 +122,7 @@ void SaccadeWindowImpl::set_cross() {
     }
 
     input_dirty = true;
+    central_input_dirty = true;
     window_dirty = true;
     waiting = true;
 }
@@ -151,6 +154,7 @@ void SaccadeWindowImpl::set_face(bool fear, bool direction) {
     }
 
     input_dirty = true;
+    central_input_dirty = true;
     window_dirty = true;
     waiting = false;
 }
@@ -168,30 +172,64 @@ void SaccadeWindowImpl::update() {
     }
 }
 
-void SaccadeWindowImpl::feed_input(Layer *layer, float *input) {
+void SaccadeWindowImpl::prepare_input_data() {
     if (input_dirty) {
         input_dirty = false;
-
         // Copy over panes
         auto pix = this->left_pane_pixbuf->get_pixels();
         for (int pix_row = 0 ; pix_row < rows ; ++pix_row)
             for (int pix_col = 0 ; pix_col < peripheral_cols ; ++pix_col)
-                input[pix_row*cols + pix_col] =
+                input_data[pix_row*cols + pix_col] =
                     float(pix[4*(pix_row*peripheral_cols + pix_col)]) / 255.0;
 
         pix = this->center_pane_pixbuf->get_pixels();
         int offset = peripheral_cols;
         for (int pix_row = 0 ; pix_row < rows ; ++pix_row)
             for (int pix_col = 0 ; pix_col < center_cols ; ++pix_col)
-                input[pix_row*cols + offset + pix_col] =
+                input_data[pix_row*cols + offset + pix_col] =
                     float(pix[4*(pix_row*center_cols + pix_col)]) / 255.0;
 
         pix = this->right_pane_pixbuf->get_pixels();
         offset = peripheral_cols + center_cols;
         for (int pix_row = 0 ; pix_row < rows ; ++pix_row)
             for (int pix_col = 0 ; pix_col < peripheral_cols ; ++pix_col)
-                input[pix_row*cols + offset + pix_col] =
+                input_data[pix_row*cols + offset + pix_col] =
                     float(pix[4*(pix_row*peripheral_cols + pix_col)]) / 255.0;
+    }
+}
+
+void SaccadeWindowImpl::feed_input(Layer *layer, float *input) {
+    for (int i = 0 ; i < layer->size ; ++i)
+        input[i] = this->input_data[i];
+}
+
+void SaccadeWindowImpl::feed_central_input(Layer *layer, float *input) {
+    if (central_input_dirty) {
+        central_input_dirty = false;
+
+        int layer_rows = layer->rows;
+        int layer_cols = layer->columns;
+        int center_row_start = fixation.get_y(rows) - (layer_rows / 2);
+        int center_col_start = fixation.get_x(cols) - (layer_cols / 2);
+
+        // Clear center field (use 1.0 since background is white)
+        for (int i = 0 ; i < layer->size ; ++i)
+            input[i] = 1.0;
+
+        // Copy data within window bounds
+        for (int row = 0 ; row < layer_rows ; ++row) {
+            int visual_row = row + center_row_start;
+
+            if (visual_row >= 0 and visual_row < rows) {
+                for (int col = 0 ; col < layer_cols ; ++col) {
+                    int visual_col = col + center_col_start;
+
+                    if (visual_col >= 0 and visual_col < cols)
+                        input[row * layer_cols + col] =
+                            this->input_data[visual_row * cols + visual_col];
+                }
+            }
+        }
     }
 }
 
@@ -225,6 +263,7 @@ void SaccadeWindowImpl::report_output(Layer *layer,
             }
         }
         window_dirty = true;
+        central_input_dirty = true;
     }
 }
 

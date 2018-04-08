@@ -16,7 +16,9 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
 
         void update();
         void add_layer(Layer *layer, IOTypeMask io_type);
+        void prepare_input_data();
         void feed_input(Layer *layer, float *input);
+        void feed_central_input(Layer *layer, float *input);
         void report_output(Layer *layer,
             Output *output, OutputType output_type);
 
@@ -43,6 +45,7 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         bool on_button_press_event(GdkEventButton* button_event);
 
         bool input_dirty;
+        bool central_input_dirty;
         bool window_dirty;
         bool waiting;
 
@@ -53,6 +56,8 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
 
         Fixation fixation;
         float saccade_rate;
+
+        float* input_data;
 };
 
 #endif

@@ -17,14 +17,8 @@ class SaccadeModule : public Module {
         void init();
         void update(Buffer *buffer);
 
-        // Primarily used by Saccade window
-        static int get_input_rows()    { return 100; }
-        static int get_input_columns() { return 200; }
-        static int get_input_size()    { return 100 * 200; }
-
     private:
-        std::map<Layer*, std::string> params;
-        Pointer<float> input_data;
+        std::map<Layer*, bool> central;
         SaccadeWindow *window;
 
     MODULE_MEMBERS
