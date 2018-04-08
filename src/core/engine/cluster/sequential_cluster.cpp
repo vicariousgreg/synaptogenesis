@@ -31,6 +31,20 @@ SequentialCluster::SequentialCluster(Structure *structure,
 
         // If already visited, skip
         if (visited.find(curr_layer) != visited.end()) continue;
+
+        // If current layer projects to other layers that haven't been visited,
+        //   Come back later
+        bool skip = false;
+        for (auto& conn : curr_layer->get_output_connections())
+            if (visited.find(conn->to_layer) == visited.end()
+                    and conn->to_layer->structure == structure)
+                skip = true;
+
+        if (skip) {
+            queue.push(curr_layer);
+            continue;
+        }
+
         visited.insert(curr_layer);
 
         // Add elements to beginning of list
