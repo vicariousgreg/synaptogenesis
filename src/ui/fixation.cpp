@@ -25,8 +25,9 @@ void Fixation::update(Output* motor, OutputType output_type,
     }
 
     if (sum_activity > 0.0) {
-        delta_x = delta_x * scale / sum_activity;
-        delta_y = delta_y * scale / sum_activity;
+        // Avoid dividing by values less than 1.0
+        delta_x = delta_x * scale / std::max(1.0f, sum_activity);
+        delta_y = delta_y * scale / std::max(1.0f, sum_activity);
 
         // Update fixation
         this->x = (fix_col + delta_x) / columns;
