@@ -15,14 +15,12 @@ static int compute_num_weights(Layer *from_layer, Layer *to_layer,
         + " (" + to_layer->structure->name + ") {Node: " + node->name + "}]";
 
     switch (config->type) {
-        case FULLY_CONNECTED: {
+        case FULLY_CONNECTED:
             return from_layer->size * to_layer->size;
             break;
-        }
-        case SUBSET: {
+        case SUBSET:
             return config->get_subset_config().total_size;
             break;
-        }
         case ONE_TO_ONE:
             if (from_layer->rows == to_layer->rows
                     and from_layer->columns == to_layer->columns)
@@ -32,41 +30,33 @@ static int compute_num_weights(Layer *from_layer, Layer *to_layer,
                     "Error in " + str + ":\n"
                     "  Cannot connect differently sized layers one-to-one!");
             break;
-        default:
+        case CONVERGENT:
+        case DIVERGENT: {
             auto arborized_config = config->get_arborized_config();
 
-            switch (config->type) {
-                case CONVERGENT:
-                    // Convolutional connections use a shared weight kernel
-                    if (config->convolutional)
-                        return arborized_config.get_total_field_size();
-                    // Convergent connections use unshared mini weight matrices
-                    // Each destination neuron connects to field_size squared neurons
-                    else
-                        return arborized_config.get_total_field_size() * to_layer->size;
-                    break;
-                case DIVERGENT:
-                    // Convolutional connections use a shared weight kernel
-                    if (config->convolutional)
-                        return arborized_config.get_total_field_size();
-                    // Divergent connections use unshared mini weight matrices
-                    // Each source neuron connects to field_size squared neurons
-                    else
-                        return arborized_config.get_total_field_size() * to_layer->size;
-
-                    // Arithmetic operations for the divergent kernel constrain
-                    //   the stride to non-zero values (division)
-                    if (arborized_config.row_stride == 0 or
-                        arborized_config.column_stride == 0)
-                        LOG_ERROR(
-                            "Error in " + str + ":\n"
-                            "  Divergent connections cannot have zero stride!");
-                    break;
-                default:
+            // Arithmetic operations for the divergent kernel constrain
+            //   the stride to non-zero values (division)
+            if (config->type == DIVERGENT) {
+                if (arborized_config.row_stride == 0 or
+                    arborized_config.column_stride == 0)
                     LOG_ERROR(
                         "Error in " + str + ":\n"
-                        "  Unknown layer connection type!");
+                        "  Divergent connections cannot have zero stride!");
             }
+
+            // Convolutional connections use a shared weight kernel
+            if (config->convolutional)
+                return arborized_config.get_total_field_size();
+            // Convergent connections use unshared mini weight matrices
+            // Each destination neuron connects to field_size^2 neurons
+            else
+                return to_layer->size
+                    * arborized_config.get_total_field_size();
+        }
+        default:
+            LOG_ERROR(
+                "Error in " + str + ":\n"
+                "  Unknown layer connection type!");
     }
 }
 
@@ -199,6 +189,7 @@ std::string Connection::str() const {
         + from_layer->name
         + " (" + from_layer->structure->name + ") -> "
         + to_layer->name
-        + " (" + to_layer->structure->name + ") {Node: " + node->name + "} name="
+        + " (" + to_layer->structure->name + ") "
+        + "{Node: " + node->name + "} name="
 	+ this->name + "]";
 }

@@ -60,8 +60,9 @@ static std::map<Layer*, DeviceID> distribute_layers(
 
 State::State(Network *network) : network(network), on_host(true) {
     // Validate neural model strings
+    auto neural_models = NeuralModelBank::get_neural_models();
     for (auto layer : network->get_layers())
-        if (NeuralModelBank::get_neural_models().count(layer->neural_model) == 0)
+        if (neural_models.count(layer->neural_model) == 0)
             LOG_ERROR(
                 "Unrecognized neural model \"" + layer->neural_model +
                 "\" in " + layer->str());
@@ -144,15 +145,15 @@ void State::build(std::set<DeviceID> devices) {
                         int word_index =
                             get_word_index(conn->delay,
                                 Attributes::get_output_type(conn->from_layer));
-                        inter_device_layers[word_index].push_back(conn->from_layer);
+                        inter_device_layers[word_index].push_back(
+                            conn->from_layer);
                     }
 
         // Create a map of word indices to buffers
         std::map<int, Buffer*> buffer_map;
-        for (auto pair : inter_device_layers) {
-            auto buffer = build_buffer(device_id, LayerList(), pair.second, LayerList());
-            buffer_map[pair.first] = buffer;
-        }
+        for (auto pair : inter_device_layers)
+            buffer_map[pair.first] = build_buffer(
+                device_id, LayerList(), pair.second, LayerList());
 
         // Set the inter device buffer
         inter_device_buffers[device_id] = buffer_map;
@@ -171,8 +172,8 @@ State::~State() {
     }
 }
 
-std::map<DeviceID, std::vector<BasePointer*>> State::get_network_pointers() const {
-    std::map<DeviceID, std::vector<BasePointer*>> network_pointers;
+PointerSetMap State::get_network_pointers() const {
+    PointerSetMap network_pointers;
     for (auto device : active_devices)
         network_pointers[device] = std::vector<BasePointer*>();
 
@@ -183,8 +184,8 @@ std::map<DeviceID, std::vector<BasePointer*>> State::get_network_pointers() cons
     return network_pointers;
 }
 
-std::map<DeviceID, std::vector<BasePointer*>> State::get_buffer_pointers() const {
-    std::map<DeviceID, std::vector<BasePointer*>> buffer_pointers;
+PointerSetMap State::get_buffer_pointers() const {
+    PointerSetMap buffer_pointers;
     for (auto device : active_devices)
         buffer_pointers[device] = std::vector<BasePointer*>();
 
@@ -343,10 +344,9 @@ void State::save(std::string file_name, bool verbose) {
         if (bytes > 0) {
             const char* data = (const char*)pair.second->get();
 
-            if (not output_file.write((const char*)&pair.first, sizeof(PointerKey)))
-                LOG_ERROR(
-                    "Error writing state to file!");
-            if (not output_file.write(data, bytes))
+            if (not output_file.write(
+                    (const char*)&pair.first, sizeof(PointerKey))
+                or not output_file.write(data, bytes))
                 LOG_ERROR(
                     "Error writing state to file!");
         }
@@ -362,7 +362,6 @@ void State::load(std::string file_name, bool verbose) {
 
     // Open file stream
     std::string path = file_name;
-
     std::ifstream input_file(path, std::ifstream::binary);
     if (verbose)
         printf("Loading network state from %s ...\n", path.c_str());
@@ -376,7 +375,6 @@ void State::load(std::string file_name, bool verbose) {
     input_file.seekg (0, input_file.beg);
 
     unsigned long read = 0;
-
     while (read < length) {
         PointerKey key(0,0,0);
         if (not input_file.read((char*)&key, sizeof(PointerKey)))
@@ -384,26 +382,24 @@ void State::load(std::string file_name, bool verbose) {
                 "Error reading pointer key from file!");
 
         // Search for the pointer, and if not found, skip it
-        BasePointer* ptr;
         try {
-            ptr = pointer_map.at(key);
+            BasePointer* ptr = pointer_map.at(key);
+
+            // If pointer size doesn't match, resize
+            if (ptr->get_bytes() != key.bytes)
+                ptr->resize(key.bytes);
+
+            // Read the data into memory
+            if (not input_file.read((char*)ptr->get(), key.bytes))
+                LOG_ERROR("Error reading data from file!");
+
+            read += sizeof(PointerKey) + key.bytes;
         } catch (...) {
             LOG_WARNING(
                 "Error retrieving pointer -- continuing...");
             input_file.ignore(key.bytes);
             read += sizeof(PointerKey) + key.bytes;
-            continue;
         }
-
-        // If pointer size doesn't match, resize
-        if (ptr->get_bytes() != key.bytes)
-            ptr->resize(key.bytes);
-
-        // Read the data into memory
-        if (not input_file.read((char*)ptr->get(), key.bytes))
-            LOG_ERROR("Error reading data from file!");
-
-        read += sizeof(PointerKey) + key.bytes;
     }
 
     // Close file stream
@@ -666,7 +662,9 @@ BasePointer* State::get_connection_data(Connection *conn, std::string key) {
 BasePointer* State::get_weight_matrix(Connection *conn, std::string key) {
     transfer_to_host();
     try {
-        return attributes.at(conn->to_layer)->get_weight_matrix(conn)->get_layer(key);
+        return attributes.at(conn->to_layer)
+            ->get_weight_matrix(conn)
+            ->get_layer(key);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get weight matrix data in State for "

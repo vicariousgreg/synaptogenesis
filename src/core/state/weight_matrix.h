@@ -144,7 +144,8 @@ void set_weights(float* arr, int size, float val, float fraction=1.0);
 void clear_weights(float* arr, int size);
 
 /* Randomizes an array */
-void randomize_weights(float* arr, int size, float min, float max, float fraction=1.0);
+void randomize_weights(float* arr, int size,
+    float min, float max, float fraction=1.0);
 void randomize_weights_gaussian(float* arr, int size,
     float mean, float std_dev, float max, float fraction=1.0);
 void randomize_weights_lognormal(float* arr, int size,
@@ -157,10 +158,5 @@ void transfer_weights(float* from, float* to, int size);
 
 /* Clears the diagonal of a weight matrix */
 void clear_diagonal(float *arr, int rows, int cols);
-
-
-/* Transposes a matrix in place */
-template <typename T>
-void transpose_matrix_in_place(T* data, int original_rows, int original_cols);
 
 #endif

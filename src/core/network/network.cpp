@@ -10,7 +10,8 @@ Network::Network(NetworkConfig* config) : config(config) {
 }
 
 Network::~Network() {
-    for (auto& structure : structures) delete structure;
+    for (auto& structure : structures)
+        delete structure;
     delete config;
 }
 
@@ -41,11 +42,11 @@ Structure* Network::get_structure(std::string name, bool log_error) const {
 Layer* Network::get_layer(std::string name, bool log_error) const {
     Layer *layer = nullptr;
     for (auto l : get_layers())
-        if (l->name == name) {
+        if (l->name == name)
             if (layer != nullptr and log_error)
                 LOG_ERROR("Ambiguous layer name: %s" + name);
-            layer = l;
-        }
+            else layer = l;
+
     if (layer == nullptr and log_error)
             LOG_ERROR(
                 "Could not find structure: " + name);
@@ -87,6 +88,7 @@ Connection* Network::get_connection(std::string name, bool log_error) {
     for (auto c : this->get_connections())
         if (c->name == name)
             conn = c;
+
     if (conn == nullptr and log_error)
             LOG_ERROR(
                 "Could not find connection: " + name);
@@ -149,6 +151,9 @@ void Network::add_connection_internal(const ConnectionConfig* conn_config) {
         std::string from_layer = conn_config->get("from layer", "");
         std::string to_layer = conn_config->get("to layer", "");
 
+        // If structures are explicit, retrieve
+        // Otherwise, search for layer in all structures
+        //   Log error if more than one layer is found
         if (conn_config->has("from structure")) {
             from_structure = conn_config->get("from structure");
         } else {
@@ -158,8 +163,9 @@ void Network::add_connection_internal(const ConnectionConfig* conn_config) {
                     if (layer->name == from_layer) {
                         if (found != nullptr)
                             LOG_ERROR(
-                                "Ambiguous source layer " + from_layer +
-                                " for connection: " + conn_config->get("name", ""));
+                                "Ambiguous source layer " + from_layer
+                                + " for connection: "
+                                + conn_config->get("name", ""));
                         found = structure;
                     }
                 }
@@ -180,8 +186,9 @@ void Network::add_connection_internal(const ConnectionConfig* conn_config) {
                     if (layer->name == to_layer) {
                         if (found != nullptr)
                             LOG_ERROR(
-                                "Ambiguous destination layer " + to_layer +
-                                " for connection: " + conn_config->get("name", ""));
+                                "Ambiguous destination layer " + to_layer
+                                + " for connection: "
+                                + conn_config->get("name", ""));
                         found = structure;
                     }
                 }

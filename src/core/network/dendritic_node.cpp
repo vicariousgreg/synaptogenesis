@@ -60,17 +60,16 @@ int DendriticNode::get_second_order_size() const {
             "  Requested second order size on non-second order node!");
     else if (second_order_conn == nullptr)
         return 0;
-    else
-        return second_order_conn->get_num_weights();
+    else return second_order_conn->get_num_weights();
 }
 
 Connection* DendriticNode::get_second_order_connection() const {
     if (not second_order)
         LOG_ERROR(
-            "Error in dendritic node of " + this->to_layer->str() + "\n"
-            "  Requested second order host connection on non-second order node!");
-    else
-        return second_order_conn;
+            "Error in dendritic node of " + this->to_layer->str()
+            + "\n  Requested second order host connection"
+            + " on non-second order node!");
+    else return second_order_conn;
 }
 
 DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
@@ -78,7 +77,8 @@ DendriticNode* DendriticNode::add_child(std::string name, Opcode opcode,
     // Verify that this node is not a leaf or a second order node
     if (is_leaf())
         LOG_ERROR(
-            "Error in dendritic node of " + this->to_layer->str() + "\n"
+            "Error in dendritic node " + name +
+            " of " + this->to_layer->str() + "\n"
             "  Dendritic node cannot have children if it has a connection!");
     else if (this->second_order)
         LOG_ERROR(
@@ -125,19 +125,18 @@ DendriticNode* DendriticNode::add_child(Connection *conn) {
     if (second_order) {
         if (second_order_conn == nullptr) {
             second_order_conn = conn;
-            return this;
-        } else if (conn->get_num_weights() != second_order_conn->get_num_weights()) {
+            child = this;
+        } else if (conn->get_num_weights()
+                    != second_order_conn->get_num_weights()) {
             LOG_ERROR(
                 "Error in dendritic node of " + this->to_layer->str() + "\n"
                 "  Second order connections must have identical sizes!");
         } else {
-            child =
-                new DendriticNode(this, to_layer, register_index, conn);
+            child = new DendriticNode(this, to_layer, register_index, conn);
             children.push_back(child);
         }
     } else {
-        child =
-            new DendriticNode(this, to_layer, register_index, conn);
+        child = new DendriticNode(this, to_layer, register_index, conn);
         children.push_back(child);
     }
     return child;

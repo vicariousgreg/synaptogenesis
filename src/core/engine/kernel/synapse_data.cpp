@@ -4,6 +4,7 @@
 #include "network/structure.h"
 #include "state/state.h"
 #include "state/attributes.h"
+#include "state/weight_matrix.h"
 
 SynapseData::SynapseData(DendriticNode *parent_node,
     Connection *conn, State *state, bool updater) :

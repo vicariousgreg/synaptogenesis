@@ -1,10 +1,9 @@
 #ifndef attribute_data_h
 #define attribute_data_h
 
-#include "network/layer.h"
-#include "util/parallel.h"
 #include "util/pointer.h"
 
+class Layer;
 class State;
 class Attributes;
 
@@ -12,10 +11,15 @@ class Attributes;
 class AttributeData {
     public:
         AttributeData(Layer *layer, State *state);
+
         const Attributes *attributes;
+
+        /* IO pointers */
         Pointer<float> input;
         Pointer<Output> output;
         Pointer<Output> expected;
+
+        /* Layer properties */
         const int size;
         const int num_weights;
         int history_size;

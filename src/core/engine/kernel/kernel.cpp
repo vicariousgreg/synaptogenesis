@@ -1,5 +1,6 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
+#include "state/weight_matrix.h"
 #include "util/parallel.h"
 
 /******************************************************************************/
@@ -134,9 +135,12 @@ GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
     if (nid < count) {
         if (overwrite)
             data[nid] =
-                (curand_uniform(&cuda_rand_states[nid]) < ((random) ? rrates[nid] : rate))
-                ? val : 0.0;
-        else if (curand_uniform(&cuda_rand_states[nid]) < ((random) ? rrates[nid] : rate))
+                (curand_uniform(&cuda_rand_states[nid])
+                        < ((random) ? rrates[nid] : rate))
+                    ? val
+                    : 0.0;
+        else if (curand_uniform(&cuda_rand_states[nid])
+                        < ((random) ? rrates[nid] : rate))
             data[nid] += val;
     }
 }
@@ -144,7 +148,8 @@ GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
 GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
         float val, float rate, bool overwrite, Pointer<float> random_rates) { }
 #endif
-Kernel<Pointer<float>, int, float, float, bool, Pointer<float>> get_randomize_data_poisson() {
+Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>
+        get_randomize_data_poisson() {
     return Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>(
         randomize_data_poisson_SERIAL, randomize_data_poisson_PARALLEL);
 }

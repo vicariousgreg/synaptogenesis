@@ -41,11 +41,6 @@ Layer::~Layer() {
         delete config;
 }
 
-const ConnectionList& Layer::get_input_connections() const
-    { return input_connections; }
-const ConnectionList& Layer::get_output_connections() const
-    { return output_connections; }
-
 bool Layer::is_structure_input() const {
     for (auto conn : get_input_connections())
         if (conn->from_layer->structure == this->structure)
@@ -65,6 +60,7 @@ DendriticNodeList Layer::get_dendritic_nodes() const {
     std::queue<DendriticNode*> q;
     q.push(this->dendritic_root);
 
+    // Breadth first search
     while (not q.empty()) {
         auto curr = q.front();
         q.pop();
@@ -100,13 +96,9 @@ std::string Layer::get_parameter(std::string key, std::string def_val) const {
 
 int Layer::get_max_delay() const {
     int max_delay = 0;
-
-    // Determine max delay for output connections
-    for (auto& conn : get_output_connections()) {
-        int delay = conn->delay;
-        if (delay > max_delay)
-            max_delay = delay;
-    }
+    for (auto& conn : get_output_connections())
+        if (conn->delay > max_delay)
+            max_delay = conn->delay;
     return max_delay;
 }
 

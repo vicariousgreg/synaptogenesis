@@ -4,7 +4,6 @@
 #include <typeinfo>
 #include <typeindex>
 
-#include "util/parallel.h"
 #include "util/stream.h"
 
 class PointerKey {

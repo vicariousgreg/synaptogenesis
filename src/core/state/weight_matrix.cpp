@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <sstream>
 
 #include "state/weight_matrix.h"
@@ -9,6 +8,7 @@
 #include "util/callback_manager.h"
 #include "util/logger.h"
 #include "util/parallel.h"
+#include "util/tools.h"
 
 /* Sets all values in an array to the given val */
 void set_weights(float* arr, int size, float val, float fraction) {
@@ -1170,42 +1170,4 @@ void WeightMatrix::get_delays(OutputType output_type,
         device_check_error("Failed to compute weight indices!");
 #endif
     }
-}
-
-/******************************************************************************/
-/**************************** MATRIX TRANSPOSITION ****************************/
-/******************************************************************************/
-
-/* Adapted from StackOverflow implementation of "Following the cycles" in-place
- *  transpose algorithm by Christian Ammer:
- * https://stackoverflow.com/questions/9227747/in-place-transposition-of-a-matrix
- */
-
-template<class RandomIterator>
-static void transpose_in_place_impl(RandomIterator first, RandomIterator last,
-        long desired_rows) {
-    const long mn1 = (last - first - 1);
-    const long n   = (last - first) / desired_rows;
-    std::vector<bool> visited(last - first);
-    RandomIterator cycle = first;
-    while (++cycle != last) {
-        if (visited[cycle - first]) continue;
-        long a = cycle - first;
-        do {
-            a = a == mn1 ? mn1 : (n * a) % mn1;
-            std::swap(*(first + a), *cycle);
-            visited[a] = true;
-        } while ((first + a) != cycle);
-    }
-}
-
-template void transpose_matrix_in_place<float>(
-    float* data, int original_rows, int original_cols);
-template void transpose_matrix_in_place<int>(
-    int* data, int original_rows, int original_cols);
-
-template <typename T>
-void transpose_matrix_in_place(T* data, int original_rows, int original_cols) {
-    transpose_in_place_impl(data,
-        data + (original_rows * original_cols), original_cols);
 }

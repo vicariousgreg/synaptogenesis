@@ -10,7 +10,6 @@
 
 #include "util/logger.h"
 #include "util/resource_manager.h"
-#include "util/tools.h"
 
 template<typename T>
 Pointer<T>::Pointer()
@@ -185,7 +184,8 @@ void Pointer<T>::copy_to(Pointer<T> dst, Stream *stream) const {
         LOG_ERROR(
             "Attempted to copy memory between pointers of different sizes!");
 #ifdef __CUDACC__
-    if (this->local and dst.local) memcpy(dst.ptr, this->ptr, this->size * sizeof(T));
+    if (this->local and dst.local)
+        memcpy(dst.ptr, this->ptr, this->size * sizeof(T));
     else {
         if (stream->is_host() and not this->local)
             LOG_ERROR(

@@ -29,6 +29,10 @@ class Connection {
         /* Sparsify functionality */
         void sparsify(int sparse_num_weights);
 
+        /* Gets a parameter from the connection config,
+         *   logging a warning if not found */
+        std::string str() const;
+
         // Connection config
         const ConnectionConfig * const config;
 
@@ -49,7 +53,7 @@ class Connection {
         // Connection operation code
         const Opcode opcode;
 
-        // Sparse matrix
+        // Sparse matrix (affects num_weights)
         const bool sparse;
 
         // Convolutional boolean (extracted from type)
@@ -65,8 +69,6 @@ class Connection {
 
         // Connection ID
         const size_t id;
-
-        std::string str() const;
 
     protected:
         friend class Structure;

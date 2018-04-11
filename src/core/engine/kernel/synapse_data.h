@@ -2,14 +2,13 @@
 #define synapse_data_h
 
 #include "network/layer.h"
-#include "state/weight_matrix.h"
 #include "engine/kernel/extractor.h"
 #include "engine/kernel/aggregator.h"
-#include "util/parallel.h"
 #include "util/pointer.h"
 
 class State;
 class Attributes;
+class WeightMatrix;
 class DendriticNode;
 class Connection;
 
@@ -48,7 +47,7 @@ class SynapseData {
         const Layer from_layer;
         const Layer to_layer;
 
-        /* IO attributes */
+        /* IO pointers */
         Pointer<Output> outputs;
         Pointer<Output> destination_outputs;
         Pointer<float> inputs;

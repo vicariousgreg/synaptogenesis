@@ -21,9 +21,9 @@
  *     or learning happens between layer activations or in a batch at the
  *     end of the timestep). The type of cluster is determined by the
  *     ClusterType passed into the constructor.
- * Note that not all neural models are supported by each cluster type.  This is
- *     checked for in Attributes::check_compatibility() when the cluster is
- *     constructed.
+ * Note that not all neural models are supported by each cluster type.
+ *     This is checked for in Attributes::check_compatibility() when the
+ *     cluster is constructed.
  */
 class Structure {
     public:
@@ -43,10 +43,11 @@ class Structure {
         const StructureConfig* get_config() { return config; }
         const LayerList& get_layers() const { return layers; }
         const ConnectionList& get_connections() const { return connections; }
-
-        // Checks whether this structure contains layers of a given neural_model
-        bool contains(std::string neural_model) const;
         int get_num_neurons() const;
+
+        /* Checks whether this structure contains layers of a neural_model */
+        bool contains(std::string neural_model) const;
+
         std::string str() const { return "[Structure: " + name + "]"; }
 
         const std::string name;
@@ -55,6 +56,7 @@ class Structure {
     protected:
         friend class Network;
 
+        /* Structures can only be constructed by Networks */
         Structure(StructureConfig* config);
         Structure(std::string name, ClusterType cluster_type=PARALLEL);
 

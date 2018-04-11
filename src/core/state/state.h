@@ -15,6 +15,8 @@ class Network;
 class Layer;
 class DendriticNode;
 
+typedef std::map<DeviceID, std::vector<BasePointer*>> PointerSetMap;
+
 class State {
     public:
         State(Network *network);
@@ -23,6 +25,8 @@ class State {
         /* Builds the state on the specified devices
          * If none specified, host is used by default */
         void build(std::set<DeviceID> devices = {});
+        const std::set<DeviceID> get_active_devices() const
+            { return active_devices; }
 
         /* Transfers all data to device or back to host */
         void transfer_to_device();
@@ -72,11 +76,10 @@ class State {
         BasePointer* get_weight_matrix(Connection *conn,
             std::string key="weights");
 
-        const std::set<DeviceID> get_active_devices() { return active_devices; }
-
         Network* const network;
 
     private:
+        // Flag for whether state data is on host
         bool on_host;
 
         // Data buffers
@@ -89,8 +92,8 @@ class State {
         std::set<DeviceID> active_devices;
 
         // Functions for gathering pointers
-        std::map<DeviceID, std::vector<BasePointer*>> get_network_pointers() const;
-        std::map<DeviceID, std::vector<BasePointer*>> get_buffer_pointers() const;
+        PointerSetMap get_network_pointers() const;
+        PointerSetMap get_buffer_pointers() const;
 
         // Map of all state data pointers
         std::map<PointerKey, BasePointer*> pointer_map;

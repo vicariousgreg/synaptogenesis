@@ -14,8 +14,8 @@ class Connection;
 typedef std::vector<Connection*> ConnectionList;
 
 /* Represents a two dimensional layer of neurons.
- * Layers can be constructed and connected into networks using the Structure class.
- * Layers contain a boatload of information.
+ * Layers can be constructed and connected into networks using the Network,
+ *   Structure, and Connection classes.
  */
 class Layer {
     public:
@@ -24,20 +24,24 @@ class Layer {
 
         /* Getters */
         const LayerConfig* get_config() const { return config; }
-
-        const ConnectionList& get_input_connections() const;
-        const ConnectionList& get_output_connections() const;
+        const ConnectionList& get_input_connections() const
+            { return input_connections; }
+        const ConnectionList& get_output_connections() const
+            { return output_connections; }
 
         /* Checks if layer is an input or output layer within its structure */
         bool is_structure_input() const;
         bool is_structure_output() const;
 
+        /* Dendritic Node retrieval */
         DendriticNodeList get_dendritic_nodes() const;
         DendriticNode* get_dendritic_root() const { return dendritic_root; }
         DendriticNode* get_dendritic_node(std::string name,
             bool log_error=false) const;
 
-        std::string get_parameter( std::string key, std::string dev_val) const;
+        /* Gets a parameter from the layer config,
+         *   logging a warning if not found */
+        std::string get_parameter(std::string key, std::string def_val) const;
 
         /* Gets the maximum delay for all outgoing connections */
         int get_max_delay() const;
