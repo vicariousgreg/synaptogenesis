@@ -1,4 +1,5 @@
 #include <sstream>
+#include <assert.h>
 
 #include "state/weight_matrix.h"
 #include "network/layer.h"
@@ -9,6 +10,7 @@
 #include "util/logger.h"
 #include "util/parallel.h"
 #include "util/tools.h"
+#include "util/transpose.h"
 
 /* Sets all values in an array to the given val */
 void set_weights(float* arr, int size, float val, float fraction) {

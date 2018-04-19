@@ -4,9 +4,6 @@
 #include "util/constants.h"
 #include "util/logger.h"
 
-const int TRANSPOSE_TILE_DIM = 32;
-const int TRANSPOSE_BLOCK_ROWS = 8;
-
 // Define prefixes such that it doesn't affect anything for serial version
 #ifdef __CUDACC__
 
@@ -14,40 +11,9 @@ const int TRANSPOSE_BLOCK_ROWS = 8;
 #define DEVICE __device__
 #define HOST __host__
 #define device_check_error(msg) { gpuAssert(__FILE__, __LINE__, msg); }
-#else
 
-#define GLOBAL
-#define DEVICE
-#define HOST
-#define device_check_error(msg)
-
-// These will be dummy functions without CUDA
-inline void device_synchronize() { }
-inline int get_num_cuda_devices() { return 0; }
-inline void init_rand(int count) { }
-inline void free_rand() { }
-inline int calc_threads(int computations) { return 0; }
-inline int calc_blocks(int computations, int threads=0) { return 0; }
-inline void device_check_memory(DeviceID device_id, size_t *free, size_t *total) { }
-inline void* cuda_allocate_device(int device_id, size_t count,
-        size_t size, void* source_data) {
-    LOG_ERROR(
-        "Attempted to allocate device memory in non-parallel build.");
-    return nullptr;
-}
-
-class dim3 {
-    public:
-        dim3(int x, int y=1, int z=1) : x(x), y(y), z(z) { }
-        int x, y, z;
-};
-
-dim3 calc_transpose_threads(int original_rows, int original_columns);
-dim3 calc_transpose_blocks(int original_rows, int original_columns);
-
-#endif
-
-#ifdef __CUDACC__
+#define MIN min
+#define MAX max
 
 #include <cstdio>
 #include <math.h>
@@ -71,9 +37,6 @@ int get_num_cuda_devices();
 int calc_threads(int computations);
 int calc_blocks(int computations, int threads=IDEAL_THREADS);
 
-dim3 calc_transpose_threads(int original_rows, int original_columns);
-dim3 calc_transpose_blocks(int original_rows, int original_columns);
-
 void gpuAssert(const char* file, int line, const char* msg);
 
 /** Checks cuda memory usage and availability */
@@ -87,13 +50,39 @@ GLOBAL void init_curand(int count);
 void init_rand(int count);
 void free_rand();
 
-template<class T>
-class Pointer;
 
-template<class T>
-GLOBAL void transpose_matrix_parallel(
-    const Pointer<T> idata, Pointer<T> odata,
-	const int original_rows, const int original_columns);
+#else
+
+
+#define GLOBAL
+#define DEVICE
+#define HOST
+#define device_check_error(msg)
+
+#include <algorithm>
+#define MIN std::fmin
+#define MAX std::fmax
+
+// These will be dummy functions without CUDA
+inline void device_synchronize() { }
+inline int get_num_cuda_devices() { return 0; }
+inline void init_rand(int count) { }
+inline void free_rand() { }
+inline int calc_threads(int computations) { return 0; }
+inline int calc_blocks(int computations, int threads=0) { return 0; }
+inline void device_check_memory(DeviceID device_id, size_t *free, size_t *total) { }
+inline void* cuda_allocate_device(int device_id, size_t count,
+        size_t size, void* source_data) {
+    LOG_ERROR(
+        "Attempted to allocate device memory in non-parallel build.");
+    return nullptr;
+}
+
+class dim3 {
+    public:
+        dim3(int x, int y=1, int z=1) : x(x), y(y), z(z) { }
+        int x, y, z;
+};
 
 #endif
 

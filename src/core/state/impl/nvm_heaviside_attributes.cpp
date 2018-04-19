@@ -4,7 +4,6 @@
 #include "state/impl/nvm_heaviside_attributes.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "util/tools.h"
 
 REGISTER_ATTRIBUTES(NVMHeavisideAttributes, "nvm_heaviside", FLOAT)
 USE_WEIGHT_MATRIX(NVMWeightMatrix, "nvm_heaviside")

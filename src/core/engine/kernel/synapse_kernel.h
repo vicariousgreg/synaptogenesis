@@ -6,7 +6,6 @@
 #include "engine/kernel/aggregator.h"
 #include "util/parallel.h"
 #include "util/constants.h"
-#include "util/tools.h"
 #include "util/pointer.h"
 
 /******************************************************************************/

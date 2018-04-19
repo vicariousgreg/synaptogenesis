@@ -1,10 +1,10 @@
 #include <string>
 #include <math.h>
+#include <assert.h>
 
 #include "state/impl/debug_attributes.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "util/tools.h"
 
 #define DUMMY_VAL 1.0
 

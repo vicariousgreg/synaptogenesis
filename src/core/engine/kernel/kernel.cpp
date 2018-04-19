@@ -1,7 +1,9 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "state/weight_matrix.h"
+#include "util/tools.h"
 #include "util/parallel.h"
+#include "util/transpose.h"
 
 /******************************************************************************/
 /************************* ACTIVATOR TOOL KERNELS *****************************/

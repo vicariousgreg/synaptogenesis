@@ -1,18 +1,6 @@
 #include "util/parallel.h"
 #include "util/pointer.h"
 
-dim3 calc_transpose_threads(int original_rows, int original_columns) {
-    return dim3(TRANSPOSE_TILE_DIM, TRANSPOSE_BLOCK_ROWS, 1);
-}
-
-dim3 calc_transpose_blocks(int original_rows, int original_columns) {
-    return dim3(
-        (original_columns/TRANSPOSE_TILE_DIM)
-            + (original_columns % TRANSPOSE_TILE_DIM > 0),
-        (original_rows/TRANSPOSE_TILE_DIM)
-            + (original_rows % TRANSPOSE_TILE_DIM > 0), 1);
-}
-
 #ifdef __CUDACC__
 
 int calc_threads(int computations) {
@@ -113,40 +101,6 @@ void free_rand() {
         cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
     }
     cudaSetDevice(prev_device);
-}
-
-template GLOBAL void transpose_matrix_parallel<float>(
-	const Pointer<float> idata, Pointer<float> odata,
-	const int original_rows, const int original_columns);
-template GLOBAL void transpose_matrix_parallel<int>(
-	const Pointer<int> idata, Pointer<int> odata,
-	const int original_rows, const int original_columns);
-
-template<class T>
-GLOBAL void transpose_matrix_parallel(
-        const Pointer<T> idata, Pointer<T> odata,
-        const int original_rows, const int original_columns) {
-    __shared__ T tile[TRANSPOSE_TILE_DIM][TRANSPOSE_TILE_DIM+1];
-
-    int x = blockIdx.x * TRANSPOSE_TILE_DIM + threadIdx.x;
-    int y = blockIdx.y * TRANSPOSE_TILE_DIM + threadIdx.y;
-
-    T* in = idata.get();
-    if (x < original_columns)
-        for (int j = 0; j < TRANSPOSE_TILE_DIM; j += TRANSPOSE_BLOCK_ROWS)
-            if (y+j < original_rows)
-                tile[threadIdx.y+j][threadIdx.x] = in[(y+j)*original_columns + x];
-
-    __syncthreads();
-
-    x = blockIdx.y * TRANSPOSE_TILE_DIM + threadIdx.x;
-    y = blockIdx.x * TRANSPOSE_TILE_DIM + threadIdx.y;
-
-    T* out = odata.get();
-    if (x < original_rows)
-        for (int j = 0; j < TRANSPOSE_TILE_DIM; j += TRANSPOSE_BLOCK_ROWS)
-            if (y + j < original_columns)
-                out[(y+j)*original_rows + x] = tile[threadIdx.x][threadIdx.y + j];
 }
 
 #endif

@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <assert.h>
 
 #include "util/logger.h"
 #include "util/resource_manager.h"

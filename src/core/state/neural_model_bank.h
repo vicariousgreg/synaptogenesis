@@ -8,7 +8,6 @@
 #include "network/connection.h"
 
 class Attributes;
-class AttributeData;
 class WeightMatrix;
 
 /* Typedef for subclass build method

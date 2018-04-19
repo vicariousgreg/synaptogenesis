@@ -4,7 +4,6 @@
 #include "state/impl/nvm_logistic_attributes.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "util/tools.h"
 
 REGISTER_ATTRIBUTES(NVMLogisticAttributes, "nvm_logistic", FLOAT)
 USE_WEIGHT_MATRIX(NVMWeightMatrix, "nvm_logistic")

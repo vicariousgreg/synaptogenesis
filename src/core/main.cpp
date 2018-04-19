@@ -11,7 +11,6 @@
 #include "io/impl/dsst_module.h"
 #include "io/environment.h"
 #include "engine/engine.h"
-#include "util/tools.h"
 #include "util/property_config.h"
 
 void mnist_test() {

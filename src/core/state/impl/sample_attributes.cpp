@@ -4,7 +4,6 @@
 #include "state/impl/sample_attributes.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "util/tools.h"
 
 /* These macros register the Attributes and WeightMatrix subclasses, associating
  *   them with the neural model named "sample".

@@ -4,7 +4,6 @@
 #include "util/pointer.h"
 #include "util/logger.h"
 #include "util/resource_manager.h"
-#include "util/tools.h"
 
 BasePointer::BasePointer(std::type_index type, void* ptr,
     size_t size, size_t unit_size,

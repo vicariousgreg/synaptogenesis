@@ -28,9 +28,8 @@ class Attributes {
 
         /* Checks whether these attributes are compatible
          *   with the given cluster_type */
-        virtual bool check_compatibility(ClusterType cluster_type) {
-            return true;
-        }
+        virtual bool check_compatibility(ClusterType cluster_type)
+            { return true; }
 
         // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
@@ -38,14 +37,12 @@ class Attributes {
         void transfer(DeviceID new_device);
 
         // Activation Function
-        virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) {
-            return get_base_activator_kernel(conn);
-        }
+        virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn)
+            { return get_base_activator_kernel(conn); }
 
         // Learning Rule
-        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) {
-            return Kernel<SYNAPSE_ARGS> ();
-        }
+        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn)
+            { return Kernel<SYNAPSE_ARGS> (); }
 
         // Weight matrix functions
         void process_weight_matrices();

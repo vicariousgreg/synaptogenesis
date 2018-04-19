@@ -11,7 +11,7 @@
 #include "io/buffer.h"
 #include "io/module.h"
 #include "util/constants.h"
-#include "util/tools.h"
+#include "util/timer.h"
 
 class Layer;
 class Report;

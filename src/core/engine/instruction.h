@@ -12,6 +12,7 @@
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
 #include "util/scheduler.h"
+#include "util/transpose.h"
 
 class Instruction {
     public:

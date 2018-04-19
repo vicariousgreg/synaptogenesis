@@ -24,7 +24,9 @@ bool NeuralModelBank::register_attributes(std::string neural_model,
 
     if (bank->att_build_pointers.count(neural_model) == 1)
         LOG_ERROR(
-            "Duplicate attributes neural model string: " + neural_model + "!");
+            "Duplicate attributes neural model string: "
+                + neural_model + "!");
+
     bank->neural_models.insert(neural_model);
     bank->att_build_pointers[neural_model] = build_ptr;
     bank->output_types[neural_model] = output_type;
@@ -37,7 +39,9 @@ bool NeuralModelBank::register_weight_matrix(std::string neural_model,
 
     if (bank->mat_build_pointers.count(neural_model) == 1)
         LOG_ERROR(
-            "Duplicate weight matrix neural model string: " + neural_model + "!");
+            "Duplicate weight matrix neural model string: "
+                + neural_model + "!");
+
     bank->neural_models.insert(neural_model);
     bank->mat_build_pointers[neural_model] = build_ptr;
     return true;

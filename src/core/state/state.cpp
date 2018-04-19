@@ -7,7 +7,6 @@
 #include "state/neural_model_bank.h"
 #include "network/network.h"
 #include "io/buffer.h"
-#include "util/tools.h"
 
 static std::map<Layer*, DeviceID> distribute_layers(
         const LayerList& layers, std::set<DeviceID> devices) {

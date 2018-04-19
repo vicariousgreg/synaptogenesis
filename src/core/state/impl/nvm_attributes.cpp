@@ -4,7 +4,6 @@
 #include "state/impl/nvm_attributes.h"
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
-#include "util/tools.h"
 
 REGISTER_ATTRIBUTES(NVMAttributes, "nvm", FLOAT)
 REGISTER_WEIGHT_MATRIX(NVMWeightMatrix, "nvm")
