@@ -4,7 +4,6 @@
 #include "state/weight_matrix.h"
 #include "network/layer.h"
 #include "network/connection.h"
-#include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "util/callback_manager.h"
 #include "util/logger.h"
@@ -12,88 +11,8 @@
 #include "util/tools.h"
 #include "util/transpose.h"
 
-/* Sets all values in an array to the given val */
-void set_weights(float* arr, int size, float val, float fraction) {
-    fSet(arr, size, val, fraction);
-}
-
-/* Clears an array */
-void clear_weights(float* arr, int size) {
-    set_weights(arr, size, 0.0);
-}
-
-/* Randomizes an array */
-void randomize_weights(float* arr, int size,
-        float min, float max, float fraction) {
-    fRand(arr, size, min, max, fraction);
-}
-void randomize_weights_gaussian(float* arr, int size,
-        float mean, float std_dev, float max, float fraction) {
-    std::normal_distribution<double> dist(mean, std_dev);
-
-    if (fraction == 1.0) {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
-    } else {
-        std::uniform_real_distribution<double> f_dist(0.0, 1.0);
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = (f_dist(generator) < fraction)
-                ? std::min((double)max, std::max(0.0, dist(generator)))
-                : 0.0;
-    }
-}
-void randomize_weights_lognormal(float* arr, int size,
-        float mean, float std_dev, float max, float fraction) {
-    std::lognormal_distribution<double> dist(mean, std_dev);
-
-    if (fraction == 1.0) {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
-    } else {
-        std::uniform_real_distribution<double> f_dist(0.0, 1.0);
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = (f_dist(generator) < fraction)
-                ? std::min((double)max, std::max(0.0, dist(generator)))
-                : 0.0;
-    }
-}
-void randomize_weights_powerlaw(float* arr, int size,
-        float exponent, float min, float max, float fraction) {
-    std::uniform_real_distribution<float> dist(0.0, 1.0);
-
-    float coeff_a = pow(max, 1.0-exponent);
-    float coeff_b = pow(std::max(min, 0.00001f), 1.0-exponent);
-    float coeff = coeff_a - coeff_b;
-    float pow_exp = 1.0 / (1.0-exponent);
-
-    if (fraction == 1.0) {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = pow(coeff * dist(generator) + coeff_b, pow_exp);
-    } else {
-        for (int i = 0 ; i < size ; ++i)
-            arr[i] = (dist(generator) < fraction)
-                ? pow(coeff * dist(generator) + coeff_b, pow_exp)
-                : 0.0;
-    }
-}
-
-/* Transfers the values from one array to another */
-void transfer_weights(float* from, float* to, int size) {
-    for (int i = 0 ; i < size ; ++i) to[i] = from[i];
-}
-
-/* Clears the diagonal of a weight matrix */
-void clear_diagonal_square(float *arr, int rows, int cols) {
-    if (rows != cols)
-        LOG_ERROR(
-            "Attempted to clear diagonal of non-square weight matrix!");
-
-    for (int i = 0 ; i < rows ; ++i)
-        arr[i * rows + i] = 0.0;
-}
-
 static void initialize_weights(WeightMatrix *matrix,
-    const PropertyConfig config, float* target_matrix, Connection* conn);
+    const PropertyConfig config, float* target_matrix);
 
 WeightMatrix::WeightMatrix(Connection* conn)
     : connection(conn),
@@ -314,7 +233,7 @@ WeightMatrix *WeightMatrix::build(Connection *conn) {
 
 void WeightMatrix::init() {
     initialize_weights(this,
-        connection->get_config()->get_weight_config(), weights, connection);
+        connection->get_config()->get_weight_config(), weights);
     if (connection->sparse) sparsify();
     register_variables();
 }
@@ -444,7 +363,7 @@ static void flat_config(const PropertyConfig& config, float* target_matrix,
     float weight = config.get_float("weight", 1.0);
     float fraction = config.get_float("fraction", 1.0);
 
-    set_weights(target_matrix, conn->get_num_weights(), weight, fraction);
+    fSet(target_matrix, conn->get_num_weights(), weight, fraction);
 }
 
 static void random_config(const PropertyConfig& config, float* target_matrix,
@@ -453,7 +372,7 @@ static void random_config(const PropertyConfig& config, float* target_matrix,
     float min_weight = config.get_float("min weight", 0.0);
     float fraction = config.get_float("fraction", 1.0);
 
-    randomize_weights(target_matrix, conn->get_num_weights(),
+    fRand(target_matrix, conn->get_num_weights(),
         min_weight, max_weight, fraction);
 }
 
@@ -470,9 +389,9 @@ static void gaussian_config(const PropertyConfig& config, float* target_matrix,
 
     // If standard deviation is 0.0, just set the weights to the mean
     if (std_dev == 0.0)
-        set_weights(target_matrix, conn->get_num_weights(), mean, fraction);
+        fSet(target_matrix, conn->get_num_weights(), mean, fraction);
     else
-        randomize_weights_gaussian(target_matrix, conn->get_num_weights(),
+        fRand_gaussian(target_matrix, conn->get_num_weights(),
             mean, std_dev, conn->max_weight, fraction);
 }
 
@@ -488,9 +407,9 @@ static void log_normal_config(const PropertyConfig& config,
             "  Log normal weight config std_dev must be positive!");
 
     if (std_dev == 0.0)
-        set_weights(target_matrix, conn->get_num_weights(), mean, fraction);
+        fSet(target_matrix, conn->get_num_weights(), mean, fraction);
     else
-        randomize_weights_lognormal(target_matrix, conn->get_num_weights(),
+        fRand_lognormal(target_matrix, conn->get_num_weights(),
             mean, std_dev, conn->max_weight, fraction);
 }
 
@@ -508,7 +427,7 @@ static void power_law_config(const PropertyConfig& config, float* target_matrix,
             "Error in weight config for " + conn->str() + ":\n"
             "  Power law config max must be positive!");
 
-    randomize_weights_powerlaw(target_matrix, conn->get_num_weights(),
+    fRand_powerlaw(target_matrix, conn->get_num_weights(),
         exponent, min_weight, max_weight, fraction);
 }
 
@@ -643,7 +562,9 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
 }
 
 static void weight_callback_config(WeightMatrix *matrix,
-        const PropertyConfig& config, float* target_matrix, Connection* conn) {
+        const PropertyConfig& config, float* target_matrix) {
+    Connection *conn = matrix->connection;
+
     if (not config.has("callback"))
         LOG_ERROR(
             "Unspecified weight callback function for connection "
@@ -659,7 +580,9 @@ static void weight_callback_config(WeightMatrix *matrix,
 }
 
 static void distance_weight_callback_config(WeightMatrix *matrix,
-        const PropertyConfig& config, float* target_matrix, Connection* conn) {
+        const PropertyConfig& config, float* target_matrix) {
+    Connection *conn = matrix->connection;
+
     if (not config.has("distance callback"))
         LOG_ERROR(
             "Unspecified distance callback function for connection "
@@ -681,18 +604,23 @@ static void distance_weight_callback_config(WeightMatrix *matrix,
     callback(id, num_weights, target_matrix, matrix->distances.get());
 }
 
-static void clear_diagonal(WeightMatrix *matrix,
-        const PropertyConfig& config, float* target_matrix, Connection* conn) {
+static void clear_diagonal_config(WeightMatrix *matrix,
+        const PropertyConfig& config, float* target_matrix) {
+    Connection *conn = matrix->connection;
+
     switch(conn->get_type()) {
         case FULLY_CONNECTED:
-            clear_diagonal_square(target_matrix,
-                conn->from_layer->size, conn->to_layer->size);
+            if (conn->from_layer->size != conn->to_layer->size)
+                LOG_ERROR(
+                    "Attempted to clear diagonal of non-square weight matrix!");
+            clear_diagonal(target_matrix, conn->from_layer->size);
             break;
         case SUBSET: {
             auto subset_config = conn->get_config()->get_subset_config();
-            clear_diagonal_square(target_matrix,
-                subset_config.from_size,
-                subset_config.to_size);
+            if (subset_config.from_size != subset_config.to_size)
+                LOG_ERROR(
+                    "Attempted to clear diagonal of non-square weight matrix!");
+            clear_diagonal(target_matrix, subset_config.from_size);
             break;
         }
         case CONVERGENT:
@@ -705,7 +633,9 @@ static void clear_diagonal(WeightMatrix *matrix,
 }
 
 static void initialize_weights(WeightMatrix *matrix,
-        const PropertyConfig config, float* target_matrix, Connection* conn) {
+        const PropertyConfig config, float* target_matrix) {
+    Connection *conn = matrix->connection;
+
     if (config.has("fraction")) {
         float fraction = config.get_float("fraction", 1.0);
         if (fraction < 0 or fraction > 1.0)
@@ -735,10 +665,10 @@ static void initialize_weights(WeightMatrix *matrix,
 
     // Now, run callbacks
     if (config.has("callback"))
-        weight_callback_config(matrix, config, target_matrix, conn);
+        weight_callback_config(matrix, config, target_matrix);
 
     if (config.has("distance callback"))
-        distance_weight_callback_config(matrix, config, target_matrix, conn);
+        distance_weight_callback_config(matrix, config, target_matrix);
 
     // Finally, do mask processing
     if (config.has_child("circular mask"))
@@ -750,7 +680,7 @@ static void initialize_weights(WeightMatrix *matrix,
             circular_mask_config(child_config, target_matrix, conn);
 
     if (not config.get_bool("diagonal", true))
-        clear_diagonal(matrix, config, target_matrix, conn);
+        clear_diagonal_config(matrix, config, target_matrix);
 }
 
 /******************************************************************************/

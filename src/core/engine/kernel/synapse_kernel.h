@@ -1,6 +1,7 @@
 #ifndef synapse_kernel_h
 #define synapse_kernel_h
 
+#include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/extractor.h"
 #include "engine/kernel/aggregator.h"

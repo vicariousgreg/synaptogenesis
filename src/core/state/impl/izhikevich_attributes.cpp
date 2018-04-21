@@ -2,8 +2,8 @@
 #include <math.h>
 
 #include "state/impl/izhikevich_attributes.h"
-#include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
+#include "util/tools.h"
 
 REGISTER_ATTRIBUTES(IzhikevichAttributes, "izhikevich", BIT)
 REGISTER_WEIGHT_MATRIX(IzhikevichWeightMatrix, "izhikevich")
@@ -671,16 +671,16 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     Pointer<float> mData = matrix->get_weights();
 
     // Short term trace
-    clear_weights(iz_mat->short_traces, num_weights);
+    fClear(iz_mat->short_traces, num_weights);
 
     // Long term trace
-    clear_weights(iz_mat->long_traces, num_weights);
+    fClear(iz_mat->long_traces, num_weights);
 
     // Plasticity trace
-    clear_weights(iz_mat->presyn_traces, num_weights);
+    fClear(iz_mat->presyn_traces, num_weights);
 
     // Short Term Plasticity
-    clear_weights(iz_mat->stps, num_weights);
+    fClear(iz_mat->stps, num_weights);
 
     // Delays
     // Myelinated connections use the base delay only

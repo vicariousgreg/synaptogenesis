@@ -80,10 +80,10 @@ void SampleAttributes::process_weight_matrix(WeightMatrix* matrix) {
     // Or with more basic connection properties.
     switch(conn->opcode) {
         case MODULATE:
-            set_weights(third_weights, num_weights, 0.0);
+            fSet(third_weights, num_weights, 0.0);
             break;
         case SUB:
-            set_weights(third_weights, num_weights, 1.0);
+            fSet(third_weights, num_weights, 1.0);
             break;
     }
 

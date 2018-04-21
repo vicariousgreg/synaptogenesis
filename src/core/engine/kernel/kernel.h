@@ -4,10 +4,11 @@
 #include <functional>
 
 #include "engine/kernel/synapse_data.h"
-#include "network/connection.h"
-#include "network/dendritic_node.h"
+#include "engine/kernel/aggregator.h"
 #include "util/resources/stream.h"
 #include "util/resources/pointer.h"
+
+class Connection;
 
 template<typename... ARGS>
 class Kernel {

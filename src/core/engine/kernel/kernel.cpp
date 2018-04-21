@@ -1,5 +1,6 @@
 #include "engine/kernel/kernel.h"
 #include "engine/kernel/synapse_kernel.h"
+#include "network/connection.h"
 #include "state/weight_matrix.h"
 #include "util/tools.h"
 #include "util/parallel.h"
