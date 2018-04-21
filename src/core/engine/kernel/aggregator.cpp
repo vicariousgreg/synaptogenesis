@@ -1,7 +1,7 @@
 #include "engine/kernel/aggregator.h"
 #include "util/parallel.h"
 #include "util/logger.h"
-#include "util/resource_manager.h"
+#include "util/resources/resource_manager.h"
 
 /* Synaptic operations
  * |prior| is the current state of the neuron.

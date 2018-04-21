@@ -3,7 +3,7 @@
 
 #include "dsst_window.h"
 #include "gui_window.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 class DSSTWindowImpl : public DSSTWindow, public GuiWindow {
     public:

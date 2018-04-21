@@ -2,7 +2,7 @@
 #define image_input_module_h
 
 #include "io/module.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 typedef enum Channel {
     RED,

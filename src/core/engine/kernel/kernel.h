@@ -6,8 +6,8 @@
 #include "engine/kernel/synapse_data.h"
 #include "network/connection.h"
 #include "network/dendritic_node.h"
-#include "util/stream.h"
-#include "util/pointer.h"
+#include "util/resources/stream.h"
+#include "util/resources/pointer.h"
 
 template<typename... ARGS>
 class Kernel {

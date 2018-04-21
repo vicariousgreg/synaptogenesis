@@ -4,7 +4,7 @@
 #include <typeinfo>
 #include <typeindex>
 
-#include "util/stream.h"
+#include "util/resources/stream.h"
 
 class PointerKey {
     public:
@@ -169,8 +169,15 @@ void copy_pointer(Pointer<T> src, Pointer<T> dst, Stream* stream) {
     src.copy_to(dst, stream);
 }
 
+/* Frees a raw pointer given its location device */
+void free_pointer(void* ptr, DeviceID device_id, bool pinned=false);
+
+/* Transfers a raw pointer */
+void* transfer_pointer(void* ptr, void* destination, size_t bytes,
+        DeviceID old_device, DeviceID new_device);
+
 #ifndef pointer_cpp
-#include "util/pointer.cpp"
+#include "util/resources/pointer.cpp"
 #endif
 
 #endif

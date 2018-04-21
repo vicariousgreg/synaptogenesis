@@ -4,7 +4,7 @@
 #include "engine/instruction.h"
 #include "network/structure.h"
 #include "state/state.h"
-#include "util/resource_manager.h"
+#include "util/resources/resource_manager.h"
 
 ParallelCluster::ParallelCluster(Structure *structure,
     State *state, Engine *engine, PropertyConfig args)

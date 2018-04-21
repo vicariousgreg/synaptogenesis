@@ -2,7 +2,7 @@
 #define weight_matrix_h
 
 #include "util/constants.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 class Connection;
 

@@ -8,8 +8,8 @@
 
 #include "util/parallel.h"
 #include "util/constants.h"
-#include "util/stream.h"
-#include "util/event.h"
+#include "util/resources/stream.h"
+#include "util/resources/event.h"
 #include "util/property_config.h"
 
 class Memstat {

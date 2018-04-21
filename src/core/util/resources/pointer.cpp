@@ -2,7 +2,7 @@
 #define pointer_cpp
 
 #ifndef pointer_h
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 #endif
 
 #include <cstdlib>
@@ -10,7 +10,7 @@
 #include <assert.h>
 
 #include "util/logger.h"
-#include "util/resource_manager.h"
+#include "util/resources/resource_manager.h"
 
 template<typename T>
 Pointer<T>::Pointer()

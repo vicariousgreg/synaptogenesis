@@ -4,7 +4,7 @@
 #include "network/structure.h"
 #include "state/state.h"
 #include "engine/engine.h"
-#include "util/resource_manager.h"
+#include "util/resources/resource_manager.h"
 
 Cluster::Cluster(State *state, Engine *engine, PropertyConfig args)
         : state(state),

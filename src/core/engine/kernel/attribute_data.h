@@ -1,7 +1,7 @@
 #ifndef attribute_data_h
 #define attribute_data_h
 
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 class Layer;
 class State;

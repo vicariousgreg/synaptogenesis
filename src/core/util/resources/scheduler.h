@@ -10,8 +10,8 @@
 #include <vector>
 #include <map>
 
-#include "util/stream.h"
-#include "util/event.h"
+#include "util/resources/stream.h"
+#include "util/resources/event.h"
 
 class Scheduler {
     public:

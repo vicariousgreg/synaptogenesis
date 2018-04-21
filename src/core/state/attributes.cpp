@@ -44,50 +44,45 @@ Attributes::~Attributes() {
     for (auto pair : neuron_variables) pair.second->free();
     for (auto matrix : weight_matrices) delete matrix.second;
 
-#ifdef __CUDACC__
-    if (not ResourceManager::get_instance()->is_host(device_id)) {
-        cudaSetDevice(device_id);
-        cudaFree(this->pointer);
-    }
-#endif
+    // Free device copy if one exists
+    if (this != this->pointer)
+        free_pointer(this->pointer, device_id);
 }
 
 void Attributes::transfer(DeviceID new_device) {
-#ifdef __CUDACC__
     if (device_id == new_device) return;
 
     auto host_id = ResourceManager::get_instance()->get_host_id();
     if (device_id != host_id and new_device != host_id)
         LOG_ERROR("Cannot transfer attributes directly between devices!");
 
-    if (new_device == host_id) {
-        auto old_device = device_id;
-        auto old_ptr = this->pointer;
+    bool to_host = (new_device == host_id);
+    auto old_device = device_id;
+    auto old_pointer = this->pointer;
 
-        // Transfer to host
-        cudaMemcpy(this, this->pointer, get_object_size(), cudaMemcpyDeviceToHost);
-        this->device_id = new_device;
-
-        // Free old device copy
-        cudaSetDevice(old_device);
-        cudaFree(old_ptr);
-        ResourceManager::get_instance()->drop_pointer(old_ptr, old_device);
+    // Transfer data and update pointer
+    if (to_host) {
+        transfer_pointer(old_pointer, this,
+            get_object_size(),
+            device_id, new_device);
         this->pointer = this;
     } else {
-        // Transfer to device
-        this->device_id = new_device;
-        cudaSetDevice(new_device);
         this->pointer = (Attributes*)
-            ResourceManager::get_instance()->allocate_device(
-                1, get_object_size(), this, new_device);
+            transfer_pointer(this, nullptr,
+                get_object_size(),
+                device_id, new_device);
     }
+
+    // Update device ID
+    this->device_id = new_device;
+
+    // If old copy was not on the host, free it
+    if (old_device != host_id)
+        free_pointer(old_pointer, old_device);
 
     // Transfer weight matrices
     for (auto pair : weight_matrices)
         pair.second->transfer(new_device);
-
-    device_check_error("Failed to transfer attributes to device!");
-#endif
 }
 
 std::vector<BasePointer*> Attributes::get_pointers() {

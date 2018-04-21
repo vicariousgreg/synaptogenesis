@@ -7,7 +7,7 @@
 #include "engine/cluster/cluster_node.h"
 #include "util/constants.h"
 #include "util/property_config.h"
-#include "util/stream.h"
+#include "util/resources/stream.h"
 
 class Layer;
 class Structure;

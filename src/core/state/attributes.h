@@ -11,7 +11,7 @@
 #include "engine/kernel/synapse_data.h"
 #include "engine/kernel/attribute_data.h"
 #include "util/constants.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 #include "util/logger.h"
 #include "util/tools.h"
 

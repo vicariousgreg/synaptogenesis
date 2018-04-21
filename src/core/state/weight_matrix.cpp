@@ -29,42 +29,32 @@ void randomize_weights(float* arr, int size,
 }
 void randomize_weights_gaussian(float* arr, int size,
         float mean, float std_dev, float max, float fraction) {
-    // If standard deviation is 0.0, just set the weights to the mean
-    if (std_dev == 0.0) {
-        set_weights(arr, size, mean, fraction);
-    } else {
-        std::normal_distribution<double> dist(mean, std_dev);
+    std::normal_distribution<double> dist(mean, std_dev);
 
-        if (fraction == 1.0) {
-            for (int i = 0 ; i < size ; ++i)
-                arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
-        } else {
-            std::uniform_real_distribution<double> f_dist(0.0, 1.0);
-            for (int i = 0 ; i < size ; ++i)
-                arr[i] = (f_dist(generator) < fraction)
-                    ? std::min((double)max, std::max(0.0, dist(generator)))
-                    : 0.0;
-        }
+    if (fraction == 1.0) {
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
+    } else {
+        std::uniform_real_distribution<double> f_dist(0.0, 1.0);
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = (f_dist(generator) < fraction)
+                ? std::min((double)max, std::max(0.0, dist(generator)))
+                : 0.0;
     }
 }
 void randomize_weights_lognormal(float* arr, int size,
         float mean, float std_dev, float max, float fraction) {
-    // If standard deviation is 0.0, just set the weights to the mean
-    if (std_dev == 0.0) {
-        set_weights(arr, size, mean, fraction);
-    } else {
-        std::lognormal_distribution<double> dist(mean, std_dev);
+    std::lognormal_distribution<double> dist(mean, std_dev);
 
-        if (fraction == 1.0) {
-            for (int i = 0 ; i < size ; ++i)
-                arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
-        } else {
-            std::uniform_real_distribution<double> f_dist(0.0, 1.0);
-            for (int i = 0 ; i < size ; ++i)
-                arr[i] = (f_dist(generator) < fraction)
-                    ? std::min((double)max, std::max(0.0, dist(generator)))
-                    : 0.0;
-        }
+    if (fraction == 1.0) {
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
+    } else {
+        std::uniform_real_distribution<double> f_dist(0.0, 1.0);
+        for (int i = 0 ; i < size ; ++i)
+            arr[i] = (f_dist(generator) < fraction)
+                ? std::min((double)max, std::max(0.0, dist(generator)))
+                : 0.0;
     }
 }
 void randomize_weights_powerlaw(float* arr, int size,
@@ -136,14 +126,9 @@ WeightMatrix::~WeightMatrix() {
     this->delays.free();
     for (auto pair : variables) pair.second->free();
 
-#ifdef __CUDACC__
-    if (this != this->pointer
-            and not ResourceManager::get_instance()->is_host(device_id)) {
-        cudaSetDevice(device_id);
-        cudaFree(this->pointer);
-        ResourceManager::get_instance()->drop_pointer(this->pointer, device_id);
-    }
-#endif
+    // Free device copy if one exists
+    if (this != this->pointer)
+        free_pointer(this->pointer, device_id);
 }
 
 void WeightMatrix::transpose() {
@@ -155,7 +140,7 @@ void WeightMatrix::transpose() {
         and num_weights != connection->to_layer->size) {
 
         // Create set of pointers to transpose
-        std::vector<BasePointer*> pointers = {
+        std::vector<BasePointer*> base_pointers = {
             &weights,
             &weights_transposed,
             &second_order_weights,
@@ -168,45 +153,17 @@ void WeightMatrix::transpose() {
             &delays,
         };
         for (auto pair : variables)
-            pointers.push_back(pair.second);
+            base_pointers.push_back(pair.second);
 
-        // Transpose on the current device
-        if (device_id == host_id) {
-            for (auto ptr : pointers)
-                if (ptr->get_size() > 0 and ptr->get_device_id() == device_id)
-                    transpose_matrix_in_place<float>(
-                        (float*)ptr->get(), get_rows(), get_columns());
-        } else {
-#ifdef __CUDACC__
-            // Create temporary matrix
-            Pointer<float> temp =
-                Pointer<float>::device_pointer(device_id, num_weights);
+        // Filter to non-zero pointers on the current device
+        std::vector<float*> float_pointers;
+        for (auto ptr : base_pointers)
+            if (ptr->get_size() > 0 and ptr->get_device_id() == device_id)
+                float_pointers.push_back((float*)ptr->get());
 
-            dim3 dimGrid = calc_transpose_blocks(get_rows(), get_columns());
-            dim3 dimBlock = calc_transpose_threads(get_rows(), get_columns());
-
-            auto stream =
-                ResourceManager::get_instance()->get_default_stream(device_id);
-
-            // Copy to temp, transpose back into original memory (not in place)
-            for (auto ptr : pointers) {
-                if (ptr->get_size() > 0 and ptr->get_device_id() == device_id) {
-                    Pointer<float> p = Pointer<float>(
-                        (float*)ptr->get(), num_weights, device_id, false);
-                    p.copy_to(&temp, stream);
-                    cudaSetDevice(device_id);
-                    transpose_matrix_parallel<float>
-                        <<<dimGrid, dimBlock, 0, stream->get_cuda_stream()>>>
-                        (temp, p, get_rows(), get_columns());
-
-                }
-            }
-
-            device_synchronize();
-            device_check_error("Failed to transpose weight matrix!");
-            temp.free();
-#endif
-        }
+        // Transpose matrices
+        transpose_matrices_in_place<float>(
+            float_pointers, get_rows(), get_columns(), device_id);
     }
 
     this->transposed = not this->transposed;
@@ -267,38 +224,35 @@ void WeightMatrix::adjust_sparse_indices() {
 
 
 void WeightMatrix::transfer(DeviceID new_device) {
-#ifdef __CUDACC__
     if (device_id == new_device) return;
 
     auto host_id = ResourceManager::get_instance()->get_host_id();
     if (device_id != host_id and new_device != host_id)
         LOG_ERROR("Cannot transfer attributes directly between devices!");
 
-    if (new_device == host_id) {
-        auto old_device = device_id;
-        auto old_ptr = this->pointer;
+    bool to_host = (new_device == host_id);
+    auto old_device = device_id;
+    auto old_pointer = this->pointer;
 
-        // Transfer to host
-        cudaMemcpy(this, this->pointer,
-            get_object_size(), cudaMemcpyDeviceToHost);
-        this->device_id = new_device;
-
-        // Free old device copy
-        cudaSetDevice(old_device);
-        cudaFree(old_ptr);
-        ResourceManager::get_instance()->drop_pointer(old_ptr, old_device);
+    // Transfer data and update pointer
+    if (to_host) {
+        transfer_pointer(old_pointer, this,
+            get_object_size(),
+            device_id, new_device);
         this->pointer = this;
     } else {
-        // Transfer to device
-        this->device_id = new_device;
-        cudaSetDevice(new_device);
         this->pointer = (WeightMatrix*)
-            ResourceManager::get_instance()->allocate_device(
-                1, get_object_size(), this, new_device);
+            transfer_pointer(this, nullptr,
+                get_object_size(),
+                device_id, new_device);
     }
-    device_synchronize();
-    device_check_error("Failed to transfer WeightMatrix to device!");
-#endif
+
+    // Update device ID
+    this->device_id = new_device;
+
+    // If old copy was not on the host, free it
+    if (old_device != host_id)
+        free_pointer(old_pointer, old_device);
 }
 
 BasePointer* WeightMatrix::get_layer(std::string key) {
@@ -382,7 +336,7 @@ void WeightMatrix::sparsify() {
             if (weights[index] == 0.0) used[index] = 0;
             nonzero += used[index];
         }
-        max_nonzero = MAX(max_nonzero, nonzero);
+        max_nonzero = std::max(max_nonzero, nonzero);
     }
     int sparse_num_weights = max_nonzero * connection->to_layer->size;
 
@@ -468,6 +422,7 @@ void WeightMatrix::sparsify() {
 
 template Pointer<float> WeightMatrix::create_variable();
 template Pointer<int> WeightMatrix::create_variable();
+
 template <class T>
 Pointer<T> WeightMatrix::create_variable() {
     return Pointer<T>(num_weights);
@@ -513,8 +468,12 @@ static void gaussian_config(const PropertyConfig& config, float* target_matrix,
             "Error in weight config for " + conn->str() + ":\n"
             "  Gaussian weight config std_dev must be positive!");
 
-    randomize_weights_gaussian(target_matrix, conn->get_num_weights(),
-        mean, std_dev, conn->max_weight, fraction);
+    // If standard deviation is 0.0, just set the weights to the mean
+    if (std_dev == 0.0)
+        set_weights(target_matrix, conn->get_num_weights(), mean, fraction);
+    else
+        randomize_weights_gaussian(target_matrix, conn->get_num_weights(),
+            mean, std_dev, conn->max_weight, fraction);
 }
 
 static void log_normal_config(const PropertyConfig& config,
@@ -528,8 +487,11 @@ static void log_normal_config(const PropertyConfig& config,
             "Error in weight config for " + conn->str() + ":\n"
             "  Log normal weight config std_dev must be positive!");
 
-    randomize_weights_lognormal(target_matrix, conn->get_num_weights(),
-        mean, std_dev, conn->max_weight, fraction);
+    if (std_dev == 0.0)
+        set_weights(target_matrix, conn->get_num_weights(), mean, fraction);
+    else
+        randomize_weights_lognormal(target_matrix, conn->get_num_weights(),
+            mean, std_dev, conn->max_weight, fraction);
 }
 
 static void power_law_config(const PropertyConfig& config, float* target_matrix,

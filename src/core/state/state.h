@@ -8,7 +8,7 @@
 
 #include "state/attributes.h"
 #include "util/constants.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 class Buffer;
 class Network;
@@ -97,10 +97,6 @@ class State {
 
         // Map of all state data pointers
         std::map<PointerKey, BasePointer*> pointer_map;
-
-        // Pointers to blocks of data returned by ResourceManager
-        // Transfers combine all pointers to one block that needs to be freed
-        std::set<BasePointer*> data_block_pointers;
 };
 
 #endif

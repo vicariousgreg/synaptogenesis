@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "util/scheduler.h"
+#include "util/resources/scheduler.h"
 
 Scheduler *Scheduler::instance = 0;
 

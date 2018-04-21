@@ -165,10 +165,6 @@ State::~State() {
     for (auto map : inter_device_buffers)
         for (auto pair : map.second)
             delete pair.second;
-    for (auto ptr : data_block_pointers) {
-        ptr->free();
-        delete ptr;
-    }
 }
 
 PointerSetMap State::get_network_pointers() const {
@@ -201,30 +197,25 @@ PointerSetMap State::get_buffer_pointers() const {
 }
 
 void State::transfer_to_device() {
-#ifdef __CUDACC__
     if (not on_host) return;
 
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
-    // Accumulate new data block pointers
-    std::set<BasePointer*> new_data_block_pointers;
+    // If the host is the only active device, return
+    if (active_devices.size() == 1
+            and *active_devices.begin() == host_id)
+        return;
 
     // Transfer network pointers
-    for (auto pair : get_network_pointers()) {
-        auto device_id = pair.first;
-        if (pair.second.size() > 0)
-            new_data_block_pointers.insert(
-                res_man->transfer(device_id, pair.second));
-    }
+    for (auto pair : get_network_pointers())
+        for (auto ptr : pair.second)
+            ptr->transfer(pair.first);
 
     // Transfer buffer pointers
-    for (auto pair : get_buffer_pointers()) {
-        auto device_id = pair.first;
-        if (pair.second.size() > 0)
-            new_data_block_pointers.insert(
-                res_man->transfer(device_id, pair.second));
-    }
+    for (auto pair : get_buffer_pointers())
+        for (auto ptr : pair.second)
+            ptr->transfer(pair.first);
 
     // Transfer attributes
     for (auto pair : attributes)
@@ -235,60 +226,40 @@ void State::transfer_to_device() {
         if (pair.second->get_device_id() != host_id)
             pair.second->transpose_weight_matrices();
 
-    // Free old data block pointers and replace with new ones
-    for (auto ptr : data_block_pointers) {
-        ptr->free();
-        delete ptr;
-    }
-    data_block_pointers = new_data_block_pointers;
-
     on_host = false;
-#endif
 }
 
 void State::transfer_to_host() {
-#ifdef __CUDACC__
     if (on_host) return;
 
     auto res_man = ResourceManager::get_instance();
     DeviceID host_id = res_man->get_host_id();
 
-    // Transpose device-bound matrices
+    // If the host is the only active device, return
+    if (active_devices.size() == 1
+            and *active_devices.begin() == host_id)
+        return;
+
+    // Transpose matrices
     for (auto pair : attributes)
         if (pair.second->get_device_id() != host_id)
             pair.second->transpose_weight_matrices();
 
     // Transfer attributes
-    for (auto pair : attributes) pair.second->transfer(host_id);
-
-    // Accumulate new data block pointers
-    std::set<BasePointer*> new_data_block_pointers;
-
-    // Transfer network pointers
-    for (auto pair : get_network_pointers()) {
-        auto device_id = pair.first;
-        if (pair.second.size() > 0)
-            new_data_block_pointers.insert(
-                res_man->transfer(host_id, pair.second));
-    }
+    for (auto pair : attributes)
+        pair.second->transfer(host_id);
 
     // Transfer buffer pointers
-    for (auto pair : get_buffer_pointers()) {
-        auto device_id = pair.first;
-        if (pair.second.size() > 0)
-            new_data_block_pointers.insert(
-                res_man->transfer(host_id, pair.second));
-    }
+    for (auto pair : get_buffer_pointers())
+        for (auto ptr : pair.second)
+            ptr->transfer(host_id);
 
-    // Free old data block pointers and replace with new ones
-    for (auto ptr : data_block_pointers) {
-        ptr->free();
-        delete ptr;
-    }
-    data_block_pointers = new_data_block_pointers;
+    // Transfer network pointers
+    for (auto pair : get_network_pointers())
+        for (auto ptr : pair.second)
+            ptr->transfer(host_id);
 
     on_host = true;
-#endif
 }
 
 void State::copy_to(State* other) {
@@ -455,7 +426,8 @@ Pointer<Output> State::get_output(Layer *layer, int word_index) const {
 
 Pointer<float> State::get_buffer_input(Layer *layer) const {
     try {
-        return internal_buffers.at(layer_devices.at(layer))->get_input(layer);
+        return
+            internal_buffers.at(layer_devices.at(layer)) ->get_input(layer);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get buffer input data in State for "
@@ -465,8 +437,8 @@ Pointer<float> State::get_buffer_input(Layer *layer) const {
 
 Pointer<Output> State::get_buffer_expected(Layer *layer) const {
     try {
-        return internal_buffers.at(layer_devices.at(layer))
-            ->get_expected(layer);
+        return
+            internal_buffers.at(layer_devices.at(layer))->get_expected(layer);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get buffer expected data in State for "

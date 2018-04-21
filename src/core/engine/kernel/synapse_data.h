@@ -4,7 +4,7 @@
 #include "network/layer.h"
 #include "engine/kernel/extractor.h"
 #include "engine/kernel/aggregator.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 class State;
 class Attributes;

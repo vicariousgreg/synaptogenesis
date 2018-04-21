@@ -1,7 +1,7 @@
-#include "util/stream.h"
-#include "util/event.h"
-#include "util/pointer.h"
-#include "util/scheduler.h"
+#include "util/resources/stream.h"
+#include "util/resources/event.h"
+#include "util/resources/pointer.h"
+#include "util/resources/scheduler.h"
 
 Stream::Stream(DeviceID device_id, bool host_flag)
         : device_id(device_id), host_flag(host_flag) {

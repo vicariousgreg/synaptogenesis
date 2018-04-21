@@ -2,7 +2,7 @@
 #define csv_module_h
 
 #include "io/module.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 class CSVReaderModule : public Module {
     public:

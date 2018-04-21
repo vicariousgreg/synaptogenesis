@@ -1,5 +1,5 @@
 #include "util/parallel.h"
-#include "util/scheduler.h"
+#include "util/resources/scheduler.h"
 
 Event::Event(DeviceID device_id, bool host_flag)
         : device_id(device_id), host_flag(host_flag) {

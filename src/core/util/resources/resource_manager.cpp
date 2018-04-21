@@ -3,11 +3,11 @@
 #include <ctime>
 #include <sys/sysinfo.h>
 
-#include "util/resource_manager.h"
+#include "util/resources/resource_manager.h"
 #include "util/logger.h"
-#include "util/stream.h"
-#include "util/event.h"
-#include "util/pointer.h"
+#include "util/resources/stream.h"
+#include "util/resources/event.h"
+#include "util/resources/pointer.h"
 
 Memstat::Memstat(DeviceID device_id, size_t free, size_t total,
     size_t used, size_t used_by_this)

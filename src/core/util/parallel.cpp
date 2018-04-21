@@ -1,5 +1,5 @@
 #include "util/parallel.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 #ifdef __CUDACC__
 

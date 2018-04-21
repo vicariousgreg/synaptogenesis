@@ -4,7 +4,7 @@
 #include "saccade_window.h"
 #include "gui_window.h"
 #include "fixation.h"
-#include "util/pointer.h"
+#include "util/resources/pointer.h"
 
 class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
     public:

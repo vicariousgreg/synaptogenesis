@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include "util/stream.h"
+#include "util/resources/stream.h"
 
 class Layer;
 class DendriticNode;
