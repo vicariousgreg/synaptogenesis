@@ -14,7 +14,10 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
               central_input_dirty(true),
               waiting(true),
               input_data((float*)malloc(rows*cols*sizeof(float))),
-              saccade_rate(module->config->get_float("saccade rate", 1.0)) {
+              saccade_rate(module->config->get_float("saccade rate", 1.0)),
+              automatic(module->config->get_bool("automatic", false)),
+              cycle_rate(module->config->get_int("cycle rate", 100)),
+              iteration(0) {
     // Add table
     table = new Gtk::Table(1, 3, false);
     table->set_row_spacings(0);
@@ -127,17 +130,31 @@ void SaccadeWindowImpl::set_cross() {
     waiting = true;
 }
 
-void SaccadeWindowImpl::set_face(bool fear, bool direction) {
-    auto& faces = fear_faces_left;
-    if (fear and direction)
-        faces = fear_faces_right;
-    else if (not fear and direction)
-        faces = neutral_faces_right;
-    else if (not fear and not direction)
-        faces = neutral_faces_left;
+void SaccadeWindowImpl::set_face(bool fear, bool direction, int face_index) {
+    // // auto& faces = fear_faces_left;
+    // auto& faces = fear_faces_right;
+    // if (fear and direction) {
+    //     printf("here1\n");
+    //     faces = fear_faces_right;
+    // } else if (not fear and direction) {
+    //     printf("here2\n");
+    //     faces = neutral_faces_right;
+    // } else if (not fear and not direction) {
+    //     printf("here3\n");
+    //     faces = neutral_faces_left;
+    // } else {
+    //     printf("here4\n");
+    //     faces = fear_faces_left;
+    // }
 
-    int index = iRand(faces.size()-1);
-    auto face_pix = faces[index];
+    // int index = iRand(faces.size()-1);
+    // auto face_pix = faces[face_index];
+    Glib::RefPtr<Gdk::Pixbuf> face_pix;
+    if (fear and direction) face_pix = fear_faces_right[face_index];
+    if (fear and not direction) face_pix = fear_faces_left[face_index];
+    if (not fear and direction) face_pix = neutral_faces_right[face_index];
+    if (not fear and not direction) face_pix = neutral_faces_left[face_index];
+
     auto face_data = face_pix->get_pixels();
     int pix_size = face_pix->get_has_alpha() ? 4 : 3;
     auto center_data = center_pane_pixbuf->get_pixels();
@@ -145,7 +162,7 @@ void SaccadeWindowImpl::set_face(bool fear, bool direction) {
     printf("Setting face to ");
     printf((fear) ? "fear " : "neutral ");
     printf((direction) ? "right " : "left ");
-    printf("%d\n", index);
+    printf("%d\n", face_index);
 
     for (int index = 0; index < rows*center_cols; ++index) {
         center_data[4*index + 0] = face_data[pix_size*index + 0];
@@ -163,6 +180,12 @@ void SaccadeWindowImpl::add_layer(Layer* layer, IOTypeMask io_type) {
 }
 
 void SaccadeWindowImpl::update() {
+    ++iteration;
+    if (automatic and (iteration % cycle_rate == 0)) {
+        if (waiting) this->click_center();
+        else this->click_peripheral();
+    }
+
     if (window_dirty) {
         left_pane_image->set(left_pane_pixbuf);
         right_pane_image->set(right_pane_pixbuf);
@@ -273,15 +296,38 @@ bool SaccadeWindowImpl::on_button_press_event(GdkEventButton* button_event) {
         int col = int(button_event->x);
         if (col < peripheral_cols) {
             printf("Clicked left   (%d, %d)\n", row, col);
-            if (not waiting) this->set_cross();
         } else if (col < peripheral_cols + center_cols) {
             printf("Clicked center (%d, %d)\n", row, col);
-            if (waiting) this->set_face(iRand(1), iRand(1));
+            // if (waiting) this->set_face(iRand(1), iRand(1));
+
+            this->click_center();
         } else {
             printf("Clicked right  (%d, %d)\n", row, col);
-            if (not waiting) this->set_cross();
+            this->click_peripheral();
         }
         return true;
     }
     return false;
+}
+
+void SaccadeWindowImpl::click_center() {
+    static bool fear = false;
+    static bool direction = false;
+    static int face_index = 0;
+
+    printf("fear %d dir %d idx %d\n",
+        fear, direction, face_index);
+
+    if (waiting) {
+        this->set_face(fear, direction, face_index);
+        fear = !fear;
+        if(!fear) {
+            direction = !direction;
+            if(!direction) face_index = (face_index + 1) % 8;
+        }
+    }
+}
+
+void SaccadeWindowImpl::click_peripheral() {
+    if (not waiting) this->set_cross();
 }

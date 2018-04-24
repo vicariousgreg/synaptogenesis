@@ -11,7 +11,8 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         SaccadeWindowImpl(SaccadeModule* module);
         virtual ~SaccadeWindowImpl();
 
-        void set_face(bool fear, bool direction);
+        /* void set_face(bool fear, bool direction); */
+        void set_face(bool fear, bool direction, int face_index);
         void set_cross();
 
         void update();
@@ -43,6 +44,8 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         Glib::RefPtr<Gdk::Pixbuf> center_pane_pixbuf;
 
         bool on_button_press_event(GdkEventButton* button_event);
+        void click_center();
+        void click_peripheral();
 
         bool input_dirty;
         bool central_input_dirty;
@@ -58,6 +61,10 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         float saccade_rate;
 
         float* input_data;
+
+        bool automatic;
+        int cycle_rate;
+        int iteration;
 };
 
 #endif
