@@ -114,6 +114,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *dopamines = att->dopamine.get();
 
     float *voltages = att->voltage.get();
+    float *voltage_rests = att->voltage_rest.get();
     float *recoveries = att->recovery.get();
     float *postsyn_exc_traces = att->postsyn_exc_trace.get();
     int *time_since_spikes = att->time_since_spike.get();
@@ -135,6 +136,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float multiplicative_factor = multiplicative_factors[nid];
 
     float voltage = voltages[nid];
+    float voltage_rest = voltage_rests[nid];
     float recovery = recoveries[nid];
     float base_current = inputs[nid];
 
@@ -162,9 +164,21 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         current += base_current;
 
         // Update voltage
+        // For numerical stability, use hybrid numerical method
+        //   (see section 5b of "Hybrid Spiking Models" by Izhikevich)
         float delta_v = (0.04 * voltage * voltage) +
                         (5*voltage) + 140 - recovery + current;
-        voltage += delta_v * IZ_EULER_RES_INV;
+
+        float sum_conductances =
+            ampa_conductance + nmda_conductance +
+            gabaa_conductance + gabab_conductance;
+
+        voltage =
+            (voltage + IZ_EULER_RES_INV *
+                (delta_v
+                    + (gabaa_conductance * -70)
+                    + (gabab_conductance * -90)))
+            / (1 + IZ_EULER_RES_INV * sum_conductances);
 
         // If the voltage explodes (voltage == NaN -> voltage != voltage),
         //   set it to threshold before it corrupts the recovery variable
@@ -177,7 +191,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             : IZ_EULER_RES_INV;
 
         // Update recovery variable
-        recovery += a * ((b * voltage) - recovery) * adjusted_tau;
+        recovery += a * adjusted_tau *
+            ((b * (voltage - voltage_rest)) - recovery);
     }
 
     ampa_conductances[nid] = 0.0;
@@ -608,6 +623,7 @@ IzhikevichAttributes::IzhikevichAttributes(Layer *layer)
         } while (abs(delta_v) > 0.001 and abs(delta_r) > 0.001);
 
         voltage[j] = v;
+        voltage_rest[j] = v;
         recovery[j] = r;
     }
 

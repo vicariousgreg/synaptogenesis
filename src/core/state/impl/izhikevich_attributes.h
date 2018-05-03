@@ -26,6 +26,7 @@ class IzhikevichAttributes : public Attributes {
 
         // Voltage and recovery variables
         Pointer<float> voltage;
+        Pointer<float> voltage_rest;
         Pointer<float> recovery;
 
         // Spike trace for learning
