@@ -114,7 +114,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *dopamines = att->dopamine.get();
 
     float *voltages = att->voltage.get();
-    float *voltage_rests = att->voltage_rest.get();
     float *recoveries = att->recovery.get();
     float *postsyn_exc_traces = att->postsyn_exc_trace.get();
     int *time_since_spikes = att->time_since_spike.get();
@@ -136,7 +135,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float multiplicative_factor = multiplicative_factors[nid];
 
     float voltage = voltages[nid];
-    float voltage_rest = voltage_rests[nid];
     float recovery = recoveries[nid];
     float base_current = inputs[nid];
 
@@ -191,8 +189,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             : IZ_EULER_RES_INV;
 
         // Update recovery variable
-        recovery += a * adjusted_tau *
-            ((b * (voltage - voltage_rest)) - recovery);
+        recovery += a * adjusted_tau * ((b * voltage) - recovery);
     }
 
     ampa_conductances[nid] = 0.0;
@@ -623,7 +620,6 @@ IzhikevichAttributes::IzhikevichAttributes(Layer *layer)
         } while (abs(delta_v) > 0.001 and abs(delta_r) > 0.001);
 
         voltage[j] = v;
-        voltage_rest[j] = v;
         recovery[j] = r;
     }
 
