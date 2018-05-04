@@ -24,10 +24,10 @@ def build_network(dim=64):
     inh_learning_rate = 0.01
 
     # Noise Parameters
-    exc_noise_strength = 10.0
-    exc_noise_rate = 1
-    inh_noise_strength = 10.0
-    inh_noise_rate = 5
+    exc_noise_strength = 20.0
+    exc_noise_rate = 0.01
+    inh_noise_strength = 20.0
+    inh_noise_rate = 0.01
     exc_random = False
     inh_random = False
 
@@ -37,14 +37,14 @@ def build_network(dim=64):
 
     exc_exc_weight_init = init
     exc_exc_exponent = 1.5
-    exc_exc_base_weight = 0.02
+    exc_exc_base_weight = 0.001
     exc_exc_base_weight_min = 0.00011
     exc_exc_base_weight_max = 0.2
     exc_exc_fraction = 0.1
 
     exc_inh_weight_init = init
     exc_inh_exponent = 1.5
-    exc_inh_base_weight = 0.02
+    exc_inh_base_weight = 0.001
     exc_inh_base_weight_min = 0.00011
     exc_inh_base_weight_max = 0.2
     exc_inh_fraction = 0.1
@@ -54,15 +54,15 @@ def build_network(dim=64):
     inh_exc_base_weight = 0.1
     inh_exc_base_weight_min = 0.00011
     inh_exc_base_weight_max = 0.2
-    inh_exc_fraction = 0.25
+    inh_exc_fraction = 1.0
 
     # Create main structure
     structure = {"name" : "snn", "type" : "parallel"}
 
     exc_exc_spread = 25
     exc_inh_spread = 15
-    inh_exc_spread = 7
-    exc_inh_mask = 9
+    inh_exc_spread = 15
+    exc_inh_mask = 3
 
     # Sine wave envelope
     sine = {
@@ -119,7 +119,9 @@ def build_network(dim=64):
 
 
     # Add layers to structure
-    structure["layers"] = [sine, poisson, excitatory, inhibitory]
+    structure["layers"] = [
+        sine, poisson,
+        excitatory, inhibitory]
 
     sine_poisson = {
         "from layer" : "sine",
@@ -129,7 +131,7 @@ def build_network(dim=64):
         "plastic" : False,
         "weight config" : {
             "type" : "flat",
-            "weight" : 0.01,
+            "weight" : 0.001,
             "fraction" : 1.0,
         },
         "direct" : True # direct connection into input current
@@ -143,7 +145,7 @@ def build_network(dim=64):
         "plastic" : False,
         "weight config" : {
             "type" : "flat",
-            "weight" : 10.0,
+            "weight" : 20.0,
             "fraction" : 1.0,
         },
         "direct" : True # direct connection into input current
@@ -306,20 +308,23 @@ def build_network(dim=64):
         inh_exc["weight config"] = {
                 "type" : "flat",
                 "weight" : 0.00011,
-                "fraction" : inh_exc_fraction
+                "fraction" : inh_exc_fraction,
+                "distance callback" : "gaussian",
             }
     elif inh_exc_weight_init == "random":
         inh_exc["weight config"] = {
                 "type" : "random",
                 "min weight" : inh_exc_base_weight_min,
                 "max weight" : inh_exc_base_weight_max,
-                "fraction" : inh_exc_fraction
+                "fraction" : inh_exc_fraction,
+                "distance callback" : "gaussian",
             }
     elif inh_exc_weight_init == "flat":
         inh_exc["weight config"] = {
                 "type" : "flat",
                 "weight" : inh_exc_base_weight,
-                "fraction" : inh_exc_fraction
+                "fraction" : inh_exc_fraction,
+                "distance callback" : "gaussian",
             }
     elif inh_exc_weight_init == "power law":
         inh_exc["weight config"] = {
@@ -327,7 +332,8 @@ def build_network(dim=64):
                 "exponent" : inh_exc_exponent,
                 "min weight" : inh_exc_base_weight_min,
                 "max weight" : inh_exc_base_weight_max,
-                "fraction" : inh_exc_fraction
+                "fraction" : inh_exc_fraction,
+                "distance callback" : "gaussian",
             }
 
     # Create connections
@@ -388,8 +394,8 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                 "window" : 1000, # Short term
                 "linear" : False,
                 "layers" : [
-                    { "structure" : "snn", "layer" : "sine" },
-                    { "structure" : "snn", "layer" : "poisson" },
+                    #{ "structure" : "snn", "layer" : "sine" },
+                    #{ "structure" : "snn", "layer" : "poisson" },
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
                 ]

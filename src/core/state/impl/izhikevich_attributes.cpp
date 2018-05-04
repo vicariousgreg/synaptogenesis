@@ -176,7 +176,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
                 (delta_v
                     + (gabaa_conductance * -70)
                     + (gabab_conductance * -90)))
-            / (1 + IZ_EULER_RES_INV * sum_conductances);
+            / (1 + (IZ_EULER_RES_INV * sum_conductances));
 
         // If the voltage explodes (voltage == NaN -> voltage != voltage),
         //   set it to threshold before it corrupts the recovery variable

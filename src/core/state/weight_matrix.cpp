@@ -331,6 +331,9 @@ void WeightMatrix::sparsify() {
     this->to_column_indices = Pointer<int>(compact_to_column_indices, true);
     this->used = Pointer<int>(compact_used, true);
 
+    if (not this->distances.is_null())
+        this->distances.free();
+
     // Free old weights and move pointer
     this->weights.free();
     this->weights = Pointer<float>(new_weights, true); // claim_ownership = true
