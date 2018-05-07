@@ -216,10 +216,13 @@ void Network::print() const {
     printf("  - weights     : %10d\n", this->get_num_weights());
 
     for (auto structure : this->get_structures()) {
-        for (auto layer : structure->get_layers()) {
-            printf("%-20s   \n",
-                (layer->structure->name + "->" + layer->name).c_str());
-        }
+        printf("Structure: %s (%d neurons in %d layers)\n",
+            structure->name.c_str(), structure->get_num_neurons(),
+            structure->get_layers().size());
+
+        for (auto layer : structure->get_layers())
+            printf("  %-40s  | n=%10d\n", layer->name.c_str(), layer->size);
+
         printf("\n");
     }
 }
