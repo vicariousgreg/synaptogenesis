@@ -697,10 +697,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     // Delays
     // Myelinated connections use the base delay only
     if (conn->get_parameter("myelinated", "false") == "true") {
-        int *delays = iz_mat->delays.get();
-        int delay = conn->delay;
-        for (int i = 0 ; i < num_weights ; ++i)
-            delays[i] = delay;
+        iz_mat->get_delays(conn->delay);
     } else if (conn->get_config()->has("random delay")) {
         int max_delay = std::stoi(
             conn->get_parameter("random delay", "0"));

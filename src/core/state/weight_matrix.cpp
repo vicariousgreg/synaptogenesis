@@ -996,6 +996,14 @@ GLOBAL void compute_delays_PARALLEL(int num_weights,
 }
 #endif
 
+void WeightMatrix::get_delays(int base_delay) {
+    // If delays is already set, delays have already been retrieved
+    if (not this->delays.is_null()) return;
+
+    int num_weights = this->connection->get_num_weights();
+    this->delays = Pointer<int>(num_weights, base_delay);
+}
+
 void WeightMatrix::get_delays(OutputType output_type,
         float from_spacing, float to_spacing,
         float x_offset, float y_offset,

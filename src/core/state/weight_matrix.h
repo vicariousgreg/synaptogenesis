@@ -48,6 +48,9 @@ class WeightMatrix {
         void get_distances(float from_spacing, float to_spacing,
             float x_offset=0.0, float y_offset=0.0);
 
+        /* Stores uniform delays */
+        void get_delays(int base_delay);
+
         /* Stores delays in array according to spatial organization */
         void get_delays(OutputType output_type,
             float from_spacing, float to_spacing,
