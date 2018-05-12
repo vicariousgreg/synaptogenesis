@@ -124,6 +124,11 @@ void Attributes::transpose_weight_matrices() {
         pair.second->transpose();
 }
 
+void Attributes::resize_weight_matrices() {
+    for (auto pair : weight_matrices)
+        pair.second->resize();
+}
+
 template Pointer<float> Attributes::create_neuron_variable();
 template Pointer<int> Attributes::create_neuron_variable();
 

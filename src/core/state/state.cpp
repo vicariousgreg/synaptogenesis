@@ -372,6 +372,11 @@ void State::load(std::string file_name, bool verbose) {
         }
     }
 
+    // Resize the weight matrices
+    // This updates num_weights for sparse matrices
+    for (auto pair : attributes)
+        pair.second->resize_weight_matrices();
+
     // Close file stream
     input_file.close();
 }

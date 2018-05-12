@@ -48,6 +48,7 @@ class Attributes {
         void process_weight_matrices();
         virtual void process_weight_matrix(WeightMatrix* matrix) { }
         void transpose_weight_matrices();
+        void resize_weight_matrices();
         WeightMatrix *get_weight_matrix(Connection *conn)
             { return weight_matrices.at(conn); }
 
