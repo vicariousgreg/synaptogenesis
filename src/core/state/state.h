@@ -16,6 +16,7 @@ class Layer;
 class DendriticNode;
 
 typedef std::map<DeviceID, std::vector<BasePointer*>> PointerSetMap;
+typedef std::map<PointerKey, BasePointer*> PointerMap;
 
 class State {
     public:
@@ -94,9 +95,7 @@ class State {
         // Functions for gathering pointers
         PointerSetMap get_network_pointers() const;
         PointerSetMap get_buffer_pointers() const;
-
-        // Map of all state data pointers
-        std::map<PointerKey, BasePointer*> pointer_map;
+        PointerMap get_pointer_map() const;
 };
 
 #endif

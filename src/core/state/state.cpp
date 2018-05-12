@@ -75,11 +75,6 @@ State::State(Network *network) : network(network), on_host(true) {
                 "  Cluster compatibility conflict detected!");
         attributes[layer] = att;
         att->process_weight_matrices();
-
-        for (auto pair : att->get_pointer_map())
-            if (pointer_map.count(pair.first) > 0)
-                LOG_ERROR("Duplicate PointerKey encountered in State!");
-            else pointer_map[pair.first] = pair.second;
     }
 
     // Adjust sparse indicies
@@ -165,6 +160,19 @@ State::~State() {
     for (auto map : inter_device_buffers)
         for (auto pair : map.second)
             delete pair.second;
+}
+
+PointerMap State::get_pointer_map() const {
+    PointerMap pointer_map;
+
+    for (auto att_pair : attributes) {
+        for (auto pair : att_pair.second->get_pointer_map())
+            if (pointer_map.count(pair.first) > 0)
+                LOG_ERROR("Duplicate PointerKey encountered in State!");
+            else pointer_map[pair.first] = pair.second;
+    }
+
+    return pointer_map;
 }
 
 PointerSetMap State::get_network_pointers() const {
@@ -268,10 +276,13 @@ void State::copy_to(State* other) {
     if (not other->on_host) other->transfer_to_host();
 
     // Copy over any matching pointers
-    for (auto pair : this->pointer_map) {
-        if (other->pointer_map.count(pair.first) > 0) {
-            auto this_ptr = this->pointer_map.at(pair.first);
-            auto other_ptr = other->pointer_map.at(pair.first);
+    auto this_pointer_map = this->get_pointer_map();
+    auto other_pointer_map = other->get_pointer_map();
+
+    for (auto pair : this_pointer_map) {
+        if (other_pointer_map.count(pair.first) > 0) {
+            auto this_ptr = this_pointer_map.at(pair.first);
+            auto other_ptr = other_pointer_map.at(pair.first);
             if (this_ptr->get_bytes() == other_ptr->get_bytes())
                 this_ptr->copy_to(other_ptr);
         }
@@ -309,7 +320,7 @@ void State::save(std::string file_name, bool verbose) {
     if (verbose)
         printf("Saving network state to %s ...\n", path.c_str());
 
-    for (auto pair : pointer_map) {
+    for (auto pair : get_pointer_map()) {
         size_t bytes = pair.first.bytes;
         if (bytes > 0) {
             const char* data = (const char*)pair.second->get();
@@ -353,11 +364,11 @@ void State::load(std::string file_name, bool verbose) {
 
         // Search for the pointer, and if not found, skip it
         try {
-            BasePointer* ptr = pointer_map.at(key);
+            BasePointer* ptr = get_pointer_map().at(key);
 
             // If pointer size doesn't match, resize
             if (ptr->get_bytes() != key.bytes)
-                ptr->resize(key.bytes);
+                ptr->resize(key.bytes / ptr->get_unit_size());
 
             // Read the data into memory
             if (not input_file.read((char*)ptr->get(), key.bytes))
