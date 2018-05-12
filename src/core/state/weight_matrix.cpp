@@ -605,6 +605,7 @@ static void distance_weight_callback_config(WeightMatrix *matrix,
     matrix->get_distances(from_spacing, to_spacing, x_offset, y_offset);
 
     callback(id, num_weights, target_matrix, matrix->distances.get());
+    matrix->distances.free();
 }
 
 static void clear_diagonal_config(WeightMatrix *matrix,
@@ -970,7 +971,7 @@ HOST void compute_delays_SERIAL(int num_weights,
     for (int weight_index = 0 ; weight_index < num_weights ; ++weight_index) {
         int delay = base_delay + (distances[weight_index] / velocity);
         if (delay > 31 and not cap_delay) {
-            printf("BIT delays cannot be greater than 31!");
+            printf("BIT delays cannot be greater than 31!\n");
             assert(false);
         }
         delays[weight_index] = MIN(31, delay);
@@ -988,7 +989,7 @@ GLOBAL void compute_delays_PARALLEL(int num_weights,
     if (weight_index < num_weights) {
         int delay = base_delay + (distances[weight_index] / velocity);
         if (delay > 31 and not cap_delay) {
-            printf("BIT delays cannot be greater than 31!");
+            printf("BIT delays cannot be greater than 31!\n");
             assert(false);
         }
         delays[weight_index] = MIN(31, delay);
