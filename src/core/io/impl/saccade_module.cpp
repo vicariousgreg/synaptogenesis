@@ -21,6 +21,7 @@ SaccadeModule::SaccadeModule(LayerList layers, ModuleConfig *config)
 }
 
 void SaccadeModule::feed_input_impl(Buffer *buffer) {
+    window->lock();
     window->prepare_input_data();
 
     for (auto layer : layers) {
@@ -31,14 +32,17 @@ void SaccadeModule::feed_input_impl(Buffer *buffer) {
                 window->feed_input(layer, buffer->get_input(layer));
         }
     }
+    window->unlock();
 }
 
 void SaccadeModule::report_output_impl(Buffer *buffer) {
+    window->lock();
     for (auto layer : layers)
         if (get_io_type(layer) & OUTPUT)
             window->report_output(layer,
                 buffer->get_output(layer),
                 get_output_type(layer));
+    window->unlock();
 }
 
 #endif

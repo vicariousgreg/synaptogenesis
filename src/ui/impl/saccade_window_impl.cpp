@@ -180,6 +180,8 @@ void SaccadeWindowImpl::add_layer(Layer* layer, IOTypeMask io_type) {
 }
 
 void SaccadeWindowImpl::update() {
+    lock();
+
     ++iteration;
     if (automatic and (iteration % cycle_rate == 0)) {
         if (waiting) this->click_center();
@@ -192,12 +194,15 @@ void SaccadeWindowImpl::update() {
         center_pane_image->set(center_pane_pixbuf);
         overlay_image->set(overlay_pix);
         window_dirty = false;
+        input_dirty = true;
+        central_input_dirty = true;
     }
+
+    unlock();
 }
 
 void SaccadeWindowImpl::prepare_input_data() {
     if (input_dirty) {
-        input_dirty = false;
         // Copy over panes
         auto pix = this->left_pane_pixbuf->get_pixels();
         for (int pix_row = 0 ; pix_row < rows ; ++pix_row)
@@ -218,6 +223,8 @@ void SaccadeWindowImpl::prepare_input_data() {
             for (int pix_col = 0 ; pix_col < peripheral_cols ; ++pix_col)
                 input_data[pix_row*cols + offset + pix_col] =
                     float(pix[4*(pix_row*peripheral_cols + pix_col)]) / 255.0;
+
+        input_dirty = false;
     }
 }
 
@@ -228,8 +235,6 @@ void SaccadeWindowImpl::feed_input(Layer *layer, float *input) {
 
 void SaccadeWindowImpl::feed_central_input(Layer *layer, float *input) {
     if (central_input_dirty) {
-        central_input_dirty = false;
-
         int layer_rows = layer->rows;
         int layer_cols = layer->columns;
         int center_row_start = fixation.get_y(rows) - (layer_rows / 2);
@@ -253,6 +258,8 @@ void SaccadeWindowImpl::feed_central_input(Layer *layer, float *input) {
                 }
             }
         }
+
+        central_input_dirty = false;
     }
 }
 

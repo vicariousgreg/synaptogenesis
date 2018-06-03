@@ -9,6 +9,8 @@ class SaccadeModule;
 class SaccadeWindow {
     public:
         static SaccadeWindow* build(SaccadeModule *module);
+        virtual void lock() = 0;
+        virtual void unlock() = 0;
         virtual void add_layer(Layer *layer, IOTypeMask io_type) = 0;
         virtual void prepare_input_data() = 0;
         virtual void feed_input(Layer *layer, float *input) = 0;

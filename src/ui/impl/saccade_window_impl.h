@@ -1,6 +1,8 @@
 #ifndef saccade_window_impl_h
 #define saccade_window_impl_h
 
+#include <mutex>
+
 #include "saccade_window.h"
 #include "gui_window.h"
 #include "fixation.h"
@@ -10,6 +12,9 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
     public:
         SaccadeWindowImpl(SaccadeModule* module);
         virtual ~SaccadeWindowImpl();
+
+        void lock() { mutex.lock(); }
+        void unlock() { mutex.unlock(); }
 
         /* void set_face(bool fear, bool direction); */
         void set_face(bool fear, bool direction, int face_index);
@@ -47,6 +52,7 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         void click_center();
         void click_peripheral();
 
+        std::mutex mutex;
         bool input_dirty;
         bool central_input_dirty;
         bool window_dirty;
