@@ -275,7 +275,7 @@ void SaccadeWindowImpl::report_output(Layer *layer,
     int col = fixation.get_x(cols);
     int row = fixation.get_y(rows);
 
-    if (row != old_row or col != old_col) {
+    if (iteration == 0 or row != old_row or col != old_col) {
         //printf("Fixation: %d %d\n", row, col);
         auto data = this->overlay_pix->get_pixels();
         for (int i = 0 ; i < rows*cols ; ++i)
