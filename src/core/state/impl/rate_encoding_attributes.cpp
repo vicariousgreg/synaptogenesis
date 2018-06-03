@@ -3,11 +3,13 @@
 #include "state/impl/rate_encoding_attributes.h"
 #include "util/logger.h"
 
+#include <math.h>
+
+REGISTER_ATTRIBUTES(RateEncodingAttributes, "rate_encoding", FLOAT)
+
 /******************************************************************************/
 /******************************** KERNEL **************************************/
 /******************************************************************************/
-
-#include <math.h>
 
 BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
     float *f_outputs = (float*)outputs;
@@ -23,6 +25,10 @@ BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
 /******************************************************************************/
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
+
+Kernel<SYNAPSE_ARGS> RateEncodingAttributes::get_updater(Connection *conn) {
+    LOG_ERROR("RateEncodingAttributes updater not implemented!");
+}
 
 RateEncodingAttributes::RateEncodingAttributes(Layer *layer)
         : Attributes(layer, FLOAT) { }
