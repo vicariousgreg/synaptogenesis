@@ -2,7 +2,7 @@
 	"modules": [
 		{
 			"type": "csv_input",
-			"filename": "\/HDD\/datasets\/mnist\/processed\/mnist_test_input.csv",
+			"filename": "\/mnt\/HDD\/datasets\/mnist\/processed\/mnist_test_input.csv",
 			"offset": "0",
 			"exposure": "1",
 			"normalization": "255",
@@ -15,7 +15,7 @@
 		},
 		{
 			"type": "csv_evaluator",
-			"filename": "\/HDD\/datasets\/mnist\/processed\/mnist_test_output.csv",
+			"filename": "\/mnt\/HDD\/datasets\/mnist\/processed\/mnist_test_output.csv",
 			"offset": "0",
 			"exposure": "1",
 			"normalization": "1",

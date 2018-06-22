@@ -1,6 +1,6 @@
 from syngen import Network, Environment, get_cpu, get_gpus
 
-data_path = "/HDD/datasets/mnist/processed/"
+data_path = "/mnt/HDD/datasets/mnist/processed/"
 # data_path = "./resources"
 
 # Create main structure (feedforward engine)

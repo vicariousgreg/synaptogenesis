@@ -73,8 +73,8 @@ void mnist_test() {
     auto network = new Network(network_config);
 
     // Modules for training
-    std::string input_file = "/HDD/datasets/mnist/processed/mnist_train_input.csv";
-    std::string output_file = "/HDD/datasets/mnist/processed/mnist_train_output.csv";
+    std::string input_file = "/mnt/HDD/datasets/mnist/processed/mnist_train_input.csv";
+    std::string output_file = "/mnt/HDD/datasets/mnist/processed/mnist_train_output.csv";
     auto env = new Environment();
     env->add_module(
         (new ModuleConfig("csv_input", "mnist", "input_layer"))
@@ -103,8 +103,8 @@ void mnist_test() {
     // Remove modules and replace for testing
     env->remove_modules();
 
-    input_file = "/HDD/datasets/mnist/processed/mnist_test_input.csv";
-    output_file = "/HDD/datasets/mnist/processed/mnist_test_output.csv";
+    input_file = "/mnt/HDD/datasets/mnist/processed/mnist_test_input.csv";
+    output_file = "/mnt/HDD/datasets/mnist/processed/mnist_test_output.csv";
     env->add_module(
         (new ModuleConfig("csv_input", "mnist", "input_layer"))
         ->set("filename", input_file)
