@@ -40,19 +40,37 @@ BUILD_ATTRIBUTE_KERNEL(SOMAttributes, som_attribute_kernel,
 /******************************************************************************/
 
 CALC_ALL(activate_som,
+    SOMWeightMatrix *som_mat = (SOMWeightMatrix*)synapse_data.matrix;
+    float* output_cache = som_mat->output_cache.get();
     ,
 
     float distance = 0.0;,
 
-    float val = extract(outputs[from_index], delay) - weights[weight_index];
+    float out = extract(outputs[from_index], delay);
+    float val = out - weights[weight_index];
+    output_cache[weight_index] = out;
     distance += val * val;,
 
     inputs[to_index] += distance;
 );
 
+CALC_ALL(modulate_som,
+    SOMAttributes *som_att = (SOMAttributes*)synapse_data.attributes;
+    float* plasticity = som_att->plasticity.get();
+    ,
+
+    float sum = 0.0;,
+
+    sum += weights[weight_index] * extract(outputs[from_index], delay);,
+
+    plasticity[to_index] = sum;
+);
+
 CALC_ALL(update_som,
     SOMAttributes *som_att = (SOMAttributes*)synapse_data.attributes;
     SOMWeightMatrix *som_mat = (SOMWeightMatrix*)synapse_data.matrix;
+    float* output_cache = som_mat->output_cache.get();
+    float* plasticity = som_att->plasticity.get();
     float learning_rate = som_mat->learning_rate;
     float neighbor_learning_rate = som_mat->neighbor_learning_rate;
     int neighborhood_size = som_mat->neighborhood_size;
@@ -64,19 +82,23 @@ CALC_ALL(update_som,
     int row_dist = abs(winner_row - (to_index / to_columns));
     int col_dist = abs(winner_col - (to_index % to_columns));,
 
-    if (to_index == winner)
-        weights[weight_index] += learning_rate *
-            (extract(outputs[from_index], delay) - weights[weight_index]);
-    else if (row_dist + col_dist <= neighborhood_size)
-        weights[weight_index] += neighbor_learning_rate *
-            (extract(outputs[from_index], delay) - weights[weight_index]);,
-
+    if (to_index == winner) {
+        weights[weight_index] += plasticity[to_index] * learning_rate *
+            (output_cache[weight_index] - weights[weight_index]);
+    } else if (row_dist + col_dist <= neighborhood_size) {
+        weights[weight_index] += plasticity[to_index] * neighbor_learning_rate *
+            (output_cache[weight_index] - weights[weight_index]);
+    },
 );
 
 Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
     try {
-        if (not conn->second_order and conn->get_type() == FULLY_CONNECTED)
-            return get_activate_som_fully_connected();
+        if (not conn->second_order) {
+            if (conn->opcode == MODULATE)
+                return modulate_som_map.at(conn->get_type());
+            else
+                return activate_som_map.at(conn->get_type());
+        }
     } catch(std::out_of_range) { }
 
     LOG_ERROR(
@@ -88,8 +110,8 @@ Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 
 Kernel<SYNAPSE_ARGS> SOMAttributes::get_updater(Connection *conn) {
-    if (not conn->second_order and conn->get_type() == FULLY_CONNECTED)
-        return get_update_som_fully_connected();
+    if (not conn->second_order)
+        return update_som_map.at(conn->get_type());
     else
         LOG_ERROR(
             "Unimplemented connection type!");
@@ -103,6 +125,14 @@ SOMAttributes::SOMAttributes(Layer *layer)
         : Attributes(layer, FLOAT) {
     this->winner = 0;
     this->rbf_scale = std::stof(layer->get_parameter("rbf scale", "1"));
+
+    this->plasticity = Attributes::create_neuron_variable<float>(0.0);
+    Attributes::register_neuron_variable("plasticity", &plasticity);
+}
+
+void SOMWeightMatrix::register_variables() {
+    this->output_cache = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("output cache", &output_cache);
 }
 
 void SOMAttributes::process_weight_matrix(WeightMatrix* matrix) {

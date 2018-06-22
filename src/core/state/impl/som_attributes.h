@@ -15,6 +15,9 @@ class SOMAttributes : public Attributes {
         int winner;
         float rbf_scale;
 
+        // Plasticity gate
+        Pointer<float> plasticity;
+
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };
@@ -25,7 +28,10 @@ class SOMWeightMatrix : public WeightMatrix {
         float neighbor_learning_rate;
         int neighborhood_size;
 
+        Pointer<float> output_cache;
+
     WEIGHT_MATRIX_MEMBERS(SOMWeightMatrix);
+    virtual void register_variables();
 };
 
 #endif
