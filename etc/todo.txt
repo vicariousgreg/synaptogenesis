@@ -1,0 +1,60 @@
+weight config list
+* sequence of operations
+* indices, distances, delays
+* callbacks
+* auto retrieve necessary info
+* some way for attributes to indicate necessary info
+
+convergent/divergent (convolutional) by weight by from index
+
+prefix/postfix for feedback update order
+
+replace callback ID with a property config passed down from a python dictionary
+
+save hash and filename for saved weights in a state
+
+history chain of states
+* timestamp identifier
+* linked list records network and state
+
+python wrappers for layers, connections, modules
+* config validation
+* convenience methods for common patterns
+
+
+return list of kernels in attributres
+
+backprop
+* before update, collect deltas
+* feedforward only, do in reverse
+* set up cluster dependencies
+* delta array in weightmatrix
+   - two if inter-device
+
+python api lattice
+* key by group props (excitatory, cortical layer, etc)
+* use lambdas over layer props to create connections
+
+save reports with state and network
+* initial (network, state)
+* list of (network, state, report)
+
+attributes kernel config
+* separate data and kernels
+* class hierarchy for compatibility
+
+add control panel module with widgets
+
+write low and high level tests
+
+documentation
+
+separate ampa and nmda weights
+* connection property: ratio
+
+output subclasses for transferring implementation specific data
+* input, expected, error?
+* generalize?
+* "expected" : replace with "label" under "input"
+
+multidimensional layers and connections
