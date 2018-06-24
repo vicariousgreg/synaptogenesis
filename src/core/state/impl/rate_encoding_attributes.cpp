@@ -17,7 +17,7 @@ BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
     ,
 
     float input = inputs[nid];
-    SHIFT_FLOAT_OUTPUTS(f_outputs, (input > 0.0) ? tanh(0.1*input) : 0.0);
+    SHIFT_FLOAT_OUTPUTS(f_outputs, (input > 0.0) ? tanh(input) : 0.0);
     // SHIFT_FLOAT_OUTPUTS(f_outputs, (input > 0.0) ? input : 0.0);
     // SHIFT_FLOAT_OUTPUTS(f_outputs, tanh(input));
 )
