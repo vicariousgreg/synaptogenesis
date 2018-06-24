@@ -497,6 +497,17 @@ def gauss(dist, peak, sig, norm=False):
     a = dist / sig
     return peak_coeff * exp(-0.5 * a * a)
 
+# Difference of gaussians
+def diff_gauss(dist, peak, sig, norm=False):
+    v = gauss(dist, peak, sig, False) - gauss(dist, peak, sig * 1.6, False)
+
+    if norm:
+        inv_sqrt_2pi = 0.3989422804014327
+        peak_coeff = peak * ((inv_sqrt_2pi / sig) - (inv_sqrt_2pi / (sig * 1.6)))
+        v = v / peak_coeff
+
+    return v
+
 # Initializes weights based on the distances between the nodes
 def dist_callback(ID, size, weights, distances):
     w_arr = FloatArray(size, weights)
@@ -511,6 +522,22 @@ def dist_callback(ID, size, weights, distances):
             w_arr.data[i] = gauss(d_arr.data[i], w_arr.data[i], sigma, True)
 
 create_distance_weight_callback("gaussian", dist_callback)
+
+# Initializes weights based on the distances between the nodes
+# Uses difference of gaussian method to create mexican hat receptive field
+def mexican_hat_dist_callback(ID, size, weights, distances):
+    w_arr = FloatArray(size, weights)
+    d_arr = FloatArray(size, distances)
+
+    # Use half maximum distance for standard deviation
+    sigma = max(d_arr.data[i] for i in xrange(size)) / 2
+
+    # Smooth out weights based on distances
+    if sigma != 0:
+        for i in xrange(size):
+            w_arr.data[i] = diff_gauss(d_arr.data[i], w_arr.data[i], sigma, True)
+
+create_distance_weight_callback("mexican_hat", mexican_hat_dist_callback)
 
 
 """ Other Library Functions """
