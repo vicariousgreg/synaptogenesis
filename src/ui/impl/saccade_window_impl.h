@@ -16,8 +16,8 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         void lock() { mutex.lock(); }
         void unlock() { mutex.unlock(); }
 
-        /* void set_face(bool fear, bool direction); */
-        void set_face(bool fear, bool direction, int face_index);
+        void set_face();
+        void set_face(bool fear, bool direction, int face_index=-1);
         void set_cross();
 
         void update();
@@ -27,6 +27,7 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         void feed_central_input(Layer *layer, float *input);
         void report_output(Layer *layer,
             Output *output, OutputType output_type);
+        void update_fixation_point(int row, int col);
 
     protected:
         Glib::RefPtr<Gdk::Pixbuf> overlay_pix;
@@ -56,7 +57,6 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         bool input_dirty;
         bool central_input_dirty;
         bool window_dirty;
-        bool waiting;
 
         Gtk::Table *table;
         Gtk::Overlay *overlay;
@@ -71,6 +71,11 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
         bool automatic;
         int cycle_rate;
         int iteration;
+
+        bool face_on;
+        bool curr_fear;
+        bool curr_direction;
+        bool curr_face_index;
 };
 
 #endif

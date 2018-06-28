@@ -12,12 +12,12 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
               window_dirty(true),
               input_dirty(true),
               central_input_dirty(true),
-              waiting(true),
+              face_on(false),
               input_data((float*)malloc(rows*cols*sizeof(float))),
               saccade_rate(module->config->get_float("saccade rate", 1.0)),
               automatic(module->config->get_bool("automatic", false)),
               cycle_rate(module->config->get_int("cycle rate", 100)),
-              iteration(0) {
+              iteration(-100) {
     // Add table
     table = new Gtk::Table(1, 3, false);
     table->set_row_spacings(0);
@@ -106,6 +106,7 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
     this->overlay->show_all();
 
     this->set_cross();
+    this->update_fixation_point(fixation.get_y(rows), fixation.get_x(cols));
 }
 
 SaccadeWindowImpl::~SaccadeWindowImpl() {
@@ -127,33 +128,21 @@ void SaccadeWindowImpl::set_cross() {
     input_dirty = true;
     central_input_dirty = true;
     window_dirty = true;
-    waiting = true;
+    face_on = false;
+}
+
+void SaccadeWindowImpl::set_face() {
+    set_face(iRand(1), iRand(1));
 }
 
 void SaccadeWindowImpl::set_face(bool fear, bool direction, int face_index) {
-    // // auto& faces = fear_faces_left;
-    // auto& faces = fear_faces_right;
-    // if (fear and direction) {
-    //     printf("here1\n");
-    //     faces = fear_faces_right;
-    // } else if (not fear and direction) {
-    //     printf("here2\n");
-    //     faces = neutral_faces_right;
-    // } else if (not fear and not direction) {
-    //     printf("here3\n");
-    //     faces = neutral_faces_left;
-    // } else {
-    //     printf("here4\n");
-    //     faces = fear_faces_left;
-    // }
+    auto& faces = fear_faces_left;
+    if (direction) faces = (fear) ? fear_faces_right : neutral_faces_right;
+    else           faces = (fear) ? fear_faces_left  : neutral_faces_left;
 
-    // int index = iRand(faces.size()-1);
-    // auto face_pix = faces[face_index];
     Glib::RefPtr<Gdk::Pixbuf> face_pix;
-    if (fear and direction) face_pix = fear_faces_right[face_index];
-    if (fear and not direction) face_pix = fear_faces_left[face_index];
-    if (not fear and direction) face_pix = neutral_faces_right[face_index];
-    if (not fear and not direction) face_pix = neutral_faces_left[face_index];
+    if (face_index == -1) face_index = iRand(faces.size()-1);
+    face_pix = faces[face_index];
 
     auto face_data = face_pix->get_pixels();
     int pix_size = face_pix->get_has_alpha() ? 4 : 3;
@@ -173,7 +162,10 @@ void SaccadeWindowImpl::set_face(bool fear, bool direction, int face_index) {
     input_dirty = true;
     central_input_dirty = true;
     window_dirty = true;
-    waiting = false;
+    face_on = true;
+    curr_fear = fear;
+    curr_direction = direction;
+    curr_face_index = face_index;
 }
 
 void SaccadeWindowImpl::add_layer(Layer* layer, IOTypeMask io_type) {
@@ -183,9 +175,9 @@ void SaccadeWindowImpl::update() {
     lock();
 
     ++iteration;
-    if (automatic and (iteration % cycle_rate == 0)) {
-        if (waiting) this->click_center();
-        else this->click_peripheral();
+    if (automatic and (iteration == cycle_rate)) {
+        if (face_on) ; //this->click_peripheral();
+        else         this->click_center();
     }
 
     if (window_dirty) {
@@ -275,26 +267,63 @@ void SaccadeWindowImpl::report_output(Layer *layer,
     int col = fixation.get_x(cols);
     int row = fixation.get_y(rows);
 
-    if (iteration == 0 or row != old_row or col != old_col) {
-        //printf("Fixation: %d %d\n", row, col);
-        auto data = this->overlay_pix->get_pixels();
-        for (int i = 0 ; i < rows*cols ; ++i)
-            data[4*i + 3] = 0;
+    if (row != old_row or col != old_col)
+        this->update_fixation_point(row, col);
 
-        int start_row = std::max(0, row-5);
-        int end_row = std::min(rows, row+5);
-        int start_col = std::max(0, col-5);
-        int end_col = std::min(cols, col+5);
+    // Check curr and old fixation panes
+    int curr_pane;
+    if (col < peripheral_cols)
+        curr_pane = 0;
+    else if (col > peripheral_cols + center_cols)
+        curr_pane = 2;
+    else
+        curr_pane = 1;
 
-        for (int i = start_row ; i < end_row ; ++i) {
-            for (int j = start_col ; j < end_col ; ++j) {
-                int index = i * cols + j;
-                data[4*index + 3] = 255;
-            }
+    int old_pane;
+    if (old_col < peripheral_cols)
+        old_pane = 0;
+    else if (old_col > peripheral_cols + center_cols)
+        old_pane = 2;
+    else
+        old_pane = 1;
+
+    if (old_pane != curr_pane) {
+        // If fixation exited face
+        if (face_on and old_pane == 1) {
+            bool correct = (curr_direction) ? curr_pane == 0 : curr_pane == 2;
+
+            printf("Looked %s (%d, %d)  correct=%d  time=%d\n",
+                curr_pane == 0 ? "left" : "right",
+                row, col, correct, iteration - cycle_rate);
+
+            this->click_peripheral();
+        // If fixation returned from peripheral
+        } else if (curr_pane == 1) {
+            printf("Looked center (%d, %d)\n", row, col);
+            iteration = 0;
         }
-        window_dirty = true;
-        central_input_dirty = true;
     }
+}
+
+void SaccadeWindowImpl::update_fixation_point(int row, int col) {
+    //printf("Fixation: %d %d\n", row, col);
+    auto data = this->overlay_pix->get_pixels();
+    for (int i = 0 ; i < rows*cols ; ++i)
+        data[4*i + 3] = 0;
+
+    int start_row = std::max(0, row-5);
+    int end_row = std::min(rows, row+5);
+    int start_col = std::max(0, col-5);
+    int end_col = std::min(cols, col+5);
+
+    for (int i = start_row ; i < end_row ; ++i) {
+        for (int j = start_col ; j < end_col ; ++j) {
+            int index = i * cols + j;
+            data[4*index + 3] = 255;
+        }
+    }
+    window_dirty = true;
+    central_input_dirty = true;
 }
 
 bool SaccadeWindowImpl::on_button_press_event(GdkEventButton* button_event) {
@@ -303,10 +332,9 @@ bool SaccadeWindowImpl::on_button_press_event(GdkEventButton* button_event) {
         int col = int(button_event->x);
         if (col < peripheral_cols) {
             printf("Clicked left   (%d, %d)\n", row, col);
+            this->click_peripheral();
         } else if (col < peripheral_cols + center_cols) {
             printf("Clicked center (%d, %d)\n", row, col);
-            // if (waiting) this->set_face(iRand(1), iRand(1));
-
             this->click_center();
         } else {
             printf("Clicked right  (%d, %d)\n", row, col);
@@ -325,7 +353,11 @@ void SaccadeWindowImpl::click_center() {
     printf("fear %d dir %d idx %d\n",
         fear, direction, face_index);
 
-    if (waiting) {
+    if (not face_on) {
+        // Set random face
+        //this->set_face();
+
+        // Iterate deterministically
         this->set_face(fear, direction, face_index);
         fear = !fear;
         if(!fear) {
@@ -336,5 +368,5 @@ void SaccadeWindowImpl::click_center() {
 }
 
 void SaccadeWindowImpl::click_peripheral() {
-    if (not waiting) this->set_cross();
+    if (face_on) this->set_cross();
 }
