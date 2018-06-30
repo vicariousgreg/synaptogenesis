@@ -215,7 +215,7 @@ src/core/state/impl/game_of_life_attributes
 
 src/core/state/impl/izhikevich_attributes
   Network->Structure->Layer
-    get_parameter("init", "regular")
+    get_parameter("params", "regular")
     get_parameter("neuron spacing", "0.1")
 
   Network->Connection

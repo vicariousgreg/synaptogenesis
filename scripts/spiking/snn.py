@@ -27,7 +27,7 @@ layer = {
         "rate" : 10
     },
     "neuron spacing" : "0.1",
-    "init" : "random positive"
+    "params" : "random positive"
 }
 
 layer_a = deepcopy(layer)
@@ -53,7 +53,7 @@ input_layer = {
         "rate" : 10
     },
     "neuron spacing" : "0.1",
-    "init" : "random positive"
+    "params" : "random positive"
 }
 gate_layer = {
     "neural model" : "relay",
@@ -84,7 +84,7 @@ layer_inh = {
         "rate" : 10
     },
     "neuron spacing" : "0.2",
-    "init" : "random negative"
+    "params" : "random negative"
 }
 
 layer_a_inh = deepcopy(layer_inh)

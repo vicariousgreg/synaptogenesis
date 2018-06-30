@@ -10,7 +10,7 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"init": "random positive",
+					"params": "random positive",
 					"init config": {
 						"type": "normal",
 						"mean": "1.000000",
@@ -29,7 +29,7 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"init": "random positive",
+					"params": "random positive",
 					"init config": {
 						"type": "normal",
 						"mean": "1.000000",
@@ -48,7 +48,7 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"init": "random positive",
+					"params": "random positive",
 					"init config": {
 						"type": "normal",
 						"mean": "1.000000",
@@ -67,7 +67,7 @@
 					"rows": "128",
 					"columns": "128",
 					"plastic": "false",
-					"init": "regular",
+					"params": "regular",
 					"init config": {
 						"type": "poisson"
 					}
@@ -78,7 +78,7 @@
 					"rows": "1",
 					"columns": "1",
 					"plastic": "false",
-					"init": "thalamo_cortical"
+					"params": "thalamo_cortical"
 				}
 			]
 		}

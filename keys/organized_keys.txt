@@ -159,7 +159,7 @@ Network->Structure->Layer
     get_parameter("birth_max", "3")
 
   src/core/state/impl/izhikevich_attributes
-    get_parameter("init", "regular")
+    get_parameter("params", "regular")
     get_parameter("neuron spacing", "0.1")
 
   src/core/state/impl/oscillator_attributes

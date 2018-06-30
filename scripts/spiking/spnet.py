@@ -11,94 +11,52 @@ import matplotlib.pyplot as plt
 
 def build_network(dim=64):
     # Neuron parameters
-    exc_init = "regular"
-    inh_init = "fast"
-    #exc_init = "random positive"
-    #inh_init = "random negative"
+    #exc_init = "regular"
+    #inh_init = "fast"
+    exc_init = "random positive"
+    inh_init = "random negative"
 
     # Plasticity parameters
-    plastic = True
-    stp = True
-    stp_tau = "5000"
-    exc_learning_rate = 0.001
-    inh_learning_rate = 0.01
+    exc_learning_rate = 1.0
+    inh_learning_rate = 1.0
 
     # Noise Parameters
     exc_noise_strength = 20.0
-    exc_noise_rate = 0.01
+    exc_noise_rate = 0.1
     inh_noise_strength = 20.0
-    inh_noise_rate = 0.01
+    inh_noise_rate = 0.1
     exc_random = False
     inh_random = False
 
     # Weight parameters
-    init = "flat"
-    myelinated = False
-
-    exc_exc_weight_init = init
-    exc_exc_exponent = 1.5
-    exc_exc_base_weight = 0.001
-    exc_exc_base_weight_min = 0.00011
-    exc_exc_base_weight_max = 0.2
+    exc_exc_base_weight = 5.0
     exc_exc_fraction = 0.1
 
-    exc_inh_weight_init = init
-    exc_inh_exponent = 1.5
-    exc_inh_base_weight = 0.001
-    exc_inh_base_weight_min = 0.00011
-    exc_inh_base_weight_max = 0.2
+    exc_inh_base_weight = 5.0
     exc_inh_fraction = 0.1
 
-    inh_exc_weight_init = init
-    inh_exc_exponent = 1.5
-    inh_exc_base_weight = 0.1
-    inh_exc_base_weight_min = 0.00011
-    inh_exc_base_weight_max = 0.2
-    inh_exc_fraction = 1.0
+    inh_exc_base_weight = 6.0
+    inh_exc_fraction = 0.1
 
     # Create main structure
     structure = {"name" : "snn", "type" : "parallel"}
 
-    exc_exc_spread = 25
-    exc_inh_spread = 15
-    inh_exc_spread = 15
-    exc_inh_mask = 3
-
-    # Sine wave envelope
-    sine = {
-        "name" : "sine",
-        "neural model" : "sine generator",
-        "frequency" : 25,
-        "rows" : dim,
-        "columns" : dim
-    }
-
-    # Poisson input layer
-    poisson = {
-        "name" : "poisson",
-        "neural model" : "poisson generator",
-        "rows" : dim,
-        "columns" : dim
-    }
-
     # Excitatory layer
     excitatory = {
         "name" : "exc",
-        "neural model" : "izhikevich",
+        "neural model" : "spnet",
         "rows" : dim,
         "columns" : dim,
-        "neuron spacing" : "0.1",
-        "params" : exc_init
+        "init" : exc_init
     }
 
     # Inhibitory layer
     inhibitory = {
         "name" : "inh",
-        "neural model" : "izhikevich",
+        "neural model" : "spnet",
         "rows" : dim/2,
         "columns" : dim/2,
-        "neuron spacing" : "0.2",
-        "params" : inh_init
+        "init" : inh_init
     }
 
     # Noise
@@ -119,227 +77,66 @@ def build_network(dim=64):
 
 
     # Add layers to structure
-    structure["layers"] = [
-        sine, poisson,
-        excitatory, inhibitory]
-
-    sine_poisson = {
-        "from layer" : "sine",
-        "to layer" : "poisson",
-        "type" : "one to one",
-        "opcode" : "add",
-        "plastic" : False,
-        "weight config" : {
-            "type" : "flat",
-            "weight" : 0.001,
-            "fraction" : 1.0,
-        },
-        "direct" : True # direct connection into input current
-    }
-
-    poisson_exc = {
-        "from layer" : "poisson",
-        "to layer" : "exc",
-        "type" : "one to one",
-        "opcode" : "add",
-        "plastic" : False,
-        "weight config" : {
-            "type" : "flat",
-            "weight" : 20.0,
-            "fraction" : 1.0,
-        },
-        "direct" : True # direct connection into input current
-    }
+    structure["layers"] = [excitatory, inhibitory]
 
     exc_exc = {
         "from layer" : "exc",
         "to layer" : "exc",
         "name" : "exc exc matrix",
-        "type" : "convergent",
-        "arborized config" : {
-            "field size" : exc_exc_spread,
-            "wrap" : True,
-        },
+        "type" : "fully connected",
         "opcode" : "add",
-        "plastic" : plastic,
+        "plastic" : True,
         "sparse" : True,
         "learning rate" : exc_learning_rate,
-        "max weight" : "0.5",
-        "myelinated" : myelinated,
-        "short term plasticity" : stp,
-        "short term plasticity tau" : stp_tau
+        "max weight" : 10,
+        "myelinated" : False,
+        "random delay" : 20,
+        "weight config" : {
+            "type" : "flat",
+            "weight" : exc_exc_base_weight,
+            "fraction" : exc_exc_fraction,
+            "diagonal" : False,
+        }
     }
 
     exc_inh = {
         "from layer" : "exc",
         "to layer" : "inh",
         "name" : "exc inh matrix",
-        "type" : "convergent",
-        "arborized config" : {
-            "field size" : exc_inh_spread,
-            "stride" : 2,
-            "wrap" : True,
-        },
+        "type" : "fully connected",
         "opcode" : "add",
-        "plastic" : plastic,
+        "plastic" : True,
         "sparse" : True,
         "learning rate" : exc_learning_rate,
-        "max weight" : "0.5",
-        "myelinated" : myelinated,
-        "short term plasticity" : stp,
-        "short term plasticity tau" : stp_tau
+        "max weight" : 10,
+        "myelinated" : False,
+        "random delay" : 20,
+        "weight config" : {
+            "type" : "flat",
+            "weight" : exc_inh_base_weight,
+            "fraction" : exc_inh_fraction,
+        }
     }
     inh_exc = {
         "from layer" : "inh",
         "to layer" : "exc",
         "name" : "inh exc matrix",
-        "type" : "divergent",
-        "arborized config" : {
-            "field size" : inh_exc_spread,
-            "stride" : 2,
-            "wrap" : True,
-        },
+        "type" : "fully connected",
         "opcode" : "sub",
-        "plastic" : plastic,
+        "plastic" : False,
         "sparse" : True,
         "learning rate" : inh_learning_rate,
-        "max weight" : "0.5",
-        "myelinated" : myelinated,
-        "short term plasticity" : stp,
-        "short term plasticity tau" : stp_tau
+        "max weight" : 10,
+        "myelinated" : True,
+        "weight config" : {
+            "type" : "flat",
+            "weight" : inh_exc_base_weight,
+            "fraction" : inh_exc_fraction,
+        }
     }
-
-    # Exc Exc init
-    if exc_exc_weight_init == "zero":
-        exc_exc["weight config"] = {
-                "type" : "flat",
-                "weight" : 0.00011,
-                "fraction" : exc_exc_fraction,
-                "diagonal" : False,
-                "circular mask" : {}
-            }
-    elif exc_exc_weight_init == "random":
-        exc_exc["weight config"] = {
-                "type" : "random",
-                "min weight" : exc_exc_base_weight_min,
-                "max weight" : exc_exc_base_weight_max,
-                "fraction" : exc_exc_fraction,
-                "diagonal" : False,
-                "circular mask" : {}
-            }
-    elif exc_exc_weight_init == "flat":
-        exc_exc["weight config"] = {
-                "type" : "flat",
-                "weight" : exc_exc_base_weight,
-                "fraction" : exc_exc_fraction,
-                "diagonal" : False,
-                "circular mask" : {}
-            }
-    elif exc_exc_weight_init == "power law":
-        exc_exc["weight config"] = {
-                "type" : "power law",
-                "exponent" : exc_exc_exponent,
-                "min weight" : exc_exc_base_weight_min,
-                "max weight" : exc_exc_base_weight_max,
-                "fraction" : exc_exc_fraction,
-                "diagonal" : False,
-                "circular mask" : {}
-            }
-
-    # Exc Inh init
-    if exc_inh_weight_init == "zero":
-        exc_inh["weight config"] = {
-                "type" : "flat",
-                "weight" : 0.00011,
-                "fraction" : exc_inh_fraction,
-                "circular mask" : [
-                    {
-                        "diameter" : exc_inh_mask,
-                        "invert" : True
-                    },
-                    { }
-                ]
-            }
-    elif exc_inh_weight_init == "random":
-        exc_inh["weight config"] = {
-                "type" : "random",
-                "min weight" : exc_inh_base_weight_min,
-                "max weight" : exc_inh_base_weight_max,
-                "fraction" : exc_inh_fraction,
-                "circular mask" : [
-                    {
-                        "diameter" : exc_inh_mask,
-                        "invert" : True
-                    },
-                    { }
-                ]
-            }
-    elif exc_inh_weight_init == "flat":
-        exc_inh["weight config"] = {
-                "type" : "flat",
-                "weight" : exc_inh_base_weight,
-                "fraction" : exc_inh_fraction,
-                "circular mask" : [
-                    {
-                        "diameter" : exc_inh_mask,
-                        "invert" : True
-                    },
-                    { }
-                ]
-            }
-    elif exc_inh_weight_init == "power law":
-        exc_inh["weight config"] = {
-                "type" : "power law",
-                "exponent" : exc_inh_exponent,
-                "min weight" : exc_inh_base_weight_min,
-                "max weight" : exc_inh_base_weight_max,
-                "fraction" : exc_inh_fraction,
-                "circular mask" : [
-                    {
-                        "diameter" : exc_inh_mask,
-                        "invert" : True
-                    },
-                    { }
-                ]
-            }
-
-    # Inh Exc init
-    if inh_exc_weight_init == "zero":
-        inh_exc["weight config"] = {
-                "type" : "flat",
-                "weight" : 0.00011,
-                "fraction" : inh_exc_fraction,
-                "distance callback" : "gaussian",
-            }
-    elif inh_exc_weight_init == "random":
-        inh_exc["weight config"] = {
-                "type" : "random",
-                "min weight" : inh_exc_base_weight_min,
-                "max weight" : inh_exc_base_weight_max,
-                "fraction" : inh_exc_fraction,
-                "distance callback" : "gaussian",
-            }
-    elif inh_exc_weight_init == "flat":
-        inh_exc["weight config"] = {
-                "type" : "flat",
-                "weight" : inh_exc_base_weight,
-                "fraction" : inh_exc_fraction,
-                "distance callback" : "gaussian",
-            }
-    elif inh_exc_weight_init == "power law":
-        inh_exc["weight config"] = {
-                "type" : "power law",
-                "exponent" : inh_exc_exponent,
-                "min weight" : inh_exc_base_weight_min,
-                "max weight" : inh_exc_base_weight_max,
-                "fraction" : inh_exc_fraction,
-                "distance callback" : "gaussian",
-            }
 
     # Create connections
     connections = [
-        sine_poisson,
-        poisson_exc,
         exc_exc,
         exc_inh,
         inh_exc,
@@ -358,8 +155,6 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                 "type" : "visualizer",
                 "colored" : False,
                 "layers" : [
-                    { "structure" : "snn", "layer" : "sine" },
-                    { "structure" : "snn", "layer" : "poisson" },
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
                 ]
@@ -394,26 +189,8 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                 "window" : 1000, # Short term
                 "linear" : False,
                 "layers" : [
-                    #{ "structure" : "snn", "layer" : "sine" },
-                    #{ "structure" : "snn", "layer" : "poisson" },
                     { "structure" : "snn", "layer" : "exc" },
                     { "structure" : "snn", "layer" : "inh" },
-                ]
-            },
-            {
-                "type" : "gaussian_random_input",
-                "rate" : "1000",
-                "border" : 0,
-                "std dev" : std_dev,
-                "value" : 1.0,
-                "normalize" : True,
-                "peaks" : peaks,
-                "random" : False,
-                "layers" : [
-                    {
-                        "structure" : "snn",
-                        "layer" : "sine"
-                    }
                 ]
             }
         ]
@@ -590,7 +367,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', action='store_true', default=False,
                         dest='stats',
                         help='print statistics')
-    parser.add_argument('-dim', type=int, default=128,
+    parser.add_argument('-dim', type=int, default=32,
                         help='dimensions')
     parser.add_argument('-p', type=int, default=1,
                         help='noise peaks')

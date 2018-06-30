@@ -70,7 +70,7 @@ def build_module(structure, dim=64):
         "rows" : dim,
         "columns" : dim,
         "neuron spacing" : 0.1,
-        "init" : exc_init
+        "params" : exc_init
     }
 
     # Inhibitory layer
@@ -80,7 +80,7 @@ def build_module(structure, dim=64):
         "rows" : dim/inh_fraction,
         "columns" : dim/inh_fraction,
         "neuron spacing" : 0.1 * inh_fraction,
-        "init" : inh_init
+        "params" : inh_init
     }
 
     # Noise

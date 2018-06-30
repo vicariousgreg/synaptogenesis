@@ -8,7 +8,7 @@ exc = {
     "neural model" : "izhikevich",
     "rows" : 200,
     "columns" : 200,
-    "init" : "random positive",
+    "params" : "random positive",
     "neuron spacing" : "0.1",
     "init config" : {
         "type" : "poisson",
@@ -20,7 +20,7 @@ inh = {
     "neural model" : "izhikevich",
     "rows" : 100,
     "columns" : 100,
-    "init" : "random negative",
+    "params" : "random negative",
     "neuron spacing" : "0.2"
 }
 structure["layers"] = [exc, inh]

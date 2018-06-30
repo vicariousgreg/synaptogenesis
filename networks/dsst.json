@@ -9,8 +9,7 @@
 					"neural model": "relay",
 					"rows": "188",
 					"columns": "178",
-					"plastic": "false",
-					"init": "regular" 
+					"plastic": "false"
 				},
 				{
 					"name": "what",
@@ -18,7 +17,6 @@
 					"rows": "17",
 					"columns": "8",
 					"plastic": "false",
-					"init": "regular",
 					"dendrites": [
 						{
 							"name": "fixation",
@@ -31,16 +29,14 @@
 					"neural model": "relay",
 					"rows": "171",
 					"columns": "170",
-					"plastic": "false",
-					"init": "regular" 
+					"plastic": "false"
 				},
 				{
 					"name": "output_layer",
 					"neural model": "relay",
 					"rows": "1",
 					"columns": "1",
-					"plastic": "false",
-					"init": "regular" 
+					"plastic": "false"
 				} 
 			] 
 		} 

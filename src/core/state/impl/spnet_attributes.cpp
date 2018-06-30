@@ -1,12 +1,12 @@
 #include <string>
 #include <math.h>
 
-#include "state/impl/izhikevich_attributes.h"
+#include "state/impl/spnet_attributes.h"
 #include "engine/kernel/synapse_kernel.h"
 #include "util/tools.h"
 
-REGISTER_ATTRIBUTES(IzhikevichAttributes, "izhikevich", BIT)
-REGISTER_WEIGHT_MATRIX(IzhikevichWeightMatrix, "izhikevich")
+REGISTER_ATTRIBUTES(SpnetAttributes, "spnet", BIT)
+REGISTER_WEIGHT_MATRIX(SpnetWeightMatrix, "spnet")
 
 /******************************************************************************/
 /******************************** PARAMS **************************************/
@@ -92,27 +92,14 @@ static void create_parameters(std::string str,
 #define IZ_EULER_RES_INV 0.1
 
 /* Time dynamics of spike traces */
-//#define STDP_TAU_POS       0.44    // tau = 1.8ms
-//#define STDP_TAU_NEG       0.833   // tau = 6ms
-#define STDP_TAU_POS       0.9     // tau = 10ms
-//#define STDP_TAU_NEG       0.933   // tau = 15ms
+#define STDP_TAU_POS       0.95   // tau = 20ms
 #define STDP_TAU_NEG       0.95   // tau = 20ms
 
-/* Time dynamics of dopamine */
-#define DOPAMINE_CLEAR_TAU 0.95  // 20ms
-
 /* STDP A constants */
-#define STDP_A_POS 0.4
-#define STDP_A_NEG 0.2
+#define STDP_A_POS 0.1
+#define STDP_A_NEG 0.1
 
-BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
-    float *ampa_conductances = att->ampa_conductance.get();
-    float *nmda_conductances = att->nmda_conductance.get();
-    float *gabaa_conductances = att->gabaa_conductance.get();
-    float *gabab_conductances = att->gabab_conductance.get();
-    float *multiplicative_factors = att->multiplicative_factor.get();
-    float *dopamines = att->dopamine.get();
-
+BUILD_ATTRIBUTE_KERNEL(SpnetAttributes, spnet_attribute_kernel,
     float *voltages = att->voltage.get();
     float *recoveries = att->recovery.get();
     float *postsyn_exc_traces = att->postsyn_exc_trace.get();
@@ -128,15 +115,9 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     /**********************
      *** VOLTAGE UPDATE ***
      **********************/
-    float ampa_conductance = ampa_conductances[nid];
-    float nmda_conductance = nmda_conductances[nid];
-    float gabaa_conductance = gabaa_conductances[nid];
-    float gabab_conductance = gabab_conductances[nid];
-    float multiplicative_factor = multiplicative_factors[nid];
-
     float voltage = voltages[nid];
     float recovery = recoveries[nid];
-    float base_current = inputs[nid];
+    float current = inputs[nid];
 
     float a = as[nid];
     float b = bs[nid];
@@ -144,39 +125,13 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     // Euler's method for voltage/recovery update
     // If the voltage exceeds the spiking threshold, break
     for (int i = 0 ; (i < IZ_EULER_RES) and (voltage < IZ_SPIKE_THRESH) ; ++i) {
-        // Start with AMPA conductance
-        float current = -ampa_conductance * voltage;
-
-        // NMDA nonlinear voltage dependence
-        float temp = powf((voltage + 80) / 60, 2);
-        current -= nmda_conductance * (temp / (1+temp)) * voltage;
-
-        // GABA conductances
-        current -= gabaa_conductance * (voltage + 70);
-        current -= gabab_conductance * (voltage + 90);
-
-        // Multiplicative factor for synaptic currents
-        current *= 1 + multiplicative_factor;
-
-        // Add the base current after multiplicative factor
-        current += base_current;
-
         // Update voltage
         // For numerical stability, use hybrid numerical method
         //   (see section 5b of "Hybrid Spiking Models" by Izhikevich)
         float delta_v = (0.04 * voltage * voltage) +
                         (5*voltage) + 140 - recovery + current;
 
-        float sum_conductances =
-            ampa_conductance + nmda_conductance +
-            gabaa_conductance + gabab_conductance;
-
-        voltage =
-            (voltage + IZ_EULER_RES_INV *
-                (delta_v
-                    + (gabaa_conductance * -70)
-                    + (gabab_conductance * -90)))
-            / (1 + (IZ_EULER_RES_INV * sum_conductances));
+        voltage += delta_v * IZ_EULER_RES_INV;
 
         // If the voltage explodes (voltage == NaN -> voltage != voltage),
         //   set it to threshold before it corrupts the recovery variable
@@ -191,13 +146,6 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
         // Update recovery variable
         recovery += a * adjusted_tau * ((b * voltage) - recovery);
     }
-
-    ampa_conductances[nid] = 0.0;
-    nmda_conductances[nid] = 0.0;
-    gabaa_conductances[nid] = 0.0;
-    gabab_conductances[nid] = 0.0;
-    multiplicative_factors[nid] = 0.0;
-    dopamines[nid] *= DOPAMINE_CLEAR_TAU;
 
     /********************
      *** SPIKE UPDATE ***
@@ -222,158 +170,47 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 /************************* TRACE ACTIVATOR KERNELS ****************************/
 /******************************************************************************/
 
-#define AMPA_TAU          0.8    // tau = 5
-#define GABAA_TAU         0.833  // tau = 6
-#define NMDA_TAU          0.993  // tau = 150
-#define GABAB_TAU         0.993  // tau = 150
-
-#define MULT_TAU          0.95   // tau = 20
-#define DOPAMINE_TAU      0.95   // tau = 20
-
 // Extraction at start of kernel
 #define ACTIV_EXTRACTIONS \
-    IzhikevichAttributes *att = \
-        (IzhikevichAttributes*)synapse_data.attributes; \
-    IzhikevichWeightMatrix *matrix = \
-        (IzhikevichWeightMatrix*)synapse_data.matrix; \
+    SpnetAttributes *att = \
+        (SpnetAttributes*)synapse_data.attributes; \
+    SpnetWeightMatrix *matrix = \
+        (SpnetWeightMatrix*)synapse_data.matrix; \
     float baseline_conductance = matrix->baseline_conductance; \
-    bool stp_flag = matrix->stp_flag; \
 \
-    float *stps   = matrix->stps.get(); \
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get();
 
-#define ACTIV_EXTRACTIONS_SHORT(SHORT_NAME, SHORT_TAU) \
-    float *short_conductances = att->SHORT_NAME.get(); \
-    float short_tau = SHORT_TAU; \
-    float *short_traces   = matrix->short_traces.get();
-
-#define ACTIV_EXTRACTIONS_LONG(LONG_NAME, LONG_TAU) \
-    float *long_conductances = att->LONG_NAME.get(); \
-    float long_tau = LONG_TAU; \
-    float *long_traces   = matrix->long_traces.get();
-
 // Neuron Pre Operation
 #define INIT_SUM \
-    float short_sum = 0.0; \
-    float long_sum = 0.0;
+    float sum = 0.0;
 
 // Weight Operation
-#define CALC_VAL_PREAMBLE \
+#define CALC_VAL \
     float spike = extract(outputs[from_index], delays[weight_index]); \
     from_time_since_spike[from_index] = \
         ((spike > 0.0) \
             ? 0 \
             : MIN(32, from_time_since_spike[from_index] + 1)); \
 \
-    float weight = weights[weight_index] * (1 + stps[weight_index]);
-
-#define CALC_VAL_SHORT \
-    float short_trace = short_traces[weight_index] \
-        + (spike * weight * baseline_conductance); \
-    short_sum += short_trace; \
-    short_traces[weight_index] = short_trace * short_tau;
-
-#define CALC_VAL_LONG \
-    float long_trace = long_traces[weight_index] \
-        + (spike * weight * baseline_conductance); \
-    long_sum += long_trace; \
-    long_traces[weight_index] = long_trace * long_tau;
+    float weight = weights[weight_index]; \
+    sum += spike * weight * baseline_conductance;
 
 // Neuron Post Operation
-#define AGGREGATE_SHORT \
-    short_conductances[to_index] += short_sum;
+#define AGGREGATE \
+    inputs[to_index] = aggregate(inputs[to_index], sum);
 
-#define AGGREGATE_LONG \
-    long_conductances[to_index] += long_sum;
-
-
-/* Trace versions of activator functions */
-CALC_ALL(activate_iz_add,
-    ACTIV_EXTRACTIONS
-    ACTIV_EXTRACTIONS_SHORT(
-        ampa_conductance,
-        AMPA_TAU)
-    ACTIV_EXTRACTIONS_LONG(
-        nmda_conductance,
-        NMDA_TAU),
+CALC_ALL(activate_spnet,
+    ACTIV_EXTRACTIONS,
 
     INIT_SUM,
 
-    CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT
-    CALC_VAL_LONG,
+    CALC_VAL,
 
-    AGGREGATE_SHORT
-    AGGREGATE_LONG
+    AGGREGATE
 );
 
-CALC_ALL(activate_iz_sub,
-    ACTIV_EXTRACTIONS
-    ACTIV_EXTRACTIONS_SHORT(
-        gabaa_conductance,
-        GABAA_TAU)
-    ACTIV_EXTRACTIONS_LONG(
-        gabab_conductance,
-        GABAB_TAU),
-
-    INIT_SUM,
-
-    CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT
-    CALC_VAL_LONG,
-
-    AGGREGATE_SHORT
-    AGGREGATE_LONG
-);
-
-CALC_ALL(activate_iz_mult,
-    ACTIV_EXTRACTIONS
-    ACTIV_EXTRACTIONS_SHORT(
-        multiplicative_factor,
-        MULT_TAU),
-
-    INIT_SUM,
-
-    CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT,
-
-    AGGREGATE_SHORT
-);
-
-CALC_ALL(activate_iz_reward,
-    ACTIV_EXTRACTIONS
-    ACTIV_EXTRACTIONS_SHORT(
-        dopamine,
-        DOPAMINE_TAU),
-
-    INIT_SUM,
-
-    CALC_VAL_PREAMBLE
-    CALC_VAL_SHORT,
-
-    AGGREGATE_SHORT
-);
-
-CALC_ALL(activate_iz_gap,
-    IzhikevichAttributes *att =
-        (IzhikevichAttributes*)synapse_data.attributes;
-    float *voltage = att->voltage.get();,
-
-    float v = voltage[to_index];
-    float sum = 0.0;,
-
-    float weight = weights[weight_index];
-    sum += (voltage[from_index] - v) * weight;,
-
-    inputs[to_index] += sum;
-);
-
-Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
-    // Direct connections get a mainline into the input current
-    if (conn->get_parameter("direct", "false") == "true")
-        return get_base_activator_kernel(conn);
-
+Kernel<SYNAPSE_ARGS> SpnetAttributes::get_activator(Connection *conn) {
     // These are not supported because of the change of weight matrix pointer
     // Second order host connections require their weight matrices to be copied
     // Currently, this only copies the first matrix in the stack, and this
@@ -382,23 +219,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
         LOG_ERROR(
             "Unimplemented connection type!");
 
-    try {
-        switch (conn->opcode) {
-            case(ADD):
-                return activate_iz_add_map.at(conn->get_type());
-            case(SUB):
-                return activate_iz_sub_map.at(conn->get_type());
-            case(MULT):
-                return activate_iz_mult_map.at(conn->get_type());
-            case(REWARD):
-                return activate_iz_reward_map.at(conn->get_type());
-            case(GAP):
-                return activate_iz_gap_map.at(conn->get_type());
-        }
-    } catch(std::out_of_range) { }
-
-    LOG_ERROR(
-        "Unimplemented connection type!");
+    return activate_spnet_map.at(conn->get_type());
 }
 
 /******************************************************************************/
@@ -406,34 +227,26 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 
 #define UPDATE_EXTRACTIONS \
-    IzhikevichWeightMatrix *matrix = \
-        (IzhikevichWeightMatrix*)synapse_data.matrix; \
+    SpnetWeightMatrix *matrix = \
+        (SpnetWeightMatrix*)synapse_data.matrix; \
     float *presyn_traces   = matrix->presyn_traces.get(); \
-    float *stps   = matrix->stps.get(); \
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get(); \
-    bool stp_flag = matrix->stp_flag; \
-    float stp_tau = matrix->stp_tau; \
+    float *dws   = matrix->dw.get(); \
 \
-    IzhikevichAttributes *att = \
-        (IzhikevichAttributes*)synapse_data.attributes; \
+    SpnetAttributes *att = \
+        (SpnetAttributes*)synapse_data.attributes; \
     float *to_exc_traces = att->postsyn_exc_trace.get(); \
     int   *to_time_since_spike = att->time_since_spike.get(); \
-    float *dopamines = att->dopamine.get(); \
     float learning_rate = matrix->learning_rate; \
 
 #define GET_DEST_ACTIVITY \
     float dest_exc_trace = to_exc_traces[to_index]; \
     int   dest_time_since_spike = to_time_since_spike[to_index]; \
-    float dopamine = dopamines[to_index]; \
     float dest_spike = extract(destination_outputs[to_index], 0);
 
 /* Minimum weight */
 #define MIN_WEIGHT 0.0001f
-
-/* Short term plasticity */
-#define MIN_STP -1.0f
-#define MAX_STP 1.0f
 
 /* Time dynamics for long term eligibility trace */
 #define C_TAU 0.99
@@ -471,31 +284,26 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
                 : 0.0); \
 \
         /* Compute delta from short term dynamics */ \
-        float weight_delta = \
-                (dest_spike * src_trace) \
-                - (src_spike * dest_trace) ; \
+        float dw = dws[weight_index] = \
+            0.9 * dws[weight_index] + \
+            (dest_spike * src_trace) \
+            - (src_spike * dest_trace) ; \
+        float weight_delta = dw + 0.01; \
 \
         /* Calculate new weight */ \
-        /* Reward (dopamine) should factor in here */ \
         weight += learning_rate * weight_delta; \
 \
         /* Ensure weight stays within boundaries */ \
         weights[weight_index] = MAX(MIN_WEIGHT, MIN(max_weight, weight)); \
-\
-        /* Update short term plasticity if applicable */ \
-        if (stp_flag) { \
-            float stp = (stps[weight_index] * stp_tau) + weight_delta; \
-            stps[weight_index] = MAX(MIN_STP, MIN(MAX_STP, stp)); \
-        } \
     }
 
-CALC_ALL(update_iz,
+CALC_ALL(update_spnet,
     UPDATE_EXTRACTIONS,
     GET_DEST_ACTIVITY,
     UPDATE_WEIGHT,
-; );
+);
 
-Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
+Kernel<SYNAPSE_ARGS> SpnetAttributes::get_updater(Connection *conn) {
     // Second order, convolutional, and direct updaters are not supported
     if (conn->second_order or conn->convolutional)
         LOG_ERROR(
@@ -505,7 +313,7 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
         switch (conn->opcode) {
             case(ADD):
             case(SUB):
-                return update_iz_map.at(conn->get_type());
+                return update_spnet_map.at(conn->get_type());
         }
     } catch(std::out_of_range) { }
 
@@ -559,22 +367,8 @@ static void check_parameters(Connection *conn) {
                 "Unrecognized connection parameter: " + pair.first);
 }
 
-IzhikevichAttributes::IzhikevichAttributes(Layer *layer)
+SpnetAttributes::SpnetAttributes(Layer *layer)
         : Attributes(layer, BIT) {
-    // Conductances
-    this->ampa_conductance = Attributes::create_neuron_variable<float>();
-    Attributes::register_neuron_variable("ampa", &ampa_conductance);
-    this->nmda_conductance = Attributes::create_neuron_variable<float>();
-    Attributes::register_neuron_variable("nmda", &nmda_conductance);
-    this->gabaa_conductance = Attributes::create_neuron_variable<float>();
-    Attributes::register_neuron_variable("gabaa", &gabaa_conductance);
-    this->gabab_conductance = Attributes::create_neuron_variable<float>();
-    Attributes::register_neuron_variable("gabab", &gabab_conductance);
-    this->multiplicative_factor = Attributes::create_neuron_variable<float>();
-    Attributes::register_neuron_variable("mult", &multiplicative_factor);
-    this->dopamine = Attributes::create_neuron_variable<float>();
-    Attributes::register_neuron_variable("dopamine", &dopamine);
-
     // Neuron variables
     this->voltage = Attributes::create_neuron_variable<float>();
     Attributes::register_neuron_variable("voltage", &voltage);
@@ -636,30 +430,22 @@ IzhikevichAttributes::IzhikevichAttributes(Layer *layer)
     }
 }
 
-void IzhikevichWeightMatrix::register_variables() {
-    // Short term (AMPA/GABAA) conductance trace
-    this->short_traces = WeightMatrix::create_variable<float>();
-    WeightMatrix::register_variable("short trace", &short_traces);
-
-    // Long term (NMDA/GABAA) conductance trace
-    this->long_traces = WeightMatrix::create_variable<float>();
-    WeightMatrix::register_variable("long trace", &long_traces);
-
+void SpnetWeightMatrix::register_variables() {
     // Presynaptic trace
     this->presyn_traces = WeightMatrix::create_variable<float>();
     WeightMatrix::register_variable("presyn trace", &presyn_traces);
 
-    // Short Term Plasticity
-    this->stps = WeightMatrix::create_variable<float>();
-    WeightMatrix::register_variable("short term plasticity", &stps);
-
     // Time since presynaptic spike
     this->time_since_spike = WeightMatrix::create_variable<int>();
     WeightMatrix::register_variable("time since spike", &time_since_spike);
+
+    // Weight derivatives
+    this->dw = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("weight derivative", &dw);
 }
 
-void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
-    auto iz_mat = (IzhikevichWeightMatrix*)matrix;
+void SpnetAttributes::process_weight_matrix(WeightMatrix* matrix) {
+    auto iz_mat = (SpnetWeightMatrix*)matrix;
     Connection *conn = matrix->connection;
 
     // Retrieve baseline conductance
@@ -670,29 +456,14 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     iz_mat->learning_rate =
         std::stof(conn->get_parameter("learning rate", "0.1"));
 
-    // Retrieve short term plasticity flag
-    iz_mat->stp_flag =
-        conn->get_parameter("short term plasticity", "true") == "true";
-
-    // Retrieve short term plasticity time constant
-    iz_mat->stp_tau =
-        1.0 - (1.0 / std::stof(
-            conn->get_parameter("short term plasticity tau", "5000")));
-
     int num_weights = conn->get_num_weights();
     Pointer<float> mData = matrix->get_weights();
-
-    // Short term trace
-    fClear(iz_mat->short_traces, num_weights);
-
-    // Long term trace
-    fClear(iz_mat->long_traces, num_weights);
 
     // Plasticity trace
     fClear(iz_mat->presyn_traces, num_weights);
 
-    // Short Term Plasticity
-    fClear(iz_mat->stps, num_weights);
+    // Weight derivatives
+    fClear(iz_mat->dw, num_weights);
 
     // Delays
     // Myelinated connections use the base delay only
@@ -704,6 +475,7 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
         if (max_delay > 31)
             LOG_ERROR(
                 "Randomized axons cannot have delays greater than 31!");
+        iz_mat->get_delays(0);
         iRand(iz_mat->delays, num_weights, 0, max_delay);
     } else {
         iz_mat->get_delays(BIT,

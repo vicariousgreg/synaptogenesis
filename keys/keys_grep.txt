@@ -173,7 +173,7 @@ src/core/state/impl/game_of_life_attributes.cpp    get_parameter("survival_max",
 src/core/state/impl/game_of_life_attributes.cpp    get_parameter("birth_min", "3")
 src/core/state/impl/game_of_life_attributes.cpp    get_parameter("birth_max", "3")
 src/core/state/impl/izhikevich_attributes.cpp    get_parameter("direct", "false")
-src/core/state/impl/izhikevich_attributes.cpp    get_parameter("init", "regular")
+src/core/state/impl/izhikevich_attributes.cpp    get_parameter("params", "regular")
 src/core/state/impl/izhikevich_attributes.cpp    get_parameter("conductance", "1.0")
 src/core/state/impl/izhikevich_attributes.cpp    get_parameter("learning rate", "0.1")
 src/core/state/impl/izhikevich_attributes.cpp    get_parameter("short term plasticity", "true")
