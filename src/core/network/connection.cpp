@@ -74,6 +74,7 @@ Connection::Connection(const Connection& other)
       opcode(other.opcode),
       type(other.type),
       sparse(other.sparse),
+      randomized_projection(other.randomized_projection),
       convolutional(other.convolutional),
       second_order(other.second_order),
       second_order_host(other.second_order_host),
@@ -81,6 +82,46 @@ Connection::Connection(const Connection& other)
       name(other.name),
       num_weights(other.num_weights),
       id(other.id) { }
+
+Connection::Connection(Connection* other, ConnectionType new_type)
+    : config(new ConnectionConfig(other->config)),
+      from_layer(other->to_layer), // opposite from/to
+      to_layer(other->from_layer),
+      node(other->node),
+      plastic(other->plastic),
+      delay(other->delay),
+      max_weight(other->max_weight),
+      opcode(other->opcode),
+      type(new_type),
+      sparse(other->sparse),
+      //randomized_projection(false), // non-randomized (avoid infinte regress)
+      randomized_projection(other->randomized_projection),
+      convolutional(other->convolutional),
+      second_order(other->second_order),
+      second_order_host(other->second_order_host),
+      second_order_slave(other->second_order_slave),
+      name(other->name),
+      num_weights(other->num_weights),
+      id(other->id) { }
+
+/* Constructs an inverted arborized connection.
+ * For use in randomizing divergent projections. */
+Connection *Connection::invert(Connection* other) {
+    switch (other->config->type) {
+        case CONVERGENT:
+            return new Connection(other, DIVERGENT);
+            break;
+        case DIVERGENT:
+            return new Connection(other, CONVERGENT);
+            break;
+        default:
+            LOG_ERROR("Connection invert method only "
+                "intended for arborized connections!");
+            break;
+    }
+    return nullptr;
+}
+
 
 Connection::Connection(Layer *from_layer, Layer *to_layer,
         const ConnectionConfig *config) :
@@ -93,7 +134,8 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             max_weight(config->max_weight),
             opcode(config->opcode),
             type(config->type),
-            sparse(config->sparse),
+            sparse(config->sparse or config->randomized_projection),
+            randomized_projection(config->randomized_projection),
             convolutional(config->convolutional),
             second_order(node->second_order),
             second_order_host(second_order and

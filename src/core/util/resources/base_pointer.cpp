@@ -81,18 +81,11 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
 
     auto res_man = ResourceManager::get_instance();
 
-    // Decrement old pointer count
-    if (ptr != nullptr)
-        res_man->decrement_pointer_count(ptr, device_id);
-
-    // Increment new pointer count
-    if (destination != nullptr)
-        res_man->increment_pointer_count(destination, device_id);
-
     // Save size (it's reset in free())
     size_t new_size = this->size;
 
     // Free old data
+    // This will decrement old pointer count
     this->free();
 
     // Update data
@@ -101,6 +94,10 @@ void BasePointer::transfer(DeviceID new_device, void* destination,
     this->device_id = new_device;
     this->local = (new_device == res_man->get_host_id());
     this->size = new_size;
+
+    // Increment new pointer count
+    if (destination != nullptr)
+        res_man->increment_pointer_count(destination, device_id);
 }
 
 void* transfer_pointer(void* ptr, void* destination, size_t bytes,

@@ -29,6 +29,16 @@ void CallbackManager::add_distance_weight_callback(std::string name,
     }
 }
 
+void CallbackManager::add_indices_weight_callback(std::string name,
+        void (*addr)(int, int, void*, void*, void*, void*)) {
+    try {
+        indices_weight_callbacks.at(name);
+        LOG_ERROR("Duplicate indices weight callback: " + name);
+    } catch (std::out_of_range) {
+        indices_weight_callbacks[name] = addr;
+    }
+}
+
 void CallbackManager::add_weight_callback(std::string name,
         void (*addr)(int, int, void*)) {
     try {
@@ -62,5 +72,14 @@ void (*CallbackManager::get_distance_weight_callback(std::string name))
         return distance_weight_callbacks.at(name);
     } catch (std::out_of_range) {
         LOG_ERROR("Could not find distance weight callback: " + name);
+    }
+}
+
+void (*CallbackManager::get_indices_weight_callback(std::string name))
+        (int, int, void*, void*, void*, void*) {
+    try {
+        return indices_weight_callbacks.at(name);
+    } catch (std::out_of_range) {
+        LOG_ERROR("Could not find indices weight callback: " + name);
     }
 }

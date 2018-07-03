@@ -98,6 +98,17 @@ PropertyConfig ArborizedConfig::to_property_config() const {
     return props;
 }
 
+bool ArborizedConfig::validate(Connection *conn) const {
+    Layer *from_layer = conn->from_layer;
+    Layer *to_layer = conn->to_layer;
+    LOG_DEBUG(
+        "Validating ArborizedConfig: \n" +
+        from_layer->str() + " => " + to_layer->str() + "\n" +
+        this->str() + "\n");
+
+    return true;
+}
+
 SubsetConfig::SubsetConfig(PropertyConfig *config) {
     from_row_start = config->get_int("from row start", 0);
     from_row_end = config->get_int("from row end", 0);
@@ -205,6 +216,7 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
           type(get_connection_type(config->get("type", "fully connected"))),
           opcode(get_opcode(config->get("opcode", "add"))),
           sparse(config->get_bool("sparse", false)),
+          randomized_projection(config->get_bool("randomized projection", false)),
           convolutional(config->get_bool("convolutional", false)) {
     if (not config->has("from layer"))
         LOG_ERROR(
@@ -248,6 +260,7 @@ ConnectionConfig::ConnectionConfig(
     bool plastic, int delay, float max_weight,
     ConnectionType type, Opcode opcode,
     bool sparse,
+    bool randomized_projection,
     bool convolutional,
     PropertyConfig *specialized_config,
     PropertyConfig *weight_config,
@@ -262,6 +275,7 @@ ConnectionConfig::ConnectionConfig(
           type(type),
           opcode(opcode),
           sparse(sparse),
+          randomized_projection(randomized_projection),
           convolutional(convolutional) {
     this->set("name", name);
     this->set("to layer", to_layer);
@@ -273,6 +287,7 @@ ConnectionConfig::ConnectionConfig(
     this->set("type", ConnectionTypeStrings.at(type));
     this->set("opcode", OpcodeStrings.at(opcode));
     this->set("convolutional", (convolutional) ? "true" : "false");
+    this->set("randomized projection", (randomized_projection) ? "true" : "false");
     this->set("sparse", (sparse) ? "true" : "false");
 
     if (delay < 0)
@@ -312,6 +327,8 @@ ConnectionConfig::ConnectionConfig(
 bool ConnectionConfig::validate(Connection *conn) const {
     if (type == SUBSET)
         return get_subset_config().validate(conn);
+    else if (type == CONVERGENT or type == DIVERGENT)
+        return get_arborized_config().validate(conn);
     return true;
 }
 

@@ -245,9 +245,10 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     int * const nonzero_counts = synapse_data.matrix->nonzero_counts.get(); \
     int * const from_row_indices = synapse_data.matrix->from_row_indices.get(); \
     int * const from_column_indices = synapse_data.matrix->from_column_indices.get(); \
+    int * const from_indices = synapse_data.matrix->from_indices.get(); \
     const int matrix_columns = num_weights / to_size; \
     EXTRACTIONS; \
- \
+\
     int to_index = 0; \
     for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
         for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
@@ -258,7 +259,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             for (int i = 0 ; i < nonzero ; ++i) { \
                 int from_row = from_row_indices[weight_index]; \
                 int from_column = from_column_indices[weight_index]; \
-                int from_index = from_row * from_columns + from_column; \
+                int from_index = from_indices[weight_index]; \
                 WEIGHT_OP; \
                 ++weight_index; \
             } \
@@ -275,8 +276,9 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     int * const nonzero_counts = synapse_data.matrix->nonzero_counts.get(); \
     int * const from_row_indices = synapse_data.matrix->from_row_indices.get(); \
     int * const from_column_indices = synapse_data.matrix->from_column_indices.get(); \
+    int * const from_indices = synapse_data.matrix->from_indices.get(); \
     EXTRACTIONS; \
- \
+\
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     int to_column = to_index % to_columns; \
     int to_row = to_index / to_columns; \
@@ -289,7 +291,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         for (int i = 0 ; i < nonzero ; ++i) { \
             int from_row = from_row_indices[weight_index]; \
             int from_column = from_column_indices[weight_index]; \
-            int from_index = from_row * from_columns + from_column; \
+            int from_index = from_indices[weight_index]; \
             WEIGHT_OP; \
             weight_index += to_size; \
         } \

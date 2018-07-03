@@ -38,26 +38,21 @@ static void create_parameters(std::string str,
         float* as, float* bs, float* cs, float* ds, int size) {
     if (str == "random positive") {
         // (ai; bi) = (0:02; 0:2) and (ci; di) = (-65; 8) + (15;-6)r2
-        for (int i = 0 ; i < size ; ++i) as[i] = 0.02;
-
-        // increase for higher frequency oscillations
-        for (int i = 0 ; i < size ; ++i) bs[i] = 0.2;
-
-        for (int i = 0 ; i < size ; ++i)
+        for (int i = 0 ; i < size ; ++i) {
+            as[i] = 0.02;
+            // increase for higher frequency oscillations
+            bs[i] = 0.2;
             cs[i] = -65.0 + (15.0 * pow(fRand(), 2));
-
-        for (int i = 0 ; i < size ; ++i)
             ds[i] = 8.0 - (6.0 * pow(fRand(), 2));
+        }
     } else if (str == "random negative") {
         //(ai; bi) = (0:02; 0:25) + (0:08;-0:05)ri and (ci; di)=(-65; 2).
-        for (int i = 0 ; i < size ; ++i)
+        for (int i = 0 ; i < size ; ++i) {
             as[i] = 0.02 + (0.08 * fRand());
-
-        for (int i = 0 ; i < size ; ++i)
             bs[i] = 0.25 - (0.05 * fRand());
-
-        for (int i = 0 ; i < size ; ++i) cs[i] = -65.0;
-        for (int i = 0 ; i < size ; ++i) ds[i] = 2.0;
+            cs[i] = -65.0;
+            ds[i] = 2.0;
+        }
     } else {
         IzhikevichParameters params(0,0,0,0);
         if (str == "default")                 params = DEFAULT;
@@ -73,10 +68,12 @@ static void create_parameters(std::string str,
                 "Unrecognized parameter string: " + str);
 
 
-        for (int i = 0 ; i < size ; ++i) as[i] = params.a;
-        for (int i = 0 ; i < size ; ++i) bs[i] = params.b;
-        for (int i = 0 ; i < size ; ++i) cs[i] = params.c;
-        for (int i = 0 ; i < size ; ++i) ds[i] = params.d;
+        for (int i = 0 ; i < size ; ++i) {
+            as[i] = params.a;
+            bs[i] = params.b;
+            cs[i] = params.c;
+            ds[i] = params.d;
+        }
     }
 }
 
@@ -92,18 +89,15 @@ static void create_parameters(std::string str,
 #define IZ_EULER_RES_INV 0.1
 
 /* Time dynamics of spike traces */
-//#define STDP_TAU_POS       0.44    // tau = 1.8ms
-//#define STDP_TAU_NEG       0.833   // tau = 6ms
-#define STDP_TAU_POS       0.9     // tau = 10ms
-//#define STDP_TAU_NEG       0.933   // tau = 15ms
+#define STDP_TAU_POS       0.933  // tau = 15ms
 #define STDP_TAU_NEG       0.95   // tau = 20ms
 
 /* Time dynamics of dopamine */
 #define DOPAMINE_CLEAR_TAU 0.95  // 20ms
 
 /* STDP A constants */
-#define STDP_A_POS 0.4
-#define STDP_A_NEG 0.2
+#define STDP_A_POS 0.004
+#define STDP_A_NEG 0.004
 
 BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float *ampa_conductances = att->ampa_conductance.get();
@@ -209,7 +203,7 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
 
     // Update trace, voltage, recovery
     postsyn_exc_traces[nid] = (prev_bit)
-        ? (postsyn_exc_traces[nid] + STDP_A_NEG)
+        ? STDP_A_NEG
         : (postsyn_exc_traces[nid] * STDP_TAU_NEG);
     time_since_spikes[nid] = (prev_bit)
         ? 0
@@ -239,7 +233,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
     float baseline_conductance = matrix->baseline_conductance; \
     bool stp_flag = matrix->stp_flag; \
 \
-    float *stps   = matrix->stps.get(); \
+    float *stp_rs = matrix->stp_rs.get(); \
+    float *stp_ws = matrix->stp_ws.get(); \
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get();
 
@@ -266,7 +261,8 @@ BUILD_ATTRIBUTE_KERNEL(IzhikevichAttributes, iz_attribute_kernel,
             ? 0 \
             : MIN(32, from_time_since_spike[from_index] + 1)); \
 \
-    float weight = weights[weight_index] * (1 + stps[weight_index]);
+    float weight = weights[weight_index] \
+        * (stp_rs[weight_index] * stp_ws[weight_index]);
 
 #define CALC_VAL_SHORT \
     float short_trace = short_traces[weight_index] \
@@ -409,11 +405,12 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     IzhikevichWeightMatrix *matrix = \
         (IzhikevichWeightMatrix*)synapse_data.matrix; \
     float *presyn_traces   = matrix->presyn_traces.get(); \
-    float *stps   = matrix->stps.get(); \
+    float *stp_rs = matrix->stp_rs.get(); \
+    float *stp_ws = matrix->stp_ws.get(); \
+    float *weight_derivatives = matrix->weight_derivatives.get(); \
     int   *delays = matrix->delays.get(); \
     int   *from_time_since_spike = matrix->time_since_spike.get(); \
     bool stp_flag = matrix->stp_flag; \
-    float stp_tau = matrix->stp_tau; \
 \
     IzhikevichAttributes *att = \
         (IzhikevichAttributes*)synapse_data.attributes; \
@@ -432,13 +429,49 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 #define MIN_WEIGHT 0.0001f
 
 /* Short term plasticity */
-#define MIN_STP -1.0f
-#define MAX_STP 1.0f
+#define U_ADD 0.5
+#define F_ADD 1000
+#define D_ADD 800
 
-/* Time dynamics for long term eligibility trace */
-#define C_TAU 0.99
+#define U_SUB 0.2
+#define F_SUB 20
+#define D_SUB 700
 
-#define UPDATE_WEIGHT \
+/* Plasticity dynamics */
+#define C_TAU 0.0001
+#define C_A   0.000001
+
+#define STDP_ADD \
+    /* Update presynaptic trace */ \
+    float src_trace = \
+        (presyn_traces[weight_index] = \
+            (src_spike) \
+                ? STDP_A_POS \
+                : presyn_traces[weight_index] * STDP_TAU_POS); \
+\
+    float dest_trace = dest_exc_trace;
+
+#define STDP_SUB \
+    /* Update presynaptic trace */ \
+    float src_trace =  \
+        ((dest_spike > 0.0 and src_time_since_spike > 0 and src_time_since_spike < 32) \
+            /* positive iSTDP function of delta T */ \
+            ? powf(src_time_since_spike, 10) \
+              * 0.000001 \
+              * 2.29 \
+              * expf(-1.1 * src_time_since_spike) \
+            : 0.0); \
+\
+    float dest_trace = \
+        ((src_spike and dest_time_since_spike > 0 and dest_time_since_spike < 32) \
+            /* negative iSTDP function of delta T */ \
+            ? powf(dest_time_since_spike, 10) \
+              * 0.0000001 \
+              * 2.6 \
+              * expf(-0.94 * dest_time_since_spike) \
+            : 0.0);
+
+#define UPDATE_WEIGHT(STDP, U, D, F) \
     float weight = weights[weight_index]; \
 \
     if (weight >= MIN_WEIGHT) { \
@@ -446,34 +479,16 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
         int src_time_since_spike = from_time_since_spike[from_index]; \
         bool src_spike = src_time_since_spike == 0; \
 \
-        /* Update presynaptic trace */ \
-        float src_trace = (opcode == ADD) \
-            ? (presyn_traces[weight_index] = \
-                (src_spike) \
-                    ? (presyn_traces[weight_index] + STDP_A_POS) \
-                    : presyn_traces[weight_index] * STDP_TAU_POS) \
-            : ((dest_spike > 0.0 and src_time_since_spike > 0 and src_time_since_spike < 32) \
-                /* positive iSTDP function of delta T */ \
-                ? powf(src_time_since_spike, 10) \
-                  * 0.000001 \
-                  * 2.29 \
-                  * expf(-1.1 * src_time_since_spike) \
-                : 0.0); \
-\
-        float dest_trace = (opcode == ADD) \
-            ? dest_exc_trace \
-            : ((src_spike and dest_time_since_spike > 0 and dest_time_since_spike < 32) \
-                /* negative iSTDP function of delta T */ \
-                ? powf(dest_time_since_spike, 10) \
-                  * 0.0000001 \
-                  * 2.6 \
-                  * expf(-0.94 * dest_time_since_spike) \
-                : 0.0); \
+        /* Depends on ADD/SUB */ \
+        STDP; \
 \
         /* Compute delta from short term dynamics */ \
-        float weight_delta = \
-                (dest_spike * src_trace) \
-                - (src_spike * dest_trace) ; \
+        float weight_delta = weight_derivatives[weight_index]; \
+        weight_delta = \
+            weight_derivatives[weight_index] -= \
+                (weight_delta - C_A) * C_TAU + \
+                    (dest_spike * src_trace) \
+                    - (src_spike * dest_trace); \
 \
         /* Calculate new weight */ \
         /* Reward (dopamine) should factor in here */ \
@@ -484,15 +499,24 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
 \
         /* Update short term plasticity if applicable */ \
         if (stp_flag) { \
-            float stp = (stps[weight_index] * stp_tau) + weight_delta; \
-            stps[weight_index] = MAX(MIN_STP, MIN(MAX_STP, stp)); \
+            float r = stp_rs[weight_index]; \
+            float w = stp_ws[weight_index]; \
+\
+            stp_rs[weight_index] += ((1 - r) / D) - (r * w * src_spike); \
+            stp_ws[weight_index] += ((U - w) / F) + (U * (1 - w) * src_spike); \
         } \
     }
 
-CALC_ALL(update_iz,
+CALC_ALL(update_iz_add,
     UPDATE_EXTRACTIONS,
     GET_DEST_ACTIVITY,
-    UPDATE_WEIGHT,
+    UPDATE_WEIGHT(STDP_ADD, U_ADD, D_ADD, F_ADD),
+; );
+
+CALC_ALL(update_iz_sub,
+    UPDATE_EXTRACTIONS,
+    GET_DEST_ACTIVITY,
+    UPDATE_WEIGHT(STDP_SUB, U_SUB, D_SUB, F_SUB),
 ; );
 
 Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
@@ -504,8 +528,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
     try {
         switch (conn->opcode) {
             case(ADD):
+                return update_iz_add_map.at(conn->get_type());
             case(SUB):
-                return update_iz_map.at(conn->get_type());
+                return update_iz_sub_map.at(conn->get_type());
         }
     } catch(std::out_of_range) { }
 
@@ -650,8 +675,14 @@ void IzhikevichWeightMatrix::register_variables() {
     WeightMatrix::register_variable("presyn trace", &presyn_traces);
 
     // Short Term Plasticity
-    this->stps = WeightMatrix::create_variable<float>();
-    WeightMatrix::register_variable("short term plasticity", &stps);
+    this->stp_rs = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("short term R", &stp_rs);
+    this->stp_ws = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("short term w", &stp_ws);
+
+    // Weight derivatives
+    this->weight_derivatives = WeightMatrix::create_variable<float>();
+    WeightMatrix::register_variable("weight derivatives", &weight_derivatives);
 
     // Time since presynaptic spike
     this->time_since_spike = WeightMatrix::create_variable<int>();
@@ -674,11 +705,6 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     iz_mat->stp_flag =
         conn->get_parameter("short term plasticity", "true") == "true";
 
-    // Retrieve short term plasticity time constant
-    iz_mat->stp_tau =
-        1.0 - (1.0 / std::stof(
-            conn->get_parameter("short term plasticity tau", "5000")));
-
     int num_weights = conn->get_num_weights();
     Pointer<float> mData = matrix->get_weights();
 
@@ -692,7 +718,16 @@ void IzhikevichAttributes::process_weight_matrix(WeightMatrix* matrix) {
     fClear(iz_mat->presyn_traces, num_weights);
 
     // Short Term Plasticity
-    fClear(iz_mat->stps, num_weights);
+    fSet(iz_mat->stp_rs, num_weights, 1.0);
+
+    if (conn->get_type() == ADD)
+        fSet(iz_mat->stp_ws, num_weights, U_ADD);
+    else if (conn->get_type() == SUB)
+        fSet(iz_mat->stp_ws, num_weights, U_SUB);
+    else
+        fClear(iz_mat->stp_ws, num_weights);
+
+    fSet(iz_mat->weight_derivatives, num_weights, C_A);
 
     // Delays
     // Myelinated connections use the base delay only

@@ -73,8 +73,10 @@ class WeightMatrix {
         // From/to indices for each weight
         Pointer<int> from_row_indices;
         Pointer<int> from_column_indices;
+        Pointer<int> from_indices;
         Pointer<int> to_row_indices;
         Pointer<int> to_column_indices;
+        Pointer<int> to_indices;
 
         // Distances between nodes for each weight
         Pointer<float> distances;
@@ -103,6 +105,9 @@ class WeightMatrix {
 
         // Initialization
         void init();
+
+        // Randomizes spatial locations of connections
+        void randomize_projection();
 
         // Sparsify functionality
         void sparsify();

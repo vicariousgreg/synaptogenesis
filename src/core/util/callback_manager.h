@@ -17,6 +17,9 @@ class CallbackManager {
         void add_distance_weight_callback(std::string name,
             void (*addr)(int, int, void*, void*));
 
+        void add_indices_weight_callback(std::string name,
+            void (*addr)(int, int, void*, void*, void*, void*));
+
         void (*get_io_callback(std::string name))(int, int, void*);
 
         void (*get_weight_callback(std::string name))
@@ -24,6 +27,9 @@ class CallbackManager {
 
         void (*get_distance_weight_callback(std::string name))
             (int, int, void*, void*);
+
+        void (*get_indices_weight_callback(std::string name))
+            (int, int, void*, void*, void*, void*);
 
     private:
         static CallbackManager *instance;
@@ -34,6 +40,8 @@ class CallbackManager {
             weight_callbacks;
         std::map<std::string, void (*)(int, int, void*, void*)>
             distance_weight_callbacks;
+        std::map<std::string, void (*)(int, int, void*, void*, void*, void*)>
+            indices_weight_callbacks;
 };
 
 #endif

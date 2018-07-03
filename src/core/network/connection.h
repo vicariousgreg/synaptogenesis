@@ -18,6 +18,10 @@ class Connection {
         Connection(const Connection& other);
         virtual ~Connection();
 
+        /* Constructs an inverted arborized connection.
+         * For use in randomizing divergent projections. */
+        static Connection *invert(Connection* other);
+
         /* Constant getters */
         ConnectionType get_type() const { return type; }
         int get_num_weights() const { return num_weights; }
@@ -56,6 +60,9 @@ class Connection {
         // Sparse matrix (affects num_weights)
         const bool sparse;
 
+        // Randomized projection
+        const bool randomized_projection;
+
         // Convolutional boolean (extracted from type)
         const bool convolutional;
 
@@ -72,6 +79,10 @@ class Connection {
 
     protected:
         friend class Structure;
+
+        // Manual constructor with type override
+        // For use with invert method above
+        Connection(Connection* other, ConnectionType new_type);
 
         // Matrix type
         ConnectionType type;

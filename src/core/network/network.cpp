@@ -209,14 +209,14 @@ void Network::add_connection_internal(const ConnectionConfig* conn_config) {
 }
 
 void Network::print() const {
-    printf("Built network.\n");
+    printf("\nBuilt network.\n");
     printf("  - neurons     : %10d\n", this->get_num_neurons());
     printf("  - layers      : %10d\n", this->get_num_layers());
     printf("  - connections : %10d\n", this->get_num_connections());
     printf("  - weights     : %10d\n", this->get_num_weights());
 
     for (auto structure : this->get_structures()) {
-        printf("Structure: %s (%d neurons in %d layers)\n",
+        printf("\nStructure: %s (%d neurons in %d layers)\n",
             structure->name.c_str(), structure->get_num_neurons(),
             structure->get_layers().size());
 

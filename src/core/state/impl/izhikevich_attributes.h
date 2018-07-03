@@ -47,7 +47,9 @@ class IzhikevichWeightMatrix : public WeightMatrix {
         Pointer<float> short_traces;
         Pointer<float> long_traces;
         Pointer<float> presyn_traces;
-        Pointer<float> stps;
+        Pointer<float> stp_rs;
+        Pointer<float> stp_ws;
+        Pointer<float> weight_derivatives;
         Pointer<int> time_since_spike;
 
         // Baseline conductances
@@ -58,9 +60,6 @@ class IzhikevichWeightMatrix : public WeightMatrix {
 
         // Short term plasticity flag
         bool stp_flag;
-
-        // Short term plasticity time constant
-        float stp_tau;
 
     WEIGHT_MATRIX_MEMBERS(IzhikevichWeightMatrix);
     virtual void register_variables();

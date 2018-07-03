@@ -1,5 +1,6 @@
 #include <sstream>
 #include <assert.h>
+#include <algorithm>
 
 #include "state/weight_matrix.h"
 #include "network/layer.h"
@@ -21,12 +22,7 @@ WeightMatrix::WeightMatrix(Connection* conn)
       transposed(false),
       pointer(this),
       num_weights(conn->get_num_weights()),
-      transpose_flag(false),
-      weights(Pointer<float>(conn->get_num_weights())),
-      second_order_weights(
-          (conn->second_order_host)
-              ? Pointer<float>(conn->get_num_weights())
-              : Pointer<float>()) {
+      transpose_flag(false) {
     this->rows = (conn->convolutional) ? 1 : conn->to_layer->size;
     this->columns = num_weights / rows;
 }
@@ -38,8 +34,10 @@ WeightMatrix::~WeightMatrix() {
     this->nonzero_counts.free();
     this->from_row_indices.free();
     this->from_column_indices.free();
+    this->from_indices.free();
     this->to_row_indices.free();
     this->to_column_indices.free();
+    this->to_indices.free();
     this->used.free();
     this->distances.free();
     this->delays.free();
@@ -65,8 +63,10 @@ void WeightMatrix::transpose() {
             &second_order_weights,
             &from_row_indices,
             &from_column_indices,
+            &from_indices,
             &to_row_indices,
             &to_column_indices,
+            &to_indices,
             &used,
             &distances,
             &delays,
@@ -100,11 +100,11 @@ void WeightMatrix::set_transpose_flag(bool t) {
 
 void WeightMatrix::resize() {
     if (weights.get_size() != num_weights) {
-        this->sparse = true;
         this->num_weights = weights.get_size();
-        this->connection->sparsify(this->num_weights);
         this->rows = connection->to_layer->size;
         this->columns = num_weights / rows;
+        this->sparse = true;
+        this->connection->sparsify(this->num_weights);
     }
 }
 
@@ -116,27 +116,84 @@ void WeightMatrix::adjust_sparse_indices() {
         int max_nonzero = num_weights / connection->to_layer->size;
         int from_rows = connection->from_layer->rows;
         int from_columns = connection->from_layer->columns;
+        bool wrap = connection->get_config()->get_arborized_config().wrap;
+
+        // Iterate over weight matrix
         for (int row = 0 ; row < rows ; ++row) {
             int curr_col = 0;
+            int nonzero = nonzero_counts[row];
+
             for (int col = 0 ; col < columns ; ++col) {
-                int new_index = row*max_nonzero + curr_col++;
-                if (weights[new_index] != 0.0) {
-                    int from_row = from_row_indices[new_index];
-                    int from_column = from_column_indices[new_index];
+                int index = row*max_nonzero + curr_col++;
 
-                    from_row = (from_row < 0)
-                        ? from_row + from_rows
-                        : (from_row >= from_rows)
-                            ? from_row - from_rows : from_row;
-                    from_column = (from_column < 0)
-                        ? from_column + from_columns
-                        : (from_column >= from_columns)
-                            ? from_column - from_columns : from_column;
+                // If the weight is used, check if out of bounds
+                if (used[index]) {
+                    int from_row = from_row_indices[index];
+                    int from_column = from_column_indices[index];
 
-                    from_row_indices[new_index] = from_row;
-                    from_column_indices[new_index] = from_column;
+                    // If wrapping, adjust indices
+                    // Otherwise, mark out of bounds as unused
+                    if (wrap) {
+                        from_row_indices[index] =
+                            from_row = from_row % from_rows;
+                        from_column_indices[index] =
+                            from_column = from_column % from_columns;
+                        from_indices[index] =
+                            from_row * from_columns + from_column;
+                    } else if (from_row < 0 or from_row >= from_rows
+                            or from_column < 0 or from_column >= from_columns) {
+                        used[index] = 0;
+                    }
                 }
             }
+        }
+
+        // If not wrapping, shift things over to remove gaps
+        // Used is not accessed in the kernel, so weights must be contiguous
+        if (not wrap) {
+            int old_max = 0;
+            int new_max = 0;
+
+            for (int row = 0 ; row < rows ; ++row) {
+                int offset = row*max_nonzero;
+                int curr_index = offset;
+                int new_index = offset;
+                int nonzero = nonzero_counts[row];
+
+                for (int col = 0 ; col < nonzero ; ++col) {
+                    // If the weight is used...
+                    if (used[curr_index]) {
+                        // ...and the indices don't match, shift
+                        if (curr_index != new_index) {
+                            from_row_indices[new_index] =
+                                from_row_indices[curr_index];
+                            from_column_indices[new_index] =
+                                from_column_indices[curr_index];
+                            from_indices[new_index] =
+                                from_indices[curr_index];
+                            to_row_indices[new_index] =
+                                to_row_indices[curr_index];
+                            to_column_indices[new_index] =
+                                to_column_indices[curr_index];
+                            to_indices[new_index] = to_indices[curr_index];
+                            used[new_index] = 1;
+                            used[curr_index] = 0;
+                        }
+                        // ...and increment the new index either way
+                        ++new_index;
+                    }
+                    ++curr_index;
+                }
+
+                // Update maxes and nonzero counts
+                old_max = std::max(old_max, curr_index - offset);
+                new_max = std::max(new_max, new_index - offset);
+                nonzero_counts[row] = new_index - offset;
+            }
+
+            // If the max has changed, the matrix can be resized
+            if (new_max < old_max)
+                this->resize();
         }
     }
 }
@@ -207,10 +264,14 @@ std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
         from_row_indices.get_bytes())] = &from_row_indices;
     pointers[PointerKey(connection->id, "from column indices",
         from_column_indices.get_bytes())] = &from_column_indices;
+    pointers[PointerKey(connection->id, "from indices",
+        from_indices.get_bytes())] = &from_indices;
     pointers[PointerKey(connection->id, "to row indices",
         to_row_indices.get_bytes())] = &to_row_indices;
     pointers[PointerKey(connection->id, "to column indices",
         to_column_indices.get_bytes())] = &to_column_indices;
+    pointers[PointerKey(connection->id, "to indices",
+        to_indices.get_bytes())] = &to_indices;
     pointers[PointerKey(connection->id, "used",
         used.get_bytes())] = &used;
     pointers[PointerKey(connection->id, "distances",
@@ -232,16 +293,197 @@ WeightMatrix *WeightMatrix::build(Connection *conn) {
 }
 
 void WeightMatrix::init() {
+    // Randomize the projection before constructing weights
+    if (connection->randomized_projection)
+        randomize_projection();
+
+    // Construct weight matrix now that the proper size is available
+    this->weights = Pointer<float>(num_weights);
+    if (connection->second_order_host)
+        this->second_order_weights = Pointer<float>(num_weights);
+
+    // Initialize weights
     initialize_weights(this,
         connection->get_config()->get_weight_config(), weights);
-    if (connection->sparse) sparsify();
+
+    // Sparsify
+    if (connection->sparse) {
+        sparsify();
+        this->sparse = true;
+        this->connection->sparsify(this->num_weights);
+    }
+
+    // Register any subclass variables
     register_variables();
+}
+
+void WeightMatrix::randomize_projection() {
+    if (connection->convolutional)
+        LOG_ERROR("Error intializing weight matrix for " + connection->str() +
+            "\n   Cannot randomize projection on convolutional weight matrix!");
+
+    // Extract dimensions
+    auto from_rows = connection->from_layer->rows;
+    auto from_columns = connection->from_layer->columns;
+    auto from_size = connection->from_layer->size;
+    auto to_rows = connection->to_layer->rows;
+    auto to_columns = connection->to_layer->columns;
+    auto to_size = connection->to_layer->size;
+
+    switch(connection->get_type()) {
+        case FULLY_CONNECTED:
+            LOG_ERROR("Error intializing weight matrix for "
+                + connection->str()
+                + "\n   Cannot randomize projection on fully connected"
+                    "weight matrix!");
+            break;
+        case SUBSET:
+            LOG_ERROR("Error intializing weight matrix for "
+                + connection->str()
+                + "\n   Cannot randomize projection on subset weight matrix!");
+            break;
+        case ONE_TO_ONE: {
+            // Get the full indices
+            this->get_indices();
+
+            // Use distributions based on source layer
+            auto row_dist = std::uniform_int_distribution<int>(0, from_rows-1);
+            auto col_dist = std::uniform_int_distribution<int>(0, from_columns-1);
+
+            // For each destination neuron, pick a random source neuron
+            for (int index = 0 ; index < to_size ; ++index) {
+                int from_row = from_row_indices[index] = row_dist(generator);
+                int from_col = from_column_indices[index] = col_dist(generator);
+                from_indices[index] = from_row * from_columns + from_col;
+            }
+            break;
+        }
+        case CONVERGENT: {
+            // Get the full indices
+            this->get_indices();
+
+            // Use distributions based on source layer
+            auto row_dist = std::uniform_int_distribution<int>(0, from_rows-1);
+            auto col_dist = std::uniform_int_distribution<int>(0, from_columns-1);
+
+            int kernel_size = connection->get_config()
+                ->get_arborized_config().get_total_field_size();
+
+            // For each destination neuron,
+            //     shift the indices of the convergent field
+            for (int index = 0 ; index < to_size ; ++index) {
+                // Generate a new RF corner
+                int new_corner_row = row_dist(generator);
+                int new_corner_col = col_dist(generator);
+
+                // Find the old RF corner
+                int corner_index = get_columns() * index;
+                int old_corner_row = from_row_indices[corner_index];
+                int old_corner_col = from_column_indices[corner_index];
+
+                // Compute RF shifts
+                int row_shift = new_corner_row - old_corner_row;
+                int col_shift = new_corner_col - old_corner_col;
+
+                printf("Shifting (%d, %d) -> (%d, %d)\n",
+                    old_corner_row, old_corner_col,
+                    new_corner_row, new_corner_col);
+
+
+                // Adjust from indices
+                for (int k_index = 0 ; k_index < kernel_size ; ++k_index) {
+                    int new_row =
+                        (from_row_indices[corner_index + k_index]
+                            += row_shift);
+                    int new_col =
+                        (from_column_indices[corner_index + k_index]
+                            += col_shift);
+                    from_indices[corner_index + k_index] =
+                        new_row * from_rows + new_col;
+                }
+            }
+            break;
+        }
+        case DIVERGENT: {
+            // Get the full indices
+            this->get_indices();
+
+            // Use distributions based on destination layer
+            auto row_dist = std::uniform_int_distribution<int>(0, to_rows-1);
+            auto col_dist = std::uniform_int_distribution<int>(0, to_columns-1);
+
+            // Generate a temporary inverted connection and matrix
+            // Build initialize the matrix
+            //     * creates indices
+            //     * randomizes projection
+            //     * sparsifies
+            Connection *inv_conn = Connection::invert(connection);
+            auto inv_mat = WeightMatrix::build(inv_conn);
+            inv_mat->adjust_sparse_indices();
+
+            /* Compute incoming weight count (switch to/row) and compute max */
+            auto in_counts = Pointer<int>(to_size, 0);
+            int max_weights = 0;
+            for (int index = 0 ; index < inv_mat->num_weights ; ++index)
+                if (inv_mat->used[index])
+                    max_weights = std::max(max_weights,
+                        ++in_counts[inv_mat->from_indices[index]]);
+
+            // Update matrix size
+            this->num_weights = max_weights * to_size;
+            this->rows = connection->to_layer->size;
+            this->columns = num_weights / rows;
+
+            // Construct auxiliary matrices
+            this->from_row_indices = Pointer<int>(num_weights, -1);
+            this->from_column_indices = Pointer<int>(num_weights, -1);
+            this->from_indices = Pointer<int>(num_weights, -1);
+            this->to_row_indices = Pointer<int>(num_weights, -1);
+            this->to_column_indices = Pointer<int>(num_weights, -1);
+            this->to_indices = Pointer<int>(num_weights, -1);
+            this->used = Pointer<int>(num_weights, 0);
+
+            // Flip all the connections
+            for (int index = 0 ; index < inv_mat->num_weights ; ++index) {
+                // Skip unused connections
+                if (not inv_mat->used[index]) continue;
+
+                // Flip to/from indices
+                int to_index = inv_mat->from_indices[index];
+                int from_index = inv_mat->to_indices[index];
+
+                // Find the next unused matrix slot
+                int mat_index =
+                    get_columns() * to_index + --in_counts[to_index];
+
+                // Update indices
+                to_row_indices[mat_index] =
+                    inv_mat->from_row_indices[index];
+                to_column_indices[mat_index] =
+                    inv_mat->from_column_indices[index];
+                to_indices[mat_index] =
+                    inv_mat->from_indices[index];
+                from_row_indices[mat_index] =
+                    inv_mat->to_row_indices[index];
+                from_column_indices[mat_index] =
+                    inv_mat->to_column_indices[index];
+                from_indices[mat_index] = inv_mat->to_indices[index];
+                used[mat_index] = 1;
+            }
+
+            // Free up inverse connection and matrix
+            delete inv_conn;
+            delete inv_mat;
+
+            break;
+        }
+    }
 }
 
 void WeightMatrix::sparsify() {
     if (connection->convolutional)
         LOG_ERROR("Error intializing weight matrix for " + connection->str() +
-        "\n   Cannot sparsify convolutional weight matrix!");
+            "\n   Cannot sparsify convolutional weight matrix!");
 
     // Get the full indices
     this->get_indices();
@@ -265,13 +507,15 @@ void WeightMatrix::sparsify() {
             "Warning in weight config for " + connection->str() + ":\n" +
             "    Attempted to sparsify empty matrix!");
         sparse_num_weights = connection->to_layer->size;
-    } else if (sparse_num_weights == num_weights) return;
+    }
 
     // Create index matrices (padded with -1) and nonzero counts
     auto compact_from_row_indices = Pointer<int>(sparse_num_weights, -1);
     auto compact_from_column_indices = Pointer<int>(sparse_num_weights, -1);
+    auto compact_from_indices = Pointer<int>(sparse_num_weights, -1);
     auto compact_to_row_indices = Pointer<int>(sparse_num_weights, -1);
     auto compact_to_column_indices = Pointer<int>(sparse_num_weights, -1);
+    auto compact_to_indices = Pointer<int>(sparse_num_weights, -1);
     auto compact_used = Pointer<int>(sparse_num_weights, 0);
     this->nonzero_counts = Pointer<int>(connection->to_layer->size, 0);
 
@@ -284,10 +528,11 @@ void WeightMatrix::sparsify() {
     int total_nonzero = 0;
     for (int row = 0 ; row < rows ; ++row) {
         int curr_col = 0;
+
         for (int col = 0 ; col < columns ; ++col) {
             int old_index = row*columns + col;
 
-            if (weights[old_index] != 0.0 and used[old_index]) {
+            if (used[old_index]) {
                 int new_index = row*max_nonzero + curr_col++;
 
                 new_weights[new_index] = weights[old_index];
@@ -295,16 +540,22 @@ void WeightMatrix::sparsify() {
                     = from_row_indices[old_index];
                 compact_from_column_indices[new_index]
                     = from_column_indices[old_index];
+                compact_from_indices[new_index]
+                    = from_indices[old_index];
                 compact_to_row_indices[new_index]
                     = to_row_indices[old_index];
                 compact_to_column_indices[new_index]
                     = to_column_indices[old_index];
+                compact_to_indices[new_index]
+                    = to_indices[old_index];
                 compact_used[new_index]
                     = used[old_index];
             }
         }
         nonzero_counts[row] = curr_col;
         total_nonzero += curr_col;
+
+        // Zero out remaining weights
         while (curr_col < max_nonzero)
             new_weights[row*max_nonzero + curr_col++] = 0.0;
     }
@@ -322,13 +573,17 @@ void WeightMatrix::sparsify() {
     // Free intermediate data and move pointers
     this->from_row_indices.free();
     this->from_column_indices.free();
+    this->from_indices.free();
     this->to_row_indices.free();
     this->to_column_indices.free();
+    this->to_indices.free();
     this->used.free();
     this->from_row_indices = Pointer<int>(compact_from_row_indices, true);
     this->from_column_indices = Pointer<int>(compact_from_column_indices, true);
+    this->from_indices = Pointer<int>(compact_from_indices, true);
     this->to_row_indices = Pointer<int>(compact_to_row_indices, true);
     this->to_column_indices = Pointer<int>(compact_to_column_indices, true);
+    this->to_indices = Pointer<int>(compact_to_indices, true);
     this->used = Pointer<int>(compact_used, true);
 
     if (not this->distances.is_null())
@@ -353,8 +608,7 @@ Pointer<T> WeightMatrix::create_variable() {
 void WeightMatrix::register_variable(
         std::string key, BasePointer* ptr) {
     if (this->variables.count(key) > 0)
-        LOG_ERROR(
-            "Repeated weight matrix variable key: " + key);
+        LOG_ERROR("Repeated weight matrix variable key: " + key);
     this->variables[key] = ptr;
 }
 
@@ -443,7 +697,7 @@ static void circular_mask_config(const PropertyConfig& config,
             "on convergent arborized connections!");
 
     auto ac = conn->get_config()->get_arborized_config();
-    int row_field_size = ac.column_field_size;
+    int row_field_size = ac.row_field_size;
     int col_field_size = ac.column_field_size;
     int kernel_size = ac.get_total_field_size();
 
@@ -608,6 +862,28 @@ static void distance_weight_callback_config(WeightMatrix *matrix,
     matrix->distances.free();
 }
 
+static void indices_weight_callback_config(WeightMatrix *matrix,
+        const PropertyConfig& config, float* target_matrix) {
+    Connection *conn = matrix->connection;
+
+    if (not config.has("indices callback"))
+        LOG_ERROR(
+            "Unspecified indices callback function for connection "
+            + conn->str());
+
+    void (*callback)(int, int, void*, void*, void*, void*) =
+        CallbackManager::get_instance()->get_indices_weight_callback(
+            config.get("indices callback"));
+
+    int id = config.get_int("id", 0);
+
+    int num_weights = conn->get_num_weights();
+    matrix->get_indices();
+
+    callback(id, num_weights, target_matrix,
+        matrix->from_indices.get(), matrix->to_indices.get(), matrix->used.get());
+}
+
 static void clear_diagonal_config(WeightMatrix *matrix,
         const PropertyConfig& config, float* target_matrix) {
     Connection *conn = matrix->connection;
@@ -674,6 +950,9 @@ static void initialize_weights(WeightMatrix *matrix,
     if (config.has("distance callback"))
         distance_weight_callback_config(matrix, config, target_matrix);
 
+    if (config.has("indices callback"))
+        indices_weight_callback_config(matrix, config, target_matrix);
+
     // Finally, do mask processing
     if (config.has_child("circular mask"))
         circular_mask_config(config.get_child("circular mask"),
@@ -694,15 +973,19 @@ static void initialize_weights(WeightMatrix *matrix,
     const WeightMatrix* mat = synapse_data.matrix; \
     int* from_row_is = mat->from_row_indices.get(); \
     int* from_column_is = mat->from_column_indices.get(); \
+    int* from_is = mat->from_indices.get(); \
     int* to_row_indices = mat->to_row_indices.get(); \
     int* to_column_indices = mat->to_column_indices.get(); \
+    int* to_is = mat->to_indices.get(); \
     int* used = mat->used.get(); \
 
 #define SET_INDICES(PREFIX) \
     from_row_is[weight_index] = PREFIX##from_row; \
     from_column_is[weight_index] = PREFIX##from_column; \
+    from_is[weight_index] = PREFIX##from_row * from_columns + PREFIX##from_column; \
     to_row_indices[weight_index] = to_row; \
     to_column_indices[weight_index] = to_column; \
+    to_is[weight_index] = to_row * to_columns + to_column; \
     used[weight_index] = 1;
 
 CALC_ALL(indices_kernel,
@@ -765,8 +1048,10 @@ void WeightMatrix::get_indices() {
     auto res_man = ResourceManager::get_instance();
     this->from_row_indices = Pointer<int>(num_weights, -1);
     this->from_column_indices = Pointer<int>(num_weights, -1);
+    this->from_indices = Pointer<int>(num_weights, -1);
     this->to_row_indices = Pointer<int>(num_weights, -1);
     this->to_column_indices = Pointer<int>(num_weights, -1);
+    this->to_indices = Pointer<int>(num_weights, -1);
     this->used = Pointer<int>(num_weights, 0);
 
     if (res_man->get_gpu_ids().size() == 0) {
@@ -787,8 +1072,10 @@ void WeightMatrix::get_indices() {
             std::vector<BasePointer*> pointers;
             pointers.push_back(&this->from_row_indices);
             pointers.push_back(&this->from_column_indices);
+            pointers.push_back(&this->from_indices);
             pointers.push_back(&this->to_row_indices);
             pointers.push_back(&this->to_column_indices);
+            pointers.push_back(&this->to_indices);
             pointers.push_back(&this->used);
 
             for (auto ptr : pointers)
@@ -824,8 +1111,10 @@ void WeightMatrix::get_indices() {
             std::vector<BasePointer*> pointers;
             pointers.push_back(&this->from_row_indices);
             pointers.push_back(&this->from_column_indices);
+            pointers.push_back(&this->from_indices);
             pointers.push_back(&this->to_row_indices);
             pointers.push_back(&this->to_column_indices);
+            pointers.push_back(&this->to_indices);
             pointers.push_back(&this->used);
 
             for (auto ptr : pointers)

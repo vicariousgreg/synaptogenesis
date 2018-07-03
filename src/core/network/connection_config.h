@@ -51,6 +51,8 @@ class ArborizedConfig {
 
         std::string str() const;
 
+        bool validate(Connection *conn) const;
+
         int row_field_size, column_field_size;
         int row_stride, column_stride;
         int row_offset, column_offset;
@@ -71,6 +73,7 @@ class ConnectionConfig : public PropertyConfig {
             ConnectionType type,
             Opcode opcode,
             bool sparse=false,
+            bool randomized_projection=false,
             bool convolutional=false,
             PropertyConfig *specialized_config=nullptr,
             PropertyConfig *weight_config=nullptr,
@@ -96,6 +99,7 @@ class ConnectionConfig : public PropertyConfig {
         const ConnectionType type;
         const Opcode opcode;
         const bool sparse;
+        const bool randomized_projection;
         const bool convolutional;
 };
 
