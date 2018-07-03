@@ -144,8 +144,9 @@ _syn.set_debug.argtypes = (c_bool,)
 
 _syn.add_io_callback.argtypes = (c_char_p, c_longlong)
 _syn.add_weight_callback.argtypes = (c_char_p, c_longlong)
-_syn.add_distance_weight_callback.argtypes = (c_char_p, c_longlong)
 _syn.add_indices_weight_callback.argtypes = (c_char_p, c_longlong)
+_syn.add_distance_weight_callback.argtypes = (c_char_p, c_longlong)
+_syn.add_delay_weight_callback.argtypes = (c_char_p, c_longlong)
 
 
 """ Wrappers for simple functions """
@@ -180,8 +181,8 @@ def interrupt_engine():
 """ Callback Maintenance """
 _io_callbacks = dict()
 _weight_callbacks = dict()
-_distance_weight_callbacks = dict()
 _indices_weight_callbacks = dict()
+_distance_weight_callbacks = dict()
 _callback_config_map = dict()
 
 def make_callback_id(config):
@@ -208,6 +209,15 @@ def create_weight_callback(name, f):
     _weight_callbacks[name] = (cb, addr)
     _syn.add_weight_callback(name, addr)
 
+def create_indices_weight_callback(name, f):
+    if name in _indices_weight_callbacks:
+        raise ValueError("Duplicate Indices Weight Callback: " + name)
+
+    cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p, c_void_p, c_void_p)(f)
+    addr = cast(cb, c_void_p).value
+    _indices_weight_callbacks[name] = (cb, addr)
+    _syn.add_indices_weight_callback(name, addr)
+
 def create_distance_weight_callback(name, f):
     if name in _distance_weight_callbacks:
         raise ValueError("Duplicate Distance Weight Callback: " + name)
@@ -217,14 +227,14 @@ def create_distance_weight_callback(name, f):
     _distance_weight_callbacks[name] = (cb, addr)
     _syn.add_distance_weight_callback(name, addr)
 
-def create_indices_weight_callback(name, f):
-    if name in _indices_weight_callbacks:
-        raise ValueError("Duplicate Indices Weight Callback: " + name)
+def create_delay_weight_callback(name, f):
+    if name in _delay_weight_callbacks:
+        raise ValueError("Duplicate Delay Weight Callback: " + name)
 
-    cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p, c_void_p, c_void_p)(f)
+    cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
-    _indices_weight_callbacks[name] = (cb, addr)
-    _syn.add_indices_weight_callback(name, addr)
+    _delay_weight_callbacks[name] = (cb, addr)
+    _syn.add_delay_weight_callback(name, addr)
 
 
 """ Base Class for C Object wrapper """

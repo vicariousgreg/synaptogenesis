@@ -315,9 +315,9 @@ void add_io_callback(char* name, long long addr) {
         (void (*)(int, int, void*))(addr));
 }
 
-void add_distance_weight_callback(char* name, long long addr) {
-    CallbackManager::get_instance()->add_distance_weight_callback(name,
-        (void (*)(int, int, void*, void*))(addr));
+void add_weight_callback(char* name, long long addr) {
+    CallbackManager::get_instance()->add_weight_callback(name,
+        (void (*)(int, int, void*))(addr));
 }
 
 void add_indices_weight_callback(char* name, long long addr) {
@@ -325,7 +325,12 @@ void add_indices_weight_callback(char* name, long long addr) {
         (void (*)(int, int, void*, void*, void*, void*))(addr));
 }
 
-void add_weight_callback(char* name, long long addr) {
-    CallbackManager::get_instance()->add_weight_callback(name,
-        (void (*)(int, int, void*))(addr));
+void add_distance_weight_callback(char* name, long long addr) {
+    CallbackManager::get_instance()->add_distance_weight_callback(name,
+        (void (*)(int, int, void*, void*))(addr));
+}
+
+void add_delay_weight_callback(char* name, long long addr) {
+    CallbackManager::get_instance()->add_delay_weight_callback(name,
+        (void (*)(int, int, void*, void*))(addr));
 }

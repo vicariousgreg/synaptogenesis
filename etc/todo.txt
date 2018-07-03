@@ -55,3 +55,7 @@ output subclasses for transferring implementation specific data
 * "expected" : replace with "label" under "input"
 
 multidimensional layers and connections
+
+enhance algorithm for dividing layers between devices
+* minimize inter-device transfers
+* try and keep feedforward structures together

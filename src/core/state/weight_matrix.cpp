@@ -840,6 +840,28 @@ static void weight_callback_config(WeightMatrix *matrix,
     callback(id, num_weights, target_matrix);
 }
 
+static void indices_weight_callback_config(WeightMatrix *matrix,
+        const PropertyConfig& config, float* target_matrix) {
+    Connection *conn = matrix->connection;
+
+    if (not config.has("indices callback"))
+        LOG_ERROR(
+            "Unspecified indices callback function for connection "
+            + conn->str());
+
+    void (*callback)(int, int, void*, void*, void*, void*) =
+        CallbackManager::get_instance()->get_indices_weight_callback(
+            config.get("indices callback"));
+
+    int id = config.get_int("id", 0);
+
+    int num_weights = conn->get_num_weights();
+    matrix->get_indices();
+
+    callback(id, num_weights, target_matrix,
+        matrix->from_indices.get(), matrix->to_indices.get(), matrix->used.get());
+}
+
 static void distance_weight_callback_config(WeightMatrix *matrix,
         const PropertyConfig& config, float* target_matrix) {
     Connection *conn = matrix->connection;
@@ -863,29 +885,27 @@ static void distance_weight_callback_config(WeightMatrix *matrix,
     matrix->get_distances(from_spacing, to_spacing, x_offset, y_offset);
 
     callback(id, num_weights, target_matrix, matrix->distances.get());
-    matrix->distances.free();
 }
 
-static void indices_weight_callback_config(WeightMatrix *matrix,
+static void delay_weight_callback_config(WeightMatrix *matrix,
         const PropertyConfig& config, float* target_matrix) {
     Connection *conn = matrix->connection;
 
-    if (not config.has("indices callback"))
+    if (not config.has("delay callback"))
         LOG_ERROR(
-            "Unspecified indices callback function for connection "
+            "Unspecified delay callback function for connection "
             + conn->str());
 
-    void (*callback)(int, int, void*, void*, void*, void*) =
-        CallbackManager::get_instance()->get_indices_weight_callback(
-            config.get("indices callback"));
+    void (*callback)(int, int, void*, void*) =
+        CallbackManager::get_instance()->get_delay_weight_callback(
+            config.get("delay callback"));
 
     int id = config.get_int("id", 0);
 
     int num_weights = conn->get_num_weights();
-    matrix->get_indices();
+    matrix->get_delays(conn->delay);
 
-    callback(id, num_weights, target_matrix,
-        matrix->from_indices.get(), matrix->to_indices.get(), matrix->used.get());
+    callback(id, num_weights, target_matrix, matrix->delays.get());
 }
 
 static void clear_diagonal_config(WeightMatrix *matrix,
@@ -951,11 +971,14 @@ static void initialize_weights(WeightMatrix *matrix,
     if (config.has("callback"))
         weight_callback_config(matrix, config, target_matrix);
 
+    if (config.has("indices callback"))
+        indices_weight_callback_config(matrix, config, target_matrix);
+
     if (config.has("distance callback"))
         distance_weight_callback_config(matrix, config, target_matrix);
 
-    if (config.has("indices callback"))
-        indices_weight_callback_config(matrix, config, target_matrix);
+    if (config.has("delay callback"))
+        delay_weight_callback_config(matrix, config, target_matrix);
 
     // Finally, do mask processing
     if (config.has_child("circular mask"))
