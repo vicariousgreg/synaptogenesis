@@ -7,8 +7,8 @@ class IzhikevichAttributes : public Attributes {
     public:
         IzhikevichAttributes(Layer *layer);
 
-        virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn);
-        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
+        virtual KernelList<SYNAPSE_ARGS> get_activators(Connection *conn);
+        virtual KernelList<SYNAPSE_ARGS> get_updaters(Connection *conn);
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
         /* Neuron Attributes */

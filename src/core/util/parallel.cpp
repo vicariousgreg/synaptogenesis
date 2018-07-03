@@ -4,11 +4,20 @@
 #ifdef __CUDACC__
 
 int calc_threads(int computations) {
-    return IDEAL_THREADS;
+    if (computations < IDEAL_THREADS) {
+        int threads = 2;
+        while (threads < computations)
+            threads *= 2;
+        return threads;
+    } else {
+        return IDEAL_THREADS;
+    }
 }
 
 int calc_blocks(int computations, int threads) {
-    return ceil((float) computations / calc_threads(computations));
+    if (threads == 0)
+        threads = calc_threads(computations);
+    return ceil((float) computations / threads);
 }
 
 void device_synchronize() {

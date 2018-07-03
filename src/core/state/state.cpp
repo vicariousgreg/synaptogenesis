@@ -545,9 +545,9 @@ AGGREGATOR State::get_connection_aggregator(Connection *conn) const {
         layer_devices.at(conn->to_layer));
 }
 
-Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
+KernelList<SYNAPSE_ARGS> State::get_activators(Connection *conn) const {
     try {
-        return attributes.at(conn->to_layer)->get_activator(conn);
+        return attributes.at(conn->to_layer)->get_activators(conn);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get activator in State for "
@@ -555,9 +555,9 @@ Kernel<SYNAPSE_ARGS> State::get_activator(Connection *conn) const {
     }
 }
 
-Kernel<SYNAPSE_ARGS> State::get_updater(Connection *conn) const {
+KernelList<SYNAPSE_ARGS> State::get_updaters(Connection *conn) const {
     try {
-        return attributes.at(conn->to_layer)->get_updater(conn);
+        return attributes.at(conn->to_layer)->get_updaters(conn);
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Failed to get updater in State for "

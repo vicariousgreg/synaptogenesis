@@ -37,12 +37,12 @@ class Attributes {
         void transfer(DeviceID new_device);
 
         // Activation Function
-        virtual Kernel<SYNAPSE_ARGS> get_activator(Connection *conn)
-            { return get_base_activator_kernel(conn); }
+        virtual KernelList<SYNAPSE_ARGS> get_activators(Connection *conn)
+            { return { get_base_activator_kernel(conn) }; }
 
         // Learning Rule
-        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn)
-            { return Kernel<SYNAPSE_ARGS> (); }
+        virtual KernelList<SYNAPSE_ARGS> get_updaters(Connection *conn)
+            { return { }; }
 
         // Weight matrix functions
         void process_weight_matrices();

@@ -7,7 +7,7 @@ class RateEncodingAttributes : public Attributes {
     public:
         RateEncodingAttributes(Layer *layer);
 
-        virtual Kernel<SYNAPSE_ARGS> get_updater(Connection *conn);
+        virtual KernelList<SYNAPSE_ARGS> get_updater(Connection *conn);
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

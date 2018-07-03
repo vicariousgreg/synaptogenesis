@@ -342,15 +342,12 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
  \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        from_row = (from_row < 0) \
-                            ? from_row + from_rows \
-                            : (from_row >= from_rows) \
-                                ? from_row - from_rows : from_row; \
- \
-                        from_column = (from_column < 0) \
-                            ? from_column + from_columns \
-                            : (from_column >= from_columns) \
-                                ? from_column - from_columns : from_column; \
+                        from_row = \
+                            (from_row % from_rows + from_rows) \
+                                % from_rows; \
+                        from_column = \
+                            (from_column % from_columns + from_columns) \
+                                % from_columns; \
                     /* Avoid making connections with non-existent neurons */ \
                     } else if (from_row < 0 or from_row >= from_rows \
                         or from_column < 0 or from_column >= from_columns) { \
@@ -415,15 +412,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    from_row = (from_row < 0) \
-                        ? from_row + from_rows \
-                        : (from_row >= from_rows) \
-                            ? from_row - from_rows : from_row; \
-\
-                    from_column = (from_column < 0) \
-                        ? from_column + from_columns \
-                        : (from_column >= from_columns) \
-                            ? from_column - from_columns : from_column; \
+                    from_row = \
+                        (from_row % from_rows + from_rows) \
+                            % from_rows; \
+                    from_column = \
+                        (from_column % from_columns + from_columns) \
+                            % from_columns; \
                 /* Avoid making connections with non-existent neurons */ \
                 } else if (from_row < 0 or from_row >= from_rows \
                     or from_column < 0 or from_column >= from_columns) { \
@@ -491,15 +485,12 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        from_row = (from_row < 0) \
-                            ? from_row + from_rows \
-                            : (from_row >= from_rows) \
-                                ? from_row - from_rows : from_row; \
- \
-                        from_column = (from_column < 0) \
-                            ? from_column + from_columns \
-                            : (from_column >= from_columns) \
-                                ? from_column - from_columns : from_column; \
+                        from_row = \
+                            (from_row % from_rows + from_rows) \
+                                % from_rows; \
+                        from_column = \
+                            (from_column % from_columns + from_columns) \
+                                % from_columns; \
                     /* Avoid making connections with non-existent neurons */ \
                     } else if (from_row < 0 or from_row >= from_rows \
                         or from_column < 0 or from_column >= from_columns) { \
@@ -560,15 +551,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    from_row = (from_row < 0) \
-                        ? from_row + from_rows \
-                        : (from_row >= from_rows) \
-                            ? from_row - from_rows : from_row; \
-\
-                    from_column = (from_column < 0) \
-                        ? from_column + from_columns \
-                        : (from_column >= from_columns) \
-                            ? from_column - from_columns : from_column; \
+                    from_row = \
+                        (from_row % from_rows + from_rows) \
+                            % from_rows; \
+                    from_column = \
+                        (from_column % from_columns + from_columns) \
+                            % from_columns; \
                 /* Avoid making connections with non-existent neurons */ \
                 } else if (from_row < 0 or from_row >= from_rows \
                     or from_column < 0 or from_column >= from_columns) { \
@@ -624,15 +612,12 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
  \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        from_row = (from_row < 0) \
-                            ? from_row + from_rows \
-                            : (from_row >= from_rows) \
-                                ? from_row - from_rows : from_row; \
- \
-                        from_column = (from_column < 0) \
-                            ? from_column + from_columns \
-                            : (from_column >= from_columns) \
-                                ? from_column - from_columns : from_column; \
+                        from_row = \
+                            (from_row % from_rows + from_rows) \
+                                % from_rows; \
+                        from_column = \
+                            (from_column % from_columns + from_columns) \
+                                % from_columns; \
                     /* Avoid making connections with non-existent neurons */ \
                     } else if (from_row < 0 or from_row >= from_rows \
                         or from_column < 0 or from_column >= from_columns) { \
@@ -686,15 +671,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    from_row = (from_row < 0) \
-                        ? from_row + from_rows \
-                        : (from_row >= from_rows) \
-                            ? from_row - from_rows : from_row; \
-\
-                    from_column = (from_column < 0) \
-                        ? from_column + from_columns \
-                        : (from_column >= from_columns) \
-                            ? from_column - from_columns : from_column; \
+                    from_row = \
+                        (from_row % from_rows + from_rows) \
+                            % from_rows; \
+                    from_column = \
+                        (from_column % from_columns + from_columns) \
+                            % from_columns; \
                 /* Avoid making connections with non-existent neurons */ \
                 } else if (from_row < 0 or from_row >= from_rows \
                     or from_column < 0 or from_column >= from_columns) { \
@@ -749,15 +731,12 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 \
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
-                        from_row = (from_row < 0) \
-                            ? from_row + from_rows \
-                            : (from_row >= from_rows) \
-                                ? from_row - from_rows : from_row; \
-\
-                        from_column = (from_column < 0) \
-                            ? from_column + from_columns \
-                            : (from_column >= from_columns) \
-                                ? from_column - from_columns : from_column; \
+                        from_row = \
+                            (from_row % from_rows + from_rows) \
+                                % from_rows; \
+                        from_column = \
+                            (from_column % from_columns + from_columns) \
+                                % from_columns; \
                     /* Avoid making connections with non-existent neurons */ \
                     } else if (from_row < 0 or from_row >= from_rows \
                         or from_column < 0 or from_column >= from_columns) { \
@@ -814,15 +793,12 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 \
                 /* If wrapping, adjust out of bounds indices accordingly */ \
                 if (wrap) { \
-                    from_row = (from_row < 0) \
-                        ? from_row + from_rows \
-                        : (from_row >= from_rows) \
-                            ? from_row - from_rows : from_row; \
-\
-                    from_column = (from_column < 0) \
-                        ? from_column + from_columns \
-                        : (from_column >= from_columns) \
-                            ? from_column - from_columns : from_column; \
+                    from_row = \
+                        (from_row % from_rows + from_rows) \
+                            % from_rows; \
+                    from_column = \
+                        (from_column % from_columns + from_columns) \
+                            % from_columns; \
                 /* Avoid making connections with non-existent neurons */ \
                 } else if (from_row < 0 or from_row >= from_rows \
                     or from_column < 0 or from_column >= from_columns) { \

@@ -210,7 +210,7 @@ CALC_ALL(activate_spnet,
     AGGREGATE
 );
 
-Kernel<SYNAPSE_ARGS> SpnetAttributes::get_activator(Connection *conn) {
+KernelList<SYNAPSE_ARGS> SpnetAttributes::get_activators(Connection *conn) {
     // These are not supported because of the change of weight matrix pointer
     // Second order host connections require their weight matrices to be copied
     // Currently, this only copies the first matrix in the stack, and this
@@ -219,7 +219,7 @@ Kernel<SYNAPSE_ARGS> SpnetAttributes::get_activator(Connection *conn) {
         LOG_ERROR(
             "Unimplemented connection type!");
 
-    return activate_spnet_map.at(conn->get_type());
+    return { activate_spnet_map.at(conn->get_type()) };
 }
 
 /******************************************************************************/
@@ -303,7 +303,7 @@ CALC_ALL(update_spnet,
     UPDATE_WEIGHT,
 );
 
-Kernel<SYNAPSE_ARGS> SpnetAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> SpnetAttributes::get_updaters(Connection *conn) {
     // Second order, convolutional, and direct updaters are not supported
     if (conn->second_order or conn->convolutional)
         LOG_ERROR(
@@ -313,7 +313,7 @@ Kernel<SYNAPSE_ARGS> SpnetAttributes::get_updater(Connection *conn) {
         switch (conn->opcode) {
             case(ADD):
             case(SUB):
-                return update_spnet_map.at(conn->get_type());
+                return { update_spnet_map.at(conn->get_type()) };
         }
     } catch(std::out_of_range) { }
 

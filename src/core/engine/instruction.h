@@ -282,7 +282,7 @@ class SynapseActivateInstruction : public SynapseInstruction {
         SynapseActivateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream, false),
-                  activator(state->get_activator(conn)) {
+                  activators(state->get_activators(conn)) {
             // Convolutional activate instructions iterate over weights
             // This is because of special conditions (see connection.cpp)
             if (conn->second_order_slave and conn->convolutional) {
@@ -294,14 +294,15 @@ class SynapseActivateInstruction : public SynapseInstruction {
 
         void activate() {
             Instruction::wait_for_dependencies();
-            activator.schedule(stream,
-                blocks, threads,
-                synapse_data);
+            for (auto& activator : activators)
+                activator.schedule(stream,
+                    blocks, threads,
+                    synapse_data);
             Instruction::record_event();
         }
 
     protected:
-        Kernel<SYNAPSE_ARGS> activator;
+        KernelList<SYNAPSE_ARGS> activators;
 };
 
 /* Updates synaptic connection */
@@ -310,7 +311,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
         SynapseUpdateInstruction(DendriticNode *parent_node,
             Connection *conn, State *state, Stream *stream)
                 : SynapseInstruction(parent_node, conn, state, stream, true),
-                  updater(state->get_updater(conn)) {
+                  updaters(state->get_updaters(conn)) {
             // Convolutional update instructions iterate over weights
             if (conn->convolutional) {
                 int num_weights = connection->get_num_weights();
@@ -320,13 +321,14 @@ class SynapseUpdateInstruction : public SynapseInstruction {
         }
 
         void activate() {
-            updater.schedule(stream,
-                blocks, threads,
-                synapse_data);
+            for (auto& updater : updaters)
+                updater.schedule(stream,
+                    blocks, threads,
+                    synapse_data);
         }
 
     protected:
-        Kernel<SYNAPSE_ARGS> updater;
+        KernelList<SYNAPSE_ARGS> updaters;
 };
 
 /* Computes dendritic node connection */
@@ -525,7 +527,7 @@ class StateUpdateInstruction : public StateInstruction {
     public:
         StateUpdateInstruction(Layer *to_layer, State *state, Stream *stream)
             : StateInstruction(to_layer, state, stream,
-              state->get_attribute_kernel(to_layer)) { }
+                  state->get_attribute_kernel(to_layer)) { }
 };
 
 /* Updates layer state */
@@ -533,7 +535,7 @@ class StateLearningInstruction : public StateInstruction {
     public:
         StateLearningInstruction(Layer *to_layer, State *state, Stream *stream)
             : StateInstruction(to_layer, state, stream,
-              state->get_learning_kernel(to_layer)) { }
+                  state->get_learning_kernel(to_layer)) { }
 };
 
 /* Retrieves the appropriate initialization instruction, based on init config

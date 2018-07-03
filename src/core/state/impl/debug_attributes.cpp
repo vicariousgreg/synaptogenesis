@@ -99,13 +99,13 @@ CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_debug_divergent_convolutional,
 );
 
 
-Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
+KernelList<SYNAPSE_ARGS> DebugAttributes::get_activators(Connection *conn) {
     if (conn->convolutional and conn->second_order) {
-        return get_activate_debug_second_order_convolutional();
+        return { get_activate_debug_second_order_convolutional() };
     }
 
     try {
-        return activate_debug_map.at(conn->get_type());
+        return { activate_debug_map.at(conn->get_type()) };
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
@@ -115,19 +115,19 @@ Kernel<SYNAPSE_ARGS> DebugAttributes::get_activator(Connection *conn) {
 /******************************************************************************/
 /************************** DEBUG UPDATER KERNELS *****************************/
 /******************************************************************************/
-Kernel<SYNAPSE_ARGS> DebugAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> DebugAttributes::get_updaters(Connection *conn) {
     if (conn->second_order)
         LOG_ERROR("Unimplemented connection type!");
 
     if (conn->convolutional) {
         if (conn->get_type() == CONVERGENT)
-            return get_update_debug_convergent_convolutional();
+            return { get_update_debug_convergent_convolutional() };
         else if (conn->get_type() == DIVERGENT)
-            return get_update_debug_divergent_convolutional();
+            return { get_update_debug_divergent_convolutional() };
     }
 
     try {
-        return update_debug_map.at(conn->get_type());
+        return { update_debug_map.at(conn->get_type()) };
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented

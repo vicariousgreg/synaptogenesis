@@ -62,7 +62,7 @@ CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_hebbian_divergent_convolutional,
     UPDATE_WEIGHT_CONVOLUTIONAL;
 );
 
-Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
+KernelList<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
         Connection *conn) {
     if (conn->second_order)
         LOG_ERROR(
@@ -70,13 +70,13 @@ Kernel<SYNAPSE_ARGS> HebbianRateEncodingAttributes::get_updater(
 
     if (conn->convolutional) {
         if (conn->get_type() == CONVERGENT)
-            return get_update_hebbian_convergent_convolutional();
+            return { get_update_hebbian_convergent_convolutional() };
         else if (conn->get_type() == DIVERGENT)
-            return get_update_hebbian_divergent_convolutional();
+            return { get_update_hebbian_divergent_convolutional() };
     }
 
     try {
-        return update_hebbian_map.at(conn->get_type());
+        return { update_hebbian_map.at(conn->get_type()) };
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented

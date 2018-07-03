@@ -26,7 +26,7 @@ BUILD_ATTRIBUTE_KERNEL(RateEncodingAttributes, re_attribute_kernel,
 /************************** CLASS FUNCTIONS ***********************************/
 /******************************************************************************/
 
-Kernel<SYNAPSE_ARGS> RateEncodingAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> RateEncodingAttributes::get_updater(Connection *conn) {
     LOG_ERROR("RateEncodingAttributes updater not implemented!");
 }
 

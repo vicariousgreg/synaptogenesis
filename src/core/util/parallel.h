@@ -35,7 +35,7 @@ void device_synchronize();
 int get_num_cuda_devices();
 
 int calc_threads(int computations);
-int calc_blocks(int computations, int threads=IDEAL_THREADS);
+int calc_blocks(int computations, int threads=0);
 
 void gpuAssert(const char* file, int line, const char* msg);
 

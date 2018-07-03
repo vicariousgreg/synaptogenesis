@@ -21,9 +21,6 @@ python wrappers for layers, connections, modules
 * config validation
 * convenience methods for common patterns
 
-
-return list of kernels in attributres
-
 backprop
 * before update, collect deltas
 * feedforward only, do in reverse

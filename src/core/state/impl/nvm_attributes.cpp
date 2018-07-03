@@ -149,21 +149,21 @@ CALC_ONE_TO_ONE(activate_nvm_second_order_convolutional,
 
 /* This function is used to retrieve the appropriate kernel for a connection.
  * This allows different connections to run on different kernels. */
-Kernel<SYNAPSE_ARGS> NVMAttributes::get_activator(Connection *conn) {
+KernelList<SYNAPSE_ARGS> NVMAttributes::get_activators(Connection *conn) {
     bool second_order = conn->second_order;
 
     if (conn->convolutional and conn->second_order) {
         // Typically convolutional connections just use the convergent kernel
         // Second order convolutional connections are special because they iterate
         //   once over the weights (see above)
-        return get_activate_nvm_second_order_convolutional();
+        return { get_activate_nvm_second_order_convolutional() };
     }
 
     try {
         if (conn->second_order)
-            return activate_nvm_second_order_map.at(conn->get_type());
+            return { activate_nvm_second_order_map.at(conn->get_type()) };
         else
-            return activate_nvm_map.at(conn->get_type());
+            return { activate_nvm_map.at(conn->get_type()) };
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
@@ -239,7 +239,7 @@ CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_nvm_divergent_convolutional,
         + (weight_delta / num_weights);
 );
 
-Kernel<SYNAPSE_ARGS> NVMAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> NVMAttributes::get_updaters(Connection *conn) {
     if (conn->second_order)
         LOG_ERROR("Unimplemented connection type!");
 
@@ -247,11 +247,11 @@ Kernel<SYNAPSE_ARGS> NVMAttributes::get_updater(Connection *conn) {
     try {
         if (conn->convolutional) {
             if (conn->get_type() == CONVERGENT)
-                return get_update_nvm_convergent_convolutional();
+                return { get_update_nvm_convergent_convolutional() };
             else if (conn->get_type() == DIVERGENT)
-                return get_update_nvm_divergent_convolutional();
+                return { get_update_nvm_divergent_convolutional() };
         }
-        return update_nvm_map.at(conn->get_type());
+        return { update_nvm_map.at(conn->get_type()) };
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented

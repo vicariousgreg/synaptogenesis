@@ -63,8 +63,8 @@ class State {
         const WeightMatrix* get_matrix_pointer(Connection *conn) const;
         EXTRACTOR get_connection_extractor(Connection *conn) const;
         AGGREGATOR get_connection_aggregator(Connection *conn) const;
-        Kernel<SYNAPSE_ARGS> get_activator(Connection *conn) const;
-        Kernel<SYNAPSE_ARGS> get_updater(Connection *conn) const;
+        KernelList<SYNAPSE_ARGS> get_activators(Connection *conn) const;
+        KernelList<SYNAPSE_ARGS> get_updaters(Connection *conn) const;
         Pointer<Output> get_device_output_buffer(
             Connection *conn, int word_index) const;
         bool is_inter_device(Connection *conn) const;

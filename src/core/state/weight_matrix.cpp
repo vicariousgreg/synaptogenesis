@@ -135,9 +135,13 @@ void WeightMatrix::adjust_sparse_indices() {
                     // Otherwise, mark out of bounds as unused
                     if (wrap) {
                         from_row_indices[index] =
-                            from_row = from_row % from_rows;
+                            from_row =
+                                (from_row % from_rows + from_rows)
+                                    % from_rows;
                         from_column_indices[index] =
-                            from_column = from_column % from_columns;
+                            from_column =
+                                (from_column % from_columns + from_columns)
+                                    % from_columns;
                         from_indices[index] =
                             from_row * from_columns + from_column;
                     } else if (from_row < 0 or from_row >= from_rows

@@ -155,16 +155,16 @@ CALC_ONE_TO_ONE(activate_oscillator_second_order_convolutional,
 
 /* This function is used to retrieve the appropriate kernel for a connection.
  * This allows different connections to run on different kernels. */
-Kernel<SYNAPSE_ARGS> OscillatorAttributes::get_activator(Connection *conn) {
+KernelList<SYNAPSE_ARGS> OscillatorAttributes::get_activators(Connection *conn) {
     if (conn->convolutional and conn->second_order) {
-        return get_activate_oscillator_second_order_convolutional();
+        return { get_activate_oscillator_second_order_convolutional() };
     }
 
     try {
         if (conn->second_order)
-            return activate_oscillator_second_order_map.at(conn->get_type());
+            return { activate_oscillator_second_order_map.at(conn->get_type()) };
         else
-            return activate_oscillator_map.at(conn->get_type());
+            return { activate_oscillator_map.at(conn->get_type()) };
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
@@ -240,19 +240,19 @@ CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(update_oscillator_divergent_convolutional
         + (weight_delta / num_weights);
 );
 
-Kernel<SYNAPSE_ARGS> OscillatorAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> OscillatorAttributes::get_updaters(Connection *conn) {
     if (conn->second_order)
         LOG_ERROR("Unimplemented connection type!");
 
     if (conn->convolutional) {
         if (conn->get_type() == CONVERGENT)
-            return get_update_oscillator_convergent_convolutional();
+            return { get_update_oscillator_convergent_convolutional() };
         else if (conn->get_type() == DIVERGENT)
-            return get_update_oscillator_divergent_convolutional();
+            return { get_update_oscillator_divergent_convolutional() };
     }
 
     try {
-        return update_oscillator_map.at(conn->get_type());
+        return { update_oscillator_map.at(conn->get_type()) };
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented

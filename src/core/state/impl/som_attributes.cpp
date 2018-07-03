@@ -91,13 +91,13 @@ CALC_ALL(update_som,
     },
 );
 
-Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
+KernelList<SYNAPSE_ARGS> SOMAttributes::get_activators(Connection *conn) {
     try {
         if (not conn->second_order) {
             if (conn->opcode == MODULATE)
-                return modulate_som_map.at(conn->get_type());
+                return { modulate_som_map.at(conn->get_type()) };
             else
-                return activate_som_map.at(conn->get_type());
+                return { activate_som_map.at(conn->get_type()) };
         }
     } catch(std::out_of_range) { }
 
@@ -109,9 +109,9 @@ Kernel<SYNAPSE_ARGS> SOMAttributes::get_activator(Connection *conn) {
 /**************************** SOM UPDATER KERNELS *****************************/
 /******************************************************************************/
 
-Kernel<SYNAPSE_ARGS> SOMAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> SOMAttributes::get_updaters(Connection *conn) {
     if (not conn->second_order)
-        return update_som_map.at(conn->get_type());
+        return { update_som_map.at(conn->get_type()) };
     else
         LOG_ERROR(
             "Unimplemented connection type!");

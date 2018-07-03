@@ -54,6 +54,10 @@ class Kernel {
         void (*parallel_kernel)(ARGS...);
 };
 
+template<typename... ARGS>
+using KernelList = std::vector<Kernel<ARGS...>>;
+
+
 /* Sets input data (use val=0.0 for clear) */
 Kernel<float, Pointer<float>, int, bool> get_set_data();
 

@@ -33,14 +33,13 @@ CALC_ALL(activate_perceptron,
     inputs[to_index] = aggregate(inputs[to_index], sum);
 ; );
 
-Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_activator(Connection *conn) {
+KernelList<SYNAPSE_ARGS> PerceptronAttributes::get_activators(Connection *conn) {
     if (conn->second_order or conn->convolutional)
         LOG_ERROR(
             "Unimplemented connection type!");
 
-
     try {
-        return activate_perceptron_map.at(conn->get_type());
+        return { activate_perceptron_map.at(conn->get_type()) };
     } catch (std::out_of_range) {
         LOG_ERROR(
             "Unimplemented connection type!");
@@ -59,13 +58,13 @@ CALC_ALL(update_perceptron,
     ,
 ; );
 
-Kernel<SYNAPSE_ARGS> PerceptronAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> PerceptronAttributes::get_updaters(Connection *conn) {
     if (conn->second_order or conn->convolutional)
         LOG_ERROR(
             "Unimplemented connection type!");
 
     try {
-        return update_perceptron_map.at(conn->get_type());
+        return { update_perceptron_map.at(conn->get_type()) };
     } catch (std::out_of_range) { }
 
     LOG_ERROR(

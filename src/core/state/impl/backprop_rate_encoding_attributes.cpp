@@ -3,9 +3,9 @@
 
 REGISTER_ATTRIBUTES(BackpropRateEncodingAttributes, "backprop_rate_encoding", FLOAT)
 
-Kernel<SYNAPSE_ARGS> BackpropRateEncodingAttributes::get_updater(
+KernelList<SYNAPSE_ARGS> BackpropRateEncodingAttributes::get_updater(
         Connection* conn) {
-    return Kernel<SYNAPSE_ARGS>(nullptr, nullptr);
+    return { };
 }
 
 /******************************************************************************/

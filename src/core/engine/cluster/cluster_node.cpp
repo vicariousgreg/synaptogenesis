@@ -91,8 +91,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     // This doesn't get run for root because it cannot have an init_value, and
     //   because it can get init applied to it that should not be overwritten
     else if (curr->name != "root")
-        (new SetInstruction(
-            curr, state, compute_stream, curr->init_val))->activate();
+        (SetInstruction(curr, state, compute_stream, curr->init_val)).activate();
 
     for (auto& child : curr->get_children()) {
         // Create an instruction

@@ -365,10 +365,10 @@ CALC_ALL(activate_iz_gap,
     inputs[to_index] += sum;
 );
 
-Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
+KernelList<SYNAPSE_ARGS> IzhikevichAttributes::get_activators(Connection *conn) {
     // Direct connections get a mainline into the input current
     if (conn->get_parameter("direct", "false") == "true")
-        return get_base_activator_kernel(conn);
+        return { get_base_activator_kernel(conn) };
 
     // These are not supported because of the change of weight matrix pointer
     // Second order host connections require their weight matrices to be copied
@@ -381,15 +381,15 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_activator(Connection *conn) {
     try {
         switch (conn->opcode) {
             case(ADD):
-                return activate_iz_add_map.at(conn->get_type());
+                return { activate_iz_add_map.at(conn->get_type()) };
             case(SUB):
-                return activate_iz_sub_map.at(conn->get_type());
+                return { activate_iz_sub_map.at(conn->get_type()) };
             case(MULT):
-                return activate_iz_mult_map.at(conn->get_type());
+                return { activate_iz_mult_map.at(conn->get_type()) };
             case(REWARD):
-                return activate_iz_reward_map.at(conn->get_type());
+                return { activate_iz_reward_map.at(conn->get_type()) };
             case(GAP):
-                return activate_iz_gap_map.at(conn->get_type());
+                return { activate_iz_gap_map.at(conn->get_type()) };
         }
     } catch(std::out_of_range) { }
 
@@ -519,7 +519,7 @@ CALC_ALL(update_iz_sub,
     UPDATE_WEIGHT(STDP_SUB, U_SUB, D_SUB, F_SUB),
 ; );
 
-Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
+KernelList<SYNAPSE_ARGS> IzhikevichAttributes::get_updaters(Connection *conn) {
     // Second order, convolutional, and direct updaters are not supported
     if (conn->second_order or conn->convolutional)
         LOG_ERROR(
@@ -528,9 +528,9 @@ Kernel<SYNAPSE_ARGS> IzhikevichAttributes::get_updater(Connection *conn) {
     try {
         switch (conn->opcode) {
             case(ADD):
-                return update_iz_add_map.at(conn->get_type());
+                return { update_iz_add_map.at(conn->get_type()) };
             case(SUB):
-                return update_iz_sub_map.at(conn->get_type());
+                return { update_iz_sub_map.at(conn->get_type()) };
         }
     } catch(std::out_of_range) { }
 
