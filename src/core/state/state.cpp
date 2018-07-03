@@ -12,6 +12,13 @@ static std::map<Layer*, DeviceID> distribute_layers(
         const LayerList& layers, std::set<DeviceID> devices) {
     std::map<Layer*, DeviceID> layer_devices;
 
+    if (devices.size() == 1) {
+        int dev = *devices.begin();
+        for (auto layer : layers)
+            layer_devices[layer] = dev;
+        return layer_devices;
+    }
+
     // Distribute layers
     // Count up weights
     std::map<Layer*, int> num_weights;
@@ -25,6 +32,22 @@ static std::map<Layer*, DeviceID> distribute_layers(
     std::map<DeviceID, int> device_weights;
     for (auto device : devices)
         device_weights[device] = 0;
+
+    // Respect device allocation parameters
+    for (auto layer : layers) {
+        int dev = layer->get_config()->get_int("device", -1);
+
+        // If device provided and is in the set, allocate layer
+        if (dev > -1) {
+            for (auto device : devices) {
+                if (dev == device) {
+                    layer_devices[layer] = dev;
+                    device_weights[dev] += num_weights[layer];
+                    num_weights.erase(layer);
+                }
+            }
+        }
+    }
 
     // Give the next biggest layer to the device with the least weight
     //   until no layers are left to distribute
