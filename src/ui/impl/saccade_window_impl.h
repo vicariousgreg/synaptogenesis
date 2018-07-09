@@ -68,9 +68,14 @@ class SaccadeWindowImpl : public SaccadeWindow, public GuiWindow {
 
         float* input_data;
 
+        bool shuffle;
         bool automatic;
-        int cycle_rate;
+        int num_faces;
+        int cross_time;
+        int face_time;
+        int last_face_time;
         int iteration;
+        int counter;
 
         bool face_on;
         bool curr_fear;

@@ -1,4 +1,5 @@
 #include "saccade_window_impl.h"
+#include "gui_controller.h"
 #include "io/impl/saccade_module.h"
 #include "util/tools.h"
 
@@ -15,8 +16,13 @@ SaccadeWindowImpl::SaccadeWindowImpl(SaccadeModule *module)
               face_on(false),
               input_data((float*)malloc(rows*cols*sizeof(float))),
               saccade_rate(module->config->get_float("saccade rate", 1.0)),
+              shuffle(module->config->get_bool("shuffle", false)),
+              num_faces(module->config->get_int("num faces", 34)),
               automatic(module->config->get_bool("automatic", false)),
-              cycle_rate(module->config->get_int("cycle rate", 100)),
+              cross_time(module->config->get_int("cross time", 100)),
+              face_time(module->config->get_int("face time", 100)),
+              last_face_time(0),
+              counter(-100),
               iteration(-100) {
     // Add table
     table = new Gtk::Table(1, 3, false);
@@ -175,9 +181,12 @@ void SaccadeWindowImpl::update() {
     lock();
 
     ++iteration;
-    if (automatic and (iteration == cycle_rate)) {
-        if (face_on) ; //this->click_peripheral();
-        else         this->click_center();
+    ++counter;
+    if (automatic) {
+        if (face_on and counter == face_time)
+            this->click_peripheral();
+        else if (not face_on and counter == cross_time)
+            this->click_center();
     }
 
     if (window_dirty) {
@@ -294,13 +303,10 @@ void SaccadeWindowImpl::report_output(Layer *layer,
 
             printf("Looked %s (%d, %d)  correct=%d  time=%d\n",
                 curr_pane == 0 ? "left" : "right",
-                row, col, correct, iteration - cycle_rate);
-
-            this->click_peripheral();
+                row, col, correct, iteration - last_face_time);
         // If fixation returned from peripheral
         } else if (curr_pane == 1) {
             printf("Looked center (%d, %d)\n", row, col);
-            iteration = 0;
         }
     }
 }
@@ -350,23 +356,33 @@ void SaccadeWindowImpl::click_center() {
     static bool direction = false;
     static int face_index = 0;
 
-    printf("fear %d dir %d idx %d\n",
-        fear, direction, face_index);
-
     if (not face_on) {
-        // Set random face
-        //this->set_face();
+        last_face_time = iteration;
+        counter = 0;
 
-        // Iterate deterministically
-        this->set_face(fear, direction, face_index);
-        fear = !fear;
-        if(!fear) {
-            direction = !direction;
-            if(!direction) face_index = (face_index + 1) % 8;
+        // Set random face
+        if (shuffle) {
+            this->set_face();
+        } else {
+            printf("fear %d dir %d idx %d\n",
+                fear, direction, face_index);
+
+            // Iterate deterministically
+            this->set_face(fear, direction, face_index);
+            fear = !fear;
+            if(!fear) {
+                direction = !direction;
+                if(!direction) face_index = (face_index + 1) % 8;
+            }
         }
     }
 }
 
 void SaccadeWindowImpl::click_peripheral() {
-    if (face_on) this->set_cross();
+    if (face_on) {
+        counter = 0;
+        this->set_cross();
+        if (--this->num_faces == 0)
+            GuiController::quit();
+    }
 }
