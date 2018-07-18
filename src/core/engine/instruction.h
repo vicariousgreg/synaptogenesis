@@ -186,7 +186,7 @@ class UniformNoiseInstruction : public InitializeInstruction {
             Stream *stream, bool overwrite)
                 : InitializeInstruction(layer, state, stream, overwrite) {
             auto config = layer->get_config()->get_child("init config");
-            min = config->get_float("min", 1.0);
+            min = config->get_float("min", 0.0);
             max = config->get_float("max", 1.0);
         }
 

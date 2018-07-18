@@ -142,13 +142,12 @@ void SaccadeWindowImpl::set_face() {
 }
 
 void SaccadeWindowImpl::set_face(bool fear, bool direction, int face_index) {
-    auto& faces = fear_faces_left;
-    if (direction) faces = (fear) ? fear_faces_right : neutral_faces_right;
-    else           faces = (fear) ? fear_faces_left  : neutral_faces_left;
+    auto* faces = &fear_faces_left;
+    if (direction) faces = (fear) ? &fear_faces_right : &neutral_faces_right;
+    else           faces = (fear) ? &fear_faces_left  : &neutral_faces_left;
 
-    Glib::RefPtr<Gdk::Pixbuf> face_pix;
-    if (face_index == -1) face_index = iRand(faces.size()-1);
-    face_pix = faces[face_index];
+    if (face_index == -1) face_index = iRand(faces->size()-1);
+    Glib::RefPtr<Gdk::Pixbuf> face_pix = faces->at(face_index);
 
     auto face_data = face_pix->get_pixels();
     int pix_size = face_pix->get_has_alpha() ? 4 : 3;
@@ -304,6 +303,9 @@ void SaccadeWindowImpl::report_output(Layer *layer,
             printf("Looked %s (%d, %d)  correct=%d  time=%d\n",
                 curr_pane == 0 ? "left" : "right",
                 row, col, correct, iteration - last_face_time);
+
+            module->log_correct(correct);
+            module->log_time(iteration - last_face_time);
         // If fixation returned from peripheral
         } else if (curr_pane == 1) {
             printf("Looked center (%d, %d)\n", row, col);

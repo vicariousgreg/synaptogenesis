@@ -45,4 +45,30 @@ void SaccadeModule::report_output_impl(Buffer *buffer) {
     window->unlock();
 }
 
+void SaccadeModule::report(Report* report) {
+    int num_correct = 0;
+    for (auto correct : correct_log)
+        num_correct += correct;
+
+    float avg_time = 0.0;
+    for (auto time : time_log)
+        avg_time += time;
+    avg_time /= time_log.size();
+
+    float std_dev = 0.0;
+    for (auto time : time_log)
+        std_dev += pow(time - avg_time, 2);
+    std_dev = pow(std_dev / time_log.size(), 0.5);
+
+    for (auto layer : layers) {
+        report->add_report(this, layer,
+            PropertyConfig({
+                { "Total", std::to_string(correct_log.size()) },
+                { "Correct", std::to_string(num_correct) },
+                { "Average time", std::to_string(avg_time) },
+                { "Standard deviation time", std::to_string(std_dev) },
+            }));
+    }
+}
+
 #endif
