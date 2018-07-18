@@ -564,6 +564,41 @@ void WeightMatrix::sparsify() {
             new_weights[row*max_nonzero + curr_col++] = 0.0;
     }
 
+    // If distances are set, compact
+    if (not this->distances.is_null()) {
+        auto compact_distances = Pointer<float>(sparse_num_weights, 0.0);
+
+        for (int row = 0 ; row < rows ; ++row) {
+            for (int col = 0, curr_col = 0 ; col < columns ; ++col) {
+                int old_index = row*columns + col;
+                if (used[old_index]) {
+                    int new_index = row*max_nonzero + curr_col++;
+                    compact_distances[new_index] = distances[old_index];
+                }
+            }
+        }
+        this->distances.free();
+        this->distances = Pointer<float>(compact_distances, true);
+    }
+
+    // If delays are set, compact
+    if (not this->delays.is_null()) {
+        auto compact_delays = Pointer<int>(sparse_num_weights, 0);
+
+        for (int row = 0 ; row < rows ; ++row) {
+            for (int col = 0, curr_col = 0 ; col < columns ; ++col) {
+                int old_index = row*columns + col;
+                if (used[old_index]) {
+                    int new_index = row*max_nonzero + curr_col++;
+                    compact_delays[new_index] = delays[old_index];
+                }
+            }
+        }
+
+        this->delays.free();
+        this->delays = Pointer<int>(compact_delays, true);
+    }
+
     // Print compression statistics
     printf("Sparsified %s:\n"
            "  Compression:         %12d / %12d (%8.6f)\n"
@@ -589,9 +624,6 @@ void WeightMatrix::sparsify() {
     this->to_column_indices = Pointer<int>(compact_to_column_indices, true);
     this->to_indices = Pointer<int>(compact_to_indices, true);
     this->used = Pointer<int>(compact_used, true);
-
-    if (not this->distances.is_null())
-        this->distances.free();
 
     // Free old weights and move pointer
     this->weights.free();
@@ -876,10 +908,22 @@ static void distance_weight_callback_config(WeightMatrix *matrix,
             config.get("distance callback"));
 
     int id = config.get_int("id", 0);
-    float from_spacing = config.get_float("from spacing", 1.0);
-    float to_spacing = config.get_float("to spacing", 1.0);
     float x_offset = config.get_float("x offset", 0.0);
     float y_offset = config.get_float("y offset", 0.0);
+
+    // Retrieve spacing with following priority:
+    //   1. Weight config
+    //   2. Layer config
+    //   3. Default = 1.0
+    float from_spacing = (config.has("from spacing"))
+        ? config.get_float("from spacing", 1.0)
+        : matrix->connection->from_layer->get_config()
+            ->get_float("neuron spacing", 1.0);
+
+    float to_spacing = (config.has("to spacing"))
+        ? config.get_float("to spacing", 1.0)
+        : matrix->connection->to_layer->get_config()
+            ->get_float("neuron spacing", 1.0);
 
     int num_weights = conn->get_num_weights();
     matrix->get_distances(from_spacing, to_spacing, x_offset, y_offset);

@@ -22,9 +22,9 @@ def build_network(dim=64):
 
     # Noise Parameters
     exc_noise_strength = 20.0
-    exc_noise_rate = 0.1
+    exc_noise_rate = 0.01
     inh_noise_strength = 20.0
-    inh_noise_rate = 0.1
+    inh_noise_rate = 0.01
     exc_random = False
     inh_random = False
 
