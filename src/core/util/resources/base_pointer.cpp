@@ -66,6 +66,7 @@ BasePointer* BasePointer::slice(size_t offset, size_t new_size) const {
         device_id,
         false);
     pointer->pinned = this->pinned;
+    return pointer;
 }
 
 void BasePointer::transfer(DeviceID new_device, void* destination,

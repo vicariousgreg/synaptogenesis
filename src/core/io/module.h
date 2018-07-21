@@ -44,17 +44,16 @@ class Module {
         /* Module API
          * These functions call subclass implementations (see below) */
         void feed_input(Buffer *buffer);
-        void feed_expected(Buffer *buffer);
         void report_output(Buffer *buffer);
         void cycle();
 
         /* Adds properties to an engine report */
         virtual void report(Report* report) { }
 
-        /* Override to indicate IO type
-         * This is used by the environment to determine which hooks to call
-         */
+        /* Used by the environment to determine which hooks to call */
         IOTypeMask get_io_type(Layer *layer) const;
+        KeySet get_input_keys(Layer *layer) const;
+        KeySet get_output_keys(Layer *layer) const;
 
         /* Get the expected number of iterations according to a module
          * If the module is agnostic, it will return 0 */
@@ -75,7 +74,6 @@ class Module {
         /* Override to implement IO functionality and module state cycling.
          * If unused, do not override */
         virtual void feed_input_impl(Buffer *buffer) { }
-        virtual void feed_expected_impl(Buffer *buffer) { }
         virtual void report_output_impl(Buffer *buffer) { }
         virtual void cycle_impl() { }
 
@@ -98,10 +96,17 @@ class Module {
         void set_default_io_type(IOTypeMask io_type);
         void set_io_type(IOTypeMask io_type);
         void set_io_type(Layer *layer, IOTypeMask io_type);
+        void add_input_auxiliary_key(std::string key);
+        void add_input_auxiliary_key(Layer *layer, std::string key);
+        void add_output_auxiliary_key(std::string key);
+        void add_output_auxiliary_key(Layer *layer, std::string key);
+        void add_missing_keys();
         OutputType get_output_type(Layer* layer);
 
         std::map<Layer*, OutputType> output_types;
         std::map<Layer*, IOTypeMask> io_types;
+        LayerKeyMap input_keys;
+        LayerKeyMap output_keys;
         bool verbose;
         int start_delay;
         int cutoff;

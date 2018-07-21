@@ -31,14 +31,13 @@ Engine::Engine(Context context)
 void Engine::build_environment(PropertyConfig args) {
     if (context.environment == nullptr) return;
 
-    /* Keep track of input and expected modules by layer
-     *   to check for coactivity conflicts */
+    /* Keep track of input modules by layer to check for coactivity conflicts */
     std::map<Layer*, std::vector<Module*>> input_modules;
-    std::map<Layer*, std::vector<Module*>> expected_modules;
 
     /* Build environmental buffer */
-    LayerList input_layers, expected_layers, output_layers;
+    LayerList input_layers, output_layers;
 
+    // Process each module config...
     for (auto config : context.environment->get_modules()) {
         // Skip if necessary
         if (config->get_bool("skip", false)) continue;
@@ -64,7 +63,7 @@ void Engine::build_environment(PropertyConfig args) {
                     "to: " + layer->str() + "\n" +
                     "    Module has zero IO type for layer!");
 
-            // Check for conflicting input/expected modules
+            // Check for conflicting input modules
             if (module_io_type & INPUT & layer_io_type) {
                 for (auto other : input_modules[layer])
                     if (module->is_coactive(other))
@@ -75,18 +74,14 @@ void Engine::build_environment(PropertyConfig args) {
                             "    Layer has conflicting input modules!");
                 input_modules[layer].push_back(module);
             }
-            if (module_io_type & EXPECTED & layer_io_type) {
-                for (auto other : expected_modules[layer])
-                    if (module->is_coactive(other))
-                        LOG_ERROR(
-                            "Error in environment model:\n"
-                            "  Error adding module " + config->get("type") +
-                            "to: " + layer->str() + "\n" +
-                            "    Layer has conflicting expected modules!");
-                expected_modules[layer].push_back(module);
-            }
 
             this->io_types[layer] = layer_io_type | module_io_type;
+
+            // Track any auxiliary data used as input or output
+            for (auto key : module->get_input_keys(layer))
+                input_keys[layer].insert(key);
+            for (auto key : module->get_output_keys(layer))
+                output_keys[layer].insert(key);
         }
     }
 
@@ -94,13 +89,13 @@ void Engine::build_environment(PropertyConfig args) {
     for (auto pair : io_types) {
         if (pair.second & INPUT)    input_layers.push_back(pair.first);
         if (pair.second & OUTPUT)   output_layers.push_back(pair.first);
-        if (pair.second & EXPECTED) expected_layers.push_back(pair.first);
     }
 
     // Construct buffer
     buffer = build_buffer(
         ResourceManager::get_instance()->get_host_id(),
-            input_layers, output_layers, expected_layers);
+            input_layers, output_layers,
+            input_keys, output_keys);
 }
 
 void Engine::build_clusters(PropertyConfig args) {
@@ -175,6 +170,8 @@ void Engine::clear() {
     for (auto module : modules) delete module;
     modules.clear();
     io_types.clear();
+    input_keys.clear();
+    output_keys.clear();
 
     // Clear resources
     ResourceManager::get_instance()->delete_streams();
@@ -216,10 +213,8 @@ void Engine::single_thread_loop() {
         /**************************/
         /*** Read sensory input ***/
         /**************************/
-        for (auto& module : this->modules) {
+        for (auto& module : this->modules)
             module->feed_input(buffer);
-            module->feed_expected(buffer);
-        }
         for (auto& cluster : clusters) cluster->launch_input();
         for (auto& cluster : clusters) cluster->wait_for_input();
 
@@ -394,10 +389,8 @@ void Engine::environment_loop() {
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT_THREAD);
-        for (auto& module : this->modules) {
+        for (auto& module : this->modules)
             module->feed_input(buffer);
-            module->feed_expected(buffer);
-        }
         sensory_lock.pass(NETWORK_THREAD);
 
         // Read motor buffer

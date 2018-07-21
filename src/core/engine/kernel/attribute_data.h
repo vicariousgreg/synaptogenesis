@@ -17,7 +17,6 @@ class AttributeData {
         /* IO pointers */
         Pointer<float> input;
         Pointer<Output> output;
-        Pointer<Output> expected;
 
         /* Layer properties */
         const int size;

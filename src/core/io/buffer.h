@@ -2,6 +2,7 @@
 #define buffer_h
 
 #include <vector>
+#include <set>
 #include <map>
 
 #include "network/layer.h"
@@ -10,10 +11,15 @@
 
 class Network;
 
+typedef std::set<std::string> KeySet;
+typedef std::map<Layer*, KeySet> LayerKeyMap;
+
 class Buffer {
     public:
-        Buffer(LayerList input_layers, LayerList output_layers,
-            LayerList expected_layers, DeviceID device_id);
+        Buffer(DeviceID device_id,
+            LayerList input_layers, LayerList output_layers,
+            LayerKeyMap input_keys = {},
+            LayerKeyMap output_keys = {});
         virtual ~Buffer();
 
         std::vector<BasePointer*> get_pointers();
@@ -21,38 +27,36 @@ class Buffer {
         /* IO setters */
         void set_input(Layer *layer, Pointer<float> source);
         void set_output(Layer *layer, Pointer<Output> source);
-        void set_expected(Layer *layer, Pointer<Output> source);
 
         /* IO getters */
         Pointer<float> get_input(Layer *layer);
         Pointer<Output> get_output(Layer *layer);
-        Pointer<Output> get_expected(Layer *layer);
+        BasePointer* get_input_auxiliary(Layer *layer, std::string key);
+        BasePointer* get_output_auxiliary(Layer *layer, std::string key);
 
         /* Dirty */
         bool get_input_dirty(Layer *layer) const;
         bool set_input_dirty(Layer *layer, bool dirty=true);
-        bool get_expected_dirty(Layer *layer) const;
-        bool set_expected_dirty(Layer *layer, bool dirty=true);
+        bool get_auxiliary_dirty(Layer *layer, std::string key) const;
+        bool set_auxiliary_dirty(Layer *layer, std::string key, bool dirty=true);
 
         const DeviceID device_id;
 
     protected:
-        Pointer<float> input;
-        Pointer<Output> output;
-        Pointer<Output> expected;
+        // Buffer data
+        std::map<Layer*, Pointer<float>*> input;
+        std::map<Layer*, Pointer<Output>*> output;
+        std::map<Layer*, std::map<std::string, BasePointer*>> input_auxiliary;
+        std::map<Layer*, std::map<std::string, BasePointer*>> output_auxiliary;
 
-        int input_size;
-        int output_size;
-        int expected_size;
-
+        // Dirty maps for input data
         std::map<Layer*, bool> input_dirty_map;
-        std::map<Layer*, bool> expected_dirty_map;
-        std::map<Layer*, int> input_map;
-        std::map<Layer*, int> output_map;
-        std::map<Layer*, int> expected_map;
+        std::map<Layer*, std::map<std::string, bool>> auxiliary_dirty_map;
 };
 
 Buffer *build_buffer(DeviceID device_id,
-    LayerList input_layers, LayerList output_layers, LayerList expected_layers);
+    LayerList input_layers, LayerList output_layers,
+    LayerKeyMap input_keys = {},
+    LayerKeyMap output_keys = {});
 
 #endif

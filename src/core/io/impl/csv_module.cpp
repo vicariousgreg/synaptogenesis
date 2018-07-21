@@ -107,17 +107,22 @@ void CSVInputModule::feed_input_impl(Buffer *buffer) {
 
 CSVExpectedModule::CSVExpectedModule(LayerList layers, ModuleConfig *config)
         : CSVReaderModule(layers, config) {
-    set_io_type(EXPECTED);
-    for (auto layer : layers)
+    set_io_type(INPUT);
+    add_input_auxiliary_key("expected");
+    for (auto layer : layers) {
         if (output_types[layer] != FLOAT)
             LOG_ERROR(
                 "CSVExpectedModule currently only supports FLOAT output type.");
+    }
 }
 
-void CSVExpectedModule::feed_expected_impl(Buffer *buffer) {
+void CSVExpectedModule::feed_input_impl(Buffer *buffer) {
     if (curr_iteration % exposure == 0)
-        for (auto layer : layers)
-            buffer->set_expected(layer, this->pointers[curr_row].cast<Output>());
+        for (auto layer : layers) {
+            auto exp = Pointer<float>(
+                buffer->get_input_auxiliary(layer, "expected"));
+            this->pointers[curr_row].copy_to(exp);
+        }
 }
 
 /******************************************************************************/
@@ -166,7 +171,7 @@ void CSVOutputModule::report_output_impl(Buffer *buffer) {
 
 CSVEvaluatorModule::CSVEvaluatorModule(LayerList layers, ModuleConfig *config)
         : CSVExpectedModule(layers, config) {
-    set_io_type(EXPECTED | OUTPUT);
+    set_io_type(INPUT | OUTPUT);
     for (auto layer : layers) {
         this->correct[layer] = 0;
         this->total_SSE[layer] = 0;

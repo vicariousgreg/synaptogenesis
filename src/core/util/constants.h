@@ -53,7 +53,6 @@ union Output {
 typedef enum {
     INPUT = 1,
     OUTPUT = 2,
-    EXPECTED = 4,
 } IOType;
 
 typedef unsigned char IOTypeMask;

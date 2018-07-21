@@ -53,11 +53,16 @@ Module::Module(LayerList layers, ModuleConfig *config)
         if (layer_config->get_bool("input", false))
             set_io_type(layer, get_io_type(layer) | INPUT);
 
-        if (layer_config->get_bool("expected", false))
-            set_io_type(layer, get_io_type(layer) | EXPECTED);
-
         if (layer_config->get_bool("output", false))
             set_io_type(layer, get_io_type(layer) | OUTPUT);
+
+        if (layer_config->has_array("input keys"))
+            for (auto key : layer_config->get_array("input keys"))
+                add_input_auxiliary_key(layer, key);
+
+        if (layer_config->has_array("output keys"))
+            for (auto key : layer_config->get_array("output keys"))
+                add_output_auxiliary_key(layer, key);
     }
 
     this->verbose = config->get_bool("verbose", false);
@@ -91,19 +96,6 @@ void Module::feed_input(Buffer *buffer) {
     }
 }
 
-void Module::feed_expected(Buffer *buffer) {
-    if (start_delay <= 0) {
-        if (cutoff == 0 or curr_iteration < cutoff) {
-            if (curr_iteration % rate == 0)
-                feed_expected_impl(buffer);
-        } else if (curr_iteration == cutoff) {
-            for (auto layer : layers)
-                if (get_io_type(layer) & EXPECTED)
-                    fSet((float*)buffer->get_expected(layer).get(), layer->size, 0.0);
-        }
-    }
-}
-
 void Module::report_output(Buffer *buffer) {
     if (start_delay <= 0
             and (cutoff == 0 or curr_iteration < cutoff)
@@ -130,9 +122,17 @@ IOTypeMask Module::get_io_type(Layer *layer) const {
     }
 }
 
+KeySet Module::get_input_keys(Layer *layer) const {
+    return input_keys.at(layer);
+}
+
+KeySet Module::get_output_keys(Layer *layer) const {
+    return output_keys.at(layer);
+}
+
 /*
  * Checks if two modules are coactive
- * A layer can have two input or expected modules if and only if they are not
+ * A layer can have two input modules if and only if they are not
  *   active at the same time due to start delays and cutoff iterations
  * This method is used by the Engine to check for this
  */
@@ -169,7 +169,11 @@ Module* Module::build_module(Network *network, ModuleConfig *config) {
         return nullptr;
     } else {
         // Build using layers and config
-        return bank->build_pointers.at(type)(layers, config);
+        auto module = bank->build_pointers.at(type)(layers, config);
+
+        // Ensure that input/output layers have keys
+        module->add_missing_keys();
+        return module;
     }
 }
 
@@ -240,6 +244,44 @@ void Module::set_io_type(IOTypeMask io_type) {
 
 void Module::set_io_type(Layer *layer, IOTypeMask io_type) {
     io_types[layer] = io_type;
+}
+
+void Module::add_input_auxiliary_key(std::string key) {
+    for (auto layer : layers) {
+        input_keys[layer].insert(key);
+        set_io_type(layer, get_io_type(layer) | INPUT);
+    }
+}
+
+void Module::add_input_auxiliary_key(Layer *layer, std::string key) {
+    input_keys[layer].insert(key);
+    set_io_type(layer, get_io_type(layer) | INPUT);
+}
+
+void Module::add_output_auxiliary_key(std::string key) {
+    for (auto layer : layers) {
+        output_keys[layer].insert(key);
+        set_io_type(layer, get_io_type(layer) | OUTPUT);
+    }
+}
+
+void Module::add_output_auxiliary_key(Layer *layer, std::string key) {
+    output_keys[layer].insert(key);
+    set_io_type(layer, get_io_type(layer) | OUTPUT);
+}
+
+void Module::add_missing_keys() {
+    for (auto layer : layers) {
+        KeySet keys = input_keys[layer];
+
+        if (keys.size() == 0 and (get_io_type(layer) & INPUT))
+            input_keys[layer].insert("input");
+
+        keys = output_keys[layer];
+
+        if (keys.size() == 0 and (get_io_type(layer) & OUTPUT))
+            output_keys[layer].insert("output");
+    }
 }
 
 OutputType Module::get_output_type(Layer *layer) {

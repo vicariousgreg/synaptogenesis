@@ -145,10 +145,10 @@ void State::build(std::set<DeviceID> devices) {
             if (layer_devices[layer] == device_id)
                 device_layers.push_back(layer);
 
-        // Set up input/expected buffer for device layers
+        // Set up input buffer for device layers
         // No need for output, which is streamed straight off device
         auto buffer =
-            build_buffer(device_id, device_layers, LayerList(), device_layers);
+            build_buffer(device_id, device_layers, LayerList());
         internal_buffers[device_id] = buffer;
 
         // Set up inter-device buffers (one per word index)
@@ -170,7 +170,7 @@ void State::build(std::set<DeviceID> devices) {
         std::map<int, Buffer*> buffer_map;
         for (auto pair : inter_device_layers)
             buffer_map[pair.first] = build_buffer(
-                device_id, LayerList(), pair.second, LayerList());
+                device_id, LayerList(), pair.second);
 
         // Set the inter device buffer
         inter_device_buffers[device_id] = buffer_map;
@@ -439,16 +439,6 @@ Pointer<float> State::get_second_order_weights(DendriticNode *node) const {
     }
 }
 
-Pointer<Output> State::get_expected(Layer *layer) const {
-    try {
-        return attributes.at(layer)->get_expected();
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to get expected data in State for "
-            "layer: " + layer->str());
-    }
-}
-
 Pointer<Output> State::get_output(Layer *layer, int word_index) const {
     // If -1, use last index (most recent output)
     while (word_index < 0)
@@ -471,17 +461,6 @@ Pointer<float> State::get_buffer_input(Layer *layer) const {
         LOG_ERROR(
             "Failed to get buffer input data in State for "
             "layer: " + layer->str());
-    }
-}
-
-Pointer<Output> State::get_buffer_expected(Layer *layer) const {
-    try {
-        return
-            internal_buffers.at(layer_devices.at(layer))->get_expected(layer);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to get buffer expected data in State for "
-            "unrepresented layer: " + layer->str());
     }
 }
 
@@ -626,8 +605,6 @@ bool State::get_transpose_flag(Connection *conn) const {
 }
 
 BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
-    transfer_to_host();
-
     try {
         return attributes.at(layer)->get_neuron_data(key);
     } catch (std::out_of_range) {
@@ -638,7 +615,6 @@ BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
 }
 
 BasePointer* State::get_layer_data(Layer *layer, std::string key) {
-    transfer_to_host();
     // TODO
     return nullptr;
 
@@ -654,7 +630,6 @@ BasePointer* State::get_layer_data(Layer *layer, std::string key) {
 }
 
 BasePointer* State::get_connection_data(Connection *conn, std::string key) {
-    transfer_to_host();
     // TODO
     return nullptr;
 

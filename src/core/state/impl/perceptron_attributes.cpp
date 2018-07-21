@@ -49,10 +49,10 @@ KernelList<SYNAPSE_ARGS> PerceptronAttributes::get_activators(Connection *conn) 
 #define LEARNING_RATE 0.05
 
 CALC_ALL(update_perceptron,
-    float* expecteds =
-        (float*)(synapse_data.attributes->expected.get());
+    float* expected_output =
+        ((PerceptronAttributes*)synapse_data.attributes)->expected_output.get();
     ,
-    float delta = expecteds[to_index] - destination_outputs[to_index].f;
+    float delta = expected_output[to_index] - destination_outputs[to_index].f;
     ,
     weights[weight_index] += LEARNING_RATE * delta * outputs[from_index].f;
     ,
@@ -76,4 +76,7 @@ KernelList<SYNAPSE_ARGS> PerceptronAttributes::get_updaters(Connection *conn) {
 /******************************************************************************/
 
 PerceptronAttributes::PerceptronAttributes(Layer *layer)
-        : Attributes(layer, FLOAT) { }
+        : Attributes(layer, FLOAT) {
+    this->expected_output = Attributes::create_neuron_variable<float>();
+    Attributes::register_neuron_variable("expected", &expected_output);
+}

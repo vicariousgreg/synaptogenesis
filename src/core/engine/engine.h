@@ -67,9 +67,10 @@ class Engine {
 
         Buffer* get_buffer() { return buffer; }
         IOTypeMask get_io_type(Layer *layer) { return io_types[layer]; }
+        KeySet get_input_keys(Layer* layer) { return input_keys[layer]; }
+        KeySet get_output_keys(Layer* layer) { return output_keys[layer]; }
         bool is_input(Layer *layer) { return get_io_type(layer) & INPUT; }
         bool is_output(Layer *layer) { return get_io_type(layer) & OUTPUT; }
-        bool is_expected(Layer *layer) { return get_io_type(layer) & EXPECTED; }
 
         size_t get_buffer_bytes() const;
 
@@ -95,6 +96,8 @@ class Engine {
         ModuleList modules;
         std::map<Layer*, IOTypeMask> io_types;
         bool suppress_output;
+        LayerKeyMap input_keys;
+        LayerKeyMap output_keys;
 
         // Running data
         Lock sensory_lock;

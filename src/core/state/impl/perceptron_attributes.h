@@ -10,6 +10,8 @@ class PerceptronAttributes : public Attributes {
         virtual KernelList<SYNAPSE_ARGS> get_activators(Connection *conn);
         virtual KernelList<SYNAPSE_ARGS> get_updaters(Connection *conn);
 
+        Pointer<float> expected_output;
+
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };

@@ -55,7 +55,6 @@ class Attributes {
         // Layer data retrieval
         Pointer<float> get_input(int register_index = 0) const;
         Pointer<Output> get_output(int word_index = 0) const;
-        Pointer<Output> get_expected() const;
 
         // Getters for external use
         BasePointer* get_neuron_data(std::string key);
@@ -63,7 +62,6 @@ class Attributes {
         // Neuron IO data
         const OutputType output_type;
         Pointer<Output> output;
-        Pointer<Output> expected;
         Pointer<float> input;
         int input_register_count;
         int output_register_count;

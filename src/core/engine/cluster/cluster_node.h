@@ -60,14 +60,11 @@ class ClusterNode {
 
         Instruction *init_instruction;
 
-        bool is_input;
         Instruction *input_instruction;
+        std::vector<Instruction*> input_auxiliary_instructions;
 
-        bool is_expected;
-        Instruction *expected_instruction;
-
-        bool is_output;
         Instruction *output_instruction;
+        std::vector<Instruction*> output_auxiliary_instructions;
 };
 
 #endif

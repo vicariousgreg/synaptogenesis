@@ -1,3 +1,8 @@
+allow IO of arbitrary attributes
+* homogenize access
+  - no separate input/input_auxiliary
+* use Output union type for all data transfer
+
 weight config list
 * sequence of operations
 * indices, distances, delays

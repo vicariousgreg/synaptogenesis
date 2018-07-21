@@ -7,7 +7,6 @@ REGISTER_MODULE(SocketModule, "socket");
 SocketModule::SocketModule(LayerList layers, ModuleConfig *config)
         : Module(layers, config),
           stream_input(false),
-          stream_expected(false),
           stream_output(false) {
     enforce_equal_layer_sizes("socket");
     enforce_specified_io_type("socket");
@@ -16,11 +15,10 @@ SocketModule::SocketModule(LayerList layers, ModuleConfig *config)
 
     auto io_type = get_io_type(layers[0]);
     this->stream_input = io_type == INPUT;
-    this->stream_expected = io_type == EXPECTED;
     this->stream_output = io_type == OUTPUT;
 
     // Ensure one IO type
-    if (stream_input + stream_expected + stream_output > 1)
+    if (stream_input and stream_output)
         LOG_ERROR("Cannot use same SocketModule for more than one IO type!");
 
     // Create buffer if multiple layers
@@ -104,22 +102,6 @@ void SocketModule::feed_input_impl(Buffer *buffer) {
         for (auto layer : layers)
             if (get_io_type(layer) & INPUT)
                 buffer->set_input(layer, this->local_buffer);
-    }
-}
-
-void SocketModule::feed_expected_impl(Buffer *buffer) {
-    if (not stream_expected) return;
-
-    if (single_layer) {
-        // If there's only one layer, stream directly into layer buffer
-        get_mesg(client, buffer->get_expected(layers[0]).get(), buffer_bytes);
-    } else {
-        // Otherwise, stream into local buffer and copy
-        get_mesg(client, local_buffer.get(), buffer_bytes);
-
-        for (auto layer : layers)
-            if (get_io_type(layer) & EXPECTED)
-                buffer->set_expected(layer, this->local_buffer.cast<Output>());
     }
 }
 

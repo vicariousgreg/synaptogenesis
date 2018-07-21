@@ -13,11 +13,10 @@ class SocketModule : public Module {
         SocketModule(LayerList layers, ModuleConfig *config);
 
         void feed_input_impl(Buffer *buffer);
-        void feed_expected_impl(Buffer *buffer);
         void report_output_impl(Buffer *buffer);
 
     protected:
-        bool stream_input, stream_expected, stream_output;
+        bool stream_input, stream_output;
         bool single_layer;
         int server, client;
         struct sockaddr_in myaddr;

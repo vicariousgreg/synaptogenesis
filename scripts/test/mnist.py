@@ -1,4 +1,14 @@
-from syngen import Network, Environment, get_cpu, get_gpus
+from syngen import Network, Environment, get_cpu, get_gpus, set_debug
+from syngen import create_io_callback, FloatArray
+
+set_debug(True)
+
+# Create test callback
+def callback(ID, size, ptr):
+    arr = FloatArray(size, ptr)
+    print(arr.to_list())
+
+create_io_callback("test", callback)
 
 data_path = "/mnt/HDD/datasets/mnist/processed/"
 # data_path = "./resources"
@@ -88,6 +98,19 @@ modules = [
             }
         ]
     },
+#    {
+#        "type" : "callback",
+#        "layers" : [
+#            {
+#                "structure" : "mnist",
+#                "layer" : "output_layer",
+#                "output" : True,
+#                "function" : "test",
+#                "id" : 0,
+#                "output keys" : ["input", "output"]
+#            }
+#        ]
+#    }
 ]
 
 # Create training environment

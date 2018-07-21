@@ -8,11 +8,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
         Stream *io_stream, Stream *compute_stream)
         : to_layer(layer),
           device_id(state->get_device_id(layer)),
-          is_input(engine->is_input(layer)),
-          is_expected(engine->is_expected(layer)),
-          is_output(engine->is_output(layer)),
           input_instruction(nullptr),
-          expected_instruction(nullptr),
           output_instruction(nullptr),
           state_update_instruction(nullptr),
           state_learning_instruction(nullptr),
@@ -21,19 +17,28 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
           state(state),
           engine(engine) {
     // Add input transfer instruction
-    if (this->is_input)
-        this->input_instruction =
-            new InputTransferInstruction(
-                to_layer, state, engine, compute_stream);
+    if (engine->is_input(layer)) {
+        auto keys = engine->get_input_keys(layer);
 
-    if (this->is_expected)
-        this->expected_instruction =
-            new ExpectedTransferInstruction(
-                to_layer, state, engine, compute_stream);
+        // Add auxiliary input instructions
+        for (auto key : keys) {
+            LOG_DEBUG("Adding input key " + key +
+                " for layer " + layer->str() + "\n");
+
+            if (key == "input")
+                this->input_instruction =
+                    new InputTransferInstruction(
+                        to_layer, state, engine, compute_stream);
+            else
+                input_auxiliary_instructions.push_back(
+                    new InputAuxiliaryTransferInstruction(key,
+                        to_layer, state, engine, compute_stream));
+        }
+    }
 
     // Add init (init / clear) instruction
     this->init_instruction = get_initialize_instruction(
-        to_layer, state, compute_stream, this->is_input);
+        to_layer, state, compute_stream, input_instruction != nullptr);
     if (init_instruction != nullptr)
         activate_instructions.push_back(init_instruction);
 
@@ -55,26 +60,43 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
     dendrite_DFS(to_layer->get_dendritic_root());
 
     // Add output transfer instruction
-    if (this->is_output) {
-        this->output_instruction =
-            new OutputTransferInstruction(
-                to_layer, state, engine, io_stream);
+    if (engine->is_output(layer)) {
+        auto keys = engine->get_output_keys(layer);
 
-        // Ensure output and state instructions depend on one another
-        output_instruction->add_dependency(state_update_instruction);
-        state_update_instruction->add_dependency(output_instruction);
+        // Add auxiliary output instructions
+        for (auto key : keys) {
+            LOG_DEBUG("Adding output key " + key +
+                " for layer " + layer->str() + "\n");
+
+            Instruction *inst = nullptr;
+
+            if (key == "output") {
+                inst = this->output_instruction =
+                    new OutputTransferInstruction(
+                        to_layer, state, engine, io_stream);
+            } else {
+                inst = new OutputAuxiliaryTransferInstruction(key,
+                    to_layer, state, engine, io_stream);
+                output_auxiliary_instructions.push_back(inst);
+            }
+
+            // Ensure output and state instructions depend on one another
+            inst->add_dependency(state_update_instruction);
+            state_update_instruction->add_dependency(inst);
+        }
     }
 }
 
 ClusterNode::~ClusterNode() {
     for (auto& inst : this->activate_instructions) delete inst;
     for (auto& inst : this->update_instructions) delete inst;
-    if (is_input) delete input_instruction;
-    if (is_expected) delete expected_instruction;
-    if (is_output) delete output_instruction;
+    if (input_instruction != nullptr) delete input_instruction;
+    if (output_instruction != nullptr) delete output_instruction;
     delete state_update_instruction;
     if (state_learning_instruction != nullptr)
         delete state_learning_instruction;
+    for (auto& inst : input_auxiliary_instructions) delete inst;
+    for (auto& inst : output_auxiliary_instructions) delete inst;
 }
 
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
@@ -167,10 +189,10 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
 }
 
 void ClusterNode::activate_input() {
-    if (this->is_input)
+    if (input_instruction != nullptr)
         input_instruction->activate();
-    if (this->is_expected)
-        expected_instruction->activate();
+    for (auto& inst : input_auxiliary_instructions)
+        inst->activate();
 }
 
 void ClusterNode::activate_state() {
@@ -178,16 +200,24 @@ void ClusterNode::activate_state() {
 }
 
 void ClusterNode::activate_output() {
-    if (this->is_output) output_instruction->activate();
+    if (output_instruction != nullptr)
+        output_instruction->activate();
+    for (auto& inst : output_auxiliary_instructions)
+        inst->activate();
 }
 
 void ClusterNode::synchronize_input() {
-    if (is_input)    input_instruction->synchronize();
-    if (is_expected) expected_instruction->synchronize();
+    if (input_instruction != nullptr)
+        input_instruction->synchronize();
+    for (auto& inst : input_auxiliary_instructions)
+        inst->synchronize();
 }
 
 void ClusterNode::synchronize_output() {
-    if (is_output) output_instruction->synchronize();
+    if (output_instruction != nullptr)
+        output_instruction->synchronize();
+    for (auto& inst : output_auxiliary_instructions)
+        inst->synchronize();
 }
 
 const InstructionList& ClusterNode::get_activate_instructions() const {

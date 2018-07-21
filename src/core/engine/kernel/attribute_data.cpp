@@ -6,7 +6,6 @@ AttributeData::AttributeData(Layer *layer, State *state) :
         attributes(state->get_attributes_pointer(layer)),
         input(state->get_input(layer)),
         output(state->get_output(layer)),
-        expected(state->get_expected(layer)),
         size(layer->size),
         num_weights(layer->get_num_weights()),
         plastic(layer->plastic) {

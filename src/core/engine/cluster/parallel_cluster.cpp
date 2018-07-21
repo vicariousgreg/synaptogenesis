@@ -23,10 +23,10 @@ ParallelCluster::ParallelCluster(Structure *structure,
     /* Schedule instructions */
     // Find all instructions with INPUT flag
     pre_input_instructions =
-        sort_instructions(engine, 0, INPUT | EXPECTED, false);
+        sort_instructions(engine, 0, INPUT, false);
     // Find all instructions without INPUT flag
     post_input_instructions =
-        sort_instructions(engine, INPUT | EXPECTED, 0, false);
+        sort_instructions(engine, INPUT, 0, false);
     // Find all plastic instructions
     plastic_instructions = sort_instructions(engine, 0, 0, true);
 }

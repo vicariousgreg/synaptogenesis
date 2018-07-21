@@ -8,7 +8,6 @@ class CallbackModule : public Module {
         CallbackModule(LayerList layers, ModuleConfig *config);
 
         void feed_input_impl(Buffer *buffer);
-        void feed_expected_impl(Buffer *buffer);
         void report_output_impl(Buffer *buffer);
 
     protected:

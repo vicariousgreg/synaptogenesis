@@ -26,7 +26,6 @@ Attributes::Attributes(Layer *layer, OutputType output_type)
         1 + get_word_index(layer->get_max_delay(), output_type);
 
     this->input = Pointer<float>(input_register_count * layer->size, 0.0);
-    this->expected = Pointer<Output>(layer->size);
     this->output = Pointer<Output>(output_register_count * layer->size);
 
     // Set up weight matrices
@@ -40,7 +39,6 @@ Attributes::Attributes(Layer *layer, OutputType output_type)
 Attributes::~Attributes() {
     this->input.free();
     this->output.free();
-    this->expected.free();
     for (auto pair : neuron_variables) pair.second->free();
     for (auto matrix : weight_matrices) delete matrix.second;
 
@@ -99,8 +97,6 @@ std::map<PointerKey, BasePointer*> Attributes::get_pointer_map() {
         layer->id, "input", input.get_bytes())] = &input;
     pointers[PointerKey(
         layer->id, "output", output.get_bytes())] = &output;
-    pointers[PointerKey(
-        layer->id, "expected", expected.get_bytes())] = &expected;
     for (auto pair : neuron_variables)
         pointers[PointerKey(
             layer->id, pair.first,
@@ -154,6 +150,8 @@ void Attributes::register_neuron_variable(
 
 BasePointer* Attributes::get_neuron_data(std::string key) {
     try {
+        if (key == "input") return &input;
+        else if (key == "output") return &output;
         return neuron_variables.at(key);
     } catch (std::out_of_range) {
         LOG_ERROR(
@@ -169,10 +167,6 @@ Pointer<float> Attributes::get_input(int register_index) const {
             "Failed to retrieve input data in Attributes for index: "
             + std::to_string(register_index));
     }
-}
-
-Pointer<Output> Attributes::get_expected() const {
-    return expected;
 }
 
 Pointer<Output> Attributes::get_output(int word_index) const {

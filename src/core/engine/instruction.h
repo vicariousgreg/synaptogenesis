@@ -472,24 +472,6 @@ class InputTransferInstruction : public BufferedTransferInstruction<float> {
         }
 };
 
-/* Transfers expected data */
-class ExpectedTransferInstruction : public BufferedTransferInstruction<Output> {
-    public:
-        ExpectedTransferInstruction(Layer *layer, State *state,
-            Engine *engine, Stream *stream)
-                : BufferedTransferInstruction(layer, stream,
-                      engine->get_buffer()->get_expected(layer),
-                      state->get_buffer_expected(layer),
-                      state->get_expected(layer),
-                      engine->get_buffer()) { }
-
-        virtual bool is_dirty() {
-            bool dirty = source_buffer->get_expected_dirty(to_layer);
-            if (dirty) source_buffer->set_expected_dirty(to_layer, false);
-            return dirty;
-        }
-};
-
 /* Transfers output data */
 class OutputTransferInstruction : public TransferInstruction<Output> {
     public:
@@ -498,6 +480,30 @@ class OutputTransferInstruction : public TransferInstruction<Output> {
                 : TransferInstruction(layer, stream,
                       state->get_output(layer),
                       engine->get_buffer()->get_output(layer)) { }
+};
+
+/* Transfers auxiliary input data */
+class InputAuxiliaryTransferInstruction : public TransferInstruction<float> {
+    public:
+        InputAuxiliaryTransferInstruction(std::string key,
+            Layer *layer, State *state,
+            Engine *engine, Stream *stream)
+                : TransferInstruction(layer, stream,
+                      Pointer<float>(engine->get_buffer()
+                          ->get_input_auxiliary(layer, key)),
+                      Pointer<float>(state->get_neuron_data(layer, key))) { }
+};
+
+/* Transfers auxiliary output data */
+class OutputAuxiliaryTransferInstruction : public TransferInstruction<float> {
+    public:
+        OutputAuxiliaryTransferInstruction(std::string key,
+            Layer *layer, State *state,
+            Engine *engine, Stream *stream)
+                : TransferInstruction(layer, stream,
+                      Pointer<float>(state->get_neuron_data(layer, key)),
+                      Pointer<float>(engine->get_buffer()
+                          ->get_output_auxiliary(layer, key))) { }
 };
 
 /* Operates on neuron state */

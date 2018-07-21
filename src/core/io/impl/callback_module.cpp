@@ -26,23 +26,21 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
 }
 
 void CallbackModule::feed_input_impl(Buffer *buffer) {
-    for (auto layer : layers)
+    for (auto layer : layers) {
         if (get_io_type(layer) & INPUT) {
-            callbacks[layer](ids[layer], layer->size,
-                (void*)buffer->get_input(layer).get());
+            for (auto& key : get_input_keys(layer))
+                callbacks[layer](ids[layer], layer->size,
+                    buffer->get_input_auxiliary(layer, key)->get());
         }
-}
-
-void CallbackModule::feed_expected_impl(Buffer *buffer) {
-    for (auto layer : layers)
-        if (get_io_type(layer) & EXPECTED)
-            callbacks[layer](ids[layer], layer->size,
-                (void*)buffer->get_expected(layer).get());
+    }
 }
 
 void CallbackModule::report_output_impl(Buffer *buffer) {
-    for (auto layer : layers)
-        if (get_io_type(layer) & OUTPUT)
-            callbacks[layer](ids[layer], layer->size,
-                (void*)buffer->get_output(layer).get());
+    for (auto layer : layers) {
+        if (get_io_type(layer) & OUTPUT) {
+            for (auto& key : get_output_keys(layer))
+                callbacks[layer](ids[layer], layer->size,
+                    buffer->get_output_auxiliary(layer, key)->get());
+        }
+    }
 }
