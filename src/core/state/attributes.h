@@ -44,6 +44,9 @@ class Attributes {
         virtual KernelList<SYNAPSE_ARGS> get_updaters(Connection *conn)
             { return { }; }
 
+        // Pointer keys to initialize with input
+        virtual KeySet get_init_keys() { return { }; }
+
         // Weight matrix functions
         void process_weight_matrices();
         virtual void process_weight_matrix(WeightMatrix* matrix) { }

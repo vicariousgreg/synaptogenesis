@@ -567,6 +567,16 @@ KernelList<SYNAPSE_ARGS> State::get_updaters(Connection *conn) const {
     }
 }
 
+KeySet State::get_init_keys(Layer *layer) const {
+    try {
+        return attributes.at(layer)->get_init_keys();
+    } catch (std::out_of_range) {
+        LOG_ERROR(
+            "Failed to get init keys in State for "
+            "layer: " + layer->str());
+    }
+}
+
 Pointer<Output> State::get_device_output_buffer(
         Connection *conn, int word_index) const {
     try {

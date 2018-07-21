@@ -37,10 +37,16 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
     }
 
     // Add init (init / clear) instruction
-    this->init_instruction = get_initialize_instruction(
+    Instruction *init_instruction = get_initialize_instruction(
         to_layer, state, compute_stream, input_instruction != nullptr);
     if (init_instruction != nullptr)
         activate_instructions.push_back(init_instruction);
+
+    // Add any custom initialization instructions
+    for (auto key : state->get_init_keys(to_layer))
+        this->activate_instructions.push_back(
+            new AuxiliaryInitializeInstruction(
+                to_layer, state, compute_stream, key, 0.0, true));
 
     // Add state instructions
     this->state_update_instruction =
@@ -226,10 +232,6 @@ const InstructionList& ClusterNode::get_activate_instructions() const {
 
 const InstructionList& ClusterNode::get_update_instructions() const {
     return update_instructions;
-}
-
-Instruction* ClusterNode::get_init_instruction() const {
-    return init_instruction;
 }
 
 Instruction* ClusterNode::get_input_instruction() const {

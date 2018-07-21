@@ -2,7 +2,11 @@
 #define constants_h
 
 #include <map>
+#include <set>
+#include <string>
 #include "util/logger.h"
+
+typedef std::set<std::string> KeySet;
 
 /* Output type enumeration.
  * Different engines may use different output formats.

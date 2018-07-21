@@ -31,7 +31,6 @@ class ClusterNode {
 
         const InstructionList& get_activate_instructions() const;
         const InstructionList& get_update_instructions() const;
-        Instruction* get_init_instruction() const;
         Instruction* get_input_instruction() const;
         Instruction* get_state_update_instruction() const;
         Instruction* get_state_learning_instruction() const;
@@ -58,7 +57,6 @@ class ClusterNode {
         Instruction *state_update_instruction;
         Instruction *state_learning_instruction;
 
-        Instruction *init_instruction;
 
         Instruction *input_instruction;
         std::vector<Instruction*> input_auxiliary_instructions;

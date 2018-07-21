@@ -25,7 +25,12 @@ class Instruction {
                   child(nullptr) { }
         virtual ~Instruction() { }
 
-        virtual void activate() = 0;
+        void activate() {
+            Instruction::wait_for_dependencies();
+            this->activate_impl();
+            Instruction::record_event();
+        }
+        virtual void activate_impl() = 0;
 
         void wait_for_dependencies() {
             // If this instruction has a child, activate it first
@@ -101,11 +106,9 @@ class InterDeviceTransferInstruction : public Instruction {
                 ->create_event(source_device);
         }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             get_copy_pointer_kernel<Output>().schedule(
                 stream, 0, 0, src, dst, stream);
-            Instruction::record_event();
         }
 
         bool matches(Connection *conn, State *state) {
@@ -145,6 +148,31 @@ class InitializeInstruction : public Instruction {
         bool overwrite;
 };
 
+/* Instructions that initialize other attribute data without connections */
+class AuxiliaryInitializeInstruction : public Instruction {
+    public:
+        // Initialize layer buffers
+        AuxiliaryInitializeInstruction(Layer *layer, State *state,
+            Stream *stream, std::string key, float val, bool overwrite)
+                : Instruction(layer, stream),
+                  dst(state->get_neuron_data(layer, key)),
+                  size(layer->size),
+                  val(val),
+                  overwrite(overwrite) { }
+
+        void activate_impl() {
+            get_set_data().schedule(stream,
+                blocks, threads,
+                val, dst, size, overwrite);
+        }
+
+    protected:
+        Pointer<float> dst;
+        int size;
+        float val;
+        bool overwrite;
+};
+
 /* Clears inputs */
 class SetInstruction : public InitializeInstruction {
     public:
@@ -167,12 +195,10 @@ class SetInstruction : public InitializeInstruction {
             val = config->get_float("value", 1.0);
         }
 
-        void activate() {
-            wait_for_dependencies();
+        void activate_impl() {
             get_set_data().schedule(stream,
                 blocks, threads,
                 val, dst, size, overwrite);
-            Instruction::record_event();
         }
 
     protected:
@@ -190,14 +216,12 @@ class UniformNoiseInstruction : public InitializeInstruction {
             max = config->get_float("max", 1.0);
         }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             get_randomize_data_uniform().schedule(stream,
                 blocks, threads,
                 dst, size,
                 min, max,
                 overwrite);
-            Instruction::record_event();
         }
 
     protected:
@@ -214,14 +238,12 @@ class NormalNoiseInstruction : public InitializeInstruction {
             std_dev = config->get_float("std dev", 0.1);
         }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             get_randomize_data_normal().schedule(stream,
                 blocks, threads,
                 dst, size,
                 mean, std_dev,
                 overwrite);
-            Instruction::record_event();
         }
 
     protected:
@@ -245,14 +267,12 @@ class PoissonNoiseInstruction : public InitializeInstruction {
             }
         }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             get_randomize_data_poisson().schedule(stream,
                 blocks, threads,
                 dst, size,
                 val, rate,
                 overwrite, random_rates);
-            Instruction::record_event();
         }
 
     protected:
@@ -292,13 +312,11 @@ class SynapseActivateInstruction : public SynapseInstruction {
             }
         }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             for (auto& activator : activators)
                 activator.schedule(stream,
                     blocks, threads,
                     synapse_data);
-            Instruction::record_event();
         }
 
     protected:
@@ -320,7 +338,7 @@ class SynapseUpdateInstruction : public SynapseInstruction {
             }
         }
 
-        void activate() {
+        void activate_impl() {
             for (auto& updater : updaters)
                 updater.schedule(stream,
                     blocks, threads,
@@ -342,12 +360,10 @@ class DendriticInstruction : public Instruction {
                   dst(state->get_input(to_layer, parent->register_index)),
                   trail_value(child->init_val) { }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             get_calc_internal().schedule(
                 stream, blocks, threads,
                 to_layer->size, src, dst, aggregator, trail_value);
-            Instruction::record_event();
         }
 
     protected:
@@ -369,13 +385,11 @@ class TransposeInstruction : public Instruction {
                     matrix->get_rows(), matrix->get_columns());
         }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             get_transposer().schedule(
                 stream, blocks, threads,
                 matrix->get_weights(), matrix->get_weights_transposed(),
                 matrix->get_rows(), matrix->get_columns());
-            Instruction::record_event();
         }
 
         Connection* const connection;
@@ -397,11 +411,9 @@ class TransferInstruction : public Instruction {
             this->add_event();
         }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             get_copy_pointer_kernel<T>().schedule(
                 stream, 0, 0, src, dst, stream);
-            Instruction::record_event();
         }
 
     protected:
@@ -423,17 +435,13 @@ class BufferedTransferInstruction : public Instruction {
 
         virtual bool is_dirty() = 0;
 
-        void activate() {
-            Instruction::wait_for_dependencies();
-
+        void activate_impl() {
             if (is_dirty())
                 get_copy_pointer_kernel<T>().schedule(
                     stream, 0, 0, src, inter, stream);
 
             get_copy_pointer_kernel<T>().schedule(
                 stream, 0, 0, inter, dst, stream);
-
-            Instruction::record_event();
         }
 
     protected:
@@ -515,12 +523,10 @@ class StateInstruction : public Instruction {
               attribute_data(to_layer, state),
               attribute_kernel(attribute_kernel) { }
 
-        void activate() {
-            Instruction::wait_for_dependencies();
+        void activate_impl() {
             attribute_kernel.schedule(stream,
                 blocks, threads,
                 attribute_data);
-            Instruction::record_event();
         }
 
     protected:

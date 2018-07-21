@@ -12,11 +12,15 @@ class OscillatorAttributes : public Attributes {
 
         virtual KernelList<SYNAPSE_ARGS> get_activators(Connection *conn);
         virtual KernelList<SYNAPSE_ARGS> get_updaters(Connection *conn);
+        virtual KeySet get_init_keys() { return { "bold" }; }
 
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
         // Internal neural state
         Pointer<float> state;
+
+        // BOLD response (sum of absolute values of input)
+        Pointer<float> bold;
 
         // Baseline tonic activity
         float tonic;

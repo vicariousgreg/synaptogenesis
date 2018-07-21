@@ -11,7 +11,6 @@
 
 class Network;
 
-typedef std::set<std::string> KeySet;
 typedef std::map<Layer*, KeySet> LayerKeyMap;
 
 class Buffer {

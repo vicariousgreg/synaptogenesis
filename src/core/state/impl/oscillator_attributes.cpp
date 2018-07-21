@@ -20,6 +20,9 @@ OscillatorAttributes::OscillatorAttributes(Layer *layer)
 
     this->state = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("state", &state);
+
+    this->bold = Attributes::create_neuron_variable<float>(0.0);
+    Attributes::register_neuron_variable("bold", &bold);
 }
 
 void OscillatorWeightMatrix::register_variables() { }
@@ -73,7 +76,8 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
  * This one defines variable extraction, as in the attributes kernel above. */
 #define EXTRACT \
     OscillatorAttributes *oscillator_att = (OscillatorAttributes*)synapse_data.attributes; \
-    OscillatorWeightMatrix *oscillator_mat = (OscillatorWeightMatrix*)synapse_data.matrix;
+    OscillatorWeightMatrix *oscillator_mat = (OscillatorWeightMatrix*)synapse_data.matrix; \
+    float* bold = oscillator_att->bold.get();
 
 /* This macro defines what happens for each neuron before weight iteration.
  * Here is where neuron specific data should be extracted or initialized */
@@ -88,7 +92,8 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     Output from_out = outputs[from_index]; \
     float weight = weights[weight_index]; \
     float val = extract(from_out, delay) * weight; \
-    sum += val;
+    sum += val; \
+    bold[to_index] += abs(sum);
 
 /* This macro defines what happens for each neuron after weight iteration.
  * The provided calc function will use the operation designated by the opcode */
