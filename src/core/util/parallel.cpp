@@ -1,17 +1,48 @@
 #include "util/parallel.h"
 #include "util/resources/pointer.h"
 
+void init_rand(int count) {
+    init_cuda_rand(count);
+    init_openmp_rand();
+}
+
+void free_rand() {
+    free_cuda_rand();
+    free_openmp_rand();
+}
+
+#ifdef _OPENMP
+#include "util/tools.h"
+#endif
+
+void init_openmp_rand() {
+#ifdef _OPENMP
+    std::random_device r;
+
+    // Create one random generator per OpenMP thread
+    // Seed with random_device + thread index
+    for (int i = 0 ; i < omp_get_num_threads() ; ++i)
+        generators.push_back(std::mt19937(r() + i));
+#endif
+}
+
+void free_openmp_rand() {
+#ifdef _OPENMP
+    generators.clear();
+#endif
+}
+
 #ifdef __CUDACC__
 
 int calc_threads(int computations) {
-    if (computations < IDEAL_THREADS) {
-        int threads = 2;
-        while (threads < computations)
-            threads *= 2;
-        return threads;
-    } else {
+    // Avoid using too few threads
+    // Max out with IDEAL_THREADS
+    if (computations < IDEAL_THREADS / 2)
+        return IDEAL_THREADS / 4;
+    else if (computations < IDEAL_THREADS)
+        return IDEAL_THREADS / 2;
+    else
         return IDEAL_THREADS;
-    }
 }
 
 int calc_blocks(int computations, int threads) {
@@ -83,7 +114,11 @@ GLOBAL void init_curand(int count){
         curand_init(clock64(), idx, 0, &cuda_rand_states[idx]);
 }
 
-void init_rand(int count) {
+void init_cuda_rand(int count) {
+    // Free existing random generators
+    free_cuda_rand();
+
+    // Initialize CUDA random generators
     int prev_device;
     cudaGetDevice(&prev_device);
     for (int i = 0; i < get_num_cuda_devices(); ++i) {
@@ -91,13 +126,12 @@ void init_rand(int count) {
         curandState_t* states;
         cudaMalloc((void**) &states, count * sizeof(curandState_t));
         cudaMemcpyToSymbol(cuda_rand_states, &states, sizeof(void *));
-        init_curand
-            <<<calc_blocks(count), calc_threads(count)>>>(count);
+        init_curand<<<calc_blocks(count), calc_threads(count)>>>(count);
     }
     cudaSetDevice(prev_device);
 }
 
-void free_rand() {
+void free_cuda_rand() {
     int prev_device;
     cudaGetDevice(&prev_device);
     for (int i = 0; i < get_num_cuda_devices(); ++i) {

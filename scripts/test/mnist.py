@@ -133,7 +133,7 @@ device = gpus[-1] if len(gpus) > 0 else get_cpu()
 train = True
 if (train):
     # Run training
-    print(network.run(train_env, {"multithreaded" : False,
+    print(network.run(train_env, {"multithreaded" : True,
                                   "devices" : device,
                                   "worker threads" : 0,
                                   "verbose" : False}))

@@ -49,6 +49,7 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     float tau = att->tau;
     float decay = att->decay;
     float* state = att->state.get();
+    float* bold = ((OscillatorAttributes*)att)->bold.get();
 
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience
@@ -57,7 +58,9 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     ,
 
     float st = state[nid];
-    state[nid] = st = st + (tau * inputs[nid]) + (decay * (tonic-st));
+    float recur = st + (decay * (tonic-st));
+    state[nid] = st = (tau * inputs[nid]) + recur;
+    bold[nid] += recur;
 
     SHIFT_FLOAT_OUTPUTS(f_outputs, MAX(0.0f, tanh(st)));
     // SHIFT_FLOAT_OUTPUTS(f_outputs, MAX(0.0f, st));
@@ -93,7 +96,7 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     float weight = weights[weight_index]; \
     float val = extract(from_out, delay) * weight; \
     sum += val; \
-    bold[to_index] += abs(sum);
+    bold[to_index] += abs(val);
 
 /* This macro defines what happens for each neuron after weight iteration.
  * The provided calc function will use the operation designated by the opcode */

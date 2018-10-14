@@ -213,10 +213,10 @@ void Engine::single_thread_loop() {
         /**************************/
         /*** Read sensory input ***/
         /**************************/
+        for (auto& cluster : clusters) cluster->wait_for_input();
         for (auto& module : this->modules)
             module->feed_input(buffer);
         for (auto& cluster : clusters) cluster->launch_input();
-        for (auto& cluster : clusters) cluster->wait_for_input();
 
         /****************************/
         /*** Perform computations ***/
@@ -235,9 +235,7 @@ void Engine::single_thread_loop() {
         if (i % environment_rate == 0) {
             for (auto& cluster : clusters) cluster->launch_output();
             for (auto& cluster : clusters) cluster->wait_for_output();
-        }
 
-        if (i % environment_rate == 0) {
             // Stream output and update UI
             if (not suppress_output)
                 for (auto& module : this->modules)
@@ -313,7 +311,6 @@ void Engine::network_loop() {
         /**************************/
         sensory_lock.wait(NETWORK_THREAD);
         for (auto& cluster : clusters) cluster->launch_input();
-        for (auto& cluster : clusters) cluster->wait_for_input();
         sensory_lock.pass(ENVIRONMENT_THREAD);
 
         /****************************/
@@ -333,7 +330,6 @@ void Engine::network_loop() {
         motor_lock.wait(NETWORK_THREAD);
         if (i % environment_rate == 0) {
             for (auto& cluster : clusters) cluster->launch_output();
-            for (auto& cluster : clusters) cluster->wait_for_output();
         }
         motor_lock.pass(ENVIRONMENT_THREAD);
 
@@ -389,6 +385,7 @@ void Engine::environment_loop() {
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Write sensory buffer
         sensory_lock.wait(ENVIRONMENT_THREAD);
+        for (auto& cluster : clusters) cluster->wait_for_input();
         for (auto& module : this->modules)
             module->feed_input(buffer);
         sensory_lock.pass(NETWORK_THREAD);
@@ -397,9 +394,11 @@ void Engine::environment_loop() {
         motor_lock.wait(ENVIRONMENT_THREAD);
         if (i % environment_rate == 0) {
             // Stream output and update UI
-            if (not suppress_output)
+            if (not suppress_output) {
+                for (auto& cluster : clusters) cluster->wait_for_output();
                 for (auto& module : this->modules)
                     module->report_output(buffer);
+            }
 #ifdef __GUI__
             GuiController::update();
 #endif
@@ -463,7 +462,7 @@ Report* Engine::run(PropertyConfig args) {
     Scheduler::get_instance()->start_thread_pool(
         std::max(0, args.get_int("worker threads", 4)));
 
-    // Initialize cuda random states
+    // Initialize parallel random states
     init_rand(context.network->get_max_layer_size());
 
     // Extract parameters

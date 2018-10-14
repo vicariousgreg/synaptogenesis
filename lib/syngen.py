@@ -380,13 +380,18 @@ class Environment(CObject):
     def __init__(self, env):
         if type(env) is str:
             self.obj = _syn.load_env(env)
+            self.props = None
         elif type(env) is dict:
-            env = Properties(env)
-            self.obj = _syn.create_environment(env.obj)
-            del env
+            self.props = Properties(env)
+            self.obj = _syn.create_environment(self.props.obj)
 
     def save(self, filename):
         return _syn.save_env(self.obj, filename)
+
+    def __del__(self):
+        if _syn is not None and self.props is not None:
+            del self.props
+            _syn.destroy(self.obj)
 
 
 """ Network Wrapper """
@@ -394,14 +399,19 @@ class Network(CObject):
     def __init__(self, net):
         if type(net) is str:
             self.obj = _syn.load_net(net)
+            self.props = None
         elif type(net) is dict:
-            net = Properties(net)
-            self.obj = _syn.create_network(net.obj)
-            del net
+            self.props = Properties(net)
+            self.obj = _syn.create_network(self.props.obj)
         self.state = None
 
     def save(self, filename):
         return _syn.save_net(self.obj, filename)
+
+    def __del__(self):
+        if _syn is not None and self.props is not None:
+            del self.props
+            _syn.destroy(self.obj)
 
     def build_state(self):
         if self.state is not None:
@@ -524,7 +534,7 @@ def diff_gauss(dist, peak, sig, norm=False):
 
     if norm:
         inv_sqrt_2pi = 0.3989422804014327
-        peak_coeff = peak * ((inv_sqrt_2pi / sig) - (inv_sqrt_2pi / (sig * 1.6)))
+        peak_coeff = ((inv_sqrt_2pi / sig) - (inv_sqrt_2pi / (sig * 1.6)))
         v = v / peak_coeff
 
     return v

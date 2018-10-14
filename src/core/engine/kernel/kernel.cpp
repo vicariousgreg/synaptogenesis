@@ -15,9 +15,11 @@ void set_data_SERIAL(float val, Pointer<float> ptr, int count, bool overwrite) {
     float* data = ptr.get();
 
     if (overwrite)
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
             data[nid] = val;
     else
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
             data[nid] += val;
 }
@@ -42,15 +44,19 @@ Kernel<float, Pointer<float>, int, bool> get_set_data() {
 /* Randomizes input data using Uniform Distribution */
 void randomize_data_uniform_SERIAL(Pointer<float> ptr,
         int count, float min, float max, bool overwrite) {
+    auto& gen = THREAD_SAFE_GENERATOR;
     std::uniform_real_distribution<float> distribution(min, max);
+
     float* data = ptr.get();
 
     if (overwrite)
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] = distribution(generator);
+            data[nid] = distribution(gen);
     else
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] += distribution(generator);
+            data[nid] += distribution(gen);
 }
 #ifdef __CUDACC__
 GLOBAL void randomize_data_uniform_PARALLEL(Pointer<float> ptr,
@@ -77,15 +83,19 @@ Kernel<Pointer<float>, int, float, float, bool>
 /* Randomizes input data using Normal Distribution */
 void randomize_data_normal_SERIAL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool overwrite) {
+    auto& gen = THREAD_SAFE_GENERATOR;
     std::normal_distribution<float> distribution(mean, std_dev);
+
     float* data = ptr.get();
 
     if (overwrite)
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] = distribution(generator);
+            data[nid] = distribution(gen);
     else
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] += distribution(generator);
+            data[nid] += distribution(gen);
 }
 #ifdef __CUDACC__
 GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
@@ -112,19 +122,23 @@ Kernel<Pointer<float>, int, float, float, bool>
 /* Randomizes input data using Poisson Point Process */
 void randomize_data_poisson_SERIAL(Pointer<float> ptr, int count, float val,
         float rate, bool overwrite, Pointer<float> random_rates) {
+    auto& gen = THREAD_SAFE_GENERATOR;
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
+
     float* data = ptr.get();
     float* rrates = random_rates.get();
     bool random = rrates != nullptr;
 
     if (overwrite)
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
             data[nid] =
-                (distribution(generator) < ((random) ? rrates[nid] : rate))
+                (distribution(gen) < ((random) ? rrates[nid] : rate))
                 ? val : 0.0;
     else
+        _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            if (distribution(generator) < ((random) ? rrates[nid] : rate))
+            if (distribution(gen) < ((random) ? rrates[nid] : rate))
                 data[nid] += val;
 }
 #ifdef __CUDACC__
@@ -162,6 +176,7 @@ void calc_internal_SERIAL(int size, Pointer<float> src_ptr,
         Pointer<float> dst_ptr, AGGREGATOR aggregate, float trail_value) {
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();
+    _Pragma("omp parallel for")
     for (int index = 0 ; index < size ; ++index) {
         dst[index] = aggregate(dst[index], src[index]);
         src[index] = trail_value;
@@ -194,6 +209,7 @@ void transpose_matrix_serial(
     float* in = idata.get();
     float* out = odata.get();
 
+    _Pragma("omp parallel for collapse(2)")
     for (int i = 0 ; i < original_rows ; ++i)
         for (int j = 0 ; j < original_columns ; ++j)
             out[(j*original_rows) + i] = in[(i*original_columns) + j];

@@ -171,6 +171,7 @@ Attributes *CLASS_NAME::build(Layer *layer) { \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
+    _Pragma("omp parallel for") \
     for (int nid = 0; nid < size; ++nid) { \
         BODY; \
     } \
@@ -191,8 +192,11 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     std::uniform_real_distribution<float> distribution(0.0, 1.0); \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
+    auto& gen = THREAD_SAFE_GENERATOR; \
+\
+    _Pragma("omp parallel for") \
     for (int nid = 0; nid < size; ++nid) { \
-        float rand = distribution(generator); \
+        float rand = distribution(gen); \
         BODY; \
     } \
 } \
@@ -251,6 +255,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
 HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
+    _Pragma("omp parallel for") \
     for (int nid = 0; nid < size; ++nid) { \
         BODY; \
     } \
@@ -263,8 +268,11 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     std::uniform_real_distribution<float> distribution(0.0, 1.0); \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
+    auto& gen = THREAD_SAFE_GENERATOR; \
+\
+    _Pragma("omp parallel for") \
     for (int nid = 0; nid < size; ++nid) { \
-        float rand = distribution(generator); \
+        float rand = distribution(gen); \
         BODY; \
     } \
 }

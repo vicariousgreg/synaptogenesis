@@ -8,6 +8,7 @@
 #include "util/parallel.h"
 #include "util/constants.h"
 #include "util/resources/pointer.h"
+#include <omp.h>
 
 /******************************************************************************/
 /*************************** CONNECTION KERNELS *******************************/
@@ -68,14 +69,15 @@
 HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
- \
-    int weight_index = 0; \
-    int to_index = 0; \
+\
+    _Pragma("omp parallel for collapse(2)") \
     for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
         for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+            int to_index = to_row * to_columns + to_column; \
             NEURON_PRE; \
 \
             int from_index = 0; \
+            int weight_index = to_index * from_size; \
             for (int from_row = 0 ; from_row < from_rows ; ++from_row) { \
                 for (int from_column = 0 ; from_column < from_columns ; ++from_column) { \
                     WEIGHT_OP; \
@@ -86,7 +88,6 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             } \
 \
             NEURON_POST; \
-            ++to_index; \
         } \
     } \
 }
@@ -95,7 +96,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
- \
+\
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     int to_column = to_index % to_columns; \
     int to_row = to_index / to_columns; \
@@ -132,14 +133,20 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const int to_col_start = synapse_data.subset_config.to_col_start; \
     const int to_col_end = synapse_data.subset_config.to_col_end; \
     const int from_kernel_size = synapse_data.subset_config.from_size; \
+    const int kernel_to_rows = to_row_end - to_row_start; \
+    const int kernel_to_cols = to_col_end - to_col_start; \
     EXTRACTIONS; \
- \
-    int to_kernel_index = 0; \
-    for (int to_row = to_row_start ; to_row < to_row_end ; ++to_row) { \
-        for (int to_column = to_col_start ; to_column < to_col_end ; ++to_column) { \
+\
+    _Pragma("omp parallel for collapse(2)") \
+    for (int i = 0 ; i < kernel_to_rows ; ++i) { \
+        for (int j = 0 ; j < kernel_to_cols ; ++j) { \
+            int to_row = i + to_row_start; \
+            int to_column = j + to_col_start; \
+            int to_kernel_index = i * to_columns + j; \
             int to_index = to_row * to_columns + to_column; \
-            NEURON_PRE; \
             int from_kernel_index = 0; \
+\
+            NEURON_PRE; \
 \
             for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
                 for (int from_column = from_col_start ; from_column < from_col_end ; ++from_column) { \
@@ -153,7 +160,6 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             } \
 \
             NEURON_POST; \
-            ++to_kernel_index; \
         } \
     } \
 }
@@ -171,7 +177,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int to_col_size = synapse_data.subset_config.to_col_size; \
     const int to_kernel_size = synapse_data.subset_config.to_size; \
     EXTRACTIONS; \
- \
+\
     int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_kernel_index < to_kernel_size) { \
         int to_row = (to_kernel_index / to_col_size) + to_row_start; \
@@ -201,15 +207,16 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
 HOST void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
- \
-    int weight_index = 0; \
-    for (int from_row=0, to_row=0, from_index=0, to_index=0 ; \
-         from_row < from_rows ; \
-         ++from_row, ++to_row) { \
-        for (int from_column=0, to_column=0 ; from_column < from_columns ; \
-             ++from_column, ++to_column, \
-             ++from_index, ++to_index, \
-             ++weight_index) { \
+\
+    _Pragma("omp parallel for collapse(2)") \
+    for (int from_row = 0 ; from_row < from_rows ; ++from_row) { \
+        for (int from_column = 0 ; from_column < from_columns ; ++from_column) { \
+            int to_row = from_row; \
+            int to_column = from_column; \
+            int from_index = from_row * from_columns + from_column; \
+            int to_index = from_index; \
+            int weight_index = to_index; \
+\
             NEURON_PRE; \
             WEIGHT_OP; \
             NEURON_POST; \
@@ -221,7 +228,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
 GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     SYNAPSE_PREAMBLE; \
     EXTRACTIONS; \
- \
+\
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     int from_column = to_index % to_columns; \
     int from_row = to_index / to_columns; \
@@ -249,9 +256,10 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const int matrix_columns = num_weights / to_size; \
     EXTRACTIONS; \
 \
-    int to_index = 0; \
+    _Pragma("omp parallel for collapse(2)") \
     for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
         for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+            int to_index = to_row * to_columns + to_column; \
             NEURON_PRE; \
 \
             int weight_index = to_index * matrix_columns; \
@@ -265,7 +273,6 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
             } \
 \
             NEURON_POST; \
-            ++to_index; \
         } \
     } \
 }
@@ -317,20 +324,21 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const int kernel_size = row_field_size * column_field_size; \
     const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
- \
-    int to_index = 0; \
+\
+    _Pragma("omp parallel for collapse(2)") \
     for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
-        for (int to_column = 0 ; to_column < to_columns ; (++to_column, ++to_index)) { \
+        for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+            int to_index = to_row * to_columns + to_column; \
             NEURON_PRE; \
- \
+\
             /* Determine starting row and column for source neurons */ \
             int s_row = to_row * row_stride + (row_spacing * row_offset); \
             int s_col = to_column * column_stride + (column_spacing * column_offset); \
- \
+\
             /* Row of matrix is either the first column (convolutional) */ \
             /*   or the index of the destination neuron otherwise */ \
             int weight_offset = (convolutional) ? 0 : (to_index * kernel_size); \
- \
+\
             /* Run the kernel */ \
             int k_index = 0; \
             for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
@@ -339,7 +347,7 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
                     int from_column = s_col + (k_col * column_spacing); \
                     int pre_wrap_from_row = from_row; \
                     int pre_wrap_from_column = from_column; \
- \
+\
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
                         from_row = \
@@ -353,12 +361,12 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
                         or from_column < 0 or from_column >= from_columns) { \
                         continue; \
                     } \
- \
+\
                     int from_index = from_row * from_columns + from_column; \
- \
+\
                     /* Column of matrix is the kernel index */ \
                     int weight_index = weight_offset + k_index; \
- \
+\
                     WEIGHT_OP; \
                 } \
             } \
@@ -382,7 +390,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int kernel_size = row_field_size * column_field_size; \
     const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
- \
+\
     int to_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (to_index < to_size) { \
         int to_row = to_index / to_columns; \
@@ -455,9 +463,10 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     EXTRACTIONS; \
 \
     /* Iterate over destination neurons */ \
-    int to_index = 0; \
+    _Pragma("omp parallel for collapse(2)") \
     for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
-        for (int to_column = 0 ; to_column < to_columns ; (++to_column, ++to_index)) { \
+        for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
+            int to_index = to_row * to_columns + to_column; \
             NEURON_PRE; \
 \
             /* Determine range of source neurons for divergent kernel */ \
@@ -527,7 +536,7 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         int to_row = to_index / to_columns; \
         int to_column = to_index % to_columns; \
         NEURON_PRE; \
- \
+\
         /* Determine range of source neurons for divergent kernel */ \
         int start_s_row = \
             (to_row + row_spacing * (-row_offset \
@@ -591,25 +600,26 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const int kernel_size = row_field_size * column_field_size; \
     const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
- \
-    int weight_index = 0; \
+\
+    _Pragma("omp parallel for collapse(2)") \
     for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
-        for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++weight_index)) { \
+        for (int k_col = 0 ; k_col < column_field_size ; ++k_col) { \
+            int weight_index = k_row * column_field_size + k_col; \
             WEIGHT_PRE; \
- \
+\
             for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
                 for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
                     int to_index = to_row * to_columns + to_column; \
- \
+\
                     /* Determine starting row and column for source neurons */ \
                     int s_row = to_row * row_stride + (row_spacing * row_offset); \
                     int s_col = to_column * column_stride + (column_spacing * column_offset); \
- \
+\
                     int from_row = s_row + (k_row * row_spacing); \
                     int from_column = s_col + (k_col * column_spacing); \
                     int pre_wrap_from_row = from_row; \
                     int pre_wrap_from_column = from_column; \
- \
+\
                     /* If wrapping, adjust out of bounds indices accordingly */ \
                     if (wrap) { \
                         from_row = \
@@ -623,9 +633,9 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
                         or from_column < 0 or from_column >= from_columns) { \
                         continue; \
                     } \
- \
+\
                     int from_index = from_row * from_columns + from_column; \
- \
+\
                     NEURON_OP; \
                 } \
             } \
@@ -648,14 +658,14 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
     const int kernel_size = row_field_size * column_field_size; \
     const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
- \
+\
     int weight_index = blockIdx.x * blockDim.x + threadIdx.x; \
     if (weight_index < (row_field_size * column_field_size)) { \
         int k_row = weight_index / column_field_size; \
         int k_col = weight_index % column_field_size; \
 \
         WEIGHT_PRE; \
- \
+\
         for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
             for (int to_column = 0 ; to_column < to_columns ; ++to_column) { \
                 int to_index = to_row * to_columns + to_column; \
@@ -708,9 +718,10 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
     const bool wrap = synapse_data.arborized_config.wrap; \
     EXTRACTIONS; \
 \
-    int weight_index = 0; \
+    _Pragma("omp parallel for collapse(2)") \
     for (int k_row = 0 ; k_row < row_field_size ; ++k_row) { \
-        for (int k_col = 0 ; k_col < column_field_size ; (++k_col, ++weight_index)) { \
+        for (int k_col = 0 ; k_col < column_field_size ; ++k_col) { \
+            int weight_index = k_row * column_field_size + k_col; \
             WEIGHT_PRE; \
 \
             for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
@@ -1027,45 +1038,45 @@ CALC_ALL(FUNC_NAME, \
     /* EXTRACTIONS */ \
     EXTRACT_SECOND_ORDER; \
     UPDATE_EXT;, \
- \
+\
     /* NEURON_PRE */ \
     , \
- \
+\
     /* WEIGHT_OP
      * Calculate weight input, aggregate to second order buffer */ \
     CALC_VAL_SECOND_ORDER; \
     UPDATE_CALC;, \
- \
+\
     /* NEURON_POST */ \
 ) \
 CALC_ONE_TO_ONE(FUNC_NAME##_convergent_convolutional, \
     /* EXTRACTIONS */ \
     EXTRACT_SECOND_ORDER; \
     UPDATE_EXT;, \
- \
+\
     /* NEURON_PRE */ \
     , \
- \
+\
     /* WEIGHT_OP
      * Calculate weight input, aggregate to second order buffer */ \
     CALC_VAL_SECOND_ORDER; \
     UPDATE_CALC;, \
- \
+\
     /* NEURON_POST */ \
 ) \
 CALC_ONE_TO_ONE(FUNC_NAME##_divergent_convolutional, \
     /* EXTRACTIONS */ \
     EXTRACT_SECOND_ORDER; \
     UPDATE_EXT;, \
- \
+\
     /* NEURON_PRE */ \
     , \
- \
+\
     /* WEIGHT_OP
      * Calculate weight input, aggregate to second order buffer */ \
     CALC_VAL_SECOND_ORDER; \
     UPDATE_CALC;, \
- \
+\
     /* NEURON_POST */ \
 ) \
 

@@ -1,17 +1,21 @@
 #!/bin/bash
 
 build_flag=serial
+openmp_flag=
 gui_flag=
 main_flag=
 debug_flag=
 jobs=
 jobs_flag=
 
-while getopts "pnmdcjh" OPTION
+while getopts "ponmdcjh" OPTION
 do
 	case $OPTION in
 		p)
 			build_flag=parallel
+			;;
+		o)
+			openmp_flag='OPENMP=true'
 			;;
 		n)
 			gui_flag='NO_GUI=true'
@@ -53,8 +57,9 @@ do
 			;;
 		\?|h)
 			echo Builds and installs synaptogenesis
-			echo "  usage: gen.sh [-p] [-n] [-d] [-c]"
+			echo "  usage: gen.sh [-p] [-o] [-n] [-d] [-c]"
 			echo "    -p builds parallel version (requires CUDA)"
+			echo "    -o builds with openmp"
 			echo "    -n builds without GUI (normally requires GTK)"
 			echo "    -m builds C++ main executable"
 			echo "    -d builds with debug flags"
@@ -71,6 +76,12 @@ if [ "$build_flag" == serial ]; then
 	echo "  ... serial"
 else
 	echo "  ... parallel"
+fi
+
+if [ "$openmp_flag" == '' ]; then
+	echo "  ... without OpenMP"
+else
+	echo "  ... with OpenMP"
 fi
 
 if [ "$gui_flag" == '' ]; then
@@ -99,7 +110,7 @@ echo ===========================
 echo
 echo
 
-if ! make $build_flag $gui_flag $main_flag $debug_flag $jobs_flag ; then
+if ! make $build_flag $gui_flag $openmp_flag $main_flag $debug_flag $jobs_flag ; then
   echo
   echo "Failed to build!"
   exit 1

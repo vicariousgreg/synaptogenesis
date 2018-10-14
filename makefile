@@ -67,6 +67,11 @@ UILIBPATH=
 LIBS=
 endif
 
+ifdef OPENMP
+CCFLAGS+=-fopenmp
+NVCCFLAGS+=-fopenmp
+endif
+
 #Default Make
 all: serial
 
