@@ -69,7 +69,7 @@ endif
 
 ifdef OPENMP
 CCFLAGS+=-fopenmp
-NVCCFLAGS+=-fopenmp
+NVCCFLAGS+=-Xcompiler -fopenmp
 endif
 
 #Default Make

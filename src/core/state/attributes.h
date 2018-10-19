@@ -192,11 +192,10 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     std::uniform_real_distribution<float> distribution(0.0, 1.0); \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
-    auto& gen = THREAD_SAFE_GENERATOR; \
 \
     _Pragma("omp parallel for") \
     for (int nid = 0; nid < size; ++nid) { \
-        float rand = distribution(gen); \
+        float rand = distribution(generator); \
         BODY; \
     } \
 } \
@@ -268,11 +267,10 @@ HOST void FUNC_NAME##_SERIAL(AttributeData attribute_data) { \
     std::uniform_real_distribution<float> distribution(0.0, 1.0); \
     PREAMBLE_ATTRIBUTES(CLASS_NAME) \
     PREAMBLE \
-    auto& gen = THREAD_SAFE_GENERATOR; \
 \
     _Pragma("omp parallel for") \
     for (int nid = 0; nid < size; ++nid) { \
-        float rand = distribution(gen); \
+        float rand = distribution(generator); \
         BODY; \
     } \
 }

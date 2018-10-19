@@ -9,7 +9,6 @@ void init_rand(int count);
 void free_rand();
 
 void init_openmp_rand();
-void free_openmp_rand();
 
 // Define prefixes such that it doesn't affect anything for serial version
 #ifdef __CUDACC__
@@ -33,10 +32,7 @@ void free_openmp_rand();
 
 #include "util/logger.h"
 
-#define WARP_SIZE 32
 #define IDEAL_THREADS 128
-#define MAX_THREADS 1024
-#define MAX_BLOCKS 65535
 
 void device_synchronize();
 int get_num_cuda_devices();

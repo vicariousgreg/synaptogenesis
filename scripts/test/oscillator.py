@@ -332,7 +332,7 @@ def build_environment(visualizer=False):
 
 def main(infile=None, outfile=None, do_training=True, print_stats=True,
         visualizer=False, device=None, iterations=1000000):
-    dim = 256
+    dim = 128
 
     network = build_network(dim)
     env = build_environment(visualizer)
@@ -346,10 +346,13 @@ def main(infile=None, outfile=None, do_training=True, print_stats=True,
             print("... done.")
 
     if device is None:
-        device = get_gpus()[1]
+        try:
+            device = get_gpus()[1]
+        except IndexError:
+            device = get_cpu()
     if do_training:
         report = network.run(env, {"multithreaded" : True,
-                                   "worker threads" : "1",
+                                   "worker threads" : 2,
                                    "devices" : device,
                                    "iterations" : iterations,
                                    "verbose" : True})

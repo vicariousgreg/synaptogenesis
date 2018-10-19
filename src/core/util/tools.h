@@ -4,24 +4,8 @@
 #include <climits>
 #include <random>
 
-// Random number generator (not thread safe!)
+// Random number generator
 static std::mt19937 generator(std::random_device{}());
-
-#ifdef _OPENMP
-
-// Create vector of generators for OpenMP threads
-// This will be initialized in init_openmp_rand() in util/parallel.h
-#include <omp.h>
-#include <vector>
-#define THREAD_SAFE_GENERATOR generators[omp_get_thread_num()]
-static std::vector<std::mt19937> generators;
-
-#else
-
-// If OpenMP is not included, use the default generator
-#define THREAD_SAFE_GENERATOR generator
-
-#endif
 
 // Float array setter
 float fSet(float* arr, int size, float val, float fraction=1.0);

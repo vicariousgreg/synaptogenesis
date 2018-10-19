@@ -44,7 +44,6 @@ Kernel<float, Pointer<float>, int, bool> get_set_data() {
 /* Randomizes input data using Uniform Distribution */
 void randomize_data_uniform_SERIAL(Pointer<float> ptr,
         int count, float min, float max, bool overwrite) {
-    auto& gen = THREAD_SAFE_GENERATOR;
     std::uniform_real_distribution<float> distribution(min, max);
 
     float* data = ptr.get();
@@ -52,11 +51,11 @@ void randomize_data_uniform_SERIAL(Pointer<float> ptr,
     if (overwrite)
         _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] = distribution(gen);
+            data[nid] = distribution(generator);
     else
         _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] += distribution(gen);
+            data[nid] += distribution(generator);
 }
 #ifdef __CUDACC__
 GLOBAL void randomize_data_uniform_PARALLEL(Pointer<float> ptr,
@@ -83,7 +82,6 @@ Kernel<Pointer<float>, int, float, float, bool>
 /* Randomizes input data using Normal Distribution */
 void randomize_data_normal_SERIAL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool overwrite) {
-    auto& gen = THREAD_SAFE_GENERATOR;
     std::normal_distribution<float> distribution(mean, std_dev);
 
     float* data = ptr.get();
@@ -91,11 +89,11 @@ void randomize_data_normal_SERIAL(Pointer<float> ptr,
     if (overwrite)
         _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] = distribution(gen);
+            data[nid] = distribution(generator);
     else
         _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            data[nid] += distribution(gen);
+            data[nid] += distribution(generator);
 }
 #ifdef __CUDACC__
 GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
@@ -122,7 +120,6 @@ Kernel<Pointer<float>, int, float, float, bool>
 /* Randomizes input data using Poisson Point Process */
 void randomize_data_poisson_SERIAL(Pointer<float> ptr, int count, float val,
         float rate, bool overwrite, Pointer<float> random_rates) {
-    auto& gen = THREAD_SAFE_GENERATOR;
     std::uniform_real_distribution<float> distribution(0.0, 1.0);
 
     float* data = ptr.get();
@@ -133,12 +130,12 @@ void randomize_data_poisson_SERIAL(Pointer<float> ptr, int count, float val,
         _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
             data[nid] =
-                (distribution(gen) < ((random) ? rrates[nid] : rate))
+                (distribution(generator) < ((random) ? rrates[nid] : rate))
                 ? val : 0.0;
     else
         _Pragma("omp parallel for")
         for (int nid = 0; nid < count; ++nid)
-            if (distribution(gen) < ((random) ? rrates[nid] : rate))
+            if (distribution(generator) < ((random) ? rrates[nid] : rate))
                 data[nid] += val;
 }
 #ifdef __CUDACC__

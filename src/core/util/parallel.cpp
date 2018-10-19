@@ -8,11 +8,11 @@ void init_rand(int count) {
 
 void free_rand() {
     free_cuda_rand();
-    free_openmp_rand();
 }
 
 #ifdef _OPENMP
 #include "util/tools.h"
+#include <omp.h>
 #endif
 
 void init_openmp_rand() {
@@ -21,14 +21,10 @@ void init_openmp_rand() {
 
     // Create one random generator per OpenMP thread
     // Seed with random_device + thread index
-    for (int i = 0 ; i < omp_get_num_threads() ; ++i)
-        generators.push_back(std::mt19937(r() + i));
-#endif
-}
-
-void free_openmp_rand() {
-#ifdef _OPENMP
-    generators.clear();
+    #pragma omp parallel
+    {
+        generator = std::mt19937(r() + omp_get_thread_num());
+    }
 #endif
 }
 
