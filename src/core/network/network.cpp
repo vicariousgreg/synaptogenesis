@@ -124,6 +124,14 @@ int Network::get_num_weights() const {
     return num_weights;
 }
 
+int Network::get_num_compute_weights() const {
+    int num_weights = 0;
+    for (auto structure : structures)
+        for (auto conn : structure->get_connections())
+            num_weights += conn->get_compute_weights();
+    return num_weights;
+}
+
 int Network::get_max_layer_size() const {
     int max_size = 0;
     for (auto& structure : this->get_structures())
@@ -213,7 +221,8 @@ void Network::print() const {
     printf("  - neurons     : %10d\n", this->get_num_neurons());
     printf("  - layers      : %10d\n", this->get_num_layers());
     printf("  - connections : %10d\n", this->get_num_connections());
-    printf("  - weights     : %10d\n", this->get_num_weights());
+    printf("  - weights     : %10d (%10d)\n",
+        this->get_num_weights(), this->get_num_compute_weights());
 
     for (auto structure : this->get_structures()) {
         printf("\nStructure: %s (%d neurons in %d layers)\n",
@@ -221,7 +230,9 @@ void Network::print() const {
             structure->get_layers().size());
 
         for (auto layer : structure->get_layers())
-            printf("  %-40s  | n=%10d\n", layer->name.c_str(), layer->size);
+            printf("  %-40s  | n=%10d  w=%10d (%10d)\n",
+                layer->name.c_str(), layer->size, layer->get_num_weights(),
+                layer->get_num_compute_weights());
 
         printf("\n");
     }

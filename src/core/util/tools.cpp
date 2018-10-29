@@ -2,9 +2,11 @@
 
 float fSet(float* arr, int size, float val, float fraction) {
     if (fraction == 1.0) {
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i) arr[i] = val;
     } else {
         auto dist = std::uniform_real_distribution<float>(0.0, 1.0);
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             if (dist(generator) < fraction) arr[i] = val;
     }
@@ -17,9 +19,11 @@ void fClear(float* arr, int size) {
 void fRand(float* arr, int size, float fMin, float fMax, float fraction) {
     auto dist = std::uniform_real_distribution<float>(fMin, fMax);
     if (fraction == 1.0) {
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i) arr[i] = dist(generator);
     } else {
         auto f_dist = std::uniform_real_distribution<float>(0.0, 1.0);
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             if (f_dist(generator) < fraction)
                 arr[i] = dist(generator);
@@ -29,9 +33,11 @@ void fRand(float* arr, int size, float fMin, float fMax, float fraction) {
 void iRand(int* arr, int size, int iMin, int iMax, float fraction) {
     auto dist = std::uniform_int_distribution<int>(iMin,iMax);
     if (fraction == 1.0)
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i) arr[i] = dist(generator);
     else {
         auto f_dist = std::uniform_real_distribution<float>(0.0, 1.0);
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             if (f_dist(generator) < fraction)
                 arr[i] = dist(generator);
@@ -45,10 +51,12 @@ void fRand_gaussian(float* arr, int size,
     std::normal_distribution<double> dist(mean, std_dev);
 
     if (fraction == 1.0) {
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
     } else {
         std::uniform_real_distribution<double> f_dist(0.0, 1.0);
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             arr[i] = (f_dist(generator) < fraction)
                 ? std::min((double)max, std::max(0.0, dist(generator)))
@@ -61,10 +69,12 @@ void fRand_lognormal(float* arr, int size,
     std::lognormal_distribution<double> dist(mean, std_dev);
 
     if (fraction == 1.0) {
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             arr[i] = std::min((double)max, std::max(0.0, dist(generator)));
     } else {
         std::uniform_real_distribution<double> f_dist(0.0, 1.0);
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             arr[i] = (f_dist(generator) < fraction)
                 ? std::min((double)max, std::max(0.0, dist(generator)))
@@ -82,9 +92,11 @@ void fRand_powerlaw(float* arr, int size,
     float pow_exp = 1.0 / (1.0-exponent);
 
     if (fraction == 1.0) {
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             arr[i] = pow(coeff * dist(generator) + coeff_b, pow_exp);
     } else {
+        _Pragma("omp parallel for")
         for (int i = 0 ; i < size ; ++i)
             arr[i] = (dist(generator) < fraction)
                 ? pow(coeff * dist(generator) + coeff_b, pow_exp)
@@ -94,6 +106,7 @@ void fRand_powerlaw(float* arr, int size,
 
 /* Clears the diagonal of a weight matrix */
 void clear_diagonal(float *mat, int dim) {
+    _Pragma("omp parallel for")
     for (int i = 0 ; i < dim ; ++i)
         mat[i * dim + i] = 0.0;
 }

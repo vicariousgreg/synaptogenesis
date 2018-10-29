@@ -48,6 +48,7 @@ class Layer {
 
         /* Gets the total number of incoming weights */
         int get_num_weights() const;
+        int get_num_compute_weights() const;
 
         std::string str() const;
 

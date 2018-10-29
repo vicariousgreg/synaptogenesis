@@ -22,11 +22,8 @@ static std::map<Layer*, DeviceID> distribute_layers(
     // Distribute layers
     // Count up weights
     std::map<Layer*, int> num_weights;
-    for (auto layer : layers) {
-        num_weights[layer] = 0;
-        for (auto& conn : layer->get_input_connections())
-            num_weights[layer] += conn->get_compute_weights();
-    }
+    for (auto layer : layers)
+        num_weights[layer] = layer->get_num_compute_weights();
 
     // Keep track of weight distribution to devices
     std::map<DeviceID, int> device_weights;

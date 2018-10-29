@@ -44,6 +44,7 @@ class Network {
         int get_num_layers() const;
         int get_num_connections() const;
         int get_num_weights() const;
+        int get_num_compute_weights() const;
         int get_max_layer_size() const;
 
         void print() const;

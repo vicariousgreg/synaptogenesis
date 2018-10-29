@@ -64,7 +64,8 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
 
     SHIFT_FLOAT_OUTPUTS(f_outputs, MAX(0.0f, tanh(st)));
     // SHIFT_FLOAT_OUTPUTS(f_outputs, MAX(0.0f, st));
-    // SHIFT_FLOAT_OUTPUTS(f_outputs, (1.0f / (1 + exp(-100.0 * st)) * tanh(st)));
+    // SHIFT_FLOAT_OUTPUTS(f_outputs,
+    //     (1.0f / (1.0f + exp(-3.0f * st - 3.0f)) * MAX(0.0f, tanh(st))));
 )
 
 /******************************************************************************/

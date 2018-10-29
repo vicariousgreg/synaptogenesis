@@ -109,6 +109,13 @@ int Layer::get_num_weights() const {
     return num_weights;
 }
 
+int Layer::get_num_compute_weights() const {
+    int num_weights = 0;
+    for (auto& conn : get_input_connections())
+        num_weights += conn->get_compute_weights();
+    return num_weights;
+}
+
 void Layer::add_input_connection(Connection* connection) {
     this->input_connections.push_back(connection);
 }

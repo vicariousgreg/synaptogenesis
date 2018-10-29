@@ -20,9 +20,12 @@ SequentialCluster::SequentialCluster(Structure *structure,
 
     // Create queue and push output layers
     // Add layers any layers that project to another structure
+    //   or have no output connections
     std::queue<Layer*> queue;
     for (auto& layer : structure->get_layers())
-        if (layer->is_structure_output()) queue.push(layer);
+        if (layer->is_structure_output()
+                or layer->get_output_connections().size() == 0)
+            queue.push(layer);
 
     /* Do breadth first search backwards on the network and create nodes */
     while (not queue.empty()) {
@@ -36,8 +39,9 @@ SequentialCluster::SequentialCluster(Structure *structure,
         //   Come back later
         bool skip = false;
         for (auto& conn : curr_layer->get_output_connections())
-            if (visited.find(conn->to_layer) == visited.end()
-                    and conn->to_layer->structure == structure)
+            if (conn->to_layer != curr_layer
+                    and conn->to_layer->structure == structure
+                    and visited.find(conn->to_layer) == visited.end())
                 skip = true;
 
         if (skip) {
@@ -53,19 +57,13 @@ SequentialCluster::SequentialCluster(Structure *structure,
             new ClusterNode(curr_layer, state, engine,
                 io_streams[device_id], compute_streams[device_id]));
 
-        // Add any layers that feed into this one to if all of its
-        //     output layers have been visited and its not in the queue
-        // Also ensure that the traversal does not leave the structure
-        for (auto& conn : curr_layer->get_input_connections()) {
-            if (visited.find(conn->from_layer) == visited.end()) {
-                for (auto& to_conn : conn->to_layer->get_output_connections())
-                    if (visited.find(to_conn->to_layer) == visited.end()
-                        or to_conn->to_layer->structure != structure)
-                        continue;
-                if (conn->from_layer->structure == structure)
-                    queue.push(conn->from_layer);
-            }
-        }
+        // Add any other layers in the same structure that feed into 
+        //   this one, and that have not been visited already.
+        for (auto& conn : curr_layer->get_input_connections())
+            if (conn->from_layer != curr_layer
+                    and conn->from_layer->structure == structure
+                    and visited.find(conn->from_layer) == visited.end())
+                queue.push(conn->from_layer);
     }
 
     if (visited.size() < structure->get_layers().size())
