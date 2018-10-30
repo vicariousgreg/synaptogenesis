@@ -4,7 +4,7 @@ build_flag=serial
 openmp_flag=
 mpi_flag=
 gui_flag=
-main_flag=
+executable_flag=
 debug_flag=
 jobs=
 jobs_flag=
@@ -100,7 +100,7 @@ else
 	echo "  ... without GUI"
 fi
 
-if [ "$main_flag" == '' ]; then
+if [ "$executable_flag" == '' ]; then
 	echo "  ... without C++ main executable"
 else
 	echo "  ... with C++ main executable"
@@ -120,7 +120,7 @@ echo ===========================
 echo
 echo
 
-if ! make $build_flag $gui_flag $openmp_flag $mpi_flag $main_flag $debug_flag $jobs_flag ; then
+if ! make $build_flag $gui_flag $openmp_flag $mpi_flag $executable_flag $debug_flag $jobs_flag ; then
   echo
   echo "Failed to build!"
   exit 1

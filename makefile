@@ -19,6 +19,8 @@ MAKEFLAGS += --jobs=$(JOBS)
 CC            := g++
 CCLINKER      := g++
 NVCC          := /usr/local/cuda-8.0/bin/nvcc
+CUDAFLAGS     := -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
+
 
 #The Target Binary Program
 TARGET_S      := syngen_test
@@ -48,8 +50,8 @@ MPIOBJ        :=
 INCLUDES     := -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH) -I$(MPIPATH)
 CCFLAGS      := -w -fPIC -std=c++11 -pthread $(INCLUDES)
 NVCCFLAGS    := -w -arch=sm_30 -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu $(INCLUDES)
-NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
-CUDALINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
+NVCCLINK     := -w -Wno-deprecated-gpu-targets $(CUDAFLAGS)
+CUDALINK     := -w -Wno-deprecated-gpu-targets $(CUDAFLAGS)
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
 ifndef MAIN
@@ -192,10 +194,10 @@ SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 $(BUILDDIR_LINK)/link.o: directories libs $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS) ctags_p $(MPIOBJ)
-	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
+	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) $(CUDAFLAGS)
 
 parallel: $(BUILDDIR_LINK)/link.o $(TARGET_P)
-	$(CCLINKER) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(MPIOBJ) $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
+	$(CCLINKER) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(MPIOBJ) $(UILIBPATH) $(LIBS) $(CUDAFLAGS)
 
 ctags_p: $(OBJECTS_P)
 ifdef CTAGS
@@ -209,7 +211,7 @@ endif
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
 $(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(MPIOBJ)
-	$(CCLINKER) $(CUDALINK) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS) -lcudart -lcudadevrt -lcuda
+	$(CCLINKER) $(CUDALINK) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS) $(CUDAFLAGS)
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
