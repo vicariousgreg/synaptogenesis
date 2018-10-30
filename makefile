@@ -17,6 +17,7 @@ MAKEFLAGS += --jobs=$(JOBS)
 
 #Compiler and Linker
 CC            := g++
+CCLINKER      := g++
 NVCC          := /usr/local/cuda-8.0/bin/nvcc
 
 #The Target Binary Program
@@ -37,14 +38,18 @@ OBJEXT        := o
 COREPATH      := src/core
 UIPATH        := src/ui
 LIBSPATH      := src/libs
+MPIPATH       := src/mpi
 BUILDDIR_UI   := build/ui
 BUILDDIR_LIBS := build/libs
 UILIBPATH     := $(BUILDDIR_UI)/gui.a
+MPIOBJ        :=
 
 #Flags, Libraries and Includes
-CCFLAGS      := -w -fPIC -std=c++11 -pthread -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
-NVCCFLAGS    := -w -arch=sm_30 -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH)
+INCLUDES     := -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH) -I$(MPIPATH)
+CCFLAGS      := -w -fPIC -std=c++11 -pthread $(INCLUDES)
+NVCCFLAGS    := -w -arch=sm_30 -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu $(INCLUDES)
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
+CUDALINK     := -w -Wno-deprecated-gpu-targets -L/usr/local/cuda-8.0/lib64 -lcuda -lcudart
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
 ifndef MAIN
@@ -70,6 +75,15 @@ endif
 ifdef OPENMP
 CCFLAGS+=-fopenmp
 NVCCFLAGS+=-Xcompiler -fopenmp
+NVCCLINK+=-Xcompiler -fopenmp
+CUDALINK+=-fopenmp
+endif
+
+ifdef MPI
+CCFLAGS+=-D__MPI__
+NVCCFLAGS+=-D__MPI__
+MPIOBJ=build/mpi_wrap.o
+CCLINKER=mpic++
 endif
 
 #Default Make
@@ -116,6 +130,12 @@ $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 	@rm -f $(BUILDDIR_UI)/$*.$(DEPEXT).tmp
 
 #---------------------------------------------------------------------------------
+#  MPI BUILDING
+#---------------------------------------------------------------------------------
+$(MPIOBJ): $(MPIPATH)/mpi_wrap.cpp $(MPIPATH)/mpi_wrap.h
+	mpic++ -fPIC -D__MPI__ src/mpi/mpi_wrap.cpp -c -o build/mpi_wrap.o
+
+#---------------------------------------------------------------------------------
 #  CORE BUILDING
 #---------------------------------------------------------------------------------
 
@@ -123,8 +143,8 @@ $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_S     := $(patsubst $(COREPATH)/%,$(BUILDDIR_S)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-serial: directories libs $(UILIBPATH) $(OBJECTS_S) $(TARGET_S) $(OBJECTS_LIBS) ctags_s
-	$(CC) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_S) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
+serial: directories libs $(UILIBPATH) $(OBJECTS_S) $(TARGET_S) $(OBJECTS_LIBS) ctags_s $(MPIOBJ)
+	$(CCLINKER) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_S) $(MPIOBJ) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS)
 
 #Make tags
 ctags_s: $(OBJECTS_S)
@@ -148,13 +168,14 @@ clean:
 	@$(RM) -rf $(BUILDDIR_P)
 	@$(RM) -rf $(BUILDDIR_UI)
 	@$(RM) -rf $(BUILDDIR_LIBS)
+	@$(RM) -f $(BUILDDIR_LINK)/*.o
 
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_S:.$(OBJEXT)=.$(DEPEXT))
 
 #Link
-$(TARGET_S): $(UILIBPATH) $(OBJECTS_S) $(OBJECTS_LIBS)
-	$(CC) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
+$(TARGET_S): $(UILIBPATH) $(OBJECTS_S) $(OBJECTS_LIBS) $(MPIOBJ)
+	$(CCLINKER) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS)
 
 #Compile
 $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
@@ -170,9 +191,11 @@ $(BUILDDIR_S)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
-parallel: directories libs $(UILIBPATH) $(OBJECTS_P) $(TARGET_P) $(OBJECTS_LIBS) ctags_p
+$(BUILDDIR_LINK)/link.o: directories libs $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS) ctags_p $(MPIOBJ)
 	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) -lcudadevrt -lcudart
-	$(CC) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
+
+parallel: $(BUILDDIR_LINK)/link.o $(TARGET_P)
+	$(CCLINKER) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(MPIOBJ) $(UILIBPATH) $(LIBS) -L/usr/local/cuda-8.0/lib64 -lcuda -lcudadevrt -lcudart
 
 ctags_p: $(OBJECTS_P)
 ifdef CTAGS
@@ -185,8 +208,8 @@ endif
 #Pull in dependency info for *existing* .o files
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
-$(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS)
-	$(NVCC) $(NVCCLINK) -o $(BIN_DIR)/$(TARGET_P) $^ $(UILIBPATH) $(LIBS)
+$(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(MPIOBJ)
+	$(CCLINKER) $(CUDALINK) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS) -lcudart -lcudadevrt -lcuda
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)

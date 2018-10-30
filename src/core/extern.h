@@ -86,4 +86,7 @@ extern "C" void add_indices_weight_callback(char* name, long long addr);
 extern "C" void add_distance_weight_callback(char* name, long long addr);
 extern "C" void add_delay_weight_callback(char* name, long long addr);
 
+extern "C" void initialize_mpi();
+extern "C" void finalize_mpi();
+
 #endif

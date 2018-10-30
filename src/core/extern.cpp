@@ -7,6 +7,7 @@
 #include "engine/engine.h"
 #include "util/constants.h"
 #include "util/callback_manager.h"
+#include "mpi_wrap.h"
 
 ARRAY build_array(BasePointer* ptr, bool owner) {
     POINTER_TYPE type = VOID_POINTER;
@@ -333,4 +334,12 @@ void add_distance_weight_callback(char* name, long long addr) {
 void add_delay_weight_callback(char* name, long long addr) {
     CallbackManager::get_instance()->add_delay_weight_callback(name,
         (void (*)(int, int, void*, void*))(addr));
+}
+
+void initialize_mpi() {
+    mpi_wrap_init();
+}
+
+void finalize_mpi() {
+    mpi_wrap_finalize();
 }

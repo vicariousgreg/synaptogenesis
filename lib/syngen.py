@@ -594,3 +594,19 @@ def get_dsst_params(num_rows=8, cell_res=8):
         "focus rows" : focus_rows,
         "focus columns" : focus_cols,
     }
+
+
+try:
+    # Attempt to load MPI library, and initialize in synaptogenesis
+    CDLL("libmpi.so", 2 | 4 | 256)
+    _syn.initialize_mpi()
+
+
+    # Make sure to finalize MPI on exit
+    import atexit
+
+    def finalize():
+        _syn.finalize_mpi()
+
+    atexit.register(finalize)
+except OSError: pass

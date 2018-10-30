@@ -2,13 +2,14 @@
 
 build_flag=serial
 openmp_flag=
+mpi_flag=
 gui_flag=
 main_flag=
 debug_flag=
 jobs=
 jobs_flag=
 
-while getopts "ponmdcjh" OPTION
+while getopts "ponmdcjhe" OPTION
 do
 	case $OPTION in
 		p)
@@ -21,7 +22,10 @@ do
 			gui_flag='NO_GUI=true'
 			;;
 		m)
-			main_flag='MAIN=true'
+			mpi_flag='MPI=true'
+			;;
+		e)
+			executable_flag='MAIN=true'
 			;;
 		d)
 			debug_flag='DEBUG=true'
@@ -84,6 +88,12 @@ else
 	echo "  ... with OpenMP"
 fi
 
+if [ "$mpi_flag" == '' ]; then
+	echo "  ... without MPI"
+else
+	echo "  ... with MPI"
+fi
+
 if [ "$gui_flag" == '' ]; then
 	echo "  ... with GUI"
 else
@@ -110,7 +120,7 @@ echo ===========================
 echo
 echo
 
-if ! make $build_flag $gui_flag $openmp_flag $main_flag $debug_flag $jobs_flag ; then
+if ! make $build_flag $gui_flag $openmp_flag $mpi_flag $main_flag $debug_flag $jobs_flag ; then
   echo
   echo "Failed to build!"
   exit 1

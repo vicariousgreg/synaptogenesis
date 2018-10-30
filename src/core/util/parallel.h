@@ -24,8 +24,6 @@ void init_openmp_rand();
 #include <cstdio>
 #include <math.h>
 
-#include "cuda_runtime.h"
-#include "curand.h"
 #include "curand_kernel.h"
 #include "device_launch_parameters.h"
 #include "assert.h"
