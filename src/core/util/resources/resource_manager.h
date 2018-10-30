@@ -1,5 +1,5 @@
-#ifndef resource_manager.h
-#define resource_manager.h
+#ifndef resource_manager_h
+#define resource_manager_h
 
 #include <thread>
 #include <vector>

@@ -20,7 +20,7 @@ typedef std::map<PointerKey, BasePointer*> PointerMap;
 
 class State {
     public:
-        State(Network *network);
+        State(Network *network, std::string filename="");
         virtual ~State();
 
         /* Builds the state on the specified devices
@@ -44,6 +44,8 @@ class State {
         static bool exists(std::string file_name);
         void save(std::string file_name, bool verbose=false);
         void load(std::string file_name, bool verbose=false);
+        std::map<PointerKey, BasePointer*> preload(
+            std::string file_name, bool verbose=false);
 
         /* Getters for layer related data */
         DeviceID get_device_id(Layer *layer) const;

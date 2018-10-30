@@ -11,6 +11,7 @@
 #include "util/parallel.h"
 #include "util/tools.h"
 #include "util/transpose.h"
+#include "util/resources/pointer_stash.h"
 
 static void initialize_weights(WeightMatrix *matrix,
     const PropertyConfig config, float* target_matrix);
@@ -297,24 +298,51 @@ WeightMatrix *WeightMatrix::build(Connection *conn) {
 }
 
 void WeightMatrix::init() {
+    // Consult the pointer stash to see if we can skip any initialization
+    auto pointers = get_pointer_map();
+    auto stash = PointerStash::get_instance();
+    for (auto& pair : pointers) {
+        auto ptr = stash->get(pair.first);
+        if (ptr != nullptr)
+            ptr->give_to(pair.second);
+    }
+
+    // Check if all the relevant sparse data has been preloaded
+    bool sparse_preloaded =
+        not from_row_indices.is_null() and
+        not from_column_indices.is_null() and
+        not from_indices.is_null() and
+        not to_row_indices.is_null() and
+        not to_column_indices.is_null() and
+        not to_indices.is_null() and
+        not used.is_null();
+
     // Randomize the projection before constructing weights
-    if (connection->randomized_projection)
+    if (connection->randomized_projection and not sparse_preloaded)
         randomize_projection();
 
     // Construct weight matrix now that the proper size is available
-    this->weights = Pointer<float>(num_weights);
-    if (connection->second_order_host)
-        this->second_order_weights = Pointer<float>(num_weights);
+    // Initialize weights if not preloaded
+    if (weights.is_null()) {
+        this->weights = Pointer<float>(num_weights);
+        initialize_weights(this,
+            connection->get_config()->get_weight_config(), weights);
+    }
 
-    // Initialize weights
-    initialize_weights(this,
-        connection->get_config()->get_weight_config(), weights);
+    // Initialize second order weights if not preloaded
+    if (connection->second_order_host and second_order_weights.is_null())
+        this->second_order_weights = Pointer<float>(num_weights);
 
     // Sparsify
     if (connection->sparse) {
-        sparsify();
-        this->sparse = true;
-        this->connection->sparsify(this->num_weights);
+        // Check if all of the relevant sparse data has been preloaded
+        if (not sparse_preloaded) {
+            sparsify();
+            this->sparse = true;
+            this->connection->sparsify(this->num_weights);
+        } else {
+            this->resize();
+        }
     }
 
     // Register any subclass variables

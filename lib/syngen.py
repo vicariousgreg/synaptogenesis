@@ -115,6 +115,8 @@ _syn.save_net.argtypes = (c_void_p, c_char_p)
 
 _syn.build_state.restype = c_void_p
 _syn.build_state.argtypes = (c_void_p,)
+_syn.build_load_state.restype = c_void_p
+_syn.build_load_state.argtypes = (c_void_p,c_char_p)
 _syn.load_state.restype = c_bool
 _syn.load_state.argtypes = (c_void_p, c_char_p)
 _syn.save_state.restype = c_bool
@@ -413,14 +415,18 @@ class Network(CObject):
             del self.props
             _syn.destroy(self.obj)
 
-    def build_state(self):
+    def build_state(self, filename=None):
         if self.state is not None:
             _syn.destroy(self.state)
-        self.state = _syn.build_state(self.obj)
+
+        if filename is None:
+            self.state = _syn.build_state(self.obj)
+        else:
+            self.state = _syn.build_load_state(self.obj, filename)
 
     def load_state(self, filename):
-        if self.state is None: self.build_state()
-        _syn.load_state(self.state, filename)
+        if self.state is None: self.build_state(filename)
+        else: _syn.load_state(self.state, filename)
 
     def save_state(self, filename):
         if self.state is None: self.build_state()

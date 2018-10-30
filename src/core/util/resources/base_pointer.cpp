@@ -5,6 +5,32 @@
 #include "util/logger.h"
 #include "util/resources/resource_manager.h"
 
+BasePointer::BasePointer(PointerKey key)
+        : type(std::type_index(typeid(char))),
+          ptr(ResourceManager::get_instance()->allocate_host(key.bytes, 1)),
+          size(key.bytes),
+          unit_size(1),
+          device_id(ResourceManager::get_instance()->get_host_id()),
+          local(true),
+          pinned(false),
+          owner(true) {
+    if (ptr != nullptr)
+        ResourceManager::get_instance()
+            ->increment_pointer_count(ptr, device_id);
+}
+
+void BasePointer::give_to(BasePointer* other) {
+    if (not other->is_null())
+        other->free();
+
+    other->ptr = this->ptr;
+    other->size = this->get_bytes() / other->unit_size;
+    other->local = this->local;
+    other->pinned = this->pinned;
+    other->owner = this->owner;
+    this->owner = false;
+}
+
 BasePointer::BasePointer(std::type_index type, void* ptr,
     size_t size, size_t unit_size,
     DeviceID device_id, bool owner)

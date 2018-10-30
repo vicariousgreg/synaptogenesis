@@ -187,6 +187,10 @@ STATE build_state(NETWORK net) {
     return new State((Network*)net);
 }
 
+STATE build_load_state(NETWORK net, char* filename) {
+    return new State((Network*)net, filename);
+}
+
 bool load_state(STATE state, char* filename) {
     try {
         ((State*)state)->load(filename);

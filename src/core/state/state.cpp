@@ -7,6 +7,7 @@
 #include "state/neural_model_bank.h"
 #include "network/network.h"
 #include "io/buffer.h"
+#include "util/resources/pointer_stash.h"
 
 static std::map<Layer*, DeviceID> distribute_layers(
         const LayerList& layers, std::set<DeviceID> devices) {
@@ -77,7 +78,14 @@ static std::map<Layer*, DeviceID> distribute_layers(
     return layer_devices;
 }
 
-State::State(Network *network) : network(network), on_host(true) {
+State::State(Network *network, std::string filename)
+        : network(network), on_host(true) {
+    // Preload state and stash pointers
+    // Weight matrices can query the stash to skip initialization
+    if (filename != "") {
+        PointerStash::get_instance()->add(this, this->preload(filename));
+    }
+
     // Validate neural model strings
     auto neural_models = NeuralModelBank::get_neural_models();
     for (auto layer : network->get_layers())
@@ -104,6 +112,25 @@ State::State(Network *network) : network(network), on_host(true) {
         attributes.at(conn->to_layer)
             ->get_weight_matrix(conn)
             ->adjust_sparse_indices();
+
+    // Copy over any unaccessed pointers
+    // Clear stashed pointers
+    if (filename != "") {
+        auto stash = PointerStash::get_instance();
+        auto stashed = stash->get(this);
+        auto pointer_map = get_pointer_map();
+
+        // For each stashed pointer...
+        for (auto& pair : stashed) {
+            // If it is the owner (has not been accessed) and is not null...
+            if (not pair.second->is_null() and pair.second->get_owner()) {
+                try {
+                    // Attempt to give data to corresponding pointer in map
+                    pair.second->give_to(pointer_map.at(pair.first));
+                } catch (std::out_of_range) { }
+            }
+        }
+    }
 
     this->build();
 }
@@ -375,6 +402,8 @@ void State::load(std::string file_name, bool verbose) {
     auto length = input_file.tellg();
     input_file.seekg (0, input_file.beg);
 
+    auto pointer_map = get_pointer_map();
+
     unsigned long read = 0;
     while (read < length) {
         PointerKey key(0,0,0);
@@ -384,7 +413,7 @@ void State::load(std::string file_name, bool verbose) {
 
         // Search for the pointer, and if not found, skip it
         try {
-            BasePointer* ptr = get_pointer_map().at(key);
+            BasePointer* ptr = pointer_map.at(key);
 
             // If pointer size doesn't match, resize
             if (ptr->get_bytes() != key.bytes)
@@ -410,6 +439,64 @@ void State::load(std::string file_name, bool verbose) {
 
     // Close file stream
     input_file.close();
+}
+
+std::map<PointerKey, BasePointer*> State::preload(
+        std::string file_name, bool verbose) {
+    if (not State::exists(file_name))
+        LOG_ERROR("Could not open file: " + file_name);
+
+    // Open file stream
+    std::string path = file_name;
+    std::ifstream input_file(path, std::ifstream::binary);
+    if (verbose)
+        printf("Loading network state from %s ...\n", path.c_str());
+
+    // Determine file length
+    input_file.seekg (0, input_file.end);
+    auto length = input_file.tellg();
+    input_file.seekg (0, input_file.beg);
+
+    // Identify relevant hashes
+    std::set<size_t> hashes;
+    for (auto& layer : network->get_layers())
+        hashes.insert(layer->id);
+    for (auto& conn : network->get_connections())
+        hashes.insert(conn->id);
+
+    std::map<PointerKey, BasePointer*> pointers;
+    unsigned long read = 0;
+    while (read < length) {
+        PointerKey key(0,0,0);
+        if (not input_file.read((char*)&key, sizeof(PointerKey)))
+            LOG_ERROR(
+                "Error reading pointer key from file!");
+
+        // Skip unrecognized hashes
+        if (hashes.find(key.hash) == hashes.end()) {
+            input_file.ignore(key.bytes);
+        } else {
+            BasePointer* ptr = new BasePointer(key);
+            try {
+                // Read the data into memory
+                if (not input_file.read((char*)ptr->get(), key.bytes))
+                    LOG_ERROR("Error reading data from file!");
+
+                pointers[key] = ptr;
+            } catch (...) {
+                LOG_WARNING(
+                    "Error retrieving pointer -- continuing...");
+                input_file.ignore(key.bytes);
+                delete ptr;
+            }
+        }
+        read += sizeof(PointerKey) + key.bytes;
+    }
+
+    // Close file stream
+    input_file.close();
+
+    return pointers;
 }
 
 /* Zoo of Getters */

@@ -31,6 +31,12 @@ class PointerKey {
 
 class BasePointer {
     public:
+        BasePointer(PointerKey key);
+
+        // Gives data to another pointer
+        // Abandons ownership
+        void give_to(BasePointer* other);
+
         HOST DEVICE void* get(size_t offset=0) const
             { return ptr + (offset * unit_size); }
         HOST DEVICE size_t get_size() const { return size; }

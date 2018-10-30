@@ -55,6 +55,7 @@ extern "C" NETWORK load_net(char* filename);
 extern "C" bool save_net(NETWORK network, char* filename);
 
 extern "C" STATE build_state(NETWORK net);
+extern "C" STATE build_load_state(NETWORK net, char* filename);
 extern "C" bool load_state(STATE state, char* filename);
 extern "C" bool save_state(STATE state, char* filename);
 

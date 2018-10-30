@@ -23,19 +23,17 @@ void set_data_SERIAL(float val, Pointer<float> ptr, int count, bool overwrite) {
         for (int nid = 0; nid < count; ++nid)
             data[nid] += val;
 }
-#ifdef __CUDACC__
 GLOBAL void set_data_PARALLEL(float val, Pointer<float> ptr,
         int count, bool overwrite) {
+#ifdef __CUDACC__
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
     if (nid < count)
         if (overwrite) data[nid] = val;
         else           data[nid] += val;
-}
-#else
-GLOBAL void set_data_PARALLEL(float val, Pointer<float> ptr, int count) { }
 #endif
+}
 Kernel<float, Pointer<float>, int, bool> get_set_data() {
     return Kernel<float, Pointer<float>, int, bool>(
         set_data_SERIAL, set_data_PARALLEL);
@@ -57,9 +55,9 @@ void randomize_data_uniform_SERIAL(Pointer<float> ptr,
         for (int nid = 0; nid < count; ++nid)
             data[nid] += distribution(generator);
 }
-#ifdef __CUDACC__
 GLOBAL void randomize_data_uniform_PARALLEL(Pointer<float> ptr,
         int count, float min, float max, bool overwrite) {
+#ifdef __CUDACC__
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -68,11 +66,8 @@ GLOBAL void randomize_data_uniform_PARALLEL(Pointer<float> ptr,
         if (overwrite) data[nid] = val;
         else           data[nid] += val;
     }
-}
-#else
-GLOBAL void randomize_data_uniform_PARALLEL(Pointer<float> ptr,
-        int count, float min, float max, bool overwrite) { }
 #endif
+}
 Kernel<Pointer<float>, int, float, float, bool>
         get_randomize_data_uniform() {
     return Kernel<Pointer<float>, int, float, float, bool>(
@@ -95,9 +90,9 @@ void randomize_data_normal_SERIAL(Pointer<float> ptr,
         for (int nid = 0; nid < count; ++nid)
             data[nid] += distribution(generator);
 }
-#ifdef __CUDACC__
 GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
         int count, float mean, float std_dev, bool overwrite) {
+#ifdef __CUDACC__
     float* data = ptr.get();
 
     int nid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -106,11 +101,8 @@ GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
         if (overwrite) data[nid] = val;
         else           data[nid] += val;
     }
-}
-#else
-GLOBAL void randomize_data_normal_PARALLEL(Pointer<float> ptr,
-        int count, float mean, float std_dev, bool overwrite) { }
 #endif
+}
 Kernel<Pointer<float>, int, float, float, bool>
         get_randomize_data_normal() {
     return Kernel<Pointer<float>, int, float, float, bool>(
@@ -138,9 +130,9 @@ void randomize_data_poisson_SERIAL(Pointer<float> ptr, int count, float val,
             if (distribution(generator) < ((random) ? rrates[nid] : rate))
                 data[nid] += val;
 }
-#ifdef __CUDACC__
 GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
         float val, float rate, bool overwrite, Pointer<float> random_rates) {
+#ifdef __CUDACC__
     float* data = ptr.get();
     float* rrates = random_rates.get();
     bool random = rrates != nullptr;
@@ -157,11 +149,8 @@ GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
                         < ((random) ? rrates[nid] : rate))
             data[nid] += val;
     }
-}
-#else
-GLOBAL void randomize_data_poisson_PARALLEL(Pointer<float> ptr, int count,
-        float val, float rate, bool overwrite, Pointer<float> random_rates) { }
 #endif
+}
 Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>
         get_randomize_data_poisson() {
     return Kernel<Pointer<float>, int, float, float, bool, Pointer<float>>(
@@ -179,9 +168,9 @@ void calc_internal_SERIAL(int size, Pointer<float> src_ptr,
         src[index] = trail_value;
     }
 }
-#ifdef __CUDACC__
 GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
         Pointer<float> dst_ptr, AGGREGATOR aggregate, float trail_value) {
+#ifdef __CUDACC__
     float* src = src_ptr.get();
     float* dst = dst_ptr.get();
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -189,11 +178,8 @@ GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
         dst[index] = aggregate(dst[index], src[index]);
         src[index] = trail_value;
     }
-}
-#else
-GLOBAL void calc_internal_PARALLEL(int size, Pointer<float> src_ptr,
-        Pointer<float> dst_ptr, float trail_value) { }
 #endif
+}
 Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR,
         float> get_calc_internal() {
     return Kernel<int, Pointer<float>, Pointer<float>, AGGREGATOR, float>(
@@ -216,7 +202,7 @@ Kernel<const Pointer<float>, Pointer<float>,
         const int, const int> get_transposer() {
 #ifdef __CUDACC__
     return Kernel<const Pointer<float>, Pointer<float>, const int, const int>(
-        transpose_matrix_serial,transpose_matrix_parallel<float>);
+        transpose_matrix_serial, transpose_matrix_parallel<float>);
 #else
     return Kernel<const Pointer<float>, Pointer<float>, const int, const int>(
         transpose_matrix_serial);
