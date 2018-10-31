@@ -48,9 +48,9 @@ MPIOBJ        :=
 
 #Flags, Libraries and Includes
 INCLUDES     := -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH) -I$(MPIPATH)
-CCFLAGS      := -w -fPIC -std=c++11 -pthread $(INCLUDES)
-NVCCFLAGS    := -w -arch=sm_30 -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu $(INCLUDES)
-NVCCLINK     := -w -Wno-deprecated-gpu-targets $(CUDAFLAGS)
+CCFLAGS      := -w -fPIC -std=c++11 -pthread -O4 $(INCLUDES)
+NVCCFLAGS    := -w -arch=sm_30 -Xcompiler "-fPIC -O4" -std=c++11 -Wno-deprecated-gpu-targets -x cu $(INCLUDES)
+NVCCLINK     := -w -Wno-deprecated-gpu-targets -Xcompiler -fPIC --device-link $(CUDAFLAGS)
 CUDALINK     := -w -Wno-deprecated-gpu-targets $(CUDAFLAGS)
 LIBS         := `pkg-config --libs gtkmm-3.0`
 
@@ -194,7 +194,7 @@ SOURCES       := $(shell find $(COREPATH) -type f -name *.$(SRCEXT))
 OBJECTS_P     := $(patsubst $(COREPATH)/%,$(BUILDDIR_P)/%,$(SOURCES:.$(SRCEXT)=.$(OBJEXT)))
 
 $(BUILDDIR_LINK)/link.o: directories libs $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS) ctags_p $(MPIOBJ)
-	$(NVCC) -Xcompiler -fPIC --device-link $(NVCCLINK) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) $(CUDAFLAGS)
+	$(NVCC) -o $(BUILDDIR_LINK)/link.o $(OBJECTS_P) $(OBJECTS_LIBS) $(UILIBPATH) $(LIBS) $(NVCCLINK)
 
 parallel: $(BUILDDIR_LINK)/link.o $(TARGET_P)
 	$(CCLINKER) $(CCFLAGS) -shared -o $(LIBRARY_DIR)/$(LIBRARY) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(MPIOBJ) $(UILIBPATH) $(LIBS) $(CUDAFLAGS)
@@ -211,7 +211,7 @@ endif
 -include $(OBJECTS_P:.$(OBJEXT)=.$(DEPEXT))
 
 $(TARGET_P): $(UILIBPATH) $(OBJECTS_P) $(OBJECTS_LIBS) $(BUILDDIR_LINK)/link.o $(MPIOBJ)
-	$(CCLINKER) $(CUDALINK) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS) $(CUDAFLAGS)
+	$(CCLINKER) $(CCFLAGS) -o $(BIN_DIR)/$(TARGET_S) $^ $(UILIBPATH) $(LIBS) $(CUDALINK)
 
 $(BUILDDIR_P)/%.$(OBJEXT): $(COREPATH)/%.$(SRCEXT)
 	@mkdir -p $(dir $@)
