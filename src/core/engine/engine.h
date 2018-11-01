@@ -27,8 +27,9 @@ enum Thread_ID {
 
 class Lock {
     public:
-        Thread_ID get_owner() { return owner; }
-        void set_owner(Thread_ID new_owner)
+        Thread_ID get_owner() volatile
+        { return owner; }
+        void set_owner(Thread_ID new_owner) volatile
             { owner = new_owner; }
 
         void wait(Thread_ID me) {
@@ -46,8 +47,9 @@ class Lock {
         }
 
     private:
+        // Volatile owner to ensure thread-safety with optimizations
+        volatile Thread_ID owner;
         std::mutex mutex;
-        Thread_ID owner;
 };
 
 class Engine {

@@ -29,20 +29,8 @@ WeightMatrix::WeightMatrix(Connection* conn)
 }
 
 WeightMatrix::~WeightMatrix() {
-    this->weights.free();
-    this->weights_transposed.free();
-    this->second_order_weights.free();
-    this->nonzero_counts.free();
-    this->from_row_indices.free();
-    this->from_column_indices.free();
-    this->from_indices.free();
-    this->to_row_indices.free();
-    this->to_column_indices.free();
-    this->to_indices.free();
-    this->used.free();
-    this->distances.free();
-    this->delays.free();
-    for (auto pair : variables) pair.second->free();
+    // Free pointers
+    for (auto ptr : get_pointers()) ptr->free();
 
     // Free device copy if one exists
     if (this != this->pointer)
@@ -200,6 +188,14 @@ void WeightMatrix::adjust_sparse_indices() {
             if (new_max < old_max)
                 this->resize();
         }
+
+        // Finally, purge unnecessary matrices
+        this->used.free();
+        this->to_row_indices.free();
+        this->to_column_indices.free();
+        this->used = Pointer<int>();
+        this->to_row_indices = Pointer<int>();
+        this->to_column_indices = Pointer<int>();
     }
 }
 
