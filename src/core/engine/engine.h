@@ -27,10 +27,8 @@ enum Thread_ID {
 
 class Lock {
     public:
-        Thread_ID get_owner() volatile
-        { return owner; }
-        void set_owner(Thread_ID new_owner) volatile
-            { owner = new_owner; }
+        Thread_ID get_owner()               volatile { return owner; }
+        void set_owner(Thread_ID new_owner) volatile { owner = new_owner; }
 
         void wait(Thread_ID me) {
             while (true) {

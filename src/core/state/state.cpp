@@ -105,13 +105,18 @@ State::State(Network *network, std::string filename)
         att->process_weight_matrices();
     }
 
-    // Adjust sparse indicies
+    // Adjust sparse indicies ( + purge auxiliary memory )
     // If not sparse, this is a no-op
     // Otherwise, it ensures weight indices are valid
-    for (auto conn : network->get_connections())
+    for (auto conn : network->get_connections()) {
         attributes.at(conn->to_layer)
             ->get_weight_matrix(conn)
             ->adjust_sparse_indices();
+
+        attributes.at(conn->to_layer)
+            ->get_weight_matrix(conn)
+            ->purge_auxiliary();
+    }
 
     // Copy over any unaccessed pointers
     // Clear stashed pointers

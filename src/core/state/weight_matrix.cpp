@@ -188,17 +188,20 @@ void WeightMatrix::adjust_sparse_indices() {
             if (new_max < old_max)
                 this->resize();
         }
-
-        // Finally, purge unnecessary matrices
-        this->used.free();
-        this->to_row_indices.free();
-        this->to_column_indices.free();
-        this->used = Pointer<int>();
-        this->to_row_indices = Pointer<int>();
-        this->to_column_indices = Pointer<int>();
     }
 }
 
+/* This function is necessary for freeing up auxiliary matrices that
+ *   were necessary during construction and initialization */
+void WeightMatrix::purge_auxiliary() {
+    // Finally, purge unnecessary matrices
+    this->used.free();
+    this->to_row_indices.free();
+    this->to_column_indices.free();
+    this->used = Pointer<int>();
+    this->to_row_indices = Pointer<int>();
+    this->to_column_indices = Pointer<int>();
+}
 
 void WeightMatrix::transfer(DeviceID new_device) {
     if (device_id == new_device) return;
@@ -449,18 +452,8 @@ void WeightMatrix::randomize_projection() {
             auto inv_mat = WeightMatrix::build(inv_conn);
             inv_mat->adjust_sparse_indices();
 
-            /* Compute incoming weight count (switch to/row) and compute max */
+            /* Keep track of incoming weight counts */
             auto in_counts = Pointer<int>(to_size, 0);
-            int max_weights = 0;
-            for (int index = 0 ; index < inv_mat->num_weights ; ++index)
-                if (inv_mat->used[index])
-                    max_weights = std::max(max_weights,
-                        ++in_counts[inv_mat->from_indices[index]]);
-
-            // Update matrix size
-            this->num_weights = max_weights * to_size;
-            this->rows = connection->to_layer->size;
-            this->columns = num_weights / rows;
 
             // Construct auxiliary matrices
             this->from_row_indices = Pointer<int>(num_weights, -1);
@@ -482,7 +475,7 @@ void WeightMatrix::randomize_projection() {
 
                 // Find the next unused matrix slot
                 int mat_index =
-                    get_columns() * to_index + --in_counts[to_index];
+                    get_columns() * to_index + in_counts[to_index]++;
 
                 // Update indices
                 to_row_indices[mat_index] =
@@ -496,6 +489,7 @@ void WeightMatrix::randomize_projection() {
                 from_column_indices[mat_index] =
                     inv_mat->to_column_indices[index];
                 from_indices[mat_index] = inv_mat->to_indices[index];
+
                 used[mat_index] = 1;
             }
 
@@ -535,6 +529,10 @@ void WeightMatrix::sparsify() {
             "Warning in weight config for " + connection->str() + ":\n" +
             "    Attempted to sparsify empty matrix!");
         sparse_num_weights = connection->to_layer->size;
+        max_nonzero = 1;
+
+        for (int row = 0 ; row < rows ; ++row)
+            used[row * columns] = 1;
     }
 
     // Create index matrices (padded with -1) and nonzero counts

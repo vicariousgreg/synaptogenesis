@@ -94,7 +94,6 @@ Connection::Connection(Connection* other, ConnectionType new_type)
       opcode(other->opcode),
       type(new_type),
       sparse(other->sparse),
-      //randomized_projection(false), // non-randomized (avoid infinte regress)
       randomized_projection(other->randomized_projection),
       convolutional(other->convolutional),
       second_order(other->second_order),

@@ -40,6 +40,8 @@ class WeightMatrix {
         // Adjust sparse indices in case they are invalid because of wrapping
         void adjust_sparse_indices();
 
+        // Purge auxiliary memory from intialization
+        void purge_auxiliary();
 
         /* Stores to/from indices in arrays */
         void get_indices();

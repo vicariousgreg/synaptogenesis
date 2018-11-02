@@ -15,29 +15,39 @@ create_indices_weight_callback("print", print_indices_callback)
 
 structure = {"name" : "test", "type" : "parallel"}
 
+rows = 100
+columns = 100
+
 a = {
     "name" : "a",
-    "neural model" : "debug",
+    "neural model" : "relay",
     "ramp" : True,
-    "rows" : 1,
-    "columns" : 10,
+    "rows" : rows,
+    "columns" : columns,
 }
 b = {
     "name" : "b",
-    "neural model" : "debug",
+    "neural model" : "relay",
     "ramp" : True,
-    "rows" : 1,
-    "columns" : 10,
+    "rows" : rows,
+    "columns" : columns,
 }
 c = {
     "name" : "c",
-    "neural model" : "debug",
+    "neural model" : "relay",
     "ramp" : True,
-    "rows" : 1,
-    "columns" : 10,
+    "rows" : rows,
+    "columns" : columns,
+}
+d = {
+    "name" : "d",
+    "neural model" : "relay",
+    "ramp" : True,
+    "rows" : rows,
+    "columns" : columns,
 }
 
-structure["layers"] = [a, b, c]
+structure["layers"] = [a, b, c, d]
 
 oto_conn = {
     "from layer" : "a",
@@ -56,7 +66,7 @@ oto_conn = {
 }
 
 conv_conn = {
-    "from layer" : "b",
+    "from layer" : "a",
     "to layer" : "c",
     "type" : "convergent",
     "opcode" : "add",
@@ -71,14 +81,14 @@ conv_conn = {
     },
     "weight config" : {
         "type" : "flat",
-        "weight" : 1.0,
+        "weight" : 1.0 / 9,
         "indices callback" : "print",
     }
 }
 
 div_conn = {
-    "from layer" : "c",
-    "to layer" : "b",
+    "from layer" : "a",
+    "to layer" : "d",
     "type" : "divergent",
     "opcode" : "add",
     "plastic" : False,
@@ -103,7 +113,40 @@ connections = [oto_conn, conv_conn, div_conn]
 #connections = [conv_conn]
 #connections = [oto_conn, conv_conn]
 
-env = Environment({})
+env = Environment(
+{
+    "modules" : [
+    {
+        "type" : "visualizer",
+        "layers" : [
+            { "structure" : "test", "layer" : "a" },
+            { "structure" : "test", "layer" : "b" },
+            { "structure" : "test", "layer" : "c" },
+            { "structure" : "test", "layer" : "d" },
+        ]
+    },
+    {
+        "type" : "one_hot_random_input",
+        "rate" : 100,
+        "layers" : [
+            { "structure" : "test", "layer" : "a" },
+        ]
+    },
+#    {
+#        "type" : "gaussian_random_input",
+#        "rate" : "100",
+#        "border" : 0,
+#        "std dev" : 3,
+#        "value" : 1.0,
+#        "normalize" : True,
+#        "peaks" : 1,
+#        "random" : False,
+#        "layers" : [
+#            { "structure" : "test", "layer" : "a" },
+#        ]
+#    }
+    ]
+})
 
 # Create network
 network = Network(
@@ -111,7 +154,7 @@ network = Network(
      "connections" : connections})
 
 print(network.run(env, {"multithreaded" : True,
-                        "iterations" : "1",
+                        "iterations" : "1000000",
                         "worker threads" : "0",
                         "refresh rate" : "100",
                         "devices" : get_cpu(),
