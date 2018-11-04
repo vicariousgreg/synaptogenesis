@@ -134,6 +134,18 @@ void Scheduler::synchronize(Event* event) {
 #endif
 }
 
+void Scheduler::wait_for_completion() {
+    if (not single_thread) {
+        int total_completed = 0;
+
+        while (total_completed < total_instructions) {
+            total_completed = 0;
+            for (auto c : completed)
+                total_completed += c;
+        }
+    }
+}
+
 
 /******************************************************************************/
 /*************************** WORKER FUNCTIONS *********************************/

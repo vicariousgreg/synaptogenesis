@@ -35,6 +35,9 @@ class Scheduler {
         /* Block the caller until the event is recorded */
         void synchronize(Event* event);
 
+        /* Block the caller until all enqueued computations are complete */
+        void wait_for_completion();
+
     protected:
         static Scheduler *instance;
 

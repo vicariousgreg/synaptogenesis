@@ -245,6 +245,9 @@ void Engine::single_thread_loop() {
 #endif
         }
 
+        // Wait for scheduler to complete
+        Scheduler::get_instance()->wait_for_completion();
+
         // Cycle modules
         for (auto& module : this->modules) module->cycle();
 
@@ -354,6 +357,10 @@ void Engine::network_loop() {
 
     // Wait for environment to terminate first
     term_lock.wait(NETWORK_THREAD);
+
+    // Wait for scheduler to complete
+    Scheduler::get_instance()->wait_for_completion();
+
 
     // Final synchronize
     device_synchronize();
