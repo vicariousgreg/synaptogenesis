@@ -182,7 +182,7 @@ void Scheduler::worker_run_stream(int id, Stream *stream) {
     //   false if the queue must be halted (if the stream is frozen on an event)
     // If this happens, or if the queue is emptied, halt execution and return
     bool active = true;
-    while (active) {
+    while (active and this->pool_running) {
         // Get an instruction
         lock_stream(stream);
         auto f = queues[stream].front();
