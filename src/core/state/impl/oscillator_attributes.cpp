@@ -86,7 +86,8 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
 /* This macro defines what happens for each neuron before weight iteration.
  * Here is where neuron specific data should be extracted or initialized */
 #define NEURON_PRE \
-    float sum = 0.0;
+    float sum = 0.0; \
+    float abs_sum = 0.0;
 
 /* This macro defines what happens for each weight.  The provided extractor
  *   function will transform the Output values to floats.  The delay is
@@ -97,12 +98,13 @@ BUILD_ATTRIBUTE_KERNEL(OscillatorAttributes, oscillator_kernel,
     float weight = weights[weight_index]; \
     float val = extract(from_out, delay) * weight; \
     sum += val; \
-    bold[to_index] += abs(val);
+    abs_sum += abs(val); \
 
 /* This macro defines what happens for each neuron after weight iteration.
  * The provided calc function will use the operation designated by the opcode */
 #define NEURON_POST \
-    inputs[to_index] = aggregate(inputs[to_index], sum);
+    inputs[to_index] = aggregate(inputs[to_index], sum); \
+    bold[to_index] += abs_sum;
 
 /* This macro puts it all together.  It takes the name of the function and four
  *   code blocks that correspond to the four macros defined above. */

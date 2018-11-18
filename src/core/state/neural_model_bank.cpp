@@ -49,7 +49,19 @@ bool NeuralModelBank::register_weight_matrix(std::string neural_model,
 
 Attributes* NeuralModelBank::build_attributes(Layer *layer) {
     auto neural_model = layer->neural_model;
+
     try {
+        // If the layer is a ghost layer, use the corresponding ghost attributes
+        if (layer->get_config()->get_bool("ghost", false) > 0) {
+            auto output_type = get_output_type(neural_model);
+
+            switch (output_type) {
+                case FLOAT: neural_model = "ghost float"; break;
+                case BIT:   neural_model = "ghost bit";   break;
+                case INT:   neural_model = "ghost int";   break;
+            }
+        }
+
         return get_instance()
             ->att_build_pointers.at(neural_model)(layer);
     } catch (std::out_of_range) {

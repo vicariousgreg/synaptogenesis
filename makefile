@@ -48,11 +48,17 @@ MPIOBJ        :=
 
 #Flags, Libraries and Includes
 INCLUDES     := -I$(COREPATH) -I$(UIPATH) -I$(LIBSPATH) -I$(MPIPATH)
-CCFLAGS      := -w -fPIC -std=c++11 -pthread -O4 $(INCLUDES)
-NVCCFLAGS    := -w -arch=sm_30 -Xcompiler "-fPIC -O4" -std=c++11 -Wno-deprecated-gpu-targets -x cu $(INCLUDES)
+CCFLAGS      := -w -fPIC -std=c++11 -pthread $(INCLUDES)
+NVCCFLAGS    := -w -arch=sm_30 -Xcompiler -fPIC -std=c++11 -Wno-deprecated-gpu-targets -x cu $(INCLUDES)
 NVCCLINK     := -w -Wno-deprecated-gpu-targets -Xcompiler -fPIC --device-link $(CUDAFLAGS)
 CUDALINK     := -w -Wno-deprecated-gpu-targets $(CUDAFLAGS)
 LIBS         := `pkg-config --libs gtkmm-3.0`
+
+#ifdef OPTIMIZE
+ifndef DEBUG
+CCFLAGS+=-O4
+NVCCFLAGS+=-Xcompiler -O4
+endif
 
 ifndef MAIN
 TARGET_S=
@@ -135,7 +141,7 @@ $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 #  MPI BUILDING
 #---------------------------------------------------------------------------------
 $(MPIOBJ): $(MPIPATH)/mpi_wrap.cpp $(MPIPATH)/mpi_wrap.h
-	mpic++ -fPIC -D__MPI__ src/mpi/mpi_wrap.cpp -c -o build/mpi_wrap.o
+	mpic++ -fopenmp -fPIC -D__MPI__ -I$(COREPATH) src/mpi/mpi_wrap.cpp -c -o build/mpi_wrap.o
 
 #---------------------------------------------------------------------------------
 #  CORE BUILDING

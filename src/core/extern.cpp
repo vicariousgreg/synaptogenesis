@@ -344,6 +344,14 @@ void initialize_mpi() {
     mpi_wrap_init();
 }
 
+int get_mpi_rank() {
+    return mpi_wrap_get_rank();
+}
+
+int get_mpi_size() {
+    return mpi_wrap_get_size();
+}
+
 void finalize_mpi() {
     mpi_wrap_finalize();
 }

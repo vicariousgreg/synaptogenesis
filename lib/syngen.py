@@ -150,6 +150,9 @@ _syn.add_indices_weight_callback.argtypes = (c_char_p, c_longlong)
 _syn.add_distance_weight_callback.argtypes = (c_char_p, c_longlong)
 _syn.add_delay_weight_callback.argtypes = (c_char_p, c_longlong)
 
+_syn.get_mpi_rank.restype = c_int
+_syn.get_mpi_size.restype = c_int
+
 
 """ Wrappers for simple functions """
 def get_cpu():
@@ -602,6 +605,7 @@ def get_dsst_params(num_rows=8, cell_res=8):
     }
 
 
+""" MPI """
 try:
     # Attempt to load MPI library, and initialize in synaptogenesis
     CDLL("libmpi.so", 2 | 4 | 256)
@@ -616,3 +620,9 @@ try:
 
     atexit.register(finalize)
 except OSError: pass
+
+def get_mpi_rank():
+    return _syn.get_mpi_rank()
+
+def get_mpi_size():
+    return _syn.get_mpi_size()

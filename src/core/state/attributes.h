@@ -118,7 +118,7 @@ class Attributes {
 /* Macros for Attribute subclass Registry */
 // Put this one in .cpp
 #define REGISTER_ATTRIBUTES(CLASS_NAME, STRING, OUTPUT_TYPE) \
-static bool __att_dummy = \
+static bool __att_dummy_##CLASS_NAME = \
     NeuralModelBank::register_attributes( \
         STRING, OUTPUT_TYPE, CLASS_NAME::build); \
 std::string CLASS_NAME::get_neural_model() {return STRING; } \

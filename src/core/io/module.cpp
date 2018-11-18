@@ -204,7 +204,7 @@ void Module::enforce_specified_io_type(std::string type) {
 
 void Module::enforce_unique_io_type(std::string type) {
     for (auto layer : layers)
-        if (std::bitset<sizeof(IOTypeMask)>(get_io_type(layer)).count() > 0)
+        if (std::bitset<sizeof(IOTypeMask)>(get_io_type(layer)).count() > 1)
             LOG_ERROR(
                 type + " module requires unique IO type!");
 }

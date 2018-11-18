@@ -1,69 +1,36 @@
 from syngen import Network, Environment, create_io_callback, FloatArray
-from syngen import get_gpus, get_cpu
+from syngen import get_gpus, get_cpu, get_mpi_size, get_mpi_rank
 from syngen import set_suppress_output, set_warnings, set_debug
 
 from random import random
 from os import path
 import sys
 import argparse
+from copy import deepcopy
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-def build_rc(name, device, fraction, input_size, res_dim, output_size):
+def build_rc(name, device, fraction, res_dim):
     # Create main structure
     structure = {"name" : name, "type" : "parallel"}
 
-    # Input layer
-    input_layer = {
-        "name" : "input_layer",
-        "neural model" : "sine generator",
-        "rows" : 1,
-        "columns" : input_size,
-        "frequency" : 100,
-        "init config" : {
-            "type" : "uniform",
-            "min" : 0.0,
-            "max" : 1.0,
-        },
-        "device" : device,
-    }
     reservoir = {
         "name" : "reservoir",
         "neural model" : "nvm_tanh",
         "rows" : res_dim,
         "columns" : res_dim,
         "device" : device,
-    }
-    output_layer = {
-        "name" : "output_layer",
-        "neural model" : "nvm_tanh",
-        "rows" : 1,
-        "columns" : output_size,
-        "device" : device,
+        "init config" : {
+            "type" : "uniform",
+            "min" : -1.0,
+            "max" : 1.0,
+        },
     }
 
 
     # Add layers to structure
-    structure["layers"] = [ input_layer, reservoir, output_layer ]
-
-    r_i = {
-        "name" : "r_i",
-        "from structure" : name,
-        "from layer" : "input_layer",
-        "to structure" : name,
-        "to layer" : "reservoir",
-        "type" : "fully connected",
-        "opcode" : "add",
-        "plastic" : False,
-        "sparse" : fraction < 0.5,
-        "weight config" : {
-            "type" : "random",
-            "min weight" : -1.0,
-            "max weight" : 1.0,
-            "fraction" : fraction
-        },
-    }
+    structure["layers"] = [ reservoir ]
 
     r_r = {
         "name" : "r_r",
@@ -83,26 +50,8 @@ def build_rc(name, device, fraction, input_size, res_dim, output_size):
         },
     }
 
-    o_r = {
-        "name" : "o_r",
-        "from structure" : name,
-        "from layer" : "reservoir",
-        "to structure" : name,
-        "to layer" : "output_layer",
-        "type" : "fully connected",
-        "opcode" : "add",
-        "plastic" : False,
-        "sparse" : fraction < 0.5,
-        "weight config" : {
-            "type" : "random",
-            "min weight" : -10.0 / (res_dim * res_dim),
-            "max weight" : 10.0 / (res_dim * res_dim),
-            "fraction" : fraction
-        },
-    }
-
     # Create connections
-    connections = [ r_i, r_r, o_r ]
+    connections = [ r_r ]
 
     # Create network
     return structure, connections
@@ -117,10 +66,8 @@ def link_rc(structures, res_dim, macro_fraction=0.1, micro_fraction=0.1):
                     {
                         "name" : "%s>%s" % (s1["name"], s2["name"]),
                         "from structure" : s1["name"],
-                        #"from layer" : "output_layer",
                         "from layer" : "reservoir",
                         "to structure" : s2["name"],
-                        #"to layer" : "input_layer",
                         "to layer" : "reservoir",
                         "type" : "fully connected",
                         "opcode" : "add",
@@ -137,7 +84,7 @@ def link_rc(structures, res_dim, macro_fraction=0.1, micro_fraction=0.1):
                     })
     return conn
 
-def build_environment(num_rcs, visualizer=False):
+def build_environment(structures, visualizer=False):
     modules = []
     if visualizer:
         modules = [
@@ -145,38 +92,21 @@ def build_environment(num_rcs, visualizer=False):
                 "type" : "visualizer",
                 "colored" : False,
                 "layers" : [
-                    #{ "structure" : "rc", "layer" : "input_layer" },
-                    { "structure" : "rc%05d" % i, "layer" : "reservoir" }
-                        for i in range(num_rcs)
-                    #{ "structure" : "rc", "layer" : "output_layer" },
+                    { "structure" : s["name"], "layer" : l["name"] }
+                        for s in structures for l in s["layers"]
                 ]
             },
-#            {
-#                "type" : "periodic_input",
-#                "min" : -0.5,
-#                "max" : 0.5,
-#                "fraction" : 0.5,
-#                "random" : True,
-#                "layers" : [
-#                    {
-#                        "structure" : "rc",
-#                        "layer" : "input_layer"
-#                    }
-#                ]
-#            }
         ]
 
-    return Environment({"modules" : modules})
+    return modules
 
 def main(infile=None, outfile=None,
         visualizer=False, refresh_rate=0, device=None,
         iterations=1000000, worker_threads=4,
         engine_multithreading=True):
 
-    num_rcs = 10
-    input_size = 32
+    num_rcs = 8
     res_dim = 64
-    output_size = 32
     fraction = 1.0
 
     if type(device) is list:
@@ -188,8 +118,7 @@ def main(infile=None, outfile=None,
     connections = []
     for i in range(num_rcs):
         name = "rc%05d" % i
-        s, c = build_rc(name, devices[i], fraction,
-            input_size, res_dim, output_size)
+        s, c = build_rc(name, devices[i], fraction, res_dim)
         structures.append(s)
         connections += c
 
@@ -197,11 +126,105 @@ def main(infile=None, outfile=None,
     micro_fraction = 1.0
     connections += link_rc(structures, res_dim, macro_fraction, micro_fraction)
 
+    # Layers that need ghost copies for MPI
+    from_ghosts = set()
+    to_ghosts = dict()
+    mpi_tags = dict()
+    mpi_owners = dict()
+
+    mpi_size = get_mpi_size()
+    mpi_rank = get_mpi_rank()
+
+    # Prune network based on MPI rank
+    if get_mpi_size() > 1:
+
+        # Round robin the structures
+        mpi_tag = 0
+        for i,s in enumerate(structures):
+            owner = i % mpi_size
+            s["mpi owner"] = owner
+
+            # Assign unique tags to layers
+            for l in s["layers"]:
+                mpi_tags[(s["name"], l["name"])] = mpi_tag
+                mpi_owners[(s["name"], l["name"])] = owner
+                mpi_tag += 1
+
+        # Identify bridging connections and ghost layers
+        filtered_connections = []
+        for i,c in enumerate(connections):
+            from_owner = mpi_owners[(c["from structure"], c["from layer"])]
+            to_owner   = mpi_owners[(c["to structure"],   c["to layer"])]
+
+            # Mark connection and add layers to ghosts if necessary
+            if to_owner == mpi_rank:
+                if from_owner != mpi_rank:
+                    from_ghosts.add((c["from structure"], c["from layer"], from_owner))
+                    c["from layer"] = "%s_%s" % (c["from structure"], c["from layer"])
+                    c["from structure"] = "ghost"
+                filtered_connections.append(c)
+            elif from_owner == mpi_rank:
+                to_ghosts.setdefault(
+                    (c["from structure"], c["from layer"]), set()).add(to_owner)
+
+        # Create ghost layers and structure
+        ghost_layers = []
+        for s in structures:
+            for l in s["layers"]:
+                for s_name, l_name, from_owner in from_ghosts:
+                    if s["name"] == s_name and l["name"] == l_name:
+                        gl = deepcopy(l)
+                        gl["name"] = "%s_%s" % (s["name"], l["name"])
+                        gl["structure"] = "ghost"
+                        gl["ghost"] = True
+                        ghost_layers.append(gl)
+                    else:
+                        if mpi_rank == 0 and "init config" in l:
+                            del l["init config"]
+
+        ghost_structure = {
+            "name" : "ghost", "type" : "parallel", "layers" : ghost_layers}
+
+        structures = [s for s in structures if s["mpi owner"] == mpi_rank]
+        structures.append(ghost_structure)
+        connections = filtered_connections
+
     network = Network(
         {"structures" : structures,
          "connections" : connections})
 
-    env = build_environment(num_rcs, visualizer)
+    #modules = build_environment(structures, visualizer)
+    modules = build_environment(structures,
+        visualizer if mpi_rank == 0 else False)
+
+    # Add MPI modules for ghost layer transfers
+    if len(from_ghosts) > 0 or len(to_ghosts) > 0:
+        modules.append({
+            "type" : "mpi",
+            "layers" : [
+                {
+                    "structure" : "ghost",
+                    "layer" : "%s_%s" % (s_name, l_name),
+                    "input" : True,
+                    "mpi source" : from_owner,
+                    "mpi tag" : mpi_tags[(s_name, l_name)],
+                } for s_name,l_name,from_owner in from_ghosts
+            ] + [
+                {
+                    "structure" : s_name,
+                    "layer" : l_name,
+                    "output" : True,
+                    "lockstep" : True,
+                    "mpi destinations" : list(to_owners),
+                    "mpi tag" : mpi_tags[(s_name, l_name)],
+                } for (s_name,l_name,),to_owners in to_ghosts.iteritems()
+            ]
+        })
+    
+        import json
+        print(json.dumps(modules[-1], indent=4))
+
+    env = Environment({"modules" : modules})
 
     if infile is not None:
         if not path.exists(infile):
@@ -222,9 +245,6 @@ def main(infile=None, outfile=None,
     if refresh_rate > 0:
         train_args["refresh rate"] = refresh_rate;
     report = network.run(env, train_args)
-
-    #mat = network.get_weight_matrix("r_i").to_list()
-    #print(mat)
 
     if report is None:
         print("Engine failure.  Exiting...")
