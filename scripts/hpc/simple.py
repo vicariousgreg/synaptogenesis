@@ -271,18 +271,26 @@ if __name__ == "__main__":
                         help='run the visualizer')
     parser.add_argument('-host', action='store_true', default=False,
                         help='run on host CPU')
+    parser.add_argument('-gpus', action='store_true', default=False,
+                        help='run on available GPUs')
     parser.add_argument('-d', type=int, default=1,
                         help='run on device #')
-    parser.add_argument('-r', type=int, default=0,
+    parser.add_argument('-r', type=float, default=0.0,
                         help='refresh rate')
     parser.add_argument('-it', type=int, default=1000000,
                         help='iterations')
-    parser.add_argument('-w', type=int, default=4,
+    parser.add_argument('-w', type=int, default=0,
                         help='worker threads')
+    parser.add_argument('-e', action='store_true', default=False,
+                        help='engine multithreading')
     args = parser.parse_args()
 
-    if args.host or len(get_gpus()) == 0:
+    if args.host and args.gpus:
+        devices = get_gpus() + [get_cpu()]
+    elif args.host or len(get_gpus()) == 0:
         device = get_cpu()
+    elif args.gpus:
+        device = get_gpus()
     else:
         device = get_gpus()[args.d]
 
@@ -292,7 +300,4 @@ if __name__ == "__main__":
     set_warnings(False)
     set_debug(False)
 
-    engine_multithreading = False
-
-    main(args.i, args.o, args.visualizer, args.r, device, args.it,
-        args.w, engine_multithreading)
+    main(args.i, args.o, args.visualizer, args.r, device, args.it, args.w, args.e)

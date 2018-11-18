@@ -94,18 +94,18 @@ void transpose_matrices_in_place(std::vector<T*> data,
     } else {
 #ifdef __CUDACC__
         // Create temporary matrix
-        Pointer<T> temp = Pointer<T>::device_pointer(
-            device_id, size);
+        Pointer<T> temp = Pointer<T>::device_pointer(device_id, size);
 
         auto stream = res_man->get_default_stream(device_id);
 
         for (auto ptr : data) {
             Pointer<T> p = Pointer<T>(ptr, size, device_id, false);
-            p.copy_to(&temp, stream);
+            p.copy_to(temp, stream);
             transpose_matrix_out_of_place(temp.get_unsafe(),
                 ptr, original_rows, original_cols, device_id);
         }
 
+        device_synchronize();
         temp.free();
 #endif
     }

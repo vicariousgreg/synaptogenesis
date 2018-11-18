@@ -1,5 +1,6 @@
 #ifdef __MPI__
 
+#include <string>
 #include "io/impl/mpi_module.h"
 
 REGISTER_MODULE(MPIModule, "mpi");
@@ -66,7 +67,7 @@ MPIModule::MPIModule(LayerList layers, ModuleConfig *config)
                 destinations[layer].push_back(dest);
 
                 LOG_DEBUG("Sending " + layer->str() + " to "
-                    + dest + " (" + tag + ")");
+                    + std::to_string(dest) + " (" + std::to_string(tag) + ")");
 
                 // Initiate first send if lockstep
                 if (lockstep)
@@ -83,7 +84,7 @@ void MPIModule::feed_input_impl(Buffer *buffer) {
             int tag = tags[layer];
 
             LOG_DEBUG("Receiving " + layer->str() + " to "
-                + dest + " (" + tag + ")");
+                + std::to_string(dest) + " (" + std::to_string(tag) + ")");
 
             mpi_wrap_recv(buffer->get_input(layer).get(), layer->size, dest, tag);
         }
@@ -99,7 +100,8 @@ void MPIModule::report_output_impl(Buffer *buffer) {
 
             // Wait for previous sends
             for (auto req : reqs) {
-                LOG_DEBUG("Waiting for  " + layer->str() + " req " + req);
+                LOG_DEBUG("Waiting for  " + layer->str() +
+                    " req " + std::to_string(req));
                 mpi_wrap_wait(req);
             }
 
@@ -113,7 +115,7 @@ void MPIModule::report_output_impl(Buffer *buffer) {
                 int req = reqs[i];
 
                 LOG_DEBUG("Sending " + layer->str() + " to "
-                    + dest + " (" + tag + ")");
+                    + std::to_string(dest) + " (" + std::to_string(tag) + ")");
 
                 mpi_wrap_isend(req, l_buf, layer->size, dest, tag);
             }

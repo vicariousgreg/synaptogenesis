@@ -141,7 +141,7 @@ $(BUILDDIR_UI)/%.$(OBJEXT): $(UIPATH)/%.$(SRCEXT)
 #  MPI BUILDING
 #---------------------------------------------------------------------------------
 $(MPIOBJ): $(MPIPATH)/mpi_wrap.cpp $(MPIPATH)/mpi_wrap.h
-	mpic++ -fopenmp -fPIC -D__MPI__ -I$(COREPATH) src/mpi/mpi_wrap.cpp -c -o build/mpi_wrap.o
+	mpic++ -w -fPIC -std=c++11 -fopenmp -fPIC -D__MPI__ -I$(COREPATH) src/mpi/mpi_wrap.cpp -c -o build/mpi_wrap.o
 
 #---------------------------------------------------------------------------------
 #  CORE BUILDING

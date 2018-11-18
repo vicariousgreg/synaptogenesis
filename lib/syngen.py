@@ -135,6 +135,10 @@ _syn.run.restype = c_void_p
 _syn.run.argtypes = (c_void_p, c_void_p, c_void_p, c_void_p)
 
 _syn.destroy.argtypes = (c_void_p,)
+_syn.destroy_network.argtypes = (c_void_p,)
+_syn.destroy_environment.argtypes = (c_void_p,)
+_syn.destroy_state.argtypes = (c_void_p,)
+_syn.destroy_properties.argtypes = (c_void_p,)
 
 _syn.get_cpu.restype = c_int
 _syn.get_gpus.restype = CArray
@@ -242,17 +246,8 @@ def create_delay_weight_callback(name, f):
     _syn.add_delay_weight_callback(name, addr)
 
 
-""" Base Class for C Object wrapper """
-class CObject:
-    def __init(self):
-        self.obj = None
-
-    def __del__(self):
-        if _syn is not None and self.obj is not None:
-            _syn.destroy(self.obj)
-
 """ Properties: C dictionary implementation """
-class Properties(CObject):
+class Properties:
     def __init__(self, props=dict()):
         # Dictionaries of Property Objects
         self.properties = OrderedDict()
@@ -379,9 +374,15 @@ class Properties(CObject):
         self.child_arrays[key].append(props)
         _syn.add_to_child_array(self.obj, key, props.obj)
 
+    def free(self):
+        if _syn is not None:
+            if self.obj is not None:
+                _syn.destroy(self.obj)
+                self.obj = None
+
 
 """ Environment Wrapper """
-class Environment(CObject):
+class Environment:
     def __init__(self, env):
         if type(env) is str:
             self.obj = _syn.load_env(env)
@@ -393,14 +394,17 @@ class Environment(CObject):
     def save(self, filename):
         return _syn.save_env(self.obj, filename)
 
-    def __del__(self):
-        if _syn is not None and self.props is not None:
-            del self.props
-            _syn.destroy(self.obj)
+    def free(self):
+        if _syn is not None:
+            if self.props is not None:
+                self.props.free()
+                self.props = None
+            _syn.destroy_environment(self.obj)
+            self.obj = None
 
 
 """ Network Wrapper """
-class Network(CObject):
+class Network:
     def __init__(self, net):
         if type(net) is str:
             self.obj = _syn.load_net(net)
@@ -413,14 +417,20 @@ class Network(CObject):
     def save(self, filename):
         return _syn.save_net(self.obj, filename)
 
-    def __del__(self):
-        if _syn is not None and self.props is not None:
-            del self.props
-            _syn.destroy(self.obj)
+    def free(self):
+        if _syn is not None:
+            if self.props is not None:
+                self.props.free()
+                self.props = None
+            if self.state is not None:
+                _syn.destroy_state(self.state)
+                self.state = None
+            _syn.destroy_network(self.obj)
+            self.obj = None
 
     def build_state(self, filename=None):
         if self.state is not None:
-            _syn.destroy(self.state)
+            _syn.destroy_state(self.state)
 
         if filename is None:
             self.state = _syn.build_state(self.obj)

@@ -277,8 +277,24 @@ PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args) {
 }
 
 
-void destroy(void* obj) {
+extern "C" void destroy(void* obj) {
     delete obj;
+}
+
+extern "C" void destroy_network(NETWORK net) {
+    delete (Network*)net;
+}
+
+extern "C" void destroy_environment(ENVIRONMENT env) {
+    delete (Environment*)env;
+}
+
+extern "C" void destroy_state(STATE state) {
+    delete (State*)state;
+}
+
+extern "C" void destroy_properties(PROPS props) {
+    delete (PropertyConfig*)props;
 }
 
 int get_cpu() {

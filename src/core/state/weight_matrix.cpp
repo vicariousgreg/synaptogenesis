@@ -38,8 +38,6 @@ WeightMatrix::~WeightMatrix() {
 }
 
 void WeightMatrix::transpose() {
-    DeviceID host_id = ResourceManager::get_instance()->get_host_id();
-
     // Only transpose if necessary
     // If convolutional or num_weights == to_layer size, transposition is a no-op.
     if (not connection->convolutional

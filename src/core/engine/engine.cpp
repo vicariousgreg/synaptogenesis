@@ -203,53 +203,47 @@ void Engine::single_thread_loop() {
     this->network_running = true;
 
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
-        // Wait for timer, then start clearing inputs
+        // Reset iteration timer
         if (time_limit > 0) iteration_timer.reset();
 
-        // Launch pre-input calculations
-        for (auto& cluster : clusters)
-            cluster->launch_pre_input_calculations();
+        /*************************************/
+        /*** Launch pre-input computations ***/
+        /*************************************/
+        for (auto& c : clusters) c->launch_pre_input_calculations();
 
         /**************************/
         /*** Read sensory input ***/
         /**************************/
-        for (auto& cluster : clusters) cluster->wait_for_input();
-        for (auto& module : this->modules)
-            module->feed_input(buffer);
-        for (auto& cluster : clusters) cluster->launch_input();
+        for (auto& c : clusters) c->wait_for_input();
+        for (auto& m : modules)  m->feed_input(buffer);
+        for (auto& c : clusters) c->launch_input();
 
-        /****************************/
-        /*** Perform computations ***/
-        /****************************/
-        for (auto& cluster : clusters)
-            cluster->launch_post_input_calculations();
-        for (auto& cluster : clusters)
-            cluster->launch_state_update();
+        /***************************************/
+        /*** Perform post-input computations ***/
+        /***************************************/
+        for (auto& c : clusters) c->launch_post_input_calculations();
+        for (auto& c : clusters) c->launch_state_update();
+
         if (learning_flag)
-            for (auto& cluster : clusters)
-                cluster->launch_weight_update();
+            for (auto& c : clusters) c->launch_weight_update();
 
         /**************************/
         /*** Write motor output ***/
         /**************************/
         if (i % environment_rate == 0) {
-            for (auto& cluster : clusters) cluster->launch_output();
-            for (auto& cluster : clusters) cluster->wait_for_output();
+            // Stream output
+            if (not suppress_output) {
+                for (auto& c : clusters) c->launch_output();
+                for (auto& c : clusters) c->wait_for_output();
+                for (auto& m : modules)  m->report_output(buffer);
+            }
 
-            // Stream output and update UI
-            if (not suppress_output)
-                for (auto& module : this->modules)
-                    module->report_output(buffer);
-#ifdef __GUI__
+            // Update UI
             GuiController::update();
-#endif
         }
 
-        // Wait for scheduler to complete
-        Scheduler::get_instance()->wait_for_completion();
-
         // Cycle modules
-        for (auto& module : this->modules) module->cycle();
+        for (auto& m : modules) m->cycle();
 
         // Check for errors
         device_check_error(nullptr);
@@ -272,6 +266,9 @@ void Engine::single_thread_loop() {
     // Set term lock owner to ensure interrupt doesn't hang
     term_lock.set_owner(NETWORK_THREAD);
 
+    // Wait for scheduler to complete
+    Scheduler::get_instance()->wait_for_completion();
+
     // Final synchronize
     device_synchronize();
 
@@ -280,16 +277,13 @@ void Engine::single_thread_loop() {
         iterations, run_timer.query(nullptr));
 
     // Allow modules to modify report
-    for (auto& module : this->modules)
-        module->report(report);
+    for (auto& m : this->modules) m->report(report);
 
     // Report report if verbose
     if (verbose) report->print();
 
-#ifdef __GUI__
     // Shutdown GUI
     GuiController::quit();
-#endif
 
     this->network_running = false;
     this->environment_running = false;
@@ -306,34 +300,34 @@ void Engine::network_loop() {
         if (time_limit > 0) iteration_timer.reset();
 
         // Launch pre-input calculations
-        for (auto& cluster : clusters)
-            cluster->launch_pre_input_calculations();
+        for (auto& c : clusters) c->launch_pre_input_calculations();
 
         /**************************/
         /*** Read sensory input ***/
         /**************************/
         sensory_lock.wait(NETWORK_THREAD);
-        for (auto& cluster : clusters) cluster->launch_input();
+
+        for (auto& c : clusters) c->launch_input();
+
         sensory_lock.pass(ENVIRONMENT_THREAD);
 
         /****************************/
         /*** Perform computations ***/
         /****************************/
-        for (auto& cluster : clusters)
-            cluster->launch_post_input_calculations();
-        for (auto& cluster : clusters)
-            cluster->launch_state_update();
+        for (auto& c : clusters) c->launch_post_input_calculations();
+        for (auto& c : clusters) c->launch_state_update();
+
         if (learning_flag)
-            for (auto& cluster : clusters)
-                cluster->launch_weight_update();
+            for (auto& c : clusters) c->launch_weight_update();
 
         /**************************/
         /*** Write motor output ***/
         /**************************/
         motor_lock.wait(NETWORK_THREAD);
-        if (i % environment_rate == 0) {
-            for (auto& cluster : clusters) cluster->launch_output();
-        }
+
+        if (i % environment_rate == 0)
+            for (auto& c : clusters) c->launch_output();
+
         motor_lock.pass(ENVIRONMENT_THREAD);
 
         // Check for errors
@@ -370,16 +364,13 @@ void Engine::network_loop() {
         iterations, run_timer.query(nullptr));
 
     // Allow modules to modify report
-    for (auto& module : this->modules)
-        module->report(report);
+    for (auto& m : modules) m->report(report);
 
     // Report report if verbose
     if (verbose) report->print();
 
-#ifdef __GUI__
     // Shutdown GUI
     GuiController::quit();
-#endif
 
     this->network_running = false;
 }
@@ -390,30 +381,35 @@ void Engine::environment_loop() {
     this->environment_running = true;
 
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
-        // Write sensory buffer
+        /****************************/
+        /*** Write sensory buffer ***/
+        /****************************/
         sensory_lock.wait(ENVIRONMENT_THREAD);
-        for (auto& cluster : clusters) cluster->wait_for_input();
-        for (auto& module : this->modules)
-            module->feed_input(buffer);
+
+        for (auto& c : clusters) c->wait_for_input();
+        for (auto& m : modules)  m->feed_input(buffer);
+
         sensory_lock.pass(NETWORK_THREAD);
 
-        // Read motor buffer
+        /*************************/
+        /*** Read motor buffer ***/
+        /*************************/
         motor_lock.wait(ENVIRONMENT_THREAD);
-        if (i % environment_rate == 0) {
-            // Stream output and update UI
-            if (not suppress_output) {
-                for (auto& cluster : clusters) cluster->wait_for_output();
-                for (auto& module : this->modules)
-                    module->report_output(buffer);
-            }
-#ifdef __GUI__
-            GuiController::update();
-#endif
+
+        // Stream output
+        if (i % environment_rate == 0 and not suppress_output) {
+            for (auto& c : clusters) c->wait_for_output();
+            for (auto& m : modules)  m->report_output(buffer);
         }
+
         motor_lock.pass(NETWORK_THREAD);
 
+        // Update environment
+        if (i % environment_rate == 0)
+            GuiController::update();
+
         // Cycle modules
-        for (auto& module : this->modules) module->cycle();
+        for (auto& m : modules) m->cycle();
 
         // If engine gets interrupted, pass the locks and break
         if (not this->environment_running) {
@@ -526,10 +522,8 @@ Report* Engine::run(PropertyConfig args) {
                 &Engine::single_thread_loop, this));
         }
 
-#ifdef __GUI__
         // Launch UI on main thread
         GuiController::launch();
-#endif
 
         // Wait for threads
         for (auto& thread : threads)

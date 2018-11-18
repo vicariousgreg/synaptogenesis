@@ -69,6 +69,10 @@ extern "C" ARRAY get_weight_matrix(STATE state, char* conn_name, char* key=nullp
 extern "C" PROPS run(NETWORK net, ENVIRONMENT env, STATE state, PROPS args);
 
 extern "C" void destroy(void* obj);
+extern "C" void destroy_network(NETWORK net);
+extern "C" void destroy_environment(ENVIRONMENT env);
+extern "C" void destroy_state(STATE state);
+extern "C" void destroy_properties(PROPS props);
 
 extern "C" int get_num_gpus();
 extern "C" int get_cpu();

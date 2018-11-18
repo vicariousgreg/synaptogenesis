@@ -8,4 +8,12 @@ class GuiController {
         static void quit();
 };
 
+#ifndef __GUI__
+
+void GuiController::launch() { }
+void GuiController::update() { }
+void GuiController::quit() { }
+
+#endif
+
 #endif
