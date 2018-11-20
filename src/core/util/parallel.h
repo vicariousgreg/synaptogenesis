@@ -61,6 +61,7 @@ void free_cuda_rand();
 #define device_check_error(msg)
 
 #include <algorithm>
+#include <cmath>
 #define MIN std::fmin
 #define MAX std::fmax
 
