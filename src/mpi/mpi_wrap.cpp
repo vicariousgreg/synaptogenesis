@@ -1,3 +1,5 @@
+#ifdef __MPI__
+
 #include <mpi.h>
 #include <vector>
 
@@ -28,6 +30,10 @@ int mpi_wrap_get_size() {
     if (MPI_SUCCESS != MPI_Comm_size(MPI_COMM_WORLD, &mpi_size))
         LOG_ERROR("MPI_Comm_size returned an error!");
     return mpi_size;
+}
+
+void mpi_wrap_barrier() {
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 static std::vector<MPI_Request*> requests;
@@ -74,3 +80,5 @@ void mpi_wrap_recv(void *buf, int count, int source, int tag) {
                 MPI_COMM_WORLD, MPI_STATUS_IGNORE))
         LOG_ERROR("Failed to call MPI_Recv!");
 }
+
+#endif

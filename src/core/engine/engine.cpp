@@ -11,6 +11,7 @@
 #include "state/attributes.h"
 #include "report.h"
 #include "gui_controller.h"
+#include "mpi_wrap.h"
 
 Engine::Engine(Context context)
         : context(context),
@@ -197,6 +198,8 @@ size_t Engine::get_buffer_bytes() const {
 
 /* Launches network and environment computations */
 void Engine::single_thread_loop() {
+    // Synchronize MPI processes, if MPI is enabled (no-op otherwise)
+    mpi_wrap_barrier();
     run_timer.reset();
 
     this->environment_running = true;
@@ -269,8 +272,11 @@ void Engine::single_thread_loop() {
     // Wait for scheduler to complete
     Scheduler::get_instance()->wait_for_completion();
 
-    // Final synchronize
+    // Final device synchronize
     device_synchronize();
+
+    // MPI synchronize
+    mpi_wrap_barrier();
 
     // Create report
     this->report = new Report(this, this->context.state,
@@ -292,7 +298,10 @@ void Engine::single_thread_loop() {
 /* Launches network computations
  *   Exchanges thread-safe locks with environment loop */
 void Engine::network_loop() {
+    // Synchronize MPI processes, if MPI is enabled (no-op otherwise)
+    mpi_wrap_barrier();
     run_timer.reset();
+
     this->network_running = true;
 
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
@@ -355,9 +364,11 @@ void Engine::network_loop() {
     // Wait for scheduler to complete
     Scheduler::get_instance()->wait_for_completion();
 
-
-    // Final synchronize
+    // Final device synchronize
     device_synchronize();
+
+    // MPI synchronize
+    mpi_wrap_barrier();
 
     // Create report
     this->report = new Report(this, this->context.state,

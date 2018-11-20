@@ -11,7 +11,7 @@ from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 
-def build_rc(name, device, fraction, res_dim):
+def build_rc(name, device, fraction, res_dim, num_recurrent):
     # Create main structure
     structure = {"name" : name, "type" : "parallel"}
 
@@ -32,26 +32,26 @@ def build_rc(name, device, fraction, res_dim):
     # Add layers to structure
     structure["layers"] = [ reservoir ]
 
-    r_r = {
-        "name" : "r_r",
-        "from structure" : name,
-        "from layer" : "reservoir",
-        "to structure" : name,
-        "to layer" : "reservoir",
-        "type" : "fully connected",
-        "opcode" : "add",
-        "plastic" : False,
-        "sparse" : fraction < 0.5,
-        "weight config" : {
-            "type" : "random",
-            "min weight" : -0.1 / (res_dim * res_dim),
-            "max weight" : 0.1 / (res_dim * res_dim),
-            "fraction" : fraction
-        },
-    }
-
     # Create connections
-    connections = [ r_r ]
+    connections = []
+    for i in range(num_recurrent):
+        connections.append({
+            "name" : "r_r_%4d" % i,
+            "from structure" : name,
+            "from layer" : "reservoir",
+            "to structure" : name,
+            "to layer" : "reservoir",
+            "type" : "fully connected",
+            "opcode" : "add",
+            "plastic" : False,
+            "sparse" : fraction < 0.5,
+            "weight config" : {
+                "type" : "random",
+                "min weight" : -0.1 / (res_dim * res_dim),
+                "max weight" : 0.1 / (res_dim * res_dim),
+                "fraction" : fraction
+            },
+        })
 
     # Create network
     return structure, connections
@@ -105,9 +105,10 @@ def main(infile=None, outfile=None,
         iterations=1000000, worker_threads=4,
         engine_multithreading=True):
 
-    num_rcs = 8
+    num_rcs = 16
     res_dim = 64
     fraction = 1.0
+    num_recurrent = 1
 
     if type(device) is list:
         devices = [device[i % len(device)] for i in range(num_rcs)]
@@ -118,7 +119,7 @@ def main(infile=None, outfile=None,
     connections = []
     for i in range(num_rcs):
         name = "rc%05d" % i
-        s, c = build_rc(name, devices[i], fraction, res_dim)
+        s, c = build_rc(name, devices[i], fraction, res_dim, num_recurrent)
         structures.append(s)
         connections += c
 
@@ -178,9 +179,6 @@ def main(infile=None, outfile=None,
                         gl["structure"] = "ghost"
                         gl["ghost"] = True
                         ghost_layers.append(gl)
-                    else:
-                        if mpi_rank == 0 and "init config" in l:
-                            del l["init config"]
 
         ghost_structure = {
             "name" : "ghost", "type" : "parallel", "layers" : ghost_layers}
