@@ -59,6 +59,7 @@ class Layer {
         Structure* const structure;
         const int rows, columns, size;
         const bool plastic;
+        const bool is_ghost;
 
     protected:
         friend class Structure;

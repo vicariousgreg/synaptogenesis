@@ -141,7 +141,7 @@ void Engine::build_clusters(PropertyConfig args) {
                         this->inter_device_transfers.push_back(inst);
                     }
                     cluster->add_inter_device_instruction(
-                        syn_inst, inst, new_transfer);
+                        conn, syn_inst, inst, new_transfer);
                 }
             }
         }

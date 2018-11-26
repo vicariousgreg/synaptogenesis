@@ -22,6 +22,8 @@ class ClusterNode {
             Stream *io_stream, Stream *compute_stream);
         virtual ~ClusterNode();
 
+        int get_ghost_inst_index() const;
+
         void activate_input();
         void activate_state();
         void activate_output();
@@ -49,6 +51,9 @@ class ClusterNode {
     private:
         void dendrite_DFS(DendriticNode *curr);
 
+        // Index of first instruction with a ghost source (-1 default)
+        int ghost_inst_index;
+
         SynapseInstructionList synapse_activate_instructions;
         SynapseInstructionList synapse_update_instructions;
 
@@ -56,7 +61,6 @@ class ClusterNode {
         InstructionList update_instructions;
         Instruction *state_update_instruction;
         Instruction *state_learning_instruction;
-
 
         Instruction *input_instruction;
         std::vector<Instruction*> input_auxiliary_instructions;

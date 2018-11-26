@@ -18,6 +18,7 @@ Layer::Layer(const Layer& other)
       columns(other.columns),
       size(other.size),
       plastic(other.plastic),
+      is_ghost(other.is_ghost),
       dendritic_root(nullptr) { }
 
 Layer::Layer(Structure *structure, const LayerConfig *config)
@@ -30,6 +31,7 @@ Layer::Layer(Structure *structure, const LayerConfig *config)
           columns(config->columns),
           size(rows * columns),
           plastic(config->plastic),
+          is_ghost(config->get_bool("ghost", false)),
           dendritic_root(new DendriticNode(this)) {
     add_dendrites("root", config->get_child_array("dendrites"));
 }

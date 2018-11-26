@@ -8,6 +8,7 @@ ClusterNode::ClusterNode(Layer *layer, State *state, Engine *engine,
         Stream *io_stream, Stream *compute_stream)
         : to_layer(layer),
           device_id(state->get_device_id(layer)),
+          ghost_inst_index(-1),
           input_instruction(nullptr),
           output_instruction(nullptr),
           state_update_instruction(nullptr),
@@ -105,6 +106,12 @@ ClusterNode::~ClusterNode() {
     for (auto& inst : output_auxiliary_instructions) delete inst;
 }
 
+int ClusterNode::get_ghost_inst_index() const {
+    if (ghost_inst_index == -1)
+        return activate_instructions.size();
+    else return ghost_inst_index;
+}
+
 void ClusterNode::dendrite_DFS(DendriticNode *curr) {
     // Second order connections need a transfer to copy the host weights
     if (curr->second_order)
@@ -126,6 +133,16 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
         // If internal, recurse first (post-fix DFS)
         if (child->is_leaf()) {
             Connection *conn = child->conn;
+
+            // Check if destination is a ghost (invalid)
+            if (conn->to_layer->is_ghost)
+                LOG_ERROR(
+                    "Error building cluster node for " + to_layer->str() + ":\n"
+                    "  Ghost layers cannot have incoming connections!");
+
+            // If this is the first ghost source, mark it
+            if (ghost_inst_index < 0 and conn->from_layer->is_ghost)
+                ghost_inst_index = activate_instructions.size();
 
             auto syn_inst = new SynapseActivateInstruction(
                 curr, conn, state, compute_stream);
@@ -169,7 +186,7 @@ void ClusterNode::dendrite_DFS(DendriticNode *curr) {
 
         if (conn == nullptr)
             LOG_ERROR(
-                "Error building cluster node for " + curr->to_layer->str() + ":\n"
+                "Error building cluster node for " + to_layer->str() + ":\n"
                 "  Missing host connection for second order node!");
 
         auto syn_inst = new SynapseActivateInstruction(

@@ -6,50 +6,9 @@
 #include "state/state.h"
 #include "util/resources/resource_manager.h"
 
-ParallelCluster::ParallelCluster(Structure *structure,
-    State *state, Engine *engine, PropertyConfig args)
-        : Cluster(state, engine, args) {
-    auto res_man = ResourceManager::get_instance();
-
-    // Build instructions
-    for (auto& layer : structure->get_layers()) {
-        auto device_id = state->get_device_id(layer);
-        auto node = new ClusterNode(
-            layer, state, engine, io_streams[device_id],
-            res_man->create_stream(device_id));
-        nodes.push_back(node);
-    }
-
-    /* Schedule instructions */
-    // Find all instructions with INPUT flag
-    pre_input_instructions =
-        sort_instructions(engine, 0, INPUT, false);
-    // Find all instructions without INPUT flag
-    post_input_instructions =
-        sort_instructions(engine, INPUT, 0, false);
-    // Find all plastic instructions
-    plastic_instructions = sort_instructions(engine, 0, 0, true);
-}
-
-InstructionList ParallelCluster::sort_instructions(Engine *engine,
-        IOTypeMask include, IOTypeMask exclude, bool plastic) {
-    std::map<Layer*, std::queue<Instruction*>> schedules;
+static InstructionList round_robin(
+        std::map<Layer*, std::queue<Instruction*>> schedules) {
     InstructionList destination;
-
-    // Extract instructions
-    for (auto& node : nodes) {
-        if ((include == 0 or (engine->get_io_type(node->to_layer) & include)) and
-                not (engine->get_io_type(node->to_layer) & exclude)) {
-            // Add to schedule map for round robin
-            if (plastic) {
-                for (auto& inst : node->get_update_instructions())
-                    schedules[node->to_layer].push(inst);
-            } else {
-                for (auto& inst : node->get_activate_instructions())
-                    schedules[node->to_layer].push(inst);
-            }
-        }
-    }
 
     // Perform round robin on nodes
     // Connections should be initialized this way to take advantage of
@@ -65,11 +24,61 @@ InstructionList ParallelCluster::sort_instructions(Engine *engine,
     return destination;
 }
 
+ParallelCluster::ParallelCluster(Structure *structure,
+    State *state, Engine *engine, PropertyConfig args)
+        : Cluster(state, engine, args) {
+    auto res_man = ResourceManager::get_instance();
+
+    // Build instructions
+    for (auto& layer : structure->get_layers()) {
+        auto device_id = state->get_device_id(layer);
+        auto node = new ClusterNode(
+            layer, state, engine, io_streams[device_id],
+            res_man->create_stream(device_id));
+        nodes.push_back(node);
+    }
+
+    /* Schedule instructions */
+    std::map<Layer*, std::queue<Instruction*>> pre_input_schedules;
+    std::map<Layer*, std::queue<Instruction*>> post_input_schedules;
+    std::map<Layer*, std::queue<Instruction*>> plastic_schedules;
+
+    // Extract instructions
+    for (auto& node : nodes) {
+        // Find all instructions with INPUT flag
+        if (engine->get_io_type(node->to_layer) & INPUT) {
+            for (auto& inst : node->get_activate_instructions())
+                post_input_schedules[node->to_layer].push(inst);
+        // Find all instructions without INPUT flag
+        } else {
+            auto insts = node->get_activate_instructions();
+            int ghost_inst_index = node->get_ghost_inst_index();
+
+            // Add pre-ghost instructions
+            for (auto& inst : InstructionList(insts.begin(), insts.begin() + ghost_inst_index))
+                pre_input_schedules[node->to_layer].push(inst);
+
+            // Add post-ghost instructions
+            for (auto& inst : InstructionList(insts.begin() + ghost_inst_index, insts.end()))
+                post_input_schedules[node->to_layer].push(inst);
+        }
+
+        // Find all plastic instructions
+        for (auto& inst : node->get_update_instructions())
+            plastic_schedules[node->to_layer].push(inst);
+    }
+
+    pre_input_instructions = round_robin(pre_input_schedules);
+    post_input_instructions = round_robin(post_input_schedules);
+    plastic_instructions = round_robin(plastic_schedules);
+}
+
 /* The parallel cluster activates inter device transfers at the beginning
  *   of the cycle.  If it's a new instruction, copy over the dependencies
  *   from the synapse instruction and add it to the list.  Regardless of
  *   whether it's new, make the synapse instruction depend on it. */
 void ParallelCluster::add_inter_device_instruction(
+        Connection *conn,
         Instruction *synapse_instruction,
         Instruction *inter_device_instruction,
         bool new_transfer) {
@@ -77,7 +86,14 @@ void ParallelCluster::add_inter_device_instruction(
     // Copy the synapse instructions dependencies over
     if (new_transfer) {
         inter_device_instruction->copy_dependencies(synapse_instruction);
-        inter_device_instructions.push_back(inter_device_instruction);
+
+        // Transfers from ghost layers must wait for input
+        if (conn->from_layer->is_ghost)
+            post_input_inter_device_instructions.push_back(
+                inter_device_instruction);
+        else
+            pre_input_inter_device_instructions.push_back(
+                inter_device_instruction);
     }
     // Regardless of whether it's new, make the synapse instruction
     //   depend on the transfer instruction
@@ -89,16 +105,25 @@ void ParallelCluster::add_inter_device_instruction(
 /******************************************************************************/
 
 void ParallelCluster::launch_pre_input_calculations() {
-    for (auto& inst : this->inter_device_instructions) inst->activate();
+    for (auto& inst : this->pre_input_inter_device_instructions) inst->activate();
     for (auto& inst : this->pre_input_instructions) inst->activate();
 }
 
 void ParallelCluster::launch_post_input_calculations() {
+    // Compute ghost output before other layers use it
+    for (auto& node : nodes)
+        if (node->to_layer->is_ghost)
+            node->activate_state();
+
+    for (auto& inst : this->post_input_inter_device_instructions) inst->activate();
     for (auto& inst : this->post_input_instructions) inst->activate();
 }
 
 void ParallelCluster::launch_state_update() {
-    for (auto& node : nodes) node->activate_state();
+    // Skip ghost output
+    for (auto& node : nodes)
+        if (not node->to_layer->is_ghost)
+            node->activate_state();
 }
 
 void ParallelCluster::launch_weight_update() {

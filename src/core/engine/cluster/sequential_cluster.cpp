@@ -78,6 +78,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
  *   will be executed before all others, so it's the only one that needs
  *   to be concerned about the transfer. */
 void SequentialCluster::add_inter_device_instruction(
+        Connection *conn,
         Instruction *synapse_instruction,
         Instruction *inter_device_instruction,
         bool new_transfer) {

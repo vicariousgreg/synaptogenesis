@@ -52,7 +52,7 @@ Attributes* NeuralModelBank::build_attributes(Layer *layer) {
 
     try {
         // If the layer is a ghost layer, use the corresponding ghost attributes
-        if (layer->get_config()->get_bool("ghost", false) > 0) {
+        if (layer->is_ghost) {
             auto output_type = get_output_type(neural_model);
 
             switch (output_type) {
