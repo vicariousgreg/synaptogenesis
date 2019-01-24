@@ -11,15 +11,15 @@ from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 
-def build_rc(name, device, fraction, res_dim, num_recurrent):
+def build_rc(name, device, fraction, rows, cols, num_recurrent):
     # Create main structure
     structure = {"name" : name, "type" : "parallel"}
 
     reservoir = {
         "name" : "reservoir",
         "neural model" : "nvm_tanh",
-        "rows" : res_dim,
-        "columns" : res_dim,
+        "rows" : rows,
+        "columns" : cols,
         "device" : device,
         "init config" : {
             "type" : "uniform",
@@ -47,8 +47,8 @@ def build_rc(name, device, fraction, res_dim, num_recurrent):
             "sparse" : fraction < 0.5,
             "weight config" : {
                 "type" : "random",
-                "min weight" : -0.1 / (res_dim * res_dim),
-                "max weight" : 0.1 / (res_dim * res_dim),
+                "min weight" : -0.1 / (rows * cols),
+                "max weight" : 0.1 / (rows * cols),
                 "fraction" : fraction
             },
         })
@@ -56,32 +56,48 @@ def build_rc(name, device, fraction, res_dim, num_recurrent):
     # Create network
     return structure, connections
 
-def link_rc(structures, res_dim, macro_fraction=0.1, micro_fraction=0.1):
+def link_rc(structures, rows, cols, macro_fraction=0.1, micro_fraction=0.1, mode="all_4k"):
     conn = []
+    pairs = []
 
-    for s1 in structures:
-        for s2 in structures:
-            if s1 != s2 and random() < macro_fraction:
-                conn.append(
-                    {
-                        "name" : "%s>%s" % (s1["name"], s2["name"]),
-                        "from structure" : s1["name"],
-                        "from layer" : "reservoir",
-                        "to structure" : s2["name"],
-                        "to layer" : "reservoir",
-                        "type" : "fully connected",
-                        "opcode" : "add",
-                        "plastic" : False,
-                        "sparse" : micro_fraction < 0.5,
-                        "weight config" : {
-                            "type" : "random",
-                            #"min weight" : -0.1 / (res_dim * res_dim),
-                            #"max weight" : 0.1 / (res_dim * res_dim),
-                            "min weight" : -1.0,
-                            "max weight" : 1.0,
-                            "fraction" : micro_fraction
-                        },
-                    })
+    if mode in ["all_4k", "all_4k_big", "all_8k", "all_16k"]:
+        pairs = []
+        for s1 in structures:
+            for s2 in structures:
+                pairs.append((s1, s2))
+        print("All to All connectivity")
+    elif mode in ["one", "one-edge"]:
+        fs = [s for s in structures]
+        ts = [s for s in structures[1:]]
+        ts.append(structures[0])
+        pairs = zip(fs, ts)
+        print("One to One connectivity")
+    elif mode == "isolated":
+        print("Isolated connectivity")
+        return conn
+
+    for s1,s2 in pairs:
+        if s1 != s2 and random() < macro_fraction:
+            conn.append(
+                {
+                    "name" : "%s>%s" % (s1["name"], s2["name"]),
+                    "from structure" : s1["name"],
+                    "from layer" : "reservoir",
+                    "to structure" : s2["name"],
+                    "to layer" : "reservoir",
+                    "type" : "fully connected",
+                    "opcode" : "add",
+                    "plastic" : False,
+                    "sparse" : micro_fraction < 0.5,
+                    "weight config" : {
+                        "type" : "random",
+                        #"min weight" : -0.1 / (rows * cols),
+                        #"max weight" : 0.1 / (rows * cols),
+                        "min weight" : -1.0,
+                        "max weight" : 1.0,
+                        "fraction" : micro_fraction
+                    },
+                })
     return conn
 
 def build_environment(structures, visualizer=False):
@@ -103,12 +119,45 @@ def build_environment(structures, visualizer=False):
 def main(infile=None, outfile=None,
         visualizer=False, refresh_rate=0, device=None,
         iterations=1000000, worker_threads=4,
-        engine_multithreading=True):
+        engine_multithreading=True, mode="all_4k"):
 
-    num_rcs = 16
-    res_dim = 64
+    print("Mode: %s" % mode)
+    if mode == "all_4k":
+        num_rcs = 16
+        rows = 64
+        cols = 64
+    elif mode == "all_4k_big":
+        num_rcs = 32
+        rows = 64
+        cols = 64
+    elif mode == "all_8k":
+        num_rcs = 8
+        rows = 64
+        cols = 128
+    elif mode == "all_16k":
+        num_rcs = 4
+        rows = 128
+        cols = 128
+    elif mode == "one":
+        num_rcs = 128
+        rows = 64
+        cols = 64
+    elif mode == "one-edge":
+        num_rcs = 128
+        rows = 64
+        cols = 64
+    elif mode == "isolated":
+        num_rcs = 256
+        rows = 64
+        cols = 64
+    else:
+        print("Unrecognized mode.")
+        return
+    print("num_rcs=%d  rows=%d  cols=%d" % (num_rcs, rows, cols))
+
     fraction = 1.0
     num_recurrent = 1
+
 
     if type(device) is list:
         devices = [device[i % len(device)] for i in range(num_rcs)]
@@ -119,13 +168,13 @@ def main(infile=None, outfile=None,
     connections = []
     for i in range(num_rcs):
         name = "rc%05d" % i
-        s, c = build_rc(name, devices[i], fraction, res_dim, num_recurrent)
+        s, c = build_rc(name, devices[i], fraction, rows, cols, num_recurrent)
         structures.append(s)
         connections += c
 
     macro_fraction = 1.0
     micro_fraction = 1.0
-    connections += link_rc(structures, res_dim, macro_fraction, micro_fraction)
+    connections += link_rc(structures, rows, cols, macro_fraction, micro_fraction, mode)
 
     # Layers that need ghost copies for MPI
     from_ghosts = set()
@@ -138,32 +187,62 @@ def main(infile=None, outfile=None,
 
     # Prune network based on MPI rank
     if get_mpi_size() > 1:
+        if mode == "one-edge":
+            print("Consolidated distribution")
+            round_robin = False
+        else:
+            print("Round robin distribution")
+            round_robin = True
 
         # Round robin the structures
-        mpi_tag = 0
-        for i,s in enumerate(structures):
-            owner = i % mpi_size
-            s["mpi owner"] = owner
+        if round_robin:
+            mpi_tag = 0
+            for i,s in enumerate(structures):
+                owner = i % mpi_size
+                s["mpi owner"] = owner
 
-            # Assign unique tags to layers
-            for l in s["layers"]:
-                mpi_tags[(s["name"], l["name"])] = mpi_tag
-                mpi_owners[(s["name"], l["name"])] = owner
-                mpi_tag += 1
+                # Assign unique tags to layers
+                for l in s["layers"]:
+                    mpi_tags[(s["name"], l["name"])] = mpi_tag
+                    mpi_owners[(s["name"], l["name"])] = owner
+                    mpi_tag += 1
+        # Assign in blocks
+        else:
+            each = len(structures) / mpi_size
+            count = each
+            owner = 0
+            
+            mpi_tag = 0
+            for i,s in enumerate(structures):
+                s["mpi owner"] = owner
+
+                # Assign unique tags to layers
+                for l in s["layers"]:
+                    mpi_tags[(s["name"], l["name"])] = mpi_tag
+                    mpi_owners[(s["name"], l["name"])] = owner
+                    mpi_tag += 1
+
+                count -= 1
+                if count == 0:
+                    owner += 1
+                    count = each
 
         # Identify bridging connections and ghost layers
-        filtered_connections = []
+        local_connections = []
+        foreign_connections = []
         for i,c in enumerate(connections):
             from_owner = mpi_owners[(c["from structure"], c["from layer"])]
             to_owner   = mpi_owners[(c["to structure"],   c["to layer"])]
 
             # Mark connection and add layers to ghosts if necessary
             if to_owner == mpi_rank:
-                if from_owner != mpi_rank:
+                if from_owner == mpi_rank:
+                    local_connections.append(c)
+                else:
                     from_ghosts.add((c["from structure"], c["from layer"], from_owner))
                     c["from layer"] = "%s_%s" % (c["from structure"], c["from layer"])
                     c["from structure"] = "ghost"
-                filtered_connections.append(c)
+                    foreign_connections.append(c)
             elif from_owner == mpi_rank:
                 to_ghosts.setdefault(
                     (c["from structure"], c["from layer"]), set()).add(to_owner)
@@ -185,7 +264,7 @@ def main(infile=None, outfile=None,
 
         structures = [s for s in structures if s["mpi owner"] == mpi_rank]
         structures.append(ghost_structure)
-        connections = filtered_connections
+        connections = local_connections + foreign_connections
 
     network = Network(
         {"structures" : structures,
@@ -198,7 +277,7 @@ def main(infile=None, outfile=None,
     # Add MPI modules for ghost layer transfers
     if len(from_ghosts) > 0 or len(to_ghosts) > 0:
         modules.append({
-            "type" : "mpi",
+            "type" : "mpi lockstep",
             "layers" : [
                 {
                     "structure" : "ghost",
@@ -212,7 +291,6 @@ def main(infile=None, outfile=None,
                     "structure" : s_name,
                     "layer" : l_name,
                     "output" : True,
-                    "lockstep" : True,
                     "mpi destinations" : list(to_owners),
                     "mpi tag" : mpi_tags[(s_name, l_name)],
                 } for (s_name,l_name,),to_owners in to_ghosts.iteritems()
@@ -281,6 +359,8 @@ if __name__ == "__main__":
                         help='worker threads')
     parser.add_argument('-e', action='store_true', default=False,
                         help='engine multithreading')
+    parser.add_argument('-m', type=str, default="all_4k",
+                        help='mode')
     args = parser.parse_args()
 
     if args.host and args.gpus:
@@ -298,4 +378,4 @@ if __name__ == "__main__":
     set_warnings(False)
     set_debug(False)
 
-    main(args.i, args.o, args.visualizer, args.r, device, args.it, args.w, args.e)
+    main(args.i, args.o, args.visualizer, args.r, device, args.it, args.w, args.e, args.m)

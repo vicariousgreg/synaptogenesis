@@ -16,17 +16,38 @@ class MPIModule : public Module {
 
         virtual void report(Report* report);
 
-    private:
-        // Source and destination ranks
-        std::map<Layer*, int> sources;
-        std::map<Layer*, std::vector<int>> destinations;
+    protected:
+        int mpi_rank;
 
         // Unique tags for each layer
-        std::map<Layer*, int> tags;
+        std::map<int, Layer*> layer_tags;
 
-        // Local buffers and MPI requests for sends
-        std::map<Layer*, Pointer<float>> local_buffers;
-        std::map<Layer*, std::vector<int>> requests;
+        // Input/output layers for each source/destination
+        std::map<int, std::vector<int>> input_tags;
+        std::map<int, std::vector<int>> output_tags;
+
+        // Input/output buffers
+        std::map<int, Pointer<float>> output_buffers;
+        std::map<int, Pointer<float>> input_buffers;
+
+        // Indices, offsets, and sizes
+        // Buffers are reused when possible
+        std::map<int, int> buffer_indices;
+        std::map<int, int> buffer_offsets;
+        std::map<int, int> buffer_sizes;
+
+        // MPI requests
+        std::map<int, void*> send_requests;
+        int recv_requests_array;
+        std::map<int, int> recv_requests;
+        std::map<int, int> recv_requests_inv;
+
+    MODULE_MEMBERS
+};
+
+class MPILockstepModule : public MPIModule {
+    public:
+        MPILockstepModule(LayerList layers, ModuleConfig *config);
 
     MODULE_MEMBERS
 };
