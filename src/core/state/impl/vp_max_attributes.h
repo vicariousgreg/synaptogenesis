@@ -15,12 +15,6 @@ class VPMaxAttributes : public Attributes {
 
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
-        // Internal neural state
-        Pointer<float> state;
-
-        // Baseline tonic activity
-        //float tonic;
-
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };

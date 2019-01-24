@@ -14,12 +14,7 @@ REGISTER_WEIGHT_MATRIX(VPMaxWeightMatrix, "vp_max")
 /******************************************************************************/
 
 VPMaxAttributes::VPMaxAttributes(Layer *layer)
-        : Attributes(layer, FLOAT) {
-    //this->tonic = std::stof(layer->get_parameter("tonic", "0.0"));
-
-    this->state = Attributes::create_neuron_variable<float>(0.0);
-    Attributes::register_neuron_variable("state", &state);
-}
+        : Attributes(layer, FLOAT) { }
 
 void VPMaxWeightMatrix::register_variables() { }
 
@@ -41,19 +36,13 @@ bool VPMaxAttributes::check_compatibility(ClusterType cluster_type) {
 /******************************************************************************/
 
 BUILD_ATTRIBUTE_KERNEL(VPMaxAttributes, vp_max_kernel,
-    //float tonic = att->tonic;
-    float* state = att->state.get();
-
     // input and output are automatically retrieved by the macro,
     //   but this casts the Output* to a float* for convenience
     float *f_outputs = (float*)outputs;
 
     ,
 
-    float input = inputs[nid];
-    float st = inputs[nid];
-    state[nid] = st;
-    SHIFT_FLOAT_OUTPUTS(f_outputs, st); // by default no nonlinearity
+    SHIFT_FLOAT_OUTPUTS(f_outputs, inputs[nid]); // by default no nonlinearity
 )
 
 /******************************************************************************/

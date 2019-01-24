@@ -20,14 +20,14 @@ def build_network(dim=64):
     plastic = True
     stp = True
     stp_tau = "5000"
-    exc_learning_rate = 0.001
+    exc_learning_rate = 0.01
     inh_learning_rate = 0.01
 
     # Noise Parameters
     exc_noise_strength = 20.0
-    exc_noise_rate = 0.01
+    exc_noise_rate = 0.001
     inh_noise_strength = 20.0
-    inh_noise_rate = 0.01
+    inh_noise_rate = 0.001
     exc_random = False
     inh_random = False
 
@@ -351,9 +351,27 @@ def build_network(dim=64):
          "connections" : connections})
 
 def build_environment(visualizer=False, peaks=False, std_dev=10):
-    modules = []
+    modules = [
+            {
+                "type" : "gaussian_random_input",
+                "rate" : "1000",
+                "border" : 0,
+                "std dev" : std_dev,
+                "value" : 1.0,
+                "normalize" : True,
+                "peaks" : peaks,
+                "random" : False,
+                "layers" : [
+                    {
+                        "structure" : "snn",
+                        "layer" : "sine"
+                    }
+                ]
+            }
+        ]
+
     if visualizer:
-        modules = [
+        modules += [
             {
                 "type" : "visualizer",
                 "colored" : False,
@@ -400,22 +418,6 @@ def build_environment(visualizer=False, peaks=False, std_dev=10):
                     { "structure" : "snn", "layer" : "inh" },
                 ]
             },
-            {
-                "type" : "gaussian_random_input",
-                "rate" : "1000",
-                "border" : 0,
-                "std dev" : std_dev,
-                "value" : 1.0,
-                "normalize" : True,
-                "peaks" : peaks,
-                "random" : False,
-                "layers" : [
-                    {
-                        "structure" : "snn",
-                        "layer" : "sine"
-                    }
-                ]
-            }
         ]
 
     return Environment({"modules" : modules})
@@ -515,7 +517,7 @@ def compare_matrices(init_matrix, pre_matrix, post_matrix, to_size):
 def main(infile=None, outfile=None, do_training=True, print_stats=True,
         dim=128, peaks=1, visualizer=False, refresh_rate=0, device=None,
         iterations=1000000):
-    std_dev = int(dim / 10)
+    std_dev = int(dim / 20)
 
     network = build_network(dim)
     env = build_environment(visualizer, peaks, std_dev)

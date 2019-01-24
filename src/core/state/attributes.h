@@ -316,7 +316,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
 #define SHIFT_FLOAT_OUTPUTS(f_outputs, new_output) \
     for (int index = history_size - 1 ; index > 0 ; --index) \
         f_outputs[size * index + nid] = f_outputs[size * (index - 1) + nid]; \
-    f_outputs[nid] = new_output;
+    f_outputs[nid] = (new_output);
 
 #define SHIFT_BIT_OUTPUTS(b_outputs, new_bit) \
     /* Reduce reads, chain values */ \
@@ -329,7 +329,7 @@ Kernel<ATTRIBUTE_ARGS> CLASS_NAME::get_learning_kernel() { \
         curr_value = prev_value; \
     } \
 \
-    b_outputs[nid] = (curr_value >> 1) | (new_bit << 31); \
+    b_outputs[nid] = (curr_value >> 1) | ((new_bit) << 31); \
     bool prev_bit = curr_value >> 31;
 
 #endif
