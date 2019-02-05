@@ -11,6 +11,9 @@ class WeightMatrix {
         WeightMatrix(Connection *conn);
         virtual ~WeightMatrix();
 
+        // Build function
+        static WeightMatrix *build(Connection *conn);
+
         // Getters
         Pointer<float> get_weights() const { return weights; }
         Pointer<float> get_weights_transposed() const
@@ -25,13 +28,15 @@ class WeightMatrix {
         // Pointer sets and transfer functions
         std::vector<BasePointer*> get_pointers();
         std::map<PointerKey, BasePointer*> get_pointer_map();
-        void transpose();
         void transfer(DeviceID new_device);
+
+        // Transposition
+        void transpose();
+        void set_transpose_flag(bool t);
+        bool get_transpose_flag() { return transpose_flag; }
 
         // Subclasses implement this for variable registration
         virtual void register_variables() { }
-        void set_transpose_flag(bool t);
-        bool get_transpose_flag() { return transpose_flag; }
 
         // Auto-resize for sparse matrices, which may need to be resized
         //   after a state save/load
@@ -87,9 +92,6 @@ class WeightMatrix {
         Pointer<int> delays;
 
         Connection* const connection;
-
-        // Build function
-        static WeightMatrix *build(Connection *conn);
 
     protected:
         // Additional matrix layers (variables)

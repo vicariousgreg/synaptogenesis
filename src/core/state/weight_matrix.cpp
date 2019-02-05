@@ -37,6 +37,158 @@ WeightMatrix::~WeightMatrix() {
         free_pointer(this->pointer, device_id);
 }
 
+WeightMatrix *WeightMatrix::build(Connection *conn) {
+    auto mat = new WeightMatrix(conn);
+    mat->init();
+    return mat;
+}
+
+void WeightMatrix::init() {
+    // Consult the pointer stash to see if we can skip any initialization
+    auto pointers = get_pointer_map();
+    auto stash = PointerStash::get_instance();
+    for (auto& pair : pointers) {
+        auto ptr = stash->get(pair.first);
+        if (ptr != nullptr)
+            ptr->give_to(pair.second);
+    }
+
+    // Check if all the relevant sparse data has been preloaded
+    bool sparse_preloaded =
+        not from_row_indices.is_null() and
+        not from_column_indices.is_null() and
+        not from_indices.is_null() and
+        not to_row_indices.is_null() and
+        not to_column_indices.is_null() and
+        not to_indices.is_null() and
+        not used.is_null();
+
+    // Randomize the projection before constructing weights
+    if (connection->randomized_projection and not sparse_preloaded)
+        randomize_projection();
+
+    // Construct weight matrix now that the proper size is available
+    // Initialize weights if not preloaded
+    if (weights.is_null()) {
+        this->weights = Pointer<float>(num_weights);
+        initialize_weights(this,
+            connection->get_config()->get_weight_config(), weights);
+    }
+
+    // Initialize second order weights if not preloaded
+    if (connection->second_order_host and second_order_weights.is_null())
+        this->second_order_weights = Pointer<float>(num_weights);
+
+    // Sparsify
+    if (connection->sparse) {
+        // Check if all of the relevant sparse data has been preloaded
+        if (not sparse_preloaded) {
+            sparsify();
+            this->sparse = true;
+            this->connection->sparsify(this->num_weights);
+        } else {
+            this->resize();
+        }
+    }
+
+    // Register any subclass variables
+    register_variables();
+}
+
+void WeightMatrix::register_variable(
+        std::string key, BasePointer* ptr) {
+    if (this->variables.count(key) > 0)
+        LOG_ERROR("Repeated weight matrix variable key: " + key);
+    this->variables[key] = ptr;
+}
+
+BasePointer* WeightMatrix::get_layer(std::string key) {
+    if (key == "weights") return &weights;
+    try {
+        return variables.at(key);
+    } catch (std::out_of_range) {
+        LOG_ERROR(
+            "Failed to retrieve data \"" + key + "\" in WeightMatrix for "
+            "connection:" + connection->str());
+    }
+}
+
+std::vector<BasePointer*> WeightMatrix::get_pointers() {
+    std::vector<BasePointer*> pointers;
+    for (auto pair : get_pointer_map())
+        pointers.push_back(pair.second);
+    return pointers;
+}
+
+std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
+    std::map<PointerKey, BasePointer*> pointers;
+
+    pointers[PointerKey(connection->id, "weights",
+        weights.get_bytes())] = &weights;
+    pointers[PointerKey(connection->id, "weights transposed",
+        weights_transposed.get_bytes())] = &weights_transposed;
+    pointers[PointerKey(connection->id, "second order weights",
+        second_order_weights.get_bytes())] = &second_order_weights;
+    pointers[PointerKey(connection->id, "nonzero counts",
+        nonzero_counts.get_bytes())] = &nonzero_counts;
+    pointers[PointerKey(connection->id, "from row indices",
+        from_row_indices.get_bytes())] = &from_row_indices;
+    pointers[PointerKey(connection->id, "from column indices",
+        from_column_indices.get_bytes())] = &from_column_indices;
+    pointers[PointerKey(connection->id, "from indices",
+        from_indices.get_bytes())] = &from_indices;
+    pointers[PointerKey(connection->id, "to row indices",
+        to_row_indices.get_bytes())] = &to_row_indices;
+    pointers[PointerKey(connection->id, "to column indices",
+        to_column_indices.get_bytes())] = &to_column_indices;
+    pointers[PointerKey(connection->id, "to indices",
+        to_indices.get_bytes())] = &to_indices;
+    pointers[PointerKey(connection->id, "used",
+        used.get_bytes())] = &used;
+    pointers[PointerKey(connection->id, "distances",
+        distances.get_bytes())] = &distances;
+    pointers[PointerKey(connection->id, "delays",
+        delays.get_bytes())] = &delays;
+
+    for (auto pair : variables)
+        pointers[PointerKey(
+            connection->id, pair.first,
+            pair.second->get_bytes())] = pair.second;
+    return pointers;
+}
+
+void WeightMatrix::transfer(DeviceID new_device) {
+    if (device_id == new_device) return;
+
+    auto host_id = ResourceManager::get_instance()->get_host_id();
+    if (device_id != host_id and new_device != host_id)
+        LOG_ERROR("Cannot transfer attributes directly between devices!");
+
+    bool to_host = (new_device == host_id);
+    auto old_device = device_id;
+    auto old_pointer = this->pointer;
+
+    // Transfer data and update pointer
+    if (to_host) {
+        transfer_pointer(old_pointer, this,
+            get_object_size(),
+            device_id, new_device);
+        this->pointer = this;
+    } else {
+        this->pointer = (WeightMatrix*)
+            transfer_pointer(this, nullptr,
+                get_object_size(),
+                device_id, new_device);
+    }
+
+    // Update device ID
+    this->device_id = new_device;
+
+    // If old copy was not on the host, free it
+    if (old_device != host_id)
+        free_pointer(old_pointer, old_device);
+}
+
 void WeightMatrix::transpose() {
     // Only transpose if necessary
     // If convolutional or num_weights == to_layer size, transposition is a no-op.
@@ -199,151 +351,6 @@ void WeightMatrix::purge_auxiliary() {
     this->used = Pointer<int>();
     this->to_row_indices = Pointer<int>();
     this->to_column_indices = Pointer<int>();
-}
-
-void WeightMatrix::transfer(DeviceID new_device) {
-    if (device_id == new_device) return;
-
-    auto host_id = ResourceManager::get_instance()->get_host_id();
-    if (device_id != host_id and new_device != host_id)
-        LOG_ERROR("Cannot transfer attributes directly between devices!");
-
-    bool to_host = (new_device == host_id);
-    auto old_device = device_id;
-    auto old_pointer = this->pointer;
-
-    // Transfer data and update pointer
-    if (to_host) {
-        transfer_pointer(old_pointer, this,
-            get_object_size(),
-            device_id, new_device);
-        this->pointer = this;
-    } else {
-        this->pointer = (WeightMatrix*)
-            transfer_pointer(this, nullptr,
-                get_object_size(),
-                device_id, new_device);
-    }
-
-    // Update device ID
-    this->device_id = new_device;
-
-    // If old copy was not on the host, free it
-    if (old_device != host_id)
-        free_pointer(old_pointer, old_device);
-}
-
-BasePointer* WeightMatrix::get_layer(std::string key) {
-    if (key == "weights") return &weights;
-    try {
-        return variables.at(key);
-    } catch (std::out_of_range) {
-        LOG_ERROR(
-            "Failed to retrieve data \"" + key + "\" in WeightMatrix for "
-            "connection:" + connection->str());
-    }
-}
-
-std::vector<BasePointer*> WeightMatrix::get_pointers() {
-    std::vector<BasePointer*> pointers;
-    for (auto pair : get_pointer_map())
-        pointers.push_back(pair.second);
-    return pointers;
-}
-
-std::map<PointerKey, BasePointer*> WeightMatrix::get_pointer_map() {
-    std::map<PointerKey, BasePointer*> pointers;
-
-    pointers[PointerKey(connection->id, "weights",
-        weights.get_bytes())] = &weights;
-    pointers[PointerKey(connection->id, "weights transposed",
-        weights_transposed.get_bytes())] = &weights_transposed;
-    pointers[PointerKey(connection->id, "second order weights",
-        second_order_weights.get_bytes())] = &second_order_weights;
-    pointers[PointerKey(connection->id, "nonzero counts",
-        nonzero_counts.get_bytes())] = &nonzero_counts;
-    pointers[PointerKey(connection->id, "from row indices",
-        from_row_indices.get_bytes())] = &from_row_indices;
-    pointers[PointerKey(connection->id, "from column indices",
-        from_column_indices.get_bytes())] = &from_column_indices;
-    pointers[PointerKey(connection->id, "from indices",
-        from_indices.get_bytes())] = &from_indices;
-    pointers[PointerKey(connection->id, "to row indices",
-        to_row_indices.get_bytes())] = &to_row_indices;
-    pointers[PointerKey(connection->id, "to column indices",
-        to_column_indices.get_bytes())] = &to_column_indices;
-    pointers[PointerKey(connection->id, "to indices",
-        to_indices.get_bytes())] = &to_indices;
-    pointers[PointerKey(connection->id, "used",
-        used.get_bytes())] = &used;
-    pointers[PointerKey(connection->id, "distances",
-        distances.get_bytes())] = &distances;
-    pointers[PointerKey(connection->id, "delays",
-        delays.get_bytes())] = &delays;
-
-    for (auto pair : variables)
-        pointers[PointerKey(
-            connection->id, pair.first,
-            pair.second->get_bytes())] = pair.second;
-    return pointers;
-}
-
-WeightMatrix *WeightMatrix::build(Connection *conn) {
-    auto mat = new WeightMatrix(conn);
-    mat->init();
-    return mat;
-}
-
-void WeightMatrix::init() {
-    // Consult the pointer stash to see if we can skip any initialization
-    auto pointers = get_pointer_map();
-    auto stash = PointerStash::get_instance();
-    for (auto& pair : pointers) {
-        auto ptr = stash->get(pair.first);
-        if (ptr != nullptr)
-            ptr->give_to(pair.second);
-    }
-
-    // Check if all the relevant sparse data has been preloaded
-    bool sparse_preloaded =
-        not from_row_indices.is_null() and
-        not from_column_indices.is_null() and
-        not from_indices.is_null() and
-        not to_row_indices.is_null() and
-        not to_column_indices.is_null() and
-        not to_indices.is_null() and
-        not used.is_null();
-
-    // Randomize the projection before constructing weights
-    if (connection->randomized_projection and not sparse_preloaded)
-        randomize_projection();
-
-    // Construct weight matrix now that the proper size is available
-    // Initialize weights if not preloaded
-    if (weights.is_null()) {
-        this->weights = Pointer<float>(num_weights);
-        initialize_weights(this,
-            connection->get_config()->get_weight_config(), weights);
-    }
-
-    // Initialize second order weights if not preloaded
-    if (connection->second_order_host and second_order_weights.is_null())
-        this->second_order_weights = Pointer<float>(num_weights);
-
-    // Sparsify
-    if (connection->sparse) {
-        // Check if all of the relevant sparse data has been preloaded
-        if (not sparse_preloaded) {
-            sparsify();
-            this->sparse = true;
-            this->connection->sparsify(this->num_weights);
-        } else {
-            this->resize();
-        }
-    }
-
-    // Register any subclass variables
-    register_variables();
 }
 
 void WeightMatrix::randomize_projection() {
@@ -659,13 +666,6 @@ template Pointer<int> WeightMatrix::create_variable();
 template <class T>
 Pointer<T> WeightMatrix::create_variable() {
     return Pointer<T>(num_weights);
-}
-
-void WeightMatrix::register_variable(
-        std::string key, BasePointer* ptr) {
-    if (this->variables.count(key) > 0)
-        LOG_ERROR("Repeated weight matrix variable key: " + key);
-    this->variables[key] = ptr;
 }
 
 /******************************************************************************/
