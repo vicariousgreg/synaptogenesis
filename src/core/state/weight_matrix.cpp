@@ -191,10 +191,16 @@ void WeightMatrix::transfer(DeviceID new_device) {
 
 void WeightMatrix::transpose() {
     // Only transpose if necessary
-    // If convolutional or num_weights == to_layer size, transposition is a no-op.
-    if (not connection->convolutional
-        and num_weights != connection->to_layer->size) {
+    bool skip = connection->convolutional;
+    if (connection->get_type() == SUBSET) {
+        skip = skip or
+            (num_weights == connection->config->get_subset_config().total_size);
+    } else {
+        skip = skip or (num_weights == connection->to_layer->size);
+    }
 
+    // If convolutional or num_weights < to_layer size, transposition is a no-op.
+    if (not skip) {
         // Create set of pointers to transpose
         std::vector<BasePointer*> base_pointers = {
             &weights,

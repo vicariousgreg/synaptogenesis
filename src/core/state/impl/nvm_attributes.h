@@ -8,26 +8,31 @@ class NVMAttributes : public Attributes {
     public:
         NVMAttributes(Layer *layer);
 
-        virtual bool check_compatibility(ClusterType cluster_type);
+        virtual bool check_compatibility(ClusterType cluster_type)
+            { return cluster_type == PARALLEL; }
 
         virtual KernelList<SYNAPSE_ARGS> get_activators(Connection *conn);
-        virtual KernelList<SYNAPSE_ARGS> get_updaters(Connection *conn);
 
         virtual void process_weight_matrix(WeightMatrix* matrix);
 
         // Internal neural state
         Pointer<float> state;
 
-        // Baseline tonic activity
-        //float tonic;
+        // Gate registers
+        bool activity_gate, learning_gate;
+
+        // Normalization factor for learning
+        float norm;
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };
 
 class NVMWeightMatrix : public WeightMatrix {
+    public:
+        float norm;
+
     WEIGHT_MATRIX_MEMBERS(NVMWeightMatrix);
-    virtual void register_variables();
 };
 
 #endif

@@ -15,6 +15,8 @@ ARRAY build_array(BasePointer* ptr, bool owner) {
         type = FLOAT_POINTER;
     else if (ptr->get_type() == std::type_index(typeid(int)))
         type = INT_POINTER;
+    else if (ptr->get_type() == std::type_index(typeid(Output)))
+        type = FLOAT_POINTER;
 
     return build_array(ptr->get(), ptr->get_size(), type, owner);
 }

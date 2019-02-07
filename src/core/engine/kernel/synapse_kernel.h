@@ -63,14 +63,49 @@
     const EXTRACTOR extract = synapse_data.extractor; \
     const AGGREGATOR aggregate = synapse_data.aggregator;
 
-#define SERIAL_LOOP_CLOSE \
+
+// Assembles and defines a serial kernel
+#define DEF_KERNEL_SERIAL(PREFIX, FUNC_NAME, EXTRACTIONS, SERIAL_BODY, PARALLEL_BODY) \
+HOST void FUNC_NAME##_SERIAL(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    PREFIX##_PREAMBLE; \
+    EXTRACTIONS; \
+\
+    PREFIX##_SERIAL_LOOP_OPEN \
+            SERIAL_BODY; \
+        } \
     } \
 }
 
-#define PARALLEL_LOOP_CLOSE \
+// Assembles and defines a parallel kernel
+#ifdef __CUDACC__
+#define DEF_KERNEL_PARALLEL(PREFIX, FUNC_NAME, EXTRACTIONS, SERIAL_BODY, PARALLEL_BODY) \
+GLOBAL void FUNC_NAME##_PARALLEL(SynapseData synapse_data) { \
+    SYNAPSE_PREAMBLE; \
+    PREFIX##_PREAMBLE; \
+    EXTRACTIONS; \
+\
+    PREFIX##_PARALLEL_LOOP_OPEN \
+        PARALLEL_BODY; \
+    } \
 }
 
+// Parallel stub for non-parallel builds
+#else
+#define DEF_KERNEL_PARALLEL(PREFIX, FUNC_NAME, EXTRACTIONS, SERIAL_BODY, PARALLEL_BODY) \
+static void(*FUNC_NAME##_PARALLEL)(SynapseData) = nullptr;
+#endif
+
+// Assembles and defines serial and parallel kernels
+#define DEF_KERNELS(PREFIX, FUNC_NAME, EXTRACTIONS, SERIAL_BODY, PARALLEL_BODY) \
+DEF_KERNEL_SERIAL(PREFIX, FUNC_NAME, EXTRACTIONS, SERIAL_BODY, PARALLEL_BODY) \
+DEF_KERNEL_PARALLEL(PREFIX, FUNC_NAME, EXTRACTIONS, SERIAL_BODY, PARALLEL_BODY)
+
+
+
 /*** FULLY CONNECTED **********************************************************/
+
+#define FC_PREAMBLE
 
 #define FC_WEIGHT_LOOP(WEIGHT_INIT, WEIGHT_OP, WEIGHT_INCR) \
 { \
@@ -97,35 +132,31 @@ if (to_index < to_size) { \
     int to_column = to_index % to_columns; \
     int to_row = to_index / to_columns;
 
-
-#define FULLY_CONNECTED_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    FC_SERIAL_LOOP_OPEN \
-        NEURON_PRE; \
+#define DEF_FULLY_CONNECTED(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DEF_KERNELS(FC, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
         FC_WEIGHT_LOOP(to_index * from_size, WEIGHT_OP, ++weight_index) \
-        NEURON_POST; \
-    SERIAL_LOOP_CLOSE; \
-}
-
-#ifdef __CUDACC__
-#define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    FC_PARALLEL_LOOP_OPEN \
-        NEURON_PRE; \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
         FC_WEIGHT_LOOP(to_index, WEIGHT_OP, weight_index += to_size); \
-        NEURON_POST; \
-    PARALLEL_LOOP_CLOSE \
-}
-#else
-#define FULLY_CONNECTED_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+    NEURON_POST; \
+)
+
+#define DEF_FULLY_CONNECTED_DUAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP_1, NEURON_MID, WEIGHT_OP_2, NEURON_POST) \
+DEF_KERNELS(FC, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        FC_WEIGHT_LOOP(to_index * from_size, WEIGHT_OP_1, ++weight_index) \
+    NEURON_MID; \
+        FC_WEIGHT_LOOP(to_index * from_size, WEIGHT_OP_2, ++weight_index) \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        FC_WEIGHT_LOOP(to_index, WEIGHT_OP_1, weight_index += to_size); \
+    NEURON_MID; \
+        FC_WEIGHT_LOOP(to_index, WEIGHT_OP_2, weight_index += to_size); \
+    NEURON_POST; \
+)
 
 /*** SUBSET *******************************************************************/
 
@@ -145,7 +176,7 @@ static void(*FUNC_NAME)(SynapseData) = nullptr;
     const int to_col_size = synapse_data.subset_config.to_col_size; \
     const int to_kernel_size = synapse_data.subset_config.to_size;
 
-#define SUB_WEIGHT_LOOP(WEIGHT_INIT, WEIGHT_OP) \
+#define SUBSET_WEIGHT_LOOP(WEIGHT_INIT, WEIGHT_OP) \
 { \
     for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
         for (int from_column = from_col_start ; from_column < from_col_end ; ++from_column) { \
@@ -159,7 +190,7 @@ static void(*FUNC_NAME)(SynapseData) = nullptr;
     } \
 }
 
-#define SUB_SERIAL_LOOP_OPEN \
+#define SUBSET_SERIAL_LOOP_OPEN \
 _Pragma("omp parallel for collapse(2)") \
 for (int i = 0 ; i < kernel_to_rows ; ++i) { \
     for (int j = 0 ; j < kernel_to_cols ; ++j) { \
@@ -169,7 +200,7 @@ for (int i = 0 ; i < kernel_to_rows ; ++i) { \
         int to_index = to_row * to_columns + to_column; \
         int from_kernel_index = 0;
 
-#define SUB_PARALLEL_LOOP_OPEN \
+#define SUBSET_PARALLEL_LOOP_OPEN \
 int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
 if (to_kernel_index < to_kernel_size) { \
     int to_row = (to_kernel_index / to_col_size) + to_row_start; \
@@ -177,47 +208,47 @@ if (to_kernel_index < to_kernel_size) { \
     int to_index = to_row * to_columns + to_column; \
     int from_kernel_index = 0;
 
-
-#define SUBSET_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    SUBSET_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    SUB_SERIAL_LOOP_OPEN \
-        NEURON_PRE; \
-\
-        SUB_WEIGHT_LOOP( \
+#define DEF_SUBSET(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DEF_KERNELS(SUBSET, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        SUBSET_WEIGHT_LOOP( \
             to_kernel_index * from_kernel_size + from_kernel_index, \
             WEIGHT_OP) \
-\
-        NEURON_POST; \
-    SERIAL_LOOP_CLOSE \
-}
-
-#ifdef __CUDACC__
-#define SUBSET_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    SUBSET_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    SUB_PARALLEL_LOOP_OPEN \
-        NEURON_PRE; \
-\
-        SUB_WEIGHT_LOOP( \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        SUBSET_WEIGHT_LOOP( \
             from_kernel_index * to_kernel_size + to_kernel_index, \
             WEIGHT_OP) \
-\
-        NEURON_POST; \
-    PARALLEL_LOOP_CLOSE \
-}
-#else
-#define SUBSET_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+    NEURON_POST; \
+)
+
+#define DEF_SUBSET_DUAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP_1, NEURON_MID, WEIGHT_OP_2, NEURON_POST) \
+DEF_KERNELS(SUBSET, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        SUBSET_WEIGHT_LOOP( \
+            to_kernel_index * from_kernel_size + from_kernel_index, \
+            WEIGHT_OP_1) \
+    NEURON_MID; \
+        SUBSET_WEIGHT_LOOP( \
+            to_kernel_index * from_kernel_size + from_kernel_index, \
+            WEIGHT_OP_2) \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        SUBSET_WEIGHT_LOOP( \
+            from_kernel_index * to_kernel_size + to_kernel_index, \
+            WEIGHT_OP_1) \
+    NEURON_MID; \
+        SUBSET_WEIGHT_LOOP( \
+            from_kernel_index * to_kernel_size + to_kernel_index, \
+            WEIGHT_OP_2) \
+    NEURON_POST; \
+)
 
 /*** ONE TO ONE ***************************************************************/
+
+#define ONE_PREAMBLE
 
 #define ONE_SERIAL_LOOP_OPEN \
 _Pragma("omp parallel for collapse(2)") \
@@ -239,35 +270,31 @@ if (to_index < from_size) { \
     int from_index = to_index; \
     int weight_index = to_index;
 
+#define DEF_ONE_TO_ONE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DEF_KERNELS(ONE, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        { WEIGHT_OP; } \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        { WEIGHT_OP; } \
+    NEURON_POST; \
+)
 
-#define ONE_TO_ONE_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    ONE_SERIAL_LOOP_OPEN \
-        NEURON_PRE; \
-        WEIGHT_OP; \
-        NEURON_POST; \
-    SERIAL_LOOP_CLOSE \
-}
-
-#ifdef __CUDACC__
-#define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    ONE_PARALLEL_LOOP_OPEN \
-        NEURON_PRE; \
-        WEIGHT_OP; \
-        NEURON_POST; \
-    PARALLEL_LOOP_CLOSE \
-}
-#else
-#define ONE_TO_ONE_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+#define DEF_ONE_TO_ONE_DUAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP_1, NEURON_MID, WEIGHT_OP_2, NEURON_POST) \
+DEF_KERNELS(ONE, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        { WEIGHT_OP_1; } \
+    NEURON_MID; \
+        { WEIGHT_OP_2; } \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        { WEIGHT_OP_1; } \
+    NEURON_MID; \
+        { WEIGHT_OP_2; } \
+    NEURON_POST; \
+)
 
 /*** SPARSE *******************************************************************/
 
@@ -303,42 +330,37 @@ int to_column = to_index % to_columns; \
 int to_row = to_index / to_columns; \
 if (to_index < to_size) {
 
-#define SPARSE_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    SPARSE_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    SPARSE_SERIAL_LOOP_OPEN \
-        NEURON_PRE; \
-\
+#define DEF_SPARSE(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DEF_KERNELS(SPARSE, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
         SPARSE_WEIGHT_LOOP( \
             to_index * matrix_columns, WEIGHT_OP, ++weight_index); \
-\
-        NEURON_POST; \
-    SERIAL_LOOP_CLOSE \
-}
-
-#ifdef __CUDACC__
-#define SPARSE_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    SPARSE_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    SPARSE_PARALLEL_LOOP_OPEN \
-        NEURON_PRE; \
-\
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
         SPARSE_WEIGHT_LOOP( \
             to_index, WEIGHT_OP, weight_index += to_size); \
-\
-        NEURON_POST; \
-    PARALLEL_LOOP_CLOSE \
-}
-#else
-#define SPARSE_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+    NEURON_POST; \
+)
+
+#define DEF_SPARSE_DUAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP_1, NEURON_MID, WEIGHT_OP_2, NEURON_POST) \
+DEF_KERNELS(SPARSE, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        SPARSE_WEIGHT_LOOP( \
+            to_index * matrix_columns, WEIGHT_OP_1, ++weight_index); \
+    NEURON_MID; \
+        SPARSE_WEIGHT_LOOP( \
+            to_index * matrix_columns, WEIGHT_OP_2, ++weight_index); \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        SPARSE_WEIGHT_LOOP( \
+            to_index, WEIGHT_OP_1, weight_index += to_size); \
+    NEURON_MID; \
+        SPARSE_WEIGHT_LOOP( \
+            to_index, WEIGHT_OP_2, weight_index += to_size); \
+    NEURON_POST; \
+)
 
 /*** CONVERGENT ***************************************************************/
 
@@ -407,15 +429,9 @@ for (int to_row = 0 ; to_row < to_rows ; ++to_row) { \
         int to_row = to_index / to_columns; \
         int to_column = to_index % to_columns;
 
-#define CONVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    CONVERGENT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    CONVERGENT_SERIAL_LOOP_OPEN; \
-        NEURON_PRE; \
-\
+#define DEF_CONVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DEF_KERNELS(CONVERGENT, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
         /* Row of matrix is either the first column (convolutional) */ \
         /*   or the index of the destination neuron otherwise */ \
         int weight_offset = (convolutional) ? 0 : (to_index * kernel_size); \
@@ -423,21 +439,9 @@ HOST void FUNC_NAME(SynapseData synapse_data) { \
         CONVERGENT_WEIGHT_LOOP( \
             int weight_index = weight_offset + k_index;, \
             WEIGHT_OP); \
-\
-        NEURON_POST; \
-    SERIAL_LOOP_CLOSE; \
-}
-
-#ifdef __CUDACC__
-#define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    CONVERGENT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    CONVERGENT_PARALLEL_LOOP_OPEN; \
-        NEURON_PRE; \
-\
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
         /* Column of matrix is either the first column (convolutional) */ \
         /*   or the index of the destination neuron otherwise */ \
         int weight_col = (convolutional) ? 0 : to_index; \
@@ -450,14 +454,36 @@ GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
         CONVERGENT_WEIGHT_LOOP( \
             int weight_index = weight_col + k_index * kernel_row_size;, \
             WEIGHT_OP); \
+    NEURON_POST; \
+)
+
+#define DEF_CONVERGENT_DUAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP_1, NEURON_MID, WEIGHT_OP_2, NEURON_POST) \
+DEF_KERNELS(CONVERGENT, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        int weight_offset = (convolutional) ? 0 : (to_index * kernel_size); \
 \
-        NEURON_POST; \
-    PARALLEL_LOOP_CLOSE; \
-}
-#else
-#define CONVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+        CONVERGENT_WEIGHT_LOOP( \
+            int weight_index = weight_offset + k_index;, \
+            WEIGHT_OP_1); \
+    NEURON_MID; \
+        CONVERGENT_WEIGHT_LOOP( \
+            int weight_index = weight_offset + k_index;, \
+            WEIGHT_OP_2); \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        int weight_col = (convolutional) ? 0 : to_index; \
+        int kernel_row_size = (convolutional) ? 1 : to_size; \
+\
+        CONVERGENT_WEIGHT_LOOP( \
+            int weight_index = weight_col + k_index * kernel_row_size;, \
+            WEIGHT_OP_1); \
+    NEURON_MID; \
+        CONVERGENT_WEIGHT_LOOP( \
+            int weight_index = weight_col + k_index * kernel_row_size;, \
+            WEIGHT_OP_2); \
+    NEURON_POST; \
+)
 
 /*** DIVERGENT ****************************************************************/
 
@@ -532,48 +558,49 @@ if (to_index < to_size) { \
     int to_row = to_index / to_columns; \
     int to_column = to_index % to_columns;
 
-#define DIVERGENT_SERIAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    DIVERGENT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    DIVERGENT_SERIAL_LOOP_OPEN; \
-        NEURON_PRE; \
-\
+#define DEF_DIVERGENT(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
+DEF_KERNELS(DIVERGENT, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
         int weight_offset = (convolutional) ? 0 : (to_index * (num_weights / to_size)); \
 \
         DIVERGENT_WEIGHT_LOOP( \
             int weight_index = weight_offset + k_index;, \
             WEIGHT_OP); \
-\
-        NEURON_POST; \
-    SERIAL_LOOP_CLOSE; \
-}
-
-#ifdef __CUDACC__
-#define DIVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    DIVERGENT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    DIVERGENT_PARALLEL_LOOP_OPEN; \
-        NEURON_PRE; \
-\
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
         DIVERGENT_WEIGHT_LOOP( \
             /* Row of matrix is the kernel index * row size (see above)
                Column of matrix is the index of the source neuron */ \
             int weight_index = (convolutional) ? k_index : (to_index + (k_index * to_size));, \
             WEIGHT_OP); \
+    NEURON_POST; \
+)
+
+#define DEF_DIVERGENT_DUAL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP_1, NEURON_MID, WEIGHT_OP_2, NEURON_POST) \
+DEF_KERNELS(DIVERGENT, FUNC_NAME, EXTRACTIONS, \
+    NEURON_PRE; \
+        int weight_offset = (convolutional) ? 0 : (to_index * (num_weights / to_size)); \
 \
-        NEURON_POST; \
-    PARALLEL_LOOP_CLOSE; \
-}
-#else
-#define DIVERGENT_PARALLEL(FUNC_NAME, EXTRACTIONS, NEURON_PRE, WEIGHT_OP, NEURON_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+        DIVERGENT_WEIGHT_LOOP( \
+            int weight_index = weight_offset + k_index;, \
+            WEIGHT_OP_1); \
+    NEURON_MID; \
+        DIVERGENT_WEIGHT_LOOP( \
+            int weight_index = weight_offset + k_index;, \
+            WEIGHT_OP_2); \
+    NEURON_POST; \
+    , \
+    NEURON_PRE; \
+        DIVERGENT_WEIGHT_LOOP( \
+            int weight_index = (convolutional) ? k_index : (to_index + (k_index * to_size));, \
+            WEIGHT_OP_1); \
+    NEURON_MID; \
+        DIVERGENT_WEIGHT_LOOP( \
+            int weight_index = (convolutional) ? k_index : (to_index + (k_index * to_size));, \
+            WEIGHT_OP_2); \
+    NEURON_POST; \
+)
 
 /*** CONVERGENT (BY WEIGHT) ***************************************************/
 
@@ -637,36 +664,31 @@ if (weight_index < (row_field_size * column_field_size)) { \
     int k_row = weight_index / column_field_size; \
     int k_col = weight_index % column_field_size;
 
-#define CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL_LOOP_OPEN; \
-        WEIGHT_PRE; \
+#define DEF_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+DEF_KERNELS(CONVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTRACTIONS, \
+    WEIGHT_PRE; \
         CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP); \
-        WEIGHT_POST; \
-    SERIAL_LOOP_CLOSE; \
-}
+    WEIGHT_POST; \
+    , \
+    WEIGHT_PRE; \
+        CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP); \
+    WEIGHT_POST; \
+)
 
-#ifdef __CUDACC__
-#define CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL_LOOP_OPEN; \
-        WEIGHT_PRE; \
-        CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP); \
-        WEIGHT_POST; \
-    } \
-}
-#else
-#define CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+#define DEF_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_DUAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP_1, WEIGHT_MID, NEURON_OP_2, WEIGHT_POST) \
+DEF_KERNELS(CONVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTRACTIONS, \
+    WEIGHT_PRE; \
+        CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_1); \
+    WEIGHT_MID; \
+        CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_2); \
+    WEIGHT_POST; \
+    , \
+    WEIGHT_PRE; \
+        CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_1); \
+    WEIGHT_MID; \
+        CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_2); \
+    WEIGHT_POST; \
+)
 
 /*** DIVERGENT (BY WEIGHT) ****************************************************/
 
@@ -733,37 +755,31 @@ if (weight_index < (row_field_size * column_field_size)) { \
     int k_row = weight_index / column_field_size; \
     int k_col = weight_index % column_field_size;
 
-#define DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-HOST void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_SERIAL_LOOP_OPEN; \
-        WEIGHT_PRE; \
+#define DEF_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
+DEF_KERNELS(DIVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTRACTIONS, \
+    WEIGHT_PRE; \
         DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP); \
-        WEIGHT_POST; \
-    SERIAL_LOOP_CLOSE; \
-}
-
-#ifdef __CUDACC__
-#define DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-GLOBAL void FUNC_NAME(SynapseData synapse_data) { \
-    SYNAPSE_PREAMBLE; \
-    DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_PREAMBLE; \
-    EXTRACTIONS; \
-\
-    DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL_LOOP_OPEN; \
-        WEIGHT_PRE; \
+    WEIGHT_POST; \
+    , \
+    WEIGHT_PRE; \
         DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP); \
-        WEIGHT_POST; \
-    PARALLEL_LOOP_CLOSE; \
-}
-#else
-#define DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_PARALLEL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP, WEIGHT_POST) \
-static void(*FUNC_NAME)(SynapseData) = nullptr;
-#endif
+    WEIGHT_POST; \
+)
 
+#define DEF_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_DUAL(FUNC_NAME, EXTRACTIONS, WEIGHT_PRE, NEURON_OP_1, WEIGHT_MID, NEURON_OP_2, WEIGHT_POST) \
+DEF_KERNELS(DIVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTRACTIONS, \
+    WEIGHT_PRE; \
+        DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_1); \
+    WEIGHT_MID; \
+        DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_2); \
+    WEIGHT_POST; \
+    , \
+    WEIGHT_PRE; \
+        DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_1); \
+    WEIGHT_MID; \
+        DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_NEURON_LOOP(NEURON_OP_2); \
+    WEIGHT_POST; \
+)
 
 
 
@@ -771,45 +787,60 @@ static void(*FUNC_NAME)(SynapseData) = nullptr;
 /******************************************************************************/
 
 /*
- * These macros take code snippets, create serial and parallel functions, and
- *    wrap them in a getter function that returns a Kernel object.
- * CALC_ALL is a master macro that calls all of the primary definition macros
- *    to create a collection of functions that implement the code snippets for
- *    all primary connection types.  A function is defined that maps connection
- *    types to getter functions.
+ * DEF_CALC take code snippets, create serial and parallel functions, and
+ *    wraps them in a getter function that returns a Kernel object.
+ * Additional macros are defined for signature consistency with CALC_ALL,
+ *    a master macro that calls all of the primary definition macros to create a
+ *    collection of functions that implement the code snippets for all primary
+ *    connection types.  A function is defined that maps connection types to
+ *    getter functions.
  */
 
-#define DEF_CALC(DEF_NAME, FUNC_NAME,     EXTR, PRE, OP, POST) \
-DEF_NAME##_SERIAL(  FUNC_NAME##_SERIAL,   EXTR, PRE, OP, POST) \
-DEF_NAME##_PARALLEL(FUNC_NAME##_PARALLEL, EXTR, PRE, OP, POST) \
+#define DEF_CALC(DEF_NAME, FUNC_NAME, EXTR, PRE, OP, POST) \
+DEF_##DEF_NAME(FUNC_NAME, EXTR, PRE, OP, POST) \
+static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() {\
+    return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
+}
+
+#define DEF_CALC_DUAL(DEF_NAME, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+DEF_##DEF_NAME##_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
 static Kernel<SYNAPSE_ARGS> get_##FUNC_NAME() {\
     return Kernel<SYNAPSE_ARGS>(FUNC_NAME##_SERIAL, FUNC_NAME##_PARALLEL); \
 }
 
 #define CALC_FULLY_CONNECTED(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(FULLY_CONNECTED, FUNC_NAME, EXTR, PRE, OP, POST)
-
 #define CALC_SUBSET(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(SUBSET, FUNC_NAME, EXTR, PRE, OP, POST)
-
 #define CALC_ONE_TO_ONE(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(ONE_TO_ONE, FUNC_NAME, EXTR, PRE, OP, POST)
-
 #define CALC_SPARSE(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(SPARSE, FUNC_NAME, EXTR, PRE, OP, POST)
-
 #define CALC_CONVERGENT(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(CONVERGENT, FUNC_NAME, EXTR, PRE, OP, POST)
-
 #define CALC_DIVERGENT(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(DIVERGENT, FUNC_NAME, EXTR, PRE, OP, POST)
-
 #define CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(CONVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTR, PRE, OP, POST)
-
 #define CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT(FUNC_NAME, EXTR, PRE, OP, POST) \
    DEF_CALC(DIVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTR, PRE, OP, POST)
 
+#define CALC_FULLY_CONNECTED_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(FULLY_CONNECTED, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
+#define CALC_SUBSET_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(SUBSET, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
+#define CALC_ONE_TO_ONE_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(ONE_TO_ONE, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
+#define CALC_SPARSE_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(SPARSE, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
+#define CALC_CONVERGENT_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(CONVERGENT, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
+#define CALC_DIVERGENT_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(DIVERGENT, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
+#define CALC_CONVERGENT_CONVOLUTIONAL_BY_WEIGHT_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(CONVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
+#define CALC_DIVERGENT_CONVOLUTIONAL_BY_WEIGHT_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+   DEF_CALC_DUAL(DIVERGENT_CONVOLUTIONAL_BY_WEIGHT, FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST)
 
 #define CALC_ALL(FUNC_NAME, EXTR, PRE, OP, POST) \
 CALC_FULLY_CONNECTED(FUNC_NAME##_fully_connected, EXTR, PRE, OP, POST); \
@@ -818,6 +849,23 @@ CALC_ONE_TO_ONE(     FUNC_NAME##_one_to_one,      EXTR, PRE, OP, POST); \
 CALC_SPARSE(         FUNC_NAME##_sparse,          EXTR, PRE, OP, POST); \
 CALC_CONVERGENT(     FUNC_NAME##_convergent,      EXTR, PRE, OP, POST); \
 CALC_DIVERGENT(      FUNC_NAME##_divergent,       EXTR, PRE, OP, POST); \
+\
+std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> FUNC_NAME##_map = { \
+    { FULLY_CONNECTED, get_##FUNC_NAME##_fully_connected() }, \
+    { SUBSET,          get_##FUNC_NAME##_subset() }, \
+    { ONE_TO_ONE,      get_##FUNC_NAME##_one_to_one() }, \
+    { SPARSE,          get_##FUNC_NAME##_sparse() }, \
+    { CONVERGENT,      get_##FUNC_NAME##_convergent() }, \
+    { DIVERGENT,       get_##FUNC_NAME##_divergent() } \
+};
+
+#define CALC_ALL_DUAL(FUNC_NAME, EXTR, PRE, OP1, MID, OP2, POST) \
+CALC_FULLY_CONNECTED_DUAL(FUNC_NAME##_fully_connected, EXTR, PRE, OP1, MID, OP2, POST); \
+CALC_SUBSET_DUAL(         FUNC_NAME##_subset,          EXTR, PRE, OP1, MID, OP2, POST); \
+CALC_ONE_TO_ONE_DUAL(     FUNC_NAME##_one_to_one,      EXTR, PRE, OP1, MID, OP2, POST); \
+CALC_SPARSE_DUAL(         FUNC_NAME##_sparse,          EXTR, PRE, OP1, MID, OP2, POST); \
+CALC_CONVERGENT_DUAL(     FUNC_NAME##_convergent,      EXTR, PRE, OP1, MID, OP2, POST); \
+CALC_DIVERGENT_DUAL(      FUNC_NAME##_divergent,       EXTR, PRE, OP1, MID, OP2, POST); \
 \
 std::map<ConnectionType, Kernel<SYNAPSE_ARGS>> FUNC_NAME##_map = { \
     { FULLY_CONNECTED, get_##FUNC_NAME##_fully_connected() }, \

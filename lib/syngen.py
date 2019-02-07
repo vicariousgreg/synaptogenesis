@@ -201,45 +201,30 @@ def get_config(ID):
     return _callback_config_map[ID]
 
 def create_io_callback(name, f):
-    if name in _io_callbacks:
-        raise ValueError("Duplicate IO Callback: " + name)
-
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _io_callbacks[name] = (cb, addr)
     _syn.add_io_callback(name, addr)
 
 def create_weight_callback(name, f):
-    if name in _weight_callbacks:
-        raise ValueError("Duplicate Weight Callback: " + name)
-
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _weight_callbacks[name] = (cb, addr)
     _syn.add_weight_callback(name, addr)
 
 def create_indices_weight_callback(name, f):
-    if name in _indices_weight_callbacks:
-        raise ValueError("Duplicate Indices Weight Callback: " + name)
-
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _indices_weight_callbacks[name] = (cb, addr)
     _syn.add_indices_weight_callback(name, addr)
 
 def create_distance_weight_callback(name, f):
-    if name in _distance_weight_callbacks:
-        raise ValueError("Duplicate Distance Weight Callback: " + name)
-
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _distance_weight_callbacks[name] = (cb, addr)
     _syn.add_distance_weight_callback(name, addr)
 
 def create_delay_weight_callback(name, f):
-    if name in _delay_weight_callbacks:
-        raise ValueError("Duplicate Delay Weight Callback: " + name)
-
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _delay_weight_callbacks[name] = (cb, addr)

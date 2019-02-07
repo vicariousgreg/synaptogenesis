@@ -252,7 +252,14 @@ void Engine::single_thread_loop() {
         device_check_error(nullptr);
 
         // If engine gets interrupted, break
-        if (not this->environment_running) {
+        if (not this->environment_running or Engine::interrupt_signaled) {
+            {
+                std::unique_lock<std::mutex> lock(interrupt_lock);
+                if (Engine::interrupt_signaled) {
+                    Engine::interrupt_signaled = false;
+                    std::thread(Engine::interrupt).detach();
+                }
+            }
             iterations = i;
             break;
         }
@@ -423,7 +430,14 @@ void Engine::environment_loop() {
         for (auto& m : modules) m->cycle();
 
         // If engine gets interrupted, pass the locks and break
-        if (not this->environment_running) {
+        if (not this->environment_running or Engine::interrupt_signaled) {
+            {
+                std::unique_lock<std::mutex> lock(interrupt_lock);
+                if (Engine::interrupt_signaled) {
+                    Engine::interrupt_signaled = false;
+                    std::thread(Engine::interrupt).detach();
+                }
+            }
             sensory_lock.pass(NETWORK_THREAD);
             motor_lock.pass(NETWORK_THREAD);
             this->network_running = false;
@@ -628,8 +642,6 @@ void Engine::interrupt() {
 
 void Engine::interrupt_async() {
     std::unique_lock<std::mutex> lock(interrupt_lock);
-    if (not Engine::interrupt_signaled) {
+    if (not Engine::interrupt_signaled)
         Engine::interrupt_signaled = true;
-        std::thread(Engine::interrupt).detach();
-    }
 }

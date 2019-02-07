@@ -309,6 +309,10 @@ class SynapseActivateInstruction : public SynapseInstruction {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
                 this->blocks = calc_blocks(num_weights);
+            } else if (conn->get_type() == SUBSET) {
+                int num_dest = conn->config->get_subset_config().total_size;
+                this->threads = calc_threads(num_dest);
+                this->blocks = calc_blocks(num_dest);
             }
         }
 
@@ -335,6 +339,10 @@ class SynapseUpdateInstruction : public SynapseInstruction {
                 int num_weights = connection->get_num_weights();
                 this->threads = calc_threads(num_weights);
                 this->blocks = calc_blocks(num_weights);
+            } else if (conn->get_type() == SUBSET) {
+                int num_dest = conn->config->get_subset_config().total_size;
+                this->threads = calc_threads(num_dest);
+                this->blocks = calc_blocks(num_dest);
             }
         }
 
