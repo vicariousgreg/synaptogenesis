@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 bool Logger::suppress_output = false;
-bool Logger::warnings = true;
+bool Logger::warnings = false;
 bool Logger::debug = false;
 
 void Logger::log_warning(std::string error, const char* file, int line) {
