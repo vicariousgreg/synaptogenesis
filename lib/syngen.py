@@ -2,6 +2,8 @@ from ctypes import *
 from collections import OrderedDict
 from json import dumps
 from copy import deepcopy
+from numpy import copyto
+from numpy.ctypeslib import as_array
 
 """ Wrapper for C Array Structure """
 class CArray(Structure):
@@ -19,11 +21,23 @@ class PArray:
     def __getitem__(self, index):
         return self.data[index]
 
+    def __setitem__(self, index, value):
+        self.data[index] = value
+
     def __iter__(self):
         curr = 0
         while (curr < self.size):
             yield self.data[curr]
             curr += 1
+
+    def is_void(self):
+        return False
+
+    def to_np_array(self):
+        return as_array(self.data,shape=(self.size,))
+
+    def copy_from(self, arr):
+        copyto(self.to_np_array(), arr)
 
 """ Typed Python array wrappers """
 class FloatArray(PArray):
@@ -51,6 +65,9 @@ class VoidArray(PArray):
     def __init__(self, size, ptr):
         self.size = size
         self.data = cast(ptr, POINTER(c_void_p))
+
+    def is_void(self):
+        return True
 
 """ Construct a Python array from a C array """
 def build_array(base_array):
