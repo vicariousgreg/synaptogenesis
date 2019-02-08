@@ -72,11 +72,11 @@ class State {
         bool get_transpose_flag(Connection *conn) const;
 
         /* Getters for external use */
-        BasePointer* get_neuron_data(Layer *layer, std::string key);
+        BasePointer* get_neuron_data(Layer *layer, std::string key, bool external=false);
         BasePointer* get_layer_data(Layer *layer, std::string key);
         BasePointer* get_connection_data(Connection *conn, std::string key);
         BasePointer* get_weight_matrix(Connection *conn,
-            std::string key="weights");
+            std::string key="weights", bool external=false);
 
         Network* const network;
 

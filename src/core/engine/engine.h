@@ -6,6 +6,7 @@
 #include <set>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 #include "context.h"
 #include "io/buffer.h"
@@ -121,11 +122,9 @@ class Engine {
         void environment_loop();
 
         // Static infrastructure for interruption
-        static std::set<Engine*> active_engines;
         static std::mutex interrupt_lock;
         static bool interrupt_signaled;
-        static void activate(Engine* engine);
-        static void deactivate(Engine* engine);
+        static bool running;
 };
 
 #endif

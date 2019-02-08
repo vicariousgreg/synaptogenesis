@@ -703,7 +703,11 @@ bool State::get_transpose_flag(Connection *conn) const {
     }
 }
 
-BasePointer* State::get_neuron_data(Layer *layer, std::string key) {
+BasePointer* State::get_neuron_data(Layer *layer,
+        std::string key, bool external) {
+    if (external)
+        transfer_to_host();
+
     try {
         return attributes.at(layer)->get_neuron_data(key);
     } catch (std::out_of_range) {
@@ -743,8 +747,11 @@ BasePointer* State::get_connection_data(Connection *conn, std::string key) {
     */
 }
 
-BasePointer* State::get_weight_matrix(Connection *conn, std::string key) {
-    transfer_to_host();
+BasePointer* State::get_weight_matrix(Connection *conn,
+        std::string key, bool external) {
+    if (external)
+        transfer_to_host();
+
     try {
         return attributes.at(conn->to_layer)
             ->get_weight_matrix(conn)

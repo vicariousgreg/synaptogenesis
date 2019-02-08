@@ -13,10 +13,39 @@
 #include "gui_controller.h"
 #include "mpi_wrap.h"
 
+
+/******************/
+/* Interrupt code */
+/******************/
+
+/* Wrapper with the correct signature for signal() */
+static void handle_interrupt(int param) {
+    Engine::interrupt();
+}
+
+/* Keep thread-safe signal flag */
+std::mutex Engine::interrupt_lock;
+bool Engine::interrupt_signaled = false;
+bool Engine::running = false;
+
+/* Signals interrupt to all active engines */
+void Engine::interrupt() {
+    {
+        std::unique_lock<std::mutex> lock(interrupt_lock);
+
+        // Avoid double signalling
+        if (Engine::interrupt_signaled or not Engine::running) return;
+        else Engine::interrupt_signaled = true;
+    }
+}
+
+void Engine::interrupt_async() {
+    Engine::interrupt();
+}
+
+
 Engine::Engine(Context context)
         : context(context),
-          network_running(false),
-          environment_running(false),
           learning_flag(true),
           suppress_output(false),
           refresh_rate(FLT_MAX),
@@ -202,9 +231,6 @@ void Engine::single_thread_loop() {
     mpi_wrap_barrier();
     run_timer.reset();
 
-    this->environment_running = true;
-    this->network_running = true;
-
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Reset iteration timer
         if (time_limit > 0) iteration_timer.reset();
@@ -252,14 +278,7 @@ void Engine::single_thread_loop() {
         device_check_error(nullptr);
 
         // If engine gets interrupted, break
-        if (not this->environment_running or Engine::interrupt_signaled) {
-            {
-                std::unique_lock<std::mutex> lock(interrupt_lock);
-                if (Engine::interrupt_signaled) {
-                    Engine::interrupt_signaled = false;
-                    std::thread(Engine::interrupt).detach();
-                }
-            }
+        if (Engine::interrupt_signaled) {
             iterations = i;
             break;
         }
@@ -272,9 +291,6 @@ void Engine::single_thread_loop() {
         // Synchronize with the clock
         if (time_limit > 0) iteration_timer.wait(time_limit);
     }
-
-    // Set term lock owner to ensure interrupt doesn't hang
-    term_lock.set_owner(NETWORK_THREAD);
 
     // Wait for scheduler to complete
     Scheduler::get_instance()->wait_for_completion();
@@ -297,9 +313,6 @@ void Engine::single_thread_loop() {
 
     // Shutdown GUI
     GuiController::quit();
-
-    this->network_running = false;
-    this->environment_running = false;
 }
 
 /* Launches network computations
@@ -308,8 +321,6 @@ void Engine::network_loop() {
     // Synchronize MPI processes, if MPI is enabled (no-op otherwise)
     mpi_wrap_barrier();
     run_timer.reset();
-
-    this->network_running = true;
 
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         // Wait for timer, then start clearing inputs
@@ -350,7 +361,7 @@ void Engine::network_loop() {
         device_check_error(nullptr);
 
         // If engine gets interrupted, halt streams and break
-        if (not this->network_running) {
+        if (Engine::interrupt_signaled) {
             iterations = i;
             break;
         }
@@ -389,15 +400,11 @@ void Engine::network_loop() {
 
     // Shutdown GUI
     GuiController::quit();
-
-    this->network_running = false;
 }
 
 /* Launches environment computations
  *   Exchanges thread-safe locks with network loop */
 void Engine::environment_loop() {
-    this->environment_running = true;
-
     for (size_t i = 0 ; iterations == 0 or i < iterations; ++i) {
         /****************************/
         /*** Write sensory buffer ***/
@@ -430,24 +437,15 @@ void Engine::environment_loop() {
         for (auto& m : modules) m->cycle();
 
         // If engine gets interrupted, pass the locks and break
-        if (not this->environment_running or Engine::interrupt_signaled) {
-            {
-                std::unique_lock<std::mutex> lock(interrupt_lock);
-                if (Engine::interrupt_signaled) {
-                    Engine::interrupt_signaled = false;
-                    std::thread(Engine::interrupt).detach();
-                }
-            }
+        if (Engine::interrupt_signaled) {
             sensory_lock.pass(NETWORK_THREAD);
             motor_lock.pass(NETWORK_THREAD);
-            this->network_running = false;
             break;
         }
     }
 
     // Pass the termination lock
     term_lock.pass(NETWORK_THREAD);
-    this->environment_running = false;
 }
 
 /* Runs the engine:
@@ -461,8 +459,15 @@ void Engine::environment_loop() {
  *   Shuts down computation thread pool
  *   Generates report */
 Report* Engine::run(PropertyConfig args) {
-    // Set engine to active
-    Engine::activate(this);
+    // Register signal interrupt
+    signal(SIGINT, handle_interrupt);
+
+    {
+        std::unique_lock<std::mutex> lock(interrupt_lock);
+        if (Engine::running)
+            LOG_ERROR("Cannot run more than one engine at once!");
+        Engine::running = true;
+    }
 
     // Determine device(s) to use
     std::set<DeviceID> devices;
@@ -520,10 +525,6 @@ Report* Engine::run(PropertyConfig args) {
     // Print network
     if (this->verbose) context.network->print();
 
-    // Set locks
-    sensory_lock.set_owner(ENVIRONMENT_THREAD);
-    motor_lock.set_owner(NETWORK_THREAD);
-    term_lock.set_owner(ENVIRONMENT_THREAD);
 
     // Ensure device is synchronized without errors
     device_synchronize();
@@ -534,6 +535,11 @@ Report* Engine::run(PropertyConfig args) {
 
     // Launch threads
     if (not killed) {
+        // Set locks
+        sensory_lock.set_owner(ENVIRONMENT_THREAD);
+        motor_lock.set_owner(NETWORK_THREAD);
+        term_lock.set_owner(ENVIRONMENT_THREAD);
+
         std::vector<std::thread> threads;
         if (args.get_bool("multithreaded", true)) {
             // Separate engine & environment threads
@@ -555,11 +561,14 @@ Report* Engine::run(PropertyConfig args) {
             thread.join();
     }
 
+    Engine::running = false;
+    if (Engine::interrupt_signaled) {
+        std::unique_lock<std::mutex> lock(interrupt_lock);
+        Engine::interrupt_signaled = false;
+    }
+
     // Shutdown the Scheduler thread pool
     Scheduler::get_instance()->shutdown_thread_pool(verbose);
-
-    // Set engine to inactive
-    Engine::deactivate(this);
 
     // Clean up
     free_rand();
@@ -576,72 +585,4 @@ Report* Engine::run(PropertyConfig args) {
     this->report = nullptr;
 
     return r;
-}
-
-
-/******************/
-/* Interrupt code */
-/******************/
-
-/* Set of running engines to be interrupted (observer pattern) */
-std::set<Engine*> Engine::active_engines;
-
-/* Wrapper with the correct signature for signal() */
-static void handle_interrupt(int param) {
-    Engine::interrupt();
-}
-
-/* Register the interrupt and add the engine to the active set */
-void Engine::activate(Engine* engine) {
-    if (active_engines.empty())
-        signal(SIGINT, handle_interrupt);
-    active_engines.insert(engine);
-}
-
-void Engine::deactivate(Engine* engine) {
-    if (active_engines.count(engine))
-        active_engines.erase(engine);
-}
-
-/* Keep thread-safe signal flag */
-std::mutex Engine::interrupt_lock;
-bool Engine::interrupt_signaled = false;
-
-/* Signals interrupt to all active engines */
-void Engine::interrupt() {
-    {
-        std::unique_lock<std::mutex> lock(interrupt_lock);
-
-        // Avoid double signalling
-        if (Engine::interrupt_signaled) return;
-        else Engine::interrupt_signaled = true;
-    }
-
-    for (auto engine : active_engines) {
-        if (engine->verbose) printf("Interrupting engine...\n");
-        engine->killed = true;
-
-        // Stop the environment
-        engine->environment_running = false;
-
-        // Wait for termination lock
-        while (engine->term_lock.get_owner() != NETWORK_THREAD);
-
-        if (engine->multithreaded and engine->network_running) {
-            // Ensure network thread gets locks
-            engine->sensory_lock.set_owner(NETWORK_THREAD);
-            engine->motor_lock.set_owner(NETWORK_THREAD);
-        }
-    }
-
-    // Reset active set and flag
-    active_engines.clear();
-    std::unique_lock<std::mutex> lock(interrupt_lock);
-    Engine::interrupt_signaled = false;
-}
-
-void Engine::interrupt_async() {
-    std::unique_lock<std::mutex> lock(interrupt_lock);
-    if (not Engine::interrupt_signaled)
-        Engine::interrupt_signaled = true;
 }

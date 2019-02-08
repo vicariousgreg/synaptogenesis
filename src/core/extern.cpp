@@ -216,7 +216,7 @@ ARRAY get_neuron_data(STATE state, char* structure_name,
     try {
         auto layer = ((State*)state)->network
             ->get_structure(structure_name)->get_layer(layer_name);
-        auto ptr = ((State*)state)->get_neuron_data(layer, key);
+        auto ptr = ((State*)state)->get_neuron_data(layer, key, true);
         return build_array(ptr, false);
     } catch (...) {
         return null_array();
@@ -249,7 +249,7 @@ ARRAY get_weight_matrix(STATE state, char* conn_name, char* key) {
     if (key == nullptr) key = "weights";
     try {
         auto conn = ((State*)state)->network->get_connection(conn_name);
-        auto ptr = ((State*)state)->get_weight_matrix(conn, key);
+        auto ptr = ((State*)state)->get_weight_matrix(conn, key, true);
         return build_array(ptr, false);
     } catch (...) {
         return null_array();
