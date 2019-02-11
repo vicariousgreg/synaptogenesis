@@ -59,23 +59,29 @@ BUILD_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
 CALC_SUBSET(activate_nvm_decay,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
     ,
+    bool gv = false;
     ,
-        nvm_att->activity_gate = not (extract(outputs[from_index], delay) > 0.0);
+        gv = gv or not (extract(outputs[from_index], delay) > 0.0);
     ,
+    nvm_att->activity_gate = gv;
 );
 CALC_SUBSET(activate_nvm_gate,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
     ,
+    bool gv = false;
     ,
-        nvm_att->activity_gate = (extract(outputs[from_index], delay) > 0.0);
+        gv = gv or (extract(outputs[from_index], delay) > 0.0);
     ,
+    nvm_att->activity_gate = gv;
 );
 CALC_SUBSET(activate_nvm_learning,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
     ,
+    bool gv = false;
     ,
-        nvm_att->learning_gate = (extract(outputs[from_index], delay) > 0.0);
+        gv = gv or (extract(outputs[from_index], delay) > 0.0);
     ,
+    nvm_att->learning_gate = gv;
 );
 
 CALC_ALL(activate_nvm,

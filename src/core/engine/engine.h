@@ -116,7 +116,6 @@ class Engine {
 
         // Thread loops
         bool multithreaded;
-        bool killed;
         void single_thread_loop();
         void network_loop();
         void environment_loop();

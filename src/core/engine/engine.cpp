@@ -55,8 +55,7 @@ Engine::Engine(Context context)
           verbose(false),
           buffer(nullptr),
           report(nullptr),
-          multithreaded(false),
-          killed(false) { }
+          multithreaded(false) { }
 
 void Engine::build_environment(PropertyConfig args) {
     if (context.environment == nullptr) return;
@@ -534,7 +533,7 @@ Report* Engine::run(PropertyConfig args) {
     auto mems = ResourceManager::get_instance()->get_memory_usage(verbose);
 
     // Launch threads
-    if (not killed) {
+    if (not Engine::interrupt_signaled) {
         // Set locks
         sensory_lock.set_owner(ENVIRONMENT_THREAD);
         motor_lock.set_owner(NETWORK_THREAD);
@@ -561,6 +560,7 @@ Report* Engine::run(PropertyConfig args) {
             thread.join();
     }
 
+    bool killed = Engine::interrupt_signaled;
     Engine::running = false;
     if (Engine::interrupt_signaled) {
         std::unique_lock<std::mutex> lock(interrupt_lock);
@@ -581,7 +581,6 @@ Report* Engine::run(PropertyConfig args) {
     for (auto mem : mems) r->add_to_child_array("memory usage", &mem);
 
     // Reset engine variables
-    killed = false;
     this->report = nullptr;
 
     return r;
