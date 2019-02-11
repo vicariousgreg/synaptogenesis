@@ -26,6 +26,8 @@ class Connection {
         ConnectionType get_type() const { return type; }
         int get_num_weights() const { return num_weights; }
         int get_compute_weights() const;
+        int get_matrix_rows() const;
+        int get_matrix_columns() const;
         const ConnectionConfig* get_config() const;
         std::string get_parameter(
             std::string key, std::string default_val) const;

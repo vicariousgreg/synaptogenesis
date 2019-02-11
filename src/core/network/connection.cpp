@@ -223,6 +223,26 @@ int Connection::get_compute_weights() const {
         return num_weights * to_layer->size;
     else return num_weights;
 }
+int Connection::get_matrix_rows() const {
+    if (convolutional)
+        return 1;
+    else if (get_type() == SUBSET)
+        return config->get_subset_config().to_size;
+    else
+        return to_layer->size;
+}
+int Connection::get_matrix_columns() const {
+    if (get_type() == SUBSET)
+        return config->get_subset_config().from_size;
+    else if (get_type() == CONVERGENT)
+        return config->get_arborized_config().get_total_field_size();
+    else if (get_type() == DIVERGENT)
+        return config->get_arborized_config().get_total_field_size();
+    else if (get_type() == ONE_TO_ONE)
+        return 1;
+    else
+        return from_layer->size;
+}
 const ConnectionConfig* Connection::get_config() const { return config; }
 
 std::string Connection::str() const {

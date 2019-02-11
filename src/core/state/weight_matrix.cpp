@@ -24,8 +24,8 @@ WeightMatrix::WeightMatrix(Connection* conn)
       pointer(this),
       num_weights(conn->get_num_weights()),
       transpose_flag(false) {
-    this->rows = (conn->convolutional) ? 1 : conn->to_layer->size;
-    this->columns = num_weights / rows;
+    this->rows = conn->get_matrix_rows();
+    this->columns = conn->get_matrix_columns();
 }
 
 WeightMatrix::~WeightMatrix() {
@@ -191,13 +191,7 @@ void WeightMatrix::transfer(DeviceID new_device) {
 
 void WeightMatrix::transpose() {
     // Only transpose if necessary
-    bool skip = connection->convolutional;
-    if (connection->get_type() == SUBSET) {
-        skip = skip or
-            (num_weights == connection->config->get_subset_config().total_size);
-    } else {
-        skip = skip or (num_weights == connection->to_layer->size);
-    }
+    bool skip = get_rows() == 1 or get_columns() == 1;
 
     // If convolutional or num_weights < to_layer size, transposition is a no-op.
     if (not skip) {
@@ -246,8 +240,8 @@ void WeightMatrix::set_transpose_flag(bool t) {
 void WeightMatrix::resize() {
     if (weights.get_size() != num_weights) {
         this->num_weights = weights.get_size();
-        this->rows = connection->to_layer->size;
-        this->columns = num_weights / rows;
+        this->rows = connection->get_matrix_rows();
+        this->columns = num_weights / this->rows;
         this->sparse = true;
         this->connection->sparsify(this->num_weights);
     }
@@ -838,34 +832,8 @@ static void specified_config(const PropertyConfig& config, float* target_matrix,
     std::stringstream stream(weight_string);
     int num_weights = conn->get_num_weights();
 
-    int rows = conn->to_layer->size;
-    int cols = conn->from_layer->size;
-    auto ac = conn->get_config()->get_arborized_config();
-    int row_field_size = ac.row_field_size;
-    int column_field_size = ac.column_field_size;
-    switch (conn->get_type()) {
-        case CONVERGENT:
-            if (conn->convolutional) {
-                rows = 1;
-                cols = row_field_size * column_field_size;
-            } else {
-                rows = conn->to_layer->size;
-                cols = row_field_size * column_field_size;
-            }
-            break;
-        case DIVERGENT:
-            if (conn->convolutional) {
-                rows = 1;
-                cols = row_field_size * column_field_size;
-            } else {
-                rows = conn->from_layer->size;
-                cols = row_field_size * column_field_size;
-            }
-            break;
-        case ONE_TO_ONE:
-            rows = 1;
-            break;
-    }
+    int rows = conn->get_matrix_rows();
+    int cols = conn->get_matrix_columns();
 
     float value;
     for (int row = 0 ; row < rows ; ++row) {

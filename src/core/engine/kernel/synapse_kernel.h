@@ -170,10 +170,8 @@ DEF_KERNELS(FC, FUNC_NAME, EXTRACTIONS, \
     const int to_col_start = synapse_data.subset_config.to_col_start; \
     const int to_col_end = synapse_data.subset_config.to_col_end; \
     const int from_kernel_size = synapse_data.subset_config.from_size; \
-    const int kernel_to_rows = to_row_end - to_row_start; \
-    const int kernel_to_cols = to_col_end - to_col_start; \
-    const int to_row_size = synapse_data.subset_config.to_row_size; \
-    const int to_col_size = synapse_data.subset_config.to_col_size; \
+    const int kernel_to_rows = synapse_data.subset_config.to_row_size; \
+    const int kernel_to_cols = synapse_data.subset_config.to_col_size; \
     const int to_kernel_size = synapse_data.subset_config.to_size;
 
 #define SUBSET_WEIGHT_LOOP(WEIGHT_INIT, WEIGHT_OP) \
@@ -196,15 +194,15 @@ for (int i = 0 ; i < kernel_to_rows ; ++i) { \
     for (int j = 0 ; j < kernel_to_cols ; ++j) { \
         int to_row = i + to_row_start; \
         int to_column = j + to_col_start; \
-        int to_kernel_index = i * to_columns + j; \
+        int to_kernel_index = i * kernel_to_cols + j; \
         int to_index = to_row * to_columns + to_column; \
         int from_kernel_index = 0;
 
 #define SUBSET_PARALLEL_LOOP_OPEN \
 int to_kernel_index = blockIdx.x * blockDim.x + threadIdx.x; \
 if (to_kernel_index < to_kernel_size) { \
-    int to_row = (to_kernel_index / to_col_size) + to_row_start; \
-    int to_column = (to_kernel_index % to_col_size) + to_col_start; \
+    int to_row = (to_kernel_index / kernel_to_cols) + to_row_start; \
+    int to_column = (to_kernel_index % kernel_to_cols) + to_col_start; \
     int to_index = to_row * to_columns + to_column; \
     int from_kernel_index = 0;
 

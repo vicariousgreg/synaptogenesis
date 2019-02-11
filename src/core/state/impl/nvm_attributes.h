@@ -8,9 +8,6 @@ class NVMAttributes : public Attributes {
     public:
         NVMAttributes(Layer *layer);
 
-        virtual bool check_compatibility(ClusterType cluster_type)
-            { return cluster_type == PARALLEL; }
-
         virtual KernelList<SYNAPSE_ARGS> get_activators(Connection *conn);
 
         virtual void process_weight_matrix(WeightMatrix* matrix);
