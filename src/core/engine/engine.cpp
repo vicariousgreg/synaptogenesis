@@ -24,23 +24,19 @@ static void handle_interrupt(int param) {
 }
 
 /* Keep thread-safe signal flag */
-std::mutex Engine::interrupt_lock;
+std::mutex Engine::global_engine_lock;
 bool Engine::interrupt_signaled = false;
 bool Engine::running = false;
 
 /* Signals interrupt to all active engines */
 void Engine::interrupt() {
     {
-        std::unique_lock<std::mutex> lock(interrupt_lock);
+        std::unique_lock<std::mutex> lock(global_engine_lock);
 
         // Avoid double signalling
         if (Engine::interrupt_signaled or not Engine::running) return;
         else Engine::interrupt_signaled = true;
     }
-}
-
-void Engine::interrupt_async() {
-    Engine::interrupt();
 }
 
 
@@ -462,7 +458,7 @@ Report* Engine::run(PropertyConfig args) {
     signal(SIGINT, handle_interrupt);
 
     {
-        std::unique_lock<std::mutex> lock(interrupt_lock);
+        std::unique_lock<std::mutex> lock(global_engine_lock);
         if (Engine::running)
             LOG_ERROR("Cannot run more than one engine at once!");
         Engine::running = true;
@@ -560,11 +556,11 @@ Report* Engine::run(PropertyConfig args) {
             thread.join();
     }
 
-    bool killed = Engine::interrupt_signaled;
-    Engine::running = false;
-    if (Engine::interrupt_signaled) {
-        std::unique_lock<std::mutex> lock(interrupt_lock);
+    bool interrupted = Engine::interrupt_signaled;
+    {
+        std::unique_lock<std::mutex> lock(global_engine_lock);
         Engine::interrupt_signaled = false;
+        Engine::running = false;
     }
 
     // Shutdown the Scheduler thread pool
@@ -574,10 +570,11 @@ Report* Engine::run(PropertyConfig args) {
     free_rand();
 
     // Generate report
-    Report* r = (killed and this->report == nullptr)
+    Report* r = (interrupted and this->report == nullptr)
         ? new Report(this, this->context.state, 0, 0.0)
         : this->report;
     r->set_child("args", &args);
+    r->set("interrupted", interrupted);
     for (auto mem : mems) r->add_to_child_array("memory usage", &mem);
 
     // Reset engine variables

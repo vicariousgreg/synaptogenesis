@@ -330,7 +330,7 @@ void set_debug(bool val) {
 }
 
 void interrupt_engine() {
-    Engine::interrupt_async();
+    Engine::interrupt();
 }
 
 void add_io_callback(char* name, long long addr) {

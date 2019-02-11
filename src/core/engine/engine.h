@@ -75,9 +75,8 @@ class Engine {
 
         size_t get_buffer_bytes() const;
 
-        // Interrupts all active engines
+        // Interrupts engine
         static void interrupt();
-        static void interrupt_async();
 
     protected:
         Context context;
@@ -121,7 +120,7 @@ class Engine {
         void environment_loop();
 
         // Static infrastructure for interruption
-        static std::mutex interrupt_lock;
+        static std::mutex global_engine_lock;
         static bool interrupt_signaled;
         static bool running;
 };
