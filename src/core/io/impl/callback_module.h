@@ -13,6 +13,7 @@ class CallbackModule : public Module {
     protected:
         std::map<Layer*, void (*)(int, int, void*)> callbacks;
         std::map<Layer*, int> ids;
+        bool clear_first;
 
     MODULE_MEMBERS
 };

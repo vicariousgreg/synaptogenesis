@@ -6,6 +6,7 @@ REGISTER_MODULE(CallbackModule, "callback");
 CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
         : Module(layers, config) {
     enforce_specified_io_type("callback");
+    this->clear_first = config->get_bool("clear", false);
 
     for (auto layer : layers) {
         auto layer_config = config->get_layer(layer);
@@ -28,9 +29,13 @@ CallbackModule::CallbackModule(LayerList layers, ModuleConfig *config)
 void CallbackModule::feed_input_impl(Buffer *buffer) {
     for (auto layer : layers) {
         if (get_io_type(layer) & INPUT) {
-            for (auto& key : get_input_keys(layer))
-                callbacks[layer](ids[layer], layer->size,
-                    buffer->get_input_auxiliary(layer, key)->get());
+            for (auto& key : get_input_keys(layer)) {
+                auto ptr = buffer->get_input_auxiliary(layer, key);
+                if (this->clear_first)
+                    fClear((float*)ptr->get(), ptr->get_size());
+
+                callbacks[layer](ids[layer], layer->size, ptr->get());
+            }
         }
     }
 }
