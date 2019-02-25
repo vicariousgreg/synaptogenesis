@@ -221,31 +221,31 @@ def create_io_callback(name, f):
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _io_callbacks[name] = (cb, addr)
-    _syn.add_io_callback(name, addr)
+    _syn.add_io_callback(name.encode('utf-8'), addr)
 
 def create_weight_callback(name, f):
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _weight_callbacks[name] = (cb, addr)
-    _syn.add_weight_callback(name, addr)
+    _syn.add_weight_callback(name.encode('utf-8'), addr)
 
 def create_indices_weight_callback(name, f):
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _indices_weight_callbacks[name] = (cb, addr)
-    _syn.add_indices_weight_callback(name, addr)
+    _syn.add_indices_weight_callback(name.encode('utf-8'), addr)
 
 def create_distance_weight_callback(name, f):
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _distance_weight_callbacks[name] = (cb, addr)
-    _syn.add_distance_weight_callback(name, addr)
+    _syn.add_distance_weight_callback(name.encode('utf-8'), addr)
 
 def create_delay_weight_callback(name, f):
     cb = CFUNCTYPE(None, c_int, c_int, c_void_p, c_void_p)(f)
     addr = cast(cb, c_void_p).value
     _delay_weight_callbacks[name] = (cb, addr)
-    _syn.add_delay_weight_callback(name, addr)
+    _syn.add_delay_weight_callback(name.encode('utf-8'), addr)
 
 
 """ Properties: C dictionary implementation """
@@ -256,11 +256,12 @@ class Properties:
         self.children = OrderedDict()
         self.arrays = OrderedDict()
         self.child_arrays = OrderedDict()
+        self.obj = None
 
         # If dictionary, build C properties
         if type(props) is dict:
             self.obj = _syn.create_properties()
-            for k,v in props.iteritems():
+            for k,v in props.items():
                 if v is None: continue
 
                 if type(v) is dict:
@@ -284,9 +285,9 @@ class Properties:
             keys = build_array(keys_obj)
             for i in range(keys.size):
                 key = keys.data[i]
-                key_str = string_at(cast(key, c_char_p))
+                key_str = string_at(cast(key, c_char_p)).decode('utf-8')
                 self.properties[key_str] = string_at(
-                    _syn.get_property(props, key))
+                    _syn.get_property(props, key)).decode('utf-8')
 
             _syn.free_array_deep(keys_obj)
 
@@ -295,7 +296,7 @@ class Properties:
             keys = build_array(keys_obj)
             for i in range(keys.size):
                 key = keys.data[i]
-                key_str = string_at(cast(key, c_char_p))
+                key_str = string_at(cast(key, c_char_p)).decode('utf-8')
                 self.children[key_str] = Properties(
                     _syn.get_child(props, key))
             _syn.free_array_deep(keys_obj)
@@ -305,7 +306,7 @@ class Properties:
             keys = build_array(keys_obj)
             for i in range(keys.size):
                 key = keys.data[i]
-                key_str = string_at(cast(key, c_char_p))
+                key_str = string_at(cast(key, c_char_p)).decode('utf-8')
                 arr_obj = _syn.get_array(props, key)
                 arr = build_array(arr_obj)
 
@@ -314,7 +315,7 @@ class Properties:
 
                 for j in range(arr.size):
                     self.arrays[key_str].append(
-                        string_at(cast(arr.data[j], c_char_p)))
+                        string_at(cast(arr.data[j], c_char_p)).decode('utf-8'))
                 _syn.free_array(arr_obj)
             _syn.free_array_deep(keys_obj)
 
@@ -323,7 +324,7 @@ class Properties:
             keys = build_array(keys_obj)
             for i in range(keys.size):
                 key = keys.data[i]
-                key_str = string_at(cast(key, c_char_p))
+                key_str = string_at(cast(key, c_char_p)).decode('utf-8')
                 arr_obj = _syn.get_child_array(props, key)
                 arr = build_array(arr_obj)
 
@@ -338,13 +339,13 @@ class Properties:
 
     def to_dict(self):
         out = OrderedDict()
-        for k,v in self.properties.iteritems():
+        for k,v in self.properties.items():
             out[k] = v
-        for k,v in self.children.iteritems():
+        for k,v in self.children.items():
             out[k] = v.to_dict()
-        for k,v in self.arrays.iteritems():
+        for k,v in self.arrays.items():
             out[k] = [str(p) for p in v]
-        for k,v in self.child_arrays.iteritems():
+        for k,v in self.child_arrays.items():
             out[k] = [p.to_dict() for p in v]
         return out
 
@@ -354,27 +355,34 @@ class Properties:
     def add_property(self, key, val):
         self.properties[key] = val
         if type(val) is bool:
-            _syn.add_property(self.obj, key, "true" if val else "false")
-        else:
-            _syn.add_property(self.obj, key, str(val))
+            val = "true" if val else "false"
+        _syn.add_property(self.obj,
+            key.encode('utf-8'),
+            str(val).encode('utf-8'))
 
     def add_child(self, key, child):
         child = Properties(child)
         self.children[key] = child
-        _syn.add_child(self.obj, key, child.obj)
+        _syn.add_child(self.obj,
+            key.encode('utf-8'),
+            child.obj)
 
     def add_to_array(self, key, val):
         if key not in self.arrays:
             self.arrays[key] = []
         self.arrays[key].append(val)
-        _syn.add_to_array(self.obj, key, val)
+        _syn.add_to_array(self.obj,
+            key.encode('utf-8'),
+            val.encode('utf-8'))
 
     def add_to_child_array(self, key, dictionary):
         props = Properties(dictionary)
         if key not in self.child_arrays:
             self.child_arrays[key] = []
         self.child_arrays[key].append(props)
-        _syn.add_to_child_array(self.obj, key, props.obj)
+        _syn.add_to_child_array(self.obj,
+            key.encode('utf-8'),
+            props.obj)
 
     def free(self):
         if _syn is not None:
@@ -392,6 +400,8 @@ class Environment:
         elif type(env) is dict:
             self.props = Properties(env)
             self.obj = _syn.create_environment(self.props.obj)
+        else:
+            self.obj = None
 
     def save(self, filename):
         return _syn.save_env(self.obj, filename)
@@ -414,6 +424,8 @@ class Network:
         elif type(net) is dict:
             self.props = Properties(net)
             self.obj = _syn.create_network(self.props.obj)
+        else:
+            self.obj = None
         self.state = None
 
     def save(self, filename):
@@ -450,22 +462,32 @@ class Network:
     def get_neuron_data(self, structure, layer, key):
         if self.state is None: self.build_state()
         return build_array(
-            _syn.get_neuron_data(self.state, structure, layer, key))
+            _syn.get_neuron_data(self.state,
+                structure.encode('utf-8'),
+                layer.encode('utf-8'),
+                key.encode('utf-8')))
 
     def get_layer_data(self, structure, layer, key):
         if self.state is None: self.build_state()
         return build_array(
-            _syn.get_layer_data(self.state, structure, layer, key))
+            _syn.get_layer_data(self.state,
+                structure.encode('utf-8'),
+                layer.encode('utf-8'),
+                key.encode('utf-8')))
 
     def get_connection_data(self, structure, connection, key):
         if self.state is None: self.build_state()
         return build_array(
-            _syn.get_connection_data(self.state, connection, key))
+            _syn.get_connection_data(self.state,
+                connection.encode('utf-8'),
+                key.encode('utf-8')))
 
     def get_weight_matrix(self, connection, key="weights"):
         if self.state is None: self.build_state()
         return build_array(
-            _syn.get_weight_matrix(self.state, connection, key))
+            _syn.get_weight_matrix(self.state,
+                connection.encode('utf-8'),
+                key.encode('utf-8')))
 
     def run(self, environment, args=dict()):
         # Build state
@@ -487,7 +509,7 @@ class Network:
 def fill_in(defaults, props):
     new_props = deepcopy(props)
 
-    for k,v in defaults.iteritems():
+    for k,v in defaults.items():
         if type(v) is dict:
             if k in new_props:
                 new_props[k] = fill_in(v, new_props[k])
@@ -566,11 +588,11 @@ def gaussian_dist_callback(ID, size, weights, distances):
     d_arr = FloatArray(size, distances)
 
     # Use half maximum distance for standard deviation
-    sigma = max(d_arr.data[i] for i in xrange(size)) / 2
+    sigma = max(d_arr.data[i] for i in range(size)) / 2
 
     # Smooth out weights based on distances
     if sigma != 0:
-        for i in xrange(size):
+        for i in range(size):
             w_arr.data[i] = gauss(d_arr.data[i], w_arr.data[i], sigma, True)
 
 create_distance_weight_callback("gaussian", gaussian_dist_callback)
@@ -582,11 +604,11 @@ def mexican_hat_dist_callback(ID, size, weights, distances):
     d_arr = FloatArray(size, distances)
 
     # Use half maximum distance for standard deviation
-    sigma = max(d_arr.data[i] for i in xrange(size)) / 2
+    sigma = max(d_arr.data[i] for i in range(size)) / 2
 
     # Smooth out weights based on distances
     if sigma != 0:
-        for i in xrange(size):
+        for i in range(size):
             w_arr.data[i] = diff_gauss(d_arr.data[i], w_arr.data[i], sigma, True)
 
 create_distance_weight_callback("mexican_hat", mexican_hat_dist_callback)

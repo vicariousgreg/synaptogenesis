@@ -8,7 +8,7 @@ def print_indices_callback(ID, size, weights, from_indices, to_indices, used):
     ti_arr = IntArray(size, to_indices)
     used_arr = IntArray(size, used)
 
-    for i in xrange(size):
+    for i in range(size):
         print(w_arr.data[i], fi_arr.data[i], ti_arr.data[i], used_arr.data[i])
 
 create_indices_weight_callback("print", print_indices_callback)

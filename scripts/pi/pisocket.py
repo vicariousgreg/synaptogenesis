@@ -59,7 +59,7 @@ class PiClient(PiSocket):
         self.close()
 
 def gen_mesg(message_size):
-    return [uniform(0.0, 1.0) for _ in xrange(message_size)]
+    return [uniform(0.0, 1.0) for _ in range(message_size)]
 
 #def get_camera_mesg(cam):
 #    return cam.capture_greyscale()
@@ -117,7 +117,7 @@ if __name__ == "__main__":
             if args.verbose: print("Sent")
 
         # Exchange
-        for i in xrange(message_count-1):
+        for i in range(message_count-1):
             if args.get:
                 sock.send_ping() if args.server else sock.get_ping()
 

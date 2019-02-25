@@ -99,6 +99,7 @@ all: serial
 
 install: 
 	python install_python.py
+	python3 install_python.py
 	sudo cp $(LIBRARY_DIR)/$(LIBRARY) /usr/lib/
 
 #---------------------------------------------------------------------------------

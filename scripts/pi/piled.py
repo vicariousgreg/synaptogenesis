@@ -6,8 +6,8 @@ class PiLED:
         self.disp.begin()
         self.coordinates = [
             (row, col, row*8+col)
-                for row in xrange(8)
-                    for col in xrange(8)]
+                for row in range(8)
+                    for col in range(8)]
 
     def clear(self):
         self.disp.clear()
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     led = PiLED()
     start = time()
-    for x in xrange(100):
-        led.display([0.15 * random() for _ in xrange(64)])
+    for x in range(100):
+        led.display([0.15 * random() for _ in range(64)])
     print(time() - start)
     led.clear()

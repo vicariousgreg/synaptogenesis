@@ -293,7 +293,7 @@ def main(infile=None, outfile=None,
                     "output" : True,
                     "mpi destinations" : list(to_owners),
                     "mpi tag" : mpi_tags[(s_name, l_name)],
-                } for (s_name,l_name,),to_owners in to_ghosts.iteritems()
+                } for (s_name,l_name,),to_owners in to_ghosts.items()
             ]
         })
     

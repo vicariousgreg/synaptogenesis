@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     accel = PiAccel()
     start = time()
-    for x in xrange(10):
+    for x in range(10):
         print(accel.get_gyro())
         print(accel.get_accel())
         print(accel.get_rotation())

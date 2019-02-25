@@ -27,7 +27,7 @@ class PiCam:
 if __name__ == "__main__":
     cam = PiCam()
     start = time()
-    for x in xrange(5):
+    for x in range(5):
         output = cam.capture_greyscale()
         #print(output.shape)
         #print(output.sum() / len(output))
