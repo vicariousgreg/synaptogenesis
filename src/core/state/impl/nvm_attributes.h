@@ -16,10 +16,14 @@ class NVMAttributes : public Attributes {
         Pointer<float> state;
 
         // Gate registers
-        bool activity_gate, learning_gate;
+        float activity_gate, learning_gate;
 
         // Normalization factor for learning
         float norm;
+
+        // Continuous gate factor variables
+        float pad;
+        float ohr;
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS

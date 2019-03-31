@@ -2,6 +2,8 @@
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
 
+#define GATE_THRESHOLD 0.5f
+
 REGISTER_ATTRIBUTES(NVMCompareAttributes, "nvm_compare", FLOAT)
 USE_WEIGHT_MATRIX(NVMWeightMatrix, "nvm_compare")
 
@@ -24,31 +26,34 @@ NVMCompareAttributes::NVMCompareAttributes(Layer *layer)
 #define WEIGHT_OP \
     sum += extract(outputs[from_index], delay) * weights[weight_index]; \
 
-#define AGG_SUM \
-    inputs[to_index] = aggregate(inputs[to_index], sum);
+#define AGG_SUM_WEIGHTED(weight) \
+    inputs[to_index] = weight * aggregate(inputs[to_index], sum);
 
 CALC_ALL_DUAL(activate_nvm_compare_plastic,
     NVMCompareAttributes *nvm_att = (NVMCompareAttributes*)synapse_data.attributes;
     NVMWeightMatrix *nvm_mat = (NVMWeightMatrix*)synapse_data.matrix;
 
-    bool ag = nvm_att->activity_gate;
-    bool lg = nvm_att->learning_gate;
-    if (not (ag or lg)) return;
+    float ag = nvm_att->activity_gate;
+    float lg = nvm_att->learning_gate;
+    if (ag < GATE_THRESHOLD and lg < GATE_THRESHOLD) return;
+    float threshold = GATE_THRESHOLD * nvm_att->ohr;
 
     float* true_state = nvm_att->true_state.get();
     float norm = nvm_mat->norm;
+    lg *= nvm_att->ohr;
+    ag *= nvm_att->ohr;
     ,
         INIT_SUM
         ,
             WEIGHT_OP
         ,
-        if (ag) {
-            AGG_SUM
+        if (ag > threshold) {
+            AGG_SUM_WEIGHTED(ag)
         }
-        if (lg) {
+        if (lg > threshold) {
             float temp = true_state[to_index];
             ,
-                weights[weight_index] =
+                weights[weight_index] = lg *
                     extract(outputs[from_index], delay) *
                     temp / norm;
             ,

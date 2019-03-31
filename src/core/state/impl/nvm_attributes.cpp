@@ -5,6 +5,8 @@
 #include "state/weight_matrix.h"
 #include "engine/kernel/synapse_kernel.h"
 
+#define GATE_THRESHOLD 0.5f
+
 REGISTER_ATTRIBUTES(NVMAttributes, "nvm", FLOAT)
 REGISTER_WEIGHT_MATRIX(NVMWeightMatrix, "nvm")
 
@@ -16,6 +18,8 @@ NVMAttributes::NVMAttributes(Layer *layer)
         : Attributes(layer, FLOAT) {
     this->state = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("state", &state);
+    this->pad = std::stof(layer->get_parameter("pad", "0.0"));
+    this->ohr = 1. / (1. - this->pad);
 }
 
 void NVMAttributes::process_weight_matrix(WeightMatrix* matrix) {
@@ -56,30 +60,34 @@ BUILD_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
 #define AGG_SUM \
     inputs[to_index] = aggregate(inputs[to_index], sum);
 
+#define AGG_SUM_WEIGHTED(weight) \
+    inputs[to_index] = weight * aggregate(inputs[to_index], sum);
+
 CALC_SUBSET(activate_nvm_decay,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
+    float pad = nvm_att->pad;
     ,
-    bool gv = false;
+    float gv = 1.0f - pad;
     ,
-        gv = gv or not (extract(outputs[from_index], delay) > 0.0);
+        gv = MIN(gv, extract(outputs[from_index], delay));
     ,
-    nvm_att->activity_gate = gv;
+    nvm_att->activity_gate = 1.0f - pad - gv;
 );
 CALC_SUBSET(activate_nvm_gate,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
     ,
-    bool gv = false;
+    float gv = 0.0f;
     ,
-        gv = gv or (extract(outputs[from_index], delay) > 0.0);
+        gv = MAX(gv, extract(outputs[from_index], delay));
     ,
     nvm_att->activity_gate = gv;
 );
 CALC_SUBSET(activate_nvm_learning,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
     ,
-    bool gv = false;
+    float gv = 0.0f;
     ,
-        gv = gv or (extract(outputs[from_index], delay) > 0.0);
+        gv = MAX(gv, extract(outputs[from_index], delay));
     ,
     nvm_att->learning_gate = gv;
 );
@@ -96,37 +104,42 @@ CALC_ALL(activate_nvm,
 
 CALC_ALL(activate_nvm_gated,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes;
-    if (not nvm_att->activity_gate) return;
+    float gv = nvm_att->activity_gate;
+    if (gv < GATE_THRESHOLD) return;
+    gv *= nvm_att->ohr;
     ,
     INIT_SUM
     ,
         WEIGHT_OP
     ,
-    AGG_SUM
+    AGG_SUM_WEIGHTED(gv);
 );
 
 CALC_ALL_DUAL(activate_nvm_plastic,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes;
     NVMWeightMatrix *nvm_mat = (NVMWeightMatrix*)synapse_data.matrix;
 
-    bool ag = nvm_att->activity_gate;
-    bool lg = nvm_att->learning_gate;
-    if (not (ag or lg)) return;
+    float ag = nvm_att->activity_gate;
+    float lg = nvm_att->learning_gate;
+    if (ag < GATE_THRESHOLD and lg < GATE_THRESHOLD) return;
+    float threshold = GATE_THRESHOLD * nvm_att->ohr;
 
     float* state = nvm_att->state.get();
     float norm = nvm_mat->norm;
+    lg *= nvm_att->ohr;
+    ag *= nvm_att->ohr;
     ,
         INIT_SUM
         ,
             WEIGHT_OP
         ,
-        if (ag) {
-            AGG_SUM
+        if (ag > threshold) {
+            AGG_SUM_WEIGHTED(ag);
         }
-        if (lg) {
+        if (lg > threshold) {
             float temp = state[to_index] - sum;
             ,
-                weights[weight_index] +=
+                weights[weight_index] += lg *
                     extract(outputs[from_index], delay) *
                     temp / norm;
             ,
