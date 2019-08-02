@@ -5,6 +5,7 @@
 #include <gtkmm.h>
 
 class GuiWindow;
+class GuiController;
 
 class GUI {
     public:
@@ -23,6 +24,8 @@ class GUI {
         Glib::Dispatcher update_dispatcher;
 
     private:
+        friend GuiController;
+
         static GUI *instance;
         GUI();
 

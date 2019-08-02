@@ -26,17 +26,19 @@ void GUI::add_window(GuiWindow *window) {
 }
 
 void GUI::init() {
-    active = true;
+    if (not active) {
+        active = true;
 
-    // Mock arguments
-    int argc = 1;
-    if (this->argv == nullptr) {
-        this->argv = (char**)malloc(sizeof(char*));
-        this->argv[0] = " ";
+        // Mock arguments
+        int argc = 1;
+        if (this->argv == nullptr) {
+            this->argv = (char**)malloc(sizeof(char*));
+            this->argv[0] = " ";
+        }
+        app =
+            Gtk::Application::create(argc, this->argv,
+                    "org.gtkmm.examples.base");
     }
-    app =
-        Gtk::Application::create(argc, this->argv,
-                "org.gtkmm.examples.base");
 }
 
 void GUI::launch() {

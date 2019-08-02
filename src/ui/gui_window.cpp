@@ -6,5 +6,5 @@ GuiObject::GuiObject() { GUI::get_instance()->init(); }
 GuiWindow::GuiWindow() { GUI::get_instance()->add_window(this); }
 
 bool GuiWindow::on_delete_event(GdkEventAny* any_event) {
-    Engine::interrupt();
+    Engine::interrupt(true);
 }

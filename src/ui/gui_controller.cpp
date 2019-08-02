@@ -9,6 +9,9 @@ void GuiController::update() {
     GUI::get_instance()->signal_update();
 }
 
-void GuiController::quit() {
-    GUI::get_instance()->signal_quit();
+void GuiController::quit(bool signal) {
+    if (signal)
+        GUI::get_instance()->signal_quit();
+    else
+        GUI::get_instance()->quit();
 }

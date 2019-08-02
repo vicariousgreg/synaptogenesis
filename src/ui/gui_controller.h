@@ -5,14 +5,14 @@ class GuiController {
     public:
         static void launch();
         static void update();
-        static void quit();
+        static void quit(bool signal=true);
 };
 
 #ifndef __GUI__
 
 void GuiController::launch() { }
 void GuiController::update() { }
-void GuiController::quit() { }
+void GuiController::quit(bool signal=true) { }
 
 #endif
 

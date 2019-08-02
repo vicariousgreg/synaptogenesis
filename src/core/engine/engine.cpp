@@ -26,16 +26,18 @@ static void handle_interrupt(int param) {
 /* Keep thread-safe signal flag */
 std::mutex Engine::global_engine_lock;
 bool Engine::interrupt_signaled = false;
+bool Engine::interrupt_from_gui = false;
 bool Engine::running = false;
 
 /* Signals interrupt to all active engines */
-void Engine::interrupt() {
+void Engine::interrupt(bool from_gui) {
     {
         std::unique_lock<std::mutex> lock(global_engine_lock);
 
         // Avoid double signalling
         if (Engine::interrupt_signaled or not Engine::running) return;
-        else Engine::interrupt_signaled = true;
+        Engine::interrupt_signaled = true;
+        Engine::interrupt_from_gui = from_gui;
     }
 }
 
@@ -306,8 +308,10 @@ void Engine::single_thread_loop() {
     // Report report if verbose
     if (verbose) report->print();
 
-    // Shutdown GUI
-    GuiController::quit();
+    // If iterrupted by GUI controls, main thread will handle
+    // Otherwise, shut down GUI
+    if (not Engine::interrupt_from_gui)
+        GuiController::quit();
 }
 
 /* Launches network computations
@@ -393,8 +397,10 @@ void Engine::network_loop() {
     // Report report if verbose
     if (verbose) report->print();
 
-    // Shutdown GUI
-    GuiController::quit();
+    // If iterrupted by GUI controls, main thread will handle
+    // Otherwise, shut down GUI
+    if (not Engine::interrupt_from_gui)
+        GuiController::quit();
 }
 
 /* Launches environment computations
@@ -559,6 +565,12 @@ Report* Engine::run(PropertyConfig args) {
     bool interrupted = Engine::interrupt_signaled;
     {
         std::unique_lock<std::mutex> lock(global_engine_lock);
+        // If interrupted by GUI controls, the main thread must terminate GUI
+        if (Engine::interrupt_from_gui) {
+            // signal=false
+            GuiController::quit(false);
+            Engine::interrupt_from_gui = false;
+        }
         Engine::interrupt_signaled = false;
         Engine::running = false;
     }

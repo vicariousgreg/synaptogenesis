@@ -76,7 +76,7 @@ class Engine {
         size_t get_buffer_bytes() const;
 
         // Interrupts engine
-        static void interrupt();
+        static void interrupt(bool from_gui=false);
 
     protected:
         Context context;
@@ -122,6 +122,7 @@ class Engine {
         // Static infrastructure for interruption
         static std::mutex global_engine_lock;
         static bool interrupt_signaled;
+        static bool interrupt_from_gui;
         static bool running;
 };
 
