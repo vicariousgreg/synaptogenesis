@@ -45,21 +45,26 @@
 // This makes a surprising difference in runtime
 // This macro only contains extractions relevant to all connection kernels
 #define SYNAPSE_PREAMBLE \
-    const Opcode opcode = synapse_data.connection.opcode; \
-    const int delay = synapse_data.connection.delay; \
-    float * const weights = synapse_data.weights.get(); \
-    const int num_weights = synapse_data.num_weights; \
-    const bool plastic = synapse_data.connection.plastic; \
-    const float max_weight = synapse_data.connection.max_weight; \
     const int from_size = synapse_data.from_layer.size; \
     const int from_rows = synapse_data.from_layer.rows; \
     const int from_columns = synapse_data.from_layer.columns; \
     const int to_size = synapse_data.to_layer.size; \
     const int to_rows = synapse_data.to_layer.rows; \
     const int to_columns = synapse_data.to_layer.columns; \
+\
+    const Opcode opcode = synapse_data.connection.opcode; \
+    const int delay = synapse_data.connection.delay; \
+    const bool plastic = synapse_data.connection.plastic; \
+    const float max_weight = synapse_data.connection.max_weight; \
+\
+    float * const weights = synapse_data.weights.get(); \
+    const int num_weights = synapse_data.num_weights; \
+    const int num_weights_per_neuron = num_weights / to_size; \
+\
     Output * const outputs = synapse_data.outputs.get(); \
     Output * const destination_outputs = synapse_data.destination_outputs.get(); \
     float * const inputs = synapse_data.inputs.get(); \
+\
     const EXTRACTOR extract = synapse_data.extractor; \
     const AGGREGATOR aggregate = synapse_data.aggregator;
 
@@ -300,8 +305,7 @@ DEF_KERNELS(ONE, FUNC_NAME, EXTRACTIONS, \
     int * const nonzero_counts = synapse_data.matrix->nonzero_counts.get(); \
     int * const from_row_indices = synapse_data.matrix->from_row_indices.get(); \
     int * const from_column_indices = synapse_data.matrix->from_column_indices.get(); \
-    int * const from_indices = synapse_data.matrix->from_indices.get(); \
-    const int matrix_columns = num_weights / to_size;
+    int * const from_indices = synapse_data.matrix->from_indices.get();
 
 #define SPARSE_WEIGHT_LOOP(WEIGHT_INIT, WEIGHT_OP, WEIGHT_INCR) \
 { \
@@ -332,7 +336,7 @@ if (to_index < to_size) {
 DEF_KERNELS(SPARSE, FUNC_NAME, EXTRACTIONS, \
     NEURON_PRE; \
         SPARSE_WEIGHT_LOOP( \
-            to_index * matrix_columns, WEIGHT_OP, ++weight_index); \
+            to_index * num_weights_per_neuron, WEIGHT_OP, ++weight_index); \
     NEURON_POST; \
     , \
     NEURON_PRE; \
@@ -345,10 +349,10 @@ DEF_KERNELS(SPARSE, FUNC_NAME, EXTRACTIONS, \
 DEF_KERNELS(SPARSE, FUNC_NAME, EXTRACTIONS, \
     NEURON_PRE; \
         SPARSE_WEIGHT_LOOP( \
-            to_index * matrix_columns, WEIGHT_OP_1, ++weight_index); \
+            to_index * num_weights_per_neuron, WEIGHT_OP_1, ++weight_index); \
     NEURON_MID; \
         SPARSE_WEIGHT_LOOP( \
-            to_index * matrix_columns, WEIGHT_OP_2, ++weight_index); \
+            to_index * num_weights_per_neuron, WEIGHT_OP_2, ++weight_index); \
     NEURON_POST; \
     , \
     NEURON_PRE; \

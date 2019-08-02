@@ -20,6 +20,7 @@ void init_openmp_rand();
 
 #define MIN min
 #define MAX max
+#define ABS abs
 
 #include <cstdio>
 #include <math.h>
@@ -64,6 +65,7 @@ void free_cuda_rand();
 #include <cmath>
 #define MIN std::fmin
 #define MAX std::fmax
+#define ABS std::abs
 
 // These will be dummy functions without CUDA
 inline void device_synchronize() { }

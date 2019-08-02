@@ -125,13 +125,14 @@ CALC_ALL_DUAL(activate_nvm_plastic,
     float threshold = GATE_THRESHOLD * nvm_att->ohr;
 
     float* state = nvm_att->state.get();
-    float norm = nvm_mat->norm;
+    float norm = nvm_mat->norm * num_weights_per_neuron;
+
     lg *= nvm_att->ohr;
     ag *= nvm_att->ohr;
     ,
         INIT_SUM
         ,
-            WEIGHT_OP
+            WEIGHT_OP;
         ,
         if (ag > threshold) {
             AGG_SUM_WEIGHTED(ag);
