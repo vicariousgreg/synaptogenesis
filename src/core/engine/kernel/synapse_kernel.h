@@ -181,6 +181,7 @@ DEF_KERNELS(FC, FUNC_NAME, EXTRACTIONS, \
 
 #define SUBSET_WEIGHT_LOOP(WEIGHT_INIT, WEIGHT_OP) \
 { \
+    from_kernel_index = 0; \
     for (int from_row = from_row_start ; from_row < from_row_end ; ++from_row) { \
         for (int from_column = from_col_start ; from_column < from_col_end ; ++from_column) { \
             int from_index = from_row * from_columns + from_column; \
