@@ -12,7 +12,7 @@ class GuiController {
 
 void GuiController::launch() { }
 void GuiController::update() { }
-void GuiController::quit(bool signal=true) { }
+void GuiController::quit(bool signal) { }
 
 #endif
 
