@@ -627,6 +627,7 @@ void WeightMatrix::sparsify() {
     }
 
     // Print compression statistics
+    /*
     printf("Sparsified %s:\n"
            "  Compression:         %12d / %12d (%8.6f)\n"
            "  Theoretical minimum: %12d / %12d (%8.6f)\n",
@@ -635,6 +636,7 @@ void WeightMatrix::sparsify() {
         float(sparse_num_weights) / num_weights,
         total_nonzero, num_weights,
         float(total_nonzero) / num_weights);
+    */
 
     // Free intermediate data and move pointers
     this->from_row_indices.free();

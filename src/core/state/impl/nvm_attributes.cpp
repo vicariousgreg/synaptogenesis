@@ -20,6 +20,8 @@ NVMAttributes::NVMAttributes(Layer *layer)
     Attributes::register_neuron_variable("state", &state);
     this->pad = std::stof(layer->get_parameter("pad", "0.0"));
     this->ohr = 1. / (1. - this->pad);
+    this->activity_gate = 1.;
+    this->learning_gate = 0.;
 }
 
 void NVMAttributes::process_weight_matrix(WeightMatrix* matrix) {

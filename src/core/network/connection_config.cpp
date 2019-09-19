@@ -217,7 +217,8 @@ ConnectionConfig::ConnectionConfig(const PropertyConfig *config)
           opcode(get_opcode(config->get("opcode", "add"))),
           sparse(config->get_bool("sparse", false)),
           randomized_projection(config->get_bool("randomized projection", false)),
-          convolutional(config->get_bool("convolutional", false)) {
+          convolutional(config->get_bool("convolutional", false)),
+          recurrent(config->get_bool("recurrent", false)) {
     if (not config->has("from layer"))
         LOG_ERROR(
             "Attempted to construct ConnectionConfig "
@@ -262,6 +263,7 @@ ConnectionConfig::ConnectionConfig(
     bool sparse,
     bool randomized_projection,
     bool convolutional,
+    bool recurrent,
     PropertyConfig *specialized_config,
     PropertyConfig *weight_config,
     std::string dendrite, std::string name)
@@ -276,7 +278,8 @@ ConnectionConfig::ConnectionConfig(
           opcode(opcode),
           sparse(sparse),
           randomized_projection(randomized_projection),
-          convolutional(convolutional) {
+          convolutional(convolutional),
+          recurrent(recurrent) {
     this->set("name", name);
     this->set("to layer", to_layer);
     this->set("from layer", from_layer);
@@ -287,6 +290,7 @@ ConnectionConfig::ConnectionConfig(
     this->set("type", ConnectionTypeStrings.at(type));
     this->set("opcode", OpcodeStrings.at(opcode));
     this->set("convolutional", (convolutional) ? "true" : "false");
+    this->set("recurrent", (recurrent) ? "true" : "false");
     this->set("randomized projection", (randomized_projection) ? "true" : "false");
     this->set("sparse", (sparse) ? "true" : "false");
 

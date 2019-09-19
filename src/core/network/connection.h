@@ -73,6 +73,9 @@ class Connection {
         const bool second_order_host;
         const bool second_order_slave;
 
+        // Flag for sequential structures
+        const bool recurrent;
+
         // Optional connection name
         const std::string name;
 

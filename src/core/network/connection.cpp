@@ -79,6 +79,7 @@ Connection::Connection(const Connection& other)
       second_order(other.second_order),
       second_order_host(other.second_order_host),
       second_order_slave(other.second_order_slave),
+      recurrent(other.recurrent),
       name(other.name),
       num_weights(other.num_weights),
       id(other.id) { }
@@ -99,6 +100,7 @@ Connection::Connection(Connection* other, ConnectionType new_type)
       second_order(other->second_order),
       second_order_host(other->second_order_host),
       second_order_slave(other->second_order_slave),
+      recurrent(other->recurrent),
       name(other->name),
       num_weights(other->num_weights),
       id(other->id) { }
@@ -140,6 +142,7 @@ Connection::Connection(Layer *from_layer, Layer *to_layer,
             second_order_host(second_order and
                 node->get_second_order_connection() == nullptr),
             second_order_slave(second_order and not second_order_host),
+            recurrent(config->recurrent),
             name(config->name),
             num_weights(compute_num_weights(from_layer, to_layer, config)),
             id(std::hash<std::string>()(this->str())) {

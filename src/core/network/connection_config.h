@@ -75,6 +75,7 @@ class ConnectionConfig : public PropertyConfig {
             bool sparse=false,
             bool randomized_projection=false,
             bool convolutional=false,
+            bool recurrent=false,
             PropertyConfig *specialized_config=nullptr,
             PropertyConfig *weight_config=nullptr,
             std::string dendrite="root",
@@ -101,6 +102,7 @@ class ConnectionConfig : public PropertyConfig {
         const bool sparse;
         const bool randomized_projection;
         const bool convolutional;
+        const bool recurrent;
 };
 
 #endif

@@ -45,14 +45,16 @@ Layer::~Layer() {
 
 bool Layer::is_structure_input() const {
     for (auto conn : get_input_connections())
-        if (conn->from_layer->structure == this->structure)
+        if (conn->from_layer->structure == this->structure
+                and not conn->recurrent)
             return false;
     return true;
 }
 
 bool Layer::is_structure_output() const {
     for (auto conn : get_output_connections())
-        if (conn->to_layer->structure == this->structure)
+        if (conn->to_layer->structure == this->structure
+                and not conn->recurrent)
             return false;
     return true;
 }

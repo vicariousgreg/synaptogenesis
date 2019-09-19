@@ -41,6 +41,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
         for (auto& conn : curr_layer->get_output_connections())
             if (conn->to_layer != curr_layer
                     and conn->to_layer->structure == structure
+                    and not conn->recurrent
                     and visited.find(conn->to_layer) == visited.end())
                 skip = true;
 
@@ -62,6 +63,7 @@ SequentialCluster::SequentialCluster(Structure *structure,
         for (auto& conn : curr_layer->get_input_connections())
             if (conn->from_layer != curr_layer
                     and conn->from_layer->structure == structure
+                    and not conn->recurrent
                     and visited.find(conn->from_layer) == visited.end())
                 queue.push(conn->from_layer);
     }

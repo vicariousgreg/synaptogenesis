@@ -1,5 +1,5 @@
 #include <algorithm>
-
+#include <chrono>
 #include "util/resources/scheduler.h"
 
 Scheduler *Scheduler::instance = 0;
@@ -220,7 +220,10 @@ void Scheduler::worker_loop(int id) {
             // This is necessary to avoid race conditions
             if (pool_running) {
                 this->dormant = true;
-                dormant_cv.wait(lock, [this](){return not this->dormant;});
+                //dormant_cv.wait(lock, [this](){return not this->dormant;});
+                dormant_cv.wait_for(lock,
+                    std::chrono::milliseconds(100),
+                    [this](){return not this->dormant;});
             }
         }
     }

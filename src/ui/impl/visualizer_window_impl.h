@@ -17,6 +17,7 @@ class VisualizerWindowImpl : public VisualizerWindow, public GuiWindow {
 
     protected:
         bool colored;
+        bool negative;
         bool decay;
         int color_window;
         int bump;

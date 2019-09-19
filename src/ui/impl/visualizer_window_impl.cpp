@@ -5,7 +5,7 @@
 
 #include "network/structure.h"
 
-static guint8 convert(Output out, OutputType type) {
+static float convert(Output out, OutputType type) {
     switch (type) {
         case FLOAT:
             return 255 * MIN(1.0, out.f);
@@ -18,6 +18,7 @@ static guint8 convert(Output out, OutputType type) {
 
 VisualizerWindowImpl::VisualizerWindowImpl(PropertyConfig *config) :
           colored(config->get_bool("colored", false)),
+          negative(config->get_bool("negative", false)),
           decay(config->get_bool("decay", false)),
           bump(config->get_int("bump", 16)),
           color_window(config->get_int("window", 256)),
@@ -111,8 +112,19 @@ void VisualizerWindowImpl::report_output(Layer *layer,
                 data[j*4 + 1] = sin(float(hue) * freq_g + 3) * 127 + 128;
                 data[j*4 + 2] = sin(float(hue) * freq_b + 5) * 127 + 128;
             }
-        } else {
+        } else if (negative) {
             float val = convert(output[j], output_type);
+            if (val >= 0.f) {
+                data[j*4 + 0] = 0;
+                data[j*4 + 1] = val;
+                data[j*4 + 2] = 0;
+            } else {
+                data[j*4 + 0] = -val;
+                data[j*4 + 1] = 0;
+                data[j*4 + 2] = 0;
+            }
+        } else {
+            guint8 val = convert(output[j], output_type);
             data[j*4 + 0] = val;
             data[j*4 + 1] = val;
             data[j*4 + 2] = val;
