@@ -562,6 +562,49 @@ class ConnectionFactory(PropertiesFactory):
         return new_props
 
 
+""" Callback module builders """
+def make_custom_input_module(structure, layer_names, name, cb, clear=True):
+
+    def custom_callback(ID, size, ptr):
+        cb(layer_names[ID], FloatArray(size,ptr).to_np_array())
+
+    create_io_callback(name, custom_callback)
+
+    return {
+        "type" : "callback",
+        "clear" : clear,
+        "layers" : [
+            {
+                "structure" : structure,
+                "layer" : layer_name,
+                "input" : True,
+                "function" : name,
+                "id" : i
+            } for i,layer_name in enumerate(layer_names)
+        ]
+    }
+
+def make_custom_output_module(structure, layer_names, name, cb):
+
+    def custom_callback(ID, size, ptr):
+        cb(layer_names[ID], FloatArray(size,ptr).to_np_array())
+
+    create_io_callback(name, custom_callback)
+
+    return {
+        "type" : "callback",
+        "layers" : [
+            {
+                "structure" : structure,
+                "layer" : layer_name,
+                "output" : True,
+                "function" : name,
+                "id" : i
+            } for i,layer_name in enumerate(layer_names)
+        ]
+    }
+
+
 """ Common callbacks """
 from math import exp
 def gauss(dist, peak, sig, norm=False):
