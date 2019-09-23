@@ -48,6 +48,7 @@ CALC_ALL_DUAL(activate_nvm_compare_plastic,
             WEIGHT_OP
         ,
         if (ag > threshold) {
+            sum += true_state[to_index] * (1 - num_weights_per_neuron);
             AGG_SUM_WEIGHTED(ag)
         }
         if (lg > threshold) {
