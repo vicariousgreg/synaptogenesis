@@ -8,7 +8,7 @@ REGISTER_ATTRIBUTES(NVMCompareAttributes, "nvm_compare", FLOAT)
 USE_WEIGHT_MATRIX(NVMWeightMatrix, "nvm_compare")
 
 NVMCompareAttributes::NVMCompareAttributes(Layer *layer)
-        : NVMAttributes(layer) {
+        : NVMHeavisideAttributes(layer) {
     this->true_state = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("true_state", &true_state);
 }
@@ -66,7 +66,7 @@ KernelList<SYNAPSE_ARGS> NVMCompareAttributes::get_activators(Connection *conn) 
     try {
         if (conn->plastic)
             return { activate_nvm_compare_plastic_map.at(conn->get_type()) };
-        else return NVMAttributes::get_activators(conn);
+        else return NVMHeavisideAttributes::get_activators(conn);
     } catch(std::out_of_range) { }
 
     // Log an error if the connection type is unimplemented
