@@ -18,8 +18,14 @@ NVMAttributes::NVMAttributes(Layer *layer)
         : Attributes(layer, FLOAT) {
     this->state = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("state", &state);
+
+    this->noise_scale = std::stof(layer->get_parameter("noise scale", "0.0"));
+    this->noise_offset = this->noise_scale *
+        std::stof(layer->get_parameter("noise offset", "0.0"));
+
     this->pad = std::stof(layer->get_parameter("pad", "0.0"));
     this->ohr = 1. / (1. - this->pad);
+
     this->activity_gate = 1.;
     this->learning_gate = 0.;
 }
@@ -37,11 +43,13 @@ void NVMAttributes::process_weight_matrix(WeightMatrix* matrix) {
 /******************************** KERNEL **************************************/
 /******************************************************************************/
 
-BUILD_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
+BUILD_RAND_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
     float* state = att->state.get();
     float *f_outputs = (float*)outputs;
+    float noise_scale = ((NVMAttributes*)att)->noise_scale;
+    float noise_offset = ((NVMAttributes*)att)->noise_offset;
     ,
-    float input = inputs[nid];
+    float input = inputs[nid] + (rand * noise_scale - noise_offset);
     state[nid] = input;
     SHIFT_FLOAT_OUTPUTS(f_outputs, tanh(input));
 )
@@ -142,7 +150,7 @@ CALC_ALL_DUAL(activate_nvm_plastic,
         if (lg > threshold) {
             float temp = state[to_index] - sum;
             ,
-                weights[weight_index] += lg *
+                weights[weight_index] +=
                     extract(outputs[from_index], delay) *
                     temp / norm;
             ,

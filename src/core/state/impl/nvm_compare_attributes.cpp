@@ -54,7 +54,7 @@ CALC_ALL_DUAL(activate_nvm_compare_plastic,
         if (lg > threshold) {
             float temp = inputs[to_index] = true_state[to_index];
             ,
-                weights[weight_index] = lg *
+                weights[weight_index] =
                     extract(outputs[from_index], delay) *
                     temp / norm;
             ,

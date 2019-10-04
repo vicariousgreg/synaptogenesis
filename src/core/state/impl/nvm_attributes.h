@@ -21,6 +21,11 @@ class NVMAttributes : public Attributes {
         // Normalization factor for learning
         float norm;
 
+        // Noise parameters
+        // noise = rand * noise_scale - noise_offset
+        float noise_scale;
+        float noise_offset;
+
         // Continuous gate factor variables
         float pad;
         float ohr;
