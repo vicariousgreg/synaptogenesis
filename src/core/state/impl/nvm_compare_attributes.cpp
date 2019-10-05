@@ -36,22 +36,19 @@ CALC_ALL_DUAL(activate_nvm_compare_plastic,
     float ag = nvm_att->activity_gate;
     float lg = nvm_att->learning_gate;
     if (ag < GATE_THRESHOLD and lg < GATE_THRESHOLD) return;
-    float threshold = GATE_THRESHOLD * nvm_att->ohr;
 
     float* true_state = nvm_att->true_state.get();
     float norm = nvm_mat->norm;
-    lg *= nvm_att->ohr;
-    ag *= nvm_att->ohr;
     ,
         INIT_SUM
         ,
             WEIGHT_OP
         ,
-        if (ag > threshold) {
+        if (ag > GATE_THRESHOLD) {
             sum += true_state[to_index] * (1 - num_weights_per_neuron);
             AGG_SUM_WEIGHTED(ag)
         }
-        if (lg > threshold) {
+        if (lg > GATE_THRESHOLD) {
             float temp = inputs[to_index] = true_state[to_index];
             ,
                 weights[weight_index] =

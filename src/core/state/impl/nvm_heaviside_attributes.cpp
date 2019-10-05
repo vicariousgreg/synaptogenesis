@@ -9,13 +9,11 @@ USE_WEIGHT_MATRIX(NVMWeightMatrix, "nvm_heaviside")
 /******************************** KERNEL **************************************/
 /******************************************************************************/
 
-BUILD_RAND_ATTRIBUTE_KERNEL(NVMHeavisideAttributes, nvm_heaviside_kernel,
+BUILD_ATTRIBUTE_KERNEL(NVMHeavisideAttributes, nvm_heaviside_kernel,
     float* state = att->state.get();
     float *f_outputs = (float*)outputs;
-    float noise_scale = ((NVMAttributes*)att)->noise_scale;
-    float noise_offset = ((NVMAttributes*)att)->noise_offset;
     ,
-    float input = inputs[nid] + (rand * noise_scale - noise_offset);
+    float input = inputs[nid];
     state[nid] = input;
     SHIFT_FLOAT_OUTPUTS(f_outputs, (float)(input > 0.));
 )
