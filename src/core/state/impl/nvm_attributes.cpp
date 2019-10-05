@@ -19,6 +19,11 @@ NVMAttributes::NVMAttributes(Layer *layer)
     this->state = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("state", &state);
 
+    this->noise_offset = 1. - std::stof(
+        layer->get_parameter("noise offset", "0.5"));
+    if (this->noise_offset > 1. or this->noise_offset < 0.)
+        LOG_ERROR("Noise offset must be in [0,1]!");
+
     this->activity_gate = 1.;
     this->learning_gate = 0.;
     this->noise_gate = 0.;
@@ -40,11 +45,11 @@ void NVMAttributes::process_weight_matrix(WeightMatrix* matrix) {
 BUILD_RAND_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
     float* state = att->state.get();
     float *f_outputs = (float*)outputs;
-
     float noise = ((NVMAttributes*)att)->noise_gate;
+    float noise_offset = ((NVMAttributes*)att)->noise_offset;
     ,
-    float input = inputs[nid] + (noise ? (rand - .5) : 0.);
-    state[nid] = input;
+    float input = state[nid] = (inputs[nid]
+        + (noise ? (rand - noise_offset) : 0.));
     SHIFT_FLOAT_OUTPUTS(f_outputs, tanh(input));
 )
 

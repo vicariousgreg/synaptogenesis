@@ -21,6 +21,10 @@ class NVMAttributes : public Attributes {
         // Normalization factor for learning
         float norm;
 
+        // Offset for noise
+        // Corresponds to expected percentage of positive outputs
+        float noise_offset;
+
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
 };
