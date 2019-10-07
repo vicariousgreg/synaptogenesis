@@ -11,6 +11,9 @@ NVMCompareAttributes::NVMCompareAttributes(Layer *layer)
         : NVMHeavisideAttributes(layer) {
     this->true_state = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("true_state", &true_state);
+
+    this->tolerance = 1. - std::stof(
+        layer->get_parameter("tolerance", "1.0"));
 }
 
 /******************************************************************************/
@@ -39,13 +42,15 @@ CALC_ALL_DUAL(activate_nvm_compare_plastic,
 
     float* true_state = nvm_att->true_state.get();
     float norm = nvm_mat->norm;
+    float tolerance = nvm_att->tolerance;
     ,
         INIT_SUM
         ,
             WEIGHT_OP
         ,
         if (ag > GATE_THRESHOLD) {
-            sum += true_state[to_index] * (1 - num_weights_per_neuron);
+            sum -= true_state[to_index] *
+                ((tolerance * num_weights_per_neuron) - 1);
             AGG_SUM_WEIGHTED(ag)
         }
         if (lg > GATE_THRESHOLD) {

@@ -13,6 +13,10 @@ class NVMCompareAttributes : public NVMHeavisideAttributes {
         // "true" pattern for learning
         Pointer<float> true_state;
 
+        // Comparison tolerance
+        // Expressed as percentage similarity
+        float tolerance;
+
     ATTRIBUTE_MEMBERS
 };
 
