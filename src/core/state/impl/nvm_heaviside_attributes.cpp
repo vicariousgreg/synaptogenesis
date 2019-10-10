@@ -14,8 +14,11 @@ BUILD_RAND_ATTRIBUTE_KERNEL(NVMHeavisideAttributes, nvm_heaviside_kernel,
     float *f_outputs = (float*)outputs;
     float noise = ((NVMAttributes*)att)->noise_gate;
     float noise_offset = ((NVMAttributes*)att)->noise_offset;
+    float noise_gain = ((NVMAttributes*)att)->noise_gain;
     ,
     float input = state[nid] = (inputs[nid]
-        + (noise ? (rand - noise_offset) : 0.));
+        + (noise
+            ? (noise_gain * ((rand >= noise_offset) - (rand < noise_offset)))
+            : 0.));
     SHIFT_FLOAT_OUTPUTS(f_outputs, (float)(input > 0.));
 )

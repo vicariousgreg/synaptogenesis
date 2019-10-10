@@ -18,12 +18,13 @@ class NVMAttributes : public Attributes {
         // Gate registers
         float activity_gate, learning_gate, noise_gate;
 
-        // Normalization factor for learning
-        float norm;
-
         // Offset for noise
         // Corresponds to expected percentage of positive outputs
         float noise_offset;
+
+        // Gain for noise
+        // Determines the magnitude of noise
+        float noise_gain;
 
     GET_KERNEL_DEF
     ATTRIBUTE_MEMBERS
