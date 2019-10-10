@@ -15,6 +15,9 @@ class NVMAttributes : public Attributes {
         // Internal neural state
         Pointer<float> state;
 
+        // Multiplicative context
+        Pointer<float> context;
+
         // Gate registers
         float activity_gate, learning_gate, noise_gate;
 

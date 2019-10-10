@@ -19,6 +19,9 @@ NVMAttributes::NVMAttributes(Layer *layer)
     this->state = Attributes::create_neuron_variable<float>(0.0);
     Attributes::register_neuron_variable("state", &state);
 
+    this->context = Attributes::create_neuron_variable<float>(1.0);
+    Attributes::register_neuron_variable("context", &context);
+
     this->noise_offset = 1. - std::stof(
         layer->get_parameter("noise offset", "0.5"));
     if (this->noise_offset > 1. or this->noise_offset < 0.)
@@ -48,6 +51,7 @@ void NVMAttributes::process_weight_matrix(WeightMatrix* matrix) {
 BUILD_RAND_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
     float* state = att->state.get();
     float *f_outputs = (float*)outputs;
+    float *context = ((NVMAttributes*)att)->context.get();
     float noise = ((NVMAttributes*)att)->noise_gate;
     float noise_offset = ((NVMAttributes*)att)->noise_offset;
     float noise_gain = ((NVMAttributes*)att)->noise_gain;
@@ -56,6 +60,7 @@ BUILD_RAND_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
         + (noise
             ? (noise_gain * ((rand >= noise_offset) - (rand < noise_offset)))
             : 0.));
+    context[nid] = 1.;
     SHIFT_FLOAT_OUTPUTS(f_outputs, tanh(input));
 )
 
@@ -74,6 +79,9 @@ BUILD_RAND_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
 
 #define AGG_SUM \
     inputs[to_index] = aggregate(inputs[to_index], sum);
+
+#define AGG_SUM_CTX \
+    context[to_index] = aggregate(context[to_index], sum);
 
 CALC_SUBSET(activate_nvm_decay,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
@@ -124,14 +132,16 @@ CALC_ALL(activate_nvm,
 
 CALC_ALL(activate_nvm_gated,
     NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes;
-    float gv = nvm_att->activity_gate;
-    if (gv < GATE_THRESHOLD) return;
+    if (nvm_att->activity_gate < GATE_THRESHOLD) return;
+    float* context = nvm_att->context.get();
     ,
-    INIT_SUM
-    ,
-        WEIGHT_OP
-    ,
-    AGG_SUM;
+    if (context[to_index] > GATE_THRESHOLD) {
+        INIT_SUM
+        ,
+            WEIGHT_OP
+        ,
+        AGG_SUM;
+    }
 );
 
 CALC_ALL_DUAL(activate_nvm_plastic,
@@ -143,25 +153,39 @@ CALC_ALL_DUAL(activate_nvm_plastic,
     if (ag < GATE_THRESHOLD and lg < GATE_THRESHOLD) return;
 
     float* state = nvm_att->state.get();
+    float* context = nvm_att->context.get();
     float norm = nvm_mat->norm * num_weights_per_neuron;
 
     ,
-        INIT_SUM
-        ,
-            WEIGHT_OP;
-        ,
-        if (ag > GATE_THRESHOLD) {
-            AGG_SUM;
-        }
-        float st = state[to_index];
-        if (lg > GATE_THRESHOLD and st != 0.) {
-            float temp = st - sum;
+        if (context[to_index] > GATE_THRESHOLD) {
+            INIT_SUM
             ,
-                weights[weight_index] +=
-                    extract(outputs[from_index], delay)
-                    * temp / norm;
+                WEIGHT_OP;
             ,
+            if (ag > GATE_THRESHOLD) {
+                AGG_SUM;
+            }
+            if (lg > GATE_THRESHOLD) {
+                float temp = state[to_index] - sum;
+                ,
+                    weights[weight_index] +=
+                        extract(outputs[from_index], delay)
+                        * temp / norm;
+                ,
+            }
         }
+);
+
+CALC_ONE_TO_ONE(activate_nvm_context,
+    NVMAttributes *nvm_att = (NVMAttributes*)synapse_data.attributes; \
+    if (nvm_att->activity_gate < GATE_THRESHOLD) return;
+    float* context = nvm_att->context.get();
+    ,
+    INIT_SUM
+    ,
+        WEIGHT_OP
+    ,
+    AGG_SUM_CTX;
 );
 
 
@@ -176,6 +200,8 @@ KernelList<SYNAPSE_ARGS> NVMAttributes::get_activators(Connection *conn) {
                 return { get_activate_nvm_learning() } ;
             else if (conn->get_parameter("noise", "false") == "true")
                 return { get_activate_nvm_noise() } ;
+            else if (conn->get_parameter("context", "false") == "true")
+                return { get_activate_nvm_context() } ;
             else if (conn->plastic)
                 return { activate_nvm_plastic_map.at(conn->get_type()) };
             else if (conn->get_parameter("gated", "false") == "true")
