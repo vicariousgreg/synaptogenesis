@@ -404,7 +404,7 @@ class Environment:
             self.obj = None
 
     def save(self, filename):
-        return _syn.save_env(self.obj, filename)
+        return _syn.save_env(self.obj, filename.encode('utf-8'))
 
     def free(self):
         if _syn is not None:
@@ -429,7 +429,7 @@ class Network:
         self.state = None
 
     def save(self, filename):
-        return _syn.save_net(self.obj, filename)
+        return _syn.save_net(self.obj, filename.encode('utf-8'))
 
     def free(self):
         if _syn is not None:
@@ -449,15 +449,16 @@ class Network:
         if filename is None:
             self.state = _syn.build_state(self.obj)
         else:
-            self.state = _syn.build_load_state(self.obj, filename)
+            self.state = _syn.build_load_state(self.obj,
+                filename.encode('utf-8'))
 
     def load_state(self, filename):
         if self.state is None: self.build_state(filename)
-        else: _syn.load_state(self.state, filename)
+        else: _syn.load_state(self.state, filename.encode('utf-8'))
 
     def save_state(self, filename):
         if self.state is None: self.build_state()
-        _syn.save_state(self.state, filename)
+        _syn.save_state(self.state, filename.encode('utf-8'))
 
     def get_neuron_data(self, structure, layer, key):
         if self.state is None: self.build_state()
