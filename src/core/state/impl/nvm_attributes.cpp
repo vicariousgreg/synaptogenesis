@@ -27,8 +27,7 @@ NVMAttributes::NVMAttributes(Layer *layer)
     if (this->noise_offset > 1. or this->noise_offset < 0.)
         LOG_ERROR("Noise offset must be in [0,1]!");
 
-    this->noise_gain = std::stof(
-        layer->get_parameter("noise gain", "1."));
+    this->gain = std::stof(layer->get_parameter("gain", "1."));
 
     this->activity_gate = 1.;
     this->learning_gate = 0.;
@@ -54,12 +53,11 @@ BUILD_RAND_ATTRIBUTE_KERNEL(NVMAttributes, nvm_kernel,
     float *context = ((NVMAttributes*)att)->context.get();
     float noise = ((NVMAttributes*)att)->noise_gate;
     float noise_offset = ((NVMAttributes*)att)->noise_offset;
-    float noise_gain = ((NVMAttributes*)att)->noise_gain;
+    float gain = ((NVMAttributes*)att)->gain;
     ,
-    float input = state[nid] = (inputs[nid]
-        + (noise
-            ? (noise_gain * ((rand >= noise_offset) - (rand < noise_offset)))
-            : 0.));
+    float input = inputs[nid] + (noise ? rand - noise_offset : 0.);
+    state[nid] = gain * ((input > 0) - (input < 0));
+
     context[nid] = 1.;
     SHIFT_FLOAT_OUTPUTS(f_outputs, tanh(input));
 )
